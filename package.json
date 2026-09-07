@@ -1,0 +1,11 @@
+{
+  "name": "research-web-app",
+  "version": "0.1.0",
+  "private": true,
+  "description": "RE:SEARCH — cộng đồng học thuật cho lớp Phương pháp nghiên cứu khoa học",
+  "scripts": {
+    "start": "node server.js",
+    "check": "node --check server.js && node --check app.js"
+  },
+  "engines": { "node": ">=24" }
+}

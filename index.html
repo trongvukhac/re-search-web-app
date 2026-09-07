@@ -1,0 +1,810 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#123f31" />
+    <title>RE:SEARCH — Cộng đồng học thuật</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Mono&family=Inter:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css?v=4" />
+  </head>
+  <body>
+    <dialog
+      id="documentViewerModal"
+      class="modal"
+      style="
+        width: 90vw;
+        max-width: 1200px;
+        height: 90vh;
+        max-height: 900px;
+        padding: 0;
+        overflow: hidden;
+      "
+    >
+      <div style="display: flex; flex-direction: column; height: 100%">
+        <div
+          class="modal-head"
+          style="
+            padding: 16px;
+            border-bottom: 1px solid var(--sage-2);
+            background: #fff;
+          "
+        >
+          <h2 id="viewerTitle" style="font-size: 16px; margin: 0">
+            Xem tài liệu
+          </h2>
+          <button
+            class="close-modal"
+            type="button"
+            onclick="this.closest('dialog').close()"
+            aria-label="Đóng"
+          >
+            ×
+          </button>
+        </div>
+        <iframe
+          id="viewerIframe"
+          style="flex: 1; width: 100%; border: none; background: #f8f9fa"
+        ></iframe>
+      </div>
+    </dialog>
+    <div class="toast" id="toast"></div>
+    <header class="site-header">
+      <a class="brand" href="#home" aria-label="RE:SEARCH Trang chủ">
+        <span class="brand-mark"
+          ><img src="public/assets/research-logo.png" alt=""
+        /></span>
+        <span>RE<span class="brand-colon">:</span>SEARCH</span>
+      </a>
+      <nav class="desktop-nav" aria-label="Điều hướng chính">
+        <a href="#home" data-route="home" class="nav-link active">Trang chủ</a>
+        <a href="#forum" data-route="forum" class="nav-link">Diễn đàn</a>
+        <a href="#documents" data-route="documents" class="nav-link"
+          >Tài liệu</a
+        >
+      </nav>
+      <div class="header-actions">
+        <button
+          class="icon-button desktop-search"
+          id="openSearch"
+          aria-label="Tìm kiếm"
+        >
+          ⌕
+        </button>
+        <button class="profile-chip" data-route="account">
+          <span class="avatar avatar-sm">TV</span>
+          <span class="profile-chip-text">Đăng nhập</span>
+          <span class="chevron">⌄</span>
+        </button>
+      </div>
+    </header>
+
+    <main>
+      <section id="home" class="page active-page" data-page="home">
+        <div class="home-hero">
+          <div class="hero-copy">
+            <p class="eyebrow">PHƯƠNG PHÁP NGHIÊN CỨU KHOA HỌC · 2026</p>
+            <h1>Mọi câu hỏi đều xứng đáng được ghi nhận.</h1>
+            <p class="hero-intro">
+              Một không gian chung dành cho các bạn sinh viên có niềm đam mê với nghiên cứu khoa học, có mong muốn được chia sẻ và giải đáp thắc mắc trong hành trình tích luỹ tri thức.
+            </p>
+            <div class="hero-actions">
+              <button class="button button-primary" id="askFromHome">
+                <span>+</span> Đặt câu hỏi
+              </button>
+              <button class="button button-quiet" data-route="forum">
+                Khám phá diễn đàn <span>→</span>
+              </button>
+            </div>
+          </div>
+          <aside class="contribution-card">
+            <div class="card-topline">
+              <span>THÀNH TÍCH NĂNG ĐỘNG</span>
+              <span class="dot-live">● Trực tuyến</span>
+            </div>
+            <div class="streak-number" id="activityStreak">
+              -- <span>ngày</span>
+            </div>
+            <p>Chuỗi đóng góp của bạn</p>
+            <div
+              class="week-strip"
+              id="activityGrid"
+              aria-label="Hoạt động trong tuần"
+            ></div>
+          </aside>
+        </div>
+
+        <div class="search-panel">
+          <span class="search-glyph">⌕</span>
+          <input
+            id="homeSearch"
+            type="search"
+            placeholder="Bạn đang muốn tìm gì? Ví dụ: research gap"
+            autocomplete="off"
+          />
+          <kbd>⌘ K</kbd>
+        </div>
+
+        <div class="home-grid">
+          <div class="main-column">
+            <div id="pinnedNotificationContainer"></div>
+            <section class="section-block">
+              <div class="section-heading">
+                <div>
+                  <p class="eyebrow">MỚI TRONG CỘNG ĐỒNG</p>
+                  <h2>Câu hỏi vừa được đặt</h2>
+                </div>
+                <button class="text-link" data-route="forum">
+                  Xem tất cả →
+                </button>
+              </div>
+              <div class="post-list" id="homePostList"></div>
+            </section>
+          </div>
+          <aside class="side-column">
+            <section class="mini-card topics-card">
+              <p class="eyebrow">KHÁM PHÁ THEO CHỦ ĐỀ</p>
+              <div id="topicCloud" class="topic-cloud"></div>
+            </section>
+            <section class="mini-card active-card">
+              <div class="active-card-title">
+                <p class="eyebrow">ĐÓNG GÓP GẦN ĐÂY</p>
+                <span>↗</span>
+              </div>
+              <ul id="globalRecentContributions"></ul>
+            </section>
+          </aside>
+        </div>
+      </section>
+
+      <section id="forum" class="page" data-page="forum">
+        <div class="forum-heading">
+          <div>
+            <p class="eyebrow">DIỄN ĐÀN LỚP HỌC</p>
+            <h1>Hỏi, trao đổi,<br /><em>cùng hiểu sâu hơn.</em></h1>
+          </div>
+          <button class="button button-primary" id="askFromForum">
+            <span>+</span> Đặt câu hỏi
+          </button>
+        </div>
+        <div class="forum-tools">
+          <div class="search-inline">
+            <span>⌕</span
+            ><input
+              id="forumSearch"
+              type="search"
+              placeholder="Tìm trong câu hỏi, phản hồi và chủ đề"
+            />
+          </div>
+          <button class="filter-button" id="filterButton">
+            ☷ <span>Lọc</span>
+          </button>
+        </div>
+        <div class="filters" id="filters">
+          <button class="filter-chip selected" data-filter="all">Tất cả</button
+          ><button class="filter-chip" data-filter="new">Mới nhất</button
+          ><button class="filter-chip" data-filter="popular">
+            Được quan tâm</button
+          ><button class="filter-chip" data-filter="unanswered">
+            Chưa có câu trả lời</button
+          ><span class="filter-divider"></span
+          ><select id="topicFilter" aria-label="Lọc theo chủ đề">
+            <option value="all">Tất cả chủ đề</option>
+          </select>
+        </div>
+        <div class="forum-layout">
+          <div class="forum-feed" id="forumFeed"></div>
+          <aside class="forum-aside">
+            <section class="mini-card">
+              <p class="eyebrow">MỘT LƯU Ý NHỎ</p>
+              <h3>Hãy hỏi thật cụ thể</h3>
+              <p>
+                Câu hỏi có bối cảnh sẽ giúp mọi người trả lời chính xác và hữu
+                ích hơn.
+              </p>
+              <button class="text-link" id="openGuide">
+                Xem hướng dẫn đặt câu hỏi →
+              </button>
+            </section>
+            <section class="mini-card stat-card">
+              <p class="eyebrow">THÀNH TÍCH CỘNG ĐỒNG</p>
+              <div>
+                <strong id="statTotalPosts">--</strong><span>câu hỏi</span>
+              </div>
+              <div>
+                <strong id="statAnsweredRatio">--%</strong
+                ><span>đã có phản hồi</span>
+              </div>
+            </section>
+            <section class="mini-card leaderboard-card">
+              <p class="eyebrow">BẢNG XẾP HẠNG</p>
+              <h3>Top đóng góp</h3>
+              <div
+                id="leaderboardList"
+                style="
+                  margin-top: 12px;
+                  display: flex;
+                  flex-direction: column;
+                  gap: 8px;
+                "
+              >
+                <!-- Dữ liệu bảng xếp hạng sẽ được nạp qua hydrateServer() -->
+                <p style="color: var(--sage); font-size: 13px">Đang tải...</p>
+              </div>
+            </section>
+          </aside>
+        </div>
+      </section>
+
+      <section id="documents" class="page" data-page="documents">
+        <div class="forum-heading docs-heading">
+          <div>
+            <p class="eyebrow">KHO TÀI LIỆU</p>
+            <h1>Đọc để hiểu,<br /><em>chia sẻ để cùng tiến.</em></h1>
+          </div>
+          <button class="button button-primary" id="shareDocument">
+            <span>+</span> Đề xuất tài liệu
+          </button>
+        </div>
+        <div class="document-tabs">
+          <button class="tab active" data-doc-filter="all">
+            Tất cả tài liệu</button
+          ><button class="tab" data-doc-filter="course">Tài liệu môn học</button
+          ><button class="tab" data-doc-filter="reference">
+            Tài liệu tham khảo
+          </button>
+        </div>
+        <div class="document-grid" id="documentGrid"></div>
+      </section>
+
+      <section id="account" class="page" data-page="account">
+        <div class="account-header">
+          <div class="profile-large">
+            <span class="avatar avatar-lg">TV</span>
+            <div>
+              <p class="eyebrow">TÀI KHOẢN CỦA BẠN</p>
+              <h1>Khách</h1>
+              <p class="role-label">Chưa đăng nhập</p>
+            </div>
+          </div>
+          <div style="display: flex; gap: 8px">
+            <button
+              class="button button-outline"
+              id="editProfile"
+              style="display: none"
+            >
+              Chỉnh sửa hồ sơ
+            </button>
+            <button
+              class="button button-outline"
+              style="
+                color: var(--error);
+                border-color: var(--error);
+                display: none;
+              "
+              id="logoutButton"
+            >
+              Đăng xuất
+            </button>
+          </div>
+        </div>
+        <div class="account-stats">
+          <div>
+            <p>Điểm đóng góp</p>
+            <strong id="profilePoints">0</strong
+            ><small>Tiếp tục đóng góp nhé</small>
+          </div>
+          <div>
+            <p>Chuỗi hoạt động</p>
+            <strong id="profileStreak">0 <em>ngày</em></strong
+            ><small>Ngày mai nhớ quay lại nhé!</small>
+          </div>
+          <div>
+            <p>Đóng góp</p>
+            <strong id="profileCount">0</strong
+            ><small>bài viết và phản hồi</small>
+          </div>
+        </div>
+        <div class="account-grid" id="accountGrid" style="display: none">
+          <section class="account-activity">
+            <div class="section-heading">
+              <div>
+                <p class="eyebrow">LỊCH SỬ HOẠT ĐỘNG</p>
+                <h2>Đóng góp gần đây</h2>
+              </div>
+              <button class="text-link" id="viewAllContributionsBtn">Xem tất cả →</button>
+            </div>
+            <div id="recentContributionsContainer"></div>
+          </section>
+          <aside class="admin-panel" id="adminPanel" style="display: none">
+            <p class="eyebrow">QUẢN TRỊ VIÊN</p>
+            <h2>Quản lý lớp học</h2>
+            <p>
+              Bạn có toàn quyền quản lý nội dung, thành viên và hoạt động trên
+              RE:SEARCH.
+            </p>
+            <div class="admin-metrics">
+              <span><b id="adminTotalUsers">--</b> thành viên</span>
+              <span><b id="adminPendingDocs">--</b> cần phản hồi</span>
+            </div>
+            <button class="button button-dark" id="adminButton">
+              Mở quản trị <span>→</span>
+            </button>
+          </aside>
+        </div>
+      </section>
+    </main>
+
+    <nav class="mobile-nav" aria-label="Điều hướng chính">
+      <a href="#home" data-route="home" class="mobile-link active"
+        ><span>⌂</span>Trang chủ</a
+      ><a href="#forum" data-route="forum" class="mobile-link"
+        ><span>◫</span>Diễn đàn</a
+      ><a href="#documents" data-route="documents" class="mobile-link"
+        ><span>▤</span>Tài liệu</a
+      ><a href="#account" data-route="account" class="mobile-link"
+        ><span>◉</span>Tài khoản</a
+      >
+    </nav>
+    <button class="mobile-fab" id="mobileAsk" aria-label="Đặt câu hỏi">
+      +
+    </button>
+
+    <dialog id="questionModal" class="modal">
+      <form method="dialog" id="questionForm">
+        <div class="modal-head">
+          <div>
+            <p class="eyebrow">CÂU HỎI MỚI</p>
+            <h2>Điều gì đang làm bạn băn khoăn?</h2>
+          </div>
+          <button
+            class="close-modal"
+            type="button"
+            onclick="this.closest('dialog').close()"
+            aria-label="Đóng"
+          >
+            ×
+          </button>
+        </div>
+        <label
+          >Tiêu đề<input
+            id="questionTitle"
+            required
+            minlength="12"
+            maxlength="140"
+            placeholder="Ví dụ: Làm sao phân biệt research gap và research problem?" /></label
+        ><label
+          >Nội dung<textarea
+            id="questionContent"
+            required
+            minlength="25"
+            rows="5"
+            placeholder="Mô tả điều bạn đã hiểu, phần còn chưa rõ và bối cảnh nếu có…"
+          ></textarea
+          ><small
+            >Ít nhất 25 ký tự để mọi người có đủ ngữ cảnh trả lời.</small
+          ></label
+        ><label>Chủ đề<select id="questionTopic"></select></label>
+        <div class="anonymous-choice">
+          <div>
+            <strong>Danh tính khi đăng</strong
+            ><span
+              >Bạn luôn có thể được TA/Admin xác định khi cần xử lý nội
+              dung.</span
+            >
+          </div>
+          <div class="switch-group">
+            <button
+              type="button"
+              class="identity-choice selected"
+              data-anonymous="false"
+            >
+              Hiển thị tên</button
+            ><button
+              type="button"
+              class="identity-choice"
+              data-anonymous="true"
+            >
+              Đăng ẩn danh
+            </button>
+          </div>
+        </div>
+        <div class="modal-actions">
+          <button
+            class="button button-quiet"
+            type="button"
+            onclick="this.closest('dialog').close()"
+          >
+            Hủy</button
+          ><button
+            class="button button-primary"
+            id="submitQuestion"
+            value="default"
+          >
+            Đăng câu hỏi <span>→</span>
+          </button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="documentModal" class="modal">
+      <form method="dialog" id="documentForm">
+        <div class="modal-head">
+          <div>
+            <p class="eyebrow">TÀI LIỆU MỚI</p>
+            <h2>Đề xuất tài liệu tham khảo</h2>
+          </div>
+          <button
+            class="close-modal"
+            type="button"
+            onclick="this.closest('dialog').close()"
+            aria-label="Đóng"
+          >
+            ×
+          </button>
+        </div>
+        <div
+          style="
+            background: var(--sage-2);
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 16px;
+            font-size: 13px;
+          "
+        >
+          <strong>Hướng dẫn:</strong> Vui lòng tải file tài liệu của bạn lên
+          <a
+            href="https://drive.google.com/drive/folders/18oJxTpSnUbXdtQfPAFYoVykgc9aO6IH-?usp=sharing"
+            target="_blank"
+            style="color: var(--green); text-decoration: underline"
+            >Thư mục Drive lớp học</a
+          >, sau đó sao chép link chia sẻ và dán vào ô bên dưới.
+        </div>
+        <label
+          >Tên tài liệu<input
+            id="docTitle"
+            required
+            minlength="3"
+            maxlength="140"
+            placeholder="Ví dụ: Sách Hướng dẫn nghiên cứu APA" /></label
+        ><label
+          >Mô tả ngắn<textarea
+            id="docDesc"
+            required
+            minlength="3"
+            rows="3"
+            placeholder="Tài liệu này hữu ích cho phần nào?"
+          ></textarea></label
+        ><label
+          >Link Google Drive<input
+            id="docUrl"
+            type="url"
+            required
+            placeholder="https://drive.google.com/..."
+        /></label>
+        <label
+          >Định dạng<select id="docFormat">
+            <option value="PDF">PDF</option>
+            <option value="Hình ảnh">Hình ảnh</option>
+            <option value="Video">Video</option>
+            <option value="Khác">Khác (Link)</option>
+          </select></label
+        >
+        <label
+          >Phân loại<select id="docCategory">
+            <option value="reference">Tài liệu tham khảo</option>
+            <option value="course">Tài liệu môn học</option>
+          </select></label
+        >
+        <div class="modal-actions">
+          <button
+            class="button button-quiet"
+            type="button"
+            onclick="this.closest('dialog').close()"
+          >
+            Hủy</button
+          ><button
+            class="button button-primary"
+            id="submitDocument"
+            value="default"
+          >
+            Gửi đề xuất <span>→</span>
+          </button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="authModal" class="modal auth-modal">
+      <form method="dialog" id="authForm">
+        <div class="modal-head">
+          <div>
+            <p class="eyebrow">TÀI KHOẢN RE:SEARCH</p>
+            <h2 id="authTitle">Đăng nhập để tiếp tục</h2>
+          </div>
+          <button
+            class="close-modal"
+            type="button"
+            onclick="this.closest('dialog').close()"
+            aria-label="Đóng"
+          >
+            ×
+          </button>
+        </div>
+        <div class="auth-tabs">
+          <button type="button" class="auth-tab active" data-auth-mode="login">
+            Đăng nhập</button
+          ><button type="button" class="auth-tab" data-auth-mode="register">
+            Tạo tài khoản
+          </button>
+        </div>
+        <label
+          >Tên hiển thị<input
+            id="authName"
+            minlength="2"
+            maxlength="80"
+            placeholder="Nguyễn Minh Anh" /></label
+        ><label
+          >Email<input
+            id="authEmail"
+            type="email"
+            required
+            autocomplete="email"
+            placeholder="ban@truong.edu.vn" /></label
+        ><label
+          >Mật khẩu<input
+            id="authPassword"
+            type="password"
+            required
+            minlength="12"
+            autocomplete="current-password"
+            placeholder="Ít nhất 12 ký tự"
+        /></label>
+        <p class="auth-note" id="authNote">
+          Chỉ TA/Admin do quản trị viên cấp quyền. Tài khoản mới mặc định là
+          Sinh viên.
+        </p>
+        <div class="modal-actions">
+          <button class="button button-primary" id="authSubmit" value="default">
+            Đăng nhập <span>→</span>
+          </button>
+        </div>
+      </form>
+    </dialog>
+    <dialog class="modal" id="editProfileModal">
+      <form id="editProfileForm" method="dialog">
+        <div class="modal-head">
+          <div>
+            <p class="eyebrow">TÀI KHOẢN RE:SEARCH</p>
+            <h2>Chỉnh sửa hồ sơ</h2>
+          </div>
+          <button
+            class="close-modal"
+            type="button"
+            onclick="this.closest('dialog').close()"
+            aria-label="Đóng"
+          >
+            ×
+          </button>
+        </div>
+        <label
+          >Tên hiển thị (Công khai)<input
+            id="profileDisplayName"
+            required
+            minlength="2"
+            maxlength="80"
+        /></label>
+        <label
+          >Mã số sinh viên (Nội bộ)<input
+            id="profileStudentId"
+            placeholder="Ví dụ: 20110001"
+        /></label>
+        <label
+          >Tên thật (Nội bộ)<input
+            id="profileRealName"
+            placeholder="Nguyễn Văn A"
+        /></label>
+        <label
+          >Lớp đang học (Nội bộ)<input
+            id="profileClassName"
+            placeholder="Ví dụ: KTPM2020"
+        /></label>
+        <div class="modal-actions" style="margin-top: 24px">
+          <button class="button button-primary" type="submit">
+            Lưu thay đổi <span>→</span>
+          </button>
+        </div>
+      </form>
+    </dialog>
+    <dialog id="historyModal" class="modal detail-modal" style="max-width: 600px;">
+      <div class="modal-head">
+        <div>
+          <p class="eyebrow">LỊCH SỬ HOẠT ĐỘNG</p>
+          <h2>Tất cả đóng góp</h2>
+        </div>
+        <button class="close-modal" id="closeHistory" aria-label="Đóng">×</button>
+      </div>
+      <div id="historyContent" style="margin-top: 16px; display: flex; flex-direction: column; gap: 12px; max-height: 60vh; overflow-y: auto;">
+        <!-- Filled by JS -->
+      </div>
+    </dialog>
+    <dialog id="detailModal" class="modal detail-modal">
+      <div id="detailContent"></div>
+    </dialog>
+    <dialog
+      id="adminModal"
+      class="modal admin-modal"
+      style="width: 90vw; max-width: 800px"
+    >
+      <div class="modal-head">
+        <div>
+          <p class="eyebrow">QUẢN TRỊ HỆ THỐNG</p>
+          <h2>Bảng điều khiển Admin</h2>
+        </div>
+        <button class="close-modal" id="closeAdmin" aria-label="Đóng">×</button>
+      </div>
+      <div class="auth-tabs" style="margin-bottom: 24px">
+        <button
+          type="button"
+          class="auth-tab admin-tab active"
+          data-admin-tab="overview"
+        >
+          Tổng quan
+        </button>
+        <button
+          type="button"
+          class="auth-tab admin-tab"
+          data-admin-tab="members"
+        >
+          Thành viên
+        </button>
+        <button
+          type="button"
+          class="auth-tab admin-tab"
+          data-admin-tab="documents"
+        >
+          Xét duyệt
+        </button>
+      </div>
+
+      <div id="adminTabOverview" class="admin-tab-content">
+        <div class="admin-dashboard">
+          <div><strong id="adminMembers">0</strong><span>Thành viên</span></div>
+          <div><strong id="adminPosts">0</strong><span>Câu hỏi</span></div>
+          <div>
+            <strong id="adminUnanswered">0</strong><span>Chưa phản hồi</span>
+          </div>
+          <div><strong id="adminDocs">0</strong><span>Tài liệu chờ</span></div>
+        </div>
+      </div>
+
+      <div id="adminTabMembers" class="admin-tab-content" style="display: none">
+        <div style="max-height: 400px; overflow-y: auto">
+          <table
+            style="width: 100%; border-collapse: collapse; text-align: left"
+          >
+            <thead>
+              <tr style="border-bottom: 1px solid var(--sage-2)">
+                <th style="padding: 12px 8px">Tên</th>
+                <th style="padding: 12px 8px">Vai trò</th>
+                <th style="padding: 12px 8px">Điểm số</th>
+                <th style="padding: 12px 8px">Thao tác</th>
+              </tr>
+            </thead>
+            <tbody id="adminUserList">
+              <!-- Users populated by JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div
+        id="adminTabDocuments"
+        class="admin-tab-content"
+        style="display: none"
+      >
+        <div
+          id="adminDocList"
+          style="
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            max-height: 400px;
+            overflow-y: auto;
+          "
+        >
+          <!-- Docs populated by JS -->
+        </div>
+      </div>
+    </dialog>
+    <dialog id="toast" class="toast" aria-live="polite"></dialog>
+    <style>
+      .auth-tabs {
+        display: flex;
+        gap: 16px;
+        border-bottom: 1px solid var(--line);
+        margin-bottom: 16px;
+      }
+      .auth-tab {
+        background: none;
+        border: 0;
+        padding: 0 1px 9px;
+        color: #718077;
+        font-size: 11px;
+        font-weight: 800;
+        position: relative;
+      }
+      .auth-tab.active {
+        color: var(--ink);
+      }
+      .auth-tab.active:after {
+        content: "";
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: -1px;
+        height: 2px;
+        background: #347553;
+      }
+      .auth-modal label:first-of-type {
+        display: none;
+      }
+      .auth-modal.registering label:first-of-type {
+        display: block;
+      }
+      .auth-note {
+        font-size: 10px;
+        line-height: 1.5;
+        color: #718077;
+        margin: 14px 0 0;
+      }
+    </style>
+    <dialog
+      id="guideModal"
+      class="modal"
+      style="
+        max-width: 1000px;
+        width: 95vw;
+        max-height: 90vh;
+        height: 90vh;
+        padding: 0;
+      "
+    >
+      <div
+        style="display: flex; flex-direction: column; width: 100%; height: 100%"
+      >
+        <div
+          class="modal-head"
+          style="padding: 24px 24px 16px; margin-bottom: 0"
+        >
+          <div>
+            <p class="eyebrow">HƯỚNG DẪN</p>
+            <h2>Cách đặt câu hỏi</h2>
+          </div>
+          <button
+            type="button"
+            class="close-modal"
+            aria-label="Đóng"
+            onclick="this.closest('dialog').close()"
+          >
+            ×
+          </button>
+        </div>
+        <div style="flex: 1; width: 100%; min-height: 0">
+          <iframe
+            src="https://drive.google.com/file/d/1f6D7iaooXW8wNsn_43eGrz8awphbW09A/preview"
+            width="100%"
+            height="100%"
+            allow="autoplay"
+            style="border: none; display: block"
+          ></iframe>
+        </div>
+      </div>
+    </dialog>
+    <script src="app.js?v=7"></script>
+  </body>
+</html>

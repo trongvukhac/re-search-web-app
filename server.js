@@ -1,0 +1,1017 @@
+#!/usr/bin/env node
+/* RE:SEARCH local application server — Node.js 24+ (no third-party runtime). */
+const http = require("node:http");
+const fs = require("node:fs");
+const path = require("node:path");
+const crypto = require("node:crypto");
+const { DatabaseSync } = require("node:sqlite");
+
+const ROOT = __dirname;
+const PORT = Number(process.env.PORT || 3000);
+const DATABASE_DIR = path.join(ROOT, "data");
+const DATABASE_PATH = path.join(DATABASE_DIR, "research.db");
+const SESSION_AGE_SECONDS = 60 * 60 * 24 * 14;
+const MIME = {
+  ".html": "text/html; charset=utf-8",
+  ".css": "text/css; charset=utf-8",
+  ".js": "text/javascript; charset=utf-8",
+  ".png": "image/png",
+  ".svg": "image/svg+xml",
+  ".ico": "image/x-icon",
+};
+
+fs.mkdirSync(DATABASE_DIR, { recursive: true });
+const db = new DatabaseSync(DATABASE_PATH);
+db.exec("PRAGMA foreign_keys = ON; PRAGMA journal_mode = WAL;");
+db.exec(`
+  CREATE TABLE IF NOT EXISTS users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    email TEXT NOT NULL UNIQUE COLLATE NOCASE,
+    password_hash TEXT NOT NULL,
+    display_name TEXT NOT NULL,
+    role TEXT NOT NULL DEFAULT 'student' CHECK(role IN ('student','lecturer','admin')),
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+  );
+  CREATE TABLE IF NOT EXISTS sessions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    token_hash TEXT NOT NULL UNIQUE,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    csrf_token TEXT NOT NULL,
+    expires_at TEXT NOT NULL,
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+  );
+  CREATE TABLE IF NOT EXISTS posts (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    author_id INTEGER NOT NULL REFERENCES users(id),
+    title TEXT NOT NULL,
+    content TEXT NOT NULL,
+    topic TEXT NOT NULL,
+    is_anonymous INTEGER NOT NULL DEFAULT 0 CHECK(is_anonymous IN (0,1)),
+    status TEXT NOT NULL DEFAULT 'visible' CHECK(status IN ('visible','hidden','deleted')),
+    selected_response_id INTEGER,
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+  );
+  CREATE TABLE IF NOT EXISTS responses (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    post_id INTEGER NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
+    author_id INTEGER NOT NULL REFERENCES users(id),
+    content TEXT NOT NULL,
+    is_anonymous INTEGER NOT NULL DEFAULT 0 CHECK(is_anonymous IN (0,1)),
+    status TEXT NOT NULL DEFAULT 'visible' CHECK(status IN ('visible','hidden','deleted')),
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+  );
+  CREATE TABLE IF NOT EXISTS votes (
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    target_type TEXT NOT NULL CHECK(target_type IN ('post','response')),
+    target_id INTEGER NOT NULL,
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY(user_id, target_type, target_id)
+  );
+  CREATE TABLE IF NOT EXISTS documents (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    submitted_by INTEGER NOT NULL REFERENCES users(id),
+    title TEXT NOT NULL,
+    description TEXT NOT NULL,
+    source_url TEXT NOT NULL,
+    category TEXT NOT NULL CHECK(category IN ('course','reference')),
+    status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending','approved','rejected')),
+    reviewed_by INTEGER REFERENCES users(id),
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+  );
+  CREATE TABLE IF NOT EXISTS contribution_events (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL REFERENCES users(id),
+    event_type TEXT NOT NULL,
+    points INTEGER NOT NULL,
+    reference_type TEXT,
+    reference_id INTEGER,
+    reason TEXT,
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+  );
+  CREATE TABLE IF NOT EXISTS activity_days (
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    activity_date TEXT NOT NULL,
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY(user_id, activity_date)
+  );
+  CREATE TABLE IF NOT EXISTS audit_logs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    actor_id INTEGER REFERENCES users(id),
+    action TEXT NOT NULL,
+    subject_type TEXT NOT NULL,
+    subject_id INTEGER,
+    reason TEXT,
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+  );
+`);
+
+const attempts = new Map();
+function rateLimit(key, max, windowMs) {
+  const now = Date.now();
+  const v = attempts.get(key) || [];
+  const kept = v.filter((t) => now - t < windowMs);
+  kept.push(now);
+  attempts.set(key, kept);
+  return kept.length <= max;
+}
+function sha(value) {
+  return crypto.createHash("sha256").update(value).digest("hex");
+}
+function randomToken() {
+  return crypto.randomBytes(32).toString("base64url");
+}
+function hashPassword(password) {
+  const salt = crypto.randomBytes(16).toString("hex");
+  const digest = crypto.scryptSync(password, salt, 64).toString("hex");
+  return `scrypt$${salt}$${digest}`;
+}
+function verifyPassword(password, encoded) {
+  const [type, salt, digest] = encoded.split("$");
+  if (type !== "scrypt" || !salt || !digest) return false;
+  const calculated = crypto.scryptSync(password, salt, 64);
+  return crypto.timingSafeEqual(calculated, Buffer.from(digest, "hex"));
+}
+function parseCookies(request) {
+  return Object.fromEntries(
+    (request.headers.cookie || "")
+      .split(";")
+      .map((v) => v.trim())
+      .filter(Boolean)
+      .map((v) => {
+        const i = v.indexOf("=");
+        return [v.slice(0, i), decodeURIComponent(v.slice(i + 1))];
+      }),
+  );
+}
+function json(response, status, body, headers = {}) {
+  response.writeHead(status, {
+    "Content-Type": "application/json; charset=utf-8",
+    "Cache-Control": "no-store",
+    ...headers,
+  });
+  response.end(JSON.stringify(body));
+}
+function error(response, status, message) {
+  json(response, status, { error: message });
+}
+async function readJSON(request) {
+  let raw = "";
+  for await (const c of request) {
+    raw += c;
+    if (raw.length > 1_000_000) throw new Error("PAYLOAD_TOO_LARGE");
+  }
+  try {
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    throw new Error("INVALID_JSON");
+  }
+}
+function sessionFrom(request) {
+  const token = parseCookies(request).research_session;
+  if (!token) return null;
+  const row = db
+    .prepare(
+      `SELECT s.csrf_token, s.expires_at, u.id, u.email, u.display_name, u.role, u.student_id, u.real_name, u.class_name FROM sessions s JOIN users u ON u.id=s.user_id WHERE s.token_hash=?`,
+    )
+    .get(sha(token));
+  if (!row || Date.parse(row.expires_at) < Date.now()) return null;
+  return row;
+}
+function publicUser(user) {
+  return {
+    id: user.id,
+    email: user.email,
+    displayName: user.display_name,
+    role: user.role,
+    studentId: user.student_id || "",
+    realName: user.real_name || "",
+    className: user.class_name || "",
+  };
+}
+function requireUser(request, response) {
+  const session = sessionFrom(request);
+  if (!session) {
+    error(response, 401, "Bạn cần đăng nhập để thực hiện thao tác này.");
+    return null;
+  }
+  return session;
+}
+function requireCsrf(request, response, session) {
+  if (request.headers["x-csrf-token"] !== session.csrf_token) {
+    error(
+      response,
+      403,
+      "Phiên làm việc không hợp lệ. Vui lòng tải lại trang.",
+    );
+    return false;
+  }
+  return true;
+}
+function isAdmin(user) {
+  return user.role === "admin";
+}
+function recordContribution(
+  userId,
+  type,
+  points,
+  referenceType,
+  referenceId,
+  reason = null,
+) {
+  const today = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Ho_Chi_Minh",
+  }).format(new Date());
+  db.prepare(
+    "INSERT OR IGNORE INTO activity_days(user_id,activity_date) VALUES (?,?)",
+  ).run(userId, today);
+  db.prepare(
+    "INSERT INTO contribution_events(user_id,event_type,points,reference_type,reference_id,reason) VALUES (?,?,?,?,?,?)",
+  ).run(userId, type, points, referenceType, referenceId, reason);
+}
+function createSession(response, userId) {
+  const token = randomToken(),
+    csrf = randomToken(),
+    expiresAt = new Date(Date.now() + SESSION_AGE_SECONDS * 1000).toISOString();
+  db.prepare(
+    "INSERT INTO sessions(token_hash,user_id,csrf_token,expires_at) VALUES (?,?,?,?)",
+  ).run(sha(token), userId, csrf, expiresAt);
+  response.setHeader(
+    "Set-Cookie",
+    `research_session=${encodeURIComponent(token)}; HttpOnly; SameSite=Lax; Path=/; Max-Age=${SESSION_AGE_SECONDS}`,
+  );
+  return csrf;
+}
+function clearSession(request, response) {
+  const token = parseCookies(request).research_session;
+  if (token)
+    db.prepare("DELETE FROM sessions WHERE token_hash=?").run(sha(token));
+  response.setHeader(
+    "Set-Cookie",
+    "research_session=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0",
+  );
+}
+
+function serializePost(row, viewer) {
+  return {
+    id: row.id,
+    title: row.title,
+    content: row.content,
+    topic: row.topic,
+    isAnonymous: Boolean(row.is_anonymous),
+    author:
+      row.is_anonymous && !isAdmin(viewer)
+        ? { displayName: "Sinh viên ẩn danh", initials: "?" }
+        : {
+            id: row.author_id,
+            displayName: row.display_name,
+            initials: row.display_name
+              .split(/\s+/)
+              .map((x) => x[0])
+              .slice(-2)
+              .join("")
+              .toUpperCase(),
+            role: row.role,
+          },
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+    helpfulCount: Number(row.helpful_count),
+    responseCount: Number(row.response_count),
+    selectedResponseId: row.selected_response_id,
+    isPinned: Boolean(row.is_pinned),
+  };
+}
+function listPosts(viewer, search = "") {
+  const needle = `%${search.trim()}%`;
+  const rows = db
+    .prepare(
+      `SELECT p.*,u.display_name,u.role,(SELECT coalesce(sum(vote_value),0) FROM votes v WHERE v.target_type='post' AND v.target_id=p.id) helpful_count,(SELECT count(*) FROM responses r WHERE r.post_id=p.id AND r.status='visible') response_count FROM posts p JOIN users u ON u.id=p.author_id WHERE p.status='visible' AND (p.title LIKE ? OR p.content LIKE ? OR p.topic LIKE ?) ORDER BY p.is_pinned DESC, p.created_at DESC`,
+    )
+    .all(needle, needle, needle);
+  return rows.map((r) => serializePost(r, viewer));
+}
+function bootstrapAdmin() {
+  const email = process.env.RESEARCH_INITIAL_ADMIN_EMAIL;
+  const password = process.env.RESEARCH_INITIAL_ADMIN_PASSWORD;
+  if (
+    !email ||
+    !password ||
+    db.prepare("SELECT count(*) count FROM users").get().count
+  )
+    return;
+  if (password.length < 12)
+    throw new Error(
+      "RESEARCH_INITIAL_ADMIN_PASSWORD phải có ít nhất 12 ký tự.",
+    );
+  db.prepare(
+    "INSERT INTO users(email,password_hash,display_name,role) VALUES (?,?,?,?)",
+  ).run(
+    email,
+    hashPassword(password),
+    process.env.RESEARCH_INITIAL_ADMIN_NAME || "TA Quản trị",
+    "admin",
+  );
+  console.log(`Đã tạo TA/Admin đầu tiên: ${email}`);
+}
+bootstrapAdmin();
+
+async function api(request, response, url) {
+  const pathName = url.pathname;
+  const method = request.method;
+  if (method === "GET" && pathName === "/api/health")
+    return json(response, 200, { ok: true });
+  if (method === "GET" && pathName === "/api/session") {
+    const session = sessionFrom(request);
+    return json(response, 200, {
+      authenticated: Boolean(session),
+      user: session ? publicUser(session) : null,
+      csrfToken: session?.csrf_token || null,
+    });
+  }
+  if (method === "POST" && pathName === "/api/auth/register") {
+    if (
+      !rateLimit(`register:${request.socket.remoteAddress}`, 5, 60 * 60 * 1000)
+    )
+      return error(response, 429, "Bạn đã thử đăng ký quá nhiều lần.");
+    const { email, password, displayName } = await readJSON(request);
+    if (
+      !/^\S+@\S+\.\S+$/.test(email || "") ||
+      typeof displayName !== "string" ||
+      displayName.trim().length < 2 ||
+      typeof password !== "string" ||
+      password.length < 12
+    )
+      return error(
+        response,
+        400,
+        "Hãy nhập email hợp lệ, tên hiển thị và mật khẩu từ 12 ký tự.",
+      );
+    try {
+      const result = db
+        .prepare(
+          "INSERT INTO users(email,password_hash,display_name,role) VALUES (?,?,?,?)",
+        )
+        .run(
+          email.trim().toLowerCase(),
+          hashPassword(password),
+          displayName.trim().slice(0, 80),
+          "student",
+        );
+      const user = db
+        .prepare("SELECT * FROM users WHERE id=?")
+        .get(result.lastInsertRowid);
+      const csrfToken = createSession(response, user.id);
+      return json(response, 201, { user: publicUser(user), csrfToken });
+    } catch (e) {
+      return error(
+        response,
+        e.message.includes("UNIQUE") ? 409 : 500,
+        e.message.includes("UNIQUE")
+          ? "Email này đã được dùng."
+          : "Không thể tạo tài khoản.",
+      );
+    }
+  }
+  if (method === "POST" && pathName === "/api/auth/login") {
+    if (!rateLimit(`login:${request.socket.remoteAddress}`, 10, 15 * 60 * 1000))
+      return error(response, 429, "Bạn đã thử đăng nhập quá nhiều lần.");
+    const { email, password } = await readJSON(request);
+    const user = db
+      .prepare("SELECT * FROM users WHERE email=?")
+      .get((email || "").trim().toLowerCase());
+    if (!user || !verifyPassword(password || "", user.password_hash))
+      return error(response, 401, "Email hoặc mật khẩu chưa đúng.");
+    const csrfToken = createSession(response, user.id);
+    return json(response, 200, { user: publicUser(user), csrfToken });
+  }
+  if (method === "POST" && pathName === "/api/auth/logout") {
+    const user = requireUser(request, response);
+    if (!user || !requireCsrf(request, response, user)) return;
+    clearSession(request, response);
+    return json(response, 200, { ok: true });
+  }
+  if (method === "GET" && pathName === "/api/posts") {
+    const viewer = sessionFrom(request) || { role: "student" };
+    return json(response, 200, {
+      posts: listPosts(viewer, url.searchParams.get("q") || ""),
+    });
+  }
+  if (method === "POST" && pathName === "/api/posts") {
+    const user = requireUser(request, response);
+    if (!user || !requireCsrf(request, response, user)) return;
+    if (!rateLimit(`post:${user.id}`, 8, 60 * 60 * 1000))
+      return error(
+        response,
+        429,
+        "Bạn đã đăng quá nhiều câu hỏi trong một giờ.",
+      );
+    const { title, content, topic, isAnonymous } = await readJSON(request);
+    const allowedTopics = [
+      "Đề tài",
+      "Lý thuyết",
+      "Phương pháp",
+      "Dữ liệu & phân tích",
+      "Viết nghiên cứu",
+      "Tài liệu",
+      "Thảo luận chung",
+    ];
+    if (
+      typeof title !== "string" ||
+      title.trim().length < 12 ||
+      title.trim().length > 140 ||
+      typeof content !== "string" ||
+      content.trim().length < 25 ||
+      content.trim().length > 10000 ||
+      !allowedTopics.includes(topic)
+    )
+      return error(response, 400, "Nội dung câu hỏi chưa hợp lệ.");
+    const anonymous = isAdmin(user) ? 0 : isAnonymous ? 1 : 0;
+    const result = db
+      .prepare(
+        "INSERT INTO posts(author_id,title,content,topic,is_anonymous) VALUES (?,?,?,?,?)",
+      )
+      .run(user.id, title.trim(), content.trim(), topic, anonymous);
+    recordContribution(
+      user.id,
+      "post_created",
+      2,
+      "post",
+      result.lastInsertRowid,
+    );
+    const post = db
+      .prepare(
+        `SELECT p.*,u.display_name,u.role,0 helpful_count,0 response_count FROM posts p JOIN users u ON u.id=p.author_id WHERE p.id=?`,
+      )
+      .get(result.lastInsertRowid);
+    return json(response, 201, { post: serializePost(post, user) });
+  }
+  const postIdMatch = pathName.match(/^\/api\/posts\/(\d+)$/);
+  if (method === "GET" && postIdMatch) {
+    const viewer = sessionFrom(request) || { role: "student" };
+    const row = db
+      .prepare(
+        `SELECT p.*,u.display_name,u.role,(SELECT coalesce(sum(vote_value),0) FROM votes v WHERE v.target_type='post' AND v.target_id=p.id) helpful_count,(SELECT count(*) FROM responses r WHERE r.post_id=p.id AND r.status='visible') response_count FROM posts p JOIN users u ON u.id=p.author_id WHERE p.id=? AND p.status='visible'`,
+      )
+      .get(Number(postIdMatch[1]));
+    if (!row) return error(response, 404, "Không tìm thấy bài viết.");
+    const responses = db
+      .prepare(
+        `SELECT r.*,u.display_name,u.role,(SELECT coalesce(sum(vote_value),0) FROM votes v WHERE v.target_type='response' AND v.target_id=r.id) helpful_count FROM responses r JOIN users u ON u.id=r.author_id WHERE r.post_id=? AND r.status='visible' ORDER BY r.created_at ASC`,
+      )
+      .all(row.id)
+      .map((r) => ({
+        id: r.id,
+        content: r.content,
+        createdAt: r.created_at,
+        helpfulCount: Number(r.helpful_count),
+        selected: row.selected_response_id === r.id,
+        author: r.is_anonymous
+          ? {
+              displayName: "Sinh viên ẩn danh",
+              role: "student",
+              initials: "?",
+            }
+          : {
+              displayName: r.display_name,
+              role: r.role,
+              initials: r.display_name
+                .split(/\s+/)
+                .map((x) => x[0])
+                .slice(-2)
+                .join("")
+                .toUpperCase(),
+            },
+      }));
+    return json(response, 200, { post: serializePost(row, viewer), responses });
+  }
+  const responseMatch = pathName.match(/^\/api\/posts\/(\d+)\/responses$/);
+  if (method === "POST" && responseMatch) {
+    const user = requireUser(request, response);
+    if (!user || !requireCsrf(request, response, user)) return;
+    const { content, isAnonymous } = await readJSON(request);
+    if (
+      typeof content !== "string" ||
+      content.trim().length < 10 ||
+      content.trim().length > 10000
+    )
+      return error(response, 400, "Phản hồi cần có ít nhất 10 ký tự.");
+    const post = db
+      .prepare("SELECT id FROM posts WHERE id=? AND status='visible'")
+      .get(Number(responseMatch[1]));
+    if (!post) return error(response, 404, "Không tìm thấy bài viết.");
+    const anonymous = isAdmin(user) ? 0 : isAnonymous ? 1 : 0;
+    const result = db
+      .prepare(
+        "INSERT INTO responses(post_id,author_id,content,is_anonymous) VALUES (?,?,?,?)",
+      )
+      .run(post.id, user.id, content.trim(), anonymous);
+    recordContribution(
+      user.id,
+      "response_created",
+      4,
+      "response",
+      result.lastInsertRowid,
+    );
+    return json(response, 201, { id: Number(result.lastInsertRowid) });
+  }
+  const voteMatch = pathName.match(/^\/api\/(posts|responses)\/(\d+)\/vote$/);
+  if (method === "POST" && voteMatch) {
+    const user = requireUser(request, response);
+    if (!user || !requireCsrf(request, response, user)) return;
+    const { value } = await readJSON(request);
+    if (![-1, 1].includes(value)) return error(response, 400, "Invalid vote");
+    const [, kind, idText] = voteMatch;
+    const targetType = kind === "posts" ? "post" : "response";
+    const table = targetType === "post" ? "posts" : "responses";
+    const target = db
+      .prepare(`SELECT author_id FROM ${table} WHERE id=? AND status='visible'`)
+      .get(Number(idText));
+    if (!target) return error(response, 404, "Không tìm thấy nội dung.");
+    if (target.author_id === user.id)
+      return error(response, 400, "Bạn không thể tự vote nội dung của mình.");
+    try {
+      db.prepare(
+        "INSERT INTO votes(user_id,target_type,target_id,vote_value) VALUES (?,?,?,?) ON CONFLICT(user_id,target_type,target_id) DO UPDATE SET vote_value=?",
+      ).run(user.id, targetType, Number(idText), value, value);
+      recordContribution(
+        target.author_id,
+        "helpful_received",
+        value > 0 ? 1 : -1,
+        targetType,
+        Number(idText),
+      );
+      return json(response, 201, { ok: true });
+    } catch {
+      return error(response, 409, "Bạn đã đánh dấu nội dung này là Hữu ích.");
+    }
+  }
+  if (method === "GET" && pathName === "/api/leaderboard") {
+    const topUsers = db
+      .prepare(`
+        SELECT u.id, u.display_name as displayName, u.role, coalesce(sum(c.points), 0) as totalPoints
+        FROM users u
+        JOIN contribution_events c ON u.id = c.user_id
+        GROUP BY u.id
+        ORDER BY totalPoints DESC
+        LIMIT 5
+      `)
+      .all();
+    return json(response, 200, { leaderboard: topUsers });
+  }
+  if (method === "GET" && pathName === "/api/me/contributions") {
+    const user = requireUser(request, response);
+    if (!user) return;
+    const stats = db
+      .prepare(
+        "SELECT coalesce(sum(points),0) total, count(*) count FROM contribution_events WHERE user_id=?",
+      )
+      .get(user.id);
+    const activity = db
+      .prepare(
+        "SELECT activity_date FROM activity_days WHERE user_id=? ORDER BY activity_date DESC",
+      )
+      .all(user.id)
+      .map((x) => x.activity_date);
+    const query = `
+      SELECT 
+        c.event_type as action, 
+        c.points, 
+        c.created_at,
+        c.reason,
+        CASE
+          WHEN c.reference_type = 'post' THEN (SELECT title FROM posts WHERE id = c.reference_id)
+          WHEN c.reference_type = 'response' THEN (SELECT content FROM responses WHERE id = c.reference_id)
+          WHEN c.reference_type = 'document' THEN (SELECT title FROM documents WHERE id = c.reference_id)
+          ELSE NULL
+        END as reference_content
+      FROM contribution_events c 
+      WHERE c.user_id=? 
+      ORDER BY c.created_at DESC
+    `;
+    const recent = db.prepare(query + " LIMIT 5").all(user.id);
+    return json(response, 200, {
+      total: Number(stats.total),
+      count: Number(stats.count),
+      activityDays: activity,
+      recentContributions: recent.map((r) => ({
+        action: r.action,
+        points: r.points,
+        date: r.created_at,
+        reason: r.reason,
+        referenceContent: r.reference_content,
+      })),
+    });
+  }
+  if (method === "GET" && pathName === "/api/me/history") {
+    const user = requireUser(request, response);
+    if (!user) return;
+    const history = db
+      .prepare(`
+        SELECT 
+          c.event_type as action, 
+          c.points, 
+          c.created_at,
+          c.reason,
+          CASE
+            WHEN c.reference_type = 'post' THEN (SELECT title FROM posts WHERE id = c.reference_id)
+            WHEN c.reference_type = 'response' THEN (SELECT content FROM responses WHERE id = c.reference_id)
+            WHEN c.reference_type = 'document' THEN (SELECT title FROM documents WHERE id = c.reference_id)
+            ELSE NULL
+          END as reference_content
+        FROM contribution_events c 
+        WHERE c.user_id=? 
+        ORDER BY c.created_at DESC
+      `)
+      .all(user.id);
+    return json(response, 200, {
+      history: history.map((r) => ({
+        action: r.action,
+        points: r.points,
+        date: r.created_at,
+        reason: r.reason,
+        referenceContent: r.reference_content,
+      })),
+    });
+  }
+  if (method === "PATCH" && pathName === "/api/me/profile") {
+    const user = requireUser(request, response);
+    if (!user || !requireCsrf(request, response, user)) return;
+    const { studentId, realName, className, displayName } =
+      await readJSON(request);
+    db.prepare(
+      "UPDATE users SET student_id=?, real_name=?, class_name=?, display_name=?, updated_at=CURRENT_TIMESTAMP WHERE id=?",
+    ).run(
+      studentId || null,
+      realName || null,
+      className || null,
+      displayName || user.displayName,
+      user.id,
+    );
+    return json(response, 200, { ok: true });
+  }
+  if (method === "GET" && pathName === "/api/documents") {
+    const viewer = sessionFrom(request);
+    const rows = db
+      .prepare(
+        `SELECT d.*,u.display_name FROM documents d JOIN users u ON u.id=d.submitted_by WHERE d.status='approved' OR ?='admin' ORDER BY d.created_at DESC`,
+      )
+      .all(viewer?.role || "student");
+    return json(response, 200, {
+      documents: rows.map((d) => ({
+        id: d.id,
+        title: d.title,
+        description: d.description,
+        sourceUrl: d.source_url,
+        category: d.category,
+        format: d.format,
+        status: d.status,
+        submittedBy: d.display_name,
+        createdAt: d.created_at,
+      })),
+    });
+  }
+  if (method === "POST" && pathName === "/api/documents") {
+    const user = requireUser(request, response);
+    if (!user || !requireCsrf(request, response, user)) return;
+    const { title, description, sourceUrl, category, format } =
+      await readJSON(request);
+    try {
+      const link = new URL(sourceUrl);
+      if (!["https:", "http:"].includes(link.protocol)) throw new Error();
+      if (
+        typeof title !== "string" ||
+        title.trim().length < 3 ||
+        typeof description !== "string" ||
+        description.trim().length < 3 ||
+        !["course", "reference"].includes(category) ||
+        !["PDF", "Hình ảnh", "Video", "Khác"].includes(format)
+      )
+        throw new Error();
+      const result = db
+        .prepare(
+          "INSERT INTO documents(submitted_by,title,description,source_url,category,format,status,reviewed_by) VALUES (?,?,?,?,?,?,?,?)",
+        )
+        .run(
+          user.id,
+          title.trim(),
+          description.trim(),
+          link.href,
+          category,
+          format,
+          isAdmin(user) ? "approved" : "pending",
+          isAdmin(user) ? user.id : null,
+        );
+      if (isAdmin(user)) {
+        recordContribution(
+          user.id,
+          "document_approved",
+          5,
+          "document",
+          result.lastInsertRowid,
+        );
+      }
+      return json(response, 201, {
+        id: Number(result.lastInsertRowid),
+        status: isAdmin(user) ? "approved" : "pending",
+      });
+    } catch {
+      return error(response, 400, "Thông tin tài liệu chưa hợp lệ.");
+    }
+  }
+  if (method === "GET" && pathName === "/api/admin/overview") {
+    const user = requireUser(request, response);
+    if (!user || !isAdmin(user))
+      return user
+        ? error(response, 403, "Chỉ TA/Admin mới có quyền này.")
+        : undefined;
+    const count = (q) => Number(db.prepare(q).get().count);
+    return json(response, 200, {
+      members: count("SELECT count(*) count FROM users"),
+      posts: count("SELECT count(*) count FROM posts"),
+      unanswered: count(
+        "SELECT count(*) count FROM posts WHERE status='visible' AND id NOT IN (SELECT post_id FROM responses WHERE status='visible')",
+      ),
+      pendingDocuments: count(
+        "SELECT count(*) count FROM documents WHERE status='pending'",
+      ),
+    });
+  }
+  if (method === "GET" && pathName === "/api/admin/users") {
+    const user = requireUser(request, response);
+    if (!user || !isAdmin(user))
+      return user
+        ? error(response, 403, "Chỉ TA/Admin mới có quyền này.")
+        : undefined;
+    const users = db
+      .prepare(
+        "SELECT u.id, u.email, u.display_name, u.role, u.created_at, coalesce(sum(c.points), 0) as totalPoints FROM users u LEFT JOIN contribution_events c ON u.id = c.user_id GROUP BY u.id ORDER BY u.created_at DESC",
+      )
+      .all()
+      .map((u) => ({
+        id: u.id,
+        email: u.email,
+        displayName: u.display_name,
+        role: u.role,
+        createdAt: u.created_at,
+        totalPoints: u.totalPoints,
+      }));
+    return json(response, 200, { users });
+  }
+  const roleMatch = pathName.match(/^\/api\/admin\/users\/(\d+)\/role$/);
+  if (method === "PATCH" && roleMatch) {
+    const user = requireUser(request, response);
+    if (!user) return;
+    if (!requireCsrf(request, response, user)) return;
+    if (!isAdmin(user))
+      return error(response, 403, "Chỉ TA/Admin mới có quyền này.");
+    const { role, reason } = await readJSON(request);
+    if (!["student", "lecturer", "admin"].includes(role))
+      return error(response, 400, "Vai trò không hợp lệ.");
+    const targetId = Number(roleMatch[1]);
+    if (targetId === user.id && role !== "admin")
+      return error(
+        response,
+        400,
+        "TA/Admin không thể tự hạ quyền tài khoản hiện tại.",
+      );
+    const changed = db
+      .prepare(
+        "UPDATE users SET role=?,updated_at=CURRENT_TIMESTAMP WHERE id=?",
+      )
+      .run(role, targetId);
+    if (!changed.changes)
+      return error(response, 404, "Không tìm thấy tài khoản.");
+    db.prepare(
+      "INSERT INTO audit_logs(actor_id,action,subject_type,subject_id,reason) VALUES (?,?,?,?,?)",
+    ).run(
+      user.id,
+      "role_changed",
+      "user",
+      targetId,
+      typeof reason === "string" ? reason.slice(0, 500) : null,
+    );
+    return json(response, 200, { ok: true });
+  }
+  const moderationMatch = pathName.match(
+    /^\/api\/admin\/posts\/(\d+)\/status$/,
+  );
+  if (method === "PATCH" && moderationMatch) {
+    const user = requireUser(request, response);
+    if (!user) return;
+    if (!requireCsrf(request, response, user)) return;
+    if (!isAdmin(user))
+      return error(response, 403, "Chỉ TA/Admin mới có quyền này.");
+    const { status, reason } = await readJSON(request);
+    if (!["visible", "hidden", "deleted"].includes(status))
+      return error(response, 400, "Trạng thái không hợp lệ.");
+    const postId = Number(moderationMatch[1]);
+    const changed = db
+      .prepare(
+        "UPDATE posts SET status=?,updated_at=CURRENT_TIMESTAMP WHERE id=?",
+      )
+      .run(status, postId);
+    if (!changed.changes)
+      return error(response, 404, "Không tìm thấy bài viết.");
+    db.prepare(
+      "INSERT INTO audit_logs(actor_id,action,subject_type,subject_id,reason) VALUES (?,?,?,?,?)",
+    ).run(
+      user.id,
+      `post_${status}`,
+      "post",
+      postId,
+    );
+    return json(response, 200, { ok: true });
+  }
+  const responseModMatch = pathName.match(
+    /^\/api\/admin\/responses\/(\d+)\/status$/,
+  );
+  if (method === "PATCH" && responseModMatch) {
+    const user = requireUser(request, response);
+    if (!user) return;
+    if (!requireCsrf(request, response, user)) return;
+    if (!isAdmin(user))
+      return error(response, 403, "Chỉ TA/Admin mới có quyền này.");
+    const { status, reason } = await readJSON(request);
+    if (!["visible", "hidden", "deleted"].includes(status))
+      return error(response, 400, "Trạng thái không hợp lệ.");
+    const responseId = Number(responseModMatch[1]);
+    const resp = db.prepare("SELECT author_id, status FROM responses WHERE id=?").get(responseId);
+    if (!resp) return error(response, 404, "Không tìm thấy bình luận.");
+    
+    const changed = db
+      .prepare(
+        "UPDATE responses SET status=?,updated_at=CURRENT_TIMESTAMP WHERE id=?",
+      )
+      .run(status, responseId);
+      
+    if (status === "deleted" && resp.status !== "deleted") {
+      recordContribution(
+        resp.author_id,
+        "response_deleted",
+        -4,
+        "response",
+        responseId
+      );
+    }
+
+    db.prepare(
+      "INSERT INTO audit_logs(actor_id,action,subject_type,subject_id,reason) VALUES (?,?,?,?,?)",
+    ).run(
+      user.id,
+      `response_${status}`,
+      "response",
+      responseId,
+      typeof reason === "string" ? reason.slice(0, 500) : null,
+    );
+    return json(response, 200, { ok: true });
+  }
+  const pinMatch = pathName.match(/^\/api\/admin\/posts\/(\d+)\/pin$/);
+  if (method === "PATCH" && pinMatch) {
+    const user = requireUser(request, response);
+    if (!user) return;
+    if (!requireCsrf(request, response, user)) return;
+    if (!isAdmin(user))
+      return error(response, 403, "Chỉ TA/Admin mới có quyền này.");
+    const { isPinned } = await readJSON(request);
+    const postId = Number(pinMatch[1]);
+    const changed = db
+      .prepare(
+        "UPDATE posts SET is_pinned=?, updated_at=CURRENT_TIMESTAMP WHERE id=?",
+      )
+      .run(isPinned ? 1 : 0, postId);
+    if (!changed.changes)
+      return error(response, 404, "Không tìm thấy bài viết.");
+    return json(response, 200, { ok: true });
+  }
+  const documentReviewMatch = pathName.match(
+    /^\/api\/admin\/documents\/(\d+)\/review$/,
+  );
+  if (method === "PATCH" && documentReviewMatch) {
+    const user = requireUser(request, response);
+    if (!user) return;
+    if (!requireCsrf(request, response, user)) return;
+    if (!isAdmin(user))
+      return error(response, 403, "Chỉ TA/Admin mới có quyền này.");
+    const { status, reason } = await readJSON(request);
+    if (!["approved", "rejected"].includes(status))
+      return error(response, 400, "Trạng thái duyệt không hợp lệ.");
+    const id = Number(documentReviewMatch[1]);
+    const doc = db
+      .prepare("SELECT submitted_by FROM documents WHERE id=?")
+      .get(id);
+    if (!doc) return error(response, 404, "Không tìm thấy tài liệu.");
+    db.prepare(
+      "UPDATE documents SET status=?,reviewed_by=?,updated_at=CURRENT_TIMESTAMP WHERE id=?",
+    ).run(status, user.id, id);
+    if (status === "approved")
+      recordContribution(
+        doc.submitted_by,
+        "document_approved",
+        5,
+        "document",
+        id,
+      );
+    db.prepare(
+      "INSERT INTO audit_logs(actor_id,action,subject_type,subject_id,reason) VALUES (?,?,?,?,?)",
+    ).run(
+      user.id,
+      `document_${status}`,
+      "document",
+      id,
+      typeof reason === "string" ? reason.slice(0, 500) : null,
+    );
+    return json(response, 200, { ok: true });
+  }
+  if (method === "POST" && pathName === "/api/admin/contributions/adjust") {
+    const user = requireUser(request, response);
+    if (!user) return;
+    if (!requireCsrf(request, response, user)) return;
+    if (!isAdmin(user))
+      return error(response, 403, "Chỉ TA/Admin mới có quyền này.");
+    const { userId, points, reason } = await readJSON(request);
+    if (
+      !Number.isInteger(userId) ||
+      !Number.isInteger(points) ||
+      points === 0 ||
+      Math.abs(points) > 1000 ||
+      typeof reason !== "string" ||
+      reason.trim().length < 5
+    )
+      return error(
+        response,
+        400,
+        "Điều chỉnh điểm cần có người nhận, giá trị hợp lệ và lý do rõ ràng.",
+      );
+    const target = db.prepare("SELECT id FROM users WHERE id=?").get(userId);
+    if (!target) return error(response, 404, "Không tìm thấy tài khoản.");
+    recordContribution(
+      userId,
+      "admin_adjustment",
+      points,
+      "user",
+      userId,
+      reason.trim().slice(0, 500),
+    );
+    db.prepare(
+      "INSERT INTO audit_logs(actor_id,action,subject_type,subject_id,reason) VALUES (?,?,?,?,?)",
+    ).run(
+      user.id,
+      "contribution_adjusted",
+      "user",
+      userId,
+      reason.trim().slice(0, 500),
+    );
+    return json(response, 200, { ok: true });
+  }
+  return error(response, 404, "Không tìm thấy API này.");
+}
+
+function serveStatic(request, response, url) {
+  let relative =
+    url.pathname === "/" ? "/index.html" : decodeURIComponent(url.pathname);
+  if (relative.includes("\0"))
+    return error(response, 400, "Đường dẫn không hợp lệ.");
+  const file = path.resolve(ROOT, `.${relative}`);
+  if (
+    !file.startsWith(ROOT + path.sep) ||
+    !fs.existsSync(file) ||
+    fs.statSync(file).isDirectory()
+  )
+    return error(response, 404, "Không tìm thấy trang.");
+  const extension = path.extname(file);
+  response.writeHead(200, {
+    "Content-Type": MIME[extension] || "application/octet-stream",
+    "X-Content-Type-Options": "nosniff",
+    "Referrer-Policy": "same-origin",
+  });
+  fs.createReadStream(file).pipe(response);
+}
+const server = http.createServer(async (request, response) => {
+  try {
+    const url = new URL(
+      request.url,
+      `http://${request.headers.host || "localhost"}`,
+    );
+    if (url.pathname.startsWith("/api/"))
+      return await api(request, response, url);
+    if (["GET", "HEAD"].includes(request.method))
+      return serveStatic(request, response, url);
+    return error(response, 405, "Phương thức không được hỗ trợ.");
+  } catch (e) {
+    console.error(e);
+    if (!response.headersSent)
+      error(
+        response,
+        e.message === "PAYLOAD_TOO_LARGE" ? 413 : 400,
+        e.message === "INVALID_JSON"
+          ? "Dữ liệu gửi lên không hợp lệ."
+          : "Không thể xử lý yêu cầu.",
+      );
+  }
+});
+server.listen(PORT, "0.0.0.0", () =>
+  console.log(`RE:SEARCH đang chạy tại http://0.0.0.0:${PORT}`),
+);
