@@ -8,10 +8,14 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=DM+Mono&family=Inter:wght@400;500;600;700;800&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="styles.css?v=4" />
+    <link rel="icon" type="image/png" href="public/assets/research-logo.png" />
+    <link href="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.snow.css" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js"></script>
+    <link rel="stylesheet" href="styles.css?v=13" />
   </head>
   <body>
     <dialog
@@ -53,7 +57,16 @@
         ></iframe>
       </div>
     </dialog>
-    <div class="toast" id="toast"></div>
+    <dialog id="assignmentBanner" class="banner-modal" style="padding:0; border:none; border-radius:12px; max-width:700px; width:90%; box-shadow:0 10px 30px rgba(0,0,0,0.2); overflow:hidden;">
+      <div style="position:relative; background:#f0f4f1;">
+        <button onclick="closeBanner(2)" style="position:absolute; top:12px; right:12px; background:rgba(0,0,0,0.5); color:#fff; border:none; width:30px; height:30px; border-radius:50%; font-size:18px; cursor:pointer; display:flex; align-items:center; justify-content:center; z-index:10;" aria-label="Đóng">×</button>
+        <img src="public/assets/banner-assignment.jpg" alt="Thông báo nộp bài tập" style="width:100%; height:auto; display:block;" onerror="this.src='https://placehold.co/800x800/e9ecef/495057?text=Banner+Th%C3%B4ng+b%C3%A1o\\n(Vui+l%C3%B2ng+th%C3%AAm+file+banner-assignment.jpg+v%C3%A0o+th%C6%B0+m%E1%BB%A5c+public/assets)'" />
+        <div style="padding:12px; text-align:center; background:#fff; border-top:1px solid var(--sage-2);">
+          <button class="button button-outline" onclick="closeBanner(24)" style="width:100%; font-weight:600; justify-content:center; padding:10px;">Không hiện lại trong hôm nay</button>
+        </div>
+      </div>
+    </dialog>
+    <div class="toast" id="toast" popover="manual"></div>
     <header class="site-header">
       <a class="brand" href="#home" aria-label="RE:SEARCH Trang chủ">
         <span class="brand-mark"
@@ -77,7 +90,7 @@
           ⌕
         </button>
         <button class="profile-chip" data-route="account">
-          <span class="avatar avatar-sm">TV</span>
+          <span class="avatar avatar-sm" id="navAvatar">🦊</span>
           <span class="profile-chip-text">Đăng nhập</span>
           <span class="chevron">⌄</span>
         </button>
@@ -88,7 +101,7 @@
       <section id="home" class="page active-page" data-page="home">
         <div class="home-hero">
           <div class="hero-copy">
-            <p class="eyebrow">PHƯƠNG PHÁP NGHIÊN CỨU KHOA HỌC · 2026</p>
+
             <h1>Mọi câu hỏi đều xứng đáng được ghi nhận.</h1>
             <p class="hero-intro">
               Một không gian chung dành cho các bạn sinh viên có niềm đam mê với nghiên cứu khoa học, có mong muốn được chia sẻ và giải đáp thắc mắc trong hành trình tích luỹ tri thức.
@@ -111,6 +124,9 @@
               -- <span>ngày</span>
             </div>
             <p>Chuỗi đóng góp của bạn</p>
+            <div id="restoreStreakContainer" style="display: none; margin-bottom: 12px; text-align: center;">
+              <button class="button button-primary button-sm" style="background: #f76707; border: none; width: 100%; justify-content: center;" onclick="restoreStreak()">🔥 Khôi phục chuỗi</button>
+            </div>
             <div
               class="week-strip"
               id="activityGrid"
@@ -133,10 +149,18 @@
         <div class="home-grid">
           <div class="main-column">
             <div id="pinnedNotificationContainer"></div>
+            <section class="section-block mobile-topics">
+              <div class="section-heading">
+                <div>
+                  <p class="eyebrow">KHÁM PHÁ THEO CHỦ ĐỀ</p>
+                </div>
+              </div>
+              <div id="mobileTopicCloud" class="topic-cloud"></div>
+            </section>
             <section class="section-block">
               <div class="section-heading">
                 <div>
-                  <p class="eyebrow">MỚI TRONG CỘNG ĐỒNG</p>
+                  <p class="eyebrow">HOẠT ĐỘNG GẦN ĐÂY</p>
                   <h2>Câu hỏi vừa được đặt</h2>
                 </div>
                 <button class="text-link" data-route="forum">
@@ -185,7 +209,7 @@
             ☷ <span>Lọc</span>
           </button>
         </div>
-        <div class="filters" id="filters">
+        <div class="filters open" id="filters">
           <button class="filter-chip selected" data-filter="all">Tất cả</button
           ><button class="filter-chip" data-filter="new">Mới nhất</button
           ><button class="filter-chip" data-filter="popular">
@@ -204,8 +228,7 @@
               <p class="eyebrow">MỘT LƯU Ý NHỎ</p>
               <h3>Hãy hỏi thật cụ thể</h3>
               <p>
-                Câu hỏi có bối cảnh sẽ giúp mọi người trả lời chính xác và hữu
-                ích hơn.
+                Câu hỏi chi tiết sẽ giúp bạn nhận về câu trả lời chính xác và hữu ích hơn.
               </p>
               <button class="text-link" id="openGuide">
                 Xem hướng dẫn đặt câu hỏi →
@@ -265,7 +288,10 @@
       <section id="account" class="page" data-page="account">
         <div class="account-header">
           <div class="profile-large">
-            <span class="avatar avatar-lg">TV</span>
+            <div style="position: relative; display: inline-block;">
+              <span class="avatar avatar-lg" id="headerAvatar">🦊</span>
+              <button class="button button-sm" id="changeAvatarBtn" style="position: absolute; bottom: -5px; left: 50%; transform: translateX(-50%); font-size: 9px; padding: 2px 6px; display: none;" onclick="promptChangeAvatar()">Đổi</button>
+            </div>
             <div>
               <p class="eyebrow">TÀI KHOẢN CỦA BẠN</p>
               <h1>Khách</h1>
@@ -307,19 +333,28 @@
           <div>
             <p>Đóng góp</p>
             <strong id="profileCount">0</strong
-            ><small>bài viết và phản hồi</small>
+            ><small>bài đăng và phản hồi</small>
           </div>
         </div>
         <div class="account-grid" id="accountGrid" style="display: none">
           <section class="account-activity">
-            <div class="section-heading">
-              <div>
-                <p class="eyebrow">LỊCH SỬ HOẠT ĐỘNG</p>
-                <h2>Đóng góp gần đây</h2>
+            <div class="section-heading" style="display: block; margin-bottom: 24px;">
+              <div style="display: flex; justify-content: space-between; align-items: flex-end;">
+                <div>
+                  <p class="eyebrow" style="margin-bottom: 12px;">NHẬT KÝ HOẠT ĐỘNG</p>
+                  <div class="document-tabs" style="margin-bottom: 0; border-bottom: none;">
+                    <button class="tab active" id="tabContributionsBtn" onclick="switchAccountTab('contributions')">Đóng góp gần đây</button>
+                    <button class="tab" id="tabMyPostsBtn" onclick="switchAccountTab('myPosts')">Bài đăng của tôi</button>
+                    <button class="tab" id="tabSavedPostsBtn" onclick="switchAccountTab('saved')">Bài đăng đã lưu</button>
+                  </div>
+                </div>
+                <button class="text-link" id="viewAllContributionsBtn" style="margin-bottom: 8px;">Xem tất cả →</button>
               </div>
-              <button class="text-link" id="viewAllContributionsBtn">Xem tất cả →</button>
+              <div style="border-bottom: 1px solid var(--line); margin-top: -1px;"></div>
             </div>
             <div id="recentContributionsContainer"></div>
+            <div id="myPostsContainer" class="forum-feed" style="display: none;"></div>
+            <div id="savedPostsContainer" class="forum-feed" style="display: none;"></div>
           </section>
           <aside class="admin-panel" id="adminPanel" style="display: none">
             <p class="eyebrow">QUẢN TRỊ VIÊN</p>
@@ -342,13 +377,13 @@
 
     <nav class="mobile-nav" aria-label="Điều hướng chính">
       <a href="#home" data-route="home" class="mobile-link active"
-        ><span>⌂</span>Trang chủ</a
+        ><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Trang chủ</a
       ><a href="#forum" data-route="forum" class="mobile-link"
-        ><span>◫</span>Diễn đàn</a
+        ><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>Diễn đàn</a
       ><a href="#documents" data-route="documents" class="mobile-link"
-        ><span>▤</span>Tài liệu</a
+        ><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>Tài liệu</a
       ><a href="#account" data-route="account" class="mobile-link"
-        ><span>◉</span>Tài khoản</a
+        ><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Tài khoản</a
       >
     </nav>
     <button class="mobile-fab" id="mobileAsk" aria-label="Đặt câu hỏi">
@@ -377,19 +412,16 @@
             required
             minlength="12"
             maxlength="140"
-            placeholder="Ví dụ: Làm sao phân biệt research gap và research problem?" /></label
-        ><label
-          >Nội dung<textarea
-            id="questionContent"
-            required
-            minlength="25"
-            rows="5"
-            placeholder="Mô tả điều bạn đã hiểu, phần còn chưa rõ và bối cảnh nếu có…"
-          ></textarea
-          ><small
-            >Ít nhất 25 ký tự để mọi người có đủ ngữ cảnh trả lời.</small
-          ></label
-        ><label>Chủ đề<select id="questionTopic"></select></label>
+            placeholder="Ví dụ: Làm sao phân biệt research gap và research problem?" /></label>
+        <label style="display:block; margin-bottom:4px; font-weight: 600;">Nội dung</label>
+        <div id="questionContentContainer" style="height: 150px; border-radius: 8px;"></div>
+        <input type="hidden" id="questionContent" />
+        <small style="display:block; margin-top:4px;">Ít nhất 25 ký tự để mọi người có đủ ngữ cảnh trả lời.</small>
+        <label style="margin-top: 12px; display: block; font-weight: 600;">Chủ đề</label>
+        <div style="margin-top: 4px; display: flex; align-items: stretch; gap: 8px;">
+          <select id="questionTopic" style="flex: 1; margin: 0; min-height: 42px;"></select>
+          <button type="button" class="button button-outline" id="proposeTopicBtn" style="padding: 0 12px; white-space: nowrap; margin: 0;">+ Chủ đề mới</button>
+        </div>
         <div class="anonymous-choice">
           <div>
             <strong>Danh tính khi đăng</strong
@@ -429,6 +461,35 @@
             Đăng câu hỏi <span>→</span>
           </button>
         </div>
+      </form>
+    </dialog>
+
+    <dialog id="editModal" class="modal">
+      <form method="dialog" id="editForm">
+        <input type="hidden" id="editType" />
+        <input type="hidden" id="editId" />
+        <div class="modal-head">
+          <div>
+            <p class="eyebrow" id="editEyebrow">CHỈNH SỬA</p>
+            <h2 id="editHeading">Cập nhật nội dung</h2>
+          </div>
+          <button
+            class="close-modal"
+            type="button"
+            onclick="this.closest('dialog').close()"
+            aria-label="Đóng"
+          >×</button>
+        </div>
+        <label id="editTitleLabel" style="display:none;"
+          >Tiêu đề<input
+            id="editTitle"
+            minlength="12"
+            maxlength="140"
+            placeholder="Chỉnh sửa tiêu đề..." /></label>
+        <label style="display:block; margin-bottom:4px; margin-top: 12px; font-weight: 600;">Nội dung</label>
+        <div id="editContentContainer" style="height: 150px; border-radius: 8px;"></div>
+        <small style="display:block; margin-top:4px;">Ít nhất 25 ký tự.</small>
+        <button type="submit" class="button" style="margin-top: 16px;">Lưu thay đổi</button>
       </form>
     </dialog>
 
@@ -472,15 +533,10 @@
             minlength="3"
             maxlength="140"
             placeholder="Ví dụ: Sách Hướng dẫn nghiên cứu APA" /></label
-        ><label
-          >Mô tả ngắn<textarea
-            id="docDesc"
-            required
-            minlength="3"
-            rows="3"
-            placeholder="Tài liệu này hữu ích cho phần nào?"
-          ></textarea></label
-        ><label
+        <label style="display:block; margin-bottom:4px; font-weight: 600;">Mô tả ngắn</label>
+        <div id="docDescContainer" style="height: 100px; border-radius: 8px;"></div>
+        <input type="hidden" id="docDesc" />
+        <label
           >Link Google Drive<input
             id="docUrl"
             type="url"
@@ -554,7 +610,7 @@
             type="email"
             required
             autocomplete="email"
-            placeholder="ban@truong.edu.vn" /></label
+            placeholder="Nhập email do Nhà trường cung cấp" /></label
         ><label
           >Mật khẩu<input
             id="authPassword"
@@ -599,17 +655,17 @@
             maxlength="80"
         /></label>
         <label
-          >Mã số sinh viên (Nội bộ)<input
+          >Mã số sinh viên (Chỉ bạn nhìn thấy)<input
             id="profileStudentId"
             placeholder="Ví dụ: 20110001"
         /></label>
         <label
-          >Tên thật (Nội bộ)<input
+          >Tên thật (Chỉ bạn nhìn thấy)<input
             id="profileRealName"
             placeholder="Nguyễn Văn A"
         /></label>
         <label
-          >Lớp đang học (Nội bộ)<input
+          >Lớp đang học (Chỉ bạn nhìn thấy)<input
             id="profileClassName"
             placeholder="Ví dụ: KTPM2020"
         /></label>
@@ -620,7 +676,7 @@
         </div>
       </form>
     </dialog>
-    <dialog id="historyModal" class="modal detail-modal" style="max-width: 600px;">
+    <dialog id="historyModal" class="modal" style="max-width: 600px; padding: 24px;">
       <div class="modal-head">
         <div>
           <p class="eyebrow">LỊCH SỬ HOẠT ĐỘNG</p>
@@ -633,7 +689,10 @@
       </div>
     </dialog>
     <dialog id="detailModal" class="modal detail-modal">
-      <div id="detailContent"></div>
+      <div class="detail-modal-inner">
+        <div id="detailContent" class="detail-scrollable"></div>
+        <div id="pinnedReplyContainer" class="pinned-reply"></div>
+      </div>
     </dialog>
     <dialog
       id="adminModal"
@@ -667,7 +726,7 @@
           class="auth-tab admin-tab"
           data-admin-tab="documents"
         >
-          Xét duyệt
+          Tài liệu & Chủ đề
         </button>
       </div>
 
@@ -679,6 +738,7 @@
             <strong id="adminUnanswered">0</strong><span>Chưa phản hồi</span>
           </div>
           <div><strong id="adminDocs">0</strong><span>Tài liệu chờ</span></div>
+          <div><strong id="adminTopics">0</strong><span>Chủ đề chờ</span></div>
         </div>
       </div>
 
@@ -707,21 +767,40 @@
         class="admin-tab-content"
         style="display: none"
       >
+        <div style="display: flex; gap: 16px; margin-bottom: 12px;">
+          <h3 style="margin: 0;">Tài liệu chờ duyệt</h3>
+        </div>
         <div
           id="adminDocList"
           style="
             display: flex;
             flex-direction: column;
             gap: 16px;
-            max-height: 400px;
+            max-height: 250px;
             overflow-y: auto;
+            margin-bottom: 24px;
           "
         >
           <!-- Docs populated by JS -->
         </div>
+
+        <div style="display: flex; gap: 16px; margin-bottom: 12px;">
+          <h3 style="margin: 0;">Chủ đề chờ duyệt</h3>
+        </div>
+        <div
+          id="adminTopicList"
+          style="
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            max-height: 250px;
+            overflow-y: auto;
+          "
+        >
+          <!-- Topics populated by JS -->
+        </div>
       </div>
     </dialog>
-    <dialog id="toast" class="toast" aria-live="polite"></dialog>
     <style>
       .auth-tabs {
         display: flex;
@@ -805,6 +884,6 @@
         </div>
       </div>
     </dialog>
-    <script src="app.js?v=7"></script>
+    <script src="app.js?v=21" defer></script>
   </body>
 </html>

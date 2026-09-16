@@ -7,5 +7,10 @@
     "start": "node server.js",
     "check": "node --check server.js && node --check app.js"
   },
-  "engines": { "node": ">=24" }
+  "engines": {
+    "node": ">=24"
+  },
+  "dependencies": {
+    "puppeteer": "^25.10.0"
+  }
 }
