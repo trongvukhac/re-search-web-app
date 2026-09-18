@@ -172,8 +172,9 @@ async function hydrateServer() {
       renderHome();
       renderPosts();
 
-      const totalPosts = posts.length;
-      const answeredPosts = posts.filter((p) => p.responses > 0).length;
+      const communityPosts = posts.filter((p) => p.authorRole !== "admin");
+      const totalPosts = communityPosts.length;
+      const answeredPosts = communityPosts.filter((p) => p.responses > 0).length;
       const ratio =
         totalPosts > 0 ? Math.round((answeredPosts / totalPosts) * 100) : 0;
       const elTotal = $("#statTotalPosts");
@@ -500,7 +501,7 @@ function postCard(post) {
   const pinnedIcon = post.isPinned
     ? `<span title="Đã ghim" style="color:var(--primary)">📌 </span>`
     : "";
-  return `<article class="post-card" data-post-id="${post.id}" style="position: relative;">
+  return `<article class="post-card ${post.authorRole === "admin" ? "admin-post" : ""}" data-post-id="${post.id}" style="position: relative;">
     ${adminBtn}${editBtn}
     <span class="avatar avatar-xs ${post.anonymous ? "ink" : ""}">${post.initials}</span>
     <div>

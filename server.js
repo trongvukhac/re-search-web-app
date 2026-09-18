@@ -617,12 +617,15 @@ async function api(request, response, url) {
     if (!rateLimit(`response:${user.id}`, 20, 60 * 60 * 1000))
       return error(response, 429, "Bạn đã phản hồi quá nhiều, thử lại sau.");
     const { content, isAnonymous, parentId } = await readJSON(request);
-    if (
-      typeof content !== "string" ||
-      content.trim().length < 10 ||
-      content.trim().length > 10000
-    )
+    if (typeof content !== "string") {
+      return error(response, 400, "Định dạng không hợp lệ.");
+    }
+    if (content.trim().length < 10) {
       return error(response, 400, "Phản hồi cần có ít nhất 10 ký tự.");
+    }
+    if (content.trim().length > 50000) {
+      return error(response, 400, "Phản hồi quá dài (vượt quá giới hạn cho phép).");
+    }
     const post = db
       .prepare("SELECT id FROM posts WHERE id=? AND status='visible'")
       .get(Number(responseMatch[1]));
@@ -660,8 +663,14 @@ async function api(request, response, url) {
     if (!user || !requireCsrf(request, response, user)) return;
 
     const { content, title } = await readJSON(request);
-    if (typeof content !== "string" || content.trim().length < 5) {
-      return error(response, 400, "Nội dung quá ngắn.");
+    if (typeof content !== "string") {
+      return error(response, 400, "Định dạng không hợp lệ.");
+    }
+    if (content.trim().length < 10) {
+      return error(response, 400, "Nội dung phản hồi cần có ít nhất 10 ký tự.");
+    }
+    if (content.trim().length > 50000) {
+      return error(response, 400, "Nội dung phản hồi quá dài.");
     }
 
     const row = db.prepare(`SELECT author_id, created_at, status FROM ${type} WHERE id=?`).get(id);
@@ -748,9 +757,12 @@ async function api(request, response, url) {
     if (!user) return;
     const stats = db
       .prepare(
-        "SELECT coalesce(sum(points),0) total, count(*) count FROM contribution_events WHERE user_id=?",
+        "SELECT coalesce(sum(points),0) total FROM contribution_events WHERE user_id=?",
       )
       .get(user.id);
+    const postCount = db.prepare("SELECT count(*) as c FROM posts WHERE author_id=? AND status='visible'").get(user.id).c;
+    const responseCount = db.prepare("SELECT count(*) as c FROM responses WHERE author_id=? AND status='visible'").get(user.id).c;
+    stats.count = postCount + responseCount;
     const activity = db
       .prepare(
         "SELECT activity_date FROM activity_days WHERE user_id=? ORDER BY activity_date DESC",

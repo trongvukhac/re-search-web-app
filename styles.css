@@ -131,6 +131,12 @@ select:focus-visible {
 .icon-button:hover {
   background: var(--sage-2);
 }
+.post-card.admin-post {
+  background-color: #f0f9ff;
+}
+.post-card.admin-post:hover {
+  background-color: #e0f2fe;
+}
 .profile-chip {
   border: 0;
   background: transparent;
