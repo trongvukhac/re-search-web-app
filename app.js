@@ -1922,11 +1922,6 @@ window.addEventListener("keydown", (e) => {
 window.addEventListener("hashchange", () =>
   go(location.hash.slice(1) || "home"),
 );
-renderHome();
-renderPosts();
-renderDocuments();
-go(location.hash.slice(1) || "home");
-hydrateServer();
 window.deleteResponse = async (id) => {
   if (!confirm("Bạn có chắc chắn muốn xoá bình luận này?")) return;
   try {
@@ -2844,4 +2839,11 @@ function initStudyLoungeEvents() {
 }
 
 initStudyLoungeEvents();
+
+renderHome();
+renderPosts();
+renderDocuments();
+go(location.hash.slice(1) || "home");
+hydrateServer();
+
 
