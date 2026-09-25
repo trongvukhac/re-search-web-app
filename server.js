@@ -57,7 +57,8 @@ db.exec(`
     is_pinned INTEGER NOT NULL DEFAULT 0 CHECK(is_pinned IN (0,1)),
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    edited_at TEXT
+    edited_at TEXT,
+    read_count INTEGER NOT NULL DEFAULT 0
   );
   CREATE TABLE IF NOT EXISTS responses (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -153,6 +154,7 @@ try { db.exec("ALTER TABLE documents ADD COLUMN format TEXT NOT NULL DEFAULT 'Kh
 try { db.exec("ALTER TABLE responses ADD COLUMN parent_id INTEGER REFERENCES responses(id) ON DELETE CASCADE;"); } catch (e) {}
 try { db.exec("ALTER TABLE posts ADD COLUMN edited_at TEXT;"); } catch (e) {}
 try { db.exec("ALTER TABLE responses ADD COLUMN edited_at TEXT;"); } catch (e) {}
+try { db.exec("ALTER TABLE posts ADD COLUMN read_count INTEGER NOT NULL DEFAULT 0;"); } catch (e) {}
 
 const defaultTopics = [
   "Đề tài", "Lý thuyết", "Phương pháp", 
@@ -376,6 +378,7 @@ function serializePost(row, viewer) {
     isPinned: Boolean(row.is_pinned),
     lecturerRecommended: Boolean(row.lecturer_recommended > 0),
     isSaved: Boolean(row.is_saved),
+    readCount: Number(row.read_count || 0),
   };
 }
 function listPosts(viewer, search = "") {
@@ -586,6 +589,15 @@ async function api(request, response, url) {
         anonymous: Boolean(r.is_anonymous),
       }));
     return json(response, 200, { post: serializePost(row, viewer), responses });
+  }
+  const readMatch = pathName.match(/^\/api\/posts\/(\d+)\/read$/);
+  if (method === "POST" && readMatch) {
+    const postId = Number(readMatch[1]);
+    const post = db.prepare("SELECT id FROM posts WHERE id=? AND status='visible'").get(postId);
+    if (!post) return error(response, 404, "Không tìm thấy bài đăng.");
+    db.prepare("UPDATE posts SET read_count = read_count + 1 WHERE id=?").run(postId);
+    const updated = db.prepare("SELECT read_count FROM posts WHERE id=?").get(postId);
+    return json(response, 200, { success: true, readCount: Number(updated.read_count || 0) });
   }
   const saveMatch = pathName.match(/^\/api\/posts\/(\d+)\/save$/);
   if (method === "POST" && saveMatch) {

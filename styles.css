@@ -1184,6 +1184,12 @@ h1 em {
   font-size: 11px;
   margin: -8px 0 4px;
 }
+.post-read-count {
+  font-size: 11px;
+  color: #6d8074;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
 .detail-title {
   font: 400 29px/1.15 var(--serif);
   letter-spacing: -1.1px;
