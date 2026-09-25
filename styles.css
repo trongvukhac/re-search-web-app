@@ -344,19 +344,19 @@ h1 em {
   font-weight: 700 !important;
 }
 .user-name-tier-5 {
-  background: linear-gradient(90deg, #7048e8 0%, #f783ac 35%, #ff6b6b 70%, #7048e8 100%);
-  background-size: 250% auto;
+  background: linear-gradient(90deg, #7048e8 0%, #f783ac 25%, #ff6b6b 50%, #f783ac 75%, #7048e8 100%);
+  background-size: 200% 100%;
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
   font-weight: 800 !important;
-  animation: shimmerName 4s linear infinite;
+  animation: shimmerName 3.5s linear infinite;
   display: inline-block;
 }
 
 @keyframes shimmerName {
-  0% { background-position: 0% center; }
-  100% { background-position: 250% center; }
+  0% { background-position: 0% 50%; }
+  100% { background-position: 200% 50%; }
 }
 
 /* Theme Shift overrides */
