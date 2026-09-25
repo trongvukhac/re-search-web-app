@@ -772,10 +772,65 @@ async function api(request, response, url) {
       return error(response, 409, "Bạn đã đánh dấu nội dung này là Hữu ích.");
     }
   }
+function calculateUserStreak(userId, todayDate, formatYMD) {
+  const today = formatYMD(todayDate);
+  const yesterdayDate = new Date(todayDate);
+  yesterdayDate.setDate(yesterdayDate.getDate() - 1);
+  const yesterday = formatYMD(yesterdayDate);
+
+  const activities = db
+    .prepare("SELECT activity_date, created_at FROM activity_days WHERE user_id=? ORDER BY activity_date DESC")
+    .all(userId);
+  const streakRestores = db
+    .prepare("SELECT restored_date, created_at FROM streak_restores WHERE user_id=?")
+    .all(userId);
+
+  const activityMap = new Map();
+  activities.forEach(a => activityMap.set(a.activity_date, a.created_at));
+  const restoreMap = new Map();
+  streakRestores.forEach(r => restoreMap.set(r.restored_date, r.created_at));
+
+  let currentStreak = 0;
+  let streakStartDate = null;
+  let streakStartCreatedAt = null;
+
+  let checkDate = new Date(todayDate);
+  if (!activityMap.has(today) && !restoreMap.has(today)) {
+    checkDate = yesterdayDate;
+  }
+
+  while (true) {
+    const dateStr = formatYMD(checkDate);
+    if (activityMap.has(dateStr)) {
+      const prevDateStr = formatYMD(new Date(checkDate.getTime() - 86400000));
+      streakStartDate = dateStr;
+      streakStartCreatedAt = activityMap.get(dateStr) || dateStr;
+      if (restoreMap.has(prevDateStr) && !activityMap.has(prevDateStr)) {
+        checkDate.setDate(checkDate.getDate() - 1);
+      } else {
+        currentStreak++;
+        checkDate.setDate(checkDate.getDate() - 1);
+      }
+    } else if (restoreMap.has(dateStr)) {
+      streakStartDate = dateStr;
+      streakStartCreatedAt = restoreMap.get(dateStr) || dateStr;
+      checkDate.setDate(checkDate.getDate() - 1);
+    } else {
+      break;
+    }
+  }
+
+  return {
+    streak: currentStreak,
+    streakStartDate: streakStartDate || "9999-99-99",
+    streakStartCreatedAt: streakStartCreatedAt || "9999-99-99",
+  };
+}
+
   if (method === "GET" && pathName === "/api/leaderboard") {
     const topUsers = db
       .prepare(`
-        SELECT u.id, u.display_name as displayName, u.role, coalesce(sum(c.points), 0) as totalPoints
+        SELECT u.id, u.display_name as displayName, u.avatar, u.role, coalesce(sum(c.points), 0) as totalPoints
         FROM users u
         JOIN contribution_events c ON u.id = c.user_id
         WHERE u.role NOT IN ('admin', 'lecturer')
@@ -783,8 +838,55 @@ async function api(request, response, url) {
         ORDER BY totalPoints DESC
         LIMIT 5
       `)
+      .all()
+      .map(u => ({
+        id: u.id,
+        displayName: u.displayName,
+        avatar: u.avatar,
+        initials: u.avatar || getAvatarEmoji(u.displayName),
+        role: u.role,
+        totalPoints: Number(u.totalPoints)
+      }));
+
+    const todayDate = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Ho_Chi_Minh" }));
+    const formatYMD = (d) => {
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, "0");
+      const day = String(d.getDate()).padStart(2, "0");
+      return `${y}-${m}-${day}`;
+    };
+
+    const students = db
+      .prepare("SELECT id, display_name as displayName, avatar, role FROM users WHERE role = 'student'")
       .all();
-    return json(response, 200, { leaderboard: topUsers });
+
+    const streakList = students.map(s => {
+      const streakInfo = calculateUserStreak(s.id, todayDate, formatYMD);
+      return {
+        id: s.id,
+        displayName: s.displayName,
+        avatar: s.avatar,
+        initials: s.avatar || getAvatarEmoji(s.displayName),
+        role: s.role,
+        streak: streakInfo.streak,
+        streakStartDate: streakInfo.streakStartDate,
+        streakStartCreatedAt: streakInfo.streakStartCreatedAt
+      };
+    });
+
+    streakList.sort((a, b) => {
+      if (b.streak !== a.streak) return b.streak - a.streak;
+      if (a.streakStartDate !== b.streakStartDate) return a.streakStartDate.localeCompare(b.streakStartDate);
+      if (a.streakStartCreatedAt !== b.streakStartCreatedAt) return a.streakStartCreatedAt.localeCompare(b.streakStartCreatedAt);
+      return a.id - b.id;
+    });
+
+    const topStreakUsers = streakList.slice(0, 5);
+
+    return json(response, 200, {
+      leaderboard: topUsers,
+      streakLeaderboard: topStreakUsers
+    });
   }
   if (method === "GET" && pathName === "/api/me/contributions") {
     const user = requireUser(request, response);
@@ -828,26 +930,7 @@ async function api(request, response, url) {
     const activitySet = new Set(activity);
     const canRestoreStreak = activitySet.has(dayBefore) && !activitySet.has(yesterday) && !streakRestoresSet.has(yesterday);
     
-    let currentStreak = 0;
-    let checkDate = new Date(todayDate);
-    if (!activitySet.has(today) && !streakRestoresSet.has(today)) checkDate = yesterdayDate;
-    
-    while(true) {
-        const dateStr = formatYMD(checkDate);
-        if(activitySet.has(dateStr)) {
-            const prevDateStr = formatYMD(new Date(checkDate.getTime() - 86400000));
-            if (streakRestoresSet.has(prevDateStr) && !activitySet.has(prevDateStr)) {
-                checkDate.setDate(checkDate.getDate() - 1);
-            } else {
-                currentStreak++;
-                checkDate.setDate(checkDate.getDate() - 1);
-            }
-        } else if (streakRestoresSet.has(dateStr)) {
-            checkDate.setDate(checkDate.getDate() - 1);
-        } else {
-            break;
-        }
-    }
+    const { streak: currentStreak } = calculateUserStreak(user.id, todayDate, formatYMD);
 
     const query = `
       SELECT 

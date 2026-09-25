@@ -1971,10 +1971,41 @@ dialog.detail-modal[open] {
 }
 
 /* Leaderboard Styles */
+.lb-tabs {
+  display: flex;
+  gap: 2px;
+  margin: 6px 0 10px;
+  background: var(--surface, #eff4ec);
+  padding: 3px;
+  border-radius: 8px;
+}
+.lb-tab {
+  flex: 1;
+  padding: 6px 4px;
+  font-size: 11px;
+  font-weight: 700;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: center;
+  white-space: nowrap;
+  letter-spacing: -0.2px;
+}
+.lb-tab:hover {
+  color: var(--primary);
+}
+.lb-tab.active {
+  background: white;
+  color: var(--primary);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+}
 .leaderboard-item {
   display: flex;
   align-items: center;
-  padding: 8px 12px;
+  padding: 6px 10px;
   border-radius: 8px;
   background: #fbfcf8;
   border: 1px solid var(--line);
@@ -1985,41 +2016,60 @@ dialog.detail-modal[open] {
   border-color: var(--primary);
   box-shadow: 0 4px 12px rgba(8, 39, 25, 0.05);
 }
-.lb-rank {
+.lb-avatar-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 10px;
+  flex-shrink: 0;
+}
+.lb-avatar-wrap .avatar {
+  width: 30px;
+  height: 30px;
+  font-size: 14px;
+}
+.lb-rank-badge {
+  position: absolute;
+  top: -4px;
+  left: -4px;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  background: var(--surface);
-  color: var(--sage);
-  font-weight: 700;
-  font-size: 11px;
-  margin-right: 12px;
-  flex-shrink: 0;
+  font-size: 9px;
+  font-weight: 800;
+  border: 1.5px solid #fff;
+  background: #7a9484;
+  color: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  z-index: 2;
 }
-.lb-rank.rank-1 {
+.lb-rank-badge.rank-1 {
   background: #FFD700;
-  color: #8B6508;
-  box-shadow: inset 0 0 0 1px #F6C324;
+  color: #7A5700;
 }
-.lb-rank.rank-2 {
+.lb-rank-badge.rank-2 {
   background: #E0E0E0;
-  color: #4A4A4A;
-  box-shadow: inset 0 0 0 1px #D6D6D6;
+  color: #333333;
 }
-.lb-rank.rank-3 {
+.lb-rank-badge.rank-3 {
   background: #CD7F32;
-  color: #593A17;
-  box-shadow: inset 0 0 0 1px #B87333;
+  color: #ffffff;
+}
+.lb-rank-badge.rank-4,
+.lb-rank-badge.rank-5 {
+  background: #7a9484;
+  color: #ffffff;
 }
 .lb-info {
   flex: 1;
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 4px;
   min-width: 0;
 }
 .lb-name {
@@ -2032,8 +2082,8 @@ dialog.detail-modal[open] {
 }
 .lb-role {
   font-size: 10px;
-  padding: 2px 6px;
-  border-radius: 12px;
+  padding: 1px 5px;
+  border-radius: 10px;
   font-weight: 700;
   white-space: nowrap;
 }
@@ -2044,12 +2094,13 @@ dialog.detail-modal[open] {
 .lb-points {
   color: var(--primary);
   font-weight: 700;
-  font-size: 13px;
+  font-size: 12px;
   background: #e9f0ec;
-  padding: 4px 8px;
-  border-radius: 16px;
-  margin-left: 8px;
+  padding: 3px 6px;
+  border-radius: 12px;
+  margin-left: 6px;
   flex-shrink: 0;
+  white-space: nowrap;
 }
 
 /* Fix iOS Auto-Zoom on Inputs & Accessibility Scaling */

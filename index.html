@@ -246,11 +246,13 @@
             </section>
             <section class="mini-card leaderboard-card">
               <p class="eyebrow">BẢNG XẾP HẠNG</p>
-              <h3>Top đóng góp</h3>
+              <div class="lb-tabs">
+                <button type="button" class="lb-tab active" id="tabTopContrib" onclick="switchLeaderboardTab('contributions')">Top đóng góp</button>
+                <button type="button" class="lb-tab" id="tabTopStreak" onclick="switchLeaderboardTab('streak')">Top giữ chuỗi</button>
+              </div>
               <div
                 id="leaderboardList"
                 style="
-                  margin-top: 12px;
                   display: flex;
                   flex-direction: column;
                   gap: 8px;

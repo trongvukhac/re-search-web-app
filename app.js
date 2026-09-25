@@ -147,6 +147,50 @@ function applySession(user) {
     }
   }
 }
+
+let currentLeaderboardTab = "contributions";
+let cachedLeaderboardData = { leaderboard: [], streakLeaderboard: [] };
+
+window.switchLeaderboardTab = function(tab) {
+  currentLeaderboardTab = tab;
+  $("#tabTopContrib")?.classList.toggle("active", tab === "contributions");
+  $("#tabTopStreak")?.classList.toggle("active", tab === "streak");
+  renderLeaderboard();
+};
+
+function renderLeaderboard() {
+  const lbEl = $("#leaderboardList");
+  if (!lbEl) return;
+
+  const isContrib = currentLeaderboardTab === "contributions";
+  const list = isContrib
+    ? (cachedLeaderboardData.leaderboard || [])
+    : (cachedLeaderboardData.streakLeaderboard || []);
+
+  if (!list || list.length === 0) {
+    lbEl.innerHTML = `<p style="color: var(--muted); font-size: 13px; text-align: center; padding: 12px 0;">${isContrib ? "Chưa có dữ liệu đóng góp." : "Chưa có dữ liệu chuỗi."}</p>`;
+    return;
+  }
+
+  lbEl.innerHTML = list
+    .map(
+      (user, idx) => `
+    <div class="leaderboard-item">
+      <div class="lb-avatar-wrap">
+        <span class="avatar avatar-sm ${user.role === 'admin' ? '' : 'teal'}">${user.initials || '?'}</span>
+        <span class="lb-rank-badge rank-${idx + 1}">${idx + 1}</span>
+      </div>
+      <div class="lb-info">
+        <span class="lb-name">${escapeHTML(user.displayName)}</span>
+        ${user.role && user.role !== 'student' ? `<span class="lb-role lb-role-${user.role}">${getRoleDisplay(user.role)}</span>` : ""}
+      </div>
+      <div class="lb-points">${isContrib ? `${user.totalPoints}đ` : `🔥 ${user.streak} ngày`}</div>
+    </div>
+  `
+    )
+    .join("");
+}
+
 async function hydrateServer() {
   if (!serverMode) return;
   try {
@@ -183,28 +227,9 @@ async function hydrateServer() {
       if (elRatio) elRatio.textContent = ratio + "%";
     }
 
-    if (leaderboardData.leaderboard) {
-      const lbEl = $("#leaderboardList");
-      if (lbEl) {
-        if (leaderboardData.leaderboard.length === 0) {
-          lbEl.innerHTML = `<p style="color: var(--sage); font-size: 13px">Chưa có dữ liệu đóng góp.</p>`;
-        } else {
-          lbEl.innerHTML = leaderboardData.leaderboard
-            .map(
-              (user, idx) => `
-            <div class="leaderboard-item">
-              <div class="lb-rank rank-${idx + 1}">${idx + 1}</div>
-              <div class="lb-info">
-                <span class="lb-name">${escapeHTML(user.displayName)}</span>
-                ${user.role !== 'student' ? `<span class="lb-role lb-role-${user.role}">${getRoleDisplay(user.role)}</span>` : ""}
-              </div>
-              <div class="lb-points">${user.totalPoints}đ</div>
-            </div>
-          `,
-            )
-            .join("");
-        }
-      }
+    if (leaderboardData) {
+      cachedLeaderboardData = leaderboardData;
+      renderLeaderboard();
     }
     if (docsData.documents) {
       documents.length = 0;
