@@ -140,6 +140,12 @@ db.exec(`
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (user_id, post_id)
   );
+  CREATE TABLE IF NOT EXISTS user_streak_shields (
+    user_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+    shields INTEGER NOT NULL DEFAULT 0,
+    last_milestone_rewarded INTEGER NOT NULL DEFAULT 0,
+    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+  );
 `);
 
 try { db.exec("ALTER TABLE users ADD COLUMN student_id TEXT;"); } catch (e) {}
@@ -273,7 +279,152 @@ function getAvatarEmoji(str) {
   return ANIMAL_EMOJIS[Math.abs(hash) % ANIMAL_EMOJIS.length];
 }
 
-function publicUser(user) {
+function getStreakTier(streak) {
+  const s = Number(streak) || 0;
+  if (s >= 50) return 5;
+  if (s >= 30) return 4;
+  if (s >= 14) return 3;
+  if (s >= 7) return 2;
+  if (s >= 3) return 1;
+  return 0;
+}
+
+function calculateUserStreak(userId, todayDate, formatYMD) {
+  if (!todayDate) {
+    todayDate = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Ho_Chi_Minh" }));
+  }
+  if (!formatYMD) {
+    formatYMD = (d) => {
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, "0");
+      const day = String(d.getDate()).padStart(2, "0");
+      return `${y}-${m}-${day}`;
+    };
+  }
+
+  const today = formatYMD(todayDate);
+  const yesterdayDate = new Date(todayDate);
+  yesterdayDate.setDate(yesterdayDate.getDate() - 1);
+  const yesterday = formatYMD(yesterdayDate);
+  const dayBeforeDate = new Date(todayDate);
+  dayBeforeDate.setDate(dayBeforeDate.getDate() - 2);
+  const dayBefore = formatYMD(dayBeforeDate);
+
+  let shieldRow = db.prepare("SELECT * FROM user_streak_shields WHERE user_id = ?").get(userId);
+  if (!shieldRow) {
+    try {
+      db.prepare("INSERT OR IGNORE INTO user_streak_shields (user_id, shields, last_milestone_rewarded) VALUES (?, 0, 0)").run(userId);
+      shieldRow = db.prepare("SELECT * FROM user_streak_shields WHERE user_id = ?").get(userId) || { user_id: userId, shields: 0, last_milestone_rewarded: 0 };
+    } catch (e) {
+      shieldRow = { user_id: userId, shields: 0, last_milestone_rewarded: 0 };
+    }
+  }
+
+  const activities = db
+    .prepare("SELECT activity_date, created_at FROM activity_days WHERE user_id=? ORDER BY activity_date DESC")
+    .all(userId);
+  const streakRestores = db
+    .prepare("SELECT restored_date, created_at FROM streak_restores WHERE user_id=?")
+    .all(userId);
+
+  const activityMap = new Map();
+  activities.forEach(a => activityMap.set(a.activity_date, a.created_at));
+  const restoreMap = new Map();
+  streakRestores.forEach(r => restoreMap.set(r.restored_date, r.created_at));
+
+  // Auto-shield logic: if missed yesterday, active on dayBefore or dayBefore was restored, and have shields > 0
+  let autoShieldUsed = false;
+  if (!activityMap.has(yesterday) && !restoreMap.has(yesterday) && shieldRow.shields > 0) {
+    const wasActiveBefore = activityMap.has(dayBefore) || restoreMap.has(dayBefore);
+    const dayBefore3 = formatYMD(new Date(todayDate.getTime() - 3 * 86400000));
+    const usedConsecutiveRestores = restoreMap.has(dayBefore) && restoreMap.has(dayBefore3);
+
+    if (wasActiveBefore && !usedConsecutiveRestores) {
+      db.prepare("INSERT OR IGNORE INTO streak_restores(user_id, restored_date) VALUES (?,?)").run(userId, yesterday);
+      restoreMap.set(yesterday, new Date().toISOString());
+      shieldRow.shields = Math.max(0, shieldRow.shields - 1);
+      db.prepare("UPDATE user_streak_shields SET shields = ?, updated_at = CURRENT_TIMESTAMP WHERE user_id = ?").run(shieldRow.shields, userId);
+      autoShieldUsed = true;
+    }
+  }
+
+  let currentStreak = 0;
+  let streakStartDate = null;
+  let streakStartCreatedAt = null;
+
+  let checkDate = new Date(todayDate);
+  if (!activityMap.has(today) && !restoreMap.has(today)) {
+    checkDate = yesterdayDate;
+  }
+
+  while (true) {
+    const dateStr = formatYMD(checkDate);
+    if (activityMap.has(dateStr)) {
+      const prevDateStr = formatYMD(new Date(checkDate.getTime() - 86400000));
+      streakStartDate = dateStr;
+      streakStartCreatedAt = activityMap.get(dateStr) || dateStr;
+      if (restoreMap.has(prevDateStr) && !activityMap.has(prevDateStr)) {
+        checkDate.setDate(checkDate.getDate() - 1);
+      } else {
+        currentStreak++;
+        checkDate.setDate(checkDate.getDate() - 1);
+      }
+    } else if (restoreMap.has(dateStr)) {
+      streakStartDate = dateStr;
+      streakStartCreatedAt = restoreMap.get(dateStr) || dateStr;
+      checkDate.setDate(checkDate.getDate() - 1);
+    } else {
+      break;
+    }
+  }
+
+  // Check milestones and grant new shields
+  const milestones = [
+    { streak: 7, reward: 1 },
+    { streak: 14, reward: 1 },
+    { streak: 30, reward: 2 },
+    { streak: 50, reward: 2 },
+  ];
+
+  let newShields = 0;
+  let highestPassed = shieldRow.last_milestone_rewarded || 0;
+  for (const m of milestones) {
+    if (currentStreak >= m.streak && highestPassed < m.streak) {
+      newShields += m.reward;
+      if (m.streak > highestPassed) highestPassed = m.streak;
+    }
+  }
+
+  if (newShields > 0) {
+    shieldRow.shields = Math.min(3, shieldRow.shields + newShields);
+    shieldRow.last_milestone_rewarded = highestPassed;
+    db.prepare("UPDATE user_streak_shields SET shields = ?, last_milestone_rewarded = ?, updated_at = CURRENT_TIMESTAMP WHERE user_id = ?").run(shieldRow.shields, highestPassed, userId);
+  }
+
+  const streakTier = getStreakTier(currentStreak);
+
+  return {
+    streak: currentStreak,
+    streakTier,
+    shields: shieldRow.shields,
+    autoShieldUsed,
+    streakStartDate: streakStartDate || "9999-99-99",
+    streakStartCreatedAt: streakStartCreatedAt || "9999-99-99",
+  };
+}
+
+function getAuthorStreakTier(userId) {
+  if (!userId) return 0;
+  try {
+    const info = calculateUserStreak(userId);
+    return info.streakTier || 0;
+  } catch (e) {
+    return 0;
+  }
+}
+
+function publicUser(user, streakInfo = null) {
+  const info = streakInfo || (user.id ? calculateUserStreak(user.id) : { streak: 0, streakTier: 0, shields: 0 });
   return {
     id: user.id,
     email: user.email,
@@ -284,6 +435,9 @@ function publicUser(user) {
     studentId: user.student_id || "",
     realName: user.real_name || "",
     className: user.class_name || "",
+    streak: info.streak || 0,
+    streakTier: info.streakTier || 0,
+    shields: info.shields || 0,
   };
 }
 function requireUser(request, response) {
@@ -377,12 +531,13 @@ function serializePost(row, viewer) {
     isAnonymous: Boolean(row.is_anonymous),
     author:
       row.is_anonymous && !isAdmin(viewer)
-        ? { displayName: "Sinh viên ẩn danh", initials: "?" }
+        ? { displayName: "Sinh viên ẩn danh", initials: "?", streakTier: 0 }
         : {
             id: row.author_id,
             displayName: row.display_name,
             initials: row.avatar || getAvatarEmoji(row.display_name),
             role: row.role,
+            streakTier: getAuthorStreakTier(row.author_id),
           },
     createdAt: row.created_at.replace(' ', 'T') + 'Z',
     updatedAt: row.updated_at.replace(' ', 'T') + 'Z',
@@ -596,11 +751,13 @@ async function api(request, response, url) {
               displayName: "Sinh viên ẩn danh",
               role: "student",
               initials: "?",
+              streakTier: 0,
             }
           : {
               displayName: r.display_name,
               role: r.role,
               initials: r.avatar || getAvatarEmoji(r.display_name),
+              streakTier: getAuthorStreakTier(r.author_id),
             },
         anonymous: Boolean(r.is_anonymous),
       }));
@@ -772,61 +929,6 @@ async function api(request, response, url) {
       return error(response, 409, "Bạn đã đánh dấu nội dung này là Hữu ích.");
     }
   }
-function calculateUserStreak(userId, todayDate, formatYMD) {
-  const today = formatYMD(todayDate);
-  const yesterdayDate = new Date(todayDate);
-  yesterdayDate.setDate(yesterdayDate.getDate() - 1);
-  const yesterday = formatYMD(yesterdayDate);
-
-  const activities = db
-    .prepare("SELECT activity_date, created_at FROM activity_days WHERE user_id=? ORDER BY activity_date DESC")
-    .all(userId);
-  const streakRestores = db
-    .prepare("SELECT restored_date, created_at FROM streak_restores WHERE user_id=?")
-    .all(userId);
-
-  const activityMap = new Map();
-  activities.forEach(a => activityMap.set(a.activity_date, a.created_at));
-  const restoreMap = new Map();
-  streakRestores.forEach(r => restoreMap.set(r.restored_date, r.created_at));
-
-  let currentStreak = 0;
-  let streakStartDate = null;
-  let streakStartCreatedAt = null;
-
-  let checkDate = new Date(todayDate);
-  if (!activityMap.has(today) && !restoreMap.has(today)) {
-    checkDate = yesterdayDate;
-  }
-
-  while (true) {
-    const dateStr = formatYMD(checkDate);
-    if (activityMap.has(dateStr)) {
-      const prevDateStr = formatYMD(new Date(checkDate.getTime() - 86400000));
-      streakStartDate = dateStr;
-      streakStartCreatedAt = activityMap.get(dateStr) || dateStr;
-      if (restoreMap.has(prevDateStr) && !activityMap.has(prevDateStr)) {
-        checkDate.setDate(checkDate.getDate() - 1);
-      } else {
-        currentStreak++;
-        checkDate.setDate(checkDate.getDate() - 1);
-      }
-    } else if (restoreMap.has(dateStr)) {
-      streakStartDate = dateStr;
-      streakStartCreatedAt = restoreMap.get(dateStr) || dateStr;
-      checkDate.setDate(checkDate.getDate() - 1);
-    } else {
-      break;
-    }
-  }
-
-  return {
-    streak: currentStreak,
-    streakStartDate: streakStartDate || "9999-99-99",
-    streakStartCreatedAt: streakStartCreatedAt || "9999-99-99",
-  };
-}
-
   if (method === "GET" && pathName === "/api/leaderboard") {
     const topUsers = db
       .prepare(`
@@ -845,7 +947,8 @@ function calculateUserStreak(userId, todayDate, formatYMD) {
         avatar: u.avatar,
         initials: u.avatar || getAvatarEmoji(u.displayName),
         role: u.role,
-        totalPoints: Number(u.totalPoints)
+        totalPoints: Number(u.totalPoints),
+        streakTier: getAuthorStreakTier(u.id)
       }));
 
     const todayDate = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Ho_Chi_Minh" }));
@@ -869,6 +972,7 @@ function calculateUserStreak(userId, todayDate, formatYMD) {
         initials: s.avatar || getAvatarEmoji(s.displayName),
         role: s.role,
         streak: streakInfo.streak,
+        streakTier: streakInfo.streakTier,
         streakStartDate: streakInfo.streakStartDate,
         streakStartCreatedAt: streakInfo.streakStartCreatedAt
       };
@@ -930,7 +1034,7 @@ function calculateUserStreak(userId, todayDate, formatYMD) {
     const activitySet = new Set(activity);
     const canRestoreStreak = activitySet.has(dayBefore) && !activitySet.has(yesterday) && !streakRestoresSet.has(yesterday);
     
-    const { streak: currentStreak } = calculateUserStreak(user.id, todayDate, formatYMD);
+    const streakInfo = calculateUserStreak(user.id, todayDate, formatYMD);
 
     const query = `
       SELECT 
@@ -953,7 +1057,10 @@ function calculateUserStreak(userId, todayDate, formatYMD) {
       total: Number(stats.total),
       count: Number(stats.count),
       activityDays: activity,
-      streak: currentStreak,
+      streak: streakInfo.streak,
+      streakTier: streakInfo.streakTier,
+      shields: streakInfo.shields,
+      autoShieldUsed: Boolean(streakInfo.autoShieldUsed),
       canRestoreStreak: canRestoreStreak,
       recentContributions: recent.map((r) => ({
         action: r.action,

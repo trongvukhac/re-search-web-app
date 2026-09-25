@@ -115,15 +115,36 @@
               </button>
             </div>
           </div>
-          <aside class="contribution-card">
+          <aside class="contribution-card" id="homeContributionCard" data-streak-tier="0">
             <div class="card-topline">
-              <span>THÀNH TÍCH NĂNG ĐỘNG</span>
-              <span class="dot-live">● Trực tuyến</span>
+              <div class="topline-left">
+                <span>THÀNH TÍCH NĂNG ĐỘNG</span>
+                <span class="dot-live">● Trực tuyến</span>
+              </div>
+              <div class="topline-actions">
+                <button type="button" class="streak-journey-btn" id="btnStreakJourney" onclick="openStreakJourneyModal()" title="Xem hành trình giữ chuỗi">
+                  <span>🗺️</span> Hành trình
+                </button>
+              </div>
             </div>
-            <div class="streak-number" id="activityStreak">
-              -- <span>ngày</span>
+            
+            <div class="streak-hero">
+              <div class="streak-flame-wrap" id="streakFlameHero"></div>
+              <div class="streak-val-wrap">
+                <div class="streak-number" id="activityStreak">
+                  0 <span>ngày</span>
+                </div>
+                <div class="streak-sub-info" id="streakSubInfo">
+                  <span class="streak-shield-badge" id="streakShieldsBadge" title="Khiên bảo vệ chuỗi"><span class="shield-icon">🛡️</span> <b id="streakShieldsCount">0</b> khiên</span>
+                  <span class="streak-tier-label" id="streakTierLabel"></span>
+                </div>
+              </div>
             </div>
-            <p>Chuỗi đóng góp của bạn</p>
+
+            <div id="streakShieldNotice" class="streak-shield-notice" style="display: none;">
+              🛡️ Khiên đã tự động giữ chuỗi cho bạn hôm qua!
+            </div>
+
             <div id="restoreStreakContainer" style="display: none; margin-bottom: 12px; text-align: center;">
               <button class="button button-primary button-sm" style="background: #f76707; border: none; width: 100%; justify-content: center;" onclick="restoreStreak()">🔥 Khôi phục chuỗi</button>
             </div>
@@ -688,6 +709,27 @@
       </div>
       <div id="historyContent" style="margin-top: 16px; display: flex; flex-direction: column; gap: 12px; max-height: 60vh; overflow-y: auto;">
         <!-- Filled by JS -->
+      </div>
+    </dialog>
+    <dialog id="streakJourneyModal" class="modal streak-journey-modal">
+      <div class="streak-journey-header">
+        <div>
+          <p class="eyebrow" style="color: #c2d5c4;">HÀNH TRÌNH GIỮ CHUỖI</p>
+          <h2>Cột mốc & Đặc quyền</h2>
+        </div>
+        <button class="close-modal" id="closeStreakJourney" onclick="closeStreakJourneyModal()" aria-label="Đóng">×</button>
+      </div>
+      <div class="streak-journey-body">
+        <div class="streak-journey-banner-container" id="streakJourneyBannerSlot">
+          <div class="journey-banner-placeholder">
+            <div class="journey-banner-icon">👑</div>
+            <div class="journey-banner-title">Hành Trình Giữ Chuỗi 50 Ngày</div>
+            <div class="journey-banner-subtitle">Bền bỉ tích lũy mỗi ngày để mở khóa các đặc quyền danh dự</div>
+          </div>
+        </div>
+        <div class="journey-milestones-list" id="journeyMilestonesList">
+          <!-- Filled by JS -->
+        </div>
       </div>
     </dialog>
     <dialog id="detailModal" class="modal detail-modal">

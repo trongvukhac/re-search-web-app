@@ -85,16 +85,194 @@ function stripHTML(html) {
   tmp.innerHTML = DOMPurify.sanitize(html);
   return (tmp.textContent || tmp.innerText || "").replace(/\s+/g, " ").trim();
 }
+function getStreakTier(streak) {
+  const s = Number(streak) || 0;
+  if (s >= 50) return 5;
+  if (s >= 30) return 4;
+  if (s >= 14) return 3;
+  if (s >= 7) return 2;
+  if (s >= 3) return 1;
+  return 0;
+}
+
+function getFlameSVG(tier = 0, size = 20, extraClass = '') {
+  const t = Number(tier) || 0;
+  let gradStops = '';
+  let innerStops = '';
+  if (t === 5) {
+    gradStops = '<stop offset="0%" stop-color="#7048e8"/><stop offset="50%" stop-color="#f783ac"/><stop offset="100%" stop-color="#ff6b6b"/>';
+    innerStops = '<stop offset="0%" stop-color="#ffd43b"/><stop offset="100%" stop-color="#ffffff"/>';
+  } else if (t === 4) {
+    gradStops = '<stop offset="0%" stop-color="#c92a2a"/><stop offset="100%" stop-color="#ff6b6b"/>';
+    innerStops = '<stop offset="0%" stop-color="#ffa8a8"/><stop offset="100%" stop-color="#fff5f5"/>';
+  } else if (t === 3) {
+    gradStops = '<stop offset="0%" stop-color="#7048e8"/><stop offset="100%" stop-color="#b197fc"/>';
+    innerStops = '<stop offset="0%" stop-color="#e599f7"/><stop offset="100%" stop-color="#ffffff"/>';
+  } else if (t === 2) {
+    gradStops = '<stop offset="0%" stop-color="#e67700"/><stop offset="100%" stop-color="#ffd43b"/>';
+    innerStops = '<stop offset="0%" stop-color="#ffe066"/><stop offset="100%" stop-color="#fff9db"/>';
+  } else if (t === 1) {
+    gradStops = '<stop offset="0%" stop-color="#1864ab"/><stop offset="100%" stop-color="#4dabf7"/>';
+    innerStops = '<stop offset="0%" stop-color="#a5d8ff"/><stop offset="100%" stop-color="#e7f5ff"/>';
+  } else {
+    gradStops = '<stop offset="0%" stop-color="#246247"/><stop offset="100%" stop-color="#6cb28e"/>';
+    innerStops = '<stop offset="0%" stop-color="#a9d09b"/><stop offset="100%" stop-color="#dcebd5"/>';
+  }
+
+  const gradId = `flameGrad_${t}_${size}_${Math.floor(Math.random()*100000)}`;
+  const innerGradId = `flameInner_${t}_${size}_${Math.floor(Math.random()*100000)}`;
+
+  return `<svg class="flame-svg flame-tier-${t} ${extraClass}" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="${gradId}" x1="0%" y1="100%" x2="0%" y2="0%">
+        ${gradStops}
+      </linearGradient>
+      <linearGradient id="${innerGradId}" x1="0%" y1="100%" x2="0%" y2="0%">
+        ${innerStops}
+      </linearGradient>
+    </defs>
+    <path d="M12 2C12 2 14.5 5.5 14.5 8C14.5 9.2 13.8 10.2 13 11C14.5 10.5 16 11.5 16 13C16 14.2 15.2 15.2 14.2 15.7C15.8 15.2 18 16.5 18 18.5C18 20.4 16.4 22 14.5 22C10.5 22 6 18.5 6 13.5C6 8.5 12 2 12 2Z" fill="url(#${gradId})"/>
+    <path d="M12 9.5C12 9.5 13.5 11.5 13.5 13C13.5 13.8 13 14.5 12.5 15C13.2 14.8 14 15.5 14 16.5C14 17.5 13.2 18.2 12.5 18.5C11.5 18.5 10 17.2 10 15C10 12.8 12 9.5 12 9.5Z" fill="url(#${innerGradId})"/>
+  </svg>`;
+}
+
+function getAvatarClass(tier, isAnonymous = false, role = '') {
+  if (isAnonymous) return 'ink';
+  const t = Number(tier) || 0;
+  const tierCls = t >= 2 ? `avatar-tier-${t}` : '';
+  const roleCls = role === 'admin' ? '' : 'teal';
+  return `${roleCls} ${tierCls}`.trim();
+}
+
+function getNameClass(tier) {
+  const t = Number(tier) || 0;
+  if (t >= 3) return `user-name-tier-${t}`;
+  return '';
+}
+
+const STREAK_MILESTONES = [
+  { days: 3, tier: 1, title: "Khởi Đầu Năng Động", color: "Xanh Lam", desc: "Đổi màu card Thành tích sang Xanh Lam & icon ngọn lửa mini" },
+  { days: 7, tier: 2, title: "Học Giả Bền Bỉ", color: "Vàng Ánh Kim", desc: "Mở khóa Viền Avatar Vàng sáng + Tặng 1 Khiên bảo vệ chuỗi" },
+  { days: 14, tier: 3, title: "Nhà Nghiên Cứu Tận Tâm", color: "Tím Huyền Bí", desc: "Màu Tên đổi sang Tím sang trọng + Viền Avatar Tím phát sáng + Tặng 1 Khiên" },
+  { days: 30, tier: 4, title: "Bậc Thầy Học Thuật", color: "Đỏ Ruby Rực Lửa", desc: "Mở khóa Toàn bộ Giao diện Đỏ Ruby + Màu tên & Viền Đỏ + Tặng 2 Khiên" },
+  { days: 50, tier: 5, title: "Huyền Thoại RE_SEARCH", color: "Gradient Tím + Đỏ", desc: "Đẳng cấp Tối Thượng: Full Theme Mythic + Tên & Viền Hào Quang Động + Tặng 2 Khiên" }
+];
+
+window.openStreakJourneyModal = function() {
+  const modal = document.getElementById("streakJourneyModal");
+  if (!modal) return;
+  
+  const currentStreak = Number(session?.streak || window.currentStreakCount || 0);
+  const listEl = document.getElementById("journeyMilestonesList");
+  if (listEl) {
+    listEl.innerHTML = STREAK_MILESTONES.map(m => {
+      const isUnlocked = currentStreak >= m.days;
+      const flame = getFlameSVG(m.tier, 26);
+      return `
+        <div class="journey-milestone-card ${isUnlocked ? 'unlocked' : ''}">
+          <div class="milestone-badge-icon">${flame}</div>
+          <div class="milestone-info">
+            <div class="milestone-title-row">
+              <span class="milestone-days">Mốc ${m.days} ngày · ${m.title}</span>
+              <span class="milestone-status">${isUnlocked ? '✓ Đã mở khóa' : `Còn ${m.days - currentStreak} ngày`}</span>
+            </div>
+            <p class="milestone-desc">${m.desc}</p>
+          </div>
+        </div>
+      `;
+    }).join("");
+  }
+  modal.showModal();
+};
+
+window.closeStreakJourneyModal = function() {
+  const modal = document.getElementById("streakJourneyModal");
+  if (modal) modal.close();
+};
+
+function triggerMilestoneCelebration(streak, tier) {
+  if (typeof currentRoute !== "undefined" && currentRoute !== "home") return;
+  if (document.querySelector("dialog[open]")) return;
+  if (tier < 1) return;
+
+  const storageKey = `re_search_celebrated_tier_${session?.id || 'guest'}`;
+  const lastCelebrated = Number(localStorage.getItem(storageKey) || 0);
+  if (tier <= lastCelebrated) return;
+
+  localStorage.setItem(storageKey, tier);
+
+  const canvas = document.createElement("canvas");
+  canvas.style.position = "fixed";
+  canvas.style.top = "0";
+  canvas.style.left = "0";
+  canvas.style.width = "100vw";
+  canvas.style.height = "100vh";
+  canvas.style.pointerEvents = "none";
+  canvas.style.zIndex = "999999";
+  document.body.appendChild(canvas);
+
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+  const ctx = canvas.getContext("2d");
+
+  const particles = [];
+  const colors = ["#ffd43b", "#f783ac", "#7048e8", "#4dabf7", "#ff6b6b", "#69db7c"];
+  for (let i = 0; i < 70; i++) {
+    particles.push({
+      x: canvas.width * 0.5 + (Math.random() - 0.5) * 200,
+      y: canvas.height * 0.35 + (Math.random() - 0.5) * 100,
+      vx: (Math.random() - 0.5) * 12,
+      vy: Math.random() * -10 - 4,
+      size: Math.random() * 8 + 4,
+      color: colors[Math.floor(Math.random() * colors.length)],
+      rotation: Math.random() * 360,
+      rotSpeed: (Math.random() - 0.5) * 10,
+      opacity: 1,
+    });
+  }
+
+  let startTime = Date.now();
+  function animate() {
+    const elapsed = Date.now() - startTime;
+    if (elapsed > 3500) {
+      canvas.remove();
+      return;
+    }
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    particles.forEach((p) => {
+      p.x += p.vx;
+      p.y += p.vy;
+      p.vy += 0.35;
+      p.rotation += p.rotSpeed;
+      p.opacity = Math.max(0, 1 - elapsed / 3500);
+
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.rotate((p.rotation * Math.PI) / 180);
+      ctx.fillStyle = p.color;
+      ctx.globalAlpha = p.opacity;
+      ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size);
+      ctx.restore();
+    });
+    requestAnimationFrame(animate);
+  }
+  requestAnimationFrame(animate);
+
+  toast(`🎉 Chúc mừng bạn đã đạt chuỗi ${streak} ngày và mở khóa đặc quyền mới!`);
+}
+
 function normalizePost(p) {
+  const authorObj = p.author || {};
   return {
     id: p.id,
     title: p.title,
     content: p.content,
     excerpt: stripHTML(p.content),
     topic: p.topic,
-    author: p.isAuthor ? ("Bạn" + (p.isAnonymous || p.anonymous ? " (Ẩn danh)" : "")) : (p.author.displayName || p.author),
-    authorRole: p.author.role,
-    initials: p.author.initials || p.initials,
+    author: p.isAuthor ? ("Bạn" + (p.isAnonymous || p.anonymous ? " (Ẩn danh)" : "")) : (authorObj.displayName || p.author),
+    authorRole: authorObj.role || p.authorRole,
+    streakTier: Number(authorObj.streakTier || p.streakTier || 0),
+    initials: authorObj.initials || p.initials,
     time: formatTime(p.createdAt),
     createdAt: p.createdAt,
     editedAt: p.editedAt,
@@ -104,6 +282,8 @@ function normalizePost(p) {
     anonymous: p.isAnonymous || p.anonymous,
     chosen: Boolean(p.selectedResponseId || p.chosen),
     isPinned: Boolean(p.isPinned),
+    lecturerRecommended: Boolean(p.lecturerRecommended),
+    readCount: Number(p.readCount || 0),
   };
 }
 window.getRoleDisplay = function(role) {
@@ -116,15 +296,29 @@ window.getRoleDisplay = function(role) {
 function applySession(user) {
   session = user || null;
   const roleDisplay = getRoleDisplay(user?.role);
+  const streakTier = Number(user?.streakTier || 0);
+
+  // Apply theme shift
+  if (streakTier >= 5) {
+    document.documentElement.dataset.userTheme = "mythic";
+  } else if (streakTier >= 4) {
+    document.documentElement.dataset.userTheme = "ruby";
+  } else {
+    delete document.documentElement.dataset.userTheme;
+  }
+
   $$(".profile-chip-text").forEach(
     (el) =>
       (el.innerHTML = user
-        ? `${escapeHTML(user.displayName)} <b>${roleDisplay}</b>`
+        ? `<span class="${getNameClass(streakTier)}">${escapeHTML(user.displayName)}</span> <b>${roleDisplay}</b>`
         : "Đăng nhập"),
   );
 
   const accountName = $(".account-header h1");
-  if (accountName) accountName.textContent = user ? user.displayName : "Khách";
+  if (accountName) {
+    accountName.textContent = user ? user.displayName : "Khách";
+    accountName.className = getNameClass(streakTier);
+  }
 
   const roleLabel = $(".role-label");
   if (roleLabel)
@@ -133,10 +327,16 @@ function applySession(user) {
       : "Chưa đăng nhập";
 
   const headerAvatar = $("#headerAvatar");
-  if (headerAvatar) headerAvatar.textContent = user ? user.initials || "🦊" : "🦊";
+  if (headerAvatar) {
+    headerAvatar.textContent = user ? user.initials || "🦊" : "🦊";
+    headerAvatar.className = "avatar avatar-lg " + getAvatarClass(streakTier, false, user?.role);
+  }
 
   const navAvatar = $("#navAvatar");
-  if (navAvatar) navAvatar.textContent = user ? user.initials || "🦊" : "🦊";
+  if (navAvatar) {
+    navAvatar.textContent = user ? user.initials || "🦊" : "🦊";
+    navAvatar.className = "avatar avatar-sm " + getAvatarClass(streakTier, false, user?.role);
+  }
 
   const changeBtn = $("#changeAvatarBtn");
   if (changeBtn) {
@@ -177,14 +377,14 @@ function renderLeaderboard() {
       (user, idx) => `
     <div class="leaderboard-item">
       <div class="lb-avatar-wrap">
-        <span class="avatar avatar-sm ${user.role === 'admin' ? '' : 'teal'}">${user.initials || '?'}</span>
+        <span class="avatar avatar-sm ${getAvatarClass(user.streakTier, false, user.role)}">${user.initials || '?'}</span>
         <span class="lb-rank-badge rank-${idx + 1}">${idx + 1}</span>
       </div>
       <div class="lb-info">
-        <span class="lb-name">${escapeHTML(user.displayName)}</span>
+        <span class="lb-name ${getNameClass(user.streakTier)}">${escapeHTML(user.displayName)}</span>
         ${user.role && user.role !== 'student' ? `<span class="lb-role lb-role-${user.role}">${getRoleDisplay(user.role)}</span>` : ""}
       </div>
-      <div class="lb-points">${isContrib ? `${user.totalPoints}đ` : `🔥 ${user.streak} ngày`}</div>
+      <div class="lb-points">${isContrib ? `${user.totalPoints}đ` : `<span style="display:inline-flex;align-items:center;gap:3px;">${getFlameSVG(user.streakTier || 0, 15)} ${user.streak} ngày</span>`}</div>
     </div>
   `
     )
@@ -256,20 +456,47 @@ async function hydrateServer() {
       try {
         const profileData = await requestAPI("/api/me/contributions");
         if (profileData) {
-          if ($(".streak-number"))
-            $(".streak-number").innerHTML =
-              `${profileData.streak || 0} <span>ngày</span>`;
+          const streak = Number(profileData.streak || 0);
+          const streakTier = Number(profileData.streakTier || getStreakTier(streak));
+          window.currentStreakCount = streak;
+          window.currentStreakTier = streakTier;
+
+          const contribCard = $("#homeContributionCard");
+          if (contribCard) {
+            contribCard.setAttribute("data-streak-tier", streakTier);
+          }
+
+          const flameHero = $("#streakFlameHero");
+          if (flameHero) {
+            flameHero.innerHTML = getFlameSVG(streakTier, 46);
+          }
+
+          if ($("#activityStreak"))
+            $("#activityStreak").innerHTML = `${streak} <span>ngày</span>`;
+
+          const shieldsCount = $("#streakShieldsCount");
+          if (shieldsCount) {
+            shieldsCount.textContent = profileData.shields || 0;
+          }
+
+          const shieldNotice = $("#streakShieldNotice");
+          if (shieldNotice) {
+            shieldNotice.style.display = profileData.autoShieldUsed ? "block" : "none";
+          }
+
           if ($("#profilePoints"))
             $("#profilePoints").textContent = profileData.total || 0;
           if ($("#profileStreak"))
-            $("#profileStreak").innerHTML =
-              `${profileData.streak || 0} <em>ngày</em>`;
+            $("#profileStreak").innerHTML = `${streak} <em>ngày</em>`;
           if ($("#profileCount"))
             $("#profileCount").textContent = profileData.count || 0;
 
           if ($("#restoreStreakContainer")) {
              $("#restoreStreakContainer").style.display = profileData.canRestoreStreak ? "block" : "none";
           }
+
+          // Trigger celebration check on home page if unlocked new milestone!
+          triggerMilestoneCelebration(streak, streakTier);
 
           const grid = $("#activityGrid");
           if (grid) {
@@ -315,15 +542,15 @@ async function hydrateServer() {
                 const isPast = i < vnDayIndex;
 
                 let cls = "";
-                let mark = "○";
+                let mark = "";
 
                 if (isActive) {
                    cls = "done";
-                   mark = "✓";
+                   mark = getFlameSVG(streakTier, 14);
                 } else if (isToday) {
                    cls = "today";
-                   mark = "•";
-                } else if (isPast) {
+                   mark = `<span style="opacity: 0.5;">${getFlameSVG(0, 13)}</span>`;
+                } else {
                    mark = "○";
                 }
 
@@ -528,10 +755,10 @@ function postCard(post) {
     : "";
   return `<article class="post-card ${post.authorRole === "admin" ? "admin-post" : ""}" data-post-id="${post.id}" style="position: relative;">
     ${adminBtn}${editBtn}
-    <span class="avatar avatar-xs ${post.anonymous ? "ink" : ""}">${post.initials}</span>
+    <span class="avatar avatar-xs ${getAvatarClass(post.streakTier, post.anonymous, post.authorRole)}">${post.initials}</span>
     <div>
       <div class="post-meta" style="${post.lecturerRecommended ? 'margin: 0 0 2px 0;' : 'margin: 6px 0 2px 0;'}">
-        <div style="line-height: 1.2;">${pinnedIcon}<b>${post.author}</b>${post.authorRole === "lecturer" ? ' <span style="color: var(--primary); font-weight: 700; margin-left: 4px; font-size: 11px;">[Giảng viên]</span>' : ""}${post.anonymous ? " · Ẩn danh" : ""} · ${post.time}${getEditedIndicator(post.editedAt)}</div>
+        <div style="line-height: 1.2;">${pinnedIcon}<b class="${getNameClass(post.streakTier)}">${escapeHTML(post.author)}</b>${post.authorRole === "lecturer" ? ' <span style="color: var(--primary); font-weight: 700; margin-left: 4px; font-size: 11px;">[Giảng viên]</span>' : ""}${post.anonymous ? " · Ẩn danh" : ""} · ${post.time}${getEditedIndicator(post.editedAt)}</div>
         ${post.lecturerRecommended ? '<div style="font-size: 11px; color: var(--primary); font-weight: 600; margin-top: 3px; display: flex; align-items: center; gap: 4px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path></svg> Giảng viên đề xuất</div>' : ''}
       </div>
       <h3 style="margin-top: 0;">${escapeHTML(post.title)}</h3>
@@ -629,9 +856,9 @@ function renderHome() {
       .map(
         (p) => `
       <li>
-        <span class="avatar avatar-xs ${p.anonymous ? "ink" : "teal"}">${p.initials}</span>
+        <span class="avatar avatar-xs ${getAvatarClass(p.streakTier, p.anonymous, p.authorRole)}">${p.initials}</span>
         <p>
-          <strong>${p.author}</strong> vừa đặt câu hỏi<br />
+          <strong class="${getNameClass(p.streakTier)}">${escapeHTML(p.author)}</strong> vừa đặt câu hỏi<br />
           <small>${p.time}</small>
         </p>
       </li>
@@ -836,11 +1063,11 @@ async function openDetail(id) {
       return `
       <div class="response" style="position: relative;">
         ${editBtn}
-        <span class="avatar avatar-xs ${r.author.role === "admin" ? "" : "teal"}">${r.author.initials}</span>
+        <span class="avatar avatar-xs ${getAvatarClass(r.author?.streakTier, r.anonymous, r.author?.role)}">${r.author.initials}</span>
         <div style="flex: 1;">
           <div class="response-meta" style="${r.lecturerRecommended ? 'margin: 0 0 4px 0;' : 'margin: 6px 0 2px 0;'}">
             <div style="line-height: 1.2;">
-              <b>${r.isAuthor ? "Bạn" : r.author.displayName}</b>${r.author.role === "lecturer" ? ' <span style="color: var(--primary); font-weight: 700; margin-left: 4px; font-size: 11px;">[Giảng viên]</span>' : ""}${r.anonymous ? " · Ẩn danh" : ""} <span style="font-size: 10px; color: #888; margin-left: 6px;">${formatTime(r.createdAt)}</span>
+              <b class="${getNameClass(r.author?.streakTier)}">${r.isAuthor ? "Bạn" : escapeHTML(r.author.displayName)}</b>${r.author.role === "lecturer" ? ' <span style="color: var(--primary); font-weight: 700; margin-left: 4px; font-size: 11px;">[Giảng viên]</span>' : ""}${r.anonymous ? " · Ẩn danh" : ""} <span style="font-size: 10px; color: #888; margin-left: 6px;">${formatTime(r.createdAt)}</span>
               ${getEditedIndicator(r.editedAt)}
               ${r.selected ? '<span class="chosen-label">✓ Câu trả lời được chọn</span>' : ""}
             </div>
@@ -885,11 +1112,11 @@ async function openDetail(id) {
         </div>
       </div>
       <div style="display: flex; gap: 12px; margin-top: -8px; margin-bottom: 0;">
-        <span class="avatar avatar-xs ${post.anonymous ? "ink" : ""}">${post.author.initials || post.initials || "?"}</span>
+        <span class="avatar avatar-xs ${getAvatarClass(post.author?.streakTier || post.streakTier, post.anonymous, post.author?.role)}">${post.author.initials || post.initials || "?"}</span>
         <div class="detail-meta" style="flex: 1; margin: 0; ${post.lecturerRecommended ? 'margin-top: -2px;' : 'margin-top: 6px;'}">
           <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 8px; line-height: 1.2;">
             <div>
-              <b>${post.author.displayName || post.author}</b>${post.author?.role === "lecturer" ? ' <span style="color: var(--primary); font-weight: 700; margin-left: 4px; font-size: 11px;">[Giảng viên]</span>' : ""} <span style="font-size: 10px; color: #888; margin-left: 6px;">${formatTime(post.createdAt)}</span>${getEditedIndicator(post.editedAt)}
+              <b class="${getNameClass(post.author?.streakTier || post.streakTier)}">${post.author.displayName || post.author}</b>${post.author?.role === "lecturer" ? ' <span style="color: var(--primary); font-weight: 700; margin-left: 4px; font-size: 11px;">[Giảng viên]</span>' : ""} <span style="font-size: 10px; color: #888; margin-left: 6px;">${formatTime(post.createdAt)}</span>${getEditedIndicator(post.editedAt)}
             </div>
             <div class="post-read-count" id="detailPostReadCount" style="font-size: 11px; color: var(--muted); white-space: nowrap; flex-shrink: 0;">
               ${post.readCount || 0} lượt đọc
@@ -917,7 +1144,7 @@ async function openDetail(id) {
     $("#pinnedReplyContainer").innerHTML = `
       <form id="replyForm" class="reply-bar collapsed">
         <div class="reply-avatar-dropdown" onclick="toggleAnonymousDropdown(event)">
-          <span class="avatar avatar-sm ${session?.role === 'admin' ? '' : 'teal'}" id="replyAvatarLabel" style="${(!session?.role || session?.role === 'student') ? 'background: var(--primary); color: white;' : ''}">${session?.initials || '?'}</span>
+          <span class="avatar avatar-sm ${getAvatarClass(session?.streakTier, false, session?.role)}" id="replyAvatarLabel" style="${(!session?.role || session?.role === 'student') ? 'background: var(--primary); color: white;' : ''}">${session?.initials || '?'}</span>
           <span class="dropdown-arrow">▼</span>
           <div id="anonymousDropdown" class="dropdown-menu">
             <div onclick="setAnonymousReply(false)">Phản hồi công khai</div>
@@ -1151,6 +1378,17 @@ document.addEventListener("DOMContentLoaded", () => {
   }
   if (document.getElementById("editContentContainer")) {
     editEditor = initEditor("editContentContainer", "Chỉnh sửa nội dung...");
+  }
+
+  const flameHero = $("#streakFlameHero");
+  if (flameHero && !flameHero.innerHTML) {
+    flameHero.innerHTML = getFlameSVG(0, 46);
+  }
+
+  const grid = $("#activityGrid");
+  if (grid && !grid.innerHTML) {
+    const days = ["T2", "T3", "T4", "T5", "T6", "T7", "CN"];
+    grid.innerHTML = days.map(d => `<div class="day"><small>${d}</small><i>○</i></div>`).join("");
   }
   
   checkAndShowBanner();
