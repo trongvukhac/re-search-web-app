@@ -661,7 +661,17 @@ function go(route) {
   if (route === "forum") renderPosts();
 }
 window.addEventListener("click", (e) => {
-  if (e.target.tagName === "DIALOG") e.target.close();
+  if (e.target.tagName === "DIALOG") {
+    const noBackdropCloseIds = [
+      "detailModal",
+      "questionModal",
+      "documentViewerModal",
+      "documentModal",
+      "editModal"
+    ];
+    if (noBackdropCloseIds.includes(e.target.id)) return;
+    e.target.close();
+  }
 });
 $("#filterButton").onclick = () => {
   $("#filters").classList.toggle("open");
@@ -751,7 +761,7 @@ async function openDetail(id) {
           if (res && typeof res.readCount === "number") {
             const countEl = $("#detailPostReadCount");
             if (countEl && postReadActivePostId === id) {
-              countEl.textContent = `Đã có ${res.readCount} lượt đọc`;
+              countEl.textContent = `${res.readCount} lượt đọc`;
             }
             if (Array.isArray(window.posts)) {
               const p = window.posts.find(x => x.id === id);
@@ -857,7 +867,7 @@ async function openDetail(id) {
               <b>${post.author.displayName || post.author}</b>${post.author?.role === "lecturer" ? ' <span style="color: var(--primary); font-weight: 700; margin-left: 4px; font-size: 11px;">[Giảng viên]</span>' : ""} <span style="font-size: 10px; color: #888; margin-left: 6px;">${formatTime(post.createdAt)}</span>${getEditedIndicator(post.editedAt)}
             </div>
             <div class="post-read-count" id="detailPostReadCount" style="font-size: 11px; color: var(--muted); white-space: nowrap; flex-shrink: 0;">
-              Đã có ${post.readCount || 0} lượt đọc
+              ${post.readCount || 0} lượt đọc
             </div>
           </div>
           ${post.lecturerRecommended ? '<div style="font-size: 11px; color: var(--primary); font-weight: 600; margin-top: 3px; display: flex; align-items: center; gap: 4px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path></svg> Giảng viên đề xuất</div>' : ''}
