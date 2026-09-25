@@ -1317,7 +1317,16 @@ async function api(request, response, url) {
     return json(response, 200, { success: true });
   }
 
-  // --- STUDY LOUNGE ENDPOINTS ---
+  // --- STUDY LOUNGE ENDPOINTS (Locked: Admin-only for testing & stabilization) ---
+  if (pathName.startsWith("/api/study/")) {
+    const user = sessionFrom(request);
+    if (!user || user.role !== "admin") {
+      return json(response, 403, {
+        error: "Tính năng Phòng tự học đang được phát triển và cần thời gian để ổn định hệ thống, bạn quay lại sau nhé!"
+      });
+    }
+  }
+
   if (method === "GET" && pathName === "/api/study/lounge") {
     cleanupCheers();
     const user = sessionFrom(request);

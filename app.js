@@ -14,6 +14,11 @@ const $ = (s) => document.querySelector(s);
 const $$ = (s) => [...document.querySelectorAll(s)];
 
 const STUDY_SETTINGS_KEY = "research_study_settings_v1";
+const STUDY_MAINTENANCE_MSG = "Tính năng Phòng tự học đang được phát triển và cần thời gian để ổn định hệ thống, bạn quay lại sau nhé!";
+
+function canAccessStudyLounge(user = session) {
+  return Boolean(user && user.role === "admin");
+}
 
 function getInitialStudySettings() {
   const defaults = {
@@ -395,11 +400,33 @@ function applySession(user) {
     }
   }
 
-  if (typeof updateStudyStreakPerks === "function") {
-    updateStudyStreakPerks();
+  const isAdmin = Boolean(user && user.role === "admin");
+  const badgeDesk = $("#studyNavBadgeDesktop");
+  const badgeMob = $("#studyNavBadgeMobile");
+  if (badgeDesk) {
+    badgeDesk.textContent = isAdmin ? "Admin Test" : "Bảo trì";
+    badgeDesk.className = `study-nav-badge ${isAdmin ? "admin" : ""}`;
   }
-  if (typeof fetchStudyLounge === "function") {
-    fetchStudyLounge();
+  if (badgeMob) {
+    badgeMob.textContent = isAdmin ? "Admin" : "Bảo trì";
+    badgeMob.className = `study-nav-badge mobile ${isAdmin ? "admin" : ""}`;
+  }
+  const notice = $("#studyLockedNotice");
+  const mainStudy = $("#studyMainContent");
+  if (notice) notice.style.display = isAdmin ? "none" : "block";
+  if (mainStudy) mainStudy.style.display = isAdmin ? "block" : "none";
+
+  if (isAdmin) {
+    if (typeof updateStudyStreakPerks === "function") {
+      updateStudyStreakPerks();
+    }
+    if (typeof fetchStudyLounge === "function") {
+      fetchStudyLounge();
+    }
+  } else {
+    if (location.hash === "#study") {
+      go("home");
+    }
   }
 }
 
@@ -986,6 +1013,22 @@ function updateResponsiveAsidePlacement() {
 window.addEventListener("resize", updateResponsiveAsidePlacement);
 
 function go(route) {
+  if (route === "study" && !canAccessStudyLounge()) {
+    toast(STUDY_MAINTENANCE_MSG);
+    const activeEl = document.querySelector(".page.active-page");
+    const currentActive = activeEl ? activeEl.dataset.page : null;
+    const fallback = (currentActive && currentActive !== "study") ? currentActive : "home";
+    history.replaceState(null, "", `#${fallback}`);
+    $$(".page").forEach((p) =>
+      p.classList.toggle("active-page", p.dataset.page === fallback),
+    );
+    $$("[data-route]").forEach((a) =>
+      a.classList.toggle("active", a.dataset.route === fallback),
+    );
+    updateResponsiveAsidePlacement();
+    return;
+  }
+
   $$("dialog").forEach((d) => d.close());
   $$(".page").forEach((p) =>
     p.classList.toggle("active-page", p.dataset.page === route),
@@ -1447,7 +1490,12 @@ $("#proposeTopicBtn")?.addEventListener("click", async () => {
 $$("[data-route]").forEach((link) =>
   link.addEventListener("click", (e) => {
     e.preventDefault();
-    go(link.dataset.route);
+    const route = link.dataset.route;
+    if (route === "study" && !canAccessStudyLounge()) {
+      toast(STUDY_MAINTENANCE_MSG);
+      return;
+    }
+    go(route);
   }),
 );
 $(".profile-chip").addEventListener("click", () => {
@@ -2696,6 +2744,7 @@ function advanceStudyCycle(manualSkip = false) {
 }
 
 async function syncStudyToServer() {
+  if (!canAccessStudyLounge()) return;
   if (!session) return;
   try {
     const res = await requestAPI("/api/study/sync", {
@@ -2856,6 +2905,7 @@ window.addEventListener("focus", () => {
 
 /* --- 5. CO-STUDY LOUNGE (Real-Time Synchronized) --- */
 async function fetchStudyLounge() {
+  if (!canAccessStudyLounge()) return;
   try {
     const res = await requestAPI("/api/study/lounge");
     if (!res) return;
@@ -2994,6 +3044,10 @@ window.notifyCheerLocked = function() {
 };
 
 window.sendStudyCheer = async function(recipientId, cheerType) {
+  if (!canAccessStudyLounge()) {
+    toast(STUDY_MAINTENANCE_MSG);
+    return;
+  }
   if (!session) {
     openAuth();
     return;
@@ -4255,6 +4309,11 @@ function clearCompletedTodos() {
 
 /* --- 15. ROUTE LIFECYCLE & EVENT INITIALIZATION --- */
 function onEnterStudyLounge() {
+  if (!canAccessStudyLounge()) {
+    toast(STUDY_MAINTENANCE_MSG);
+    go("home");
+    return;
+  }
   updateStudyStreakPerks();
   fetchStudyLounge();
   loadStudyTodos();

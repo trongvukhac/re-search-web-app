@@ -3747,3 +3747,40 @@ dialog.detail-modal[open] {
   }
 }
 
+/* Study Lounge Maintenance / Admin Test Badges & Card */
+.study-nav-badge {
+  display: inline-block;
+  font-size: 9px;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 999px;
+  background: rgba(239, 68, 68, 0.12);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.28);
+  margin-left: 5px;
+  vertical-align: middle;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  line-height: 1.2;
+}
+
+.study-nav-badge.admin {
+  background: rgba(16, 185, 129, 0.15);
+  color: #10b981;
+  border-color: rgba(16, 185, 129, 0.3);
+}
+
+.study-nav-badge.mobile {
+  position: absolute;
+  top: 1px;
+  right: 8px;
+  font-size: 7px;
+  padding: 0 4px;
+}
+
+.study-maintenance-card {
+  background: var(--surface);
+  border: 1px dashed var(--border);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+}
+
