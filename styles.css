@@ -347,6 +347,7 @@ h1 em {
   background: linear-gradient(90deg, #7048e8 0%, #f783ac 35%, #ff6b6b 70%, #7048e8 100%);
   background-size: 250% auto;
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
   font-weight: 800 !important;
   animation: shimmerName 4s linear infinite;
