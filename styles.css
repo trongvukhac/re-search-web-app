@@ -3710,6 +3710,24 @@ dialog.detail-modal[open] {
   .study-live-badge {
     align-self: flex-start;
   }
+  .study-card {
+    padding: 16px 12px;
+  }
+  .timer-mode-selector {
+    gap: 6px;
+    max-width: 100%;
+  }
+  .study-mode-btn {
+    padding: 8px 4px;
+    min-width: 0;
+  }
+  .study-mode-btn strong {
+    font-size: 11px;
+    letter-spacing: -0.2px;
+  }
+  .study-mode-btn span {
+    font-size: 9px;
+  }
   .timer-circle {
     width: 200px;
     height: 200px;
@@ -3722,7 +3740,7 @@ dialog.detail-modal[open] {
   }
   .study-action-ctrl {
     flex: 1 1 calc(50% - 8px);
-    min-width: 120px;
+    min-width: 110px;
   }
   .ambient-grid {
     grid-template-columns: 1fr;

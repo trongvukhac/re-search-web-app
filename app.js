@@ -199,11 +199,11 @@ function getNameClass(tier) {
 }
 
 const STREAK_MILESTONES = [
-  { days: 3, tier: 1, title: "Sinh viên năng động", color: "Xanh lam", desc: "Mở khoá giao diện thẻ thành tích mới" },
-  { days: 7, tier: 2, title: "Học giả bền bỉ", color: "Vàng ánh kim", desc: "Mở khoá viền avatar đặc sắc" },
-  { days: 14, tier: 3, title: "Nhà nghiên cứu", color: "Tím huyền bí", desc: "Mở khoá màu tên rực rỡ và avatar đặc sắc" },
-  { days: 30, tier: 4, title: "Bậc thầy học thuật", color: "Đỏ ruby", desc: "Mở khóa giao diện độc quyền, màu tên rực rỡ và avatar đặc sắc" },
-  { days: 50, tier: 5, title: "Độc nhất vô nhị", color: "Gradient tím + đỏ", desc: "Mở khoá giao diện đẳng cấp sang trọng, hào quang rực rỡ đón chờ!" }
+  { days: 3, tier: 1, title: "Sinh viên năng động", color: "Xanh lam", desc: "Mở khoá toàn bộ 8 âm thanh thiên nhiên & chế độ Phối âm (Mix) Phòng tự học; Thẻ thành tích mới" },
+  { days: 7, tier: 2, title: "Học giả bền bỉ", color: "Vàng ánh kim", desc: "Mở khoá kho nhạc Lo-Fi thư giãn & Cổ vũ tương tác tại Bàn tròn; Viền avatar đặc sắc" },
+  { days: 14, tier: 3, title: "Nhà nghiên cứu", color: "Tím huyền bí", desc: "Mở khoá Tải âm thanh cá nhân (.mp3, .m4a) & Kho hình nền học thuật; Màu tên rực rỡ" },
+  { days: 30, tier: 4, title: "Bậc thầy học thuật", color: "Đỏ ruby", desc: "Mở khoá Tải hình nền cá nhân từ máy tính; Giao diện độc quyền & avatar đặc sắc" },
+  { days: 50, tier: 5, title: "Độc nhất vô nhị", color: "Gradient tím + đỏ", desc: "Mở khoá Hào quang & Tùy biến toàn diện giao diện; Đẳng cấp sang trọng đón chờ!" }
 ];
 
 window.openStreakJourneyModal = function() {
@@ -2591,7 +2591,9 @@ function updateTimerDisplay() {
   $$("#studyCycleDots .cycle-dot").forEach((dot) => {
     const c = Number(dot.dataset.cycle);
     dot.classList.remove("active", "completed");
-    if (c < studyState.cycleIndex) {
+    if (studyState.mode === 'longbreak') {
+      dot.classList.add("completed");
+    } else if (c < studyState.cycleIndex) {
       dot.classList.add("completed");
     } else if (c === studyState.cycleIndex) {
       dot.classList.add("active");
@@ -2663,7 +2665,7 @@ function advanceStudyCycle(manualSkip = false) {
         startStudyTimer();
       }
     } else {
-      studyState.cycleIndex = 1;
+      studyState.cycleIndex = 4;
       studyState.mode = 'longbreak';
       studyState.durationMinutes = studySettings.longBreakMins;
       studyState.remainingSeconds = studySettings.longBreakMins * 60;
@@ -2673,7 +2675,10 @@ function advanceStudyCycle(manualSkip = false) {
       }
     }
   } else {
-    // Was in break -> Advance to Focus
+    // Was in break (shortbreak or longbreak) -> Advance to Focus
+    if (studyState.mode === 'longbreak') {
+      studyState.cycleIndex = 1;
+    }
     studyState.mode = 'focus';
     studyState.durationMinutes = studySettings.focusMins;
     studyState.remainingSeconds = studySettings.focusMins * 60;
@@ -3737,6 +3742,12 @@ async function loadCustomAudioFromDB() {
           <small>${sizeMb} MB</small>
         </div>
         <div class="custom-audio-actions">
+          ${isPlaying ? `
+            <div class="custom-vol-row" style="display:inline-flex; align-items:center; gap:6px;">
+              <span style="font-size:11px; color:var(--muted);">Âm lượng:</span>
+              <input type="range" min="0" max="100" value="50" oninput="setCustomAudioVolume(this.value)" style="width:70px; height:6px;" />
+            </div>
+          ` : ''}
           <button class="button button-sm ${isPlaying ? 'button-dark' : 'button-outline'}" onclick="toggleCustomAudioPlay('${t.id}')">
             ${isPlaying ? '■ Dừng' : '▶ Phát'}
           </button>
@@ -3746,6 +3757,12 @@ async function loadCustomAudioFromDB() {
     `;
   }).join("");
 }
+
+window.setCustomAudioVolume = function(val) {
+  if (studyState.customAudioPlayer) {
+    studyState.customAudioPlayer.volume = Math.max(0, Math.min(1, Number(val) / 100));
+  }
+};
 
 async function handleCustomAudioUpload(file) {
   if (!file) return;
@@ -4056,7 +4073,14 @@ window.openStudySettingsModal = function() {
   if (lInput) lInput.value = studySettings.longBreakMins;
   if (aBreaks) aBreaks.checked = studySettings.autoStartBreaks;
   if (aPoms) aPoms.checked = studySettings.autoStartPomodoros;
-  if (bNotifs) bNotifs.checked = studySettings.browserNotifications;
+  if (bNotifs) {
+    bNotifs.checked = studySettings.browserNotifications;
+    bNotifs.onchange = () => {
+      if (bNotifs.checked && "Notification" in window && Notification.permission !== "granted") {
+        Notification.requestPermission();
+      }
+    };
+  }
   if (selAlarm) selAlarm.value = studySettings.alarmSound;
 
   modal.showModal();
@@ -4303,10 +4327,14 @@ function initStudyLoungeEvents() {
     tab.onclick = () => {
       const tabName = tab.dataset.soundTab;
       $$(".sound-tab").forEach(t => t.classList.toggle("active", t === tab));
+      const targetPaneId = (tabName === 'custom' || tabName === 'customAudio') ? 'paneCustomAudio' : (tabName === 'lofi' ? 'paneLofi' : 'paneAmbiance');
       $$(".sound-tab-pane").forEach(p => {
-        p.style.display = (p.id === `pane${capitalize(tabName)}`) ? "block" : "none";
+        p.style.display = (p.id === targetPaneId) ? "block" : "none";
       });
       studyState.activeSoundTab = tabName;
+      if (tabName === 'custom' || tabName === 'customAudio') {
+        loadCustomAudioFromDB();
+      }
     };
   });
 
