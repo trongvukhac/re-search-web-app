@@ -648,7 +648,9 @@ function renderActivityRow(r) {
     post_deleted: "✕",
     post_hidden: "👁️",
     response_hidden: "👁️",
-    weekly_active_reward: "🎁"
+    weekly_active_reward: "🎁",
+    post_read: "📖",
+    document_read: "📄"
   };
   
   const getSnippet = () => {
@@ -664,6 +666,8 @@ function renderActivityRow(r) {
       case "response_created": return `Bạn đã trả lời${getSnippet()}`;
       case "helpful_received": return `Bài đăng${getSnippet()} nhận được lượt Vote`;
       case "document_approved": return `Tài liệu${getSnippet()} đã được duyệt`;
+      case "post_read": return `Đọc bài đăng${getSnippet()} (giữ chuỗi)`;
+      case "document_read": return `Xem tài liệu${getSnippet()} (giữ chuỗi)`;
       case "admin_adjustment": return r.points > 0 ? `Được TA cộng điểm: ${escapeHTML(r.reason || '')}` : `Bị trừ điểm do vi phạm quy định: ${escapeHTML(r.reason || '')}`;
       case "response_deleted": return `Phản hồi của bạn đã bị xóa`;
       case "post_deleted": return `Câu hỏi của bạn đã bị xóa`;
@@ -894,6 +898,7 @@ function renderDocuments() {
         $("#viewerIframe").src = previewUrl;
         $("#viewerTitle").textContent = doc.title;
         $("#documentViewerModal").showModal();
+        startDocReadTracking(doc.id);
       } else {
         toast("Tài liệu này không có link hợp lệ.");
       }
@@ -968,14 +973,87 @@ function updatePostReadAccumulator() {
   postReadLastActiveTime = document.visibilityState === "visible" ? now : null;
 }
 
+let docReadTimer = null;
+let docReadActiveDocId = null;
+let docReadTracked = false;
+let docReadAccumulatedMs = 0;
+let docReadLastActiveTime = null;
+
+function stopDocReadTracking() {
+  if (docReadTimer) {
+    clearInterval(docReadTimer);
+    docReadTimer = null;
+  }
+  docReadActiveDocId = null;
+  docReadTracked = false;
+  docReadAccumulatedMs = 0;
+  docReadLastActiveTime = null;
+}
+
+function updateDocReadAccumulator() {
+  if (!docReadActiveDocId || docReadTracked) return;
+  const now = Date.now();
+  if (document.visibilityState === "visible" && docReadLastActiveTime) {
+    docReadAccumulatedMs += (now - docReadLastActiveTime);
+  }
+  docReadLastActiveTime = document.visibilityState === "visible" ? now : null;
+}
+
+function startDocReadTracking(docId) {
+  if (docReadActiveDocId !== docId) {
+    stopDocReadTracking();
+    docReadActiveDocId = docId;
+    docReadTracked = false;
+    docReadAccumulatedMs = 0;
+    docReadLastActiveTime = document.visibilityState === "visible" ? Date.now() : null;
+
+    docReadTimer = setInterval(async () => {
+      const modal = $("#documentViewerModal");
+      if (!modal || !modal.open || docReadActiveDocId !== docId) {
+        stopDocReadTracking();
+        return;
+      }
+
+      updateDocReadAccumulator();
+
+      if (docReadAccumulatedMs >= 60000 && !docReadTracked) {
+        docReadTracked = true;
+        clearInterval(docReadTimer);
+        docReadTimer = null;
+
+        try {
+          if (serverMode && session) {
+            await requestAPI(`/api/documents/${docId}/read`, { method: "POST" });
+            if (typeof loadContributions === "function") {
+              loadContributions();
+            }
+          }
+        } catch (err) {
+          console.error("Failed to record document read:", err);
+        }
+      }
+    }, 1000);
+  }
+}
+
 document.addEventListener("visibilitychange", () => {
   updatePostReadAccumulator();
+  updateDocReadAccumulator();
 });
 
 const detailModalEl = $("#detailModal");
 if (detailModalEl) {
   detailModalEl.addEventListener("close", () => {
     stopPostReadTracking();
+  });
+}
+
+const docViewerModalEl = $("#documentViewerModal");
+if (docViewerModalEl) {
+  docViewerModalEl.addEventListener("close", () => {
+    stopDocReadTracking();
+    const iframe = $("#viewerIframe");
+    if (iframe) iframe.src = "about:blank";
   });
 }
 
@@ -1019,6 +1097,9 @@ async function openDetail(id) {
               const p = window.posts.find(x => x.id === id);
               if (p) p.readCount = res.readCount;
             }
+          }
+          if (serverMode && session && typeof loadContributions === "function") {
+            loadContributions();
           }
         } catch (err) {
           console.error("Failed to update post read count:", err);
