@@ -204,11 +204,46 @@ function getNameClass(tier) {
 }
 
 const STREAK_MILESTONES = [
-  { days: 3, tier: 1, title: "Sinh viên năng động", color: "Xanh lam", desc: "Mở khoá toàn bộ 8 âm thanh thiên nhiên & chế độ Phối âm (Mix) Phòng tự học; Thẻ thành tích mới" },
-  { days: 7, tier: 2, title: "Học giả bền bỉ", color: "Vàng ánh kim", desc: "Mở khoá kho nhạc Lo-Fi thư giãn & Cổ vũ tương tác tại Bàn tròn; Viền avatar đặc sắc" },
-  { days: 14, tier: 3, title: "Nhà nghiên cứu", color: "Tím huyền bí", desc: "Mở khoá Tải âm thanh cá nhân (.mp3, .m4a) & Kho hình nền học thuật; Màu tên rực rỡ" },
-  { days: 30, tier: 4, title: "Bậc thầy học thuật", color: "Đỏ ruby", desc: "Mở khoá Tải hình nền cá nhân từ máy tính; Giao diện độc quyền & avatar đặc sắc" },
-  { days: 50, tier: 5, title: "Độc nhất vô nhị", color: "Gradient tím + đỏ", desc: "Mở khoá Hào quang & Tùy biến toàn diện giao diện; Đẳng cấp sang trọng đón chờ!" }
+  {
+    days: 3,
+    tier: 1,
+    title: "Sinh viên năng động",
+    color: "Xanh lam",
+    forumDesc: "Mở khoá giao diện thẻ thành tích mới",
+    studyDesc: "Chờ nhé, sắp có rồi"
+  },
+  {
+    days: 7,
+    tier: 2,
+    title: "Học giả bền bỉ",
+    color: "Vàng ánh kim",
+    forumDesc: "Mở khoá viền avatar đặc sắc",
+    studyDesc: "Chờ nhé, sắp có rồi"
+  },
+  {
+    days: 14,
+    tier: 3,
+    title: "Nhà nghiên cứu tài năng",
+    color: "Tím huyền bí",
+    forumDesc: "Mở khoá màu tên rực rỡ và avatar đặc sắc",
+    studyDesc: "Chờ nhé, sắp có rồi"
+  },
+  {
+    days: 30,
+    tier: 4,
+    title: "Bậc thầy học thuật",
+    color: "Đỏ ruby",
+    forumDesc: "Mở khóa giao diện độc quyền, màu tên rực rỡ và avatar đặc sắc",
+    studyDesc: "Chờ nhé, sắp có rồi"
+  },
+  {
+    days: 50,
+    tier: 5,
+    title: "Độc nhất vô nhị",
+    color: "Gradient tím + đỏ",
+    forumDesc: "Mở khoá giao diện đẳng cấp sang trọng, hào quang rực rỡ đón chờ!",
+    studyDesc: "Chờ nhé, sắp có rồi"
+  }
 ];
 
 window.openStreakJourneyModal = function() {
@@ -229,7 +264,16 @@ window.openStreakJourneyModal = function() {
               <span class="milestone-days">Mốc ${m.days} ngày · ${m.title}</span>
               <span class="milestone-status">${isUnlocked ? '✓ Đã mở khóa' : `Còn ${m.days - currentStreak} ngày`}</span>
             </div>
-            <p class="milestone-desc">${m.desc}</p>
+            <div class="milestone-perks-container">
+              <div class="milestone-perk-row">
+                <span class="milestone-perk-tag perk-forum">Diễn đàn</span>
+                <span class="milestone-perk-text">${m.forumDesc}</span>
+              </div>
+              <div class="milestone-perk-row">
+                <span class="milestone-perk-tag perk-study">Phòng tự học</span>
+                <span class="milestone-perk-text perk-study-waiting">${m.studyDesc}</span>
+              </div>
+            </div>
           </div>
         </div>
       `;
@@ -3822,7 +3866,7 @@ async function handleCustomAudioUpload(file) {
   if (!file) return;
   const userStreak = getUserStudyStreak();
   if (userStreak < 14) {
-    toast("🔒 Tính năng Tải âm thanh cá nhân mở khóa ở Chuỗi 14 ngày (Nhà nghiên cứu)!");
+    toast("🔒 Tính năng Tải âm thanh cá nhân mở khóa ở Chuỗi 14 ngày (Nhà nghiên cứu tài năng)!");
     return;
   }
 

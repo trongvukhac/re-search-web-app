@@ -1048,6 +1048,50 @@ h1 em {
   margin: 0;
   line-height: 1.4;
 }
+.milestone-perks-container {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-top: 6px;
+}
+.milestone-perk-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 11.5px;
+  line-height: 1.4;
+}
+.milestone-perk-tag {
+  display: inline-flex;
+  align-items: center;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 7px;
+  border-radius: 6px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  line-height: 1.4;
+}
+.milestone-perk-tag.perk-forum {
+  background: rgba(25, 96, 68, 0.1);
+  color: #196044;
+  border: 1px solid rgba(25, 96, 68, 0.22);
+}
+.milestone-perk-tag.perk-study {
+  background: rgba(14, 116, 144, 0.1);
+  color: #0e7490;
+  border: 1px solid rgba(14, 116, 144, 0.22);
+}
+.milestone-perk-text {
+  color: var(--muted);
+}
+.journey-milestone-card.unlocked .milestone-perk-text {
+  color: var(--ink);
+}
+.milestone-perk-text.perk-study-waiting {
+  color: #8c9b93;
+  font-style: italic;
+}
 .search-panel {
   height: 66px;
   margin: 33px 0 45px;
