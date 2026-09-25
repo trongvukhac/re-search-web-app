@@ -151,11 +151,11 @@ function getNameClass(tier) {
 }
 
 const STREAK_MILESTONES = [
-  { days: 3, tier: 1, title: "Khởi Đầu Năng Động", color: "Xanh Lam", desc: "Đổi màu card Thành tích sang Xanh Lam & icon ngọn lửa mini" },
-  { days: 7, tier: 2, title: "Học Giả Bền Bỉ", color: "Vàng Ánh Kim", desc: "Mở khóa Viền Avatar Vàng sáng + Tặng 1 Khiên bảo vệ chuỗi" },
-  { days: 14, tier: 3, title: "Nhà Nghiên Cứu Tận Tâm", color: "Tím Huyền Bí", desc: "Màu Tên đổi sang Tím sang trọng + Viền Avatar Tím phát sáng + Tặng 1 Khiên" },
-  { days: 30, tier: 4, title: "Bậc Thầy Học Thuật", color: "Đỏ Ruby Rực Lửa", desc: "Mở khóa Toàn bộ Giao diện Đỏ Ruby + Màu tên & Viền Đỏ + Tặng 2 Khiên" },
-  { days: 50, tier: 5, title: "Huyền Thoại RE_SEARCH", color: "Gradient Tím + Đỏ", desc: "Đẳng cấp Tối Thượng: Full Theme Mythic + Tên & Viền Hào Quang Động + Tặng 2 Khiên" }
+  { days: 3, tier: 1, title: "Sinh viên năng động", color: "Xanh lam", desc: "Mở khoá giao diện thẻ thành tích mới" },
+  { days: 7, tier: 2, title: "Học giả bền bỉ", color: "Vàng ánh kim", desc: "Mở khoá viền avatar đặc sắc" },
+  { days: 14, tier: 3, title: "Nhà nghiên cứu", color: "Tím huyền bí", desc: "Mở khoá màu tên rực rỡ và avatar đặc sắc" },
+  { days: 30, tier: 4, title: "Bậc thầy học thuật", color: "Đỏ ruby", desc: "Mở khóa giao diện độc quyền, màu tên rực rỡ và avatar đặc sắc" },
+  { days: 50, tier: 5, title: "Độc nhất vô nhị", color: "Gradient tím + đỏ", desc: "Mở khoá giao diện đẳng cấp sang trọng, hào quang rực rỡ đón chờ!" }
 ];
 
 window.openStreakJourneyModal = function() {
