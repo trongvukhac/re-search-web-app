@@ -365,14 +365,314 @@ h1 em {
   --primary-soft: #ffe3e3;
   --accent: #e03131;
   --green: #c92a2a;
-  --sage-2: #fff5f5;
+  --ink: #3b0a11;
+  --ink-deep: #24050a;
+  --paper: #fdf6f6;
+  --cream: #faecec;
+  --line: #eed6d6;
+  --sage: #f8c8c8;
+  --sage-2: #fae4e4;
+  --muted: #7d5e63;
 }
+
+[data-user-theme="ruby"] body {
+  background: #fdf6f6;
+  color: #3b0a11;
+}
+
+[data-user-theme="ruby"] .button-primary {
+  background: linear-gradient(135deg, #a61e32 0%, #c92a2a 100%) !important;
+  color: #fff !important;
+  box-shadow: 0 4px 14px rgba(201, 42, 42, 0.35) !important;
+}
+[data-user-theme="ruby"] .button-dark {
+  background: #fae4e4 !important;
+  color: #8e1526 !important;
+}
+[data-user-theme="ruby"] .button-outline {
+  border-color: #e0a8a8 !important;
+  color: #8e1526 !important;
+}
+[data-user-theme="ruby"] .button-quiet {
+  color: #8e1526 !important;
+}
+[data-user-theme="ruby"] .site-header {
+  border-bottom-color: #eed6d6;
+}
+[data-user-theme="ruby"] .brand-colon {
+  color: #e03131 !important;
+}
+[data-user-theme="ruby"] .nav-link:hover,
+[data-user-theme="ruby"] .nav-link.active {
+  background: #fae4e4 !important;
+  color: #8e1526 !important;
+}
+[data-user-theme="ruby"] .icon-button:hover {
+  background: #fae4e4 !important;
+}
+[data-user-theme="ruby"] .profile-chip b {
+  background: #fae4e4 !important;
+  color: #a61e32 !important;
+}
+[data-user-theme="ruby"] h1 em {
+  color: #c92a2a !important;
+}
+[data-user-theme="ruby"] .search-panel {
+  border-color: #f0cece !important;
+  box-shadow: 0 10px 24px rgba(201, 42, 42, 0.08) !important;
+  background: #fff !important;
+}
+[data-user-theme="ruby"] .search-glyph,
+[data-user-theme="ruby"] .search-inline span {
+  color: #c92a2a !important;
+}
+[data-user-theme="ruby"] .search-inline {
+  border-color: #f0cece !important;
+}
+[data-user-theme="ruby"] .filter-chip:hover,
+[data-user-theme="ruby"] .filter-chip.selected {
+  background: #fae4e4 !important;
+  color: #a61e32 !important;
+}
+[data-user-theme="ruby"] .filter-button {
+  border-color: #e8c4c4 !important;
+  background: #faf0f0 !important;
+  color: #8e1526 !important;
+}
+[data-user-theme="ruby"] .lb-tab.active {
+  background: #c92a2a !important;
+  color: #fff !important;
+}
+[data-user-theme="ruby"] .lb-tab {
+  color: #8e1526;
+}
+[data-user-theme="ruby"] .tab.active:after {
+  background: #c92a2a !important;
+}
+[data-user-theme="ruby"] .post-tag {
+  color: #a61e32 !important;
+  background: #fae4e4 !important;
+}
+[data-user-theme="ruby"] .topic {
+  border-color: #f0cece !important;
+  background: #fff5f5 !important;
+  color: #8e1526 !important;
+}
+[data-user-theme="ruby"] .topic:hover {
+  border-color: #c92a2a !important;
+  background: #fae4e4 !important;
+}
+[data-user-theme="ruby"] .topics-card,
+[data-user-theme="ruby"] .mini-card {
+  background: #faecec !important;
+}
+[data-user-theme="ruby"] .active-card {
+  background: #fff8f8 !important;
+  border-color: #f5dcdc !important;
+}
+[data-user-theme="ruby"] .active-card-title > span {
+  color: #c92a2a !important;
+}
+[data-user-theme="ruby"] .post-card:hover {
+  background: #fdf0f0 !important;
+}
+[data-user-theme="ruby"] .post-meta b {
+  color: #a61e32 !important;
+}
+[data-user-theme="ruby"] .text-link {
+  color: #c92a2a !important;
+}
+[data-user-theme="ruby"] .announcement {
+  border-left-color: #c92a2a !important;
+}
+[data-user-theme="ruby"] .announcement-icon {
+  background: #fae4e4 !important;
+  color: #a61e32 !important;
+}
+[data-user-theme="ruby"] .activity-icon {
+  background: #fae4e4 !important;
+  color: #a61e32 !important;
+}
+[data-user-theme="ruby"] .activity-points {
+  color: #c92a2a !important;
+}
+[data-user-theme="ruby"] .admin-panel {
+  background: #440c14 !important;
+}
+[data-user-theme="ruby"] .admin-panel .eyebrow {
+  color: #ffc9c9 !important;
+}
+[data-user-theme="ruby"] .streak-journey-header {
+  background: linear-gradient(135deg, #440c14 0%, #7a1523 100%) !important;
+}
+[data-user-theme="ruby"] button:focus-visible,
+[data-user-theme="ruby"] a:focus-visible,
+[data-user-theme="ruby"] input:focus-visible,
+[data-user-theme="ruby"] textarea:focus-visible,
+[data-user-theme="ruby"] select:focus-visible {
+  outline-color: #ff6b6b !important;
+}
+
 [data-user-theme="mythic"] {
   --primary: #5f3dc4;
   --primary-soft: #f3d9fa;
   --accent: #d6336c;
-  --green: #5f3dc4;
-  --sage-2: #f8f0fc;
+  --green: #7048e8;
+  --ink: #2b0e45;
+  --ink-deep: #19052b;
+  --paper: #faf6fd;
+  --cream: #f4ecfa;
+  --line: #e6d6f2;
+  --sage: #e0c8f5;
+  --sage-2: #f2e6fa;
+  --muted: #6e5585;
+}
+
+[data-user-theme="mythic"] body {
+  background: #faf6fd;
+  color: #2b0e45;
+}
+
+[data-user-theme="mythic"] .button-primary {
+  background: linear-gradient(135deg, #5f3dc4 0%, #9c1c68 50%, #d6336c 100%) !important;
+  background-size: 200% auto !important;
+  color: #fff !important;
+  box-shadow: 0 4px 18px rgba(112, 72, 232, 0.45), 0 2px 8px rgba(214, 51, 108, 0.3) !important;
+  animation: mythicButtonGlow 4s ease infinite alternate;
+}
+@keyframes mythicButtonGlow {
+  0% { background-position: 0% center; box-shadow: 0 4px 18px rgba(112, 72, 232, 0.45), 0 2px 8px rgba(214, 51, 108, 0.3); }
+  100% { background-position: 100% center; box-shadow: 0 4px 20px rgba(214, 51, 108, 0.5), 0 2px 10px rgba(112, 72, 232, 0.35); }
+}
+[data-user-theme="mythic"] .button-dark {
+  background: #f2e6fa !important;
+  color: #5f3dc4 !important;
+}
+[data-user-theme="mythic"] .button-outline {
+  border-color: #d0bfff !important;
+  color: #5f3dc4 !important;
+}
+[data-user-theme="mythic"] .button-quiet {
+  color: #5f3dc4 !important;
+}
+[data-user-theme="mythic"] .site-header {
+  border-bottom-color: #e6d6f2;
+}
+[data-user-theme="mythic"] .brand-colon {
+  color: #d6336c !important;
+}
+[data-user-theme="mythic"] .nav-link:hover,
+[data-user-theme="mythic"] .nav-link.active {
+  background: #f2e6fa !important;
+  color: #5f3dc4 !important;
+}
+[data-user-theme="mythic"] .icon-button:hover {
+  background: #f2e6fa !important;
+}
+[data-user-theme="mythic"] .profile-chip b {
+  background: #f2e6fa !important;
+  color: #5f3dc4 !important;
+}
+[data-user-theme="mythic"] h1 em {
+  background: linear-gradient(90deg, #7048e8, #f783ac, #ff6b6b);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+[data-user-theme="mythic"] .search-panel {
+  border-color: #dec5f4 !important;
+  box-shadow: 0 10px 24px rgba(112, 72, 232, 0.12) !important;
+  background: #fff !important;
+}
+[data-user-theme="mythic"] .search-glyph,
+[data-user-theme="mythic"] .search-inline span {
+  color: #7048e8 !important;
+}
+[data-user-theme="mythic"] .search-inline {
+  border-color: #dec5f4 !important;
+}
+[data-user-theme="mythic"] .filter-chip:hover,
+[data-user-theme="mythic"] .filter-chip.selected {
+  background: #f0e2fa !important;
+  color: #5f3dc4 !important;
+}
+[data-user-theme="mythic"] .filter-button {
+  border-color: #dec5f4 !important;
+  background: #f8f0fc !important;
+  color: #5f3dc4 !important;
+}
+[data-user-theme="mythic"] .lb-tab.active {
+  background: linear-gradient(135deg, #5f3dc4 0%, #d6336c 100%) !important;
+  color: #fff !important;
+}
+[data-user-theme="mythic"] .lb-tab {
+  color: #5f3dc4;
+}
+[data-user-theme="mythic"] .tab.active:after {
+  background: linear-gradient(90deg, #7048e8, #f783ac) !important;
+}
+[data-user-theme="mythic"] .post-tag {
+  color: #5f3dc4 !important;
+  background: #f0e2fa !important;
+}
+[data-user-theme="mythic"] .topic {
+  border-color: #dec5f4 !important;
+  background: #fbf8fe !important;
+  color: #5f3dc4 !important;
+}
+[data-user-theme="mythic"] .topic:hover {
+  border-color: #7048e8 !important;
+  background: #f0e2fa !important;
+}
+[data-user-theme="mythic"] .topics-card,
+[data-user-theme="mythic"] .mini-card {
+  background: #f4ecfa !important;
+}
+[data-user-theme="mythic"] .active-card {
+  background: #fcf9fe !important;
+  border-color: #ecdcf7 !important;
+}
+[data-user-theme="mythic"] .active-card-title > span {
+  color: #7048e8 !important;
+}
+[data-user-theme="mythic"] .post-card:hover {
+  background: #f6eeff !important;
+}
+[data-user-theme="mythic"] .post-meta b {
+  color: #7048e8 !important;
+}
+[data-user-theme="mythic"] .text-link {
+  color: #7048e8 !important;
+}
+[data-user-theme="mythic"] .announcement {
+  border-left-color: #7048e8 !important;
+}
+[data-user-theme="mythic"] .announcement-icon {
+  background: #f0e2fa !important;
+  color: #5f3dc4 !important;
+}
+[data-user-theme="mythic"] .activity-icon {
+  background: #f0e2fa !important;
+  color: #5f3dc4 !important;
+}
+[data-user-theme="mythic"] .activity-points {
+  color: #7048e8 !important;
+}
+[data-user-theme="mythic"] .admin-panel {
+  background: linear-gradient(135deg, #280838 0%, #4a0e4e 50%, #68112a 100%) !important;
+}
+[data-user-theme="mythic"] .admin-panel .eyebrow {
+  color: #fcc2d7 !important;
+}
+[data-user-theme="mythic"] .streak-journey-header {
+  background: linear-gradient(135deg, #280838 0%, #4a0e4e 50%, #68112a 100%) !important;
+}
+[data-user-theme="mythic"] button:focus-visible,
+[data-user-theme="mythic"] a:focus-visible,
+[data-user-theme="mythic"] input:focus-visible,
+[data-user-theme="mythic"] textarea:focus-visible,
+[data-user-theme="mythic"] select:focus-visible {
+  outline-color: #b197fc !important;
 }
 
 /* Flame SVG & Animations */
@@ -1746,6 +2046,15 @@ h1 em {
     gap: 28px;
   }
   .side-column {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-top: 16px;
+  }
+  .side-column .topics-card {
+    display: none;
+  }
+  .forum-aside {
     display: none;
   }
   .announcement {

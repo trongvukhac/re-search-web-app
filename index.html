@@ -15,7 +15,7 @@
     <link href="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.snow.css" rel="stylesheet" />
     <script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js"></script>
-    <link rel="stylesheet" href="styles.css?v=15" />
+    <link rel="stylesheet" href="styles.css?v=16" />
   </head>
   <body>
     <dialog
@@ -202,6 +202,7 @@
               </div>
               <ul id="globalRecentContributions"></ul>
             </section>
+            <div id="homeCommunityAsideSlot"></div>
           </aside>
         </div>
       </section>
@@ -243,45 +244,47 @@
         </div>
         <div class="forum-layout">
           <div class="forum-feed" id="forumFeed"></div>
-          <aside class="forum-aside">
-            <section class="mini-card">
-              <p class="eyebrow">MỘT LƯU Ý NHỎ</p>
-              <h3>Hãy hỏi thật cụ thể</h3>
-              <p>
-                Câu hỏi chi tiết sẽ giúp bạn nhận về câu trả lời chính xác và hữu ích hơn.
-              </p>
-              <button class="text-link" id="openGuide">
-                Xem hướng dẫn đặt câu hỏi →
-              </button>
-            </section>
-            <section class="mini-card stat-card">
-              <p class="eyebrow">THÀNH TÍCH CỘNG ĐỒNG</p>
-              <div>
-                <strong id="statTotalPosts">--</strong><span>câu hỏi</span>
-              </div>
-              <div>
-                <strong id="statAnsweredRatio">--%</strong
-                ><span>đã có phản hồi</span>
-              </div>
-            </section>
-            <section class="mini-card leaderboard-card">
-              <p class="eyebrow">BẢNG XẾP HẠNG</p>
-              <div class="lb-tabs">
-                <button type="button" class="lb-tab active" id="tabTopContrib" onclick="switchLeaderboardTab('contributions')">Top đóng góp</button>
-                <button type="button" class="lb-tab" id="tabTopStreak" onclick="switchLeaderboardTab('streak')">Top giữ chuỗi</button>
-              </div>
-              <div
-                id="leaderboardList"
-                style="
-                  display: flex;
-                  flex-direction: column;
-                  gap: 8px;
-                "
-              >
-                <!-- Dữ liệu bảng xếp hạng sẽ được nạp qua hydrateServer() -->
-                <p style="color: var(--sage); font-size: 13px">Đang tải...</p>
-              </div>
-            </section>
+          <aside class="forum-aside" id="forumCommunityAsideSlot">
+            <div id="forumCommunityAsideCards" class="forum-community-cards">
+              <section class="mini-card">
+                <p class="eyebrow">MỘT LƯU Ý NHỎ</p>
+                <h3>Hãy hỏi thật cụ thể</h3>
+                <p>
+                  Câu hỏi chi tiết sẽ giúp bạn nhận về câu trả lời chính xác và hữu ích hơn.
+                </p>
+                <button class="text-link" id="openGuide">
+                  Xem hướng dẫn đặt câu hỏi →
+                </button>
+              </section>
+              <section class="mini-card stat-card">
+                <p class="eyebrow">THÀNH TÍCH CỘNG ĐỒNG</p>
+                <div>
+                  <strong id="statTotalPosts">--</strong><span>câu hỏi</span>
+                </div>
+                <div>
+                  <strong id="statAnsweredRatio">--%</strong
+                  ><span>đã có phản hồi</span>
+                </div>
+              </section>
+              <section class="mini-card leaderboard-card">
+                <p class="eyebrow">BẢNG XẾP HẠNG</p>
+                <div class="lb-tabs">
+                  <button type="button" class="lb-tab active" id="tabTopContrib" onclick="switchLeaderboardTab('contributions')">Top đóng góp</button>
+                  <button type="button" class="lb-tab" id="tabTopStreak" onclick="switchLeaderboardTab('streak')">Top giữ chuỗi</button>
+                </div>
+                <div
+                  id="leaderboardList"
+                  style="
+                    display: flex;
+                    flex-direction: column;
+                    gap: 8px;
+                  "
+                >
+                  <!-- Dữ liệu bảng xếp hạng sẽ được nạp qua hydrateServer() -->
+                  <p style="color: var(--sage); font-size: 13px">Đang tải...</p>
+                </div>
+              </section>
+            </div>
           </aside>
         </div>
       </section>

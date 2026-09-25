@@ -430,6 +430,7 @@ async function hydrateServer() {
     if (leaderboardData) {
       cachedLeaderboardData = leaderboardData;
       renderLeaderboard();
+      updateResponsiveAsidePlacement();
     }
     if (docsData.documents) {
       documents.length = 0;
@@ -905,6 +906,28 @@ function renderDocuments() {
     }),
   );
 }
+
+function updateResponsiveAsidePlacement() {
+  const cardsContainer = document.getElementById("forumCommunityAsideCards");
+  const homeSlot = document.getElementById("homeCommunityAsideSlot");
+  const forumSlot = document.getElementById("forumCommunityAsideSlot");
+
+  if (!cardsContainer || !homeSlot || !forumSlot) return;
+
+  const isMobile = window.innerWidth <= 900;
+  if (isMobile) {
+    if (homeSlot !== cardsContainer.parentElement) {
+      homeSlot.appendChild(cardsContainer);
+    }
+  } else {
+    if (forumSlot !== cardsContainer.parentElement) {
+      forumSlot.appendChild(cardsContainer);
+    }
+  }
+}
+
+window.addEventListener("resize", updateResponsiveAsidePlacement);
+
 function go(route) {
   $$("dialog").forEach((d) => d.close());
   $$(".page").forEach((p) =>
@@ -916,6 +939,7 @@ function go(route) {
   history.replaceState(null, "", `#${route}`);
   window.scrollTo({ top: 0, behavior: "smooth" });
   if (route === "forum") renderPosts();
+  updateResponsiveAsidePlacement();
 }
 window.addEventListener("click", (e) => {
   if (e.target.tagName === "DIALOG") {
