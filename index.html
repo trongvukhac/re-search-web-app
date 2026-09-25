@@ -15,7 +15,7 @@
     <link href="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.snow.css" rel="stylesheet" />
     <script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js"></script>
-    <link rel="stylesheet" href="styles.css?v=18" />
+    <link rel="stylesheet" href="styles.css?v=19" />
   </head>
   <body>
     <dialog
@@ -328,13 +328,16 @@
             <div class="study-card study-timer-card">
               <div class="timer-mode-selector">
                 <button class="study-mode-btn active" data-study-mode="pomodoro" data-duration="25">
-                  ⏱️ 25 phút <span>Tiêu chuẩn</span>
+                  <strong>⏱️ 25 phút</strong>
+                  <span>Tiêu chuẩn</span>
                 </button>
                 <button class="study-mode-btn" data-study-mode="deep" data-duration="50">
-                  🔬 50 phút <span>NCKH Sâu</span>
+                  <strong>🔬 50 phút</strong>
+                  <span>NCKH Sâu</span>
                 </button>
                 <button class="study-mode-btn" data-study-mode="shortbreak" data-duration="5">
-                  ☕ 5 phút <span>Nghỉ ngắn</span>
+                  <strong>☕ 5 phút</strong>
+                  <span>Nghỉ ngắn</span>
                 </button>
               </div>
 
@@ -400,9 +403,9 @@
                 <div class="ambient-track">
                   <div class="ambient-track-info">
                     <span class="ambient-name">🌊 Tiếng ồn trắng / Sóng</span>
-                    <button class="ambient-track-toggle" id="toggleWaveBtn" data-sound="waves">Bật</button>
+                    <button class="ambient-track-toggle" id="toggleWavesBtn" data-sound="waves">Bật</button>
                   </div>
-                  <input type="range" id="volumeWave" min="0" max="100" value="40" class="ambient-slider" />
+                  <input type="range" id="volumeWaves" min="0" max="100" value="40" class="ambient-slider" />
                 </div>
               </div>
             </div>
@@ -1060,6 +1063,6 @@
         </div>
       </div>
     </dialog>
-    <script src="app.js?v=32" defer></script>
+    <script src="app.js?v=33" defer></script>
   </body>
 </html>

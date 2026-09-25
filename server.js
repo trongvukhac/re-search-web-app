@@ -149,7 +149,13 @@ db.exec(`
   CREATE TABLE IF NOT EXISTS study_sessions (
     user_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
     goal TEXT,
-    duration_minutes INTEGER NOT NULL DEFAULT 0,
+    mode TEXT NOT NULL DEFAULT 'pomodoro',
+    duration_minutes INTEGER NOT NULL DEFAULT 25,
+    remaining_seconds INTEGER NOT NULL DEFAULT 1500,
+    target_end_ms INTEGER NOT NULL DEFAULT 0,
+    is_running INTEGER NOT NULL DEFAULT 0,
+    started_at_ms INTEGER NOT NULL DEFAULT 0,
+    last_ping_ms INTEGER NOT NULL DEFAULT 0,
     started_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
     last_ping TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
   );
@@ -168,6 +174,12 @@ try { db.exec("ALTER TABLE responses ADD COLUMN parent_id INTEGER REFERENCES res
 try { db.exec("ALTER TABLE posts ADD COLUMN edited_at TEXT;"); } catch (e) {}
 try { db.exec("ALTER TABLE responses ADD COLUMN edited_at TEXT;"); } catch (e) {}
 try { db.exec("ALTER TABLE posts ADD COLUMN read_count INTEGER NOT NULL DEFAULT 0;"); } catch (e) {}
+try { db.exec("ALTER TABLE study_sessions ADD COLUMN mode TEXT NOT NULL DEFAULT 'pomodoro';"); } catch (e) {}
+try { db.exec("ALTER TABLE study_sessions ADD COLUMN remaining_seconds INTEGER NOT NULL DEFAULT 1500;"); } catch (e) {}
+try { db.exec("ALTER TABLE study_sessions ADD COLUMN target_end_ms INTEGER NOT NULL DEFAULT 0;"); } catch (e) {}
+try { db.exec("ALTER TABLE study_sessions ADD COLUMN is_running INTEGER NOT NULL DEFAULT 0;"); } catch (e) {}
+try { db.exec("ALTER TABLE study_sessions ADD COLUMN started_at_ms INTEGER NOT NULL DEFAULT 0;"); } catch (e) {}
+try { db.exec("ALTER TABLE study_sessions ADD COLUMN last_ping_ms INTEGER NOT NULL DEFAULT 0;"); } catch (e) {}
 
 const defaultTopics = [
   "Đề tài", "Lý thuyết", "Phương pháp", 
@@ -501,10 +513,10 @@ function requireCsrf(request, response, session) {
   return true;
 }
 function isAdmin(user) {
-  return user.role === "admin" || user.role === "ta" || user.role === "lecturer";
+  return Boolean(user && (user.role === "admin" || user.role === "ta" || user.role === "lecturer"));
 }
 function isSuperAdmin(user) {
-  return user.role === "admin" || user.role === "ta";
+  return Boolean(user && (user.role === "admin" || user.role === "ta"));
 }
 function recordContribution(
   userId,
@@ -1301,18 +1313,28 @@ async function api(request, response, url) {
   if (method === "GET" && pathName === "/api/study/lounge") {
     cleanupCheers();
     const user = sessionFrom(request);
+    const nowMs = Date.now();
+
     const activeRows = db.prepare(`
-      SELECT s.user_id, s.goal, s.duration_minutes, s.started_at, s.last_ping,
+      SELECT s.user_id, s.goal, s.mode, s.duration_minutes, s.remaining_seconds,
+             s.target_end_ms, s.is_running, s.started_at_ms, s.last_ping_ms,
+             s.started_at, s.last_ping,
              u.display_name, u.role, u.avatar
       FROM study_sessions s
       JOIN users u ON s.user_id = u.id
-      WHERE (unixepoch('now') - unixepoch(s.last_ping)) < 180
-      ORDER BY s.last_ping DESC
-    `).all();
+      WHERE s.is_running = 1
+         OR (s.last_ping_ms > 0 AND (? - s.last_ping_ms) < 180000)
+         OR (s.last_ping IS NOT NULL AND (unixepoch('now') - unixepoch(s.last_ping)) < 180)
+      ORDER BY s.last_ping_ms DESC, s.last_ping DESC
+    `).all(nowMs);
 
     const todayDate = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Ho_Chi_Minh" }));
     const learners = activeRows.map(r => {
       const streakInfo = calculateUserStreak(r.user_id, todayDate);
+      let remainingSecs = r.remaining_seconds;
+      if (r.is_running && r.target_end_ms > 0) {
+        remainingSecs = Math.max(0, Math.floor((r.target_end_ms - nowMs) / 1000));
+      }
       return {
         userId: r.user_id,
         name: r.display_name || "Học giả NCKH",
@@ -1321,10 +1343,34 @@ async function api(request, response, url) {
         streak: streakInfo.streak,
         streakTier: streakInfo.streakTier,
         goal: r.goal || "Nghiên cứu khoa học",
-        durationMinutes: r.duration_minutes,
+        mode: r.mode || "pomodoro",
+        durationMinutes: r.duration_minutes || 25,
+        remainingSeconds: remainingSecs,
+        isRunning: Boolean(r.is_running),
         isSelf: user ? user.id === r.user_id : false
       };
     });
+
+    let mySession = null;
+    if (user) {
+      const myRow = db.prepare("SELECT * FROM study_sessions WHERE user_id = ?").get(user.id);
+      if (myRow) {
+        let remainingSecs = myRow.remaining_seconds;
+        if (myRow.is_running && myRow.target_end_ms > 0) {
+          remainingSecs = Math.max(0, Math.floor((myRow.target_end_ms - nowMs) / 1000));
+        }
+        mySession = {
+          mode: myRow.mode || 'pomodoro',
+          durationMinutes: myRow.duration_minutes || 25,
+          remainingSeconds: remainingSecs,
+          targetEndMs: myRow.target_end_ms || 0,
+          isRunning: Boolean(myRow.is_running),
+          goal: myRow.goal || '',
+          startedAtMs: myRow.started_at_ms || nowMs,
+          lastPingMs: myRow.last_ping_ms || nowMs
+        };
+      }
+    }
 
     let myCheers = [];
     if (user) {
@@ -1334,26 +1380,100 @@ async function api(request, response, url) {
     return json(response, 200, {
       learners,
       activeCount: learners.length,
+      mySession,
       myCheers
     });
+  }
+
+  if (method === "POST" && pathName === "/api/study/sync") {
+    const user = requireUser(request, response);
+    if (!user) return;
+    try {
+      const body = await readJSON(request);
+      const mode = (body.mode === 'deep' || body.mode === 'shortbreak') ? body.mode : 'pomodoro';
+      const durationMinutes = Math.max(1, Math.min(720, Number(body.durationMinutes) || 25));
+      const isRunning = body.isRunning ? 1 : 0;
+      const goal = (body.goal || "").trim().slice(0, 100);
+      const nowMs = Date.now();
+      let remainingSeconds = Math.max(0, Math.min(durationMinutes * 60, Number(body.remainingSeconds) || (durationMinutes * 60)));
+      let targetEndMs = Number(body.targetEndMs) || 0;
+
+      if (isRunning) {
+        if (!targetEndMs || targetEndMs <= nowMs) {
+          targetEndMs = nowMs + remainingSeconds * 1000;
+        } else {
+          remainingSeconds = Math.max(0, Math.floor((targetEndMs - nowMs) / 1000));
+        }
+      } else {
+        targetEndMs = 0;
+      }
+
+      const existing = db.prepare("SELECT * FROM study_sessions WHERE user_id = ?").get(user.id);
+      const startedAtMs = existing && existing.started_at_ms ? existing.started_at_ms : nowMs;
+
+      db.prepare(`
+        INSERT INTO study_sessions (
+          user_id, goal, mode, duration_minutes, remaining_seconds, target_end_ms, is_running, started_at_ms, last_ping_ms, started_at, last_ping
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+        ON CONFLICT(user_id) DO UPDATE SET
+          goal = excluded.goal,
+          mode = excluded.mode,
+          duration_minutes = excluded.duration_minutes,
+          remaining_seconds = excluded.remaining_seconds,
+          target_end_ms = excluded.target_end_ms,
+          is_running = excluded.is_running,
+          last_ping_ms = excluded.last_ping_ms,
+          last_ping = CURRENT_TIMESTAMP
+      `).run(user.id, goal, mode, durationMinutes, remainingSeconds, targetEndMs, isRunning, startedAtMs, nowMs);
+
+      return json(response, 200, {
+        success: true,
+        mySession: {
+          mode,
+          durationMinutes,
+          remainingSeconds,
+          targetEndMs,
+          isRunning: Boolean(isRunning),
+          goal,
+          startedAtMs,
+          lastPingMs: nowMs
+        }
+      });
+    } catch (e) {
+      console.error("study sync error:", e);
+      return error(response, 400, "Dữ liệu không hợp lệ.");
+    }
   }
 
   if (method === "POST" && pathName === "/api/study/ping") {
     const user = requireUser(request, response);
     if (!user) return;
     try {
-      const body = await parseBody(request);
+      const body = await readJSON(request);
       const goal = (body.goal || "").trim().slice(0, 100);
-      const durationMinutes = Math.max(0, Math.min(720, Number(body.durationMinutes) || 0));
+      const mode = (body.mode === 'deep' || body.mode === 'shortbreak') ? body.mode : 'pomodoro';
+      const durationMinutes = Math.max(1, Math.min(720, Number(body.durationMinutes) || 25));
+      const remainingSeconds = Math.max(0, Number(body.remainingSeconds) || 0);
+      const targetEndMs = Number(body.targetEndMs) || 0;
+      const isRunning = body.isRunning ? 1 : 0;
+      const nowMs = Date.now();
 
       db.prepare(`
-        INSERT INTO study_sessions (user_id, goal, duration_minutes, started_at, last_ping)
-        VALUES (?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+        INSERT INTO study_sessions (
+          user_id, goal, mode, duration_minutes, remaining_seconds, target_end_ms, is_running, started_at_ms, last_ping_ms, started_at, last_ping
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
         ON CONFLICT(user_id) DO UPDATE SET
           goal = excluded.goal,
+          mode = excluded.mode,
           duration_minutes = excluded.duration_minutes,
+          remaining_seconds = excluded.remaining_seconds,
+          target_end_ms = excluded.target_end_ms,
+          is_running = excluded.is_running,
+          last_ping_ms = excluded.last_ping_ms,
           last_ping = CURRENT_TIMESTAMP
-      `).run(user.id, goal, durationMinutes);
+      `).run(user.id, goal, mode, durationMinutes, remainingSeconds, targetEndMs, isRunning, nowMs, nowMs);
 
       return json(response, 200, { success: true });
     } catch {
@@ -1373,13 +1493,13 @@ async function api(request, response, url) {
     const user = requireUser(request, response);
     if (!user) return;
     try {
-      const body = await parseBody(request);
+      const body = await readJSON(request);
       const minutes = Number(body.durationMinutes) || 0;
       const goal = (body.goal || "Tự học NCKH").trim().slice(0, 100);
 
       let pointsAwarded = 0;
       let streakUpdated = false;
-      if (minutes >= 25) {
+      if (minutes >= 20) {
         pointsAwarded = 10;
         recordContribution(user.id, "study_session", pointsAwarded, "study", null, `Hoàn thành ca tự học ${minutes} phút (${goal})`);
         streakUpdated = true;
@@ -1402,7 +1522,7 @@ async function api(request, response, url) {
     const user = requireUser(request, response);
     if (!user) return;
     try {
-      const body = await parseBody(request);
+      const body = await readJSON(request);
       const recipientId = Number(body.recipientId);
       const cheerType = (body.cheerType || "👏").slice(0, 4);
       if (!recipientId || recipientId === user.id) {
@@ -1825,12 +1945,17 @@ setInterval(() => {
         "INSERT INTO contribution_events(user_id,event_type,points,reference_type,reference_id,reason) VALUES (?,?,?,?,?,?)"
       );
       
-      db.transaction(() => {
+      db.exec("BEGIN");
+      try {
         for (const u of users) {
           insertEvent.run(u.user_id, 'weekly_active_reward', 10, null, null, "Thưởng điểm hoạt động tích cực tuần vừa rồi");
         }
         db.prepare("INSERT INTO kv_store(key, value) VALUES (?, '1')").run(key);
-      })();
+        db.exec("COMMIT");
+      } catch (err) {
+        db.exec("ROLLBACK");
+        throw err;
+      }
       console.log(`Cronjob: Thưởng tuần (${targetMondayDateStr} -> ${targetSundayDateStr}) đã chạy cho ${users.length} user.`);
     }
   } catch (e) {

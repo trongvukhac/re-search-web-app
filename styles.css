@@ -2856,30 +2856,44 @@ dialog.detail-modal[open] {
   overflow: hidden;
 }
 .timer-mode-selector {
-  display: flex;
-  justify-content: center;
-  gap: 8px;
-  margin-bottom: 20px;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  max-width: 440px;
+  margin: 0 auto 20px;
+  width: 100%;
 }
 .study-mode-btn {
   background: var(--surface-bg, #f4f7f5);
-  border: 1px solid var(--line);
+  border: 1.5px solid var(--line);
   color: var(--ink);
-  padding: 8px 14px;
-  border-radius: 20px;
-  font-size: 13px;
-  font-weight: 600;
+  padding: 8px 10px;
+  border-radius: 12px;
   cursor: pointer;
   transition: all 0.2s ease;
-  display: inline-flex;
+  display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 6px;
+  justify-content: center;
+  gap: 3px;
+  min-height: 54px;
+  box-sizing: border-box;
+  text-align: center;
+}
+.study-mode-btn strong {
+  font-size: 13px;
+  font-weight: 700;
+  display: block;
+  line-height: 1.2;
+  white-space: nowrap;
 }
 .study-mode-btn span {
   font-size: 11px;
   opacity: 0.75;
-  font-weight: 400;
+  font-weight: 500;
+  display: block;
+  line-height: 1.2;
+  white-space: nowrap;
 }
 .study-mode-btn:hover {
   background: #e9f0ec;
@@ -2889,7 +2903,10 @@ dialog.detail-modal[open] {
   background: var(--primary);
   color: #fff;
   border-color: var(--primary);
-  box-shadow: 0 4px 12px rgba(47, 94, 69, 0.25);
+  box-shadow: 0 4px 14px rgba(47, 94, 69, 0.25);
+}
+.study-mode-btn.active strong {
+  color: #fff;
 }
 .study-mode-btn.active span {
   color: rgba(255, 255, 255, 0.85);
@@ -2935,14 +2952,20 @@ dialog.detail-modal[open] {
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  width: 100%;
 }
 .timer-clock {
   font-family: 'Outfit', 'Inter', -apple-system, sans-serif;
-  font-size: 44px;
+  font-size: 40px;
   font-weight: 800;
   color: var(--ink);
-  letter-spacing: -1px;
-  line-height: 1;
+  letter-spacing: -0.5px;
+  line-height: 1.1;
+  white-space: nowrap !important;
+  word-break: keep-all;
+  font-variant-numeric: tabular-nums;
+  display: block;
+  text-align: center;
 }
 .timer-status-label {
   font-size: 12px;
@@ -2952,6 +2975,7 @@ dialog.detail-modal[open] {
   padding: 3px 10px;
   border-radius: 12px;
   background: var(--surface-bg, #f4f7f5);
+  white-space: nowrap;
 }
 
 /* Goal input */
@@ -2986,8 +3010,23 @@ dialog.detail-modal[open] {
 .study-actions {
   display: flex;
   justify-content: center;
+  align-items: center;
   gap: 10px;
   flex-wrap: wrap;
+}
+.study-actions .button {
+  min-width: 130px;
+  height: 42px;
+  padding: 0 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  border-radius: 10px;
+  box-sizing: border-box;
+  white-space: nowrap;
 }
 
 /* Ambient Mixer Card */
@@ -3009,7 +3048,7 @@ dialog.detail-modal[open] {
 }
 .ambient-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  grid-template-columns: repeat(3, 1fr);
   gap: 12px;
 }
 .ambient-track {
@@ -3018,6 +3057,9 @@ dialog.detail-modal[open] {
   border-radius: 12px;
   padding: 12px 14px;
   transition: all 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
 }
 .ambient-track.active {
   border-color: var(--primary);
@@ -3027,22 +3069,28 @@ dialog.detail-modal[open] {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 8px;
+  gap: 8px;
+  margin-bottom: 10px;
 }
 .ambient-name {
   font-size: 13px;
   font-weight: 600;
   color: var(--ink);
+  white-space: nowrap;
 }
 .ambient-track-toggle {
   background: var(--paper);
   border: 1px solid var(--line);
   border-radius: 6px;
-  padding: 2px 8px;
-  font-size: 11px;
+  padding: 4px 10px;
+  font-size: 12px;
   font-weight: 600;
   cursor: pointer;
   color: var(--ink);
+  white-space: nowrap !important;
+  min-width: 46px;
+  text-align: center;
+  box-sizing: border-box;
 }
 .ambient-track.active .ambient-track-toggle {
   background: var(--primary);
@@ -3268,13 +3316,49 @@ dialog.detail-modal[open] {
 @media (max-width: 900px) {
   .study-layout {
     grid-template-columns: 1fr;
+    gap: 16px;
   }
   .timer-circle {
-    width: 190px;
-    height: 190px;
+    width: 200px;
+    height: 200px;
   }
   .timer-clock {
-    font-size: 38px;
+    font-size: 34px !important;
+    line-height: 1.1;
+    white-space: nowrap !important;
+  }
+  .timer-mode-selector {
+    gap: 6px;
+  }
+  .study-mode-btn {
+    padding: 6px 4px;
+    min-height: 50px;
+  }
+  .study-mode-btn strong {
+    font-size: 12px;
+  }
+  .study-mode-btn span {
+    font-size: 10px;
+  }
+  .study-actions .button {
+    min-width: 115px;
+    height: 38px;
+    padding: 0 12px;
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 600px) {
+  .study-heading {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .study-live-badge {
+    align-self: flex-start;
+  }
+  .ambient-grid {
+    grid-template-columns: 1fr;
   }
 }
 

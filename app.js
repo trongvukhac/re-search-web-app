@@ -2252,19 +2252,21 @@ document.addEventListener('click', () => {
 });
 
 /* ==========================================================================
-   STUDY LOUNGE CONTROLLER (Phòng Tự Học NCKH)
+   STUDY LOUNGE CONTROLLER (Phòng Tự Học NCKH - Multi-Device Synchronized)
    ========================================================================== */
 
 let studyState = {
   mode: 'pomodoro', // 'pomodoro' (25), 'deep' (50), 'shortbreak' (5)
   durationMinutes: 25,
   remainingSeconds: 25 * 60,
+  targetEndMs: 0,
   isRunning: false,
   timerInterval: null,
-  pingInterval: null,
+  syncHeartbeatInterval: null,
   pollingInterval: null,
   elapsedSessionSeconds: 0,
   goal: '',
+  lastSyncMs: 0,
   audioCtx: null,
   activeSounds: {
     rain: false,
@@ -2276,7 +2278,7 @@ let studyState = {
     cafe: null,
     waves: null
   },
-  soundSources: {
+  soundNodes: {
     rain: null,
     cafe: null,
     waves: null
@@ -2284,8 +2286,9 @@ let studyState = {
 };
 
 function formatMMSS(totalSecs) {
-  const m = Math.floor(totalSecs / 60);
-  const s = totalSecs % 60;
+  const safe = Math.max(0, Math.floor(totalSecs));
+  const m = Math.floor(safe / 60);
+  const s = safe % 60;
   return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
 }
 
@@ -2293,13 +2296,16 @@ function updateTimerDisplay() {
   const clock = $("#timerClock");
   const progressCircle = $("#timerProgressCircle");
   const label = $("#timerStatusLabel");
-  if (!clock) return;
+  const startBtn = $("#studyStartBtn");
+  const pauseBtn = $("#studyPauseBtn");
+  const completeBtn = $("#studyCompleteBtn");
 
-  clock.textContent = formatMMSS(studyState.remainingSeconds);
+  if (clock) {
+    clock.textContent = formatMMSS(studyState.remainingSeconds);
+  }
 
   const totalSecs = studyState.durationMinutes * 60;
-  const progress = totalSecs > 0 ? (1 - studyState.remainingSeconds / totalSecs) : 0;
-  // Circumference = 2 * PI * 88 ~= 553
+  const progress = totalSecs > 0 ? (1 - Math.max(0, studyState.remainingSeconds) / totalSecs) : 0;
   const offset = 553 * progress;
   if (progressCircle) {
     progressCircle.style.strokeDashoffset = offset;
@@ -2317,6 +2323,16 @@ function updateTimerDisplay() {
       label.style.color = 'var(--muted)';
     }
   }
+
+  if (startBtn) startBtn.style.display = studyState.isRunning ? "none" : "inline-flex";
+  if (pauseBtn) pauseBtn.style.display = studyState.isRunning ? "inline-flex" : "none";
+  if (completeBtn) {
+    completeBtn.style.display = (studyState.mode !== 'shortbreak' && (studyState.isRunning || studyState.remainingSeconds < totalSecs)) ? "inline-flex" : "none";
+  }
+
+  $$(".study-mode-btn").forEach(btn => {
+    btn.classList.toggle("active", btn.dataset.studyMode === studyState.mode);
+  });
 }
 
 function setStudyMode(mode, duration) {
@@ -2324,88 +2340,119 @@ function setStudyMode(mode, duration) {
     if (!confirm("Ca học hiện tại đang chạy. Bạn có muốn đổi chế độ và đặt lại thời gian?")) {
       return;
     }
-    pauseStudyTimer();
+    pauseStudyTimer(false);
   }
   studyState.mode = mode;
   studyState.durationMinutes = duration;
   studyState.remainingSeconds = duration * 60;
+  studyState.targetEndMs = 0;
   studyState.elapsedSessionSeconds = 0;
 
-  $$(".study-mode-btn").forEach(btn => {
-    btn.classList.toggle("active", btn.dataset.studyMode === mode);
-  });
-
   updateTimerDisplay();
-  const startBtn = $("#studyStartBtn");
-  const pauseBtn = $("#studyPauseBtn");
-  const completeBtn = $("#studyCompleteBtn");
-  if (startBtn) startBtn.style.display = "inline-flex";
-  if (pauseBtn) pauseBtn.style.display = "none";
-  if (completeBtn) completeBtn.style.display = "none";
+  syncStudyToServer();
 }
 
-function startStudyTimer() {
-  if (studyState.isRunning) return;
+async function syncStudyToServer() {
+  if (!session) return;
+  try {
+    const res = await requestAPI("/api/study/sync", {
+      method: "POST",
+      body: JSON.stringify({
+        mode: studyState.mode,
+        durationMinutes: studyState.durationMinutes,
+        remainingSeconds: studyState.remainingSeconds,
+        targetEndMs: studyState.targetEndMs,
+        isRunning: studyState.isRunning,
+        goal: studyState.goal
+      })
+    });
+    studyState.lastSyncMs = Date.now();
+    return res;
+  } catch (e) {
+    console.warn("syncStudyToServer:", e);
+  }
+}
+
+function startLocalTimerTick() {
   studyState.isRunning = true;
+  if (studyState.timerInterval) {
+    clearInterval(studyState.timerInterval);
+  }
+
+  studyState.timerInterval = setInterval(() => {
+    const now = Date.now();
+    if (studyState.targetEndMs > 0) {
+      const remaining = Math.max(0, Math.floor((studyState.targetEndMs - now) / 1000));
+      studyState.remainingSeconds = remaining;
+      studyState.elapsedSessionSeconds++;
+      updateTimerDisplay();
+      if (remaining <= 0) {
+        finishStudySession(true);
+      }
+    } else {
+      if (studyState.remainingSeconds > 0) {
+        studyState.remainingSeconds--;
+        studyState.elapsedSessionSeconds++;
+        updateTimerDisplay();
+      } else {
+        finishStudySession(true);
+      }
+    }
+  }, 1000);
+
+  if (!studyState.syncHeartbeatInterval) {
+    studyState.syncHeartbeatInterval = setInterval(syncStudyToServer, 25000);
+  }
+}
+
+async function startStudyTimer() {
+  if (studyState.isRunning) return;
   studyState.goal = ($("#studyGoalInput") ? $("#studyGoalInput").value : "").trim();
-
-  const startBtn = $("#studyStartBtn");
-  const pauseBtn = $("#studyPauseBtn");
-  const completeBtn = $("#studyCompleteBtn");
-  if (startBtn) startBtn.style.display = "none";
-  if (pauseBtn) pauseBtn.style.display = "inline-flex";
-  if (completeBtn) completeBtn.style.display = studyState.mode !== 'shortbreak' ? "inline-flex" : "none";
-
+  studyState.targetEndMs = Date.now() + studyState.remainingSeconds * 1000;
+  
   if (studyState.audioCtx && studyState.audioCtx.state === 'suspended') {
     studyState.audioCtx.resume();
   }
 
-  pingStudySession();
-
-  studyState.timerInterval = setInterval(() => {
-    if (studyState.remainingSeconds > 0) {
-      studyState.remainingSeconds--;
-      studyState.elapsedSessionSeconds++;
-      updateTimerDisplay();
-    } else {
-      finishStudySession(true);
-    }
-  }, 1000);
-
-  if (!studyState.pingInterval) {
-    studyState.pingInterval = setInterval(pingStudySession, 40000);
-  }
-
+  startLocalTimerTick();
   updateTimerDisplay();
+  await syncStudyToServer();
+  await fetchStudyLounge();
 }
 
-function pauseStudyTimer() {
+async function pauseStudyTimer(sync = true) {
   studyState.isRunning = false;
   if (studyState.timerInterval) {
     clearInterval(studyState.timerInterval);
     studyState.timerInterval = null;
   }
-  const startBtn = $("#studyStartBtn");
-  const pauseBtn = $("#studyPauseBtn");
-  if (startBtn) startBtn.style.display = "inline-flex";
-  if (pauseBtn) pauseBtn.style.display = "none";
+  if (studyState.targetEndMs > 0) {
+    studyState.remainingSeconds = Math.max(0, Math.floor((studyState.targetEndMs - Date.now()) / 1000));
+    studyState.targetEndMs = 0;
+  }
   updateTimerDisplay();
-}
-
-function resetStudyTimer() {
-  pauseStudyTimer();
-  studyState.remainingSeconds = studyState.durationMinutes * 60;
-  studyState.elapsedSessionSeconds = 0;
-  const completeBtn = $("#studyCompleteBtn");
-  if (completeBtn) completeBtn.style.display = "none";
-  updateTimerDisplay();
-  if (session) {
-    fetch("/api/study/leave", { method: "POST" }).catch(() => {});
+  if (sync) {
+    await syncStudyToServer();
+    await fetchStudyLounge();
   }
 }
 
+async function resetStudyTimer() {
+  await pauseStudyTimer(false);
+  studyState.remainingSeconds = studyState.durationMinutes * 60;
+  studyState.targetEndMs = 0;
+  studyState.elapsedSessionSeconds = 0;
+  updateTimerDisplay();
+  if (session) {
+    try {
+      await requestAPI("/api/study/leave", { method: "POST" });
+    } catch (e) {}
+  }
+  await fetchStudyLounge();
+}
+
 async function finishStudySession(autoCompleted = false) {
-  pauseStudyTimer();
+  pauseStudyTimer(false);
   playChimeSound();
 
   const totalElapsedMins = Math.round(studyState.elapsedSessionSeconds / 60);
@@ -2414,7 +2461,7 @@ async function finishStudySession(autoCompleted = false) {
 
   if (session && durationToCredit >= 20) {
     try {
-      const res = await api("/api/study/complete", {
+      const res = await requestAPI("/api/study/complete", {
         method: "POST",
         body: JSON.stringify({
           durationMinutes: durationToCredit,
@@ -2432,38 +2479,22 @@ async function finishStudySession(autoCompleted = false) {
     } catch (e) {
       console.error(e);
     }
-  } else if (durationToCredit >= 25) {
+  } else if (durationToCredit >= 20) {
     toast(`🎉 Hoàn thành ca tự học ${durationToCredit} phút! (Đăng nhập để lưu điểm & giữ chuỗi)`);
   } else {
     toast(`Ca học kết thúc (${durationToCredit} phút).`);
   }
 
   studyState.remainingSeconds = studyState.durationMinutes * 60;
+  studyState.targetEndMs = 0;
   studyState.elapsedSessionSeconds = 0;
-  const completeBtn = $("#studyCompleteBtn");
-  if (completeBtn) completeBtn.style.display = "none";
   updateTimerDisplay();
   fetchStudyLounge();
 }
 
-async function pingStudySession() {
-  if (!session || !studyState.isRunning) return;
-  const currentDurationMins = Math.round(studyState.elapsedSessionSeconds / 60);
-  try {
-    await fetch("/api/study/ping", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        goal: studyState.goal,
-        durationMinutes: currentDurationMins
-      })
-    });
-  } catch (e) {}
-}
-
 async function fetchStudyLounge() {
   try {
-    const res = await fetch("/api/study/lounge").then(r => r.json());
+    const res = await requestAPI("/api/study/lounge");
     if (!res) return;
 
     const count = res.activeCount || 0;
@@ -2482,7 +2513,9 @@ async function fetchStudyLounge() {
           const isSelfClass = l.isSelf ? 'is-self' : '';
           const nameDisplay = l.isSelf ? `${escapeHTML(l.name)} (Bạn)` : escapeHTML(l.name);
           const roleBadge = l.role === 'admin' ? '<span class="lb-role lb-role-admin">Admin</span>' : (l.role === 'ta' ? '<span class="lb-role lb-role-ta">TA</span>' : '');
-          
+          const statusIcon = l.isRunning ? (l.mode === 'shortbreak' ? '☕' : '🔥') : '⏸️';
+          const remainingMin = Math.ceil((l.remainingSeconds || 0) / 60);
+
           return `
             <div class="co-study-item ${isSelfClass}">
               <span class="avatar avatar-sm ${tierClass}">${escapeHTML(l.avatar || '🦊')}</span>
@@ -2492,7 +2525,7 @@ async function fetchStudyLounge() {
                 </div>
                 <div class="co-study-goal">🎯 ${escapeHTML(l.goal || 'Nghiên cứu khoa học')}</div>
               </div>
-              <span class="co-study-time">⏱️ ${l.durationMinutes || 0}m</span>
+              <span class="co-study-time">${statusIcon} ${l.isRunning ? `${remainingMin}m` : 'Tạm dừng'}</span>
               ${!l.isSelf && session ? `
                 <div class="co-study-cheers">
                   <button class="cheer-btn" title="Cổ vũ" onclick="sendStudyCheer(${l.userId}, '👏')">👏</button>
@@ -2503,6 +2536,39 @@ async function fetchStudyLounge() {
             </div>
           `;
         }).join("");
+      }
+    }
+
+    // CROSS-DEVICE REAL-TIME SYNC
+    if (res.mySession && session) {
+      const s = res.mySession;
+      const now = Date.now();
+      if (s.isRunning) {
+        const serverRemaining = Math.max(0, Math.floor((s.targetEndMs - now) / 1000));
+        if (!studyState.isRunning || Math.abs(studyState.remainingSeconds - serverRemaining) > 2) {
+          studyState.mode = s.mode;
+          studyState.durationMinutes = s.durationMinutes;
+          studyState.remainingSeconds = serverRemaining;
+          studyState.targetEndMs = s.targetEndMs;
+          studyState.goal = s.goal || '';
+          
+          const goalInput = $("#studyGoalInput");
+          if (goalInput && !goalInput.matches(":focus")) {
+            goalInput.value = studyState.goal;
+          }
+
+          if (!studyState.isRunning) {
+            startLocalTimerTick();
+          }
+          updateTimerDisplay();
+        }
+      } else {
+        // Server indicates session is paused
+        if (studyState.isRunning && (now - studyState.lastSyncMs > 6000)) {
+          pauseStudyTimer(false);
+          studyState.remainingSeconds = s.remainingSeconds;
+          updateTimerDisplay();
+        }
       }
     }
 
@@ -2535,7 +2601,7 @@ window.sendStudyCheer = async function(recipientId, cheerType) {
     return;
   }
   try {
-    const res = await api("/api/study/cheer", {
+    const res = await requestAPI("/api/study/cheer", {
       method: "POST",
       body: JSON.stringify({ recipientId, cheerType })
     });
@@ -2561,25 +2627,44 @@ function getAudioContext() {
   return studyState.audioCtx;
 }
 
-function createNoiseBuffer(ctx, type) {
-  const bufferSize = ctx.sampleRate * 2;
+function createPinkNoiseBuffer(ctx) {
+  const bufferSize = ctx.sampleRate * 3;
+  const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+  const data = buffer.getChannelData(0);
+  let b0 = 0, b1 = 0, b2 = 0, b3 = 0, b4 = 0, b5 = 0, b6 = 0;
+  for (let i = 0; i < bufferSize; i++) {
+    const white = Math.random() * 2 - 1;
+    b0 = 0.99886 * b0 + white * 0.0555179;
+    b1 = 0.99332 * b1 + white * 0.0750759;
+    b2 = 0.96900 * b2 + white * 0.1538520;
+    b3 = 0.86650 * b3 + white * 0.3104856;
+    b4 = 0.55000 * b4 + white * 0.5329522;
+    b5 = -0.7616 * b5 - white * 0.0168980;
+    data[i] = (b0 + b1 + b2 + b3 + b4 + b5 + b6 + white * 0.5362) * 0.08;
+    b6 = white * 0.115926;
+  }
+  return buffer;
+}
+
+function createBrownNoiseBuffer(ctx) {
+  const bufferSize = ctx.sampleRate * 3;
   const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
   const data = buffer.getChannelData(0);
   let lastOut = 0.0;
   for (let i = 0; i < bufferSize; i++) {
     const white = Math.random() * 2 - 1;
-    if (type === 'rain') {
-      data[i] = (lastOut * 0.93) + (white * 0.07);
-      lastOut = data[i];
-    } else if (type === 'waves') {
-      data[i] = (lastOut * 0.985) + (white * 0.015);
-      lastOut = data[i];
-    } else {
-      data[i] = (lastOut * 0.88) + (white * 0.12);
-      lastOut = data[i];
-    }
+    data[i] = (lastOut + (0.02 * white)) / 1.02;
+    lastOut = data[i];
+    data[i] *= 2.5; // Gain compensation
   }
   return buffer;
+}
+
+function updateMasterAmbientButtonState() {
+  const masterBtn = $("#toggleAmbientMaster");
+  if (!masterBtn) return;
+  const anyActive = Object.values(studyState.activeSounds).some(v => v);
+  masterBtn.textContent = anyActive ? "Tắt tất cả" : "Bật tất cả";
 }
 
 function toggleSoundTrack(soundType) {
@@ -2594,62 +2679,153 @@ function toggleSoundTrack(soundType) {
   const trackCard = trackBtn ? trackBtn.closest('.ambient-track') : null;
 
   if (isCurrentlyActive) {
+    // STOP TRACK
     try {
-      if (studyState.soundSources[soundType]) {
-        studyState.soundSources[soundType].stop();
-        studyState.soundSources[soundType].disconnect();
+      const nodes = studyState.soundNodes[soundType];
+      if (nodes) {
+        if (nodes.source) nodes.source.stop();
+        if (nodes.lfo) nodes.lfo.stop();
+        if (nodes.hum) nodes.hum.stop();
+        if (nodes.clinkInterval) clearInterval(nodes.clinkInterval);
       }
     } catch (e) {}
-    studyState.soundSources[soundType] = null;
+
+    studyState.soundNodes[soundType] = null;
+    studyState.soundGains[soundType] = null;
     studyState.activeSounds[soundType] = false;
+
     if (trackBtn) trackBtn.textContent = "Bật";
     if (trackCard) trackCard.classList.remove('active');
   } else {
+    // START TRACK
     try {
-      const buffer = createNoiseBuffer(ctx, soundType);
-      const source = ctx.createBufferSource();
-      source.buffer = buffer;
-      source.loop = true;
-
       const gainNode = ctx.createGain();
       const slider = $(`#volume${capitalize(soundType)}`);
-      const vol = slider ? (Number(slider.value) / 100) * 0.25 : 0.12;
-      gainNode.gain.setValueAtTime(vol, ctx.currentTime);
+      const userVol = slider ? Number(slider.value) / 100 : 0.4;
 
-      const filter = ctx.createBiquadFilter();
       if (soundType === 'rain') {
-        filter.type = 'lowpass';
-        filter.frequency.setValueAtTime(1000, ctx.currentTime);
+        const buffer = createPinkNoiseBuffer(ctx);
+        const source = ctx.createBufferSource();
+        source.buffer = buffer;
+        source.loop = true;
+
+        const lowpass = ctx.createBiquadFilter();
+        lowpass.type = 'lowpass';
+        lowpass.frequency.setValueAtTime(1100, ctx.currentTime);
+
+        const highpass = ctx.createBiquadFilter();
+        highpass.type = 'highpass';
+        highpass.frequency.setValueAtTime(200, ctx.currentTime);
+
+        gainNode.gain.setValueAtTime(userVol * 0.25, ctx.currentTime);
+
+        source.connect(highpass);
+        highpass.connect(lowpass);
+        lowpass.connect(gainNode);
+        gainNode.connect(ctx.destination);
+
+        source.start(0);
+        studyState.soundNodes[soundType] = { source, gainNode };
+      } else if (soundType === 'cafe') {
+        // Quán Cafe: Warm conversational murmur + background cafe tone + subtle cup clinks
+        const buffer = createPinkNoiseBuffer(ctx);
+        const source = ctx.createBufferSource();
+        source.buffer = buffer;
+        source.loop = true;
+
+        const bandpass = ctx.createBiquadFilter();
+        bandpass.type = 'bandpass';
+        bandpass.frequency.setValueAtTime(650, ctx.currentTime);
+        bandpass.Q.setValueAtTime(1.1, ctx.currentTime);
+
+        // Warm low ambient hum
+        const hum = ctx.createOscillator();
+        hum.type = 'sine';
+        hum.frequency.setValueAtTime(130, ctx.currentTime);
+        const humGain = ctx.createGain();
+        humGain.gain.setValueAtTime(0.015, ctx.currentTime);
+        hum.connect(humGain);
+        humGain.connect(gainNode);
+        hum.start();
+
+        // Subtle randomized coffee cup clinks
+        const clinkInterval = setInterval(() => {
+          if (!studyState.activeSounds.cafe) return;
+          try {
+            const clinkOsc = ctx.createOscillator();
+            const clinkGain = ctx.createGain();
+            const freq = Math.random() > 0.5 ? 2093 : 2489; // C7 or D#7
+            clinkOsc.type = 'sine';
+            clinkOsc.frequency.setValueAtTime(freq, ctx.currentTime);
+            clinkGain.gain.setValueAtTime(userVol * 0.02, ctx.currentTime);
+            clinkGain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.12);
+            clinkOsc.connect(clinkGain);
+            clinkGain.connect(ctx.destination);
+            clinkOsc.start();
+            clinkOsc.stop(ctx.currentTime + 0.13);
+          } catch (e) {}
+        }, 5500);
+
+        gainNode.gain.setValueAtTime(userVol * 0.22, ctx.currentTime);
+
+        source.connect(bandpass);
+        bandpass.connect(gainNode);
+        gainNode.connect(ctx.destination);
+
+        source.start(0);
+        studyState.soundNodes[soundType] = { source, hum, clinkInterval, gainNode };
       } else if (soundType === 'waves') {
+        // Sóng biển / Brown noise swells with LFO
+        const buffer = createBrownNoiseBuffer(ctx);
+        const source = ctx.createBufferSource();
+        source.buffer = buffer;
+        source.loop = true;
+
+        const filter = ctx.createBiquadFilter();
         filter.type = 'lowpass';
-        filter.frequency.setValueAtTime(450, ctx.currentTime);
-      } else {
-        filter.type = 'bandpass';
-        filter.frequency.setValueAtTime(800, ctx.currentTime);
+        filter.frequency.setValueAtTime(320, ctx.currentTime);
+
+        // LFO for rolling wave motion (8-second cycle)
+        const lfo = ctx.createOscillator();
+        lfo.type = 'sine';
+        lfo.frequency.setValueAtTime(0.12, ctx.currentTime); // ~8.3 sec period
+
+        const lfoGain = ctx.createGain();
+        lfoGain.gain.setValueAtTime(180, ctx.currentTime); // mod range 140Hz - 500Hz
+        lfo.connect(lfoGain);
+        lfoGain.connect(filter.frequency);
+
+        gainNode.gain.setValueAtTime(userVol * 0.35, ctx.currentTime);
+
+        source.connect(filter);
+        filter.connect(gainNode);
+        gainNode.connect(ctx.destination);
+
+        lfo.start();
+        source.start(0);
+
+        studyState.soundNodes[soundType] = { source, lfo, gainNode };
       }
 
-      source.connect(filter);
-      filter.connect(gainNode);
-      gainNode.connect(ctx.destination);
-
-      source.start(0);
-
-      studyState.soundSources[soundType] = source;
       studyState.soundGains[soundType] = gainNode;
       studyState.activeSounds[soundType] = true;
 
       if (trackBtn) trackBtn.textContent = "Tắt";
       if (trackCard) trackCard.classList.add('active');
     } catch (e) {
-      console.error(e);
+      console.error("Audio synth error:", e);
     }
   }
+
+  updateMasterAmbientButtonState();
 }
 
 function updateSoundVolume(soundType, val) {
   const gain = studyState.soundGains[soundType];
   if (gain && studyState.audioCtx) {
-    gain.gain.setValueAtTime((val / 100) * 0.25, studyState.audioCtx.currentTime);
+    const userVol = (Number(val) / 100);
+    const multiplier = soundType === 'waves' ? 0.35 : (soundType === 'rain' ? 0.25 : 0.22);
+    gain.gain.setValueAtTime(userVol * multiplier, studyState.audioCtx.currentTime);
   }
 }
 
@@ -2762,7 +2938,7 @@ function onEnterStudyLounge() {
   updateTimerDisplay();
 
   if (!studyState.pollingInterval) {
-    studyState.pollingInterval = setInterval(fetchStudyLounge, 25000);
+    studyState.pollingInterval = setInterval(fetchStudyLounge, 15000);
   }
 }
 
@@ -2786,7 +2962,7 @@ function initStudyLoungeEvents() {
   if (startBtn) startBtn.onclick = startStudyTimer;
 
   const pauseBtn = $("#studyPauseBtn");
-  if (pauseBtn) pauseBtn.onclick = pauseStudyTimer;
+  if (pauseBtn) pauseBtn.onclick = () => pauseStudyTimer(true);
 
   const resetBtn = $("#studyResetBtn");
   if (resetBtn) resetBtn.onclick = resetStudyTimer;
@@ -2798,14 +2974,14 @@ function initStudyLoungeEvents() {
   if (rainBtn) rainBtn.onclick = () => toggleSoundTrack('rain');
   const cafeBtn = $("#toggleCafeBtn");
   if (cafeBtn) cafeBtn.onclick = () => toggleSoundTrack('cafe');
-  const waveBtn = $("#toggleWaveBtn");
+  const waveBtn = $("#toggleWavesBtn");
   if (waveBtn) waveBtn.onclick = () => toggleSoundTrack('waves');
 
   const volRain = $("#volumeRain");
   if (volRain) volRain.oninput = (e) => updateSoundVolume('rain', e.target.value);
   const volCafe = $("#volumeCafe");
   if (volCafe) volCafe.oninput = (e) => updateSoundVolume('cafe', e.target.value);
-  const volWave = $("#volumeWave");
+  const volWave = $("#volumeWaves");
   if (volWave) volWave.oninput = (e) => updateSoundVolume('waves', e.target.value);
 
   const masterAmbientBtn = $("#toggleAmbientMaster");
@@ -2816,13 +2992,12 @@ function initStudyLoungeEvents() {
         ['rain', 'cafe', 'waves'].forEach(s => {
           if (studyState.activeSounds[s]) toggleSoundTrack(s);
         });
-        masterAmbientBtn.textContent = "Bật tất cả";
       } else {
-        ['rain', 'cafe', 'waves'].forEach(s => {
+        ['rain', 'cafe'].forEach(s => {
           if (!studyState.activeSounds[s]) toggleSoundTrack(s);
         });
-        masterAmbientBtn.textContent = "Tắt tất cả";
       }
+      updateMasterAmbientButtonState();
     };
   }
 
