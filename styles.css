@@ -2784,13 +2784,62 @@ dialog.detail-modal[open] {
 }
 
 /* ==========================================================================
-   STUDY LOUNGE (Phòng Tự Học NCKH)
+   STUDY LOUNGE (Phòng Tự Học NCKH - Pomodoro Focus Arena)
    ========================================================================== */
+#study {
+  position: relative;
+  transition: all 0.3s ease;
+}
+
+/* Background Layers for Presets & Custom Wallpapers */
+.study-bg-layer {
+  position: absolute;
+  top: -24px;
+  left: -24px;
+  right: -24px;
+  bottom: -24px;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  z-index: 0;
+  opacity: 0;
+  transition: opacity 0.5s ease-in-out;
+  pointer-events: none;
+  border-radius: 20px;
+}
+.study-bg-overlay {
+  position: absolute;
+  top: -24px;
+  left: -24px;
+  right: -24px;
+  bottom: -24px;
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 1;
+  opacity: 0;
+  transition: opacity 0.5s ease;
+  pointer-events: none;
+  border-radius: 20px;
+}
+#study.has-custom-bg .study-bg-layer,
+#study.has-custom-bg .study-bg-overlay {
+  opacity: 1;
+}
+
 .study-heading {
   display: flex;
   justify-content: space-between;
   align-items: flex-end;
   margin-bottom: 24px;
+  position: relative;
+  z-index: 2;
+}
+.study-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 .study-live-badge {
   display: inline-flex;
@@ -2805,6 +2854,30 @@ dialog.detail-modal[open] {
   color: var(--ink);
   box-shadow: var(--shadow-sm);
 }
+.study-action-btn {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  box-shadow: var(--shadow-sm);
+  transition: all 0.2s ease;
+}
+.study-action-btn:hover {
+  background: var(--surface-bg, #f4f7f5);
+  border-color: var(--primary);
+  transform: translateY(-1px);
+}
+.study-action-btn.icon-only {
+  padding: 6px 10px;
+  font-size: 15px;
+}
 .pulse-dot {
   width: 8px;
   height: 8px;
@@ -2814,25 +2887,18 @@ dialog.detail-modal[open] {
   animation: livePulse 2s infinite;
 }
 @keyframes livePulse {
-  0% {
-    transform: scale(0.95);
-    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
-  }
-  70% {
-    transform: scale(1);
-    box-shadow: 0 0 0 8px rgba(16, 185, 129, 0);
-  }
-  100% {
-    transform: scale(0.95);
-    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
-  }
+  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+  70% { transform: scale(1); box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); }
+  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
 }
 
 .study-layout {
   display: grid;
-  grid-template-columns: 1.15fr 0.85fr;
+  grid-template-columns: 1.18fr 0.82fr;
   gap: 24px;
   align-items: start;
+  position: relative;
+  z-index: 2;
 }
 .study-main-col,
 .study-side-col {
@@ -2849,7 +2915,7 @@ dialog.detail-modal[open] {
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
-/* Timer Card */
+/* Timer Card & Mode Selector */
 .study-timer-card {
   text-align: center;
   position: relative;
@@ -2859,15 +2925,15 @@ dialog.detail-modal[open] {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 10px;
-  max-width: 440px;
-  margin: 0 auto 20px;
+  max-width: 460px;
+  margin: 0 auto 16px;
   width: 100%;
 }
 .study-mode-btn {
   background: var(--surface-bg, #f4f7f5);
   border: 1.5px solid var(--line);
   color: var(--ink);
-  padding: 8px 10px;
+  padding: 10px 8px;
   border-radius: 12px;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -2875,8 +2941,8 @@ dialog.detail-modal[open] {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 3px;
-  min-height: 54px;
+  gap: 4px;
+  min-height: 56px;
   box-sizing: border-box;
   text-align: center;
 }
@@ -2889,7 +2955,7 @@ dialog.detail-modal[open] {
 }
 .study-mode-btn span {
   font-size: 11px;
-  opacity: 0.75;
+  opacity: 0.8;
   font-weight: 500;
   display: block;
   line-height: 1.2;
@@ -2905,24 +2971,56 @@ dialog.detail-modal[open] {
   border-color: var(--primary);
   box-shadow: 0 4px 14px rgba(47, 94, 69, 0.25);
 }
-.study-mode-btn.active strong {
-  color: #fff;
+.study-mode-btn.active strong { color: #fff; }
+.study-mode-btn.active span { color: rgba(255, 255, 255, 0.85); }
+
+/* Pomodoro Cycle Indicator (1/4 -> 4/4) */
+.study-cycle-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 12px;
 }
-.study-mode-btn.active span {
-  color: rgba(255, 255, 255, 0.85);
+.study-cycle-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.study-cycle-dots {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.cycle-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--line);
+  transition: all 0.3s ease;
+}
+.cycle-dot.active {
+  background: var(--primary);
+  transform: scale(1.25);
+  box-shadow: 0 0 8px rgba(47, 94, 69, 0.4);
+}
+.cycle-dot.completed {
+  background: #10b981;
 }
 
-/* Circular Timer */
+/* Circular Timer Visual */
 .timer-visual-wrap {
   display: flex;
   justify-content: center;
   align-items: center;
-  margin: 10px 0 20px;
+  margin: 8px 0 12px;
 }
 .timer-circle {
   position: relative;
-  width: 220px;
-  height: 220px;
+  width: 240px;
+  height: 240px;
 }
 .timer-svg {
   width: 100%;
@@ -2939,7 +3037,7 @@ dialog.detail-modal[open] {
   stroke: var(--primary);
   stroke-width: 8;
   stroke-linecap: round;
-  stroke-dasharray: 553;
+  stroke-dasharray: 660;
   stroke-dashoffset: 0;
   transition: stroke-dashoffset 0.8s ease, stroke 0.3s ease;
 }
@@ -2952,35 +3050,62 @@ dialog.detail-modal[open] {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  width: 100%;
+  width: 88%;
 }
 .timer-clock {
-  font-family: 'Outfit', 'Inter', -apple-system, sans-serif;
-  font-size: 40px;
+  font-family: 'Outfit', 'Inter', -apple-system, BlinkMacSystemFont, monospace, sans-serif;
+  font-size: 48px;
   font-weight: 800;
   color: var(--ink);
-  letter-spacing: -0.5px;
-  line-height: 1.1;
+  letter-spacing: -1.5px;
+  line-height: 1;
   white-space: nowrap !important;
   word-break: keep-all;
   font-variant-numeric: tabular-nums;
-  display: block;
   text-align: center;
+  margin: 0;
+  padding: 0;
 }
 .timer-status-label {
   font-size: 12px;
   font-weight: 600;
   color: var(--muted);
-  margin-top: 6px;
-  padding: 3px 10px;
-  border-radius: 12px;
+  margin-top: 8px;
+  padding: 4px 12px;
+  border-radius: 14px;
   background: var(--surface-bg, #f4f7f5);
   white-space: nowrap;
 }
 
+/* Dedicated Study Quote Card */
+.study-quote-card {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: var(--surface-bg, #f4f7f5);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 8px 16px;
+  margin: 4px auto 14px;
+  max-width: 460px;
+}
+.quote-icon {
+  font-size: 14px;
+  flex-shrink: 0;
+}
+.timer-quote-text {
+  font-size: 12px;
+  font-style: italic;
+  color: var(--muted);
+  line-height: 1.35;
+  text-align: center;
+}
+
 /* Goal input */
 .study-goal-box {
-  margin: 15px 0 20px;
+  margin: 12px auto 18px;
+  max-width: 460px;
   text-align: left;
 }
 .study-goal-box label {
@@ -3013,42 +3138,123 @@ dialog.detail-modal[open] {
   align-items: center;
   gap: 10px;
   flex-wrap: wrap;
+  max-width: 480px;
+  margin: 0 auto;
 }
-.study-actions .button {
-  min-width: 130px;
-  height: 42px;
+.study-action-ctrl {
+  min-width: 124px;
+  height: 44px;
   padding: 0 18px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: 8px;
   font-size: 14px;
   font-weight: 600;
   border-radius: 10px;
   box-sizing: border-box;
   white-space: nowrap;
+  line-height: 1;
+  vertical-align: middle;
+}
+.study-action-ctrl .btn-icon {
+  font-size: 14px;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.study-action-ctrl .btn-label {
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+}
+.study-btn-pulse {
+  animation: subtlePulse 2.5s infinite;
+}
+@keyframes subtlePulse {
+  0% { transform: scale(1); box-shadow: 0 4px 12px rgba(47, 94, 69, 0.2); }
+  50% { transform: scale(1.02); box-shadow: 0 6px 18px rgba(47, 94, 69, 0.35); }
+  100% { transform: scale(1); box-shadow: 0 4px 12px rgba(47, 94, 69, 0.2); }
 }
 
-/* Ambient Mixer Card */
+/* ==========================================================================
+   AUDIO & AMBIANCE ARENA
+   ========================================================================== */
 .ambient-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 4px;
+  margin-bottom: 14px;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 10px;
+  flex-wrap: wrap;
+  gap: 10px;
 }
-.ambient-header h3 {
-  font-size: 16px;
-  margin: 0;
+.sound-tabs {
+  display: flex;
+  gap: 8px;
+}
+.sound-tab {
+  background: none;
+  border: 1px solid transparent;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+}
+.sound-tab:hover {
   color: var(--ink);
+  background: var(--surface-bg, #f4f7f5);
+}
+.sound-tab.active {
+  color: var(--primary);
+  background: #eef5f1;
+  border-color: rgba(47, 94, 69, 0.2);
+}
+.perk-badge {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 10px;
+  background: #f1f3f5;
+  color: #868e96;
+}
+.perk-badge.unlocked {
+  background: #d3f9d8;
+  color: #2b8a3e;
+}
+.ambient-sub-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 .ambient-sub {
   font-size: 12px;
   color: var(--muted);
-  margin: 0 0 16px;
+  margin: 0;
 }
+.mix-mode-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* Ambient Grid (Single & Multi-track) */
 .ambient-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
   gap: 12px;
 }
 .ambient-track {
@@ -3060,23 +3266,30 @@ dialog.detail-modal[open] {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
+  gap: 10px;
 }
 .ambient-track.active {
   border-color: var(--primary);
   background: #eef5f1;
+  box-shadow: 0 2px 8px rgba(47, 94, 69, 0.1);
+}
+.ambient-track.locked {
+  opacity: 0.65;
+  position: relative;
 }
 .ambient-track-info {
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: 8px;
-  margin-bottom: 10px;
 }
 .ambient-name {
   font-size: 13px;
   font-weight: 600;
   color: var(--ink);
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .ambient-track-toggle {
   background: var(--paper);
@@ -3088,7 +3301,7 @@ dialog.detail-modal[open] {
   cursor: pointer;
   color: var(--ink);
   white-space: nowrap !important;
-  min-width: 46px;
+  min-width: 48px;
   text-align: center;
   box-sizing: border-box;
 }
@@ -3104,23 +3317,164 @@ dialog.detail-modal[open] {
   height: 4px;
 }
 
-/* Co-Study Desk Card */
+/* Lo-Fi & Custom Audio Tabs */
+.perk-locked-banner {
+  background: #fff9db;
+  border: 1px solid #ffe066;
+  border-radius: 10px;
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #795548;
+  margin-bottom: 14px;
+}
+.perk-locked-banner .lock-icon { font-size: 22px; }
+.perk-locked-banner strong { font-size: 13px; display: block; margin-bottom: 2px; }
+.perk-locked-banner p { font-size: 12px; margin: 0; opacity: 0.85; }
+
+.lofi-tracks-list,
+.custom-audio-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.lofi-track-item,
+.custom-audio-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: var(--surface-bg, #f7faf8);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  transition: all 0.2s ease;
+}
+.lofi-track-item.playing,
+.custom-audio-item.playing {
+  border-color: var(--primary);
+  background: #eef5f1;
+}
+.upload-dropzone {
+  border: 2px dashed var(--line);
+  border-radius: 12px;
+  padding: 24px;
+  text-align: center;
+  background: var(--surface-bg, #fafcfb);
+  margin-bottom: 14px;
+}
+.dropzone-tip {
+  font-size: 11px;
+  color: var(--muted);
+  margin: 8px 0 0;
+}
+
+/* ==========================================================================
+   THEME & WALLPAPER ARENA
+   ========================================================================== */
+.theme-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 14px;
+}
+.theme-card-header h3 { font-size: 16px; margin: 0 0 2px; color: var(--ink); }
+.theme-card-sub { font-size: 12px; color: var(--muted); margin: 0; }
+.theme-selection-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.theme-tier-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink);
+  margin-bottom: 10px;
+}
+.preset-thumbs {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+  gap: 8px;
+}
+.preset-thumb-btn {
+  aspect-ratio: 16 / 10;
+  border-radius: 8px;
+  border: 2px solid var(--line);
+  background-size: cover;
+  background-position: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
+  padding: 0;
+}
+.preset-thumb-btn:hover { transform: scale(1.05); }
+.preset-thumb-btn.active {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px rgba(47, 94, 69, 0.3);
+}
+.preset-thumb-title {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: rgba(0, 0, 0, 0.65);
+  color: #fff;
+  font-size: 9px;
+  font-weight: 600;
+  padding: 2px 4px;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.custom-wall-box {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--surface-bg, #f7faf8);
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+}
+.custom-wall-info {
+  font-size: 12px;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.color-palette-picker {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.color-swatch-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 1px var(--line);
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+.color-swatch-btn:hover { transform: scale(1.2); }
+.color-swatch-btn.active { box-shadow: 0 0 0 2.5px var(--primary); }
+
+/* ==========================================================================
+   CO-STUDY & TO-DO CHECKLIST
+   ========================================================================== */
 .co-study-head {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  margin-bottom: 4px;
+  align-items: flex-start;
+  margin-bottom: 12px;
 }
-.co-study-head h3 {
-  font-size: 16px;
-  margin: 0;
-  color: var(--ink);
-}
-.co-study-tip {
-  font-size: 12px;
-  color: var(--muted);
-  margin: 0 0 16px;
-}
+.co-study-head h3 { font-size: 16px; margin: 0; color: var(--ink); }
+.co-study-tip { font-size: 12px; color: var(--muted); margin: 2px 0 0; }
 .co-study-list {
   display: flex;
   flex-direction: column;
@@ -3152,10 +3506,7 @@ dialog.detail-modal[open] {
   border-color: var(--primary);
   background: #f0f7f3;
 }
-.co-study-info {
-  flex: 1;
-  min-width: 0;
-}
+.co-study-info { flex: 1; min-width: 0; }
 .co-study-name {
   font-size: 13px;
   font-weight: 600;
@@ -3185,22 +3536,24 @@ dialog.detail-modal[open] {
   border-radius: 8px;
   white-space: nowrap;
 }
-.co-study-cheers {
-  display: flex;
-  gap: 4px;
-}
+.co-study-cheers { display: flex; gap: 4px; }
 .cheer-btn {
   background: var(--paper);
   border: 1px solid var(--line);
   border-radius: 6px;
-  padding: 2px 6px;
+  padding: 3px 6px;
   font-size: 12px;
   cursor: pointer;
   transition: transform 0.15s ease, background-color 0.15s;
 }
-.cheer-btn:hover {
-  transform: scale(1.15);
+.cheer-btn:hover:not(:disabled) {
+  transform: scale(1.2);
   background: #fff8e1;
+}
+.cheer-btn:disabled,
+.cheer-btn.locked {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 /* To-Do Checklist */
@@ -3319,20 +3672,20 @@ dialog.detail-modal[open] {
     gap: 16px;
   }
   .timer-circle {
-    width: 200px;
-    height: 200px;
+    width: 220px;
+    height: 220px;
   }
   .timer-clock {
-    font-size: 34px !important;
-    line-height: 1.1;
+    font-size: 42px !important;
+    line-height: 1;
     white-space: nowrap !important;
   }
   .timer-mode-selector {
-    gap: 6px;
+    gap: 8px;
   }
   .study-mode-btn {
-    padding: 6px 4px;
-    min-height: 50px;
+    padding: 8px 6px;
+    min-height: 52px;
   }
   .study-mode-btn strong {
     font-size: 12px;
@@ -3340,10 +3693,10 @@ dialog.detail-modal[open] {
   .study-mode-btn span {
     font-size: 10px;
   }
-  .study-actions .button {
-    min-width: 115px;
-    height: 38px;
-    padding: 0 12px;
+  .study-action-ctrl {
+    min-width: 110px;
+    height: 42px;
+    padding: 0 14px;
     font-size: 13px;
   }
 }
@@ -3356,6 +3709,20 @@ dialog.detail-modal[open] {
   }
   .study-live-badge {
     align-self: flex-start;
+  }
+  .timer-circle {
+    width: 200px;
+    height: 200px;
+  }
+  .timer-clock {
+    font-size: 38px !important;
+  }
+  .study-actions {
+    gap: 8px;
+  }
+  .study-action-ctrl {
+    flex: 1 1 calc(50% - 8px);
+    min-width: 120px;
   }
   .ambient-grid {
     grid-template-columns: 1fr;

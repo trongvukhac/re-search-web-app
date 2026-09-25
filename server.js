@@ -17,8 +17,15 @@ const MIME = {
   ".js": "text/javascript; charset=utf-8",
   ".png": "image/png",
   ".jpg": "image/jpeg",
+  ".webp": "image/webp",
+  ".gif": "image/gif",
   ".svg": "image/svg+xml",
   ".ico": "image/x-icon",
+  ".mp3": "audio/mpeg",
+  ".m4a": "audio/mp4",
+  ".wav": "audio/wav",
+  ".ogg": "audio/ogg",
+  ".webm": "audio/webm",
 };
 
 fs.mkdirSync(DATABASE_DIR, { recursive: true });
@@ -180,6 +187,7 @@ try { db.exec("ALTER TABLE study_sessions ADD COLUMN target_end_ms INTEGER NOT N
 try { db.exec("ALTER TABLE study_sessions ADD COLUMN is_running INTEGER NOT NULL DEFAULT 0;"); } catch (e) {}
 try { db.exec("ALTER TABLE study_sessions ADD COLUMN started_at_ms INTEGER NOT NULL DEFAULT 0;"); } catch (e) {}
 try { db.exec("ALTER TABLE study_sessions ADD COLUMN last_ping_ms INTEGER NOT NULL DEFAULT 0;"); } catch (e) {}
+try { db.exec("ALTER TABLE study_sessions ADD COLUMN cycle_index INTEGER NOT NULL DEFAULT 1;"); } catch (e) {}
 
 const defaultTopics = [
   "Đề tài", "Lý thuyết", "Phương pháp", 
@@ -1318,15 +1326,15 @@ async function api(request, response, url) {
     const activeRows = db.prepare(`
       SELECT s.user_id, s.goal, s.mode, s.duration_minutes, s.remaining_seconds,
              s.target_end_ms, s.is_running, s.started_at_ms, s.last_ping_ms,
-             s.started_at, s.last_ping,
+             s.cycle_index, s.started_at, s.last_ping,
              u.display_name, u.role, u.avatar
       FROM study_sessions s
       JOIN users u ON s.user_id = u.id
-      WHERE s.is_running = 1
+      WHERE (s.is_running = 1 AND (? - s.last_ping_ms) < 300000)
          OR (s.last_ping_ms > 0 AND (? - s.last_ping_ms) < 180000)
          OR (s.last_ping IS NOT NULL AND (unixepoch('now') - unixepoch(s.last_ping)) < 180)
-      ORDER BY s.last_ping_ms DESC, s.last_ping DESC
-    `).all(nowMs);
+      ORDER BY s.is_running DESC, s.last_ping_ms DESC
+    `).all(nowMs, nowMs);
 
     const todayDate = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Ho_Chi_Minh" }));
     const learners = activeRows.map(r => {
@@ -1343,9 +1351,10 @@ async function api(request, response, url) {
         streak: streakInfo.streak,
         streakTier: streakInfo.streakTier,
         goal: r.goal || "Nghiên cứu khoa học",
-        mode: r.mode || "pomodoro",
+        mode: r.mode || "focus",
         durationMinutes: r.duration_minutes || 25,
         remainingSeconds: remainingSecs,
+        cycleIndex: r.cycle_index || 1,
         isRunning: Boolean(r.is_running),
         isSelf: user ? user.id === r.user_id : false
       };
@@ -1360,9 +1369,10 @@ async function api(request, response, url) {
           remainingSecs = Math.max(0, Math.floor((myRow.target_end_ms - nowMs) / 1000));
         }
         mySession = {
-          mode: myRow.mode || 'pomodoro',
+          mode: myRow.mode || 'focus',
           durationMinutes: myRow.duration_minutes || 25,
           remainingSeconds: remainingSecs,
+          cycleIndex: myRow.cycle_index || 1,
           targetEndMs: myRow.target_end_ms || 0,
           isRunning: Boolean(myRow.is_running),
           goal: myRow.goal || '',
@@ -1390,8 +1400,10 @@ async function api(request, response, url) {
     if (!user) return;
     try {
       const body = await readJSON(request);
-      const mode = (body.mode === 'deep' || body.mode === 'shortbreak') ? body.mode : 'pomodoro';
+      const validModes = ['focus', 'pomodoro', 'deep', 'shortbreak', 'longbreak'];
+      const mode = validModes.includes(body.mode) ? body.mode : 'focus';
       const durationMinutes = Math.max(1, Math.min(720, Number(body.durationMinutes) || 25));
+      const cycleIndex = Math.max(1, Math.min(4, Number(body.cycleIndex) || 1));
       const isRunning = body.isRunning ? 1 : 0;
       const goal = (body.goal || "").trim().slice(0, 100);
       const nowMs = Date.now();
@@ -1413,9 +1425,9 @@ async function api(request, response, url) {
 
       db.prepare(`
         INSERT INTO study_sessions (
-          user_id, goal, mode, duration_minutes, remaining_seconds, target_end_ms, is_running, started_at_ms, last_ping_ms, started_at, last_ping
+          user_id, goal, mode, duration_minutes, remaining_seconds, target_end_ms, is_running, started_at_ms, last_ping_ms, cycle_index, started_at, last_ping
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
         ON CONFLICT(user_id) DO UPDATE SET
           goal = excluded.goal,
           mode = excluded.mode,
@@ -1424,8 +1436,9 @@ async function api(request, response, url) {
           target_end_ms = excluded.target_end_ms,
           is_running = excluded.is_running,
           last_ping_ms = excluded.last_ping_ms,
+          cycle_index = excluded.cycle_index,
           last_ping = CURRENT_TIMESTAMP
-      `).run(user.id, goal, mode, durationMinutes, remainingSeconds, targetEndMs, isRunning, startedAtMs, nowMs);
+      `).run(user.id, goal, mode, durationMinutes, remainingSeconds, targetEndMs, isRunning, startedAtMs, nowMs, cycleIndex);
 
       return json(response, 200, {
         success: true,
@@ -1433,6 +1446,7 @@ async function api(request, response, url) {
           mode,
           durationMinutes,
           remainingSeconds,
+          cycleIndex,
           targetEndMs,
           isRunning: Boolean(isRunning),
           goal,
@@ -1522,9 +1536,14 @@ async function api(request, response, url) {
     const user = requireUser(request, response);
     if (!user) return;
     try {
+      const senderStreak = calculateUserStreak(user.id);
+      if ((senderStreak.streak || 0) < 7 && user.role !== 'admin') {
+        return error(response, 403, "Cần đạt chuỗi hoạt động từ 7 ngày để mở khóa tính năng cổ vũ.");
+      }
       const body = await readJSON(request);
       const recipientId = Number(body.recipientId);
-      const cheerType = (body.cheerType || "👏").slice(0, 4);
+      const allowedCheers = ["👏", "☕", "🔥", "❤️", "💡", "🚀"];
+      const cheerType = allowedCheers.includes(body.cheerType) ? body.cheerType : "👏";
       if (!recipientId || recipientId === user.id) {
         return error(response, 400, "Người nhận không hợp lệ.");
       }

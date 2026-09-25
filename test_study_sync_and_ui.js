@@ -73,6 +73,7 @@ async function runTest() {
 
     // Login on mobile with same credentials
     await pageMobile.goto('http://localhost:3000/#study', { waitUntil: 'networkidle0' });
+    await pageMobile.waitForFunction(() => typeof requestAPI === 'function');
     await pageMobile.evaluate(async (email, password) => {
       await requestAPI('/api/auth/login', {
         method: 'POST',

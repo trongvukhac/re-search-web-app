@@ -312,40 +312,65 @@
       </section>
 
       <section id="study" class="page" data-page="study">
+        <!-- Background Wallpaper Layer (Local / Custom) -->
+        <div id="studyBackgroundLayer" class="study-bg-layer" aria-hidden="true"></div>
+        <div id="studyBackgroundOverlay" class="study-bg-overlay" aria-hidden="true"></div>
+
         <div class="forum-heading study-heading">
           <div>
             <p class="eyebrow">KHÔNG GIAN TỰ HỌC NCKH</p>
             <h1>Tập trung sâu,<br /><em>bền bỉ cùng bạn bè.</em></h1>
           </div>
-          <div class="study-header-status">
+          <div class="study-header-actions">
             <span class="study-live-badge"><span class="pulse-dot"></span> <span id="studyLiveCount">0</span> học giả đang học</span>
+            <button type="button" class="study-action-btn" id="studyStreakChip" onclick="openStreakJourneyModal()" title="Xem hành trình mở khóa đặc quyền">
+              <span>🔥 Chuỗi:</span> <strong id="studyUserStreakVal">0</strong> ngày
+            </button>
+            <button type="button" class="study-action-btn icon-only" id="studySettingsBtn" title="Cài đặt Pomodoro" onclick="openStudySettingsModal()">
+              ⚙️
+            </button>
+            <button type="button" class="study-action-btn icon-only" id="studyFullscreenBtn" title="Chế độ toàn màn hình tập trung">
+              ⛶
+            </button>
           </div>
         </div>
 
         <div class="study-layout">
           <!-- Main Timer & Focus Panel -->
           <div class="study-main-col">
-            <div class="study-card study-timer-card">
+            <div class="study-card study-timer-card" id="timerMainCard">
               <div class="timer-mode-selector">
-                <button class="study-mode-btn active" data-study-mode="pomodoro" data-duration="25">
-                  <strong>⏱️ 25 phút</strong>
-                  <span>Tiêu chuẩn</span>
+                <button type="button" class="study-mode-btn active" id="btnModeFocus" data-study-mode="focus">
+                  <strong id="labelModeFocus">⏱️ 25 phút</strong>
+                  <span>Tập trung</span>
                 </button>
-                <button class="study-mode-btn" data-study-mode="deep" data-duration="50">
-                  <strong>🔬 50 phút</strong>
-                  <span>NCKH Sâu</span>
-                </button>
-                <button class="study-mode-btn" data-study-mode="shortbreak" data-duration="5">
-                  <strong>☕ 5 phút</strong>
+                <button type="button" class="study-mode-btn" id="btnModeShortBreak" data-study-mode="shortbreak">
+                  <strong id="labelModeShortBreak">☕ 5 phút</strong>
                   <span>Nghỉ ngắn</span>
+                </button>
+                <button type="button" class="study-mode-btn" id="btnModeLongBreak" data-study-mode="longbreak">
+                  <strong id="labelModeLongBreak">🌿 15 phút</strong>
+                  <span>Nghỉ dài</span>
                 </button>
               </div>
 
+              <!-- Pomodoro Cycle Indicator (1/4 -> 4/4) -->
+              <div class="study-cycle-container">
+                <span class="study-cycle-label" id="studyCycleLabel">Hiệp 1/4 (Pomodoro)</span>
+                <div class="study-cycle-dots" id="studyCycleDots">
+                  <span class="cycle-dot active" data-cycle="1" title="Hiệp 1"></span>
+                  <span class="cycle-dot" data-cycle="2" title="Hiệp 2"></span>
+                  <span class="cycle-dot" data-cycle="3" title="Hiệp 3"></span>
+                  <span class="cycle-dot" data-cycle="4" title="Hiệp 4"></span>
+                </div>
+              </div>
+
+              <!-- Circular Progress & Timer -->
               <div class="timer-visual-wrap">
                 <div class="timer-circle">
-                  <svg class="timer-svg" viewBox="0 0 200 200">
-                    <circle class="timer-bg-circle" cx="100" cy="100" r="88" />
-                    <circle class="timer-progress-circle" id="timerProgressCircle" cx="100" cy="100" r="88" />
+                  <svg class="timer-svg" viewBox="0 0 240 240">
+                    <circle class="timer-bg-circle" cx="120" cy="120" r="105" />
+                    <circle class="timer-progress-circle" id="timerProgressCircle" cx="120" cy="120" r="105" />
                   </svg>
                   <div class="timer-center-content">
                     <div class="timer-clock" id="timerClock">25:00</div>
@@ -354,58 +379,152 @@
                 </div>
               </div>
 
+              <!-- Dedicated Study Quote Card -->
+              <div class="study-quote-card" id="timerQuoteWrap">
+                <span class="quote-icon">✨</span>
+                <span class="timer-quote-text" id="timerQuoteText">“Từng bước nhỏ tạo nên bước tiến lớn.”</span>
+              </div>
+
               <div class="study-goal-box">
                 <label for="studyGoalInput">🎯 Mục tiêu ca học này:</label>
-                <input type="text" id="studyGoalInput" maxlength="80" placeholder="Ví dụ: Đọc tổng quan đề tài, chạy dữ liệu SPSS, viết đề cương..." />
+                <input type="text" id="studyGoalInput" maxlength="80" placeholder="Ví dụ: Đọc tổng quan tài liệu, xử lý dữ liệu SPSS, hoàn thiện đề cương..." />
               </div>
 
               <div class="study-actions">
-                <button class="button button-primary" id="studyStartBtn">
-                  <span>▶</span> Bắt đầu học
+                <button type="button" class="button button-outline study-action-ctrl" id="studyResetBtn" title="Đặt lại hiệp này">
+                  <span class="btn-icon">↺</span> <span class="btn-label">Đặt lại</span>
                 </button>
-                <button class="button button-outline" id="studyPauseBtn" style="display: none;">
-                  <span>⏸</span> Tạm dừng
+                <button type="button" class="button button-primary study-btn-pulse study-action-ctrl" id="studyStartBtn">
+                  <span class="btn-icon">▶</span> <span class="btn-label" id="studyStartBtnText">Bắt đầu học</span>
                 </button>
-                <button class="button button-outline" id="studyResetBtn">
-                  <span>🔄</span> Đặt lại
+                <button type="button" class="button button-outline study-action-ctrl" id="studyPauseBtn" style="display: none;">
+                  <span class="btn-icon">⏸</span> <span class="btn-label">Tạm dừng</span>
                 </button>
-                <button class="button button-quiet" id="studyCompleteBtn" style="display: none;">
-                  <span>✓</span> Hoàn tất & Nhận điểm
+                <button type="button" class="button button-outline study-action-ctrl" id="studyNextBtn" title="Bỏ qua / Sang phiên kế tiếp">
+                  <span class="btn-icon">⏭</span> <span class="btn-label">Chuyển phiên</span>
+                </button>
+                <button type="button" class="button button-quiet study-action-ctrl" id="studyCompleteBtn" style="display: none;">
+                  <span class="btn-icon">✓</span> <span class="btn-label">Hoàn tất</span>
                 </button>
               </div>
             </div>
 
-            <!-- Built-in Ambient Sound Synthesizer (Zero Network Overhead) -->
-            <div class="study-card ambient-card">
+            <!-- Audio & Ambiance Arena -->
+            <div class="study-card ambient-card" id="soundArenaCard">
               <div class="ambient-header">
-                <h3>🎧 Âm thanh tập trung (Tích hợp)</h3>
-                <button class="button button-sm button-outline" id="toggleAmbientMaster">Bật tất cả</button>
+                <div class="sound-tabs">
+                  <button type="button" class="sound-tab active" data-sound-tab="ambiance">🎧 Môi trường</button>
+                  <button type="button" class="sound-tab" data-sound-tab="lofi" id="tabLofiBtn">
+                    🎵 Nhạc Lo-Fi <span class="perk-badge" id="badgeLofiLock">🔒 7d</span>
+                  </button>
+                  <button type="button" class="sound-tab" data-sound-tab="custom" id="tabCustomAudioBtn">
+                    📁 Tải âm thanh <span class="perk-badge" id="badgeCustomAudioLock">🔒 14d</span>
+                  </button>
+                </div>
+                <div class="sound-master-controls">
+                  <button type="button" class="button button-sm button-outline" id="toggleAmbientMaster">Bật tất cả</button>
+                </div>
               </div>
-              <p class="ambient-sub">Âm thanh sóng êm dịu tổng hợp trực tiếp trên trình duyệt, không tốn dữ liệu mạng.</p>
-              
-              <div class="ambient-grid">
-                <div class="ambient-track">
-                  <div class="ambient-track-info">
-                    <span class="ambient-name">🌧️ Tiếng mưa rơi</span>
-                    <button class="ambient-track-toggle" id="toggleRainBtn" data-sound="rain">Bật</button>
+
+              <!-- Tab Content: Ambiance -->
+              <div class="sound-tab-pane active" id="paneAmbiance">
+                <div class="ambient-sub-bar">
+                  <span class="ambient-sub" id="ambianceSubText">Âm thanh thiên nhiên êm dịu, phát trực tiếp trên trình duyệt.</span>
+                  <div class="mix-mode-toggle" id="mixModeWrap">
+                    <span class="mix-label">Phối âm (Mix) <span class="perk-badge" id="badgeMixLock">🔒 3d</span></span>
+                    <input type="checkbox" id="mixModeCheckbox" class="toggle-switch" disabled />
                   </div>
-                  <input type="range" id="volumeRain" min="0" max="100" value="50" class="ambient-slider" />
                 </div>
 
-                <div class="ambient-track">
-                  <div class="ambient-track-info">
-                    <span class="ambient-name">☕ Quán cafe ấm cúng</span>
-                    <button class="ambient-track-toggle" id="toggleCafeBtn" data-sound="cafe">Bật</button>
+                <div class="ambient-grid" id="ambianceGrid">
+                  <!-- Dynamically populated by JS with rich ambient tracks -->
+                </div>
+              </div>
+
+              <!-- Tab Content: Lo-Fi Study Tracks (Streak >= 7) -->
+              <div class="sound-tab-pane" id="paneLofi" style="display: none;">
+                <div class="perk-locked-banner" id="bannerLofiLocked" style="display: none;">
+                  <span class="lock-icon">🔒</span>
+                  <div>
+                    <strong>Mở khóa ở chuỗi 7 ngày (Học giả bền bỉ)</strong>
+                    <p>Giữ chuỗi học tập để thưởng thức các bản nhạc Lo-Fi & Instrumental thư giãn sâu.</p>
                   </div>
-                  <input type="range" id="volumeCafe" min="0" max="100" value="40" class="ambient-slider" />
+                </div>
+                <div id="lofiTracksContainer" class="lofi-tracks-list">
+                  <!-- Populated by JS -->
+                </div>
+              </div>
+
+              <!-- Tab Content: Custom Audio Upload (Streak >= 14) -->
+              <div class="sound-tab-pane" id="paneCustomAudio" style="display: none;">
+                <div class="perk-locked-banner" id="bannerCustomAudioLocked" style="display: none;">
+                  <span class="lock-icon">🔒</span>
+                  <div>
+                    <strong>Mở khóa ở chuỗi 14 ngày (Nhà nghiên cứu)</strong>
+                    <p>Tự tải lên bài nhạc, âm thanh thiền định ưa thích từ máy tính (lưu cục bộ trên trình duyệt của bạn).</p>
+                  </div>
+                </div>
+                <div id="customAudioContent" class="custom-audio-box">
+                  <div class="upload-dropzone" id="audioDropzone">
+                    <input type="file" id="customAudioInput" accept="audio/*,.mp3,.m4a,.wav,.ogg" style="display: none;" />
+                    <button type="button" class="button button-outline" onclick="document.getElementById('customAudioInput').click()">
+                      ➕ Tải tệp âm thanh từ máy (.mp3, .m4a, .wav)
+                    </button>
+                    <p class="dropzone-tip">Lưu an toàn trong bộ nhớ máy của bạn, không tốn dữ liệu mạng.</p>
+                  </div>
+                  <div id="customAudioList" class="custom-audio-list"></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Theme & Wallpaper Arena (Streak Perks) -->
+            <div class="study-card theme-card" id="themeArenaCard">
+              <div class="theme-card-header">
+                <div>
+                  <h3>🖼️ Không gian & Hình nền</h3>
+                  <p class="theme-card-sub">Cá nhân hóa góc học tập theo phong cách của bạn.</p>
+                </div>
+                <div class="theme-actions">
+                  <button type="button" class="button button-sm button-ghost" id="resetThemeBtn" onclick="resetStudyTheme()">Mặc định</button>
+                </div>
+              </div>
+
+              <div class="theme-selection-grid">
+                <!-- Wallpaper Presets (Streak >= 14) -->
+                <div class="wallpaper-presets-wrap">
+                  <div class="theme-tier-title">
+                    <span>Kho hình nền học thuật</span>
+                    <span class="perk-badge" id="badgeWallPresetLock">🔒 14d</span>
+                  </div>
+                  <div class="preset-thumbs" id="wallpaperPresetsList">
+                    <!-- Presets rendered by JS -->
+                  </div>
                 </div>
 
-                <div class="ambient-track">
-                  <div class="ambient-track-info">
-                    <span class="ambient-name">🌊 Tiếng ồn trắng / Sóng</span>
-                    <button class="ambient-track-toggle" id="toggleWavesBtn" data-sound="waves">Bật</button>
+                <!-- Custom Wallpaper Upload (Streak >= 30) -->
+                <div class="wallpaper-upload-wrap">
+                  <div class="theme-tier-title">
+                    <span>Tải ảnh nền cá nhân</span>
+                    <span class="perk-badge" id="badgeWallUploadLock">🔒 30d</span>
                   </div>
-                  <input type="range" id="volumeWaves" min="0" max="100" value="40" class="ambient-slider" />
+                  <div class="custom-wall-box" id="customWallBox">
+                    <input type="file" id="customWallInput" accept="image/*,.jpg,.jpeg,.png,.webp" style="display: none;" />
+                    <button type="button" class="button button-sm button-outline" id="btnUploadWall" onclick="triggerWallpaperUpload()">
+                      📷 Chọn ảnh từ máy tính
+                    </button>
+                    <span class="custom-wall-info" id="customWallName">Chưa chọn ảnh</span>
+                  </div>
+                </div>
+
+                <!-- Full Master Customization (Streak >= 50) -->
+                <div class="theme-master-wrap">
+                  <div class="theme-tier-title">
+                    <span>Hào quang & Màu sắc chủ đạo</span>
+                    <span class="perk-badge" id="badgeMasterCustomLock">🔒 50d</span>
+                  </div>
+                  <div class="color-palette-picker" id="colorPalettePicker">
+                    <!-- Color swatches rendered by JS -->
+                  </div>
                 </div>
               </div>
             </div>
@@ -416,10 +535,12 @@
             <!-- Co-Study Live Desks -->
             <div class="study-card co-study-card">
               <div class="co-study-head">
-                <h3>👥 Bàn tròn cùng học</h3>
+                <div>
+                  <h3>👥 Bàn tròn cùng học</h3>
+                  <p class="co-study-tip">Động viên nhau bền bỉ trong từng ca học.</p>
+                </div>
                 <span class="badge" id="coStudyCountBadge">0 học giả</span>
               </div>
-              <p class="co-study-tip">Cùng giữ chuỗi và động viên nhau trong từng ca học.</p>
               <div class="co-study-list" id="coStudyList">
                 <div class="co-study-empty">Chưa có ai trong phòng. Bấm <b>Bắt đầu học</b> để là người đầu tiên!</div>
               </div>
@@ -428,8 +549,13 @@
             <!-- Session To-Do Checklist -->
             <div class="study-card todo-card">
               <div class="todo-head">
-                <h3>📝 Ghi chú ca học</h3>
-                <button class="button button-sm button-ghost" id="clearCompletedTodos">Dọn việc đã xong</button>
+                <div>
+                  <h3>📝 Nhiệm vụ ca học</h3>
+                  <div class="todo-progress-bar-wrap">
+                    <div class="todo-progress-bar" id="todoProgressBar" style="width: 0%;"></div>
+                  </div>
+                </div>
+                <button class="button button-sm button-ghost" id="clearCompletedTodos">Dọn việc xong</button>
               </div>
               <div class="todo-input-wrap">
                 <input type="text" id="newTodoInput" placeholder="Thêm mục tiêu nhỏ..." maxlength="80" />
@@ -1021,6 +1147,96 @@
         margin: 14px 0 0;
       }
     </style>
+    <dialog id="studySettingsModal" class="modal study-settings-modal">
+      <div class="modal-head">
+        <div>
+          <p class="eyebrow">CÀI ĐẶT PHÒNG TỰ HỌC</p>
+          <h2>Cấu hình chu kỳ Pomodoro</h2>
+        </div>
+        <button class="close-modal" type="button" onclick="this.closest('dialog').close()" aria-label="Đóng">×</button>
+      </div>
+
+      <div class="settings-body">
+        <div class="settings-group">
+          <h3>Thời lượng phiên (phút)</h3>
+          <div class="duration-grid">
+            <div class="duration-item">
+              <label>Tập trung (Focus)</label>
+              <div class="stepper-input">
+                <button type="button" class="step-btn" onclick="stepDuration('focus', -5)">-</button>
+                <input type="number" id="settingFocusMins" min="1" max="120" value="25" />
+                <button type="button" class="step-btn" onclick="stepDuration('focus', 5)">+</button>
+              </div>
+            </div>
+            <div class="duration-item">
+              <label>Nghỉ ngắn (Break)</label>
+              <div class="stepper-input">
+                <button type="button" class="step-btn" onclick="stepDuration('shortbreak', -1)">-</button>
+                <input type="number" id="settingShortBreakMins" min="1" max="30" value="5" />
+                <button type="button" class="step-btn" onclick="stepDuration('shortbreak', 1)">+</button>
+              </div>
+            </div>
+            <div class="duration-item">
+              <label>Nghỉ dài (Long Break)</label>
+              <div class="stepper-input">
+                <button type="button" class="step-btn" onclick="stepDuration('longbreak', -5)">-</button>
+                <input type="number" id="settingLongBreakMins" min="5" max="60" value="15" />
+                <button type="button" class="step-btn" onclick="stepDuration('longbreak', 5)">+</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="settings-group">
+          <h3>Tự động hóa & Thông báo</h3>
+          <div class="toggle-list">
+            <label class="setting-toggle-row">
+              <div>
+                <strong>Tự động bắt đầu nghỉ giải lao</strong>
+                <span>Chuyển ngay sang tính giờ nghỉ khi kết thúc phiên tập trung</span>
+              </div>
+              <input type="checkbox" id="settingAutoStartBreaks" class="toggle-switch" checked />
+            </label>
+            <label class="setting-toggle-row">
+              <div>
+                <strong>Tự động bắt đầu phiên Pomodoro mới</strong>
+                <span>Tự động đếm giờ học tiếp theo khi hết thời gian nghỉ</span>
+              </div>
+              <input type="checkbox" id="settingAutoStartPomodoros" class="toggle-switch" />
+            </label>
+            <label class="setting-toggle-row">
+              <div>
+                <strong>Thông báo đẩy màn hình (Push Notification)</strong>
+                <span>Báo chuông và hiện thông báo khi hết giờ ngay cả khi đang chuyển tab</span>
+              </div>
+              <input type="checkbox" id="settingBrowserNotifications" class="toggle-switch" />
+            </label>
+          </div>
+        </div>
+
+        <div class="settings-group">
+          <h3>Âm thanh chuông báo (Alarms)</h3>
+          <div class="alarm-settings-row">
+            <div class="alarm-field">
+              <label>Âm báo hết giờ:</label>
+              <select id="settingEndAlarm">
+                <option value="bell">Chuông nhẹ (Bell)</option>
+                <option value="ding">Tiếng Ding thanh thoát</option>
+                <option value="servicebell">Chuông tiếp tân (Service Bell)</option>
+                <option value="singingbowl">Chuông thiền Tây Tạng (Singing Bowl)</option>
+                <option value="chime">Giai điệu Chime vui tươi</option>
+              </select>
+              <button type="button" class="button button-sm button-outline" onclick="previewSelectedAlarm()">▶ Nghe thử</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-actions" style="margin-top: 24px;">
+          <button type="button" class="button button-quiet" onclick="this.closest('dialog').close()">Đóng</button>
+          <button type="button" class="button button-primary" onclick="saveStudySettings()">Lưu cài đặt</button>
+        </div>
+      </div>
+    </dialog>
     <dialog
       id="guideModal"
       class="modal"
