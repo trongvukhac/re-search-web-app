@@ -303,21 +303,34 @@ h1 em {
   margin-top: 18px;
   text-align: left;
 }
-/* Streak Tier Avatar Frames */
+/* Streak Tier Avatar Frames & Background Colors */
 .avatar.avatar-tier-2 {
   box-shadow: 0 0 0 2px #fff, 0 0 0 4px #f59f00, 0 0 10px rgba(245, 159, 0, 0.55);
 }
 .avatar.avatar-tier-3 {
+  background: linear-gradient(135deg, #5f3dc4 0%, #7048e8 50%, #845ef7 100%) !important;
+  color: #fff !important;
   box-shadow: 0 0 0 2px #fff, 0 0 0 4px #845ef7, 0 0 14px rgba(132, 94, 247, 0.65);
   animation: pulseTier3 3s ease-in-out infinite;
 }
 .avatar.avatar-tier-4 {
+  background: linear-gradient(135deg, #c92a2a 0%, #e03131 50%, #ff6b6b 100%) !important;
+  color: #fff !important;
   box-shadow: 0 0 0 2px #fff, 0 0 0 4px #e03131, 0 0 16px rgba(224, 49, 49, 0.75);
   animation: pulseTier4 2.5s ease-in-out infinite;
 }
 .avatar.avatar-tier-5 {
+  background: linear-gradient(135deg, #5f3dc4 0%, #a61e4d 45%, #e03131 85%, #f783ac 100%) !important;
+  background-size: 200% 200% !important;
+  color: #fff !important;
   box-shadow: 0 0 0 2px #fff, 0 0 0 4.5px #f783ac, 0 0 20px rgba(112, 72, 232, 0.8), 0 0 25px rgba(255, 107, 107, 0.6);
-  animation: mythicAura 3.5s linear infinite;
+  animation: mythicAura 3.5s linear infinite, mythicBgShift 6s ease infinite;
+}
+
+@keyframes mythicBgShift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
 }
 
 @keyframes pulseTier3 {

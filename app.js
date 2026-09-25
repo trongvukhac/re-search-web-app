@@ -1395,7 +1395,7 @@ async function openDetail(id) {
     $("#pinnedReplyContainer").innerHTML = `
       <form id="replyForm" class="reply-bar collapsed">
         <div class="reply-avatar-dropdown" onclick="toggleAnonymousDropdown(event)">
-          <span class="avatar avatar-sm ${getAvatarClass(session?.streakTier, false, session?.role)}" id="replyAvatarLabel" style="${(!session?.role || session?.role === 'student') ? 'background: var(--primary); color: white;' : ''}">${session?.initials || '?'}</span>
+          <span class="avatar avatar-sm ${getAvatarClass(session?.streakTier, false, session?.role)}" id="replyAvatarLabel" style="${(!session?.role || session?.role === 'student') ? ((session?.streakTier >= 3) ? '' : 'background: var(--primary); color: white;') : ''}">${session?.initials || '?'}</span>
           <span class="dropdown-arrow">▼</span>
           <div id="anonymousDropdown" class="dropdown-menu">
             <div onclick="setAnonymousReply(false)">Phản hồi công khai</div>
@@ -2386,7 +2386,7 @@ window.setAnonymousReply = function(isAnon) {
       avatarLabel.classList.add('teal');
     }
     if (!session || !session.role || session.role === 'student') {
-      avatarLabel.style.background = 'var(--primary)';
+      avatarLabel.style.background = ((session?.streakTier || 0) >= 3) ? '' : 'var(--primary)';
     } else {
       avatarLabel.style.background = '';
     }
