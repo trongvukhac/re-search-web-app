@@ -146,6 +146,13 @@ db.exec(`
     last_milestone_rewarded INTEGER NOT NULL DEFAULT 0,
     updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
   );
+  CREATE TABLE IF NOT EXISTS study_sessions (
+    user_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+    goal TEXT,
+    duration_minutes INTEGER NOT NULL DEFAULT 0,
+    started_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    last_ping TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+  );
 `);
 
 try { db.exec("ALTER TABLE users ADD COLUMN student_id TEXT;"); } catch (e) {}
@@ -188,6 +195,13 @@ function recordDownvoteAndCheckSpam(userId) {
   recent.push(now);
   downvoteAttempts.set(userId, recent);
   return recent.length >= 5;
+}
+const recentCheers = [];
+function cleanupCheers() {
+  const now = Date.now();
+  while (recentCheers.length > 0 && now - recentCheers[0].timestamp > 60000) {
+    recentCheers.shift();
+  }
 }
 const readCooldowns = new Map();
 function canRecordRead(identifier, postId) {
@@ -1282,6 +1296,133 @@ async function api(request, response, url) {
     }
     return json(response, 200, { success: true });
   }
+
+  // --- STUDY LOUNGE ENDPOINTS ---
+  if (method === "GET" && pathName === "/api/study/lounge") {
+    cleanupCheers();
+    const user = sessionFrom(request);
+    const activeRows = db.prepare(`
+      SELECT s.user_id, s.goal, s.duration_minutes, s.started_at, s.last_ping,
+             u.display_name, u.role, u.avatar
+      FROM study_sessions s
+      JOIN users u ON s.user_id = u.id
+      WHERE (unixepoch('now') - unixepoch(s.last_ping)) < 180
+      ORDER BY s.last_ping DESC
+    `).all();
+
+    const todayDate = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Ho_Chi_Minh" }));
+    const learners = activeRows.map(r => {
+      const streakInfo = calculateUserStreak(r.user_id, todayDate);
+      return {
+        userId: r.user_id,
+        name: r.display_name || "Học giả NCKH",
+        role: r.role,
+        avatar: r.avatar || (r.role === 'admin' ? '🛡️' : (r.role === 'ta' ? '🎓' : '🦊')),
+        streak: streakInfo.streak,
+        streakTier: streakInfo.streakTier,
+        goal: r.goal || "Nghiên cứu khoa học",
+        durationMinutes: r.duration_minutes,
+        isSelf: user ? user.id === r.user_id : false
+      };
+    });
+
+    let myCheers = [];
+    if (user) {
+      myCheers = recentCheers.filter(c => c.recipientId === user.id && (Date.now() - c.timestamp) < 45000);
+    }
+
+    return json(response, 200, {
+      learners,
+      activeCount: learners.length,
+      myCheers
+    });
+  }
+
+  if (method === "POST" && pathName === "/api/study/ping") {
+    const user = requireUser(request, response);
+    if (!user) return;
+    try {
+      const body = await parseBody(request);
+      const goal = (body.goal || "").trim().slice(0, 100);
+      const durationMinutes = Math.max(0, Math.min(720, Number(body.durationMinutes) || 0));
+
+      db.prepare(`
+        INSERT INTO study_sessions (user_id, goal, duration_minutes, started_at, last_ping)
+        VALUES (?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+        ON CONFLICT(user_id) DO UPDATE SET
+          goal = excluded.goal,
+          duration_minutes = excluded.duration_minutes,
+          last_ping = CURRENT_TIMESTAMP
+      `).run(user.id, goal, durationMinutes);
+
+      return json(response, 200, { success: true });
+    } catch {
+      return error(response, 400, "Dữ liệu không hợp lệ.");
+    }
+  }
+
+  if (method === "POST" && pathName === "/api/study/leave") {
+    const user = sessionFrom(request);
+    if (user) {
+      db.prepare("DELETE FROM study_sessions WHERE user_id = ?").run(user.id);
+    }
+    return json(response, 200, { success: true });
+  }
+
+  if (method === "POST" && pathName === "/api/study/complete") {
+    const user = requireUser(request, response);
+    if (!user) return;
+    try {
+      const body = await parseBody(request);
+      const minutes = Number(body.durationMinutes) || 0;
+      const goal = (body.goal || "Tự học NCKH").trim().slice(0, 100);
+
+      let pointsAwarded = 0;
+      let streakUpdated = false;
+      if (minutes >= 25) {
+        pointsAwarded = 10;
+        recordContribution(user.id, "study_session", pointsAwarded, "study", null, `Hoàn thành ca tự học ${minutes} phút (${goal})`);
+        streakUpdated = true;
+      }
+      db.prepare("DELETE FROM study_sessions WHERE user_id = ?").run(user.id);
+
+      const streakInfo = calculateUserStreak(user.id);
+      return json(response, 200, {
+        success: true,
+        pointsAwarded,
+        streak: streakInfo.streak,
+        streakTier: streakInfo.streakTier
+      });
+    } catch {
+      return error(response, 400, "Không thể lưu ca tự học.");
+    }
+  }
+
+  if (method === "POST" && pathName === "/api/study/cheer") {
+    const user = requireUser(request, response);
+    if (!user) return;
+    try {
+      const body = await parseBody(request);
+      const recipientId = Number(body.recipientId);
+      const cheerType = (body.cheerType || "👏").slice(0, 4);
+      if (!recipientId || recipientId === user.id) {
+        return error(response, 400, "Người nhận không hợp lệ.");
+      }
+      cleanupCheers();
+      recentCheers.push({
+        id: Date.now() + Math.random(),
+        recipientId,
+        senderName: user.displayName || user.email.split("@")[0],
+        senderAvatar: user.avatar || "🦊",
+        cheerType,
+        timestamp: Date.now()
+      });
+      return json(response, 200, { success: true });
+    } catch {
+      return error(response, 400, "Không thể gửi cổ vũ.");
+    }
+  }
+
   if (method === "GET" && pathName === "/api/admin/overview") {
     const user = requireUser(request, response);
     if (!user || !isSuperAdmin(user))

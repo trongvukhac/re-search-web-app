@@ -651,7 +651,8 @@ function renderActivityRow(r) {
     response_hidden: "👁️",
     weekly_active_reward: "🎁",
     post_read: "📖",
-    document_read: "📄"
+    document_read: "📄",
+    study_session: "🎧"
   };
   
   const getSnippet = () => {
@@ -669,6 +670,7 @@ function renderActivityRow(r) {
       case "document_approved": return `Tài liệu${getSnippet()} đã được duyệt`;
       case "post_read": return `Đọc bài đăng${getSnippet()} (giữ chuỗi)`;
       case "document_read": return `Xem tài liệu${getSnippet()} (giữ chuỗi)`;
+      case "study_session": return `Hoàn thành ca tự học NCKH: ${escapeHTML(r.reason || 'Tự học tập trung')}`;
       case "admin_adjustment": return r.points > 0 ? `Được TA cộng điểm: ${escapeHTML(r.reason || '')}` : `Bị trừ điểm do vi phạm quy định: ${escapeHTML(r.reason || '')}`;
       case "response_deleted": return `Phản hồi của bạn đã bị xóa`;
       case "post_deleted": return `Câu hỏi của bạn đã bị xóa`;
@@ -939,6 +941,8 @@ function go(route) {
   history.replaceState(null, "", `#${route}`);
   window.scrollTo({ top: 0, behavior: "smooth" });
   if (route === "forum") renderPosts();
+  if (route === "study") onEnterStudyLounge();
+  else onLeaveStudyLounge();
   updateResponsiveAsidePlacement();
 }
 window.addEventListener("click", (e) => {
@@ -2251,3 +2255,593 @@ document.addEventListener('click', () => {
   const dd = document.getElementById('anonymousDropdown');
   if (dd) dd.classList.remove('show');
 });
+
+/* ==========================================================================
+   STUDY LOUNGE CONTROLLER (Phòng Tự Học NCKH)
+   ========================================================================== */
+
+let studyState = {
+  mode: 'pomodoro', // 'pomodoro' (25), 'deep' (50), 'shortbreak' (5)
+  durationMinutes: 25,
+  remainingSeconds: 25 * 60,
+  isRunning: false,
+  timerInterval: null,
+  pingInterval: null,
+  pollingInterval: null,
+  elapsedSessionSeconds: 0,
+  goal: '',
+  audioCtx: null,
+  activeSounds: {
+    rain: false,
+    cafe: false,
+    waves: false
+  },
+  soundGains: {
+    rain: null,
+    cafe: null,
+    waves: null
+  },
+  soundSources: {
+    rain: null,
+    cafe: null,
+    waves: null
+  }
+};
+
+function formatMMSS(totalSecs) {
+  const m = Math.floor(totalSecs / 60);
+  const s = totalSecs % 60;
+  return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+}
+
+function updateTimerDisplay() {
+  const clock = $("#timerClock");
+  const progressCircle = $("#timerProgressCircle");
+  const label = $("#timerStatusLabel");
+  if (!clock) return;
+
+  clock.textContent = formatMMSS(studyState.remainingSeconds);
+
+  const totalSecs = studyState.durationMinutes * 60;
+  const progress = totalSecs > 0 ? (1 - studyState.remainingSeconds / totalSecs) : 0;
+  // Circumference = 2 * PI * 88 ~= 553
+  const offset = 553 * progress;
+  if (progressCircle) {
+    progressCircle.style.strokeDashoffset = offset;
+  }
+
+  if (label) {
+    if (studyState.isRunning) {
+      label.textContent = studyState.mode === 'shortbreak' ? '☕ Đang nghỉ ngơi' : '🔥 Đang tập trung cao độ';
+      label.style.color = 'var(--primary)';
+    } else if (studyState.remainingSeconds < totalSecs) {
+      label.textContent = '⏸ Đang tạm dừng';
+      label.style.color = 'var(--muted)';
+    } else {
+      label.textContent = 'Sẵn sàng ca học';
+      label.style.color = 'var(--muted)';
+    }
+  }
+}
+
+function setStudyMode(mode, duration) {
+  if (studyState.isRunning) {
+    if (!confirm("Ca học hiện tại đang chạy. Bạn có muốn đổi chế độ và đặt lại thời gian?")) {
+      return;
+    }
+    pauseStudyTimer();
+  }
+  studyState.mode = mode;
+  studyState.durationMinutes = duration;
+  studyState.remainingSeconds = duration * 60;
+  studyState.elapsedSessionSeconds = 0;
+
+  $$(".study-mode-btn").forEach(btn => {
+    btn.classList.toggle("active", btn.dataset.studyMode === mode);
+  });
+
+  updateTimerDisplay();
+  const startBtn = $("#studyStartBtn");
+  const pauseBtn = $("#studyPauseBtn");
+  const completeBtn = $("#studyCompleteBtn");
+  if (startBtn) startBtn.style.display = "inline-flex";
+  if (pauseBtn) pauseBtn.style.display = "none";
+  if (completeBtn) completeBtn.style.display = "none";
+}
+
+function startStudyTimer() {
+  if (studyState.isRunning) return;
+  studyState.isRunning = true;
+  studyState.goal = ($("#studyGoalInput") ? $("#studyGoalInput").value : "").trim();
+
+  const startBtn = $("#studyStartBtn");
+  const pauseBtn = $("#studyPauseBtn");
+  const completeBtn = $("#studyCompleteBtn");
+  if (startBtn) startBtn.style.display = "none";
+  if (pauseBtn) pauseBtn.style.display = "inline-flex";
+  if (completeBtn) completeBtn.style.display = studyState.mode !== 'shortbreak' ? "inline-flex" : "none";
+
+  if (studyState.audioCtx && studyState.audioCtx.state === 'suspended') {
+    studyState.audioCtx.resume();
+  }
+
+  pingStudySession();
+
+  studyState.timerInterval = setInterval(() => {
+    if (studyState.remainingSeconds > 0) {
+      studyState.remainingSeconds--;
+      studyState.elapsedSessionSeconds++;
+      updateTimerDisplay();
+    } else {
+      finishStudySession(true);
+    }
+  }, 1000);
+
+  if (!studyState.pingInterval) {
+    studyState.pingInterval = setInterval(pingStudySession, 40000);
+  }
+
+  updateTimerDisplay();
+}
+
+function pauseStudyTimer() {
+  studyState.isRunning = false;
+  if (studyState.timerInterval) {
+    clearInterval(studyState.timerInterval);
+    studyState.timerInterval = null;
+  }
+  const startBtn = $("#studyStartBtn");
+  const pauseBtn = $("#studyPauseBtn");
+  if (startBtn) startBtn.style.display = "inline-flex";
+  if (pauseBtn) pauseBtn.style.display = "none";
+  updateTimerDisplay();
+}
+
+function resetStudyTimer() {
+  pauseStudyTimer();
+  studyState.remainingSeconds = studyState.durationMinutes * 60;
+  studyState.elapsedSessionSeconds = 0;
+  const completeBtn = $("#studyCompleteBtn");
+  if (completeBtn) completeBtn.style.display = "none";
+  updateTimerDisplay();
+  if (session) {
+    fetch("/api/study/leave", { method: "POST" }).catch(() => {});
+  }
+}
+
+async function finishStudySession(autoCompleted = false) {
+  pauseStudyTimer();
+  playChimeSound();
+
+  const totalElapsedMins = Math.round(studyState.elapsedSessionSeconds / 60);
+  const isFullSession = autoCompleted && (studyState.mode === 'pomodoro' || studyState.mode === 'deep');
+  const durationToCredit = isFullSession ? studyState.durationMinutes : totalElapsedMins;
+
+  if (session && durationToCredit >= 20) {
+    try {
+      const res = await api("/api/study/complete", {
+        method: "POST",
+        body: JSON.stringify({
+          durationMinutes: durationToCredit,
+          goal: studyState.goal || "Tự học NCKH"
+        })
+      });
+      if (res && res.success) {
+        if (res.pointsAwarded > 0) {
+          toast(`🎉 Hoàn thành xuất sắc ca tự học ${durationToCredit} phút! +${res.pointsAwarded} điểm đóng góp & giữ chuỗi!`);
+        } else {
+          toast(`🎉 Hoàn tất ca học ${durationToCredit} phút!`);
+        }
+        loadContributions();
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  } else if (durationToCredit >= 25) {
+    toast(`🎉 Hoàn thành ca tự học ${durationToCredit} phút! (Đăng nhập để lưu điểm & giữ chuỗi)`);
+  } else {
+    toast(`Ca học kết thúc (${durationToCredit} phút).`);
+  }
+
+  studyState.remainingSeconds = studyState.durationMinutes * 60;
+  studyState.elapsedSessionSeconds = 0;
+  const completeBtn = $("#studyCompleteBtn");
+  if (completeBtn) completeBtn.style.display = "none";
+  updateTimerDisplay();
+  fetchStudyLounge();
+}
+
+async function pingStudySession() {
+  if (!session || !studyState.isRunning) return;
+  const currentDurationMins = Math.round(studyState.elapsedSessionSeconds / 60);
+  try {
+    await fetch("/api/study/ping", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        goal: studyState.goal,
+        durationMinutes: currentDurationMins
+      })
+    });
+  } catch (e) {}
+}
+
+async function fetchStudyLounge() {
+  try {
+    const res = await fetch("/api/study/lounge").then(r => r.json());
+    if (!res) return;
+
+    const count = res.activeCount || 0;
+    const badge1 = $("#studyLiveCount");
+    const badge2 = $("#coStudyCountBadge");
+    if (badge1) badge1.textContent = count;
+    if (badge2) badge2.textContent = `${count} học giả`;
+
+    const list = $("#coStudyList");
+    if (list) {
+      if (!res.learners || res.learners.length === 0) {
+        list.innerHTML = `<div class="co-study-empty">Chưa có ai trong phòng. Bấm <b>Bắt đầu học</b> để là người đầu tiên!</div>`;
+      } else {
+        list.innerHTML = res.learners.map(l => {
+          const tierClass = `tier-${l.streakTier || 0}`;
+          const isSelfClass = l.isSelf ? 'is-self' : '';
+          const nameDisplay = l.isSelf ? `${escapeHTML(l.name)} (Bạn)` : escapeHTML(l.name);
+          const roleBadge = l.role === 'admin' ? '<span class="lb-role lb-role-admin">Admin</span>' : (l.role === 'ta' ? '<span class="lb-role lb-role-ta">TA</span>' : '');
+          
+          return `
+            <div class="co-study-item ${isSelfClass}">
+              <span class="avatar avatar-sm ${tierClass}">${escapeHTML(l.avatar || '🦊')}</span>
+              <div class="co-study-info">
+                <div class="co-study-name">
+                  ${nameDisplay} ${roleBadge}
+                </div>
+                <div class="co-study-goal">🎯 ${escapeHTML(l.goal || 'Nghiên cứu khoa học')}</div>
+              </div>
+              <span class="co-study-time">⏱️ ${l.durationMinutes || 0}m</span>
+              ${!l.isSelf && session ? `
+                <div class="co-study-cheers">
+                  <button class="cheer-btn" title="Cổ vũ" onclick="sendStudyCheer(${l.userId}, '👏')">👏</button>
+                  <button class="cheer-btn" title="Mời cà phê" onclick="sendStudyCheer(${l.userId}, '☕')">☕</button>
+                  <button class="cheer-btn" title="Cố lên" onclick="sendStudyCheer(${l.userId}, '🔥')">🔥</button>
+                </div>
+              ` : ''}
+            </div>
+          `;
+        }).join("");
+      }
+    }
+
+    if (res.myCheers && res.myCheers.length > 0) {
+      res.myCheers.forEach(c => {
+        showCheerToast(c);
+      });
+    }
+  } catch (e) {
+    console.error("fetchStudyLounge error:", e);
+  }
+}
+
+function showCheerToast(c) {
+  const toastId = `cheer-${c.id}`;
+  if (document.getElementById(toastId)) return;
+  const toastEl = document.createElement("div");
+  toastEl.id = toastId;
+  toastEl.className = "floating-cheer";
+  toastEl.innerHTML = `<span>${c.cheerType}</span> <span><b>${escapeHTML(c.senderName)}</b> vừa gửi cổ vũ đến bạn!</span>`;
+  document.body.appendChild(toastEl);
+  setTimeout(() => {
+    if (toastEl.parentElement) toastEl.remove();
+  }, 4000);
+}
+
+window.sendStudyCheer = async function(recipientId, cheerType) {
+  if (!session) {
+    openAuth();
+    return;
+  }
+  try {
+    const res = await api("/api/study/cheer", {
+      method: "POST",
+      body: JSON.stringify({ recipientId, cheerType })
+    });
+    if (res && res.success) {
+      toast(`Đã gửi ${cheerType} cổ vũ bạn cùng học!`);
+    }
+  } catch (e) {
+    toast("Không thể gửi cổ vũ.");
+  }
+};
+
+/* --- WEB AUDIO SYNTHESIZER (Ambient Sounds, 0 Network Traffic) --- */
+function getAudioContext() {
+  if (!studyState.audioCtx) {
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    if (AudioContext) {
+      studyState.audioCtx = new AudioContext();
+    }
+  }
+  if (studyState.audioCtx && studyState.audioCtx.state === 'suspended') {
+    studyState.audioCtx.resume();
+  }
+  return studyState.audioCtx;
+}
+
+function createNoiseBuffer(ctx, type) {
+  const bufferSize = ctx.sampleRate * 2;
+  const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+  const data = buffer.getChannelData(0);
+  let lastOut = 0.0;
+  for (let i = 0; i < bufferSize; i++) {
+    const white = Math.random() * 2 - 1;
+    if (type === 'rain') {
+      data[i] = (lastOut * 0.93) + (white * 0.07);
+      lastOut = data[i];
+    } else if (type === 'waves') {
+      data[i] = (lastOut * 0.985) + (white * 0.015);
+      lastOut = data[i];
+    } else {
+      data[i] = (lastOut * 0.88) + (white * 0.12);
+      lastOut = data[i];
+    }
+  }
+  return buffer;
+}
+
+function toggleSoundTrack(soundType) {
+  const ctx = getAudioContext();
+  if (!ctx) {
+    toast("Trình duyệt không hỗ trợ âm thanh Web Audio.");
+    return;
+  }
+
+  const isCurrentlyActive = studyState.activeSounds[soundType];
+  const trackBtn = $(`#toggle${capitalize(soundType)}Btn`);
+  const trackCard = trackBtn ? trackBtn.closest('.ambient-track') : null;
+
+  if (isCurrentlyActive) {
+    try {
+      if (studyState.soundSources[soundType]) {
+        studyState.soundSources[soundType].stop();
+        studyState.soundSources[soundType].disconnect();
+      }
+    } catch (e) {}
+    studyState.soundSources[soundType] = null;
+    studyState.activeSounds[soundType] = false;
+    if (trackBtn) trackBtn.textContent = "Bật";
+    if (trackCard) trackCard.classList.remove('active');
+  } else {
+    try {
+      const buffer = createNoiseBuffer(ctx, soundType);
+      const source = ctx.createBufferSource();
+      source.buffer = buffer;
+      source.loop = true;
+
+      const gainNode = ctx.createGain();
+      const slider = $(`#volume${capitalize(soundType)}`);
+      const vol = slider ? (Number(slider.value) / 100) * 0.25 : 0.12;
+      gainNode.gain.setValueAtTime(vol, ctx.currentTime);
+
+      const filter = ctx.createBiquadFilter();
+      if (soundType === 'rain') {
+        filter.type = 'lowpass';
+        filter.frequency.setValueAtTime(1000, ctx.currentTime);
+      } else if (soundType === 'waves') {
+        filter.type = 'lowpass';
+        filter.frequency.setValueAtTime(450, ctx.currentTime);
+      } else {
+        filter.type = 'bandpass';
+        filter.frequency.setValueAtTime(800, ctx.currentTime);
+      }
+
+      source.connect(filter);
+      filter.connect(gainNode);
+      gainNode.connect(ctx.destination);
+
+      source.start(0);
+
+      studyState.soundSources[soundType] = source;
+      studyState.soundGains[soundType] = gainNode;
+      studyState.activeSounds[soundType] = true;
+
+      if (trackBtn) trackBtn.textContent = "Tắt";
+      if (trackCard) trackCard.classList.add('active');
+    } catch (e) {
+      console.error(e);
+    }
+  }
+}
+
+function updateSoundVolume(soundType, val) {
+  const gain = studyState.soundGains[soundType];
+  if (gain && studyState.audioCtx) {
+    gain.gain.setValueAtTime((val / 100) * 0.25, studyState.audioCtx.currentTime);
+  }
+}
+
+function capitalize(str) {
+  if (!str) return '';
+  return str.charAt(0).toUpperCase() + str.slice(1);
+}
+
+function playChimeSound() {
+  try {
+    const ctx = getAudioContext();
+    if (!ctx) return;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(587.33, ctx.currentTime); // D5
+    osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.3); // A5
+    gain.gain.setValueAtTime(0.2, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 1.2);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime + 1.2);
+  } catch (e) {}
+}
+
+/* --- TO-DO CHECKLIST MANAGER (localStorage) --- */
+const TODO_STORAGE_KEY = "research_study_todos_v1";
+
+function loadStudyTodos() {
+  const listEl = $("#studyTodoList");
+  if (!listEl) return;
+  let todos = [];
+  try {
+    todos = JSON.parse(localStorage.getItem(TODO_STORAGE_KEY) || "[]");
+  } catch (e) {
+    todos = [];
+  }
+
+  if (todos.length === 0) {
+    listEl.innerHTML = `<li class="todo-item" style="color:var(--muted); font-size:12px; justify-content:center;">Chưa có ghi chú nào.</li>`;
+    return;
+  }
+
+  listEl.innerHTML = todos.map((t, idx) => `
+    <li class="todo-item ${t.done ? 'done' : ''}">
+      <input type="checkbox" ${t.done ? 'checked' : ''} onchange="toggleStudyTodo(${idx})" />
+      <span>${escapeHTML(t.text)}</span>
+      <button class="todo-del-btn" onclick="deleteStudyTodo(${idx})" title="Xoá">×</button>
+    </li>
+  `).join("");
+}
+
+function saveStudyTodos(todos) {
+  try {
+    localStorage.setItem(TODO_STORAGE_KEY, JSON.stringify(todos));
+  } catch (e) {}
+  loadStudyTodos();
+}
+
+function addStudyTodo() {
+  const input = $("#newTodoInput");
+  if (!input) return;
+  const text = input.value.trim();
+  if (!text) return;
+  let todos = [];
+  try {
+    todos = JSON.parse(localStorage.getItem(TODO_STORAGE_KEY) || "[]");
+  } catch (e) {
+    todos = [];
+  }
+  todos.push({ text, done: false });
+  input.value = "";
+  saveStudyTodos(todos);
+}
+
+window.toggleStudyTodo = function(idx) {
+  let todos = [];
+  try {
+    todos = JSON.parse(localStorage.getItem(TODO_STORAGE_KEY) || "[]");
+  } catch (e) {}
+  if (todos[idx]) {
+    todos[idx].done = !todos[idx].done;
+    saveStudyTodos(todos);
+  }
+};
+
+window.deleteStudyTodo = function(idx) {
+  let todos = [];
+  try {
+    todos = JSON.parse(localStorage.getItem(TODO_STORAGE_KEY) || "[]");
+  } catch (e) {}
+  todos.splice(idx, 1);
+  saveStudyTodos(todos);
+};
+
+function clearCompletedTodos() {
+  let todos = [];
+  try {
+    todos = JSON.parse(localStorage.getItem(TODO_STORAGE_KEY) || "[]");
+  } catch (e) {}
+  todos = todos.filter(t => !t.done);
+  saveStudyTodos(todos);
+}
+
+/* --- ROUTE LIFECYCLE --- */
+function onEnterStudyLounge() {
+  fetchStudyLounge();
+  loadStudyTodos();
+  updateTimerDisplay();
+
+  if (!studyState.pollingInterval) {
+    studyState.pollingInterval = setInterval(fetchStudyLounge, 25000);
+  }
+}
+
+function onLeaveStudyLounge() {
+  if (studyState.pollingInterval) {
+    clearInterval(studyState.pollingInterval);
+    studyState.pollingInterval = null;
+  }
+}
+
+function initStudyLoungeEvents() {
+  $$(".study-mode-btn").forEach(btn => {
+    btn.onclick = () => {
+      const mode = btn.dataset.studyMode;
+      const duration = Number(btn.dataset.duration) || 25;
+      setStudyMode(mode, duration);
+    };
+  });
+
+  const startBtn = $("#studyStartBtn");
+  if (startBtn) startBtn.onclick = startStudyTimer;
+
+  const pauseBtn = $("#studyPauseBtn");
+  if (pauseBtn) pauseBtn.onclick = pauseStudyTimer;
+
+  const resetBtn = $("#studyResetBtn");
+  if (resetBtn) resetBtn.onclick = resetStudyTimer;
+
+  const completeBtn = $("#studyCompleteBtn");
+  if (completeBtn) completeBtn.onclick = () => finishStudySession(false);
+
+  const rainBtn = $("#toggleRainBtn");
+  if (rainBtn) rainBtn.onclick = () => toggleSoundTrack('rain');
+  const cafeBtn = $("#toggleCafeBtn");
+  if (cafeBtn) cafeBtn.onclick = () => toggleSoundTrack('cafe');
+  const waveBtn = $("#toggleWaveBtn");
+  if (waveBtn) waveBtn.onclick = () => toggleSoundTrack('waves');
+
+  const volRain = $("#volumeRain");
+  if (volRain) volRain.oninput = (e) => updateSoundVolume('rain', e.target.value);
+  const volCafe = $("#volumeCafe");
+  if (volCafe) volCafe.oninput = (e) => updateSoundVolume('cafe', e.target.value);
+  const volWave = $("#volumeWave");
+  if (volWave) volWave.oninput = (e) => updateSoundVolume('waves', e.target.value);
+
+  const masterAmbientBtn = $("#toggleAmbientMaster");
+  if (masterAmbientBtn) {
+    masterAmbientBtn.onclick = () => {
+      const anyActive = Object.values(studyState.activeSounds).some(v => v);
+      if (anyActive) {
+        ['rain', 'cafe', 'waves'].forEach(s => {
+          if (studyState.activeSounds[s]) toggleSoundTrack(s);
+        });
+        masterAmbientBtn.textContent = "Bật tất cả";
+      } else {
+        ['rain', 'cafe', 'waves'].forEach(s => {
+          if (!studyState.activeSounds[s]) toggleSoundTrack(s);
+        });
+        masterAmbientBtn.textContent = "Tắt tất cả";
+      }
+    };
+  }
+
+  const addTodoBtn = $("#addTodoBtn");
+  if (addTodoBtn) addTodoBtn.onclick = addStudyTodo;
+  const todoInput = $("#newTodoInput");
+  if (todoInput) {
+    todoInput.onkeydown = (e) => {
+      if (e.key === "Enter") addStudyTodo();
+    };
+  }
+  const clearTodoBtn = $("#clearCompletedTodos");
+  if (clearTodoBtn) clearTodoBtn.onclick = clearCompletedTodos;
+}
+
+initStudyLoungeEvents();
+

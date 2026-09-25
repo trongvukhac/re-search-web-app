@@ -15,7 +15,7 @@
     <link href="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.snow.css" rel="stylesheet" />
     <script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js"></script>
-    <link rel="stylesheet" href="styles.css?v=17" />
+    <link rel="stylesheet" href="styles.css?v=18" />
   </head>
   <body>
     <dialog
@@ -77,9 +77,10 @@
       <nav class="desktop-nav" aria-label="Điều hướng chính">
         <a href="#home" data-route="home" class="nav-link active">Trang chủ</a>
         <a href="#forum" data-route="forum" class="nav-link">Diễn đàn</a>
-        <a href="#documents" data-route="documents" class="nav-link"
-          >Tài liệu</a
-        >
+        <a href="#documents" data-route="documents" class="nav-link">Tài liệu</a>
+        <a href="#study" data-route="study" class="nav-link nav-link-study">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: -2px; margin-right: 4px;"><path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/></svg>Phòng tự học
+        </a>
       </nav>
       <div class="header-actions">
         <button
@@ -310,6 +311,133 @@
         <div class="document-grid" id="documentGrid"></div>
       </section>
 
+      <section id="study" class="page" data-page="study">
+        <div class="forum-heading study-heading">
+          <div>
+            <p class="eyebrow">KHÔNG GIAN TỰ HỌC NCKH</p>
+            <h1>Tập trung sâu,<br /><em>bền bỉ cùng bạn bè.</em></h1>
+          </div>
+          <div class="study-header-status">
+            <span class="study-live-badge"><span class="pulse-dot"></span> <span id="studyLiveCount">0</span> học giả đang học</span>
+          </div>
+        </div>
+
+        <div class="study-layout">
+          <!-- Main Timer & Focus Panel -->
+          <div class="study-main-col">
+            <div class="study-card study-timer-card">
+              <div class="timer-mode-selector">
+                <button class="study-mode-btn active" data-study-mode="pomodoro" data-duration="25">
+                  ⏱️ 25 phút <span>Tiêu chuẩn</span>
+                </button>
+                <button class="study-mode-btn" data-study-mode="deep" data-duration="50">
+                  🔬 50 phút <span>NCKH Sâu</span>
+                </button>
+                <button class="study-mode-btn" data-study-mode="shortbreak" data-duration="5">
+                  ☕ 5 phút <span>Nghỉ ngắn</span>
+                </button>
+              </div>
+
+              <div class="timer-visual-wrap">
+                <div class="timer-circle">
+                  <svg class="timer-svg" viewBox="0 0 200 200">
+                    <circle class="timer-bg-circle" cx="100" cy="100" r="88" />
+                    <circle class="timer-progress-circle" id="timerProgressCircle" cx="100" cy="100" r="88" />
+                  </svg>
+                  <div class="timer-center-content">
+                    <div class="timer-clock" id="timerClock">25:00</div>
+                    <div class="timer-status-label" id="timerStatusLabel">Sẵn sàng ca học</div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="study-goal-box">
+                <label for="studyGoalInput">🎯 Mục tiêu ca học này:</label>
+                <input type="text" id="studyGoalInput" maxlength="80" placeholder="Ví dụ: Đọc tổng quan đề tài, chạy dữ liệu SPSS, viết đề cương..." />
+              </div>
+
+              <div class="study-actions">
+                <button class="button button-primary" id="studyStartBtn">
+                  <span>▶</span> Bắt đầu học
+                </button>
+                <button class="button button-outline" id="studyPauseBtn" style="display: none;">
+                  <span>⏸</span> Tạm dừng
+                </button>
+                <button class="button button-outline" id="studyResetBtn">
+                  <span>🔄</span> Đặt lại
+                </button>
+                <button class="button button-quiet" id="studyCompleteBtn" style="display: none;">
+                  <span>✓</span> Hoàn tất & Nhận điểm
+                </button>
+              </div>
+            </div>
+
+            <!-- Built-in Ambient Sound Synthesizer (Zero Network Overhead) -->
+            <div class="study-card ambient-card">
+              <div class="ambient-header">
+                <h3>🎧 Âm thanh tập trung (Tích hợp)</h3>
+                <button class="button button-sm button-outline" id="toggleAmbientMaster">Bật tất cả</button>
+              </div>
+              <p class="ambient-sub">Âm thanh sóng êm dịu tổng hợp trực tiếp trên trình duyệt, không tốn dữ liệu mạng.</p>
+              
+              <div class="ambient-grid">
+                <div class="ambient-track">
+                  <div class="ambient-track-info">
+                    <span class="ambient-name">🌧️ Tiếng mưa rơi</span>
+                    <button class="ambient-track-toggle" id="toggleRainBtn" data-sound="rain">Bật</button>
+                  </div>
+                  <input type="range" id="volumeRain" min="0" max="100" value="50" class="ambient-slider" />
+                </div>
+
+                <div class="ambient-track">
+                  <div class="ambient-track-info">
+                    <span class="ambient-name">☕ Quán cafe ấm cúng</span>
+                    <button class="ambient-track-toggle" id="toggleCafeBtn" data-sound="cafe">Bật</button>
+                  </div>
+                  <input type="range" id="volumeCafe" min="0" max="100" value="40" class="ambient-slider" />
+                </div>
+
+                <div class="ambient-track">
+                  <div class="ambient-track-info">
+                    <span class="ambient-name">🌊 Tiếng ồn trắng / Sóng</span>
+                    <button class="ambient-track-toggle" id="toggleWaveBtn" data-sound="waves">Bật</button>
+                  </div>
+                  <input type="range" id="volumeWave" min="0" max="100" value="40" class="ambient-slider" />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Side Column: Co-Study Learners & Session Tasks -->
+          <div class="study-side-col">
+            <!-- Co-Study Live Desks -->
+            <div class="study-card co-study-card">
+              <div class="co-study-head">
+                <h3>👥 Bàn tròn cùng học</h3>
+                <span class="badge" id="coStudyCountBadge">0 học giả</span>
+              </div>
+              <p class="co-study-tip">Cùng giữ chuỗi và động viên nhau trong từng ca học.</p>
+              <div class="co-study-list" id="coStudyList">
+                <div class="co-study-empty">Chưa có ai trong phòng. Bấm <b>Bắt đầu học</b> để là người đầu tiên!</div>
+              </div>
+            </div>
+
+            <!-- Session To-Do Checklist -->
+            <div class="study-card todo-card">
+              <div class="todo-head">
+                <h3>📝 Ghi chú ca học</h3>
+                <button class="button button-sm button-ghost" id="clearCompletedTodos">Dọn việc đã xong</button>
+              </div>
+              <div class="todo-input-wrap">
+                <input type="text" id="newTodoInput" placeholder="Thêm mục tiêu nhỏ..." maxlength="80" />
+                <button class="button button-sm button-primary" id="addTodoBtn">+</button>
+              </div>
+              <ul class="todo-list" id="studyTodoList"></ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <section id="account" class="page" data-page="account">
         <div class="account-header">
           <div class="profile-large">
@@ -407,6 +535,8 @@
         ><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>Diễn đàn</a
       ><a href="#documents" data-route="documents" class="mobile-link"
         ><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>Tài liệu</a
+      ><a href="#study" data-route="study" class="mobile-link"
+        ><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/></svg>Tự học</a
       ><a href="#account" data-route="account" class="mobile-link"
         ><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Tài khoản</a
       >
@@ -930,6 +1060,6 @@
         </div>
       </div>
     </dialog>
-    <script src="app.js?v=31" defer></script>
+    <script src="app.js?v=32" defer></script>
   </body>
 </html>
