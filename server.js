@@ -183,6 +183,22 @@ function recordDownvoteAndCheckSpam(userId) {
   downvoteAttempts.set(userId, recent);
   return recent.length >= 5;
 }
+const readCooldowns = new Map();
+function canRecordRead(identifier, postId) {
+  const key = `${identifier}:${postId}`;
+  const now = Date.now();
+  const lastRead = readCooldowns.get(key);
+  if (lastRead && now - lastRead < 30 * 60 * 1000) {
+    return false;
+  }
+  readCooldowns.set(key, now);
+  if (readCooldowns.size > 5000) {
+    for (const [k, time] of readCooldowns.entries()) {
+      if (now - time > 35 * 60 * 1000) readCooldowns.delete(k);
+    }
+  }
+  return true;
+}
 function sha(value) {
   return crypto.createHash("sha256").update(value).digest("hex");
 }
@@ -593,11 +609,17 @@ async function api(request, response, url) {
   const readMatch = pathName.match(/^\/api\/posts\/(\d+)\/read$/);
   if (method === "POST" && readMatch) {
     const postId = Number(readMatch[1]);
-    const post = db.prepare("SELECT id FROM posts WHERE id=? AND status='visible'").get(postId);
+    const post = db.prepare("SELECT id, read_count FROM posts WHERE id=? AND status='visible'").get(postId);
     if (!post) return error(response, 404, "Không tìm thấy bài đăng.");
-    db.prepare("UPDATE posts SET read_count = read_count + 1 WHERE id=?").run(postId);
-    const updated = db.prepare("SELECT read_count FROM posts WHERE id=?").get(postId);
-    return json(response, 200, { success: true, readCount: Number(updated.read_count || 0) });
+    const viewer = sessionFrom(request);
+    const identifier = viewer ? `u:${viewer.id}` : `ip:${request.socket.remoteAddress || "unknown"}`;
+    if (canRecordRead(identifier, postId)) {
+      db.prepare("UPDATE posts SET read_count = read_count + 1 WHERE id=?").run(postId);
+      const updated = db.prepare("SELECT read_count FROM posts WHERE id=?").get(postId);
+      return json(response, 200, { success: true, counted: true, readCount: Number(updated.read_count || 0) });
+    } else {
+      return json(response, 200, { success: true, counted: false, readCount: Number(post.read_count || 0) });
+    }
   }
   const saveMatch = pathName.match(/^\/api\/posts\/(\d+)\/save$/);
   if (method === "POST" && saveMatch) {

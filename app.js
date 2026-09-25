@@ -683,16 +683,37 @@ function openQuestion() {
 let postReadTimer = null;
 let postReadActivePostId = null;
 let postReadTracked = false;
+let postReadAccumulatedMs = 0;
+let postReadLastActiveTime = null;
+
+function stopPostReadTracking() {
+  if (postReadTimer) {
+    clearInterval(postReadTimer);
+    postReadTimer = null;
+  }
+  postReadActivePostId = null;
+  postReadTracked = false;
+  postReadAccumulatedMs = 0;
+  postReadLastActiveTime = null;
+}
+
+function updatePostReadAccumulator() {
+  if (!postReadActivePostId || postReadTracked) return;
+  const now = Date.now();
+  if (document.visibilityState === "visible" && postReadLastActiveTime) {
+    postReadAccumulatedMs += (now - postReadLastActiveTime);
+  }
+  postReadLastActiveTime = document.visibilityState === "visible" ? now : null;
+}
+
+document.addEventListener("visibilitychange", () => {
+  updatePostReadAccumulator();
+});
 
 const detailModalEl = $("#detailModal");
 if (detailModalEl) {
   detailModalEl.addEventListener("close", () => {
-    if (postReadTimer) {
-      clearTimeout(postReadTimer);
-      postReadTimer = null;
-    }
-    postReadActivePostId = null;
-    postReadTracked = false;
+    stopPostReadTracking();
   });
 }
 
@@ -705,21 +726,32 @@ async function openDetail(id) {
   $("#detailContent").setAttribute("data-current-post", id);
 
   if (postReadActivePostId !== id) {
-    if (postReadTimer) {
-      clearTimeout(postReadTimer);
-      postReadTimer = null;
-    }
+    stopPostReadTracking();
     postReadActivePostId = id;
     postReadTracked = false;
-    postReadTimer = setTimeout(async () => {
-      if (modal.open && postReadActivePostId === id && !postReadTracked) {
+    postReadAccumulatedMs = 0;
+    postReadLastActiveTime = document.visibilityState === "visible" ? Date.now() : null;
+
+    postReadTimer = setInterval(async () => {
+      const modal = $("#detailModal");
+      if (!modal || !modal.open || postReadActivePostId !== id) {
+        stopPostReadTracking();
+        return;
+      }
+
+      updatePostReadAccumulator();
+
+      if (postReadAccumulatedMs >= 60000 && !postReadTracked) {
         postReadTracked = true;
+        clearInterval(postReadTimer);
+        postReadTimer = null;
+
         try {
           const res = await requestAPI(`/api/posts/${id}/read`, { method: "POST" });
           if (res && typeof res.readCount === "number") {
             const countEl = $("#detailPostReadCount");
             if (countEl && postReadActivePostId === id) {
-              countEl.textContent = `Đã có ${res.readCount} người đọc`;
+              countEl.textContent = `Đã có ${res.readCount} lượt đọc`;
             }
             if (Array.isArray(window.posts)) {
               const p = window.posts.find(x => x.id === id);
@@ -730,7 +762,7 @@ async function openDetail(id) {
           console.error("Failed to update post read count:", err);
         }
       }
-    }, 60000);
+    }, 1000);
   }
 
   try {
@@ -825,7 +857,7 @@ async function openDetail(id) {
               <b>${post.author.displayName || post.author}</b>${post.author?.role === "lecturer" ? ' <span style="color: var(--primary); font-weight: 700; margin-left: 4px; font-size: 11px;">[Giảng viên]</span>' : ""} <span style="font-size: 10px; color: #888; margin-left: 6px;">${formatTime(post.createdAt)}</span>${getEditedIndicator(post.editedAt)}
             </div>
             <div class="post-read-count" id="detailPostReadCount" style="font-size: 11px; color: var(--muted); white-space: nowrap; flex-shrink: 0;">
-              Đã có ${post.readCount || 0} người đọc
+              Đã có ${post.readCount || 0} lượt đọc
             </div>
           </div>
           ${post.lecturerRecommended ? '<div style="font-size: 11px; color: var(--primary); font-weight: 600; margin-top: 3px; display: flex; align-items: center; gap: 4px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path></svg> Giảng viên đề xuất</div>' : ''}
