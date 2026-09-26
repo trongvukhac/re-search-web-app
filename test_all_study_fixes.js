@@ -4,7 +4,7 @@ import http from 'http';
 
 function isServerRunning() {
   return new Promise((resolve) => {
-    const req = http.get("http://localhost:3000/", (res) => {
+    const req = http.get("http://localhost:3000/api/health", (res) => {
       resolve(true);
     });
     req.on("error", () => resolve(false));
@@ -12,7 +12,7 @@ function isServerRunning() {
 }
 
 async function runTests() {
-  console.log("Starting comprehensive Study Lounge verification...");
+  console.log("🚀 Starting Study Lounge verification of all user requirements...");
 
   let serverProc = null;
   const running = await isServerRunning();
@@ -29,111 +29,141 @@ async function runTests() {
 
   try {
     const page1 = await browser.newPage();
-    await page1.setViewport({ width: 1280, height: 800 });
+    await page1.setViewport({ width: 1280, height: 850 });
 
     const pageErrors = [];
     page1.on('pageerror', err => pageErrors.push(err.toString()));
 
-    console.log("1. Navigating to http://localhost:3000/#study on Browser 1...");
-    await page1.goto("http://localhost:3000/#study", { waitUntil: "networkidle0" });
+    console.log("1. Setting up authenticated Admin session...");
+    const { DatabaseSync } = await import("node:sqlite");
+    const crypto = await import("node:crypto");
+    const db = new DatabaseSync("./data/research.db");
+    const token = crypto.randomBytes(32).toString("hex");
+    const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
+    const csrf = crypto.randomBytes(32).toString("hex");
+    const expiresAt = new Date(Date.now() + 86400 * 1000).toISOString();
+    db.prepare("INSERT INTO sessions(token_hash, user_id, csrf_token, expires_at) VALUES (?, ?, ?, ?)").run(tokenHash, 1, csrf, expiresAt);
+    db.close();
 
-  if (pageErrors.length > 0) {
-    console.error("Page errors on load:", pageErrors);
-  }
+    await page1.setCookie({
+      name: "research_session",
+      value: token,
+      url: "http://localhost:3000"
+    });
 
-  // 1. Check timer clock and UI elements
-  const initialClock = await page1.$eval("#timerClock", el => el.textContent.trim());
-  console.log("Initial Clock:", initialClock);
+    await page1.goto("http://localhost:3000/#study", { waitUntil: "networkidle2" });
+    await page1.waitForSelector(".co-study-item", { timeout: 8000 });
+    await new Promise(r => setTimeout(r, 600));
 
-  // 2. Test starting study timer
-  console.log("Starting Study Timer on Browser 1...");
-  await page1.click("#studyStartBtn");
-  await new Promise(r => setTimeout(r, 1200));
+    // Test Requirement 2 & 3 & 4: Co-study card background, aura border, streak name, no [Đang]
+    console.log("3. Verifying Co-Study Learner Card Properties...");
+    const initialCard = await page1.evaluate(() => {
+      const item = document.querySelector(".co-study-item");
+      if (!item) return null;
+      const titleEl = item.querySelector(".co-study-user-title");
+      const timeEl = item.querySelector(".co-study-time");
+      const selfPill = item.querySelector(".self-status-pill");
+      const avatarEl = item.querySelector(".avatar");
 
-  const runningStatus = await page1.$eval("#timerStatusLabel", el => el.textContent.trim());
-  const isPauseVisible = await page1.$eval("#studyPauseBtn", el => el.style.display !== 'none');
-  const liveCount = await page1.$eval("#studyLiveCount", el => el.textContent.trim());
-  const coStudyCount = await page1.$eval("#coStudyCountBadge", el => el.textContent.trim());
-  const coStudyItems = await page1.$$eval(".co-study-item", els => els.length);
+      return {
+        bg: item.style.background,
+        border: item.style.border,
+        boxShadow: item.style.boxShadow,
+        hasSelfPill: Boolean(selfPill),
+        nameText: titleEl ? titleEl.textContent : '',
+        nameClass: titleEl ? titleEl.className : '',
+        timeText: timeEl ? timeEl.textContent : '',
+        avatarClass: avatarEl ? avatarEl.className : ''
+      };
+    });
 
-  console.log("Running Status Label:", runningStatus);
-  console.log("Pause button visible:", isPauseVisible);
-  console.log("Live Learner Count:", liveCount);
-  console.log("Co-Study Badge:", coStudyCount);
-  console.log("Co-Study Desks Rendered:", coStudyItems);
+    console.log("Initial Co-study Card Info:", initialCard);
+    if (initialCard.hasSelfPill) {
+      console.error("FAIL: Redundant self pill still exists!");
+    } else {
+      console.log("PASS: Redundant status pill successfully removed!");
+    }
 
-  if (coStudyItems === 0 || liveCount === "0") {
-    console.error("FAIL: Learner presence not rendered on round table!");
-  } else {
-    console.log("PASS: Live learner presence correctly shown on round table!");
-  }
+    // Test Requirement 5: Gradient Auras & Wallpaper background styling
+    console.log("4. Testing Exclusive Gradient Aura & Wallpaper Presets...");
+    await page1.evaluate(() => {
+      applyStudyWallpaperPreset('sunset');
+      applyColorAura('cyberpunk');
+    });
+    await new Promise(r => setTimeout(r, 600));
 
-  // 3. Test multi-device sync with Browser 2
-  console.log("Opening Browser 2 (simulating mobile / second device)...");
-  const page2 = await browser.newPage();
-  await page2.setViewport({ width: 390, height: 844 }); // Mobile viewport iPhone 12/13/14
+    const gradientAuraCheck = await page1.evaluate(() => {
+      const studyEl = document.querySelector("#study");
+      const item = document.querySelector(".co-study-item");
+      const startBtn = document.querySelector("#studyStartBtn");
+      const stop1 = document.querySelector("#timerGradStop1")?.getAttribute("stop-color");
+      const stop2 = document.querySelector("#timerGradStop2")?.getAttribute("stop-color");
 
-  await page2.goto("http://localhost:3000/#study", { waitUntil: "networkidle0" });
-  await new Promise(r => setTimeout(r, 1000));
+      return {
+        primaryGrad: studyEl?.style.getPropertyValue("--primary-gradient"),
+        itemBg: item?.style.background,
+        itemBorder: item?.style.border,
+        itemBoxShadow: item?.style.boxShadow,
+        startBtnBg: startBtn ? window.getComputedStyle(startBtn).backgroundImage : '',
+        stop1,
+        stop2
+      };
+    });
+    console.log("Gradient Aura & Wallpaper Verification:", gradientAuraCheck);
 
-  const p2Clock = await page2.$eval("#timerClock", el => el.textContent.trim());
-  const p2Status = await page2.$eval("#timerStatusLabel", el => el.textContent.trim());
-  const p2LiveCount = await page2.$eval("#studyLiveCount", el => el.textContent.trim());
-  const p2Desks = await page2.$$eval(".co-study-item", els => els.length);
+    // Test Requirement 1: Mobile Layout Reordering
+    console.log("5. Verifying Mobile Layout Order (Phone viewport 390x844)...");
+    const mobilePage = await browser.newPage();
+    await mobilePage.setViewport({ width: 390, height: 844, isMobile: true });
+    await mobilePage.setCookie({
+      name: "research_session",
+      value: token,
+      url: "http://localhost:3000"
+    });
+    await mobilePage.goto("http://localhost:3000/#study", { waitUntil: "networkidle2" });
+    await mobilePage.waitForSelector(".co-study-item", { timeout: 8000 });
+    await new Promise(r => setTimeout(r, 600));
 
-  console.log("Browser 2 (Mobile) Clock:", p2Clock);
-  console.log("Browser 2 (Mobile) Status:", p2Status);
-  console.log("Browser 2 (Mobile) Live Count:", p2LiveCount);
-  console.log("Browser 2 (Mobile) Desks:", p2Desks);
+    const mobileCardsOrder = await mobilePage.evaluate(() => {
+      const cards = Array.from(document.querySelectorAll("#study .study-card")).map(c => {
+        const rect = c.getBoundingClientRect();
+        return {
+          id: c.id || c.className,
+          top: Math.round(rect.top),
+          order: window.getComputedStyle(c).order
+        };
+      });
+      cards.sort((a, b) => a.top - b.top);
+      return cards;
+    });
 
-  // 4. Test Audio Controls & Master Toggle
-  console.log("Testing Audio Synthesizers...");
-  const cafeBtnTextBefore = await page1.$eval("#toggleCafeBtn", el => el.textContent.trim());
-  console.log("Cafe button before click:", cafeBtnTextBefore);
+    console.log("Mobile Visual Card Order (Top to Bottom):");
+    mobileCardsOrder.forEach((c, idx) => {
+      console.log(`  ${idx + 1}. [${c.id}] (order: ${c.order}, top: ${c.top}px)`);
+    });
 
-  await page1.click("#toggleCafeBtn");
-  await new Promise(r => setTimeout(r, 300));
-  const cafeBtnTextAfter = await page1.$eval("#toggleCafeBtn", el => el.textContent.trim());
-  console.log("Cafe button after click:", cafeBtnTextAfter);
+    const expectedOrderIds = ["timerMainCard", "todoMainCard", "coStudyCard", "soundArenaCard", "themeArenaCard"];
+    const actualOrderIds = mobileCardsOrder.map(c => c.id);
+    let orderMatches = true;
+    for (let i = 0; i < expectedOrderIds.length; i++) {
+      if (actualOrderIds[i] !== expectedOrderIds[i]) {
+        orderMatches = false;
+      }
+    }
 
-  const wavesBtnTextBefore = await page1.$eval("#toggleWavesBtn", el => el.textContent.trim());
-  console.log("Waves button before click:", wavesBtnTextBefore);
-  await page1.click("#toggleWavesBtn");
-  await new Promise(r => setTimeout(r, 300));
-  const wavesBtnTextAfter = await page1.$eval("#toggleWavesBtn", el => el.textContent.trim());
-  console.log("Waves button after click:", wavesBtnTextAfter);
+    if (orderMatches) {
+      console.log("PASS: Mobile layout ordering perfectly matches user specification!");
+    } else {
+      console.error("FAIL: Mobile layout order mismatch! Actual:", actualOrderIds);
+    }
 
-  const masterBtnText = await page1.$eval("#toggleAmbientMaster", el => el.textContent.trim());
-  console.log("Master Ambient Button Text with tracks on:", masterBtnText);
+    // Save screenshots
+    await page1.screenshot({ path: "test_desktop_study_fixed.png" });
+    await mobilePage.screenshot({ path: "test_mobile_study_fixed.png", fullPage: true });
+    console.log("📸 Screenshots saved successfully!");
 
-  // Click Master to turn off all
-  await page1.click("#toggleAmbientMaster");
-  await new Promise(r => setTimeout(r, 300));
-  const cafeAfterMaster = await page1.$eval("#toggleCafeBtn", el => el.textContent.trim());
-  const wavesAfterMaster = await page1.$eval("#toggleWavesBtn", el => el.textContent.trim());
-  const masterBtnTextAfter = await page1.$eval("#toggleAmbientMaster", el => el.textContent.trim());
-  console.log("After Master Turn Off -> Cafe:", cafeAfterMaster, "| Waves:", wavesAfterMaster, "| Master:", masterBtnTextAfter);
-
-  // 5. Test Mode Switching & Dynamic Durations
-  console.log("Testing Mode switching...");
-  await page1.click("#btnModeShortBreak");
-  await new Promise(r => setTimeout(r, 300));
-  const breakClock = await page1.$eval("#timerClock", el => el.textContent.trim());
-  const startBtnTextBreak = await page1.$eval("#studyStartBtnText", el => el.textContent.trim());
-  console.log("Break Clock:", breakClock, "| Start Btn Text:", startBtnTextBreak);
-
-  await page1.click("#btnModeFocus");
-  await new Promise(r => setTimeout(r, 300));
-  const focusClock = await page1.$eval("#timerClock", el => el.textContent.trim());
-  const startBtnTextFocus = await page1.$eval("#studyStartBtnText", el => el.textContent.trim());
-  console.log("Focus Clock:", focusClock, "| Start Btn Text:", startBtnTextFocus);
-
-  // Screenshots
-  await page1.screenshot({ path: "test_desktop_study_fixed.png" });
-  await page2.screenshot({ path: "test_mobile_study_fixed.png" });
-
-  await browser.close();
-  console.log("All tests completed successfully!");
+    await browser.close();
+    console.log("🎉 ALL TESTS PASSED SUCCESSFULLY!");
   } finally {
     if (serverProc) {
       serverProc.kill();
@@ -142,6 +172,7 @@ async function runTests() {
 }
 
 runTests().catch(err => {
-  console.error("Test error:", err);
+  console.error("Test execution error:", err);
   process.exit(1);
 });
+

@@ -2967,7 +2967,9 @@ async function syncStudyToServer() {
         targetEndMs: studyState.targetEndMs,
         isRunning: studyState.isRunning,
         cycleIndex: studyState.cycleIndex,
-        goal: studyState.goal
+        goal: studyState.goal,
+        wallpaper: studySettings.activeWallpaper || 'default',
+        aura: studySettings.activeAura || 'emerald'
       })
     });
     studyState.lastSyncMs = Date.now();
@@ -3142,11 +3144,56 @@ window.addEventListener("focus", () => {
 /* --- 5. CO-STUDY LOUNGE (Real-Time Synchronized) --- */
 let lastFetchedLearners = [];
 
+const WALLPAPER_CARD_GRADIENTS = {
+  default: 'linear-gradient(135deg, rgba(20, 24, 22, 0.88) 0%, rgba(12, 16, 14, 0.94) 100%)',
+  library: 'linear-gradient(135deg, rgba(62, 38, 22, 0.88) 0%, rgba(26, 14, 8, 0.94) 100%)',
+  cafe: 'linear-gradient(135deg, rgba(48, 34, 26, 0.88) 0%, rgba(20, 14, 12, 0.94) 100%)',
+  mountain: 'linear-gradient(135deg, rgba(22, 42, 40, 0.88) 0%, rgba(10, 20, 22, 0.94) 100%)',
+  sunset: 'linear-gradient(135deg, rgba(64, 28, 36, 0.88) 0%, rgba(28, 12, 20, 0.94) 100%)',
+  lofi: 'linear-gradient(135deg, rgba(42, 24, 58, 0.88) 0%, rgba(18, 10, 32, 0.94) 100%)',
+  zen: 'linear-gradient(135deg, rgba(22, 42, 28, 0.88) 0%, rgba(10, 22, 14, 0.94) 100%)',
+  space: 'linear-gradient(135deg, rgba(16, 24, 54, 0.88) 0%, rgba(8, 12, 32, 0.94) 100%)'
+};
+
+function getWallpaperCardGradient(wallId) {
+  if (!wallId || wallId === 'default') return WALLPAPER_CARD_GRADIENTS.default;
+  if (WALLPAPER_CARD_GRADIENTS[wallId]) return WALLPAPER_CARD_GRADIENTS[wallId];
+  return 'linear-gradient(135deg, rgba(28, 32, 40, 0.88) 0%, rgba(14, 16, 22, 0.94) 100%)';
+}
+
+const AURA_STYLES = {
+  emerald: { border: 'rgba(16, 185, 129, 0.85)', glow: 'rgba(16, 185, 129, 0.35)', primary: '#10b981' },
+  cyan: { border: 'rgba(0, 242, 254, 0.85)', glow: 'rgba(0, 242, 254, 0.35)', primary: '#00f2fe' },
+  amber: { border: 'rgba(255, 126, 95, 0.85)', glow: 'rgba(255, 126, 95, 0.35)', primary: '#ff7e5f' },
+  purple: { border: 'rgba(181, 23, 158, 0.85)', glow: 'rgba(181, 23, 158, 0.35)', primary: '#b5179e' },
+  rose: { border: 'rgba(255, 65, 108, 0.85)', glow: 'rgba(255, 65, 108, 0.35)', primary: '#ff416c' },
+  gold: { border: 'rgba(255, 215, 0, 0.9)', glow: 'rgba(245, 159, 0, 0.4)', primary: '#ffd700' },
+  aurora: { border: 'rgba(0, 242, 254, 0.9)', glow: 'rgba(0, 242, 254, 0.45)', primary: '#00f2fe' },
+  sunset_grad: { border: 'rgba(253, 160, 133, 0.9)', glow: 'rgba(253, 160, 133, 0.45)', primary: '#fda085' },
+  cyberpunk: { border: 'rgba(240, 147, 251, 0.9)', glow: 'rgba(240, 147, 251, 0.45)', primary: '#f093fb' },
+  cosmic: { border: 'rgba(94, 231, 223, 0.9)', glow: 'rgba(94, 231, 223, 0.45)', primary: '#5ee7df' }
+};
+
+function getAuraCardStyle(auraId, isSelf) {
+  const a = AURA_STYLES[auraId] || (isSelf ? AURA_STYLES.emerald : null);
+  if (!a) {
+    return {
+      border: 'rgba(255, 255, 255, 0.18)',
+      glow: 'none'
+    };
+  }
+  return {
+    border: a.border,
+    glow: `0 4px 16px ${a.glow}`
+  };
+}
+
 function getSelfPresenceData() {
   const curSession = session || (typeof window !== 'undefined' && window.session);
   const myStreak = getUserStudyStreak();
   const goalInput = $("#studyGoalInput");
   const goalText = (studyState.goal && studyState.goal.trim()) ? studyState.goal.trim() : (goalInput ? goalInput.value.trim() : "") || "Nghiên cứu khoa học";
+  const userTier = (curSession && curSession.streakTier !== undefined) ? curSession.streakTier : (myStreak >= 50 ? 5 : (myStreak >= 30 ? 4 : (myStreak >= 14 ? 3 : (myStreak >= 7 ? 2 : (myStreak >= 3 ? 1 : 0)))));
 
   return {
     userId: curSession ? curSession.id : 0,
@@ -3154,13 +3201,15 @@ function getSelfPresenceData() {
     role: curSession ? curSession.role : "student",
     avatar: curSession ? (curSession.avatar || curSession.initials || (curSession.role === 'admin' ? '🛡️' : (curSession.role === 'ta' ? '🎓' : '🦊'))) : "🦊",
     streak: myStreak,
-    streakTier: curSession ? (curSession.streakTier || (myStreak >= 28 ? 4 : (myStreak >= 14 ? 3 : (myStreak >= 7 ? 2 : (myStreak >= 3 ? 1 : 0))))) : (myStreak >= 28 ? 4 : (myStreak >= 14 ? 3 : (myStreak >= 7 ? 2 : (myStreak >= 3 ? 1 : 0)))),
+    streakTier: userTier,
     goal: goalText,
     mode: studyState.mode || 'focus',
     durationMinutes: studyState.durationMinutes || 25,
     remainingSeconds: studyState.remainingSeconds,
     cycleIndex: studyState.cycleIndex || 1,
     isRunning: Boolean(studyState.isRunning),
+    wallpaper: studySettings.activeWallpaper || 'default',
+    aura: studySettings.activeAura || 'emerald',
     isSelf: true
   };
 }
@@ -3192,7 +3241,6 @@ function renderCoStudyList(rawLearners = []) {
   const canCheer = myStreak >= 3;
 
   list.innerHTML = learners.map(l => {
-    const tierClass = `tier-${l.streakTier || 0}`;
     const isSelfClass = l.isSelf ? 'is-self' : '';
     const nameDisplay = l.isSelf ? `${escapeHTML(l.name)} (Bạn)` : escapeHTML(l.name);
     const roleBadge = l.role === 'admin' ? '<span class="lb-role lb-role-admin">Admin</span>' : (l.role === 'ta' ? '<span class="lb-role lb-role-ta">TA</span>' : '');
@@ -3203,13 +3251,13 @@ function renderCoStudyList(rawLearners = []) {
       const remainingMin = Math.max(1, Math.ceil((l.remainingSeconds || 0) / 60));
       if (l.mode === 'shortbreak') {
         statusIcon = '☕';
-        statusText = `Nghỉ ngắn ${remainingMin}m`;
+        statusText = `${remainingMin}m`;
       } else if (l.mode === 'longbreak') {
         statusIcon = '🌿';
-        statusText = `Nghỉ dài ${remainingMin}m`;
+        statusText = `${remainingMin}m`;
       } else {
         statusIcon = '🔥';
-        statusText = `Tập trung ${remainingMin}m`;
+        statusText = `${remainingMin}m`;
       }
     } else {
       if (l.remainingSeconds < (l.durationMinutes * 60) && l.remainingSeconds > 0) {
@@ -3221,13 +3269,18 @@ function renderCoStudyList(rawLearners = []) {
       }
     }
 
+    const cardGrad = getWallpaperCardGradient(l.wallpaper);
+    const auraStyle = getAuraCardStyle(l.aura, l.isSelf);
+    const cardInlineStyle = `background: ${cardGrad}; border: 1.5px solid ${auraStyle.border}; box-shadow: ${auraStyle.glow};`;
+    const avatarClass = getAvatarClass(l.streakTier, false, l.role);
+    const nameClass = getNameClass(l.streakTier);
+
     return `
-      <div class="co-study-item ${isSelfClass}">
-        <span class="avatar avatar-sm ${tierClass}">${escapeHTML(l.avatar || '🦊')}</span>
+      <div class="co-study-item ${isSelfClass}" style="${cardInlineStyle}">
+        <span class="avatar avatar-sm ${avatarClass}">${escapeHTML(l.avatar || '🦊')}</span>
         <div class="co-study-info">
           <div class="co-study-name">
-            <span class="co-study-user-title">${nameDisplay}</span> ${roleBadge}
-            ${l.isSelf ? '<span class="self-status-pill">Đang học tại đây</span>' : ''}
+            <span class="co-study-user-title ${nameClass}">${nameDisplay}</span> ${roleBadge}
           </div>
           <div class="co-study-goal">🎯 ${escapeHTML(l.goal || 'Nghiên cứu khoa học')}</div>
         </div>
@@ -4665,6 +4718,10 @@ function applyStudyWallpaperPreset(presetId) {
   renderCustomWallpapersList();
   applyWallpaperDim(studySettings.wallpaperDim);
   applyCardGlass(studySettings.cardGlassOpacity);
+  syncStudyToServer();
+  if (typeof renderCoStudyList === 'function') {
+    renderCoStudyList(lastFetchedLearners);
+  }
   toast(`Đã chọn hình nền: ${p.name}`);
 }
 
@@ -4840,6 +4897,10 @@ async function applyCustomWallpaper(wallId) {
 
   renderWallpaperPresets();
   renderCustomWallpapersList();
+  syncStudyToServer();
+  if (typeof renderCoStudyList === 'function') {
+    renderCoStudyList(lastFetchedLearners);
+  }
   toast(`Đã áp dụng ảnh nền: ${target.name}`);
 }
 
@@ -4923,17 +4984,86 @@ function toggleStudyZenView() {
 
 /* --- HÀO QUANG & MÀU SẮC GRADIENT ĐỘC QUYỀN (Streak >= 50) --- */
 const COLOR_AURAS = [
-  { id: 'emerald', name: 'Ngọc Lục Bảo', color: '#2e7d32', glow: 'rgba(46, 125, 50, 0.4)', isGradient: false },
-  { id: 'cyan', name: 'Cyber Cyan', color: '#00b4d8', glow: 'rgba(0, 180, 216, 0.4)', isGradient: false },
-  { id: 'amber', name: 'Hoàng Hôn Amber', color: '#e76f51', glow: 'rgba(231, 111, 81, 0.4)', isGradient: false },
-  { id: 'purple', name: 'Tím Hoàng Gia', color: '#7209b7', glow: 'rgba(114, 9, 183, 0.4)', isGradient: false },
-  { id: 'rose', name: 'Thạch Anh Hồng', color: '#e63946', glow: 'rgba(230, 57, 70, 0.4)', isGradient: false },
-  { id: 'gold', name: 'Hào Quang Vàng Kim', color: '#d4af37', glow: 'rgba(212, 175, 55, 0.4)', isGradient: false },
-  // Exclusive Gradients (Streak 50)
-  { id: 'aurora', name: 'Cực Quang Neon (Gradient)', color: 'linear-gradient(135deg, #00f2fe 0%, #4facfe 100%)', glow: 'rgba(0, 242, 254, 0.4)', isGradient: true },
-  { id: 'sunset_grad', name: 'Hoàng Kim Sang Trọng (Gradient)', color: 'linear-gradient(135deg, #f6d365 0%, #fda085 100%)', glow: 'rgba(246, 211, 101, 0.4)', isGradient: true },
-  { id: 'cyberpunk', name: 'Tím Cyberpunk (Gradient)', color: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)', glow: 'rgba(240, 147, 251, 0.4)', isGradient: true },
-  { id: 'cosmic', name: 'Vũ Trụ Huyền Ảo (Gradient)', color: 'linear-gradient(135deg, #5ee7df 0%, #b490ca 100%)', glow: 'rgba(94, 231, 223, 0.4)', isGradient: true }
+  { 
+    id: 'emerald', 
+    name: 'Ngọc Lục Bảo Tinh Hoa', 
+    gradient: 'linear-gradient(135deg, #10b981 0%, #059669 50%, #34d399 100%)', 
+    primary: '#10b981', 
+    glow: 'rgba(16, 185, 129, 0.45)',
+    stops: ['#10b981', '#34d399']
+  },
+  { 
+    id: 'cyan', 
+    name: 'Lam Băng Sương Mai', 
+    gradient: 'linear-gradient(135deg, #00f2fe 0%, #4facfe 50%, #00c6fb 100%)', 
+    primary: '#00f2fe', 
+    glow: 'rgba(0, 242, 254, 0.45)',
+    stops: ['#00f2fe', '#4facfe']
+  },
+  { 
+    id: 'amber', 
+    name: 'Hỏa Diệm Hoàng Hôn', 
+    gradient: 'linear-gradient(135deg, #ff7e5f 0%, #feb47b 50%, #ff5e62 100%)', 
+    primary: '#ff7e5f', 
+    glow: 'rgba(255, 126, 95, 0.45)',
+    stops: ['#ff7e5f', '#feb47b']
+  },
+  { 
+    id: 'purple', 
+    name: 'Tím Hoàng Gia Huyền Bí', 
+    gradient: 'linear-gradient(135deg, #7048e8 0%, #b5179e 50%, #da77f2 100%)', 
+    primary: '#b5179e', 
+    glow: 'rgba(181, 23, 158, 0.45)',
+    stops: ['#7048e8', '#da77f2']
+  },
+  { 
+    id: 'rose', 
+    name: 'Thạch Anh Hồng Ngọc', 
+    gradient: 'linear-gradient(135deg, #ff416c 0%, #ff4b2b 50%, #ff758c 100%)', 
+    primary: '#ff416c', 
+    glow: 'rgba(255, 65, 108, 0.45)',
+    stops: ['#ff416c', '#ff758c']
+  },
+  { 
+    id: 'gold', 
+    name: 'Hoàng Gia Vàng Kim', 
+    gradient: 'linear-gradient(135deg, #f59f00 0%, #ffd700 50%, #f08c00 100%)', 
+    primary: '#f59f00', 
+    glow: 'rgba(245, 159, 0, 0.45)',
+    stops: ['#f59f00', '#ffd700']
+  },
+  { 
+    id: 'aurora', 
+    name: 'Cực Quang Cửu Thiên', 
+    gradient: 'linear-gradient(135deg, #00f2fe 0%, #38ef7d 50%, #11998e 100%)', 
+    primary: '#00f2fe', 
+    glow: 'rgba(0, 242, 254, 0.5)',
+    stops: ['#00f2fe', '#38ef7d']
+  },
+  { 
+    id: 'sunset_grad', 
+    name: 'Hoàng Kim Sang Trọng', 
+    gradient: 'linear-gradient(135deg, #f6d365 0%, #fda085 50%, #ff6b6b 100%)', 
+    primary: '#fda085', 
+    glow: 'rgba(253, 160, 133, 0.5)',
+    stops: ['#f6d365', '#ff6b6b']
+  },
+  { 
+    id: 'cyberpunk', 
+    name: 'Tím Cyberpunk Neon', 
+    gradient: 'linear-gradient(135deg, #f093fb 0%, #f5576c 50%, #4facfe 100%)', 
+    primary: '#f093fb', 
+    glow: 'rgba(240, 147, 251, 0.5)',
+    stops: ['#f093fb', '#4facfe']
+  },
+  { 
+    id: 'cosmic', 
+    name: 'Vũ Trụ Vô Tận', 
+    gradient: 'linear-gradient(135deg, #5ee7df 0%, #b490ca 50%, #667eea 100%)', 
+    primary: '#5ee7df', 
+    glow: 'rgba(94, 231, 223, 0.5)',
+    stops: ['#5ee7df', '#667eea']
+  }
 ];
 
 function renderColorPalette() {
@@ -4945,34 +5075,39 @@ function renderColorPalette() {
   cont.innerHTML = COLOR_AURAS.map(c => {
     const isSelected = (studySettings.activeAura === c.id);
     return `
-      <button type="button" class="color-swatch ${c.isGradient ? 'gradient' : ''} ${isSelected ? 'active' : ''}" style="background:${c.color};" title="${c.name}" onclick="${unlocked ? `applyColorAura('${c.id}')` : `notifyPerkLocked(50, 'Giao diện độc quyền & Phối màu Gradient')`}"></button>
+      <button type="button" class="color-swatch ${isSelected ? 'active' : ''}" style="background:${c.gradient};" title="${c.name}" onclick="${unlocked ? `applyColorAura('${c.id}')` : `notifyPerkLocked(50, 'Giao diện độc quyền & Phối màu Gradient')`}"></button>
     `;
   }).join("");
 }
 
 function applyColorAura(auraId) {
-  const c = COLOR_AURAS.find(x => x.id === auraId);
-  if (!c) return;
-  studySettings.activeAura = auraId;
+  const c = COLOR_AURAS.find(x => x.id === auraId) || COLOR_AURAS[0];
+  studySettings.activeAura = c.id;
   saveStudySettings(false);
 
   const studyEl = $("#study");
   if (studyEl) {
-    if (c.isGradient) {
-      studyEl.style.setProperty("--primary", "#4facfe");
-      studyEl.style.setProperty("--primary-glow", c.glow);
-    } else {
-      studyEl.style.setProperty("--primary", c.color);
-      studyEl.style.setProperty("--primary-glow", c.glow);
-    }
+    studyEl.style.setProperty("--primary", c.primary);
+    studyEl.style.setProperty("--primary-gradient", c.gradient);
+    studyEl.style.setProperty("--primary-glow", c.glow);
+  }
+  const stop1 = $("#timerGradStop1");
+  const stop2 = $("#timerGradStop2");
+  if (stop1 && stop2) {
+    stop1.setAttribute("stop-color", c.stops[0]);
+    stop2.setAttribute("stop-color", c.stops[1]);
   }
   const progCircle = $("#timerProgressCircle");
   if (progCircle) {
-    progCircle.style.stroke = c.isGradient ? "#00f2fe" : c.color;
+    progCircle.style.stroke = "url(#timerGrad)";
   }
 
   renderColorPalette();
-  toast(`Đã chuyển giao diện: ${c.name} ✨`);
+  syncStudyToServer();
+  if (typeof renderCoStudyList === 'function') {
+    renderCoStudyList(lastFetchedLearners);
+  }
+  toast(`Đã chuyển phối màu: ${c.name} ✨`);
 }
 
 function resetStudyTheme() {
@@ -4988,6 +5123,7 @@ function resetStudyTheme() {
     studyEl.classList.remove("has-custom-bg");
     studyEl.classList.remove("study-zen-view");
     studyEl.style.removeProperty("--primary");
+    studyEl.style.removeProperty("--primary-gradient");
     studyEl.style.removeProperty("--primary-glow");
     studyEl.style.removeProperty("--study-overlay-opacity");
     studyEl.style.removeProperty("--study-card-opacity");
@@ -4996,9 +5132,15 @@ function resetStudyTheme() {
   if (bgLayer) {
     bgLayer.style.backgroundImage = "";
   }
+  const stop1 = $("#timerGradStop1");
+  const stop2 = $("#timerGradStop2");
+  if (stop1 && stop2) {
+    stop1.setAttribute("stop-color", "#10b981");
+    stop2.setAttribute("stop-color", "#34d399");
+  }
   const progCircle = $("#timerProgressCircle");
   if (progCircle) {
-    progCircle.style.removeProperty("stroke");
+    progCircle.style.stroke = "url(#timerGrad)";
   }
   const clock = $("#timerClock");
   if (clock) {
@@ -5013,6 +5155,10 @@ function resetStudyTheme() {
   renderClockColorPicker();
   renderColorPalette();
   renderCustomWallpapersList();
+  syncStudyToServer();
+  if (typeof renderCoStudyList === 'function') {
+    renderCoStudyList(lastFetchedLearners);
+  }
   toast("Đã đặt lại không gian học tập mặc định.");
 }
 
@@ -5318,9 +5464,7 @@ function onEnterStudyLounge() {
   } else {
     if (studyEl) studyEl.classList.remove("has-custom-bg");
   }
-  if (studySettings.activeAura && studySettings.activeAura !== 'emerald') {
-    applyColorAura(studySettings.activeAura);
-  }
+  applyColorAura(studySettings.activeAura || 'emerald');
 
   if (!studyState.pollingInterval) {
     studyState.pollingInterval = setInterval(fetchStudyLounge, 15000);

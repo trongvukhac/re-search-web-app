@@ -384,8 +384,14 @@
               <div class="timer-visual-wrap">
                 <div class="timer-circle">
                   <svg class="timer-svg" viewBox="0 0 240 240">
+                    <defs>
+                      <linearGradient id="timerGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" id="timerGradStop1" stop-color="#10b981" />
+                        <stop offset="100%" id="timerGradStop2" stop-color="#34d399" />
+                      </linearGradient>
+                    </defs>
                     <circle class="timer-bg-circle" cx="120" cy="120" r="105" />
-                    <circle class="timer-progress-circle" id="timerProgressCircle" cx="120" cy="120" r="105" />
+                    <circle class="timer-progress-circle" id="timerProgressCircle" cx="120" cy="120" r="105" stroke="url(#timerGrad)" />
                   </svg>
                   <div class="timer-center-content">
                     <div class="timer-clock" id="timerClock">25:00</div>
@@ -651,7 +657,7 @@
           <!-- Side Column: Co-Study Learners & Session Tasks -->
           <div class="study-side-col">
             <!-- Co-Study Live Desks -->
-            <div class="study-card co-study-card">
+            <div class="study-card co-study-card" id="coStudyCard">
               <div class="co-study-head">
                 <div>
                   <h3>👥 Không gian chung</h3>
@@ -665,7 +671,7 @@
             </div>
 
             <!-- Session To-Do Checklist -->
-            <div class="study-card todo-card">
+            <div class="study-card todo-card" id="todoMainCard">
               <div class="todo-head">
                 <div>
                   <h3>📝 Những việc cần làm</h3>

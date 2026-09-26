@@ -187,8 +187,9 @@ try { db.exec("ALTER TABLE study_sessions ADD COLUMN remaining_seconds INTEGER N
 try { db.exec("ALTER TABLE study_sessions ADD COLUMN target_end_ms INTEGER NOT NULL DEFAULT 0;"); } catch (e) {}
 try { db.exec("ALTER TABLE study_sessions ADD COLUMN is_running INTEGER NOT NULL DEFAULT 0;"); } catch (e) {}
 try { db.exec("ALTER TABLE study_sessions ADD COLUMN started_at_ms INTEGER NOT NULL DEFAULT 0;"); } catch (e) {}
-try { db.exec("ALTER TABLE study_sessions ADD COLUMN last_ping_ms INTEGER NOT NULL DEFAULT 0;"); } catch (e) {}
 try { db.exec("ALTER TABLE study_sessions ADD COLUMN cycle_index INTEGER NOT NULL DEFAULT 1;"); } catch (e) {}
+try { db.exec("ALTER TABLE study_sessions ADD COLUMN wallpaper TEXT DEFAULT 'default';"); } catch (e) {}
+try { db.exec("ALTER TABLE study_sessions ADD COLUMN aura TEXT DEFAULT 'emerald';"); } catch (e) {}
 try {
   db.exec(`
     INSERT INTO user_streak_shields (user_id, shields, last_milestone_rewarded, updated_at)
@@ -1516,7 +1517,7 @@ async function api(request, response, url) {
     const activeRows = db.prepare(`
       SELECT s.user_id, s.goal, s.mode, s.duration_minutes, s.remaining_seconds,
              s.target_end_ms, s.is_running, s.started_at_ms, s.last_ping_ms,
-             s.cycle_index, s.started_at, s.last_ping,
+             s.cycle_index, s.started_at, s.last_ping, s.wallpaper, s.aura,
              u.display_name, u.role, u.avatar
       FROM study_sessions s
       JOIN users u ON s.user_id = u.id
@@ -1546,6 +1547,8 @@ async function api(request, response, url) {
         remainingSeconds: remainingSecs,
         cycleIndex: r.cycle_index || 1,
         isRunning: Boolean(r.is_running),
+        wallpaper: r.wallpaper || 'default',
+        aura: r.aura || 'emerald',
         isSelf: user ? user.id === r.user_id : false
       };
     });
@@ -1566,6 +1569,8 @@ async function api(request, response, url) {
           targetEndMs: myRow.target_end_ms || 0,
           isRunning: Boolean(myRow.is_running),
           goal: myRow.goal || '',
+          wallpaper: myRow.wallpaper || 'default',
+          aura: myRow.aura || 'emerald',
           startedAtMs: myRow.started_at_ms || nowMs,
           lastPingMs: myRow.last_ping_ms || nowMs
         };
@@ -1596,6 +1601,8 @@ async function api(request, response, url) {
       const cycleIndex = Math.max(1, Math.min(4, Number(body.cycleIndex) || 1));
       const isRunning = body.isRunning ? 1 : 0;
       const goal = (body.goal || "").trim().slice(0, 100);
+      const wallpaper = typeof body.wallpaper === 'string' ? body.wallpaper.slice(0, 50) : 'default';
+      const aura = typeof body.aura === 'string' ? body.aura.slice(0, 50) : 'emerald';
       const nowMs = Date.now();
       let remainingSeconds = Math.max(0, Math.min(durationMinutes * 60, Number(body.remainingSeconds) || (durationMinutes * 60)));
       let targetEndMs = Number(body.targetEndMs) || 0;
@@ -1615,9 +1622,9 @@ async function api(request, response, url) {
 
       db.prepare(`
         INSERT INTO study_sessions (
-          user_id, goal, mode, duration_minutes, remaining_seconds, target_end_ms, is_running, started_at_ms, last_ping_ms, cycle_index, started_at, last_ping
+          user_id, goal, mode, duration_minutes, remaining_seconds, target_end_ms, is_running, started_at_ms, last_ping_ms, cycle_index, wallpaper, aura, started_at, last_ping
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
         ON CONFLICT(user_id) DO UPDATE SET
           goal = excluded.goal,
           mode = excluded.mode,
@@ -1627,8 +1634,10 @@ async function api(request, response, url) {
           is_running = excluded.is_running,
           last_ping_ms = excluded.last_ping_ms,
           cycle_index = excluded.cycle_index,
+          wallpaper = excluded.wallpaper,
+          aura = excluded.aura,
           last_ping = CURRENT_TIMESTAMP
-      `).run(user.id, goal, mode, durationMinutes, remainingSeconds, targetEndMs, isRunning, startedAtMs, nowMs, cycleIndex);
+      `).run(user.id, goal, mode, durationMinutes, remainingSeconds, targetEndMs, isRunning, startedAtMs, nowMs, cycleIndex, wallpaper, aura);
 
       return json(response, 200, {
         success: true,
@@ -1640,6 +1649,8 @@ async function api(request, response, url) {
           targetEndMs,
           isRunning: Boolean(isRunning),
           goal,
+          wallpaper,
+          aura,
           startedAtMs,
           lastPingMs: nowMs
         }

@@ -3116,34 +3116,15 @@ dialog.detail-modal[open] {
   color: #cbd5e1;
 }
 #study.has-custom-bg .co-study-item {
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.16);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
 }
 #study.has-custom-bg .co-study-item:hover {
-  background: rgba(255, 255, 255, 0.14);
+  filter: brightness(1.08);
 }
-#study.has-custom-bg .co-study-item.is-self {
-  background: rgba(16, 185, 129, 0.22) !important;
-  border: 1.5px solid rgba(52, 211, 153, 0.7) !important;
-  box-shadow: 0 0 16px rgba(16, 185, 129, 0.3);
-}
-#study.has-custom-bg .co-study-name,
-#study.has-custom-bg .co-study-name span,
-#study.has-custom-bg .co-study-user-title {
-  color: #ffffff !important;
-  font-weight: 600;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
-}
-#study.has-custom-bg .self-status-pill {
-  background: rgba(16, 185, 129, 0.35);
-  color: #6ee7b7;
-  border: 1px solid rgba(52, 211, 153, 0.5);
-  font-size: 10px;
-  padding: 2px 7px;
-  border-radius: 6px;
-  font-weight: 600;
+#study.has-custom-bg .co-study-name .co-study-user-title:not([class*="user-name-tier"]) {
+  color: #ffffff;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
 }
 #study.has-custom-bg .co-study-goal {
   color: #cbd5e1 !important;
@@ -3371,13 +3352,19 @@ dialog.detail-modal[open] {
   border-color: var(--primary);
 }
 .study-mode-btn.active {
-  background: var(--primary);
+  background: var(--primary-gradient, linear-gradient(135deg, #10b981 0%, #059669 100%));
   color: #fff;
-  border-color: var(--primary);
-  box-shadow: 0 4px 14px rgba(47, 94, 69, 0.25);
+  border-color: transparent;
+  box-shadow: 0 4px 14px var(--primary-glow, rgba(16, 185, 129, 0.35));
 }
 .study-mode-btn.active strong { color: #fff; }
-.study-mode-btn.active span { color: rgba(255, 255, 255, 0.85); }
+.study-mode-btn.active span { color: rgba(255, 255, 255, 0.9); }
+
+#study #studyStartBtn {
+  background: var(--primary-gradient, linear-gradient(135deg, #10b981 0%, #059669 100%)) !important;
+  box-shadow: 0 4px 14px var(--primary-glow, rgba(16, 185, 129, 0.35)) !important;
+  color: #fff !important;
+}
 
 /* Pomodoro Cycle Indicator (1/4 -> 4/4) */
 .study-cycle-container {
@@ -4181,22 +4168,38 @@ dialog.detail-modal[open] {
 
 .color-palette-picker {
   display: flex;
-  gap: 10px;
+  gap: 12px;
   flex-wrap: wrap;
 }
 .color-swatch {
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  border: 2px solid var(--paper);
-  box-shadow: 0 0 0 1px var(--line);
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
   cursor: pointer;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
-.color-swatch:hover { transform: scale(1.15); }
+.color-swatch:hover {
+  transform: translateY(-2px) scale(1.1);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
+}
 .color-swatch.active {
-  box-shadow: 0 0 0 2px var(--primary, #10b981);
-  transform: scale(1.1);
+  box-shadow: 0 0 0 3px #ffffff, 0 0 14px var(--primary-glow, rgba(16, 185, 129, 0.6));
+  transform: scale(1.12);
+  border-color: #ffffff;
+}
+.color-swatch.active::after {
+  content: '✓';
+  font-size: 15px;
+  font-weight: 900;
+  color: #ffffff;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7);
 }
 .color-swatch-btn {
   width: 28px;
@@ -4429,7 +4432,8 @@ dialog.detail-modal[open] {
 /* Responsive adjustments */
 @media (max-width: 900px) {
   .study-layout {
-    grid-template-columns: minmax(0, 1fr);
+    display: flex;
+    flex-direction: column;
     gap: 16px;
     width: 100%;
     max-width: 100%;
@@ -4437,10 +4441,24 @@ dialog.detail-modal[open] {
   }
   .study-main-col,
   .study-side-col {
-    width: 100%;
-    max-width: 100%;
-    box-sizing: border-box;
-    min-width: 0;
+    display: contents;
+  }
+  #timerMainCard {
+    order: 1;
+  }
+  #todoMainCard,
+  .todo-card {
+    order: 2;
+  }
+  #coStudyCard,
+  .co-study-card {
+    order: 3;
+  }
+  #soundArenaCard {
+    order: 4;
+  }
+  #themeArenaCard {
+    order: 5;
   }
   .timer-circle {
     width: 220px;
