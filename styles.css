@@ -1782,6 +1782,9 @@ h1 em {
 .mobile-fab {
   display: none;
 }
+dialog:not([open]) {
+  display: none !important;
+}
 .modal {
   border: 0;
   border-radius: 11px;
@@ -3842,6 +3845,10 @@ dialog.detail-modal[open] {
 }
 
 /* Study Settings Modal Styling */
+dialog.study-settings-modal:not([open]) {
+  display: none !important;
+}
+
 .study-settings-modal {
   padding: 24px 28px;
   border-radius: 16px;
@@ -3850,12 +3857,11 @@ dialog.detail-modal[open] {
   box-shadow: 0 24px 70px rgba(10, 42, 32, 0.25);
   width: min(560px, calc(100vw - 32px));
   max-height: min(88vh, 720px);
-  display: flex;
-  flex-direction: column;
 }
 
 .study-settings-modal[open] {
   display: flex;
+  flex-direction: column;
 }
 
 .study-settings-modal .modal-head {
