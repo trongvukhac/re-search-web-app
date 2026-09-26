@@ -3235,60 +3235,60 @@ window.sendStudyCheer = async function(recipientId, cheerType) {
   }
 };
 
-/* --- 6. DEFAULT AUDIO SOURCES (Hướng 2: External CDN Direct Streaming) --- */
+/* --- 6. DEFAULT AUDIO SOURCES (GitHub Releases v1.0-audio CDN Direct Streaming) --- */
 const DEFAULT_ENV_AUDIO_SOURCES = {
-  env_1: "",
-  env_2: "",
-  env_3: "",
-  env_4: ""
+  env_1: "https://github.com/trongvukhac/re-search-web-app/releases/download/v1.0-audio/Campfire.by.the.Forest.Riverbank.mp3",
+  env_2: "https://github.com/trongvukhac/re-search-web-app/releases/download/v1.0-audio/tropical.island-wave.and.bird.sounds.mp3",
+  env_3: "https://github.com/trongvukhac/re-search-web-app/releases/download/v1.0-audio/Cafe.Ambience.mp3",
+  env_4: "https://github.com/trongvukhac/re-search-web-app/releases/download/v1.0-audio/NYC.Sunrise.Morning.Traffic.Sounds.mp3"
 };
 
 const DEFAULT_MIX_AUDIO_SOURCES = {
-  mix_1: "",
-  mix_2: "",
-  mix_3: "",
-  mix_4: "",
-  mix_5: "",
-  mix_6: "",
-  mix_7: "",
-  mix_8: "",
-  mix_9: ""
+  mix_1: "https://github.com/trongvukhac/re-search-web-app/releases/download/v1.0-audio/N.c.ch.y.mp3",
+  mix_2: "https://github.com/trongvukhac/re-search-web-app/releases/download/v1.0-audio/M.a.rao.mp3",
+  mix_3: "https://github.com/trongvukhac/re-search-web-app/releases/download/v1.0-audio/Ti.ng.chuong.gio.mp3",
+  mix_4: "https://github.com/trongvukhac/re-search-web-app/releases/download/v1.0-audio/Ti.ng.chim.hot.mp3",
+  mix_5: "https://github.com/trongvukhac/re-search-web-app/releases/download/v1.0-audio/Ti.ng.la.xao.x.c.mp3",
+  mix_6: "https://github.com/trongvukhac/re-search-web-app/releases/download/v1.0-audio/Ti.ng.gio.th.i.mp3",
+  mix_7: "https://github.com/trongvukhac/re-search-web-app/releases/download/v1.0-audio/Ti.ng.d.keu.mp3",
+  mix_8: "https://github.com/trongvukhac/re-search-web-app/releases/download/v1.0-audio/Ti.ng.l.a.chay.mp3",
+  mix_9: "https://github.com/trongvukhac/re-search-web-app/releases/download/v1.0-audio/Ti.ng.song.bi.n.mp3"
 };
 
 const DEFAULT_MUSIC_AUDIO_SOURCES = {
-  music_1: "",
-  music_2: "",
-  music_3: "",
-  music_4: ""
+  music_1: "https://github.com/trongvukhac/re-search-web-app/releases/download/v1.0-audio/After.Hours.Moody.R.B.Mix.mp3",
+  music_2: "https://github.com/trongvukhac/re-search-web-app/releases/download/v1.0-audio/soft.and.smooth.japanese.jazz.mp3",
+  music_3: "https://github.com/trongvukhac/re-search-web-app/releases/download/v1.0-audio/summer.lofi.mp3",
+  music_4: "https://github.com/trongvukhac/re-search-web-app/releases/download/v1.0-audio/1.Hour1990s.Tokyo.City.Pop.mp3"
 };
 
 /* --- 4 ÂM THANH MÔI TRƯỜNG CƠ BẢN (Khoảng 1 tiếng, hỗn hợp sẵn, mở ở Chuỗi 3 ngày) --- */
 const AMBIENT_ENV_TRACKS = [
-  { id: 'env_1', name: 'Âm thanh 1', sub: 'Mô tả 1', icon: '🎧', reqStreak: 3, defaultVol: 50 },
-  { id: 'env_2', name: 'Âm thanh 2', sub: 'Mô tả 2', icon: '🍃', reqStreak: 3, defaultVol: 50 },
-  { id: 'env_3', name: 'Âm thanh 3', sub: 'Mô tả 3', icon: '☕', reqStreak: 3, defaultVol: 50 },
-  { id: 'env_4', name: 'Âm thanh 4', sub: 'Mô tả 4', icon: '🌌', reqStreak: 3, defaultVol: 50 }
+  { id: 'env_1', name: 'Lửa trại bên bờ suối', sub: 'Ánh lửa ấm bên dòng suối giữa rừng sâu, hòa cùng tiếng nước và âm thanh thiên nhiên tĩnh lặng.', icon: '🪵', reqStreak: 3, defaultVol: 50 },
+  { id: 'env_2', name: 'Thanh âm đảo nhiệt đới', sub: 'Tiếng sóng vỗ dịu dàng hòa cùng tiếng chim giữa không gian đảo nhiệt đới thanh bình.', icon: '🏝️', reqStreak: 3, defaultVol: 50 },
+  { id: 'env_3', name: 'Góc cà phê', sub: 'Âm thanh quán cà phê nhẹ nhàng hòa cùng tiếng ồn trắng và âm nhạc, tạo không gian thư giãn và tập trung.', icon: '☕', reqStreak: 3, defaultVol: 50 },
+  { id: 'env_4', name: 'Bình minh phố thị', sub: 'Thanh âm giao thông buổi sớm hòa cùng nhịp sống khi thành phố dần thức giấc.', icon: '🌅', reqStreak: 3, defaultVol: 50 }
 ];
 
 /* --- 9 ÂM THANH PHỐI HỢP ĐƠN LẺ (Cho phép mix nhiều âm cùng lúc, mở ở Chuỗi 7 ngày) --- */
 const MIX_SOUND_TRACKS = [
-  { id: 'mix_1', soundType: 'rain', name: 'Âm thanh 1', sub: 'Mô tả 1', icon: '🌧️', reqStreak: 7, defaultVol: 40 },
-  { id: 'mix_2', soundType: 'stream', name: 'Âm thanh 2', sub: 'Mô tả 2', icon: '🏞️', reqStreak: 7, defaultVol: 40 },
-  { id: 'mix_3', soundType: 'birds', name: 'Âm thanh 3', sub: 'Mô tả 3', icon: '🐦', reqStreak: 7, defaultVol: 30 },
-  { id: 'mix_4', soundType: 'forest', name: 'Âm thanh 4', sub: 'Mô tả 4', icon: '🌲', reqStreak: 7, defaultVol: 40 },
-  { id: 'mix_5', soundType: 'campfire', name: 'Âm thanh 5', sub: 'Mô tả 5', icon: '🔥', reqStreak: 7, defaultVol: 35 },
-  { id: 'mix_6', soundType: 'waves', name: 'Âm thanh 6', sub: 'Mô tả 6', icon: '🌊', reqStreak: 7, defaultVol: 45 },
-  { id: 'mix_7', soundType: 'cafe', name: 'Âm thanh 7', sub: 'Mô tả 7', icon: '☕', reqStreak: 7, defaultVol: 35 },
-  { id: 'mix_8', soundType: 'whitenoise', name: 'Âm thanh 8', sub: 'Mô tả 8', icon: '📻', reqStreak: 7, defaultVol: 25 },
-  { id: 'mix_9', soundType: 'clock', name: 'Âm thanh 9', sub: 'Mô tả 9', icon: '🕰️', reqStreak: 7, defaultVol: 30 }
+  { id: 'mix_1', soundType: 'stream', name: 'Tiếng nước chảy', sub: 'Dòng nước chảy len lỏi qua những dòng suối', icon: '🌊', reqStreak: 7, defaultVol: 40 },
+  { id: 'mix_2', soundType: 'rain', name: 'Tiếng mưa', sub: 'Mưa rơi tí tách trên mái hiên nhà', icon: '🌧️', reqStreak: 7, defaultVol: 40 },
+  { id: 'mix_3', soundType: 'windchime', name: 'Tiếng chuông gió', sub: 'Chuông gió ngân vang khe khẽ trong làn gió', icon: '🎐', reqStreak: 7, defaultVol: 30 },
+  { id: 'mix_4', soundType: 'birds', name: 'Tiếng chim hót', sub: 'Tiếng chim hót trong trẻo giữa không gian yên bình', icon: '🐦', reqStreak: 7, defaultVol: 35 },
+  { id: 'mix_5', soundType: 'leaves', name: 'Tiếng lá xào xạc', sub: 'Tiếng lá xanh xào xạc trên những tán cây', icon: '🍃', reqStreak: 7, defaultVol: 40 },
+  { id: 'mix_6', soundType: 'wind', name: 'Tiếng gió thổi', sub: 'Tiếng gió thổi bên ngoài khung cửa sổ', icon: '💨', reqStreak: 7, defaultVol: 35 },
+  { id: 'mix_7', soundType: 'crickets', name: 'Tiếng dế kêu', sub: 'Tiếng dế rả rích giữa màn đêm yên tĩnh.', icon: '🦗', reqStreak: 7, defaultVol: 30 },
+  { id: 'mix_8', soundType: 'campfire', name: 'Tiếng lửa cháy', sub: 'Tiếng củi cháy tí tách, đều và nhẹ.', icon: '🔥', reqStreak: 7, defaultVol: 35 },
+  { id: 'mix_9', soundType: 'waves', name: 'Tiếng sóng biển', sub: 'Tiếng những con sóng nhẹ nhàng vỗ vào bờ.', icon: '🌊', reqStreak: 7, defaultVol: 45 }
 ];
 
 /* --- 4 BẢN ÂM NHẠC TẬP TRUNG (Phát vòng lặp, mở ở Chuỗi 7 ngày) --- */
 const MUSIC_SOUND_TRACKS = [
-  { id: 'music_1', name: 'Âm thanh 1', sub: 'Mô tả 1', icon: '🎵', reqStreak: 7, defaultVol: 45 },
-  { id: 'music_2', name: 'Âm thanh 2', sub: 'Mô tả 2', icon: '🎹', reqStreak: 7, defaultVol: 45 },
-  { id: 'music_3', name: 'Âm thanh 3', sub: 'Mô tả 3', icon: '🎸', reqStreak: 7, defaultVol: 45 },
-  { id: 'music_4', name: 'Âm thanh 4', sub: 'Mô tả 4', icon: '🎷', reqStreak: 7, defaultVol: 45 }
+  { id: 'music_1', name: 'R&B trầm lắng', sub: 'Playlist những giai điệu R&B hiện đại, trầm lắng và mượt mà, mang theo cảm giác thành phố khi đêm xuống.', icon: '🌃', reqStreak: 7, defaultVol: 45 },
+  { id: 'music_2', name: 'Jazz dịu dàng', sub: 'Playlist nhạc jazz Nhật Bản cổ điển, mang sắc trầm ấm và không khí thư thả, không chút vội vàng.', icon: '🎷', reqStreak: 7, defaultVol: 45 },
+  { id: 'music_3', name: 'Lofi êm dịu', sub: 'Giai điệu lofi êm dịu giữa rừng thông, mang lại cảm giác ấm áp, bình yên và nhẹ nhõm.', icon: '🌲', reqStreak: 7, defaultVol: 45 },
+  { id: 'music_4', name: 'City Pop rực rỡ', sub: 'Giai điệu City Pop hoài niệm đưa bạn về Tokyo thập niên 1990, giữa ánh đèn neon và nhịp sống đêm sôi động.', icon: '🌆', reqStreak: 7, defaultVol: 45 }
 ];
 
 function getAudioContext() {
@@ -3411,7 +3411,6 @@ function toggleEnvTrack(trackId) {
     if (!player || player.src !== DEFAULT_ENV_AUDIO_SOURCES[trackId]) {
       player = new Audio(DEFAULT_ENV_AUDIO_SOURCES[trackId]);
       player.loop = true; // Phát vòng lặp
-      player.crossOrigin = "anonymous";
       studyState.envAudioPlayers[trackId] = player;
     }
     player.volume = Math.max(0, Math.min(1, userVol));
@@ -3595,7 +3594,6 @@ function toggleMixTrack(trackId) {
       if (!player || player.src !== DEFAULT_MIX_AUDIO_SOURCES[trackId]) {
         player = new Audio(DEFAULT_MIX_AUDIO_SOURCES[trackId]);
         player.loop = true; // Phát vòng lặp
-        player.crossOrigin = "anonymous";
         studyState.mixAudioPlayers[trackId] = player;
       }
       player.volume = Math.max(0, Math.min(1, userVol));
@@ -3957,7 +3955,6 @@ function toggleMusicTrack(trackId) {
     if (!player || player.src !== DEFAULT_MUSIC_AUDIO_SOURCES[trackId]) {
       player = new Audio(DEFAULT_MUSIC_AUDIO_SOURCES[trackId]);
       player.loop = true; // Phát vòng lặp
-      player.crossOrigin = "anonymous";
       studyState.musicAudioPlayers[trackId] = player;
     }
     player.volume = Math.max(0, Math.min(1, userVol));
