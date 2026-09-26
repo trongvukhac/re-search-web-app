@@ -552,6 +552,8 @@ function renderLeaderboard() {
     .join("");
 }
 
+let initialStudyRouteHandled = false;
+
 async function hydrateServer() {
   if (!serverMode) return;
   try {
@@ -559,9 +561,11 @@ async function hydrateServer() {
     csrfToken = current.csrfToken;
     applySession(current.user);
 
-    if (typeof initialRequestedRoute !== "undefined" && initialRequestedRoute === "study") {
+    // Only navigate to requested study route ONCE on initial app boot
+    if (!initialStudyRouteHandled && typeof initialRequestedRoute !== "undefined" && initialRequestedRoute === "study") {
+      initialStudyRouteHandled = true;
       if (canAccessStudyLounge(current.user)) {
-        go("study");
+        go("study", false);
       } else {
         toast(STUDY_MAINTENANCE_MSG);
       }
@@ -582,8 +586,9 @@ async function hydrateServer() {
 
     if (postsData.posts) {
       posts = postsData.posts.map(normalizePost);
-      renderHome();
-      renderPosts();
+      // Only re-render home/forum if relevant to avoid scroll/DOM disruptions
+      if (!currentActiveRoute || currentActiveRoute === "home") renderHome();
+      if (currentActiveRoute === "forum") renderPosts();
 
       const communityPosts = posts.filter((p) => p.authorRole !== "admin");
       const totalPosts = communityPosts.length;
@@ -615,7 +620,7 @@ async function hydrateServer() {
           url: d.url || d.sourceUrl,
         });
       });
-      renderDocuments();
+      if (!currentActiveRoute || currentActiveRoute === "documents") renderDocuments();
     }
 
     if (current.authenticated) {
@@ -1099,12 +1104,15 @@ function updateResponsiveAsidePlacement() {
 
 window.addEventListener("resize", updateResponsiveAsidePlacement);
 
-function go(route) {
+let currentActiveRoute = null;
+
+function go(route, scrollToTop = true) {
   if (route === "study" && !canAccessStudyLounge()) {
     toast(STUDY_MAINTENANCE_MSG);
     const activeEl = document.querySelector(".page.active-page");
     const currentActive = activeEl ? activeEl.dataset.page : null;
     const fallback = (currentActive && currentActive !== "study") ? currentActive : "home";
+    currentActiveRoute = fallback;
     history.replaceState(null, "", `#${fallback}`);
     $$(".page").forEach((p) =>
       p.classList.toggle("active-page", p.dataset.page === fallback),
@@ -1116,15 +1124,30 @@ function go(route) {
     return;
   }
 
-  $$("dialog").forEach((d) => d.close());
+  const isSameRoute = (currentActiveRoute === route);
+  currentActiveRoute = route;
+
+  if (!isSameRoute) {
+    $$("dialog").forEach((d) => {
+      if (d.open) d.close();
+    });
+  }
+
   $$(".page").forEach((p) =>
     p.classList.toggle("active-page", p.dataset.page === route),
   );
   $$("[data-route]").forEach((a) =>
     a.classList.toggle("active", a.dataset.route === route),
   );
-  history.replaceState(null, "", `#${route}`);
-  window.scrollTo({ top: 0, behavior: "smooth" });
+  if (location.hash !== `#${route}`) {
+    history.replaceState(null, "", `#${route}`);
+  }
+
+  // Only scroll to top when actually navigating to a new route and scrollToTop is true
+  if (scrollToTop && !isSameRoute) {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
   if (route === "forum") renderPosts();
   if (route === "study") onEnterStudyLounge();
   else onLeaveStudyLounge();
@@ -5105,9 +5128,9 @@ renderPosts();
 renderDocuments();
 const initialRequestedRoute = (location.hash.slice(1) || "home");
 if (initialRequestedRoute === "study" && serverMode) {
-  go("home");
+  go("home", false);
 } else {
-  go(initialRequestedRoute);
+  go(initialRequestedRoute, false);
 }
 hydrateServer();
 
