@@ -3287,8 +3287,7 @@ dialog.detail-modal[open] {
   color: #868e96;
 }
 .perk-badge.unlocked {
-  background: #d3f9d8;
-  color: #2b8a3e;
+  display: none !important;
 }
 .ambient-sub-bar {
   display: flex;

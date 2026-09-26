@@ -2562,26 +2562,30 @@ window.updateStudyStreakPerks = function() {
   const bannerEnvLocked = $("#bannerEnvLocked");
   if (badgeEnvLock) {
     badgeEnvLock.className = `perk-badge ${envUnlocked ? 'unlocked' : ''}`;
-    badgeEnvLock.textContent = envUnlocked ? "✓ Đã mở" : "🔒 3d";
+    badgeEnvLock.textContent = envUnlocked ? "" : "🔒 3d";
+    badgeEnvLock.style.display = envUnlocked ? "none" : "inline-flex";
   }
   if (bannerEnvLocked) bannerEnvLocked.style.display = envUnlocked ? "none" : "flex";
 
-  // Streak 7: Mixable Sounds (9 Tracks) & Focus Music (4 Tracks)
+  // Streak 7: Mixable Sounds (9 Tracks)
   const mixUnlocked = streak >= 7;
   const badgeMixLock = $("#badgeMixLock");
   const bannerMixLocked = $("#bannerMixLocked");
   if (badgeMixLock) {
     badgeMixLock.className = `perk-badge ${mixUnlocked ? 'unlocked' : ''}`;
-    badgeMixLock.textContent = mixUnlocked ? "✓ Đã mở" : "🔒 7d";
+    badgeMixLock.textContent = mixUnlocked ? "" : "🔒 7d";
+    badgeMixLock.style.display = mixUnlocked ? "none" : "inline-flex";
   }
   if (bannerMixLocked) bannerMixLocked.style.display = mixUnlocked ? "none" : "flex";
 
+  // Streak 7: Focus Music (4 Tracks)
   const musicUnlocked = streak >= 7;
   const badgeMusicLock = $("#badgeMusicLock");
   const bannerMusicLocked = $("#bannerMusicLocked");
   if (badgeMusicLock) {
     badgeMusicLock.className = `perk-badge ${musicUnlocked ? 'unlocked' : ''}`;
-    badgeMusicLock.textContent = musicUnlocked ? "✓ Đã mở" : "🔒 7d";
+    badgeMusicLock.textContent = musicUnlocked ? "" : "🔒 7d";
+    badgeMusicLock.style.display = musicUnlocked ? "none" : "inline-flex";
   }
   if (bannerMusicLocked) bannerMusicLocked.style.display = musicUnlocked ? "none" : "flex";
 
@@ -2590,7 +2594,8 @@ window.updateStudyStreakPerks = function() {
   const badgeWallPresetLock = $("#badgeWallPresetLock");
   if (badgeWallPresetLock) {
     badgeWallPresetLock.className = `perk-badge ${wallPresetUnlocked ? 'unlocked' : ''}`;
-    badgeWallPresetLock.textContent = wallPresetUnlocked ? "✓ Đã mở" : "🔒 14d";
+    badgeWallPresetLock.textContent = wallPresetUnlocked ? "" : "🔒 14d";
+    badgeWallPresetLock.style.display = wallPresetUnlocked ? "none" : "inline-flex";
   }
   const wallPresetWrap = $(".wallpaper-presets-wrap");
   if (wallPresetWrap) wallPresetWrap.classList.toggle("locked-feature", !wallPresetUnlocked);
@@ -2599,7 +2604,8 @@ window.updateStudyStreakPerks = function() {
   const badgeClockColorLock = $("#badgeClockColorLock");
   if (badgeClockColorLock) {
     badgeClockColorLock.className = `perk-badge ${clockColorUnlocked ? 'unlocked' : ''}`;
-    badgeClockColorLock.textContent = clockColorUnlocked ? "✓ Đã mở" : "🔒 14d";
+    badgeClockColorLock.textContent = clockColorUnlocked ? "" : "🔒 14d";
+    badgeClockColorLock.style.display = clockColorUnlocked ? "none" : "inline-flex";
   }
   const clockColorWrap = $(".clock-color-wrap");
   if (clockColorWrap) clockColorWrap.classList.toggle("locked-feature", !clockColorUnlocked);
@@ -2614,15 +2620,18 @@ window.updateStudyStreakPerks = function() {
   const btnUploadMusicAudio = $("#btnUploadMusicAudio");
   if (badgeCustomEnvLock) {
     badgeCustomEnvLock.className = `perk-badge ${customAudioUnlocked ? 'unlocked' : ''}`;
-    badgeCustomEnvLock.textContent = customAudioUnlocked ? "✓ Đã mở" : "🔒 30d";
+    badgeCustomEnvLock.textContent = customAudioUnlocked ? "" : "🔒 30d";
+    badgeCustomEnvLock.style.display = customAudioUnlocked ? "none" : "inline-flex";
   }
   if (badgeCustomMixLock) {
     badgeCustomMixLock.className = `perk-badge ${customAudioUnlocked ? 'unlocked' : ''}`;
-    badgeCustomMixLock.textContent = customAudioUnlocked ? "✓ Đã mở" : "🔒 30d";
+    badgeCustomMixLock.textContent = customAudioUnlocked ? "" : "🔒 30d";
+    badgeCustomMixLock.style.display = customAudioUnlocked ? "none" : "inline-flex";
   }
   if (badgeCustomMusicLock) {
     badgeCustomMusicLock.className = `perk-badge ${customAudioUnlocked ? 'unlocked' : ''}`;
-    badgeCustomMusicLock.textContent = customAudioUnlocked ? "✓ Đã mở" : "🔒 30d";
+    badgeCustomMusicLock.textContent = customAudioUnlocked ? "" : "🔒 30d";
+    badgeCustomMusicLock.style.display = customAudioUnlocked ? "none" : "inline-flex";
   }
   if (btnUploadEnvAudio) btnUploadEnvAudio.disabled = !customAudioUnlocked;
   if (btnUploadMixAudio) btnUploadMixAudio.disabled = !customAudioUnlocked;
@@ -2633,7 +2642,8 @@ window.updateStudyStreakPerks = function() {
   const btnUploadWall = $("#btnUploadWall");
   if (badgeWallUploadLock) {
     badgeWallUploadLock.className = `perk-badge ${wallUploadUnlocked ? 'unlocked' : ''}`;
-    badgeWallUploadLock.textContent = wallUploadUnlocked ? "✓ Đã mở" : "🔒 30d";
+    badgeWallUploadLock.textContent = wallUploadUnlocked ? "" : "🔒 30d";
+    badgeWallUploadLock.style.display = wallUploadUnlocked ? "none" : "inline-flex";
   }
   if (btnUploadWall) btnUploadWall.disabled = !wallUploadUnlocked;
 
@@ -2642,7 +2652,8 @@ window.updateStudyStreakPerks = function() {
   const badgeMasterCustomLock = $("#badgeMasterCustomLock");
   if (badgeMasterCustomLock) {
     badgeMasterCustomLock.className = `perk-badge ${masterCustomUnlocked ? 'unlocked' : ''}`;
-    badgeMasterCustomLock.textContent = masterCustomUnlocked ? "✓ Đã mở" : "🔒 50d";
+    badgeMasterCustomLock.textContent = masterCustomUnlocked ? "" : "🔒 50d";
+    badgeMasterCustomLock.style.display = masterCustomUnlocked ? "none" : "inline-flex";
   }
   const palettePicker = $("#colorPalettePicker");
   if (palettePicker) palettePicker.classList.toggle("locked-feature", !masterCustomUnlocked);
@@ -3382,6 +3393,7 @@ function toggleEnvTrack(trackId) {
     stopCurrentEnvAudio();
     studyState.activeEnvTrack = null;
     renderEnvironmentAudioGrid();
+    loadCustomAudioFromDB();
     toast(`Đã tắt ${track ? track.name : ''}.`);
     updateMasterAmbientButtonState();
     return;
@@ -3450,6 +3462,7 @@ function toggleEnvTrack(trackId) {
   }
 
   renderEnvironmentAudioGrid();
+  loadCustomAudioFromDB();
   toast(`Đang phát: ${track ? track.name : trackId} (Vòng lặp) 🎧`);
   updateMasterAmbientButtonState();
 }
@@ -3927,6 +3940,7 @@ function toggleMusicTrack(trackId) {
     stopCurrentMusicAudio();
     studyState.activeMusicTrack = null;
     renderMusicAudioGrid();
+    loadCustomAudioFromDB();
     toast(`Đã tắt ${track ? track.name : ''}.`);
     updateMasterAmbientButtonState();
     return;
@@ -4026,6 +4040,7 @@ function toggleMusicTrack(trackId) {
   }
 
   renderMusicAudioGrid();
+  loadCustomAudioFromDB();
   toast(`Đang phát: ${track ? track.name : trackId} (Vòng lặp) 🎵`);
   updateMasterAmbientButtonState();
 }
@@ -4500,6 +4515,7 @@ async function handleCustomMusicAudioUpload(file) {
 async function toggleCustomEnvAudioPlay(id) {
   if (studyState.activeCustomEnvId === id) {
     stopCurrentEnvAudio();
+    renderEnvironmentAudioGrid();
     loadCustomAudioFromDB();
     toast("Đã dừng phát âm thanh môi trường.");
     return;
@@ -4517,6 +4533,7 @@ async function toggleCustomEnvAudioPlay(id) {
   player.play().then(() => {
     studyState.customEnvAudioPlayer = player;
     studyState.activeCustomEnvId = id;
+    renderEnvironmentAudioGrid();
     loadCustomAudioFromDB();
     toast(`Đang phát: ${track.name} (Vòng lặp) 🌿`);
   }).catch(e => {
@@ -4561,6 +4578,7 @@ async function toggleCustomMixAudioPlay(id) {
 async function toggleCustomMusicAudioPlay(id) {
   if (studyState.activeCustomMusicId === id) {
     stopCurrentMusicAudio();
+    renderMusicAudioGrid();
     loadCustomAudioFromDB();
     toast("Đã dừng phát âm nhạc.");
     return;
@@ -4578,6 +4596,7 @@ async function toggleCustomMusicAudioPlay(id) {
   player.play().then(() => {
     studyState.customMusicAudioPlayer = player;
     studyState.activeCustomMusicId = id;
+    renderMusicAudioGrid();
     loadCustomAudioFromDB();
     toast(`Đang phát: ${track.name} (Vòng lặp) 🎵`);
   }).catch(e => {
