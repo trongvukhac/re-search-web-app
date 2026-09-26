@@ -4012,6 +4012,8 @@ dialog.study-settings-modal:not([open]) {
   color: var(--ink);
   padding: 0;
   margin: 0;
+  appearance: textfield;
+  -webkit-appearance: textfield;
   -moz-appearance: textfield;
 }
 
