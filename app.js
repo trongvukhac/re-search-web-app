@@ -17,8 +17,9 @@ const STUDY_SETTINGS_KEY = "research_study_settings_v1";
 const STUDY_MAINTENANCE_MSG = "Tính năng Phòng tự học đang được phát triển và cần thời gian để ổn định hệ thống, bạn quay lại sau nhé!";
 
 function canAccessStudyLounge(user = (session || (typeof window !== "undefined" && window.session))) {
-  return true;
+  return Boolean(user && user.role === "admin");
 }
+window.canAccessStudyLounge = canAccessStudyLounge;
 
 function getInitialStudySettings() {
   const defaults = {
@@ -471,19 +472,39 @@ function applySession(user) {
   const isAdmin = Boolean(user && user.role === "admin");
   const badgeDesk = $("#studyNavBadgeDesktop");
   const badgeMob = $("#studyNavBadgeMobile");
-  if (badgeDesk) badgeDesk.style.display = "none";
-  if (badgeMob) badgeMob.style.display = "none";
+  if (badgeDesk) {
+    badgeDesk.textContent = isAdmin ? "Admin Test" : "Bảo trì";
+    badgeDesk.className = `study-nav-badge ${isAdmin ? "admin" : ""}`;
+    badgeDesk.style.display = "inline-block";
+  }
+  if (badgeMob) {
+    badgeMob.textContent = isAdmin ? "Admin" : "Bảo trì";
+    badgeMob.className = `study-nav-badge mobile ${isAdmin ? "admin" : ""}`;
+    badgeMob.style.display = "inline-block";
+  }
 
   const notice = $("#studyLockedNotice");
   const mainStudy = $("#studyMainContent");
-  if (notice) notice.style.display = "none";
-  if (mainStudy) mainStudy.style.display = "block";
+  if (notice) notice.style.display = isAdmin ? "none" : "block";
+  if (mainStudy) mainStudy.style.display = isAdmin ? "block" : "none";
 
-  if (typeof updateStudyStreakPerks === "function") {
-    updateStudyStreakPerks();
-  }
-  if (typeof fetchStudyLounge === "function") {
-    fetchStudyLounge();
+  if (isAdmin) {
+    if (typeof updateStudyStreakPerks === "function") {
+      updateStudyStreakPerks();
+    }
+    if (typeof fetchStudyLounge === "function") {
+      fetchStudyLounge();
+    }
+  } else {
+    if (typeof stopAllStudyAudio === "function") {
+      stopAllStudyAudio();
+    }
+    if (typeof pauseStudyTimer === "function" && studyState.isRunning) {
+      pauseStudyTimer(false);
+    }
+    if (location.hash === "#study") {
+      go("home");
+    }
   }
 }
 
@@ -536,6 +557,14 @@ async function hydrateServer() {
     const current = await requestAPI("/api/session", { headers: {} });
     csrfToken = current.csrfToken;
     applySession(current.user);
+
+    if (typeof initialRequestedRoute !== "undefined" && initialRequestedRoute === "study") {
+      if (canAccessStudyLounge(current.user)) {
+        go("study");
+      } else {
+        toast(STUDY_MAINTENANCE_MSG);
+      }
+    }
 
     const [postsData, docsData, leaderboardData, topicsData] = await Promise.all([
       requestAPI("/api/posts").catch(() => ({ posts: [] })),
@@ -4913,7 +4942,12 @@ initStudyLoungeEvents();
 renderHome();
 renderPosts();
 renderDocuments();
-go(location.hash.slice(1) || "home");
+const initialRequestedRoute = (location.hash.slice(1) || "home");
+if (initialRequestedRoute === "study" && serverMode) {
+  go("home");
+} else {
+  go(initialRequestedRoute);
+}
 hydrateServer();
 
 
