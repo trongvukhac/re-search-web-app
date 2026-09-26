@@ -359,14 +359,25 @@ h1 em {
   font-weight: 700 !important;
 }
 .user-name-tier-5 {
-  background: linear-gradient(90deg, #7048e8 0%, #f783ac 25%, #ff6b6b 50%, #f783ac 75%, #7048e8 100%);
+  background: linear-gradient(
+    90deg,
+    #b197fc 0%,
+    #f783ac 25%,
+    #ff6b6b 50%,
+    #f783ac 75%,
+    #b197fc 100%
+  );
   background-size: 200% 100%;
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
+  color: transparent;
   font-weight: 800 !important;
-  animation: shimmerName 3.5s linear infinite;
+  animation: shimmerName 7.5s linear infinite;
   display: inline-block;
+  vertical-align: middle;
+  text-shadow: none !important;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.45));
 }
 
 @keyframes shimmerName {
@@ -2924,9 +2935,13 @@ dialog.detail-modal[open] {
   text-shadow: 0 2px 14px rgba(0, 0, 0, 0.7);
 }
 #study.has-custom-bg .study-heading .eyebrow {
+  background: var(--primary-gradient, linear-gradient(135deg, #6ee7b7 0%, #34d399 100%));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
   color: #6ee7b7;
   font-weight: 700;
-  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.6);
+  filter: drop-shadow(0 1px 4px rgba(0, 0, 0, 0.6));
 }
 #study.has-custom-bg .study-live-badge,
 #study.has-custom-bg .study-action-btn {
@@ -2942,11 +2957,19 @@ dialog.detail-modal[open] {
   border-color: rgba(255, 255, 255, 0.4);
   color: #ffffff;
 }
-#study.has-custom-bg .study-action-btn.active {
-  background: var(--primary, #10b981);
-  border-color: var(--primary, #10b981);
-  color: #ffffff;
-  box-shadow: 0 0 16px rgba(16, 185, 129, 0.5);
+#study.has-custom-bg .study-action-btn.active,
+.study-action-btn.active {
+  background: var(--primary-gradient, linear-gradient(135deg, #10b981 0%, #059669 100%)) !important;
+  border-color: transparent !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 16px var(--primary-glow, rgba(16, 185, 129, 0.45)) !important;
+}
+
+#study .button-primary {
+  background: var(--primary-gradient, linear-gradient(135deg, #10b981 0%, #059669 100%)) !important;
+  color: #fff !important;
+  border-color: transparent !important;
+  box-shadow: 0 2px 10px var(--primary-glow, rgba(16, 185, 129, 0.35)) !important;
 }
 
 #study.has-custom-bg .study-card {
@@ -2982,11 +3005,12 @@ dialog.detail-modal[open] {
   background: rgba(255, 255, 255, 0.18);
   border-color: rgba(255, 255, 255, 0.35);
 }
-#study.has-custom-bg .study-mode-btn.active {
-  background: var(--primary, #10b981);
-  border-color: var(--primary, #10b981);
-  color: #ffffff;
-  box-shadow: 0 4px 18px rgba(16, 185, 129, 0.45);
+#study.has-custom-bg .study-mode-btn.active,
+.study-mode-btn.active {
+  background: var(--primary-gradient, linear-gradient(135deg, #10b981 0%, #059669 100%)) !important;
+  border-color: transparent !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 18px var(--primary-glow, rgba(16, 185, 129, 0.45)) !important;
 }
 #study.has-custom-bg .study-mode-btn strong {
   color: #ffffff;
@@ -3050,11 +3074,12 @@ dialog.detail-modal[open] {
   color: #ffffff;
   background: rgba(255, 255, 255, 0.18);
 }
-#study.has-custom-bg .sound-tab.active {
-  color: #ffffff;
-  background: var(--primary, #10b981);
-  border-color: var(--primary, #10b981);
-  box-shadow: 0 0 14px rgba(16, 185, 129, 0.4);
+#study.has-custom-bg .sound-tab.active,
+.sound-tab.active {
+  color: #ffffff !important;
+  background: var(--primary-gradient, linear-gradient(135deg, #10b981 0%, #059669 100%)) !important;
+  border-color: transparent !important;
+  box-shadow: 0 4px 14px var(--primary-glow, rgba(16, 185, 129, 0.4)) !important;
 }
 #study.has-custom-bg #toggleAmbientMaster {
   background: rgba(255, 255, 255, 0.12);
@@ -3089,14 +3114,17 @@ dialog.detail-modal[open] {
 #study.has-custom-bg .ambient-track-toggle:hover {
   background: rgba(255, 255, 255, 0.25);
 }
-#study.has-custom-bg .ambient-track.active {
-  background: rgba(16, 185, 129, 0.22);
-  border-color: rgba(52, 211, 153, 0.6);
-  box-shadow: 0 0 16px rgba(16, 185, 129, 0.25);
+#study.has-custom-bg .ambient-track.active,
+.ambient-track.active {
+  background: rgba(16, 185, 129, 0.12);
+  border-color: var(--primary, rgba(52, 211, 153, 0.6)) !important;
+  box-shadow: 0 0 16px var(--primary-glow, rgba(16, 185, 129, 0.25));
 }
-#study.has-custom-bg .ambient-track.active .ambient-track-toggle {
-  background: var(--primary, #10b981);
-  border-color: var(--primary, #10b981);
+#study.has-custom-bg .ambient-track.active .ambient-track-toggle,
+.ambient-track.active .ambient-track-toggle {
+  background: var(--primary-gradient, linear-gradient(135deg, #10b981 0%, #059669 100%)) !important;
+  border-color: transparent !important;
+  color: #ffffff !important;
 }
 #study.has-custom-bg .custom-audio-box {
   background: rgba(255, 255, 255, 0.05);
@@ -3394,12 +3422,13 @@ dialog.detail-modal[open] {
   transition: all 0.3s ease;
 }
 .cycle-dot.active {
-  background: var(--primary);
+  background: var(--primary-gradient, var(--primary, #10b981)) !important;
   transform: scale(1.25);
-  box-shadow: 0 0 8px rgba(47, 94, 69, 0.4);
+  box-shadow: 0 0 10px var(--primary-glow, rgba(16, 185, 129, 0.5)) !important;
 }
 .cycle-dot.completed {
-  background: #10b981;
+  background: var(--primary-gradient, var(--primary, #10b981)) !important;
+  box-shadow: 0 0 6px var(--primary-glow, rgba(16, 185, 129, 0.4)) !important;
 }
 
 /* Circular Timer Visual */

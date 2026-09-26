@@ -1010,7 +1010,23 @@ async function api(request, response, url) {
     const viewer = sessionFrom(request);
     const identifier = viewer ? `u:${viewer.id}` : `ip:${request.socket.remoteAddress || "unknown"}`;
     if (viewer) {
-      recordContribution(viewer.id, "post_read", 0, "post", postId, "Đọc bài đăng trên 1 phút");
+      const todayVN = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Ho_Chi_Minh" }).format(new Date());
+      // Luôn ghi nhận ngày hoạt động để duy trì chuỗi
+      db.prepare("INSERT OR IGNORE INTO activity_days(user_id,activity_date) VALUES (?,?)").run(viewer.id, todayVN);
+
+      // Chỉ ghi lại bài đọc đầu tiên trong ngày vào lịch sử đóng góp (tránh spam thừa thông tin)
+      const alreadyLoggedToday = db.prepare(`
+        SELECT 1 FROM contribution_events 
+        WHERE user_id = ? AND event_type IN ('post_read', 'document_read') 
+          AND date(datetime(created_at, '+7 hours')) = ?
+        LIMIT 1
+      `).get(viewer.id, todayVN);
+
+      if (!alreadyLoggedToday) {
+        db.prepare(
+          "INSERT INTO contribution_events(user_id,event_type,points,reference_type,reference_id,reason) VALUES (?,?,?,?,?,?)"
+        ).run(viewer.id, "post_read", 0, "post", postId, "Đọc bài đăng giữ chuỗi");
+      }
     }
     if (canRecordRead(identifier, postId)) {
       db.prepare("UPDATE posts SET read_count = read_count + 1 WHERE id=?").run(postId);
@@ -1494,7 +1510,23 @@ async function api(request, response, url) {
     if (!doc) return error(response, 404, "Không tìm thấy tài liệu.");
     const viewer = sessionFrom(request);
     if (viewer) {
-      recordContribution(viewer.id, "document_read", 0, "document", docId, "Xem tài liệu trên 1 phút");
+      const todayVN = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Ho_Chi_Minh" }).format(new Date());
+      // Luôn ghi nhận ngày hoạt động để duy trì chuỗi
+      db.prepare("INSERT OR IGNORE INTO activity_days(user_id,activity_date) VALUES (?,?)").run(viewer.id, todayVN);
+
+      // Chỉ ghi lại tài liệu đầu tiên trong ngày vào lịch sử đóng góp (tránh spam thừa thông tin)
+      const alreadyLoggedToday = db.prepare(`
+        SELECT 1 FROM contribution_events 
+        WHERE user_id = ? AND event_type IN ('post_read', 'document_read') 
+          AND date(datetime(created_at, '+7 hours')) = ?
+        LIMIT 1
+      `).get(viewer.id, todayVN);
+
+      if (!alreadyLoggedToday) {
+        db.prepare(
+          "INSERT INTO contribution_events(user_id,event_type,points,reference_type,reference_id,reason) VALUES (?,?,?,?,?,?)"
+        ).run(viewer.id, "document_read", 0, "document", docId, "Xem tài liệu giữ chuỗi");
+      }
     }
     return json(response, 200, { success: true });
   }
@@ -1710,14 +1742,49 @@ async function api(request, response, url) {
     try {
       const body = await readJSON(request);
       const minutes = Number(body.durationMinutes) || 0;
+      const cycles = Math.max(0, Number(body.cyclesCompleted) || (minutes >= 40 ? 2 : (minutes >= 20 ? 1 : 0)));
       const goal = (body.goal || "Tự học NCKH").trim().slice(0, 100);
 
+      // Tính ngày Thứ Hai của tuần hiện tại theo giờ VN (GMT+7)
+      const vnNow = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Ho_Chi_Minh" }));
+      const vnDayIndex = vnNow.getDay() === 0 ? 6 : vnNow.getDay() - 1;
+      const mondayDate = new Date(vnNow);
+      mondayDate.setDate(vnNow.getDate() - vnDayIndex);
+      const y = mondayDate.getFullYear();
+      const m = String(mondayDate.getMonth() + 1).padStart(2, '0');
+      const d = String(mondayDate.getDate()).padStart(2, '0');
+      const mondayDateStr = `${y}-${m}-${d}`;
+
+      // Kiểm tra xem tuần này đã nhận điểm study_session (+10đ) chưa
+      const hasWeeklyStudyReward = db.prepare(`
+        SELECT count(*) as c FROM contribution_events 
+        WHERE user_id = ? AND event_type = 'study_session' AND points > 0 
+          AND date(datetime(created_at, '+7 hours')) >= ?
+      `).get(user.id, mondayDateStr).c > 0;
+
       let pointsAwarded = 0;
-      let streakUpdated = false;
-      if (minutes >= 20) {
-        pointsAwarded = 10;
-        recordContribution(user.id, "study_session", pointsAwarded, "study", null, `Hoàn thành ca tự học ${minutes} phút (${goal})`);
-        streakUpdated = true;
+      let toastMessage = "";
+      let reason = "";
+
+      // Phải hoàn thành tối thiểu 2 hiệp (hoặc >= 40 phút) và chưa nhận trong tuần
+      if (cycles >= 2 || minutes >= 40) {
+        if (!hasWeeklyStudyReward) {
+          pointsAwarded = 10;
+          reason = `Hoàn thành ca tự học Pomodoro (${cycles} hiệp, ${minutes} phút) - Thưởng tuần +10đ`;
+          toastMessage = `🎉 Hoàn thành xuất sắc ca tự học (${cycles} hiệp)! +10 điểm thưởng tuần & giữ chuỗi thành công!`;
+        } else {
+          pointsAwarded = 0;
+          reason = `Hoàn thành ca tự học Pomodoro (${cycles} hiệp, ${minutes} phút) - Đã nhận thưởng tuần này (1 lần/tuần)`;
+          toastMessage = `🎉 Hoàn tất ca tự học (${cycles} hiệp)! Tuần này bạn đã nhận 10đ thưởng ca học (tối đa 1 lần/tuần). Hoạt động đã được ghi nhận giữ chuỗi!`;
+        }
+      } else {
+        pointsAwarded = 0;
+        reason = `Hoàn thành ca tự học (${minutes} phút, ${cycles} hiệp) - Cần tối thiểu 2 hiệp để nhận thưởng tuần (+10đ)`;
+        toastMessage = `🎉 Hoàn tất ca học (${minutes} phút)! Bạn cần hoàn thành tối thiểu 2 hiệp Pomodoro để nhận 10đ thưởng tuần. Hoạt động đã được ghi nhận giữ chuỗi!`;
+      }
+
+      if (minutes >= 20 || cycles >= 1) {
+        recordContribution(user.id, "study_session", pointsAwarded, "study", null, reason);
       }
       db.prepare("DELETE FROM study_sessions WHERE user_id = ?").run(user.id);
 
@@ -1725,6 +1792,7 @@ async function api(request, response, url) {
       return json(response, 200, {
         success: true,
         pointsAwarded,
+        message: toastMessage,
         streak: streakInfo.streak,
         streakTier: streakInfo.streakTier
       });
@@ -2133,57 +2201,82 @@ const server = http.createServer(async (request, response) => {
   }
 });
 
-// --- Cron Job Thưởng Tuần ---
-setInterval(() => {
+// --- Cron Job Thưởng Điểm Năng Động Tuần (+5 điểm) ---
+function checkAndAwardWeeklyRewards() {
   try {
-    const now = new Date();
-    const vnTime = new Date(now.getTime() + 7 * 60 * 60 * 1000);
-    
-    let targetSunday = new Date(vnTime.getTime());
-    
-    if (vnTime.getUTCDay() === 0 && (vnTime.getUTCHours() < 23 || (vnTime.getUTCHours() === 23 && vnTime.getUTCMinutes() < 59))) {
-      targetSunday = new Date(vnTime.getTime() - 7 * 24 * 60 * 60 * 1000);
-    } else if (vnTime.getUTCDay() !== 0) {
-      const daysSinceSunday = vnTime.getUTCDay();
-      targetSunday = new Date(vnTime.getTime() - daysSinceSunday * 24 * 60 * 60 * 1000);
+    const vnNow = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Ho_Chi_Minh" }));
+    const dayOfWeek = vnNow.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+    const hours = vnNow.getHours();
+
+    const formatYMD = (d) => {
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, "0");
+      const day = String(d.getDate()).padStart(2, "0");
+      return `${y}-${m}-${day}`;
+    };
+
+    const weeksToCheck = [];
+
+    // Nếu là tối Chủ Nhật từ 23h trở đi (gần kết thúc tuần), xét duyệt ngay cho tuần hiện tại
+    if (dayOfWeek === 0 && hours >= 23) {
+      const currentSunday = new Date(vnNow.getFullYear(), vnNow.getMonth(), vnNow.getDate());
+      const currentMonday = new Date(currentSunday);
+      currentMonday.setDate(currentSunday.getDate() - 6);
+      weeksToCheck.push({ monday: formatYMD(currentMonday), sunday: formatYMD(currentSunday) });
     }
-    
-    const targetSundayDateStr = targetSunday.toISOString().split('T')[0];
-    const targetMondayTime = new Date(targetSunday.getTime() - 6 * 24 * 60 * 60 * 1000);
-    const targetMondayDateStr = targetMondayTime.toISOString().split('T')[0];
-    
-    const key = `reward_given_${targetSundayDateStr}`;
-    const kv = db.prepare("SELECT value FROM kv_store WHERE key = ?").get(key);
-    if (!kv) {
-      const users = db.prepare(`
-        SELECT user_id, count(DISTINCT activity_date) as activeDays 
-        FROM activity_days 
-        WHERE activity_date >= ? AND activity_date <= ?
-        GROUP BY user_id
-        HAVING activeDays >= 3
-      `).all(targetMondayDateStr, targetSundayDateStr);
-      
-      const insertEvent = db.prepare(
-        "INSERT INTO contribution_events(user_id,event_type,points,reference_type,reference_id,reason) VALUES (?,?,?,?,?,?)"
-      );
-      
-      db.exec("BEGIN");
-      try {
-        for (const u of users) {
-          insertEvent.run(u.user_id, 'weekly_active_reward', 10, null, null, "Thưởng điểm hoạt động tích cực tuần vừa rồi");
+
+    // Luôn kiểm tra tuần trước đó (kết thúc vào Chủ Nhật vừa qua) để tránh sót nếu server khởi động lại
+    const daysSinceLastSunday = dayOfWeek === 0 ? 7 : dayOfWeek;
+    const lastSunday = new Date(vnNow.getFullYear(), vnNow.getMonth(), vnNow.getDate() - daysSinceLastSunday);
+    const lastMonday = new Date(lastSunday);
+    lastMonday.setDate(lastSunday.getDate() - 6);
+    weeksToCheck.push({ monday: formatYMD(lastMonday), sunday: formatYMD(lastSunday) });
+
+    for (const week of weeksToCheck) {
+      const key = `weekly_active_reward_${week.sunday}`;
+      const kv = db.prepare("SELECT value FROM kv_store WHERE key = ?").get(key);
+      if (!kv) {
+        const users = db.prepare(`
+          SELECT user_id, count(DISTINCT activity_date) as activeDays 
+          FROM activity_days 
+          WHERE activity_date >= ? AND activity_date <= ?
+          GROUP BY user_id
+          HAVING activeDays >= 3
+        `).all(week.monday, week.sunday);
+
+        const insertEvent = db.prepare(
+          "INSERT INTO contribution_events(user_id,event_type,points,reference_type,reference_id,reason) VALUES (?,?,?,?,?,?)"
+        );
+
+        db.exec("BEGIN");
+        try {
+          for (const u of users) {
+            insertEvent.run(
+              u.user_id,
+              'weekly_active_reward',
+              5,
+              null,
+              null,
+              `Điểm năng động tuần (Thắp sáng ${u.activeDays}/7 ngày từ ${week.monday} đến ${week.sunday})`
+            );
+          }
+          db.prepare("INSERT INTO kv_store(key, value) VALUES (?, '1')").run(key);
+          db.exec("COMMIT");
+          console.log(`Cronjob: Điểm năng động tuần (+5đ) (${week.monday} -> ${week.sunday}) đã trao cho ${users.length} thành viên.`);
+        } catch (err) {
+          db.exec("ROLLBACK");
+          throw err;
         }
-        db.prepare("INSERT INTO kv_store(key, value) VALUES (?, '1')").run(key);
-        db.exec("COMMIT");
-      } catch (err) {
-        db.exec("ROLLBACK");
-        throw err;
       }
-      console.log(`Cronjob: Thưởng tuần (${targetMondayDateStr} -> ${targetSundayDateStr}) đã chạy cho ${users.length} user.`);
     }
   } catch (e) {
     console.error("Cronjob thưởng tuần lỗi:", e);
   }
-}, 60000);
+}
+
+// Chạy kiểm tra khi khởi động và định kỳ mỗi 1 phút
+checkAndAwardWeeklyRewards();
+setInterval(checkAndAwardWeeklyRewards, 60000);
 
 server.listen(PORT, "::", () =>
   console.log(`RE:SEARCH đang chạy tại http://[::]:${PORT}`),

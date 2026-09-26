@@ -52,6 +52,8 @@ let studyState = {
   remainingSeconds: 25 * 60,
   targetEndMs: 0,
   cycleIndex: 1, // 1..4 (Hiệp 1/4 -> 4/4)
+  completedFocusCycles: 0,
+  accumulatedFocusMinutes: 0,
   isRunning: false,
   timerInterval: null,
   syncHeartbeatInterval: null,
@@ -3048,6 +3050,8 @@ async function pauseStudyTimer(sync = true) {
 
 async function resetStudyTimer() {
   await pauseStudyTimer(false);
+  studyState.completedFocusCycles = 0;
+  studyState.accumulatedFocusMinutes = 0;
   studyState.remainingSeconds = studyState.durationMinutes * 60;
   studyState.targetEndMs = 0;
   studyState.elapsedSessionSeconds = 0;
@@ -3068,29 +3072,46 @@ async function finishStudySession(autoCompleted = false) {
 
   const totalElapsedMins = Math.round(studyState.elapsedSessionSeconds / 60);
   const isFocus = (studyState.mode === 'focus' || studyState.mode === 'pomodoro');
-  const durationToCredit = isFocus ? (autoCompleted ? studyState.durationMinutes : totalElapsedMins) : 0;
 
-  if (session && durationToCredit >= 20) {
+  if (isFocus) {
+    if (autoCompleted) {
+      studyState.completedFocusCycles = (studyState.completedFocusCycles || 0) + 1;
+      studyState.accumulatedFocusMinutes = (studyState.accumulatedFocusMinutes || 0) + studyState.durationMinutes;
+    } else {
+      if (totalElapsedMins >= 20) {
+        studyState.completedFocusCycles = (studyState.completedFocusCycles || 0) + 1;
+      }
+      studyState.accumulatedFocusMinutes = (studyState.accumulatedFocusMinutes || 0) + totalElapsedMins;
+    }
+  }
+
+  const durationToCredit = isFocus ? (autoCompleted ? (studyState.accumulatedFocusMinutes || studyState.durationMinutes) : (studyState.accumulatedFocusMinutes || totalElapsedMins)) : 0;
+  const cyclesToCredit = studyState.completedFocusCycles || 0;
+
+  if (session && (durationToCredit >= 20 || cyclesToCredit >= 1)) {
     try {
       const res = await requestAPI("/api/study/complete", {
         method: "POST",
         body: JSON.stringify({
           durationMinutes: durationToCredit,
+          cyclesCompleted: cyclesToCredit,
           goal: studyState.goal || "Tự học NCKH"
         })
       });
       if (res && res.success) {
-        if (res.pointsAwarded > 0) {
-          toast(`🎉 Hoàn thành xuất sắc ca tự học ${durationToCredit} phút! +${res.pointsAwarded} điểm đóng góp & giữ chuỗi!`);
+        if (res.message) {
+          toast(res.message);
+        } else if (res.pointsAwarded > 0) {
+          toast(`🎉 Hoàn thành xuất sắc ca tự học (${cyclesToCredit} hiệp)! +${res.pointsAwarded} điểm thưởng tuần & giữ chuỗi!`);
         } else {
-          toast(`🎉 Hoàn tất ca học ${durationToCredit} phút!`);
+          toast(`🎉 Hoàn tất ca học (${cyclesToCredit} hiệp)! Hoạt động đã được ghi nhận.`);
         }
         loadContributions();
       }
     } catch (e) {
       console.error(e);
     }
-  } else if (durationToCredit >= 20) {
+  } else if (durationToCredit >= 20 || cyclesToCredit >= 1) {
     toast(`🎉 Hoàn thành ca tự học ${durationToCredit} phút! (Đăng nhập để lưu điểm & giữ chuỗi)`);
   } else {
     toast("🎉 Đã hoàn tất ca học!");
@@ -3098,6 +3119,8 @@ async function finishStudySession(autoCompleted = false) {
 
   if (!autoCompleted) {
     // Khi bấm hoàn thành: reset thời gian về hiệp 0 và thoát khu vực bàn tròn
+    studyState.completedFocusCycles = 0;
+    studyState.accumulatedFocusMinutes = 0;
     studyState.cycleIndex = 0;
     studyState.mode = 'focus';
     studyState.durationMinutes = studySettings.focusMins;
@@ -4759,12 +4782,8 @@ function applyClockColor(colorId) {
   if (clock) {
     clock.style.color = (c.id === 'default' ? '' : c.color);
   }
-  const prog = $("#timerProgressCircle");
-  if (prog && c.id !== 'default') {
-    prog.style.stroke = c.color;
-  }
   renderClockColorPicker();
-  toast(`Đã đổi màu đồng hồ: ${c.name}`);
+  toast(`Đã đổi màu số đồng hồ: ${c.name}`);
 }
 
 async function triggerWallpaperUpload() {
