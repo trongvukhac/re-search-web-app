@@ -58,9 +58,11 @@ let studyState = {
   lastSyncMs: 0,
   audioCtx: null,
   activeSounds: {}, // trackId -> boolean
+  ambientAudioPlayers: {}, // trackId -> Audio element (for external CDN audio)
   soundNodes: {},   // trackId -> nodes
   soundGains: {},   // trackId -> gainNode
   activeLofiTrack: null,
+  lofiPlayer: null, // Audio element (for external CDN lofi)
   lofiNodes: null,
   customAudioPlayer: null,
   playingCustomAudioId: null,
@@ -2604,6 +2606,24 @@ window.updateStudyStreakPerks = function() {
   const palettePicker = $("#colorPalettePicker");
   if (palettePicker) palettePicker.classList.toggle("locked-feature", !masterCustomUnlocked);
 
+  const dropzoneTip = $(".dropzone-tip");
+  if (dropzoneTip) {
+    if (streak >= 50) {
+      dropzoneTip.innerHTML = `✨ <strong>Mốc 50 ngày:</strong> Tải lên không giới hạn dung lượng & số lượng (lưu cục bộ an toàn)!`;
+      dropzoneTip.style.color = "var(--primary-color, #10b981)";
+    } else {
+      dropzoneTip.textContent = `Lưu an toàn trong bộ nhớ máy của bạn, không tốn dữ liệu mạng (tối đa 25MB). Đạt Chuỗi 50 ngày để không giới hạn.`;
+      dropzoneTip.style.color = "";
+    }
+  }
+
+  const customWallName = $("#customWallName");
+  if (customWallName && !studySettings.activeWallpaper?.startsWith("custom_")) {
+    if (streak >= 50) {
+      customWallName.textContent = "Không giới hạn dung lượng ảnh (Chuỗi 50 ngày)";
+    }
+  }
+
   renderAmbianceGrid();
   renderLofiTracks();
   renderWallpaperPresets();
@@ -3141,7 +3161,26 @@ window.sendStudyCheer = async function(recipientId, cheerType) {
   }
 };
 
-/* --- 6. WEB AUDIO SYNTHESIZER (Ambient Sounds, 0 Network Traffic) --- */
+/* --- 6. DEFAULT AUDIO SOURCES (Hướng 2: External CDN / GitHub Releases Direct Streaming) --- */
+const DEFAULT_AUDIO_SOURCES = {
+  // 10 Ambient Sounds (60MB default original files hosted on GitHub Releases / R2 / CDN)
+  rain: "",
+  cafe: "",
+  waves: "",
+  forest: "",
+  birds: "",
+  stream: "",
+  campfire: "",
+  whitenoise: "",
+  library: "",
+  clock: "",
+  // 3 Lo-Fi Study Tracks
+  lofi_night: "",
+  lofi_desk: "",
+  lofi_coffee: ""
+};
+
+/* --- WEB AUDIO SYNTHESIZER (Ambient Sounds, 0 Network Traffic fallback) --- */
 const AMBIENT_TRACKS = [
   { id: 'rain', name: 'Mưa rào nhẹ', icon: '🌧️', sub: 'Mưa rơi tí tách trên mái hiên', reqStreak: 0, defaultVol: 40 },
   { id: 'cafe', name: 'Góc quán Cafe', icon: '☕', sub: 'Tiếng trò chuyện rì rầm & ly tách', reqStreak: 0, defaultVol: 35 },
@@ -3151,6 +3190,8 @@ const AMBIENT_TRACKS = [
   { id: 'stream', name: 'Suối nguồn trên núi', icon: '🏞️', sub: 'Dòng nước chảy len qua ghềnh đá', reqStreak: 3, defaultVol: 40 },
   { id: 'campfire', name: 'Lửa trại ấm cúng', icon: '🔥', sub: 'Củi tí tách trong đêm yên tĩnh', reqStreak: 3, defaultVol: 35 },
   { id: 'whitenoise', name: 'Tiếng ồn trắng (Zen)', icon: '📻', sub: 'Tần số phẳng cách ly mọi tạp âm', reqStreak: 3, defaultVol: 25 },
+  { id: 'library', name: 'Thư viện học thuật', icon: '📚', sub: 'Không gian tĩnh lặng, bước chân nhẹ', reqStreak: 7, defaultVol: 35 },
+  { id: 'clock', name: 'Đồng hồ quả lắc', icon: '🕰️', sub: 'Nhịp tích tắc sâu lắng tập trung', reqStreak: 7, defaultVol: 30 }
 ];
 
 function getAudioContext() {
@@ -3256,12 +3297,6 @@ function updateMasterAmbientButtonState() {
 }
 
 function toggleSoundTrack(soundType) {
-  const ctx = getAudioContext();
-  if (!ctx) {
-    toast("Trình duyệt không hỗ trợ âm thanh Web Audio.");
-    return;
-  }
-
   const streak = getUserStudyStreak();
   const trackMeta = AMBIENT_TRACKS.find(t => t.id === soundType);
   if (trackMeta && trackMeta.reqStreak > streak) {
@@ -3274,9 +3309,62 @@ function toggleSoundTrack(soundType) {
   const trackBtn = $(`#toggle${capId}Btn`);
   const trackCard = $(`#cardSound_${soundType}`) || (trackBtn ? trackBtn.closest('.ambient-track') : null);
 
+  // 1. External CDN Stream (Hướng 2 - Fastly / Cloudflare / GitHub Releases Direct)
+  if (DEFAULT_AUDIO_SOURCES && DEFAULT_AUDIO_SOURCES[soundType]) {
+    if (isCurrentlyActive) {
+      const extPlayer = studyState.ambientAudioPlayers[soundType];
+      if (extPlayer) {
+        extPlayer.pause();
+        extPlayer.currentTime = 0;
+      }
+      studyState.activeSounds[soundType] = false;
+      if (trackBtn) {
+        trackBtn.textContent = "Bật";
+        trackBtn.className = "button button-sm button-outline";
+      }
+      if (trackCard) trackCard.classList.remove('active');
+    } else {
+      let extPlayer = studyState.ambientAudioPlayers[soundType];
+      if (!extPlayer || extPlayer.src !== DEFAULT_AUDIO_SOURCES[soundType]) {
+        extPlayer = new Audio(DEFAULT_AUDIO_SOURCES[soundType]);
+        extPlayer.loop = true;
+        extPlayer.crossOrigin = "anonymous";
+        studyState.ambientAudioPlayers[soundType] = extPlayer;
+      }
+      const slider = $(`#volume${capId}`);
+      const userVol = slider ? Number(slider.value) / 100 : 0.4;
+      extPlayer.volume = Math.max(0, Math.min(1, userVol));
+      extPlayer.play().catch(e => {
+        console.warn("External ambient audio stream error, falling back to synthesizer:", e);
+        DEFAULT_AUDIO_SOURCES[soundType] = "";
+        toggleSoundTrack(soundType);
+      });
+      studyState.activeSounds[soundType] = true;
+      if (trackBtn) {
+        trackBtn.textContent = "Tắt";
+        trackBtn.className = "button button-sm button-dark";
+      }
+      if (trackCard) trackCard.classList.add('active');
+    }
+    updateMasterAmbientButtonState();
+    return;
+  }
+
+  // 2. Synthesizer Fallback (Web Audio API)
+  const ctx = getAudioContext();
+  if (!ctx) {
+    toast("Trình duyệt không hỗ trợ âm thanh Web Audio.");
+    return;
+  }
+
   if (isCurrentlyActive) {
     // STOP TRACK
     try {
+      const extPlayer = studyState.ambientAudioPlayers[soundType];
+      if (extPlayer) {
+        extPlayer.pause();
+        extPlayer.currentTime = 0;
+      }
       const nodes = studyState.soundNodes[soundType];
       if (nodes) {
         if (nodes.gainNode) {
@@ -3326,7 +3414,6 @@ function toggleSoundTrack(soundType) {
         highpass.type = 'highpass';
         highpass.frequency.setValueAtTime(250, ctx.currentTime);
 
-        // Periodic light raindrop clicks
         const dropInterval = setInterval(() => {
           if (!studyState.activeSounds.rain) return;
           try {
@@ -3352,13 +3439,11 @@ function toggleSoundTrack(soundType) {
 
         studyState.soundNodes[soundType] = { source, interval: dropInterval, gainNode };
       } else if (soundType === 'cafe') {
-        // Authentic Coffee Shop Atmosphere: Multiband conversational formant murmur + room hum + ceramic clinks + gentle espresso puff
         const buffer = createPinkNoiseBuffer(ctx);
         const source = ctx.createBufferSource();
         source.buffer = buffer;
         source.loop = true;
 
-        // Dual formant filters for speech-like ambient chatter murmur
         const f1 = ctx.createBiquadFilter();
         f1.type = 'bandpass';
         f1.frequency.setValueAtTime(320, ctx.currentTime);
@@ -3374,7 +3459,6 @@ function toggleSoundTrack(soundType) {
         f3.frequency.setValueAtTime(1650, ctx.currentTime);
         f3.Q.setValueAtTime(2.5, ctx.currentTime);
 
-        // Low warm ambient room tone / refrigerator hum
         const roomHum = ctx.createOscillator();
         roomHum.type = 'sine';
         roomHum.frequency.setValueAtTime(108, ctx.currentTime);
@@ -3384,7 +3468,6 @@ function toggleSoundTrack(soundType) {
         humGain.connect(gainNode);
         roomHum.start();
 
-        // Slow modulation of chatter murmur frequencies
         const lfoMurmur = ctx.createOscillator();
         lfoMurmur.type = 'sine';
         lfoMurmur.frequency.setValueAtTime(0.25, ctx.currentTime);
@@ -3394,7 +3477,6 @@ function toggleSoundTrack(soundType) {
         lfoGain.connect(f2.frequency);
         lfoMurmur.start();
 
-        // Occasional delicate ceramic coffee cup / spoon clinks
         const clinkInterval = setInterval(() => {
           if (!studyState.activeSounds.cafe) return;
           try {
@@ -3413,7 +3495,6 @@ function toggleSoundTrack(soundType) {
           } catch (e) {}
         }, 4500);
 
-        // Occasional gentle espresso steam puff
         const steamInterval = setInterval(() => {
           if (!studyState.activeSounds.cafe) return;
           try {
@@ -3454,7 +3535,6 @@ function toggleSoundTrack(soundType) {
           gainNode
         };
       } else if (soundType === 'waves') {
-        // Realistic Ocean Surf: Brown noise tidal sweep with rhythmic ebb and flow
         const buffer = createBrownNoiseBuffer(ctx);
         const source = ctx.createBufferSource();
         source.buffer = buffer;
@@ -3471,7 +3551,7 @@ function toggleSoundTrack(soundType) {
 
         const swellLfo = ctx.createOscillator();
         swellLfo.type = 'sine';
-        swellLfo.frequency.setValueAtTime(0.085, ctx.currentTime); // ~11.7s per wave cycle
+        swellLfo.frequency.setValueAtTime(0.085, ctx.currentTime);
 
         const lfoFilterGain = ctx.createGain();
         lfoFilterGain.gain.setValueAtTime(220, ctx.currentTime);
@@ -3615,6 +3695,70 @@ function toggleSoundTrack(soundType) {
         gainNode.connect(ctx.destination);
         source.start(0);
         studyState.soundNodes[soundType] = { source, gainNode };
+      } else if (soundType === 'library') {
+        // Deep academic library room ambience: subtle warm room tone + occasional soft book page rustle
+        const buffer = createPinkNoiseBuffer(ctx);
+        const source = ctx.createBufferSource();
+        source.buffer = buffer;
+        source.loop = true;
+
+        const lowpass = ctx.createBiquadFilter();
+        lowpass.type = 'lowpass';
+        lowpass.frequency.setValueAtTime(420, ctx.currentTime);
+
+        const pageInterval = setInterval(() => {
+          if (!studyState.activeSounds.library) return;
+          try {
+            const pageBuffer = createWhiteNoiseBuffer(ctx);
+            const pageSrc = ctx.createBufferSource();
+            pageSrc.buffer = pageBuffer;
+            const pageFilter = ctx.createBiquadFilter();
+            pageFilter.type = 'bandpass';
+            pageFilter.frequency.setValueAtTime(2200 + Math.random() * 800, ctx.currentTime);
+            pageFilter.Q.setValueAtTime(1.5, ctx.currentTime);
+            const pageGain = ctx.createGain();
+            pageGain.gain.setValueAtTime(userVol * 0.03, ctx.currentTime);
+            pageGain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.22);
+            pageSrc.connect(pageFilter);
+            pageFilter.connect(gainNode);
+            pageSrc.start();
+            pageSrc.stop(ctx.currentTime + 0.25);
+          } catch (e) {}
+        }, 8500);
+
+        gainNode.gain.setValueAtTime(userVol * 0.22, ctx.currentTime);
+        source.connect(lowpass);
+        lowpass.connect(gainNode);
+        gainNode.connect(ctx.destination);
+        source.start(0);
+
+        studyState.soundNodes[soundType] = { source, interval: pageInterval, gainNode };
+      } else if (soundType === 'clock') {
+        // Rhythmic pendulum tick-tock (alternating 920Hz and 720Hz gentle triangle pulse every 1s)
+        gainNode.gain.setValueAtTime(userVol * 0.22, ctx.currentTime);
+        gainNode.connect(ctx.destination);
+
+        let tickToggle = false;
+        const clockInterval = setInterval(() => {
+          if (!studyState.activeSounds.clock) return;
+          try {
+            const osc = ctx.createOscillator();
+            const clickGain = ctx.createGain();
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(tickToggle ? 920 : 720, ctx.currentTime);
+            tickToggle = !tickToggle;
+
+            clickGain.gain.setValueAtTime(userVol * 0.08, ctx.currentTime);
+            clickGain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.045);
+
+            osc.connect(clickGain);
+            clickGain.connect(gainNode);
+            osc.start();
+            osc.stop(ctx.currentTime + 0.05);
+          } catch (e) {}
+        }, 1000);
+
+        studyState.soundNodes[soundType] = { interval: clockInterval, gainNode };
       }
 
       studyState.soundGains[soundType] = gainNode;
@@ -3634,9 +3778,13 @@ function toggleSoundTrack(soundType) {
 }
 
 function updateSoundVolume(soundType, val) {
+  const userVol = (Number(val) / 100);
+  const extPlayer = studyState.ambientAudioPlayers[soundType];
+  if (extPlayer) {
+    extPlayer.volume = Math.max(0, Math.min(1, userVol));
+  }
   const gain = studyState.soundGains[soundType];
   if (gain && studyState.audioCtx) {
-    const userVol = (Number(val) / 100);
     const multiplier = soundType === 'waves' ? 0.38 : (soundType === 'cafe' ? 0.32 : (soundType === 'rain' ? 0.28 : 0.24));
     gain.gain.setValueAtTime(userVol * multiplier, studyState.audioCtx.currentTime);
   }
@@ -3776,69 +3924,96 @@ function toggleLofiTrack(trackId) {
     return;
   }
 
-  const ctx = getAudioContext();
-  if (!ctx) return;
-
   if (studyState.activeLofiTrack === trackId) {
     // STOP LO-FI
+    if (studyState.lofiPlayer) {
+      studyState.lofiPlayer.pause();
+      studyState.lofiPlayer.currentTime = 0;
+    }
     if (studyState.lofiNodes) {
       if (studyState.lofiNodes.interval) clearInterval(studyState.lofiNodes.interval);
-      if (studyState.lofiNodes.gainNode) {
-        studyState.lofiNodes.gainNode.gain.linearRampToValueAtTime(0.0001, ctx.currentTime + 0.1);
+      if (studyState.lofiNodes.gainNode && studyState.audioCtx) {
+        studyState.lofiNodes.gainNode.gain.linearRampToValueAtTime(0.0001, studyState.audioCtx.currentTime + 0.1);
       }
     }
     studyState.activeLofiTrack = null;
     studyState.lofiNodes = null;
     renderLofiTracks();
     toast("Đã dừng nhạc Lo-Fi.");
-  } else {
-    // START LO-FI
-    if (studyState.activeLofiTrack) {
-      toggleLofiTrack(studyState.activeLofiTrack);
+    return;
+  }
+
+  // START LO-FI: Stop any currently active Lo-Fi track first
+  if (studyState.activeLofiTrack) {
+    toggleLofiTrack(studyState.activeLofiTrack);
+  }
+
+  const track = LOFI_PRESETS.find(t => t.id === trackId);
+  if (!track) return;
+
+  // 1. External CDN Stream (Hướng 2 - Fastly / Cloudflare / GitHub Releases Direct)
+  if (DEFAULT_AUDIO_SOURCES && DEFAULT_AUDIO_SOURCES[trackId]) {
+    let player = studyState.lofiPlayer;
+    if (!player || player.src !== DEFAULT_AUDIO_SOURCES[trackId]) {
+      player = new Audio(DEFAULT_AUDIO_SOURCES[trackId]);
+      player.loop = true;
+      player.crossOrigin = "anonymous";
+      studyState.lofiPlayer = player;
     }
+    player.volume = 0.5;
+    player.play().catch(e => {
+      console.warn("External Lo-Fi stream error, falling back to synth:", e);
+      DEFAULT_AUDIO_SOURCES[trackId] = "";
+      toggleLofiTrack(trackId);
+    });
+    studyState.activeLofiTrack = trackId;
+    renderLofiTracks();
+    toast(`Đang phát: ${track.name} 🎧`);
+    return;
+  }
 
-    const track = LOFI_PRESETS.find(t => t.id === trackId);
-    if (!track) return;
+  // 2. Synthesizer Fallback (Web Audio API)
+  const ctx = getAudioContext();
+  if (!ctx) return;
 
-    try {
-      const masterLofiGain = ctx.createGain();
-      masterLofiGain.gain.setValueAtTime(0.2, ctx.currentTime);
-      masterLofiGain.connect(ctx.destination);
+  try {
+    const masterLofiGain = ctx.createGain();
+    masterLofiGain.gain.setValueAtTime(0.2, ctx.currentTime);
+    masterLofiGain.connect(ctx.destination);
 
-      let step = 0;
-      const playChordStep = () => {
-        if (studyState.activeLofiTrack !== trackId) return;
-        const baseFreq = track.chords[step % track.chords.length];
-        step++;
+    let step = 0;
+    const playChordStep = () => {
+      if (studyState.activeLofiTrack !== trackId) return;
+      const baseFreq = track.chords[step % track.chords.length];
+      step++;
 
-        // Play 3 notes of the chord with soft attack/decay
-        [baseFreq, baseFreq * 1.25, baseFreq * 1.5].forEach((f) => {
-          try {
-            const osc = ctx.createOscillator();
-            const noteGain = ctx.createGain();
-            osc.type = "sine";
-            osc.frequency.setValueAtTime(f, ctx.currentTime);
-            noteGain.gain.setValueAtTime(0.001, ctx.currentTime);
-            noteGain.gain.linearRampToValueAtTime(0.07, ctx.currentTime + 0.4);
-            noteGain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 2.8);
-            osc.connect(noteGain);
-            noteGain.connect(masterLofiGain);
-            osc.start();
-            osc.stop(ctx.currentTime + 2.9);
-          } catch (e) {}
-        });
-      };
+      // Play 3 notes of the chord with soft attack/decay
+      [baseFreq, baseFreq * 1.25, baseFreq * 1.5].forEach((f) => {
+        try {
+          const osc = ctx.createOscillator();
+          const noteGain = ctx.createGain();
+          osc.type = "sine";
+          osc.frequency.setValueAtTime(f, ctx.currentTime);
+          noteGain.gain.setValueAtTime(0.001, ctx.currentTime);
+          noteGain.gain.linearRampToValueAtTime(0.07, ctx.currentTime + 0.4);
+          noteGain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 2.8);
+          osc.connect(noteGain);
+          noteGain.connect(masterLofiGain);
+          osc.start();
+          osc.stop(ctx.currentTime + 2.9);
+        } catch (e) {}
+      });
+    };
 
-      playChordStep();
-      const interval = setInterval(playChordStep, 2900);
+    playChordStep();
+    const interval = setInterval(playChordStep, 2900);
 
-      studyState.activeLofiTrack = trackId;
-      studyState.lofiNodes = { interval, gainNode: masterLofiGain };
-      renderLofiTracks();
-      toast(`Đang phát: ${track.name} 🎧`);
-    } catch (e) {
-      console.warn("Lofi play error:", e);
-    }
+    studyState.activeLofiTrack = trackId;
+    studyState.lofiNodes = { interval, gainNode: masterLofiGain };
+    renderLofiTracks();
+    toast(`Đang phát: ${track.name} 🎧`);
+  } catch (e) {
+    console.warn("Lofi play error:", e);
   }
 }
 
@@ -3894,8 +4069,10 @@ async function handleCustomAudioUpload(file) {
     return;
   }
 
-  if (file.size > 25 * 1024 * 1024) {
-    toast("Tệp âm thanh quá lớn (tối đa 25MB). Vui lòng chọn tệp nhỏ hơn.");
+  // Chuỗi 50 ngày (Độc nhất vô nhị): Mở khóa tải lên KHÔNG GIỚI HẠN dung lượng và số lượng!
+  const isMaxStreak = userStreak >= 50;
+  if (!isMaxStreak && file.size > 25 * 1024 * 1024) {
+    toast("Tệp âm thanh quá lớn (tối đa 25MB cho chuỗi dưới 50 ngày). Đạt Chuỗi 50 ngày để mở khóa tải lên không giới hạn!");
     return;
   }
 
@@ -3910,7 +4087,7 @@ async function handleCustomAudioUpload(file) {
 
   const ok = await idbPut("custom_audio", newTrack);
   if (ok) {
-    toast(`Đã lưu tệp "${file.name}" vào trình duyệt của bạn!`);
+    toast(isMaxStreak ? `✨ [Chuỗi 50 ngày] Đã lưu tệp không giới hạn "${file.name}" vào trình duyệt!` : `Đã lưu tệp "${file.name}" vào trình duyệt của bạn!`);
     await loadCustomAudioFromDB();
   } else {
     toast("Không thể lưu tệp âm thanh.");
@@ -4025,12 +4202,14 @@ async function handleCustomWallpaperUpload(file) {
   if (!file) return;
   const streak = getUserStudyStreak();
   if (streak < 30) {
-    toast("🔒 Tính năng Tải hình nền cá nhân mở khóa ở Chuỗi 30 ngày (Chuyên gia)!");
+    toast("🔒 Tính năng Tải hình nền cá nhân mở khóa ở Chuỗi 30 ngày (Bậc thầy học thuật)!");
     return;
   }
 
-  if (file.size > 10 * 1024 * 1024) {
-    toast("Ảnh nền quá lớn (tối đa 10MB).");
+  // Chuỗi 50 ngày (Độc nhất vô nhị): Mở khóa tải lên KHÔNG GIỚI HẠN dung lượng ảnh nền!
+  const isMaxStreak = streak >= 50;
+  if (!isMaxStreak && file.size > 10 * 1024 * 1024) {
+    toast("Ảnh nền quá lớn (tối đa 10MB cho chuỗi dưới 50 ngày). Đạt Chuỗi 50 ngày để mở khóa không giới hạn!");
     return;
   }
 
@@ -4056,7 +4235,7 @@ async function handleCustomWallpaperUpload(file) {
     }
     const nameEl = $("#customWallName");
     if (nameEl) nameEl.textContent = file.name;
-    toast(`Đã áp dụng ảnh nền cá nhân: ${file.name}`);
+    toast(isMaxStreak ? `✨ [Chuỗi 50 ngày] Đã áp dụng ảnh nền không giới hạn: ${file.name}` : `Đã áp dụng ảnh nền cá nhân: ${file.name}`);
   };
   reader.readAsDataURL(file);
 }
