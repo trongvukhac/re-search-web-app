@@ -3418,6 +3418,36 @@ dialog.detail-modal[open] {
   color: #fff;
   border-color: var(--primary);
 }
+.ambient-track-delete {
+  background: var(--paper, #fff);
+  border: 1.5px solid var(--line, #e2e8f0);
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 13px;
+  cursor: pointer;
+  color: var(--muted, #64748b);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+  box-sizing: border-box;
+}
+.ambient-track-delete:hover {
+  background: #fef2f2;
+  color: #dc2626;
+  border-color: #fca5a5;
+  transform: translateY(-1px);
+}
+.ambient-track.active .ambient-track-delete {
+  background: rgba(255, 255, 255, 0.9);
+  border-color: rgba(47, 94, 69, 0.2);
+}
+.ambient-track.active .ambient-track-delete:hover {
+  background: #fef2f2;
+  border-color: #fca5a5;
+  color: #dc2626;
+}
 .ambient-slider-row {
   display: flex;
   align-items: center;
@@ -3456,7 +3486,10 @@ dialog.detail-modal[open] {
 .custom-audio-list {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 .lofi-track-item,
 .custom-audio-item {

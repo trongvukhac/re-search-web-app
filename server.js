@@ -685,78 +685,113 @@ function resolveGitHubRedirect(ghUrl) {
   });
 }
 
-async function getAudioAzureUrl(trackId) {
-  const cached = azureAudioUrlCache.get(trackId);
-  if (cached && cached.expiresAt > Date.now()) {
-    return cached.url;
+async function getAudioAzureUrl(trackId, forceRefresh = false) {
+  if (!forceRefresh) {
+    const cached = azureAudioUrlCache.get(trackId);
+    if (cached && cached.expiresAt > Date.now()) {
+      return cached.url;
+    }
   }
   const ghUrl = AUDIO_TRACK_URLS[trackId];
   if (!ghUrl) return null;
-  const directUrl = await resolveGitHubRedirect(ghUrl);
-  azureAudioUrlCache.set(trackId, {
-    url: directUrl,
-    expiresAt: Date.now() + 50 * 60 * 1000 // Cache 50 mins
+  try {
+    const directUrl = await resolveGitHubRedirect(ghUrl);
+    azureAudioUrlCache.set(trackId, {
+      url: directUrl,
+      expiresAt: Date.now() + 10 * 60 * 1000 // Cache 10 mins (Azure SAS token typically expires in 30-60 mins)
+    });
+    return directUrl;
+  } catch (err) {
+    console.error(`Failed to resolve GitHub redirect for ${trackId}:`, err.message);
+    return null;
+  }
+}
+
+async function fetchAzureAudioStream(trackId, reqMethod, headers, isRetry = false) {
+  const directUrl = await getAudioAzureUrl(trackId, isRetry);
+  if (!directUrl) return null;
+
+  return new Promise((resolve, reject) => {
+    try {
+      const parsed = new URL(directUrl);
+      const options = {
+        method: reqMethod,
+        hostname: parsed.hostname,
+        path: parsed.pathname + parsed.search,
+        headers
+      };
+
+      const azureReq = https.request(options, async (azureRes) => {
+        // If expired SAS token or forbidden, retry once with a fresh URL
+        if ((azureRes.statusCode === 403 || azureRes.statusCode === 401) && !isRetry) {
+          azureAudioUrlCache.delete(trackId);
+          try {
+            const retried = await fetchAzureAudioStream(trackId, reqMethod, headers, true);
+            return resolve(retried);
+          } catch (e) {
+            return resolve({ statusCode: azureRes.statusCode, headers: azureRes.headers, stream: azureRes, req: azureReq });
+          }
+        }
+        resolve({ statusCode: azureRes.statusCode, headers: azureRes.headers, stream: azureRes, req: azureReq });
+      });
+
+      azureReq.setTimeout(15000, () => {
+        azureReq.destroy(new Error("Azure audio stream timed out"));
+      });
+
+      azureReq.on("error", (err) => {
+        if (!isRetry) {
+          azureAudioUrlCache.delete(trackId);
+        }
+        reject(err);
+      });
+
+      azureReq.end();
+    } catch (e) {
+      reject(e);
+    }
   });
-  return directUrl;
 }
 
 async function streamAudioTrack(request, response, trackId) {
   try {
-    const directUrl = await getAudioAzureUrl(trackId);
-    if (!directUrl) {
-      return error(response, 404, "Không tìm thấy tệp âm thanh.");
-    }
-
     const headers = {};
     if (request.headers.range) {
       headers["Range"] = request.headers.range;
     }
 
     const reqMethod = request.method === "HEAD" ? "HEAD" : "GET";
-    const parsed = new URL(directUrl);
-    const options = {
-      method: reqMethod,
-      hostname: parsed.hostname,
-      path: parsed.pathname + parsed.search,
-      headers
+    const result = await fetchAzureAudioStream(trackId, reqMethod, headers);
+    if (!result) {
+      return error(response, 404, "Không tìm thấy tệp âm thanh.");
+    }
+
+    const { statusCode, headers: azureHeaders, stream, req: azureReq } = result;
+
+    const resHeaders = {
+      "Content-Type": "audio/mpeg",
+      "Content-Disposition": "inline",
+      "Accept-Ranges": "bytes",
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Headers": "Range, Accept-Encoding",
+      "Access-Control-Expose-Headers": "Content-Range, Content-Length, Accept-Ranges",
+      "Cache-Control": "public, max-age=86400, immutable",
+      "X-Content-Type-Options": "nosniff"
     };
 
-    const azureReq = https.request(options, (azureRes) => {
-      if (azureRes.statusCode === 403) {
-        azureAudioUrlCache.delete(trackId);
-      }
+    if (azureHeaders["content-range"]) {
+      resHeaders["Content-Range"] = azureHeaders["content-range"];
+    }
+    if (azureHeaders["content-length"]) {
+      resHeaders["Content-Length"] = azureHeaders["content-length"];
+    }
 
-      const resHeaders = {
-        "Content-Type": "audio/mpeg",
-        "Content-Disposition": "inline",
-        "Accept-Ranges": "bytes",
-        "Cache-Control": "public, max-age=86400, immutable",
-        "X-Content-Type-Options": "nosniff"
-      };
-
-      if (azureRes.headers["content-range"]) {
-        resHeaders["Content-Range"] = azureRes.headers["content-range"];
-      }
-      if (azureRes.headers["content-length"]) {
-        resHeaders["Content-Length"] = azureRes.headers["content-length"];
-      }
-
-      response.writeHead(azureRes.statusCode || 200, resHeaders);
-      if (reqMethod === "HEAD") {
-        response.end();
-      } else {
-        azureRes.pipe(response);
-      }
-    });
-
-    azureReq.on("error", (err) => {
-      console.error(`Audio stream error (${trackId}):`, err.message);
-      if (!response.headersSent) {
-        error(response, 502, "Lỗi kết nối tệp âm thanh.");
-      }
-    });
-
-    azureReq.end();
+    response.writeHead(statusCode || 200, resHeaders);
+    if (reqMethod === "HEAD") {
+      response.end();
+    } else {
+      stream.pipe(response);
+    }
 
     request.on("close", () => {
       try { azureReq.destroy(); } catch (e) {}

@@ -2417,7 +2417,7 @@ document.addEventListener('click', () => {
 
 /* --- 1. INDEXEDDB CLIENT STORAGE (Zero Server Bloat) --- */
 const STUDY_IDB_NAME = "RE_SEARCH_STUDY_DB";
-const STUDY_IDB_VERSION = 1;
+const STUDY_IDB_VERSION = 3;
 let studyIdbInstance = null;
 
 function getStudyDB() {
@@ -2457,8 +2457,12 @@ async function idbPut(storeName, item) {
       const store = tx.objectStore(storeName);
       store.put(item);
       tx.oncomplete = () => resolve(true);
-      tx.onerror = () => resolve(false);
+      tx.onerror = (err) => {
+        console.warn("idbPut transaction error:", err);
+        resolve(false);
+      };
     } catch (e) {
+      console.warn("idbPut error:", e);
       resolve(false);
     }
   });
@@ -2473,8 +2477,12 @@ async function idbGetAll(storeName) {
       const store = tx.objectStore(storeName);
       const req = store.getAll();
       req.onsuccess = () => resolve(req.result || []);
-      req.onerror = () => resolve([]);
+      req.onerror = (err) => {
+        console.warn("idbGetAll error:", err);
+        resolve([]);
+      };
     } catch (e) {
+      console.warn("idbGetAll exception:", e);
       resolve([]);
     }
   });
@@ -2489,8 +2497,12 @@ async function idbDelete(storeName, id) {
       const store = tx.objectStore(storeName);
       store.delete(id);
       tx.oncomplete = () => resolve(true);
-      tx.onerror = () => resolve(false);
+      tx.onerror = (err) => {
+        console.warn("idbDelete error:", err);
+        resolve(false);
+      };
     } catch (e) {
+      console.warn("idbDelete exception:", e);
       resolve(false);
     }
   });
@@ -3377,9 +3389,7 @@ function toggleEnvTrack(trackId) {
   // 1. Nếu track này đang phát -> Tắt
   if (studyState.activeEnvTrack === trackId) {
     stopCurrentEnvAudio();
-    studyState.activeEnvTrack = null;
     updateEnvGridDOM();
-    loadCustomAudioFromDB();
     toast(`Đã tắt ${track ? track.name : ''}.`);
     updateMasterAmbientButtonState();
     return;
@@ -3394,7 +3404,8 @@ function toggleEnvTrack(trackId) {
 
   if (DEFAULT_ENV_AUDIO_SOURCES && DEFAULT_ENV_AUDIO_SOURCES[trackId]) {
     let player = studyState.envAudioPlayers[trackId];
-    if (!player) {
+    if (!player || player.error) {
+      if (player) { try { player.pause(); player.src = ""; } catch (e) {} }
       player = new Audio(DEFAULT_ENV_AUDIO_SOURCES[trackId]);
       player.loop = true; // Phát vòng lặp
       player.preload = "auto";
@@ -3406,14 +3417,13 @@ function toggleEnvTrack(trackId) {
       playPromise.catch(e => {
         if (e.name === "AbortError") return;
         console.warn("Env audio stream error:", e);
-        toast("Đang tải tệp âm thanh môi trường, vui lòng thử lại...");
+        toast("Nhấp vào trang để cho phép phát âm thanh môi trường.");
       });
     }
     studyState.activeEnvTrack = trackId;
   }
 
   updateEnvGridDOM();
-  loadCustomAudioFromDB();
   toast(`Đang phát: ${track ? track.name : trackId} (Vòng lặp) 🎧`);
   updateMasterAmbientButtonState();
 }
@@ -3422,34 +3432,26 @@ function stopCurrentEnvAudio() {
   if (studyState.activeEnvTrack) {
     const ext = studyState.envAudioPlayers[studyState.activeEnvTrack];
     if (ext) {
-      ext.pause();
-      ext.currentTime = 0;
-    }
-    if (studyState.envNodes) {
       try {
-        if (studyState.envGainNode && studyState.audioCtx) {
-          studyState.envGainNode.gain.linearRampToValueAtTime(0.0001, studyState.audioCtx.currentTime + 0.1);
-        }
-        setTimeout(() => {
-          try {
-            if (studyState.envNodes.source) studyState.envNodes.source.stop();
-            if (studyState.envNodes.lfo) studyState.envNodes.lfo.stop();
-          } catch (e) {}
-        }, 120);
+        ext.pause();
+        ext.currentTime = 0;
       } catch (e) {}
     }
-    studyState.envNodes = null;
-    studyState.envGainNode = null;
     studyState.activeEnvTrack = null;
+    updateEnvGridDOM();
   }
 
   if (studyState.activeCustomEnvId) {
     if (studyState.customEnvAudioPlayer) {
-      studyState.customEnvAudioPlayer.pause();
-      studyState.customEnvAudioPlayer.currentTime = 0;
+      try {
+        studyState.customEnvAudioPlayer.pause();
+        studyState.customEnvAudioPlayer.currentTime = 0;
+      } catch (e) {}
       studyState.customEnvAudioPlayer = null;
     }
+    const oldCustomId = studyState.activeCustomEnvId;
     studyState.activeCustomEnvId = null;
+    updateCustomTrackDOM(oldCustomId, false);
   }
 }
 
@@ -3513,8 +3515,10 @@ function toggleMixTrack(trackId) {
     // STOP TRACK
     const ext = studyState.mixAudioPlayers[trackId];
     if (ext) {
-      ext.pause();
-      ext.currentTime = 0;
+      try {
+        ext.pause();
+        ext.currentTime = 0;
+      } catch (e) {}
     }
     studyState.activeMixSounds[trackId] = false;
   } else {
@@ -3524,7 +3528,8 @@ function toggleMixTrack(trackId) {
 
     if (DEFAULT_MIX_AUDIO_SOURCES && DEFAULT_MIX_AUDIO_SOURCES[trackId]) {
       let player = studyState.mixAudioPlayers[trackId];
-      if (!player) {
+      if (!player || player.error) {
+        if (player) { try { player.pause(); player.src = ""; } catch (e) {} }
         player = new Audio(DEFAULT_MIX_AUDIO_SOURCES[trackId]);
         player.loop = true; // Phát vòng lặp
         player.preload = "auto";
@@ -3536,7 +3541,7 @@ function toggleMixTrack(trackId) {
         playPromise.catch(e => {
           if (e.name === "AbortError") return;
           console.warn("Mix stream error:", e);
-          toast("Đang tải âm thanh phối hợp, vui lòng thử lại sau giây lát.");
+          toast("Nhấp vào trang để cho phép phát âm thanh.");
         });
       }
       studyState.activeMixSounds[trackId] = true;
@@ -3608,9 +3613,7 @@ function toggleMusicTrack(trackId) {
   // 1. Nếu track này đang phát -> Tắt
   if (studyState.activeMusicTrack === trackId) {
     stopCurrentMusicAudio();
-    studyState.activeMusicTrack = null;
     updateMusicGridDOM();
-    loadCustomAudioFromDB();
     toast(`Đã tắt ${track ? track.name : ''}.`);
     updateMasterAmbientButtonState();
     return;
@@ -3624,7 +3627,8 @@ function toggleMusicTrack(trackId) {
 
   if (DEFAULT_MUSIC_AUDIO_SOURCES && DEFAULT_MUSIC_AUDIO_SOURCES[trackId]) {
     let player = studyState.musicAudioPlayers[trackId];
-    if (!player) {
+    if (!player || player.error) {
+      if (player) { try { player.pause(); player.src = ""; } catch (e) {} }
       player = new Audio(DEFAULT_MUSIC_AUDIO_SOURCES[trackId]);
       player.loop = true; // Phát vòng lặp
       player.preload = "auto";
@@ -3636,14 +3640,13 @@ function toggleMusicTrack(trackId) {
       playPromise.catch(e => {
         if (e.name === "AbortError") return;
         console.warn("Music audio stream error:", e);
-        toast("Đang tải bản nhạc, vui lòng thử lại sau giây lát.");
+        toast("Nhấp vào trang để cho phép phát âm thanh.");
       });
     }
     studyState.activeMusicTrack = trackId;
   }
 
   updateMusicGridDOM();
-  loadCustomAudioFromDB();
   toast(`Đang phát: ${track ? track.name : trackId} (Vòng lặp) 🎵`);
   updateMasterAmbientButtonState();
 }
@@ -3652,34 +3655,26 @@ function stopCurrentMusicAudio() {
   if (studyState.activeMusicTrack) {
     const ext = studyState.musicAudioPlayers[studyState.activeMusicTrack];
     if (ext) {
-      ext.pause();
-      ext.currentTime = 0;
-    }
-    if (studyState.musicNodes) {
-      if (studyState.musicNodes.interval) clearInterval(studyState.musicNodes.interval);
-      if (studyState.musicNodes.oscs) {
-        studyState.musicNodes.oscs.forEach(o => {
-          try { o.osc.stop(); } catch(e){}
-        });
-      }
-    }
-    if (studyState.musicGainNode && studyState.audioCtx) {
       try {
-        studyState.musicGainNode.gain.setValueAtTime(0.0001, studyState.audioCtx.currentTime);
-      } catch(e){}
+        ext.pause();
+        ext.currentTime = 0;
+      } catch (e) {}
     }
-    studyState.musicNodes = null;
-    studyState.musicGainNode = null;
     studyState.activeMusicTrack = null;
+    updateMusicGridDOM();
   }
 
   if (studyState.activeCustomMusicId) {
     if (studyState.customMusicAudioPlayer) {
-      studyState.customMusicAudioPlayer.pause();
-      studyState.customMusicAudioPlayer.currentTime = 0;
+      try {
+        studyState.customMusicAudioPlayer.pause();
+        studyState.customMusicAudioPlayer.currentTime = 0;
+      } catch (e) {}
       studyState.customMusicAudioPlayer = null;
     }
+    const oldCustomId = studyState.activeCustomMusicId;
     studyState.activeCustomMusicId = null;
+    updateCustomTrackDOM(oldCustomId, false);
   }
 }
 
@@ -3822,7 +3817,39 @@ function previewSelectedAlarm() {
   playAlarmSound(val);
 }
 
-/* --- 8. CUSTOM AUDIO UPLOAD & PLAYBACK (Rạch ròi: Môi trường [Max 3] vs Phối hợp [Max 5], Streak 50 Unlimited) --- */
+/* --- 8. CUSTOM AUDIO UPLOAD, PERSISTENT STORAGE & PLAYBACK --- */
+// Persistent Volume Store for Custom Audio
+try {
+  const savedCustomVols = localStorage.getItem("research_custom_audio_vols");
+  if (savedCustomVols) {
+    studyState.customVolumes = Object.assign({}, JSON.parse(savedCustomVols), studyState.customVolumes);
+  }
+} catch (e) {}
+
+function getTrackBlobUrl(track) {
+  if (track.objectUrl) return track.objectUrl;
+  let blob = null;
+  if (track.data) {
+    blob = new Blob([track.data], { type: track.type || "audio/mpeg" });
+  } else if (track.blob) {
+    blob = track.blob;
+  }
+  if (blob) {
+    track.objectUrl = URL.createObjectURL(blob);
+    return track.objectUrl;
+  }
+  return null;
+}
+
+function updateCustomTrackDOM(id, isActive) {
+  const card = $(`#cardCustom_${id}`);
+  if (card) {
+    card.classList.toggle('active', isActive);
+    const btn = card.querySelector('.ambient-track-toggle');
+    if (btn) btn.textContent = isActive ? 'Tắt' : 'Bật';
+  }
+}
+
 async function loadCustomAudioFromDB() {
   const allTracks = await idbGetAll("custom_audio");
   studyState.customEnvAudioTracks = allTracks.filter(t => t.category === 'env');
@@ -3832,98 +3859,14 @@ async function loadCustomAudioFromDB() {
   const streak = getUserStudyStreak();
   const isMaxStreak = streak >= 50;
 
-  // Render Custom Environment Audio List
-  const envListEl = $("#customEnvAudioList");
-  if (envListEl) {
-    if (studyState.customEnvAudioTracks.length === 0) {
-      envListEl.innerHTML = `<p style="font-size:12px; color:var(--muted); padding:8px 0;">Chưa có tệp môi trường tải lên nào. Tải bài dài 1 tiếng ưa thích của bạn!</p>`;
-    } else {
-      envListEl.innerHTML = studyState.customEnvAudioTracks.map(t => {
-        const isPlaying = (studyState.activeCustomEnvId === t.id);
-        const sizeMb = (t.size / (1024 * 1024)).toFixed(1);
-        const savedVol = studyState.customVolumes[t.id] ?? 50;
-        return `
-          <div class="custom-audio-item ${isPlaying ? 'playing' : ''}">
-            <div class="custom-audio-name">
-              <strong>🌿 ${escapeHTML(t.name)}</strong>
-              <small>${sizeMb} MB (Vòng lặp)</small>
-            </div>
-            <div class="custom-audio-actions">
-              ${isPlaying ? `
-                <input type="range" min="0" max="100" value="${savedVol}" oninput="setCustomAudioVolume('${t.id}', this.value, true)" style="width:65px; height:6px;" />
-              ` : ''}
-              <button type="button" class="button button-sm ${isPlaying ? 'button-dark' : 'button-outline'}" onclick="toggleCustomEnvAudioPlay('${t.id}')">
-                ${isPlaying ? '■ Dừng' : '▶ Phát'}
-              </button>
-              <button type="button" class="button button-sm button-ghost" style="color:var(--error);" onclick="deleteCustomAudioTrack('${t.id}')" title="Xóa">✕</button>
-            </div>
-          </div>
-        `;
-      }).join("");
-    }
-  }
+  // Render Custom Environment Audio List (UI identical to default tracks)
+  renderCustomAudioList('env', $("#customEnvAudioList"), studyState.customEnvAudioTracks);
 
-  // Render Custom Mix Audio List
-  const mixListEl = $("#customMixAudioList");
-  if (mixListEl) {
-    if (studyState.customMixAudioTracks.length === 0) {
-      mixListEl.innerHTML = `<p style="font-size:12px; color:var(--muted); padding:8px 0;">Chưa có tệp phối hợp tải lên nào. Tải âm thanh thiên nhiên/tiếng ồn yêu thích để mix!</p>`;
-    } else {
-      mixListEl.innerHTML = studyState.customMixAudioTracks.map(t => {
-        const isPlaying = !!studyState.activeCustomMixSounds[t.id];
-        const sizeMb = (t.size / (1024 * 1024)).toFixed(1);
-        const savedVol = studyState.customVolumes[t.id] ?? 50;
-        return `
-          <div class="custom-audio-item ${isPlaying ? 'playing' : ''}">
-            <div class="custom-audio-name">
-              <strong>🎛️ ${escapeHTML(t.name)}</strong>
-              <small>${sizeMb} MB (Phối âm)</small>
-            </div>
-            <div class="custom-audio-actions">
-              ${isPlaying ? `
-                <input type="range" min="0" max="100" value="${savedVol}" oninput="setCustomAudioVolume('${t.id}', this.value, false)" style="width:65px; height:6px;" />
-              ` : ''}
-              <button type="button" class="button button-sm ${isPlaying ? 'button-dark' : 'button-outline'}" onclick="toggleCustomMixAudioPlay('${t.id}')">
-                ${isPlaying ? '■ Dừng' : '▶ Phát'}
-              </button>
-              <button type="button" class="button button-sm button-ghost" style="color:var(--error);" onclick="deleteCustomAudioTrack('${t.id}')" title="Xóa">✕</button>
-            </div>
-          </div>
-        `;
-      }).join("");
-    }
-  }
+  // Render Custom Mix Audio List (UI identical to default tracks)
+  renderCustomAudioList('mix', $("#customMixAudioList"), studyState.customMixAudioTracks);
 
-  // Render Custom Music Audio List
-  const musicListEl = $("#customMusicAudioList");
-  if (musicListEl) {
-    if (studyState.customMusicAudioTracks.length === 0) {
-      musicListEl.innerHTML = `<p style="font-size:12px; color:var(--muted); padding:8px 0;">Chưa có bản nhạc tải lên nào. Tải giai điệu yêu thích của bạn!</p>`;
-    } else {
-      musicListEl.innerHTML = studyState.customMusicAudioTracks.map(t => {
-        const isPlaying = (studyState.activeCustomMusicId === t.id);
-        const sizeMb = (t.size / (1024 * 1024)).toFixed(1);
-        const savedVol = studyState.customVolumes[t.id] ?? 50;
-        return `
-          <div class="custom-audio-item ${isPlaying ? 'playing' : ''}">
-            <div class="custom-audio-name">
-              <strong>🎵 ${escapeHTML(t.name)}</strong>
-              <small>${sizeMb} MB (Vòng lặp)</small>
-            </div>
-            <div class="custom-audio-actions">
-              ${isPlaying ? `
-                <input type="range" min="0" max="100" value="${savedVol}" oninput="setCustomAudioVolume('${t.id}', this.value, 'music')" style="width:65px; height:6px;" />
-              ` : ''}
-              <button type="button" class="button button-sm ${isPlaying ? 'button-dark' : 'button-outline'}" onclick="toggleCustomMusicAudioPlay('${t.id}')">
-                ${isPlaying ? '■ Dừng' : '▶ Phát'}
-              </button>
-              <button type="button" class="button button-sm button-ghost" style="color:var(--error);" onclick="deleteCustomAudioTrack('${t.id}')" title="Xóa">✕</button>
-            </div>
-          </div>
-        `;
-      }).join("");
-    }
-  }
+  // Render Custom Music Audio List (UI identical to default tracks)
+  renderCustomAudioList('music', $("#customMusicAudioList"), studyState.customMusicAudioTracks);
 
   // Update limit badges
   const badgeCustomEnvLimit = $("#badgeCustomEnvLimit");
@@ -3960,273 +3903,350 @@ async function loadCustomAudioFromDB() {
   updateMasterAmbientButtonState();
 }
 
-window.setCustomAudioVolume = function(id, val, type) {
-  studyState.customVolumes[id] = Number(val);
-  const vol = Math.max(0, Math.min(1, Number(val) / 100));
-  if (type === 'env' || type === true) {
-    if (studyState.customEnvAudioPlayer) studyState.customEnvAudioPlayer.volume = vol;
-  } else if (type === 'music') {
-    if (studyState.customMusicAudioPlayer) studyState.customMusicAudioPlayer.volume = vol;
-  } else {
-    const p = studyState.customMixAudioPlayers[id];
-    if (p) p.volume = vol;
+function renderCustomAudioList(category, containerEl, tracks) {
+  if (!containerEl) return;
+  if (!tracks || tracks.length === 0) {
+    const emptyHints = {
+      env: "Chưa có âm thanh môi trường tải lên nào. Bạn có thể tải bài dài yêu thích (mưa, sóng biển, suối...) để phát lặp!",
+      mix: "Chưa có âm thanh phối hợp tải lên nào. Bạn có thể tải hiệu ứng âm thanh để mix cùng lúc!",
+      music: "Chưa có bản nhạc tải lên nào. Bạn có thể tải các bản nhạc lofi/nhẹ nhàng yêu thích của bạn!"
+    };
+    containerEl.innerHTML = `<p style="font-size:12px; color:var(--muted); padding:10px 0; margin:0;">${emptyHints[category] || "Chưa có tệp tải lên."}</p>`;
+    return;
+  }
+
+  const categoryIcons = { env: '🌿', mix: '🎛️', music: '🎵' };
+  const icon = categoryIcons[category] || '🎵';
+
+  containerEl.innerHTML = tracks.map(t => {
+    let isActive = false;
+    if (category === 'env') isActive = (studyState.activeCustomEnvId === t.id);
+    else if (category === 'music') isActive = (studyState.activeCustomMusicId === t.id);
+    else isActive = !!studyState.activeCustomMixSounds[t.id];
+
+    const sizeMb = (t.size ? (t.size / (1024 * 1024)).toFixed(1) : "0.0");
+    const savedVol = studyState.customVolumes[t.id] ?? 50;
+
+    return `
+      <div class="ambient-track custom-track ${isActive ? 'active' : ''}" id="cardCustom_${t.id}">
+        <div class="ambient-track-info">
+          <span style="font-size:24px; flex-shrink:0;">${icon}</span>
+          <div style="flex:1; min-width:0; overflow:hidden;">
+            <div class="ambient-name"><strong>${escapeHTML(t.name)}</strong></div>
+            <small style="color:var(--muted); font-size:11px; display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+              ${sizeMb} MB • Âm thanh tải lên • Lưu trên máy
+            </small>
+          </div>
+          <button type="button" class="ambient-track-toggle button-sm" onclick="toggleCustomAudio('${t.id}')">
+            ${isActive ? 'Tắt' : 'Bật'}
+          </button>
+          <button type="button" class="ambient-track-delete" onclick="confirmDeleteCustomAudioTrack('${t.id}')" title="Xóa tệp âm thanh này">
+            🗑️
+          </button>
+        </div>
+        <div class="ambient-slider-row" style="display:flex; align-items:center; gap:8px;">
+          <input type="range" class="ambient-slider" id="volCustom_${t.id}" min="0" max="100" value="${savedVol}" oninput="updateCustomAudioVolume('${t.id}', this.value)" />
+        </div>
+      </div>
+    `;
+  }).join("");
+}
+
+window.updateCustomAudioVolume = function(id, val) {
+  const numVal = Number(val);
+  studyState.customVolumes[id] = numVal;
+  try {
+    localStorage.setItem("research_custom_audio_vols", JSON.stringify(studyState.customVolumes));
+  } catch (e) {}
+
+  const userVol = Math.max(0, Math.min(1, numVal / 100));
+  if (studyState.activeCustomEnvId === id && studyState.customEnvAudioPlayer) {
+    studyState.customEnvAudioPlayer.volume = userVol;
+  }
+  if (studyState.activeCustomMusicId === id && studyState.customMusicAudioPlayer) {
+    studyState.customMusicAudioPlayer.volume = userVol;
+  }
+  if (studyState.customMixAudioPlayers[id]) {
+    studyState.customMixAudioPlayers[id].volume = userVol;
   }
 };
 
-window.triggerUploadEnvAudio = function() {
-  const streak = getUserStudyStreak();
-  if (streak < 30) {
-    toast("🔒 Tính năng Tải âm thanh môi trường mở khóa ở Chuỗi 30 ngày (Bậc thầy học thuật)!");
+window.toggleCustomAudio = function(id) {
+  const allTracks = [
+    ...(studyState.customEnvAudioTracks || []),
+    ...(studyState.customMixAudioTracks || []),
+    ...(studyState.customMusicAudioTracks || [])
+  ];
+  const track = allTracks.find(t => t.id === id);
+  if (!track) return;
+
+  if (track.category === 'env') {
+    toggleCustomEnvAudio(track);
+  } else if (track.category === 'music') {
+    toggleCustomMusicAudio(track);
+  } else {
+    toggleCustomMixAudio(track);
+  }
+};
+
+function toggleCustomEnvAudio(track) {
+  const id = track.id;
+  if (studyState.activeCustomEnvId === id) {
+    stopCurrentEnvAudio();
+    updateCustomTrackDOM(id, false);
+    toast(`Đã tắt ${track.name}.`);
+    updateMasterAmbientButtonState();
     return;
   }
+
+  // Dừng track môi trường hiện tại (cả mặc định lẫn custom khác)
+  stopCurrentEnvAudio();
+  updateEnvGridDOM();
+
+  const audioUrl = getTrackBlobUrl(track);
+  if (!audioUrl) {
+    toast("Không thể đọc tệp âm thanh môi trường.");
+    return;
+  }
+
+  let player = studyState.customEnvAudioPlayer;
+  if (!player || player.src !== audioUrl || player.error) {
+    if (player) { try { player.pause(); } catch(e){} }
+    player = new Audio(audioUrl);
+    player.loop = true;
+    player.preload = "auto";
+    studyState.customEnvAudioPlayer = player;
+  }
+
+  const savedVol = studyState.customVolumes[id] ?? 50;
+  player.volume = Math.max(0, Math.min(1, savedVol / 100));
+
+  const p = player.play();
+  if (p !== undefined) {
+    p.catch(e => {
+      if (e.name === "AbortError") return;
+      console.warn("Custom env play error:", e);
+      toast("Nhấp vào trang để cho phép phát âm thanh.");
+    });
+  }
+
+  studyState.activeCustomEnvId = id;
+  // Cập nhật DOM các track custom env khác
+  (studyState.customEnvAudioTracks || []).forEach(t => {
+    updateCustomTrackDOM(t.id, t.id === id);
+  });
+
+  toast(`Đang phát: ${track.name} (Vòng lặp) 🌿`);
+  updateMasterAmbientButtonState();
+}
+
+function toggleCustomMusicAudio(track) {
+  const id = track.id;
+  if (studyState.activeCustomMusicId === id) {
+    stopCurrentMusicAudio();
+    updateCustomTrackDOM(id, false);
+    toast(`Đã tắt ${track.name}.`);
+    updateMasterAmbientButtonState();
+    return;
+  }
+
+  // Dừng track âm nhạc hiện tại (cả mặc định lẫn custom khác)
+  stopCurrentMusicAudio();
+  updateMusicGridDOM();
+
+  const audioUrl = getTrackBlobUrl(track);
+  if (!audioUrl) {
+    toast("Không thể đọc tệp âm nhạc.");
+    return;
+  }
+
+  let player = studyState.customMusicAudioPlayer;
+  if (!player || player.src !== audioUrl || player.error) {
+    if (player) { try { player.pause(); } catch(e){} }
+    player = new Audio(audioUrl);
+    player.loop = true;
+    player.preload = "auto";
+    studyState.customMusicAudioPlayer = player;
+  }
+
+  const savedVol = studyState.customVolumes[id] ?? 50;
+  player.volume = Math.max(0, Math.min(1, savedVol / 100));
+
+  const p = player.play();
+  if (p !== undefined) {
+    p.catch(e => {
+      if (e.name === "AbortError") return;
+      console.warn("Custom music play error:", e);
+      toast("Nhấp vào trang để cho phép phát âm thanh.");
+    });
+  }
+
+  studyState.activeCustomMusicId = id;
+  // Cập nhật DOM các track custom music khác
+  (studyState.customMusicAudioTracks || []).forEach(t => {
+    updateCustomTrackDOM(t.id, t.id === id);
+  });
+
+  toast(`Đang phát: ${track.name} (Vòng lặp) 🎵`);
+  updateMasterAmbientButtonState();
+}
+
+function toggleCustomMixAudio(track) {
+  const id = track.id;
+  const isPlaying = !!studyState.activeCustomMixSounds[id];
+
+  if (isPlaying) {
+    const p = studyState.customMixAudioPlayers[id];
+    if (p) {
+      try {
+        p.pause();
+        p.currentTime = 0;
+      } catch (e) {}
+    }
+    studyState.activeCustomMixSounds[id] = false;
+    updateCustomTrackDOM(id, false);
+    toast(`Đã tắt ${track.name}.`);
+    updateMasterAmbientButtonState();
+    return;
+  }
+
+  const audioUrl = getTrackBlobUrl(track);
+  if (!audioUrl) {
+    toast("Không thể đọc tệp âm thanh phối hợp.");
+    return;
+  }
+
+  let player = studyState.customMixAudioPlayers[id];
+  if (!player || player.src !== audioUrl || player.error) {
+    if (player) { try { player.pause(); } catch(e){} }
+    player = new Audio(audioUrl);
+    player.loop = true;
+    player.preload = "auto";
+    studyState.customMixAudioPlayers[id] = player;
+  }
+
+  const savedVol = studyState.customVolumes[id] ?? 50;
+  player.volume = Math.max(0, Math.min(1, savedVol / 100));
+
+  const p = player.play();
+  if (p !== undefined) {
+    p.catch(e => {
+      if (e.name === "AbortError") return;
+      console.warn("Custom mix play error:", e);
+      toast("Nhấp vào trang để cho phép phát âm thanh.");
+    });
+  }
+
+  studyState.activeCustomMixSounds[id] = true;
+  updateCustomTrackDOM(id, true);
+  toast(`Đang mix: ${track.name} 🎛️`);
+  updateMasterAmbientButtonState();
+}
+
+window.confirmDeleteCustomAudioTrack = async function(id) {
+  const allTracks = [
+    ...(studyState.customEnvAudioTracks || []),
+    ...(studyState.customMixAudioTracks || []),
+    ...(studyState.customMusicAudioTracks || [])
+  ];
+  const track = allTracks.find(t => t.id === id);
+  const trackName = track ? `"${track.name}"` : "tệp âm thanh này";
+
+  const ok = window.confirm(`Bạn có chắc chắn muốn xóa ${trackName} không? Tệp âm thanh đã lưu trên máy sẽ bị xóa vĩnh viễn.`);
+  if (!ok) return;
+
+  // 1. Dừng phát nếu đang chạy
+  if (studyState.activeCustomEnvId === id) {
+    stopCurrentEnvAudio();
+  }
+  if (studyState.activeCustomMusicId === id) {
+    stopCurrentMusicAudio();
+  }
+  if (studyState.activeCustomMixSounds[id]) {
+    const p = studyState.customMixAudioPlayers[id];
+    if (p) {
+      try { p.pause(); p.currentTime = 0; } catch (e) {}
+      delete studyState.customMixAudioPlayers[id];
+    }
+    studyState.activeCustomMixSounds[id] = false;
+  }
+
+  // 2. Thu hồi object URL nếu có
+  if (track && track.objectUrl) {
+    try { URL.revokeObjectURL(track.objectUrl); } catch (e) {}
+  }
+
+  // 3. Xóa trong IndexedDB
+  await idbDelete("custom_audio", id);
+
+  toast(`Đã xóa ${trackName}.`);
+  await loadCustomAudioFromDB();
+};
+
+window.triggerUploadEnvAudio = function() {
   const input = $("#customEnvAudioInput");
   if (input) input.click();
 };
 
 window.triggerUploadMixAudio = function() {
-  const streak = getUserStudyStreak();
-  if (streak < 30) {
-    toast("🔒 Tính năng Tải âm thanh phối hợp mở khóa ở Chuỗi 30 ngày (Bậc thầy học thuật)!");
-    return;
-  }
   const input = $("#customMixAudioInput");
   if (input) input.click();
 };
 
 window.triggerUploadMusicAudio = function() {
-  const streak = getUserStudyStreak();
-  if (streak < 30) {
-    toast("🔒 Tính năng Tải âm nhạc mở khóa ở Chuỗi 30 ngày (Bậc thầy học thuật)!");
-    return;
-  }
   const input = $("#customMusicAudioInput");
   if (input) input.click();
 };
 
-async function handleCustomEnvAudioUpload(file) {
+async function handleCustomAudioUpload(file, category) {
   if (!file) return;
+
   const streak = getUserStudyStreak();
-  if (streak < 30) {
-    toast("🔒 Tính năng Tải âm thanh môi trường mở khóa ở Chuỗi 30 ngày (Bậc thầy học thuật)!");
-    return;
-  }
-
   const isMaxStreak = streak >= 50;
-  if (!isMaxStreak) {
-    if (studyState.customEnvAudioTracks.length >= 3) {
-      toast("Bạn chỉ được tải tối đa 3 âm thanh môi trường (Chuỗi 30 ngày). Đạt Chuỗi 50 ngày để mở khóa không giới hạn!");
-      return;
-    }
-    if (file.size > 25 * 1024 * 1024) {
-      toast("Tệp âm thanh quá lớn (tối đa 25MB cho chuỗi dưới 50 ngày). Đạt Chuỗi 50 ngày để không giới hạn dung lượng!");
-      return;
-    }
-  }
 
-  const newTrack = {
-    id: `env_${Date.now()}`,
-    category: 'env',
-    name: file.name,
-    size: file.size,
-    type: file.type || "audio/mpeg",
-    blob: file,
-    createdAt: Date.now()
-  };
-
-  const ok = await idbPut("custom_audio", newTrack);
-  if (ok) {
-    toast(isMaxStreak ? `✨ [Chuỗi 50 ngày] Đã lưu tệp môi trường "${file.name}" không giới hạn!` : `Đã lưu tệp môi trường "${file.name}" vào trình duyệt!`);
-    await loadCustomAudioFromDB();
-  } else {
-    toast("Không thể lưu tệp âm thanh.");
-  }
-}
-
-async function handleCustomMixAudioUpload(file) {
-  if (!file) return;
-  const streak = getUserStudyStreak();
-  if (streak < 30) {
-    toast("🔒 Tính năng Tải âm thanh phối hợp mở khóa ở Chuỗi 30 ngày (Bậc thầy học thuật)!");
+  if (!isMaxStreak && file.size > 50 * 1024 * 1024) {
+    toast("Tệp âm thanh quá lớn (tối đa 50MB cho mỗi tệp).");
     return;
   }
 
-  const isMaxStreak = streak >= 50;
-  if (!isMaxStreak) {
-    if (studyState.customMixAudioTracks.length >= 5) {
-      toast("Bạn chỉ được tải tối đa 5 âm thanh phối hợp (Chuỗi 30 ngày). Đạt Chuỗi 50 ngày để mở khóa không giới hạn!");
-      return;
-    }
-    if (file.size > 25 * 1024 * 1024) {
-      toast("Tệp âm thanh quá lớn (tối đa 25MB cho chuỗi dưới 50 ngày). Đạt Chuỗi 50 ngày để không giới hạn dung lượng!");
-      return;
-    }
-  }
-
-  const newTrack = {
-    id: `mix_${Date.now()}`,
-    category: 'mix',
-    name: file.name,
-    size: file.size,
-    type: file.type || "audio/mpeg",
-    blob: file,
-    createdAt: Date.now()
-  };
-
-  const ok = await idbPut("custom_audio", newTrack);
-  if (ok) {
-    toast(isMaxStreak ? `✨ [Chuỗi 50 ngày] Đã lưu tệp phối hợp "${file.name}" không giới hạn!` : `Đã lưu tệp phối hợp "${file.name}" vào trình duyệt!`);
-    await loadCustomAudioFromDB();
-  } else {
-    toast("Không thể lưu tệp âm thanh.");
-  }
-}
-
-async function handleCustomMusicAudioUpload(file) {
-  if (!file) return;
-  const streak = getUserStudyStreak();
-  if (streak < 30) {
-    toast("🔒 Tính năng Tải âm nhạc mở khóa ở Chuỗi 30 ngày (Bậc thầy học thuật)!");
+  const allTracks = await idbGetAll("custom_audio");
+  const countInCategory = allTracks.filter(t => t.category === category).length;
+  const maxAllowed = (category === 'mix' ? 5 : 3);
+  if (!isMaxStreak && countInCategory >= maxAllowed) {
+    toast(`Bạn đã tải tối đa ${maxAllowed} tệp cho mục này. Đạt Chuỗi 50 ngày để mở khóa tải không giới hạn!`);
     return;
   }
 
-  const isMaxStreak = streak >= 50;
-  if (!isMaxStreak) {
-    if (studyState.customMusicAudioTracks.length >= 3) {
-      toast("Bạn chỉ được tải tối đa 3 bản nhạc (Chuỗi 30 ngày). Đạt Chuỗi 50 ngày để mở khóa không giới hạn!");
-      return;
+  toast(`Đang xử lý và lưu "${file.name}"...`);
+
+  try {
+    const arrayBuffer = await file.arrayBuffer();
+    const trackItem = {
+      id: `custom_${category}_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
+      category: category,
+      name: file.name,
+      size: file.size,
+      type: file.type || "audio/mpeg",
+      data: arrayBuffer,
+      createdAt: Date.now()
+    };
+
+    const ok = await idbPut("custom_audio", trackItem);
+    if (ok) {
+      toast(`✨ Đã lưu tệp "${file.name}" vào bộ nhớ máy (lưu trữ cục bộ cho đến khi bạn xóa)!`);
+      await loadCustomAudioFromDB();
+    } else {
+      toast("Lỗi: Không thể lưu tệp âm thanh vào bộ nhớ trình duyệt.");
     }
-    if (file.size > 25 * 1024 * 1024) {
-      toast("Tệp âm thanh quá lớn (tối đa 25MB cho chuỗi dưới 50 ngày). Đạt Chuỗi 50 ngày để không giới hạn dung lượng!");
-      return;
-    }
-  }
-
-  const newTrack = {
-    id: `music_${Date.now()}`,
-    category: 'music',
-    name: file.name,
-    size: file.size,
-    type: file.type || "audio/mpeg",
-    blob: file,
-    createdAt: Date.now()
-  };
-
-  const ok = await idbPut("custom_audio", newTrack);
-  if (ok) {
-    toast(isMaxStreak ? `✨ [Chuỗi 50 ngày] Đã lưu bản nhạc "${file.name}" không giới hạn!` : `Đã lưu bản nhạc "${file.name}" vào trình duyệt!`);
-    await loadCustomAudioFromDB();
-  } else {
-    toast("Không thể lưu tệp âm thanh.");
+  } catch (err) {
+    console.error("Custom audio upload error:", err);
+    toast("Không thể đọc tệp âm thanh: " + (err.message || "vui lòng thử lại"));
   }
 }
 
-async function toggleCustomEnvAudioPlay(id) {
-  if (studyState.activeCustomEnvId === id) {
-    stopCurrentEnvAudio();
-    renderEnvironmentAudioGrid();
-    loadCustomAudioFromDB();
-    toast("Đã dừng phát âm thanh môi trường.");
-    return;
-  }
-
-  stopCurrentEnvAudio();
-  const track = studyState.customEnvAudioTracks.find(t => t.id === id);
-  if (!track || !track.blob) return;
-
-  const audioUrl = URL.createObjectURL(track.blob);
-  const player = new Audio(audioUrl);
-  player.loop = true; // Vòng lặp
-  player.volume = 0.5;
-
-  player.play().then(() => {
-    studyState.customEnvAudioPlayer = player;
-    studyState.activeCustomEnvId = id;
-    renderEnvironmentAudioGrid();
-    loadCustomAudioFromDB();
-    toast(`Đang phát: ${track.name} (Vòng lặp) 🌿`);
-  }).catch(e => {
-    console.warn("Audio play err:", e);
-    toast("Không thể phát tệp âm thanh này.");
-  });
-}
-
-async function toggleCustomMixAudioPlay(id) {
-  if (studyState.activeCustomMixSounds[id]) {
-    const p = studyState.customMixAudioPlayers[id];
-    if (p) {
-      p.pause();
-      p.currentTime = 0;
-      delete studyState.customMixAudioPlayers[id];
-    }
-    studyState.activeCustomMixSounds[id] = false;
-    loadCustomAudioFromDB();
-    toast("Đã dừng âm thanh phối hợp này.");
-    return;
-  }
-
-  const track = studyState.customMixAudioTracks.find(t => t.id === id);
-  if (!track || !track.blob) return;
-
-  const audioUrl = URL.createObjectURL(track.blob);
-  const player = new Audio(audioUrl);
-  player.loop = true; // Vòng lặp
-  player.volume = 0.5;
-
-  player.play().then(() => {
-    studyState.customMixAudioPlayers[id] = player;
-    studyState.activeCustomMixSounds[id] = true;
-    loadCustomAudioFromDB();
-    toast(`Đang mix: ${track.name} 🎛️`);
-  }).catch(e => {
-    console.warn("Audio mix play err:", e);
-    toast("Không thể phát tệp âm thanh này.");
-  });
-}
-
-async function toggleCustomMusicAudioPlay(id) {
-  if (studyState.activeCustomMusicId === id) {
-    stopCurrentMusicAudio();
-    renderMusicAudioGrid();
-    loadCustomAudioFromDB();
-    toast("Đã dừng phát âm nhạc.");
-    return;
-  }
-
-  stopCurrentMusicAudio();
-  const track = studyState.customMusicAudioTracks.find(t => t.id === id);
-  if (!track || !track.blob) return;
-
-  const audioUrl = URL.createObjectURL(track.blob);
-  const player = new Audio(audioUrl);
-  player.loop = true; // Vòng lặp
-  player.volume = 0.5;
-
-  player.play().then(() => {
-    studyState.customMusicAudioPlayer = player;
-    studyState.activeCustomMusicId = id;
-    renderMusicAudioGrid();
-    loadCustomAudioFromDB();
-    toast(`Đang phát: ${track.name} (Vòng lặp) 🎵`);
-  }).catch(e => {
-    console.warn("Audio play err:", e);
-    toast("Không thể phát tệp âm thanh này.");
-  });
-}
-
-async function deleteCustomAudioTrack(id) {
-  if (studyState.activeCustomEnvId === id) {
-    toggleCustomEnvAudioPlay(id);
-  }
-  if (studyState.activeCustomMusicId === id) {
-    toggleCustomMusicAudioPlay(id);
-  }
-  if (studyState.activeCustomMixSounds[id]) {
-    toggleCustomMixAudioPlay(id);
-  }
-  await idbDelete("custom_audio", id);
-  toast("Đã xóa tệp âm thanh.");
-  await loadCustomAudioFromDB();
-}
+window.handleCustomEnvAudioUpload = (file) => handleCustomAudioUpload(file, 'env');
+window.handleCustomMixAudioUpload = (file) => handleCustomAudioUpload(file, 'mix');
+window.handleCustomMusicAudioUpload = (file) => handleCustomAudioUpload(file, 'music');
 
 /* --- 9. WALLPAPER PRESETS, CLOCK COLOR & EXCLUSIVE COLOR GRADIENTS --- */
 const WALLPAPER_PRESETS = [
@@ -4870,6 +4890,23 @@ function initStudyLoungeEvents() {
   renderClockColorPicker();
   renderColorPalette();
 }
+
+window.studyState = studyState;
+window.toggleEnvTrack = toggleEnvTrack;
+window.toggleMixTrack = toggleMixTrack;
+window.toggleMusicTrack = toggleMusicTrack;
+window.updateEnvVolume = updateEnvVolume;
+window.updateMixVolume = updateMixVolume;
+window.updateMusicVolume = updateMusicVolume;
+window.toggleCustomAudio = toggleCustomAudio;
+window.confirmDeleteCustomAudioTrack = confirmDeleteCustomAudioTrack;
+window.updateCustomAudioVolume = updateCustomAudioVolume;
+
+document.addEventListener("click", () => {
+  if (studyState.audioCtx && studyState.audioCtx.state === "suspended") {
+    studyState.audioCtx.resume();
+  }
+}, { once: true });
 
 initStudyLoungeEvents();
 
