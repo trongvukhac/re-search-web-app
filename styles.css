@@ -3429,6 +3429,96 @@ dialog.detail-modal[open] {
   margin: 8px 0 0;
 }
 
+/* Custom Audio Sub-sections (Rạch ròi cho từng loại) */
+.custom-audio-section {
+  margin-top: 22px;
+  padding-top: 18px;
+  border-top: 1px dashed var(--line);
+}
+.custom-audio-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.custom-audio-head h4 {
+  font-size: 14px;
+  font-weight: 700;
+  margin: 0 0 2px;
+  color: var(--ink);
+}
+.custom-audio-sub {
+  font-size: 11px;
+  color: var(--muted);
+  margin: 0;
+}
+.custom-audio-head-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.custom-audio-limit-badge {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 12px;
+  background: var(--surface-bg, #f1f3f5);
+  color: var(--muted);
+}
+.custom-audio-limit-badge.unlimited {
+  background: #d3f9d8;
+  color: #2b8a3e;
+  font-weight: 700;
+}
+
+/* Clock color picker (Streak >= 14) */
+.clock-color-wrap {
+  display: flex;
+  flex-direction: column;
+}
+.clock-color-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.clock-color-swatch {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 2px solid var(--paper);
+  box-shadow: 0 0 0 1px var(--line);
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: bold;
+}
+.clock-color-swatch:hover {
+  transform: scale(1.15);
+}
+.clock-color-swatch.active {
+  box-shadow: 0 0 0 2px var(--primary, #10b981);
+  transform: scale(1.1);
+}
+
+/* Gradient Swatches (Streak >= 50) */
+.color-swatch.gradient {
+  border-radius: 8px;
+  position: relative;
+  overflow: hidden;
+}
+.color-swatch.gradient::after {
+  content: '✨';
+  font-size: 10px;
+  position: absolute;
+  top: 1px;
+  right: 1px;
+}
+
 /* ==========================================================================
    THEME & WALLPAPER ARENA
    ========================================================================== */

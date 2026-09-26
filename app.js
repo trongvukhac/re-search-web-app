@@ -16,7 +16,7 @@ const $$ = (s) => [...document.querySelectorAll(s)];
 const STUDY_SETTINGS_KEY = "research_study_settings_v1";
 const STUDY_MAINTENANCE_MSG = "Tính năng Phòng tự học đang được phát triển và cần thời gian để ổn định hệ thống, bạn quay lại sau nhé!";
 
-function canAccessStudyLounge(user = session) {
+function canAccessStudyLounge(user = (session || (typeof window !== "undefined" && window.session))) {
   if (typeof window !== "undefined" && window.__studyTestAdmin) return true;
   return Boolean(user && user.role === "admin");
 }
@@ -31,7 +31,8 @@ function getInitialStudySettings() {
     browserNotifications: false,
     alarmSound: "bell",
     activeWallpaper: "default",
-    activeAura: "emerald"
+    activeAura: "emerald",
+    clockColor: "default"
   };
   try {
     const saved = localStorage.getItem(STUDY_SETTINGS_KEY);
@@ -57,16 +58,24 @@ let studyState = {
   goal: '',
   lastSyncMs: 0,
   audioCtx: null,
-  activeSounds: {}, // trackId -> boolean
-  ambientAudioPlayers: {}, // trackId -> Audio element (for external CDN audio)
-  soundNodes: {},   // trackId -> nodes
-  soundGains: {},   // trackId -> gainNode
-  activeLofiTrack: null,
-  lofiPlayer: null, // Audio element (for external CDN lofi)
-  lofiNodes: null,
-  customAudioPlayer: null,
-  playingCustomAudioId: null,
-  activeSoundTab: 'ambiance'
+  // 1. Ambient Environment Audio (4 Tracks + Custom)
+  activeEnvTrack: null, // string trackId or null
+  envAudioPlayers: {},  // trackId -> Audio element
+  envNodes: null,       // synth nodes
+  envGainNode: null,    // synth gainNode
+  activeCustomEnvId: null,
+  customEnvAudioPlayer: null,
+  // 2. Mixable Sound Effects (9 Tracks + Custom)
+  activeMixSounds: {},  // trackId -> boolean
+  mixAudioPlayers: {},  // trackId -> Audio element
+  mixSoundNodes: {},    // trackId -> synth nodes
+  mixSoundGains: {},    // trackId -> gainNode
+  activeCustomMixSounds: {}, // customTrackId -> boolean
+  customMixAudioPlayers: {}, // customTrackId -> Audio element
+  // Custom audio lists
+  customEnvAudioTracks: [],
+  customMixAudioTracks: [],
+  activeSoundTab: 'env'
 };
 
 function setSubmitLoading(formOrEvent, isLoading) {
@@ -2525,58 +2534,41 @@ function rotateStudyQuote() {
 
 /* --- 3. STREAK PERKS EVALUATOR --- */
 function getUserStudyStreak() {
-  if (!session) return 0;
-  if (session.role === 'admin') return 999;
-  return Number(session.streak || 0);
+  const curSession = session || (typeof window !== 'undefined' && window.session);
+  if (!curSession) return 0;
+  if (curSession.role === 'admin') return 999;
+  return Number(curSession.streak || 0);
 }
 
 window.updateStudyStreakPerks = function() {
   const streak = getUserStudyStreak();
-  const isAdmin = session && session.role === 'admin';
+  const curSession = session || (typeof window !== 'undefined' && window.session);
+  const isAdmin = curSession && curSession.role === 'admin';
 
   const chipVal = $("#studyUserStreakVal");
   if (chipVal) chipVal.textContent = isAdmin ? "Admin" : streak;
 
-  // Streak 3: Sound Mix mode & Expanded ambient library
-  const mixUnlocked = streak >= 3;
-  const mixCheckbox = $("#mixModeCheckbox");
-  const badgeMixLock = $("#badgeMixLock");
-  if (mixCheckbox) {
-    mixCheckbox.disabled = !mixUnlocked;
-    if (!mixUnlocked) mixCheckbox.checked = false;
+  // Streak 3: Ambient Environment Audio (4 Tracks) & Co-Study interaction
+  const envUnlocked = streak >= 3;
+  const badgeEnvLock = $("#badgeEnvLock");
+  const bannerEnvLocked = $("#bannerEnvLocked");
+  if (badgeEnvLock) {
+    badgeEnvLock.className = `perk-badge ${envUnlocked ? 'unlocked' : ''}`;
+    badgeEnvLock.textContent = envUnlocked ? "✓ Đã mở" : "🔒 3d";
   }
+  if (bannerEnvLocked) bannerEnvLocked.style.display = envUnlocked ? "none" : "flex";
+
+  // Streak 7: Mixable Sounds (9 Tracks)
+  const mixUnlocked = streak >= 7;
+  const badgeMixLock = $("#badgeMixLock");
+  const bannerMixLocked = $("#bannerMixLocked");
   if (badgeMixLock) {
     badgeMixLock.className = `perk-badge ${mixUnlocked ? 'unlocked' : ''}`;
-    badgeMixLock.textContent = mixUnlocked ? "✓ Đã mở" : "🔒 3d";
+    badgeMixLock.textContent = mixUnlocked ? "✓ Đã mở" : "🔒 7d";
   }
+  if (bannerMixLocked) bannerMixLocked.style.display = mixUnlocked ? "none" : "flex";
 
-  // Streak 7: Lo-Fi Music & Cheers
-  const lofiUnlocked = streak >= 7;
-  const badgeLofiLock = $("#badgeLofiLock");
-  const bannerLofiLocked = $("#bannerLofiLocked");
-  const lofiContainer = $("#lofiTracksContainer");
-  if (badgeLofiLock) {
-    badgeLofiLock.className = `perk-badge ${lofiUnlocked ? 'unlocked' : ''}`;
-    badgeLofiLock.textContent = lofiUnlocked ? "✓ Đã mở" : "🔒 7d";
-  }
-  if (bannerLofiLocked) bannerLofiLocked.style.display = lofiUnlocked ? "none" : "flex";
-  if (lofiContainer) lofiContainer.style.opacity = lofiUnlocked ? "1" : "0.5";
-
-  // Streak 14: Custom Audio Upload & Preset Wallpapers
-  const customAudioUnlocked = streak >= 14;
-  const badgeCustomAudioLock = $("#badgeCustomAudioLock");
-  const bannerCustomAudioLocked = $("#bannerCustomAudioLocked");
-  const customAudioContent = $("#customAudioContent");
-  if (badgeCustomAudioLock) {
-    badgeCustomAudioLock.className = `perk-badge ${customAudioUnlocked ? 'unlocked' : ''}`;
-    badgeCustomAudioLock.textContent = customAudioUnlocked ? "✓ Đã mở" : "🔒 14d";
-  }
-  if (bannerCustomAudioLocked) bannerCustomAudioLocked.style.display = customAudioUnlocked ? "none" : "flex";
-  if (customAudioContent) {
-    const dropzone = $("#audioDropzone");
-    if (dropzone) dropzone.style.display = customAudioUnlocked ? "block" : "none";
-  }
-
+  // Streak 14: Preset Wallpapers & Clock Color Customization
   const wallPresetUnlocked = streak >= 14;
   const badgeWallPresetLock = $("#badgeWallPresetLock");
   if (badgeWallPresetLock) {
@@ -2586,7 +2578,32 @@ window.updateStudyStreakPerks = function() {
   const wallPresetWrap = $(".wallpaper-presets-wrap");
   if (wallPresetWrap) wallPresetWrap.classList.toggle("locked-feature", !wallPresetUnlocked);
 
-  // Streak 30: Custom Wallpaper Upload
+  const clockColorUnlocked = streak >= 14;
+  const badgeClockColorLock = $("#badgeClockColorLock");
+  if (badgeClockColorLock) {
+    badgeClockColorLock.className = `perk-badge ${clockColorUnlocked ? 'unlocked' : ''}`;
+    badgeClockColorLock.textContent = clockColorUnlocked ? "✓ Đã mở" : "🔒 14d";
+  }
+  const clockColorWrap = $(".clock-color-wrap");
+  if (clockColorWrap) clockColorWrap.classList.toggle("locked-feature", !clockColorUnlocked);
+
+  // Streak 30: Custom Audio Upload (Max 3 Env, Max 5 Mix) & Custom Wallpaper Upload
+  const customAudioUnlocked = streak >= 30;
+  const badgeCustomEnvLock = $("#badgeCustomEnvLock");
+  const badgeCustomMixLock = $("#badgeCustomMixLock");
+  const btnUploadEnvAudio = $("#btnUploadEnvAudio");
+  const btnUploadMixAudio = $("#btnUploadMixAudio");
+  if (badgeCustomEnvLock) {
+    badgeCustomEnvLock.className = `perk-badge ${customAudioUnlocked ? 'unlocked' : ''}`;
+    badgeCustomEnvLock.textContent = customAudioUnlocked ? "✓ Đã mở" : "🔒 30d";
+  }
+  if (badgeCustomMixLock) {
+    badgeCustomMixLock.className = `perk-badge ${customAudioUnlocked ? 'unlocked' : ''}`;
+    badgeCustomMixLock.textContent = customAudioUnlocked ? "✓ Đã mở" : "🔒 30d";
+  }
+  if (btnUploadEnvAudio) btnUploadEnvAudio.disabled = !customAudioUnlocked;
+  if (btnUploadMixAudio) btnUploadMixAudio.disabled = !customAudioUnlocked;
+
   const wallUploadUnlocked = streak >= 30;
   const badgeWallUploadLock = $("#badgeWallUploadLock");
   const btnUploadWall = $("#btnUploadWall");
@@ -2596,7 +2613,7 @@ window.updateStudyStreakPerks = function() {
   }
   if (btnUploadWall) btnUploadWall.disabled = !wallUploadUnlocked;
 
-  // Streak 50: Master Customization & Aura
+  // Streak 50: Master Customization & Gradient Palettes & Unlimited Uploads
   const masterCustomUnlocked = streak >= 50;
   const badgeMasterCustomLock = $("#badgeMasterCustomLock");
   if (badgeMasterCustomLock) {
@@ -2606,14 +2623,25 @@ window.updateStudyStreakPerks = function() {
   const palettePicker = $("#colorPalettePicker");
   if (palettePicker) palettePicker.classList.toggle("locked-feature", !masterCustomUnlocked);
 
-  const dropzoneTip = $(".dropzone-tip");
-  if (dropzoneTip) {
-    if (streak >= 50) {
-      dropzoneTip.innerHTML = `✨ <strong>Mốc 50 ngày:</strong> Tải lên không giới hạn dung lượng & số lượng (lưu cục bộ an toàn)!`;
-      dropzoneTip.style.color = "var(--primary-color, #10b981)";
-    } else {
-      dropzoneTip.textContent = `Lưu an toàn trong bộ nhớ máy của bạn, không tốn dữ liệu mạng (tối đa 25MB). Đạt Chuỗi 50 ngày để không giới hạn.`;
-      dropzoneTip.style.color = "";
+  const badgeCustomEnvLimit = $("#badgeCustomEnvLimit");
+  const badgeCustomMixLimit = $("#badgeCustomMixLimit");
+  if (streak >= 50) {
+    if (badgeCustomEnvLimit) {
+      badgeCustomEnvLimit.textContent = "✨ Không giới hạn (50d)";
+      badgeCustomEnvLimit.classList.add("unlimited");
+    }
+    if (badgeCustomMixLimit) {
+      badgeCustomMixLimit.textContent = "✨ Không giới hạn (50d)";
+      badgeCustomMixLimit.classList.add("unlimited");
+    }
+  } else {
+    if (badgeCustomEnvLimit) {
+      badgeCustomEnvLimit.textContent = `Tối đa 3 tệp (${studyState.customEnvAudioTracks?.length || 0}/3)`;
+      badgeCustomEnvLimit.classList.remove("unlimited");
+    }
+    if (badgeCustomMixLimit) {
+      badgeCustomMixLimit.textContent = `Tối đa 5 tệp (${studyState.customMixAudioTracks?.length || 0}/5)`;
+      badgeCustomMixLimit.classList.remove("unlimited");
     }
   }
 
@@ -2624,10 +2652,12 @@ window.updateStudyStreakPerks = function() {
     }
   }
 
-  renderAmbianceGrid();
-  renderLofiTracks();
+  renderEnvironmentAudioGrid();
+  renderMixAudioGrid();
   renderWallpaperPresets();
+  renderClockColorPicker();
   renderColorPalette();
+  loadCustomAudioFromDB();
 };
 
 /* --- 4. TIMER DISPLAY & POMODORO CYCLE --- */
@@ -3035,7 +3065,7 @@ async function fetchStudyLounge() {
         list.innerHTML = `<div class="co-study-empty">Chưa có ai trong phòng. Bấm <b>Bắt đầu học</b> để là người đầu tiên!</div>`;
       } else {
         const userStreak = getUserStudyStreak();
-        const canCheer = userStreak >= 7;
+        const canCheer = userStreak >= 3;
 
         list.innerHTML = learners.map(l => {
           const tierClass = `tier-${l.streakTier || 0}`;
@@ -3057,12 +3087,12 @@ async function fetchStudyLounge() {
               <span class="co-study-time">${statusIcon} ${l.isRunning ? `${remainingMin}m` : 'Tạm dừng'}</span>
               ${!l.isSelf && session ? `
                 <div class="co-study-cheers">
-                  <button class="cheer-btn ${canCheer ? '' : 'locked'}" title="${canCheer ? 'Vỗ tay tán thưởng' : 'Mở khóa ở chuỗi 7 ngày 🔥'}" onclick="${canCheer ? `sendStudyCheer(${l.userId}, '👏')` : 'notifyCheerLocked()'}">👏</button>
-                  <button class="cheer-btn ${canCheer ? '' : 'locked'}" title="${canCheer ? 'Mời cà phê tỉnh táo' : 'Mở khóa ở chuỗi 7 ngày 🔥'}" onclick="${canCheer ? `sendStudyCheer(${l.userId}, '☕')` : 'notifyCheerLocked()'}">☕</button>
-                  <button class="cheer-btn ${canCheer ? '' : 'locked'}" title="${canCheer ? 'Tiếp lửa quyết tâm' : 'Mở khóa ở chuỗi 7 ngày 🔥'}" onclick="${canCheer ? `sendStudyCheer(${l.userId}, '🔥')` : 'notifyCheerLocked()'}">🔥</button>
-                  <button class="cheer-btn ${canCheer ? '' : 'locked'}" title="${canCheer ? 'Gửi tim yêu thương' : 'Mở khóa ở chuỗi 7 ngày 🔥'}" onclick="${canCheer ? `sendStudyCheer(${l.userId}, '❤️')` : 'notifyCheerLocked()'}">❤️</button>
-                  <button class="cheer-btn ${canCheer ? '' : 'locked'}" title="${canCheer ? 'Gợi ý ý tưởng sáng tạo' : 'Mở khóa ở chuỗi 7 ngày 🔥'}" onclick="${canCheer ? `sendStudyCheer(${l.userId}, '💡')` : 'notifyCheerLocked()'}">💡</button>
-                  <button class="cheer-btn ${canCheer ? '' : 'locked'}" title="${canCheer ? 'Tăng tốc về đích' : 'Mở khóa ở chuỗi 7 ngày 🔥'}" onclick="${canCheer ? `sendStudyCheer(${l.userId}, '🚀')` : 'notifyCheerLocked()'}">🚀</button>
+                  <button class="cheer-btn ${canCheer ? '' : 'locked'}" title="${canCheer ? 'Vỗ tay tán thưởng' : 'Mở khóa ở chuỗi 3 ngày 🔥'}" onclick="${canCheer ? `sendStudyCheer(${l.userId}, '👏')` : 'notifyCheerLocked()'}">👏</button>
+                  <button class="cheer-btn ${canCheer ? '' : 'locked'}" title="${canCheer ? 'Mời cà phê tỉnh táo' : 'Mở khóa ở chuỗi 3 ngày 🔥'}" onclick="${canCheer ? `sendStudyCheer(${l.userId}, '☕')` : 'notifyCheerLocked()'}">☕</button>
+                  <button class="cheer-btn ${canCheer ? '' : 'locked'}" title="${canCheer ? 'Tiếp lửa quyết tâm' : 'Mở khóa ở chuỗi 3 ngày 🔥'}" onclick="${canCheer ? `sendStudyCheer(${l.userId}, '🔥')` : 'notifyCheerLocked()'}">🔥</button>
+                  <button class="cheer-btn ${canCheer ? '' : 'locked'}" title="${canCheer ? 'Gửi tim yêu thương' : 'Mở khóa ở chuỗi 3 ngày 🔥'}" onclick="${canCheer ? `sendStudyCheer(${l.userId}, '❤️')` : 'notifyCheerLocked()'}">❤️</button>
+                  <button class="cheer-btn ${canCheer ? '' : 'locked'}" title="${canCheer ? 'Gợi ý ý tưởng sáng tạo' : 'Mở khóa ở chuỗi 3 ngày 🔥'}" onclick="${canCheer ? `sendStudyCheer(${l.userId}, '💡')` : 'notifyCheerLocked()'}">💡</button>
+                  <button class="cheer-btn ${canCheer ? '' : 'locked'}" title="${canCheer ? 'Tăng tốc về đích' : 'Mở khóa ở chuỗi 3 ngày 🔥'}" onclick="${canCheer ? `sendStudyCheer(${l.userId}, '🚀')` : 'notifyCheerLocked()'}">🚀</button>
                 </div>
               ` : ''}
             </div>
@@ -3128,7 +3158,7 @@ function showCheerToast(c) {
 }
 
 window.notifyCheerLocked = function() {
-  toast("🔒 Tính năng Cổ vũ tương tác mở khóa ở Chuỗi 7 ngày (Học giả bền bỉ)!");
+  toast("🔒 Tính năng Cổ vũ tương tác mở khóa ở Chuỗi 3 ngày (Sinh viên năng động)!");
 };
 
 window.sendStudyCheer = async function(recipientId, cheerType) {
@@ -3141,8 +3171,8 @@ window.sendStudyCheer = async function(recipientId, cheerType) {
     return;
   }
   const userStreak = getUserStudyStreak();
-  if (userStreak < 7) {
-    toast("🔒 Tính năng Cổ vũ tương tác mở khóa ở Chuỗi 7 ngày (Học giả bền bỉ)!");
+  if (userStreak < 3) {
+    toast("🔒 Tính năng Cổ vũ tương tác mở khóa ở Chuỗi 3 ngày (Sinh viên năng động)!");
     return;
   }
 
@@ -3161,37 +3191,45 @@ window.sendStudyCheer = async function(recipientId, cheerType) {
   }
 };
 
-/* --- 6. DEFAULT AUDIO SOURCES (Hướng 2: External CDN / GitHub Releases Direct Streaming) --- */
-const DEFAULT_AUDIO_SOURCES = {
-  // 10 Ambient Sounds (60MB default original files hosted on GitHub Releases / R2 / CDN)
-  rain: "",
-  cafe: "",
-  waves: "",
-  forest: "",
-  birds: "",
-  stream: "",
-  campfire: "",
-  whitenoise: "",
-  library: "",
-  clock: "",
-  // 3 Lo-Fi Study Tracks
-  lofi_night: "",
-  lofi_desk: "",
-  lofi_coffee: ""
+/* --- 6. DEFAULT AUDIO SOURCES (Hướng 2: External CDN Direct Streaming) --- */
+const DEFAULT_ENV_AUDIO_SOURCES = {
+  env_1: "",
+  env_2: "",
+  env_3: "",
+  env_4: ""
 };
 
-/* --- WEB AUDIO SYNTHESIZER (Ambient Sounds, 0 Network Traffic fallback) --- */
-const AMBIENT_TRACKS = [
-  { id: 'rain', name: 'Mưa rào nhẹ', icon: '🌧️', sub: 'Mưa rơi tí tách trên mái hiên', reqStreak: 0, defaultVol: 40 },
-  { id: 'cafe', name: 'Góc quán Cafe', icon: '☕', sub: 'Tiếng trò chuyện rì rầm & ly tách', reqStreak: 0, defaultVol: 35 },
-  { id: 'waves', name: 'Sóng biển dạt dào', icon: '🌊', sub: 'Nhịp sóng vỗ bờ cát thư thái', reqStreak: 0, defaultVol: 45 },
-  { id: 'forest', name: 'Gió rừng thông', icon: '🌲', sub: 'Tiếng gió xào xạc của đại ngàn', reqStreak: 3, defaultVol: 40 },
-  { id: 'birds', name: 'Tiếng chim sớm', icon: '🐦', sub: 'Hót trong trẻo lúc bình minh', reqStreak: 3, defaultVol: 30 },
-  { id: 'stream', name: 'Suối nguồn trên núi', icon: '🏞️', sub: 'Dòng nước chảy len qua ghềnh đá', reqStreak: 3, defaultVol: 40 },
-  { id: 'campfire', name: 'Lửa trại ấm cúng', icon: '🔥', sub: 'Củi tí tách trong đêm yên tĩnh', reqStreak: 3, defaultVol: 35 },
-  { id: 'whitenoise', name: 'Tiếng ồn trắng (Zen)', icon: '📻', sub: 'Tần số phẳng cách ly mọi tạp âm', reqStreak: 3, defaultVol: 25 },
-  { id: 'library', name: 'Thư viện học thuật', icon: '📚', sub: 'Không gian tĩnh lặng, bước chân nhẹ', reqStreak: 7, defaultVol: 35 },
-  { id: 'clock', name: 'Đồng hồ quả lắc', icon: '🕰️', sub: 'Nhịp tích tắc sâu lắng tập trung', reqStreak: 7, defaultVol: 30 }
+const DEFAULT_MIX_AUDIO_SOURCES = {
+  mix_1: "",
+  mix_2: "",
+  mix_3: "",
+  mix_4: "",
+  mix_5: "",
+  mix_6: "",
+  mix_7: "",
+  mix_8: "",
+  mix_9: ""
+};
+
+/* --- 4 ÂM THANH MÔI TRƯỜNG CƠ BẢN (Khoảng 1 tiếng, hỗn hợp sẵn, mở ở Chuỗi 3 ngày) --- */
+const AMBIENT_ENV_TRACKS = [
+  { id: 'env_1', name: 'Âm thanh 1', sub: 'Mô tả 1', icon: '🎧', reqStreak: 3, defaultVol: 50 },
+  { id: 'env_2', name: 'Âm thanh 2', sub: 'Mô tả 2', icon: '🍃', reqStreak: 3, defaultVol: 50 },
+  { id: 'env_3', name: 'Âm thanh 3', sub: 'Mô tả 3', icon: '☕', reqStreak: 3, defaultVol: 50 },
+  { id: 'env_4', name: 'Âm thanh 4', sub: 'Mô tả 4', icon: '🌌', reqStreak: 3, defaultVol: 50 }
+];
+
+/* --- 9 ÂM THANH PHỐI HỢP ĐƠN LẺ (Cho phép mix nhiều âm cùng lúc, mở ở Chuỗi 7 ngày) --- */
+const MIX_SOUND_TRACKS = [
+  { id: 'mix_1', soundType: 'rain', name: 'Âm thanh 1', sub: 'Mô tả 1', icon: '🌧️', reqStreak: 7, defaultVol: 40 },
+  { id: 'mix_2', soundType: 'stream', name: 'Âm thanh 2', sub: 'Mô tả 2', icon: '🏞️', reqStreak: 7, defaultVol: 40 },
+  { id: 'mix_3', soundType: 'birds', name: 'Âm thanh 3', sub: 'Mô tả 3', icon: '🐦', reqStreak: 7, defaultVol: 30 },
+  { id: 'mix_4', soundType: 'forest', name: 'Âm thanh 4', sub: 'Mô tả 4', icon: '🌲', reqStreak: 7, defaultVol: 40 },
+  { id: 'mix_5', soundType: 'campfire', name: 'Âm thanh 5', sub: 'Mô tả 5', icon: '🔥', reqStreak: 7, defaultVol: 35 },
+  { id: 'mix_6', soundType: 'waves', name: 'Âm thanh 6', sub: 'Mô tả 6', icon: '🌊', reqStreak: 7, defaultVol: 45 },
+  { id: 'mix_7', soundType: 'cafe', name: 'Âm thanh 7', sub: 'Mô tả 7', icon: '☕', reqStreak: 7, defaultVol: 35 },
+  { id: 'mix_8', soundType: 'whitenoise', name: 'Âm thanh 8', sub: 'Mô tả 8', icon: '📻', reqStreak: 7, defaultVol: 25 },
+  { id: 'mix_9', soundType: 'clock', name: 'Âm thanh 9', sub: 'Mô tả 9', icon: '🕰️', reqStreak: 7, defaultVol: 30 }
 ];
 
 function getAudioContext() {
@@ -3250,37 +3288,31 @@ function createWhiteNoiseBuffer(ctx) {
   return buffer;
 }
 
-function renderAmbianceGrid() {
-  const grid = $("#ambianceGrid");
+/* --- 6.1 GIAO DIỆN & PHÁT ÂM THANH MÔI TRƯỜNG (4 Âm thanh hỗn hợp sẵn, loop vô tận) --- */
+function renderEnvironmentAudioGrid() {
+  const grid = $("#envAudioGrid");
   if (!grid) return;
-
   const streak = getUserStudyStreak();
 
-  grid.innerHTML = AMBIENT_TRACKS.map(t => {
+  grid.innerHTML = AMBIENT_ENV_TRACKS.map(t => {
     const isLocked = t.reqStreak > streak;
-    const isActive = !!studyState.activeSounds[t.id];
-    const capId = capitalize(t.id);
+    const isActive = (studyState.activeEnvTrack === t.id);
 
     return `
-      <div class="ambient-track ${isActive ? 'active' : ''} ${isLocked ? 'locked-track' : ''}" id="cardSound_${t.id}">
-        <div class="ambient-track-head">
-          <div class="ambient-track-title">
-            <span class="ambient-track-icon">${t.icon}</span>
-            <div>
-              <strong>${t.name}</strong>
-              <small>${t.sub}</small>
-            </div>
+      <div class="ambient-track ${isActive ? 'active' : ''} ${isLocked ? 'locked' : ''}" id="cardEnv_${t.id}">
+        <div class="ambient-track-info">
+          <span style="font-size:24px;">${t.icon}</span>
+          <div style="flex:1; overflow:hidden;">
+            <div class="ambient-name"><strong>${escapeHTML(t.name)}</strong></div>
+            <small style="color:var(--muted); font-size:11px; display:block;">${escapeHTML(t.sub)}</small>
           </div>
-          <div class="ambient-track-ctrl">
-            ${isLocked ? `<span class="perk-badge">🔒 ${t.reqStreak}d</span>` : ''}
-            <button class="button button-sm ${isActive ? 'button-dark' : 'button-outline'}" id="toggle${capId}Btn" ${isLocked ? 'disabled' : ''} onclick="toggleSoundTrack('${t.id}')">
-              ${isActive ? 'Tắt' : 'Bật'}
-            </button>
-          </div>
+          ${isLocked ? `<span class="perk-badge">🔒 ${t.reqStreak}d</span>` : ''}
+          <button type="button" class="ambient-track-toggle button-sm" ${isLocked ? 'disabled' : ''} onclick="toggleEnvTrack('${t.id}')">
+            ${isActive ? 'Tắt' : 'Bật'}
+          </button>
         </div>
-        <div class="ambient-slider-row">
-          <span>Âm lượng</span>
-          <input type="range" id="volume${capId}" min="0" max="100" value="${t.defaultVol}" ${isLocked ? 'disabled' : ''} oninput="updateSoundVolume('${t.id}', this.value)" />
+        <div class="ambient-slider-row" style="display:flex; align-items:center; gap:8px;">
+          <input type="range" class="ambient-slider" id="volEnv_${t.id}" min="0" max="100" value="${t.defaultVol}" ${isLocked ? 'disabled' : ''} oninput="updateEnvVolume('${t.id}', this.value)" />
         </div>
       </div>
     `;
@@ -3289,86 +3321,191 @@ function renderAmbianceGrid() {
   updateMasterAmbientButtonState();
 }
 
-function updateMasterAmbientButtonState() {
-  const masterBtn = $("#toggleAmbientMaster");
-  if (!masterBtn) return;
-  const anyActive = Object.values(studyState.activeSounds).some(v => v);
-  masterBtn.textContent = anyActive ? "Tắt tất cả" : "Bật tất cả";
-}
-
-function toggleSoundTrack(soundType) {
+function toggleEnvTrack(trackId) {
   const streak = getUserStudyStreak();
-  const trackMeta = AMBIENT_TRACKS.find(t => t.id === soundType);
-  if (trackMeta && trackMeta.reqStreak > streak) {
-    toast(`🔒 Âm thanh ${trackMeta.name} mở khóa ở Chuỗi ${trackMeta.reqStreak} ngày!`);
+  const track = AMBIENT_ENV_TRACKS.find(t => t.id === trackId);
+  if (track && track.reqStreak > streak) {
+    toast(`🔒 Âm thanh môi trường mở khóa ở Chuỗi ${track.reqStreak} ngày (Sinh viên năng động)!`);
     return;
   }
 
-  const isCurrentlyActive = !!studyState.activeSounds[soundType];
-  const capId = capitalize(soundType);
-  const trackBtn = $(`#toggle${capId}Btn`);
-  const trackCard = $(`#cardSound_${soundType}`) || (trackBtn ? trackBtn.closest('.ambient-track') : null);
-
-  // 1. External CDN Stream (Hướng 2 - Fastly / Cloudflare / GitHub Releases Direct)
-  if (DEFAULT_AUDIO_SOURCES && DEFAULT_AUDIO_SOURCES[soundType]) {
-    if (isCurrentlyActive) {
-      const extPlayer = studyState.ambientAudioPlayers[soundType];
-      if (extPlayer) {
-        extPlayer.pause();
-        extPlayer.currentTime = 0;
-      }
-      studyState.activeSounds[soundType] = false;
-      if (trackBtn) {
-        trackBtn.textContent = "Bật";
-        trackBtn.className = "button button-sm button-outline";
-      }
-      if (trackCard) trackCard.classList.remove('active');
-    } else {
-      let extPlayer = studyState.ambientAudioPlayers[soundType];
-      if (!extPlayer || extPlayer.src !== DEFAULT_AUDIO_SOURCES[soundType]) {
-        extPlayer = new Audio(DEFAULT_AUDIO_SOURCES[soundType]);
-        extPlayer.loop = true;
-        extPlayer.crossOrigin = "anonymous";
-        studyState.ambientAudioPlayers[soundType] = extPlayer;
-      }
-      const slider = $(`#volume${capId}`);
-      const userVol = slider ? Number(slider.value) / 100 : 0.4;
-      extPlayer.volume = Math.max(0, Math.min(1, userVol));
-      extPlayer.play().catch(e => {
-        console.warn("External ambient audio stream error, falling back to synthesizer:", e);
-        DEFAULT_AUDIO_SOURCES[soundType] = "";
-        toggleSoundTrack(soundType);
-      });
-      studyState.activeSounds[soundType] = true;
-      if (trackBtn) {
-        trackBtn.textContent = "Tắt";
-        trackBtn.className = "button button-sm button-dark";
-      }
-      if (trackCard) trackCard.classList.add('active');
-    }
+  // 1. Nếu track này đang phát -> Tắt
+  if (studyState.activeEnvTrack === trackId) {
+    stopCurrentEnvAudio();
+    studyState.activeEnvTrack = null;
+    renderEnvironmentAudioGrid();
+    toast(`Đã tắt ${track ? track.name : ''}.`);
     updateMasterAmbientButtonState();
     return;
   }
 
-  // 2. Synthesizer Fallback (Web Audio API)
-  const ctx = getAudioContext();
-  if (!ctx) {
-    toast("Trình duyệt không hỗ trợ âm thanh Web Audio.");
+  // 2. Nếu đang phát track môi trường khác (kể cả custom env) -> Dừng trước khi bật mới
+  stopCurrentEnvAudio();
+
+  // Bật track mới với loop vô tận
+  const slider = $(`#volEnv_${trackId}`);
+  const userVol = slider ? Number(slider.value) / 100 : 0.5;
+
+  if (DEFAULT_ENV_AUDIO_SOURCES && DEFAULT_ENV_AUDIO_SOURCES[trackId]) {
+    let player = studyState.envAudioPlayers[trackId];
+    if (!player || player.src !== DEFAULT_ENV_AUDIO_SOURCES[trackId]) {
+      player = new Audio(DEFAULT_ENV_AUDIO_SOURCES[trackId]);
+      player.loop = true; // Phát vòng lặp
+      player.crossOrigin = "anonymous";
+      studyState.envAudioPlayers[trackId] = player;
+    }
+    player.volume = Math.max(0, Math.min(1, userVol));
+    player.play().catch(e => {
+      console.warn("Env audio stream error, falling back to synth:", e);
+      DEFAULT_ENV_AUDIO_SOURCES[trackId] = "";
+      toggleEnvTrack(trackId);
+    });
+    studyState.activeEnvTrack = trackId;
+  } else {
+    // Web Audio Synthesizer Fallback (Ấm áp, phát vòng lặp)
+    const ctx = getAudioContext();
+    if (ctx) {
+      try {
+        const gainNode = ctx.createGain();
+        gainNode.gain.setValueAtTime(userVol * 0.28, ctx.currentTime);
+        gainNode.connect(ctx.destination);
+
+        const buffer = createPinkNoiseBuffer(ctx);
+        const source = ctx.createBufferSource();
+        source.buffer = buffer;
+        source.loop = true; // Phát vòng lặp
+
+        const lowpass = ctx.createBiquadFilter();
+        lowpass.type = 'lowpass';
+        lowpass.frequency.setValueAtTime(550, ctx.currentTime);
+
+        const lfo = ctx.createOscillator();
+        lfo.type = 'sine';
+        lfo.frequency.setValueAtTime(0.08, ctx.currentTime);
+        const lfoGain = ctx.createGain();
+        lfoGain.gain.setValueAtTime(150, ctx.currentTime);
+        lfo.connect(lfoGain);
+        lfoGain.connect(lowpass.frequency);
+        lfo.start();
+
+        source.connect(lowpass);
+        lowpass.connect(gainNode);
+        source.start(0);
+
+        studyState.envNodes = { source, lfo, gainNode };
+        studyState.envGainNode = gainNode;
+        studyState.activeEnvTrack = trackId;
+      } catch (e) {
+        console.error("Env synth error:", e);
+      }
+    }
+  }
+
+  renderEnvironmentAudioGrid();
+  toast(`Đang phát: ${track ? track.name : trackId} (Vòng lặp) 🎧`);
+  updateMasterAmbientButtonState();
+}
+
+function stopCurrentEnvAudio() {
+  if (studyState.activeEnvTrack) {
+    const ext = studyState.envAudioPlayers[studyState.activeEnvTrack];
+    if (ext) {
+      ext.pause();
+      ext.currentTime = 0;
+    }
+    if (studyState.envNodes) {
+      try {
+        if (studyState.envGainNode && studyState.audioCtx) {
+          studyState.envGainNode.gain.linearRampToValueAtTime(0.0001, studyState.audioCtx.currentTime + 0.1);
+        }
+        setTimeout(() => {
+          try {
+            if (studyState.envNodes.source) studyState.envNodes.source.stop();
+            if (studyState.envNodes.lfo) studyState.envNodes.lfo.stop();
+          } catch (e) {}
+        }, 120);
+      } catch (e) {}
+    }
+    studyState.envNodes = null;
+    studyState.envGainNode = null;
+    studyState.activeEnvTrack = null;
+  }
+
+  if (studyState.activeCustomEnvId) {
+    if (studyState.customEnvAudioPlayer) {
+      studyState.customEnvAudioPlayer.pause();
+      studyState.customEnvAudioPlayer.currentTime = 0;
+      studyState.customEnvAudioPlayer = null;
+    }
+    studyState.activeCustomEnvId = null;
+  }
+}
+
+function updateEnvVolume(trackId, val) {
+  const userVol = Number(val) / 100;
+  const ext = studyState.envAudioPlayers[trackId];
+  if (ext) ext.volume = Math.max(0, Math.min(1, userVol));
+  if (studyState.envGainNode && studyState.audioCtx) {
+    studyState.envGainNode.gain.setValueAtTime(userVol * 0.28, studyState.audioCtx.currentTime);
+  }
+}
+
+/* --- 6.2 GIAO DIỆN & PHÁT ÂM THANH PHỐI HỢP (9 Âm thanh đơn lẻ, mix cùng lúc, loop vô tận) --- */
+function renderMixAudioGrid() {
+  const grid = $("#mixAudioGrid");
+  if (!grid) return;
+  const streak = getUserStudyStreak();
+
+  grid.innerHTML = MIX_SOUND_TRACKS.map(t => {
+    const isLocked = t.reqStreak > streak;
+    const isActive = !!studyState.activeMixSounds[t.id];
+
+    return `
+      <div class="ambient-track ${isActive ? 'active' : ''} ${isLocked ? 'locked' : ''}" id="cardMix_${t.id}">
+        <div class="ambient-track-info">
+          <span style="font-size:24px;">${t.icon}</span>
+          <div style="flex:1; overflow:hidden;">
+            <div class="ambient-name"><strong>${escapeHTML(t.name)}</strong></div>
+            <small style="color:var(--muted); font-size:11px; display:block;">${escapeHTML(t.sub)}</small>
+          </div>
+          ${isLocked ? `<span class="perk-badge">🔒 ${t.reqStreak}d</span>` : ''}
+          <button type="button" class="ambient-track-toggle button-sm" ${isLocked ? 'disabled' : ''} onclick="toggleMixTrack('${t.id}')">
+            ${isActive ? 'Tắt' : 'Bật'}
+          </button>
+        </div>
+        <div class="ambient-slider-row" style="display:flex; align-items:center; gap:8px;">
+          <input type="range" class="ambient-slider" id="volMix_${t.id}" min="0" max="100" value="${t.defaultVol}" ${isLocked ? 'disabled' : ''} oninput="updateMixVolume('${t.id}', this.value)" />
+        </div>
+      </div>
+    `;
+  }).join("");
+
+  updateMasterAmbientButtonState();
+}
+
+function toggleMixTrack(trackId) {
+  const streak = getUserStudyStreak();
+  const track = MIX_SOUND_TRACKS.find(t => t.id === trackId);
+  if (track && track.reqStreak > streak) {
+    toast(`🔒 Âm thanh phối hợp mở khóa ở Chuỗi ${track.reqStreak} ngày (Học giả bền bỉ)!`);
     return;
   }
 
+  const isCurrentlyActive = !!studyState.activeMixSounds[trackId];
+
   if (isCurrentlyActive) {
     // STOP TRACK
-    try {
-      const extPlayer = studyState.ambientAudioPlayers[soundType];
-      if (extPlayer) {
-        extPlayer.pause();
-        extPlayer.currentTime = 0;
-      }
-      const nodes = studyState.soundNodes[soundType];
-      if (nodes) {
+    const ext = studyState.mixAudioPlayers[trackId];
+    if (ext) {
+      ext.pause();
+      ext.currentTime = 0;
+    }
+
+    const nodes = studyState.mixSoundNodes[trackId];
+    if (nodes && studyState.audioCtx) {
+      try {
         if (nodes.gainNode) {
-          nodes.gainNode.gain.linearRampToValueAtTime(0.0001, ctx.currentTime + 0.1);
+          nodes.gainNode.gain.linearRampToValueAtTime(0.0001, studyState.audioCtx.currentTime + 0.1);
         }
         setTimeout(() => {
           try {
@@ -3381,418 +3518,353 @@ function toggleSoundTrack(soundType) {
             if (nodes.interval) clearInterval(nodes.interval);
           } catch (e) {}
         }, 120);
-      }
-    } catch (e) {}
-
-    studyState.soundNodes[soundType] = null;
-    studyState.soundGains[soundType] = null;
-    studyState.activeSounds[soundType] = false;
-
-    if (trackBtn) {
-      trackBtn.textContent = "Bật";
-      trackBtn.className = "button button-sm button-outline";
+      } catch (e) {}
     }
-    if (trackCard) trackCard.classList.remove('active');
+
+    studyState.mixSoundNodes[trackId] = null;
+    studyState.mixSoundGains[trackId] = null;
+    studyState.activeMixSounds[trackId] = false;
   } else {
     // START TRACK
-    try {
-      const gainNode = ctx.createGain();
-      const slider = $(`#volume${capId}`);
-      const userVol = slider ? Number(slider.value) / 100 : 0.4;
+    const slider = $(`#volMix_${trackId}`);
+    const userVol = slider ? Number(slider.value) / 100 : 0.4;
 
-      if (soundType === 'rain') {
-        const buffer = createPinkNoiseBuffer(ctx);
-        const source = ctx.createBufferSource();
-        source.buffer = buffer;
-        source.loop = true;
-
-        const lowpass = ctx.createBiquadFilter();
-        lowpass.type = 'lowpass';
-        lowpass.frequency.setValueAtTime(1400, ctx.currentTime);
-
-        const highpass = ctx.createBiquadFilter();
-        highpass.type = 'highpass';
-        highpass.frequency.setValueAtTime(250, ctx.currentTime);
-
-        const dropInterval = setInterval(() => {
-          if (!studyState.activeSounds.rain) return;
-          try {
-            const dropOsc = ctx.createOscillator();
-            const dropGain = ctx.createGain();
-            dropOsc.type = 'sine';
-            dropOsc.frequency.setValueAtTime(1800 + Math.random() * 1200, ctx.currentTime);
-            dropGain.gain.setValueAtTime(userVol * 0.04, ctx.currentTime);
-            dropGain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.05);
-            dropOsc.connect(dropGain);
-            dropGain.connect(gainNode);
-            dropOsc.start();
-            dropOsc.stop(ctx.currentTime + 0.06);
-          } catch (e) {}
-        }, 400);
-
-        gainNode.gain.setValueAtTime(userVol * 0.28, ctx.currentTime);
-        source.connect(highpass);
-        highpass.connect(lowpass);
-        lowpass.connect(gainNode);
-        gainNode.connect(ctx.destination);
-        source.start(0);
-
-        studyState.soundNodes[soundType] = { source, interval: dropInterval, gainNode };
-      } else if (soundType === 'cafe') {
-        const buffer = createPinkNoiseBuffer(ctx);
-        const source = ctx.createBufferSource();
-        source.buffer = buffer;
-        source.loop = true;
-
-        const f1 = ctx.createBiquadFilter();
-        f1.type = 'bandpass';
-        f1.frequency.setValueAtTime(320, ctx.currentTime);
-        f1.Q.setValueAtTime(1.8, ctx.currentTime);
-
-        const f2 = ctx.createBiquadFilter();
-        f2.type = 'bandpass';
-        f2.frequency.setValueAtTime(850, ctx.currentTime);
-        f2.Q.setValueAtTime(2.2, ctx.currentTime);
-
-        const f3 = ctx.createBiquadFilter();
-        f3.type = 'bandpass';
-        f3.frequency.setValueAtTime(1650, ctx.currentTime);
-        f3.Q.setValueAtTime(2.5, ctx.currentTime);
-
-        const roomHum = ctx.createOscillator();
-        roomHum.type = 'sine';
-        roomHum.frequency.setValueAtTime(108, ctx.currentTime);
-        const humGain = ctx.createGain();
-        humGain.gain.setValueAtTime(0.018, ctx.currentTime);
-        roomHum.connect(humGain);
-        humGain.connect(gainNode);
-        roomHum.start();
-
-        const lfoMurmur = ctx.createOscillator();
-        lfoMurmur.type = 'sine';
-        lfoMurmur.frequency.setValueAtTime(0.25, ctx.currentTime);
-        const lfoGain = ctx.createGain();
-        lfoGain.gain.setValueAtTime(45, ctx.currentTime);
-        lfoMurmur.connect(lfoGain);
-        lfoGain.connect(f2.frequency);
-        lfoMurmur.start();
-
-        const clinkInterval = setInterval(() => {
-          if (!studyState.activeSounds.cafe) return;
-          try {
-            const clinkOsc = ctx.createOscillator();
-            const clinkGain = ctx.createGain();
-            const clinkFrequencies = [2093, 2637, 3136, 2349];
-            const chosenFreq = clinkFrequencies[Math.floor(Math.random() * clinkFrequencies.length)];
-            clinkOsc.type = 'sine';
-            clinkOsc.frequency.setValueAtTime(chosenFreq, ctx.currentTime);
-            clinkGain.gain.setValueAtTime(userVol * 0.035, ctx.currentTime);
-            clinkGain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.16);
-            clinkOsc.connect(clinkGain);
-            clinkGain.connect(gainNode);
-            clinkOsc.start();
-            clinkOsc.stop(ctx.currentTime + 0.17);
-          } catch (e) {}
-        }, 4500);
-
-        const steamInterval = setInterval(() => {
-          if (!studyState.activeSounds.cafe) return;
-          try {
-            const steamBuffer = createWhiteNoiseBuffer(ctx);
-            const steamSrc = ctx.createBufferSource();
-            steamSrc.buffer = steamBuffer;
-            const steamFilter = ctx.createBiquadFilter();
-            steamFilter.type = 'bandpass';
-            steamFilter.frequency.setValueAtTime(3200, ctx.currentTime);
-            const steamGain = ctx.createGain();
-            steamGain.gain.setValueAtTime(0.0001, ctx.currentTime);
-            steamGain.gain.linearRampToValueAtTime(userVol * 0.025, ctx.currentTime + 0.4);
-            steamGain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 1.6);
-            steamSrc.connect(steamFilter);
-            steamFilter.connect(steamGain);
-            steamGain.connect(gainNode);
-            steamSrc.start();
-            steamSrc.stop(ctx.currentTime + 1.7);
-          } catch (e) {}
-        }, 13000);
-
-        gainNode.gain.setValueAtTime(userVol * 0.32, ctx.currentTime);
-
-        source.connect(f1);
-        source.connect(f2);
-        source.connect(f3);
-        f1.connect(gainNode);
-        f2.connect(gainNode);
-        f3.connect(gainNode);
-        gainNode.connect(ctx.destination);
-        source.start(0);
-
-        studyState.soundNodes[soundType] = {
-          source,
-          hum: roomHum,
-          lfo: lfoMurmur,
-          intervals: [clinkInterval, steamInterval],
-          gainNode
-        };
-      } else if (soundType === 'waves') {
-        const buffer = createBrownNoiseBuffer(ctx);
-        const source = ctx.createBufferSource();
-        source.buffer = buffer;
-        source.loop = true;
-
-        const pinkBuf = createPinkNoiseBuffer(ctx);
-        const pinkSrc = ctx.createBufferSource();
-        pinkBuf.loop = true;
-        pinkSrc.buffer = pinkBuf;
-
-        const filter = ctx.createBiquadFilter();
-        filter.type = 'lowpass';
-        filter.frequency.setValueAtTime(280, ctx.currentTime);
-
-        const swellLfo = ctx.createOscillator();
-        swellLfo.type = 'sine';
-        swellLfo.frequency.setValueAtTime(0.085, ctx.currentTime);
-
-        const lfoFilterGain = ctx.createGain();
-        lfoFilterGain.gain.setValueAtTime(220, ctx.currentTime);
-        swellLfo.connect(lfoFilterGain);
-        lfoFilterGain.connect(filter.frequency);
-
-        const lfoVolGain = ctx.createGain();
-        lfoVolGain.gain.setValueAtTime(userVol * 0.2, ctx.currentTime);
-        swellLfo.connect(lfoVolGain);
-
-        gainNode.gain.setValueAtTime(userVol * 0.38, ctx.currentTime);
-
-        source.connect(filter);
-        pinkSrc.connect(filter);
-        filter.connect(gainNode);
-        gainNode.connect(ctx.destination);
-
-        swellLfo.start();
-        source.start(0);
-        pinkSrc.start(0);
-
-        studyState.soundNodes[soundType] = {
-          sources: [source, pinkSrc],
-          lfo: swellLfo,
-          gainNode
-        };
-      } else if (soundType === 'forest') {
-        const buffer = createPinkNoiseBuffer(ctx);
-        const source = ctx.createBufferSource();
-        source.buffer = buffer;
-        source.loop = true;
-
-        const band = ctx.createBiquadFilter();
-        band.type = 'bandpass';
-        band.frequency.setValueAtTime(750, ctx.currentTime);
-        band.Q.setValueAtTime(2.2, ctx.currentTime);
-
-        const windLfo = ctx.createOscillator();
-        windLfo.type = 'sine';
-        windLfo.frequency.setValueAtTime(0.06, ctx.currentTime);
-        const windGain = ctx.createGain();
-        windGain.gain.setValueAtTime(280, ctx.currentTime);
-        windLfo.connect(windGain);
-        windGain.connect(band.frequency);
-        windLfo.start();
-
-        gainNode.gain.setValueAtTime(userVol * 0.28, ctx.currentTime);
-        source.connect(band);
-        band.connect(gainNode);
-        gainNode.connect(ctx.destination);
-        source.start(0);
-
-        studyState.soundNodes[soundType] = { source, lfo: windLfo, gainNode };
-      } else if (soundType === 'birds') {
-        gainNode.gain.setValueAtTime(userVol * 0.22, ctx.currentTime);
-        gainNode.connect(ctx.destination);
-
-        const birdInterval = setInterval(() => {
-          if (!studyState.activeSounds.birds) return;
-          try {
-            const osc = ctx.createOscillator();
-            const bGain = ctx.createGain();
-            const f1 = 2400 + Math.random() * 900;
-            osc.type = 'sine';
-            osc.frequency.setValueAtTime(f1, ctx.currentTime);
-            osc.frequency.exponentialRampToValueAtTime(f1 + 700, ctx.currentTime + 0.07);
-            osc.frequency.exponentialRampToValueAtTime(f1 - 250, ctx.currentTime + 0.16);
-
-            bGain.gain.setValueAtTime(userVol * 0.1, ctx.currentTime);
-            bGain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.18);
-            osc.connect(bGain);
-            bGain.connect(gainNode);
-            osc.start();
-            osc.stop(ctx.currentTime + 0.2);
-          } catch (e) {}
-        }, 3000);
-
-        studyState.soundNodes[soundType] = { interval: birdInterval, gainNode };
-      } else if (soundType === 'stream') {
-        const buffer = createPinkNoiseBuffer(ctx);
-        const source = ctx.createBufferSource();
-        source.buffer = buffer;
-        source.loop = true;
-
-        const hipass = ctx.createBiquadFilter();
-        hipass.type = 'highpass';
-        hipass.frequency.setValueAtTime(450, ctx.currentTime);
-
-        const band = ctx.createBiquadFilter();
-        band.type = 'bandpass';
-        band.frequency.setValueAtTime(1300, ctx.currentTime);
-
-        gainNode.gain.setValueAtTime(userVol * 0.24, ctx.currentTime);
-        source.connect(hipass);
-        hipass.connect(band);
-        band.connect(gainNode);
-        gainNode.connect(ctx.destination);
-        source.start(0);
-        studyState.soundNodes[soundType] = { source, gainNode };
-      } else if (soundType === 'campfire') {
-        const buffer = createBrownNoiseBuffer(ctx);
-        const source = ctx.createBufferSource();
-        source.buffer = buffer;
-        source.loop = true;
-
-        const low = ctx.createBiquadFilter();
-        low.type = 'lowpass';
-        low.frequency.setValueAtTime(260, ctx.currentTime);
-
-        gainNode.gain.setValueAtTime(userVol * 0.3, ctx.currentTime);
-        source.connect(low);
-        low.connect(gainNode);
-        gainNode.connect(ctx.destination);
-        source.start(0);
-
-        const crackleInterval = setInterval(() => {
-          if (!studyState.activeSounds.campfire) return;
-          try {
-            const crackleOsc = ctx.createOscillator();
-            const crackleGain = ctx.createGain();
-            crackleOsc.type = 'triangle';
-            crackleOsc.frequency.setValueAtTime(160 + Math.random() * 450, ctx.currentTime);
-            crackleGain.gain.setValueAtTime(userVol * 0.06, ctx.currentTime);
-            crackleGain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.04);
-            crackleOsc.connect(crackleGain);
-            crackleGain.connect(gainNode);
-            crackleOsc.start();
-            crackleOsc.stop(ctx.currentTime + 0.05);
-          } catch (e) {}
-        }, 1100);
-
-        studyState.soundNodes[soundType] = { source, interval: crackleInterval, gainNode };
-      } else if (soundType === 'whitenoise') {
-        const buffer = createWhiteNoiseBuffer(ctx);
-        const source = ctx.createBufferSource();
-        source.buffer = buffer;
-        source.loop = true;
-
-        gainNode.gain.setValueAtTime(userVol * 0.18, ctx.currentTime);
-        source.connect(gainNode);
-        gainNode.connect(ctx.destination);
-        source.start(0);
-        studyState.soundNodes[soundType] = { source, gainNode };
-      } else if (soundType === 'library') {
-        // Deep academic library room ambience: subtle warm room tone + occasional soft book page rustle
-        const buffer = createPinkNoiseBuffer(ctx);
-        const source = ctx.createBufferSource();
-        source.buffer = buffer;
-        source.loop = true;
-
-        const lowpass = ctx.createBiquadFilter();
-        lowpass.type = 'lowpass';
-        lowpass.frequency.setValueAtTime(420, ctx.currentTime);
-
-        const pageInterval = setInterval(() => {
-          if (!studyState.activeSounds.library) return;
-          try {
-            const pageBuffer = createWhiteNoiseBuffer(ctx);
-            const pageSrc = ctx.createBufferSource();
-            pageSrc.buffer = pageBuffer;
-            const pageFilter = ctx.createBiquadFilter();
-            pageFilter.type = 'bandpass';
-            pageFilter.frequency.setValueAtTime(2200 + Math.random() * 800, ctx.currentTime);
-            pageFilter.Q.setValueAtTime(1.5, ctx.currentTime);
-            const pageGain = ctx.createGain();
-            pageGain.gain.setValueAtTime(userVol * 0.03, ctx.currentTime);
-            pageGain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.22);
-            pageSrc.connect(pageFilter);
-            pageFilter.connect(gainNode);
-            pageSrc.start();
-            pageSrc.stop(ctx.currentTime + 0.25);
-          } catch (e) {}
-        }, 8500);
-
-        gainNode.gain.setValueAtTime(userVol * 0.22, ctx.currentTime);
-        source.connect(lowpass);
-        lowpass.connect(gainNode);
-        gainNode.connect(ctx.destination);
-        source.start(0);
-
-        studyState.soundNodes[soundType] = { source, interval: pageInterval, gainNode };
-      } else if (soundType === 'clock') {
-        // Rhythmic pendulum tick-tock (alternating 920Hz and 720Hz gentle triangle pulse every 1s)
-        gainNode.gain.setValueAtTime(userVol * 0.22, ctx.currentTime);
-        gainNode.connect(ctx.destination);
-
-        let tickToggle = false;
-        const clockInterval = setInterval(() => {
-          if (!studyState.activeSounds.clock) return;
-          try {
-            const osc = ctx.createOscillator();
-            const clickGain = ctx.createGain();
-            osc.type = 'triangle';
-            osc.frequency.setValueAtTime(tickToggle ? 920 : 720, ctx.currentTime);
-            tickToggle = !tickToggle;
-
-            clickGain.gain.setValueAtTime(userVol * 0.08, ctx.currentTime);
-            clickGain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.045);
-
-            osc.connect(clickGain);
-            clickGain.connect(gainNode);
-            osc.start();
-            osc.stop(ctx.currentTime + 0.05);
-          } catch (e) {}
-        }, 1000);
-
-        studyState.soundNodes[soundType] = { interval: clockInterval, gainNode };
+    if (DEFAULT_MIX_AUDIO_SOURCES && DEFAULT_MIX_AUDIO_SOURCES[trackId]) {
+      let player = studyState.mixAudioPlayers[trackId];
+      if (!player || player.src !== DEFAULT_MIX_AUDIO_SOURCES[trackId]) {
+        player = new Audio(DEFAULT_MIX_AUDIO_SOURCES[trackId]);
+        player.loop = true; // Phát vòng lặp
+        player.crossOrigin = "anonymous";
+        studyState.mixAudioPlayers[trackId] = player;
       }
+      player.volume = Math.max(0, Math.min(1, userVol));
+      player.play().catch(e => {
+        console.warn("Mix stream error, falling back to synth:", e);
+        DEFAULT_MIX_AUDIO_SOURCES[trackId] = "";
+        toggleMixTrack(trackId);
+      });
+      studyState.activeMixSounds[trackId] = true;
+    } else {
+      // Synthesizer Fallback (Web Audio API, Loop vô tận)
+      const ctx = getAudioContext();
+      if (ctx) {
+        try {
+          const gainNode = ctx.createGain();
+          const soundType = track.soundType || 'rain';
 
-      studyState.soundGains[soundType] = gainNode;
-      studyState.activeSounds[soundType] = true;
+          if (soundType === 'rain') {
+            const buffer = createPinkNoiseBuffer(ctx);
+            const source = ctx.createBufferSource();
+            source.buffer = buffer;
+            source.loop = true;
 
-      if (trackBtn) {
-        trackBtn.textContent = "Tắt";
-        trackBtn.className = "button button-sm button-dark";
+            const lowpass = ctx.createBiquadFilter();
+            lowpass.type = 'lowpass';
+            lowpass.frequency.setValueAtTime(1400, ctx.currentTime);
+
+            const highpass = ctx.createBiquadFilter();
+            highpass.type = 'highpass';
+            highpass.frequency.setValueAtTime(250, ctx.currentTime);
+
+            const dropInterval = setInterval(() => {
+              if (!studyState.activeMixSounds[trackId]) return;
+              try {
+                const dropOsc = ctx.createOscillator();
+                const dropGain = ctx.createGain();
+                dropOsc.type = 'sine';
+                dropOsc.frequency.setValueAtTime(1800 + Math.random() * 1200, ctx.currentTime);
+                dropGain.gain.setValueAtTime(userVol * 0.04, ctx.currentTime);
+                dropGain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.05);
+                dropOsc.connect(dropGain);
+                dropGain.connect(gainNode);
+                dropOsc.start();
+                dropOsc.stop(ctx.currentTime + 0.06);
+              } catch (e) {}
+            }, 400);
+
+            gainNode.gain.setValueAtTime(userVol * 0.28, ctx.currentTime);
+            source.connect(highpass);
+            highpass.connect(lowpass);
+            lowpass.connect(gainNode);
+            gainNode.connect(ctx.destination);
+            source.start(0);
+
+            studyState.mixSoundNodes[trackId] = { source, interval: dropInterval, gainNode };
+          } else if (soundType === 'stream') {
+            const buffer = createPinkNoiseBuffer(ctx);
+            const source = ctx.createBufferSource();
+            source.buffer = buffer;
+            source.loop = true;
+
+            const hipass = ctx.createBiquadFilter();
+            hipass.type = 'highpass';
+            hipass.frequency.setValueAtTime(450, ctx.currentTime);
+
+            const band = ctx.createBiquadFilter();
+            band.type = 'bandpass';
+            band.frequency.setValueAtTime(1300, ctx.currentTime);
+
+            gainNode.gain.setValueAtTime(userVol * 0.24, ctx.currentTime);
+            source.connect(hipass);
+            hipass.connect(band);
+            band.connect(gainNode);
+            gainNode.connect(ctx.destination);
+            source.start(0);
+            studyState.mixSoundNodes[trackId] = { source, gainNode };
+          } else if (soundType === 'birds') {
+            gainNode.gain.setValueAtTime(userVol * 0.22, ctx.currentTime);
+            gainNode.connect(ctx.destination);
+
+            const birdInterval = setInterval(() => {
+              if (!studyState.activeMixSounds[trackId]) return;
+              try {
+                const osc = ctx.createOscillator();
+                const bGain = ctx.createGain();
+                const f1 = 2400 + Math.random() * 900;
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(f1, ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(f1 + 700, ctx.currentTime + 0.07);
+                osc.frequency.exponentialRampToValueAtTime(f1 - 250, ctx.currentTime + 0.16);
+
+                bGain.gain.setValueAtTime(userVol * 0.1, ctx.currentTime);
+                bGain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.18);
+                osc.connect(bGain);
+                bGain.connect(gainNode);
+                osc.start();
+                osc.stop(ctx.currentTime + 0.2);
+              } catch (e) {}
+            }, 3000);
+
+            studyState.mixSoundNodes[trackId] = { interval: birdInterval, gainNode };
+          } else if (soundType === 'forest') {
+            const buffer = createPinkNoiseBuffer(ctx);
+            const source = ctx.createBufferSource();
+            source.buffer = buffer;
+            source.loop = true;
+
+            const band = ctx.createBiquadFilter();
+            band.type = 'bandpass';
+            band.frequency.setValueAtTime(750, ctx.currentTime);
+            band.Q.setValueAtTime(2.2, ctx.currentTime);
+
+            const windLfo = ctx.createOscillator();
+            windLfo.type = 'sine';
+            windLfo.frequency.setValueAtTime(0.06, ctx.currentTime);
+            const windGain = ctx.createGain();
+            windGain.gain.setValueAtTime(280, ctx.currentTime);
+            windLfo.connect(windGain);
+            windGain.connect(band.frequency);
+            windLfo.start();
+
+            gainNode.gain.setValueAtTime(userVol * 0.28, ctx.currentTime);
+            source.connect(band);
+            band.connect(gainNode);
+            gainNode.connect(ctx.destination);
+            source.start(0);
+
+            studyState.mixSoundNodes[trackId] = { source, lfo: windLfo, gainNode };
+          } else if (soundType === 'campfire') {
+            const buffer = createBrownNoiseBuffer(ctx);
+            const source = ctx.createBufferSource();
+            source.buffer = buffer;
+            source.loop = true;
+
+            const low = ctx.createBiquadFilter();
+            low.type = 'lowpass';
+            low.frequency.setValueAtTime(260, ctx.currentTime);
+
+            gainNode.gain.setValueAtTime(userVol * 0.3, ctx.currentTime);
+            source.connect(low);
+            low.connect(gainNode);
+            gainNode.connect(ctx.destination);
+            source.start(0);
+
+            const crackleInterval = setInterval(() => {
+              if (!studyState.activeMixSounds[trackId]) return;
+              try {
+                const crackleOsc = ctx.createOscillator();
+                const crackleGain = ctx.createGain();
+                crackleOsc.type = 'triangle';
+                crackleOsc.frequency.setValueAtTime(160 + Math.random() * 450, ctx.currentTime);
+                crackleGain.gain.setValueAtTime(userVol * 0.06, ctx.currentTime);
+                crackleGain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.04);
+                crackleOsc.connect(crackleGain);
+                crackleGain.connect(gainNode);
+                crackleOsc.start();
+                crackleOsc.stop(ctx.currentTime + 0.05);
+              } catch (e) {}
+            }, 1100);
+
+            studyState.mixSoundNodes[trackId] = { source, interval: crackleInterval, gainNode };
+          } else if (soundType === 'waves') {
+            const buffer = createBrownNoiseBuffer(ctx);
+            const source = ctx.createBufferSource();
+            source.buffer = buffer;
+            source.loop = true;
+
+            const pinkBuf = createPinkNoiseBuffer(ctx);
+            const pinkSrc = ctx.createBufferSource();
+            pinkBuf.loop = true;
+            pinkSrc.buffer = pinkBuf;
+
+            const filter = ctx.createBiquadFilter();
+            filter.type = 'lowpass';
+            filter.frequency.setValueAtTime(280, ctx.currentTime);
+
+            const swellLfo = ctx.createOscillator();
+            swellLfo.type = 'sine';
+            swellLfo.frequency.setValueAtTime(0.085, ctx.currentTime);
+
+            const lfoFilterGain = ctx.createGain();
+            lfoFilterGain.gain.setValueAtTime(220, ctx.currentTime);
+            swellLfo.connect(lfoFilterGain);
+            lfoFilterGain.connect(filter.frequency);
+
+            const lfoVolGain = ctx.createGain();
+            lfoVolGain.gain.setValueAtTime(userVol * 0.2, ctx.currentTime);
+            swellLfo.connect(lfoVolGain);
+
+            gainNode.gain.setValueAtTime(userVol * 0.38, ctx.currentTime);
+
+            source.connect(filter);
+            pinkSrc.connect(filter);
+            filter.connect(gainNode);
+            gainNode.connect(ctx.destination);
+
+            swellLfo.start();
+            source.start(0);
+            pinkSrc.start(0);
+
+            studyState.mixSoundNodes[trackId] = {
+              sources: [source, pinkSrc],
+              lfo: swellLfo,
+              gainNode
+            };
+          } else if (soundType === 'cafe') {
+            const buffer = createPinkNoiseBuffer(ctx);
+            const source = ctx.createBufferSource();
+            source.buffer = buffer;
+            source.loop = true;
+
+            const f1 = ctx.createBiquadFilter();
+            f1.type = 'bandpass';
+            f1.frequency.setValueAtTime(320, ctx.currentTime);
+            f1.Q.setValueAtTime(1.8, ctx.currentTime);
+
+            const f2 = ctx.createBiquadFilter();
+            f2.type = 'bandpass';
+            f2.frequency.setValueAtTime(850, ctx.currentTime);
+            f2.Q.setValueAtTime(2.2, ctx.currentTime);
+
+            const f3 = ctx.createBiquadFilter();
+            f3.type = 'bandpass';
+            f3.frequency.setValueAtTime(1650, ctx.currentTime);
+            f3.Q.setValueAtTime(2.5, ctx.currentTime);
+
+            gainNode.gain.setValueAtTime(userVol * 0.32, ctx.currentTime);
+            source.connect(f1);
+            source.connect(f2);
+            source.connect(f3);
+            f1.connect(gainNode);
+            f2.connect(gainNode);
+            f3.connect(gainNode);
+            gainNode.connect(ctx.destination);
+            source.start(0);
+
+            studyState.mixSoundNodes[trackId] = { source, gainNode };
+          } else if (soundType === 'whitenoise') {
+            const buffer = createWhiteNoiseBuffer(ctx);
+            const source = ctx.createBufferSource();
+            source.buffer = buffer;
+            source.loop = true;
+
+            gainNode.gain.setValueAtTime(userVol * 0.18, ctx.currentTime);
+            source.connect(gainNode);
+            gainNode.connect(ctx.destination);
+            source.start(0);
+            studyState.mixSoundNodes[trackId] = { source, gainNode };
+          } else if (soundType === 'clock') {
+            gainNode.gain.setValueAtTime(userVol * 0.22, ctx.currentTime);
+            gainNode.connect(ctx.destination);
+
+            let tickToggle = false;
+            const clockInterval = setInterval(() => {
+              if (!studyState.activeMixSounds[trackId]) return;
+              try {
+                const osc = ctx.createOscillator();
+                const clickGain = ctx.createGain();
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(tickToggle ? 920 : 720, ctx.currentTime);
+                tickToggle = !tickToggle;
+
+                clickGain.gain.setValueAtTime(userVol * 0.08, ctx.currentTime);
+                clickGain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.045);
+
+                osc.connect(clickGain);
+                clickGain.connect(gainNode);
+                osc.start();
+                osc.stop(ctx.currentTime + 0.05);
+              } catch (e) {}
+            }, 1000);
+
+            studyState.mixSoundNodes[trackId] = { interval: clockInterval, gainNode };
+          }
+
+          studyState.mixSoundGains[trackId] = gainNode;
+        } catch (e) {
+          console.error("Mix synth error:", e);
+        }
       }
-      if (trackCard) trackCard.classList.add('active');
-    } catch (e) {
-      console.error("Audio synth error:", e);
+      studyState.activeMixSounds[trackId] = true;
     }
   }
 
+  renderMixAudioGrid();
   updateMasterAmbientButtonState();
 }
 
-function updateSoundVolume(soundType, val) {
-  const userVol = (Number(val) / 100);
-  const extPlayer = studyState.ambientAudioPlayers[soundType];
-  if (extPlayer) {
-    extPlayer.volume = Math.max(0, Math.min(1, userVol));
-  }
-  const gain = studyState.soundGains[soundType];
+function updateMixVolume(trackId, val) {
+  const userVol = Number(val) / 100;
+  const ext = studyState.mixAudioPlayers[trackId];
+  if (ext) ext.volume = Math.max(0, Math.min(1, userVol));
+  const gain = studyState.mixSoundGains[trackId];
   if (gain && studyState.audioCtx) {
-    const multiplier = soundType === 'waves' ? 0.38 : (soundType === 'cafe' ? 0.32 : (soundType === 'rain' ? 0.28 : 0.24));
-    gain.gain.setValueAtTime(userVol * multiplier, studyState.audioCtx.currentTime);
+    gain.gain.setValueAtTime(userVol * 0.3, studyState.audioCtx.currentTime);
   }
 }
 
-function capitalize(str) {
-  if (!str) return '';
-  return str.charAt(0).toUpperCase() + str.slice(1);
+function stopAllStudyAudio() {
+  stopCurrentEnvAudio();
+
+  // Stop all active mix sounds
+  MIX_SOUND_TRACKS.forEach(t => {
+    if (studyState.activeMixSounds[t.id]) {
+      toggleMixTrack(t.id);
+    }
+  });
+
+  // Stop all active custom mix sounds
+  Object.keys(studyState.activeCustomMixSounds).forEach(id => {
+    if (studyState.activeCustomMixSounds[id]) {
+      toggleCustomMixAudioPlay(id);
+    }
+  });
+
+  renderEnvironmentAudioGrid();
+  renderMixAudioGrid();
+  loadCustomAudioFromDB();
+  updateMasterAmbientButtonState();
+}
+
+function updateMasterAmbientButtonState() {
+  const masterBtn = $("#toggleAmbientMaster");
+  if (!masterBtn) return;
+  const anyActive = (studyState.activeEnvTrack !== null) ||
+                    (studyState.activeCustomEnvId !== null) ||
+                    Object.values(studyState.activeMixSounds).some(v => v) ||
+                    Object.values(studyState.activeCustomMixSounds).some(v => v);
+
+  masterBtn.textContent = anyActive ? "Tắt tất cả" : "Bật tất cả";
 }
 
 /* --- 7. ALARM CHIMES (Synthesized Offline Web Audio) --- */
@@ -3806,8 +3878,8 @@ function playAlarmSound(alarmType = "bell") {
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
       osc.type = "sine";
-      osc.frequency.setValueAtTime(1567.98, now); // G6
-      osc.frequency.exponentialRampToValueAtTime(2093.00, now + 0.05); // C7
+      osc.frequency.setValueAtTime(1567.98, now);
+      osc.frequency.exponentialRampToValueAtTime(2093.00, now + 0.05);
       gain.gain.setValueAtTime(0.3, now);
       gain.gain.exponentialRampToValueAtTime(0.0001, now + 1.2);
       osc.connect(gain);
@@ -3842,7 +3914,6 @@ function playAlarmSound(alarmType = "bell") {
         osc.stop(now + 4.0);
       });
     } else if (alarmType === "chime") {
-      // 3-note cheerful arpeggio (C5 -> E5 -> G5)
       const notes = [523.25, 659.25, 783.99];
       notes.forEach((freq, i) => {
         const osc = ctx.createOscillator();
@@ -3858,7 +3929,6 @@ function playAlarmSound(alarmType = "bell") {
         osc.stop(start + 0.95);
       });
     } else {
-      // Default tubular "bell"
       [587.33, 1174.66, 1761.99].forEach((freq, i) => {
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
@@ -3888,196 +3958,153 @@ function previewSelectedAlarm() {
   playAlarmSound(val);
 }
 
-/* --- 8. LO-FI STUDY TRACKS (Streak >= 7) --- */
-const LOFI_PRESETS = [
-  { id: 'lofi_night', name: 'Chuyến tàu đêm (Midnight Train)', desc: 'Giai điệu Rhodes 7th ấm áp, thư giãn thần kinh', chords: [349.23, 329.63, 293.66, 261.63] },
-  { id: 'lofi_desk', name: 'Bàn học bên cửa sổ (Window Desk)', desc: 'Hợp âm Jazz thư thái cùng tiếng mưa đêm', chords: [440.00, 392.00, 349.23, 293.66] },
-  { id: 'lofi_coffee', name: 'Cà phê & Đề cương (Coffee & Thesis)', desc: 'Âm sắc mộc êm dịu giúp tư duy sáng tạo', chords: [523.25, 493.88, 440.00, 392.00] }
-];
-
-function renderLofiTracks() {
-  const cont = $("#lofiTracksContainer");
-  if (!cont) return;
-  const streak = getUserStudyStreak();
-  const unlocked = streak >= 7;
-
-  cont.innerHTML = LOFI_PRESETS.map(t => {
-    const isPlaying = (studyState.activeLofiTrack === t.id);
-    return `
-      <div class="lofi-track-card ${isPlaying ? 'active' : ''}">
-        <div class="lofi-track-info">
-          <strong>🎵 ${t.name}</strong>
-          <p>${t.desc}</p>
-        </div>
-        <button class="button button-sm ${isPlaying ? 'button-dark' : 'button-outline'}" ${unlocked ? '' : 'disabled'} onclick="toggleLofiTrack('${t.id}')">
-          ${isPlaying ? '■ Dừng' : '▶ Phát'}
-        </button>
-      </div>
-    `;
-  }).join("");
-}
-
-function toggleLofiTrack(trackId) {
-  const streak = getUserStudyStreak();
-  if (streak < 7) {
-    toast("🔒 Nhạc Lo-Fi mở khóa ở Chuỗi 7 ngày (Học giả bền bỉ)!");
-    return;
-  }
-
-  if (studyState.activeLofiTrack === trackId) {
-    // STOP LO-FI
-    if (studyState.lofiPlayer) {
-      studyState.lofiPlayer.pause();
-      studyState.lofiPlayer.currentTime = 0;
-    }
-    if (studyState.lofiNodes) {
-      if (studyState.lofiNodes.interval) clearInterval(studyState.lofiNodes.interval);
-      if (studyState.lofiNodes.gainNode && studyState.audioCtx) {
-        studyState.lofiNodes.gainNode.gain.linearRampToValueAtTime(0.0001, studyState.audioCtx.currentTime + 0.1);
-      }
-    }
-    studyState.activeLofiTrack = null;
-    studyState.lofiNodes = null;
-    renderLofiTracks();
-    toast("Đã dừng nhạc Lo-Fi.");
-    return;
-  }
-
-  // START LO-FI: Stop any currently active Lo-Fi track first
-  if (studyState.activeLofiTrack) {
-    toggleLofiTrack(studyState.activeLofiTrack);
-  }
-
-  const track = LOFI_PRESETS.find(t => t.id === trackId);
-  if (!track) return;
-
-  // 1. External CDN Stream (Hướng 2 - Fastly / Cloudflare / GitHub Releases Direct)
-  if (DEFAULT_AUDIO_SOURCES && DEFAULT_AUDIO_SOURCES[trackId]) {
-    let player = studyState.lofiPlayer;
-    if (!player || player.src !== DEFAULT_AUDIO_SOURCES[trackId]) {
-      player = new Audio(DEFAULT_AUDIO_SOURCES[trackId]);
-      player.loop = true;
-      player.crossOrigin = "anonymous";
-      studyState.lofiPlayer = player;
-    }
-    player.volume = 0.5;
-    player.play().catch(e => {
-      console.warn("External Lo-Fi stream error, falling back to synth:", e);
-      DEFAULT_AUDIO_SOURCES[trackId] = "";
-      toggleLofiTrack(trackId);
-    });
-    studyState.activeLofiTrack = trackId;
-    renderLofiTracks();
-    toast(`Đang phát: ${track.name} 🎧`);
-    return;
-  }
-
-  // 2. Synthesizer Fallback (Web Audio API)
-  const ctx = getAudioContext();
-  if (!ctx) return;
-
-  try {
-    const masterLofiGain = ctx.createGain();
-    masterLofiGain.gain.setValueAtTime(0.2, ctx.currentTime);
-    masterLofiGain.connect(ctx.destination);
-
-    let step = 0;
-    const playChordStep = () => {
-      if (studyState.activeLofiTrack !== trackId) return;
-      const baseFreq = track.chords[step % track.chords.length];
-      step++;
-
-      // Play 3 notes of the chord with soft attack/decay
-      [baseFreq, baseFreq * 1.25, baseFreq * 1.5].forEach((f) => {
-        try {
-          const osc = ctx.createOscillator();
-          const noteGain = ctx.createGain();
-          osc.type = "sine";
-          osc.frequency.setValueAtTime(f, ctx.currentTime);
-          noteGain.gain.setValueAtTime(0.001, ctx.currentTime);
-          noteGain.gain.linearRampToValueAtTime(0.07, ctx.currentTime + 0.4);
-          noteGain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 2.8);
-          osc.connect(noteGain);
-          noteGain.connect(masterLofiGain);
-          osc.start();
-          osc.stop(ctx.currentTime + 2.9);
-        } catch (e) {}
-      });
-    };
-
-    playChordStep();
-    const interval = setInterval(playChordStep, 2900);
-
-    studyState.activeLofiTrack = trackId;
-    studyState.lofiNodes = { interval, gainNode: masterLofiGain };
-    renderLofiTracks();
-    toast(`Đang phát: ${track.name} 🎧`);
-  } catch (e) {
-    console.warn("Lofi play error:", e);
-  }
-}
-
-/* --- 9. CUSTOM AUDIO UPLOAD & PLAYBACK (Streak >= 14, IndexedDB) --- */
+/* --- 8. CUSTOM AUDIO UPLOAD & PLAYBACK (Rạch ròi: Môi trường [Max 3] vs Phối hợp [Max 5], Streak 50 Unlimited) --- */
 async function loadCustomAudioFromDB() {
-  const listEl = $("#customAudioList");
-  if (!listEl) return;
-  const tracks = await idbGetAll("custom_audio");
-  studyState.customAudioTracks = tracks;
+  const allTracks = await idbGetAll("custom_audio");
+  studyState.customEnvAudioTracks = allTracks.filter(t => t.category === 'env');
+  studyState.customMixAudioTracks = allTracks.filter(t => t.category !== 'env');
 
-  if (tracks.length === 0) {
-    listEl.innerHTML = `<p style="font-size:12px; color:var(--muted); text-align:center; padding:16px;">Chưa có tệp tải lên nào. Tải bài hát hoặc âm thanh yêu thích của bạn từ máy tính!</p>`;
-    return;
+  const streak = getUserStudyStreak();
+  const isMaxStreak = streak >= 50;
+
+  // Render Custom Environment Audio List
+  const envListEl = $("#customEnvAudioList");
+  if (envListEl) {
+    if (studyState.customEnvAudioTracks.length === 0) {
+      envListEl.innerHTML = `<p style="font-size:12px; color:var(--muted); padding:8px 0;">Chưa có tệp môi trường tải lên nào. Tải bài dài 1 tiếng ưa thích của bạn!</p>`;
+    } else {
+      envListEl.innerHTML = studyState.customEnvAudioTracks.map(t => {
+        const isPlaying = (studyState.activeCustomEnvId === t.id);
+        const sizeMb = (t.size / (1024 * 1024)).toFixed(1);
+        return `
+          <div class="custom-audio-item ${isPlaying ? 'playing' : ''}">
+            <div class="custom-audio-name">
+              <strong>🌿 ${escapeHTML(t.name)}</strong>
+              <small>${sizeMb} MB (Vòng lặp)</small>
+            </div>
+            <div class="custom-audio-actions">
+              ${isPlaying ? `
+                <input type="range" min="0" max="100" value="50" oninput="setCustomAudioVolume('${t.id}', this.value, true)" style="width:65px; height:6px;" />
+              ` : ''}
+              <button type="button" class="button button-sm ${isPlaying ? 'button-dark' : 'button-outline'}" onclick="toggleCustomEnvAudioPlay('${t.id}')">
+                ${isPlaying ? '■ Dừng' : '▶ Phát'}
+              </button>
+              <button type="button" class="button button-sm button-ghost" style="color:var(--error);" onclick="deleteCustomAudioTrack('${t.id}')" title="Xóa">✕</button>
+            </div>
+          </div>
+        `;
+      }).join("");
+    }
   }
 
-  listEl.innerHTML = tracks.map(t => {
-    const isPlaying = (studyState.playingCustomAudioId === t.id);
-    const sizeMb = (t.size / (1024 * 1024)).toFixed(1);
-    return `
-      <div class="custom-audio-item ${isPlaying ? 'active' : ''}">
-        <div class="custom-audio-name">
-          <strong>🎵 ${escapeHTML(t.name)}</strong>
-          <small>${sizeMb} MB</small>
-        </div>
-        <div class="custom-audio-actions">
-          ${isPlaying ? `
-            <div class="custom-vol-row" style="display:inline-flex; align-items:center; gap:6px;">
-              <span style="font-size:11px; color:var(--muted);">Âm lượng:</span>
-              <input type="range" min="0" max="100" value="50" oninput="setCustomAudioVolume(this.value)" style="width:70px; height:6px;" />
+  // Render Custom Mix Audio List
+  const mixListEl = $("#customMixAudioList");
+  if (mixListEl) {
+    if (studyState.customMixAudioTracks.length === 0) {
+      mixListEl.innerHTML = `<p style="font-size:12px; color:var(--muted); padding:8px 0;">Chưa có tệp phối hợp tải lên nào. Tải âm thanh thiên nhiên/tiếng ồn yêu thích để mix!</p>`;
+    } else {
+      mixListEl.innerHTML = studyState.customMixAudioTracks.map(t => {
+        const isPlaying = !!studyState.activeCustomMixSounds[t.id];
+        const sizeMb = (t.size / (1024 * 1024)).toFixed(1);
+        return `
+          <div class="custom-audio-item ${isPlaying ? 'playing' : ''}">
+            <div class="custom-audio-name">
+              <strong>🎛️ ${escapeHTML(t.name)}</strong>
+              <small>${sizeMb} MB (Phối âm)</small>
             </div>
-          ` : ''}
-          <button class="button button-sm ${isPlaying ? 'button-dark' : 'button-outline'}" onclick="toggleCustomAudioPlay('${t.id}')">
-            ${isPlaying ? '■ Dừng' : '▶ Phát'}
-          </button>
-          <button class="button button-sm button-ghost" style="color:var(--error);" onclick="deleteCustomAudioTrack('${t.id}')" title="Xóa">✕</button>
-        </div>
-      </div>
-    `;
-  }).join("");
+            <div class="custom-audio-actions">
+              ${isPlaying ? `
+                <input type="range" min="0" max="100" value="50" oninput="setCustomAudioVolume('${t.id}', this.value, false)" style="width:65px; height:6px;" />
+              ` : ''}
+              <button type="button" class="button button-sm ${isPlaying ? 'button-dark' : 'button-outline'}" onclick="toggleCustomMixAudioPlay('${t.id}')">
+                ${isPlaying ? '■ Dừng' : '▶ Phát'}
+              </button>
+              <button type="button" class="button button-sm button-ghost" style="color:var(--error);" onclick="deleteCustomAudioTrack('${t.id}')" title="Xóa">✕</button>
+            </div>
+          </div>
+        `;
+      }).join("");
+    }
+  }
+
+  // Update limit badges
+  const badgeCustomEnvLimit = $("#badgeCustomEnvLimit");
+  const badgeCustomMixLimit = $("#badgeCustomMixLimit");
+  if (badgeCustomEnvLimit) {
+    if (isMaxStreak) {
+      badgeCustomEnvLimit.textContent = "✨ Không giới hạn (50d)";
+      badgeCustomEnvLimit.classList.add("unlimited");
+    } else {
+      badgeCustomEnvLimit.textContent = `Tối đa 3 tệp (${studyState.customEnvAudioTracks.length}/3)`;
+      badgeCustomEnvLimit.classList.remove("unlimited");
+    }
+  }
+  if (badgeCustomMixLimit) {
+    if (isMaxStreak) {
+      badgeCustomMixLimit.textContent = "✨ Không giới hạn (50d)";
+      badgeCustomMixLimit.classList.add("unlimited");
+    } else {
+      badgeCustomMixLimit.textContent = `Tối đa 5 tệp (${studyState.customMixAudioTracks.length}/5)`;
+      badgeCustomMixLimit.classList.remove("unlimited");
+    }
+  }
+
+  updateMasterAmbientButtonState();
 }
 
-window.setCustomAudioVolume = function(val) {
-  if (studyState.customAudioPlayer) {
-    studyState.customAudioPlayer.volume = Math.max(0, Math.min(1, Number(val) / 100));
+window.setCustomAudioVolume = function(id, val, isEnv) {
+  const vol = Math.max(0, Math.min(1, Number(val) / 100));
+  if (isEnv) {
+    if (studyState.customEnvAudioPlayer) studyState.customEnvAudioPlayer.volume = vol;
+  } else {
+    const p = studyState.customMixAudioPlayers[id];
+    if (p) p.volume = vol;
   }
 };
 
-async function handleCustomAudioUpload(file) {
+window.triggerUploadEnvAudio = function() {
+  const streak = getUserStudyStreak();
+  if (streak < 30) {
+    toast("🔒 Tính năng Tải âm thanh môi trường mở khóa ở Chuỗi 30 ngày (Bậc thầy học thuật)!");
+    return;
+  }
+  const input = $("#customEnvAudioInput");
+  if (input) input.click();
+};
+
+window.triggerUploadMixAudio = function() {
+  const streak = getUserStudyStreak();
+  if (streak < 30) {
+    toast("🔒 Tính năng Tải âm thanh phối hợp mở khóa ở Chuỗi 30 ngày (Bậc thầy học thuật)!");
+    return;
+  }
+  const input = $("#customMixAudioInput");
+  if (input) input.click();
+};
+
+async function handleCustomEnvAudioUpload(file) {
   if (!file) return;
-  const userStreak = getUserStudyStreak();
-  if (userStreak < 14) {
-    toast("🔒 Tính năng Tải âm thanh cá nhân mở khóa ở Chuỗi 14 ngày (Nhà nghiên cứu tài năng)!");
+  const streak = getUserStudyStreak();
+  if (streak < 30) {
+    toast("🔒 Tính năng Tải âm thanh môi trường mở khóa ở Chuỗi 30 ngày (Bậc thầy học thuật)!");
     return;
   }
 
-  // Chuỗi 50 ngày (Độc nhất vô nhị): Mở khóa tải lên KHÔNG GIỚI HẠN dung lượng và số lượng!
-  const isMaxStreak = userStreak >= 50;
-  if (!isMaxStreak && file.size > 25 * 1024 * 1024) {
-    toast("Tệp âm thanh quá lớn (tối đa 25MB cho chuỗi dưới 50 ngày). Đạt Chuỗi 50 ngày để mở khóa tải lên không giới hạn!");
-    return;
+  const isMaxStreak = streak >= 50;
+  if (!isMaxStreak) {
+    if (studyState.customEnvAudioTracks.length >= 3) {
+      toast("Bạn chỉ được tải tối đa 3 âm thanh môi trường (Chuỗi 30 ngày). Đạt Chuỗi 50 ngày để mở khóa không giới hạn!");
+      return;
+    }
+    if (file.size > 25 * 1024 * 1024) {
+      toast("Tệp âm thanh quá lớn (tối đa 25MB cho chuỗi dưới 50 ngày). Đạt Chuỗi 50 ngày để không giới hạn dung lượng!");
+      return;
+    }
   }
 
   const newTrack = {
-    id: `audio_${Date.now()}`,
+    id: `env_${Date.now()}`,
+    category: 'env',
     name: file.name,
     size: file.size,
     type: file.type || "audio/mpeg",
@@ -4087,66 +4114,126 @@ async function handleCustomAudioUpload(file) {
 
   const ok = await idbPut("custom_audio", newTrack);
   if (ok) {
-    toast(isMaxStreak ? `✨ [Chuỗi 50 ngày] Đã lưu tệp không giới hạn "${file.name}" vào trình duyệt!` : `Đã lưu tệp "${file.name}" vào trình duyệt của bạn!`);
+    toast(isMaxStreak ? `✨ [Chuỗi 50 ngày] Đã lưu tệp môi trường "${file.name}" không giới hạn!` : `Đã lưu tệp môi trường "${file.name}" vào trình duyệt!`);
     await loadCustomAudioFromDB();
   } else {
     toast("Không thể lưu tệp âm thanh.");
   }
 }
 
-async function toggleCustomAudioPlay(id) {
-  if (studyState.playingCustomAudioId === id) {
-    // STOP
-    if (studyState.customAudioPlayer) {
-      studyState.customAudioPlayer.pause();
-      studyState.customAudioPlayer.src = "";
-      studyState.customAudioPlayer = null;
+async function handleCustomMixAudioUpload(file) {
+  if (!file) return;
+  const streak = getUserStudyStreak();
+  if (streak < 30) {
+    toast("🔒 Tính năng Tải âm thanh phối hợp mở khóa ở Chuỗi 30 ngày (Bậc thầy học thuật)!");
+    return;
+  }
+
+  const isMaxStreak = streak >= 50;
+  if (!isMaxStreak) {
+    if (studyState.customMixAudioTracks.length >= 5) {
+      toast("Bạn chỉ được tải tối đa 5 âm thanh phối hợp (Chuỗi 30 ngày). Đạt Chuỗi 50 ngày để mở khóa không giới hạn!");
+      return;
     }
-    studyState.playingCustomAudioId = null;
-    loadCustomAudioFromDB();
-    toast("Đã dừng phát âm thanh cá nhân.");
+    if (file.size > 25 * 1024 * 1024) {
+      toast("Tệp âm thanh quá lớn (tối đa 25MB cho chuỗi dưới 50 ngày). Đạt Chuỗi 50 ngày để không giới hạn dung lượng!");
+      return;
+    }
+  }
+
+  const newTrack = {
+    id: `mix_${Date.now()}`,
+    category: 'mix',
+    name: file.name,
+    size: file.size,
+    type: file.type || "audio/mpeg",
+    blob: file,
+    createdAt: Date.now()
+  };
+
+  const ok = await idbPut("custom_audio", newTrack);
+  if (ok) {
+    toast(isMaxStreak ? `✨ [Chuỗi 50 ngày] Đã lưu tệp phối hợp "${file.name}" không giới hạn!` : `Đã lưu tệp phối hợp "${file.name}" vào trình duyệt!`);
+    await loadCustomAudioFromDB();
   } else {
-    // START
-    const track = studyState.customAudioTracks.find(t => t.id === id);
-    if (!track || !track.blob) return;
-
-    if (studyState.customAudioPlayer) {
-      studyState.customAudioPlayer.pause();
-      studyState.customAudioPlayer.src = "";
-    }
-
-    const audioUrl = URL.createObjectURL(track.blob);
-    const player = new Audio(audioUrl);
-    player.loop = true;
-    player.volume = 0.5;
-
-    player.onended = () => {
-      studyState.playingCustomAudioId = null;
-      loadCustomAudioFromDB();
-    };
-
-    player.play().then(() => {
-      studyState.customAudioPlayer = player;
-      studyState.playingCustomAudioId = id;
-      loadCustomAudioFromDB();
-      toast(`Đang phát: ${track.name} 🎧`);
-    }).catch(e => {
-      console.warn("Audio play err:", e);
-      toast("Không thể phát tệp âm thanh này.");
-    });
+    toast("Không thể lưu tệp âm thanh.");
   }
 }
 
+async function toggleCustomEnvAudioPlay(id) {
+  if (studyState.activeCustomEnvId === id) {
+    stopCurrentEnvAudio();
+    loadCustomAudioFromDB();
+    toast("Đã dừng phát âm thanh môi trường.");
+    return;
+  }
+
+  stopCurrentEnvAudio();
+  const track = studyState.customEnvAudioTracks.find(t => t.id === id);
+  if (!track || !track.blob) return;
+
+  const audioUrl = URL.createObjectURL(track.blob);
+  const player = new Audio(audioUrl);
+  player.loop = true; // Vòng lặp
+  player.volume = 0.5;
+
+  player.play().then(() => {
+    studyState.customEnvAudioPlayer = player;
+    studyState.activeCustomEnvId = id;
+    loadCustomAudioFromDB();
+    toast(`Đang phát: ${track.name} (Vòng lặp) 🌿`);
+  }).catch(e => {
+    console.warn("Audio play err:", e);
+    toast("Không thể phát tệp âm thanh này.");
+  });
+}
+
+async function toggleCustomMixAudioPlay(id) {
+  if (studyState.activeCustomMixSounds[id]) {
+    const p = studyState.customMixAudioPlayers[id];
+    if (p) {
+      p.pause();
+      p.currentTime = 0;
+      delete studyState.customMixAudioPlayers[id];
+    }
+    studyState.activeCustomMixSounds[id] = false;
+    loadCustomAudioFromDB();
+    toast("Đã dừng âm thanh phối hợp này.");
+    return;
+  }
+
+  const track = studyState.customMixAudioTracks.find(t => t.id === id);
+  if (!track || !track.blob) return;
+
+  const audioUrl = URL.createObjectURL(track.blob);
+  const player = new Audio(audioUrl);
+  player.loop = true; // Vòng lặp
+  player.volume = 0.5;
+
+  player.play().then(() => {
+    studyState.customMixAudioPlayers[id] = player;
+    studyState.activeCustomMixSounds[id] = true;
+    loadCustomAudioFromDB();
+    toast(`Đang mix: ${track.name} 🎛️`);
+  }).catch(e => {
+    console.warn("Audio mix play err:", e);
+    toast("Không thể phát tệp âm thanh này.");
+  });
+}
+
 async function deleteCustomAudioTrack(id) {
-  if (studyState.playingCustomAudioId === id) {
-    toggleCustomAudioPlay(id);
+  if (studyState.activeCustomEnvId === id) {
+    toggleCustomEnvAudioPlay(id);
+  }
+  if (studyState.activeCustomMixSounds[id]) {
+    toggleCustomMixAudioPlay(id);
   }
   await idbDelete("custom_audio", id);
   toast("Đã xóa tệp âm thanh.");
   await loadCustomAudioFromDB();
 }
 
-/* --- 10. WALLPAPER PRESETS, CUSTOM UPLOADS & COLOR AURA --- */
+/* --- 9. WALLPAPER PRESETS, CLOCK COLOR & EXCLUSIVE COLOR GRADIENTS --- */
 const WALLPAPER_PRESETS = [
   { id: 'default', name: 'Mặc định RE:SEARCH', style: 'linear-gradient(135deg, rgba(20,24,22,0.95), rgba(12,16,14,0.98))' },
   { id: 'library', name: 'Thư viện cổ Oxford', style: 'linear-gradient(135deg, #1f1d1a 0%, #11100e 100%)' },
@@ -4188,10 +4275,52 @@ function applyStudyWallpaperPreset(presetId) {
   toast(`Đã chọn hình nền: ${p.name}`);
 }
 
+/* --- CLOCK COLOR CUSTOMIZATION (Streak >= 14) --- */
+const CLOCK_COLORS = [
+  { id: 'default', name: 'Trắng nguyên bản', color: '#ffffff' },
+  { id: 'emerald', name: 'Ngọc Lục Bảo', color: '#10b981' },
+  { id: 'sky', name: 'Xanh Thanh Thiên', color: '#38bdf8' },
+  { id: 'amber', name: 'Hổ Phách Ấm', color: '#f59e0b' },
+  { id: 'purple', name: 'Tím Thạch Anh', color: '#a855f7' },
+  { id: 'rose', name: 'Hồng San Hô', color: '#f43f5e' }
+];
+
+function renderClockColorPicker() {
+  const cont = $("#clockColorPicker");
+  if (!cont) return;
+  const streak = getUserStudyStreak();
+  const unlocked = streak >= 14;
+
+  cont.innerHTML = CLOCK_COLORS.map(c => {
+    const isSelected = (studySettings.clockColor || 'default') === c.id;
+    return `
+      <button type="button" class="clock-color-swatch ${isSelected ? 'active' : ''}" style="background:${c.color};" title="${c.name}" onclick="${unlocked ? `applyClockColor('${c.id}')` : `notifyPerkLocked(14, 'Tinh chỉnh màu sắc đồng hồ')`}"></button>
+    `;
+  }).join("");
+}
+
+function applyClockColor(colorId) {
+  const c = CLOCK_COLORS.find(x => x.id === colorId);
+  if (!c) return;
+  studySettings.clockColor = colorId;
+  saveStudySettings(false);
+
+  const clock = $("#timerClock");
+  if (clock) {
+    clock.style.color = (c.id === 'default' ? '' : c.color);
+  }
+  const prog = $("#timerProgressCircle");
+  if (prog && c.id !== 'default') {
+    prog.style.stroke = c.color;
+  }
+  renderClockColorPicker();
+  toast(`Đã đổi màu đồng hồ: ${c.name}`);
+}
+
 async function triggerWallpaperUpload() {
   const streak = getUserStudyStreak();
   if (streak < 30) {
-    toast("🔒 Tính năng Tải hình nền cá nhân mở khóa ở Chuỗi 30 ngày (Chuyên gia)! ");
+    toast("🔒 Tính năng Tải hình nền cá nhân mở khóa ở Chuỗi 30 ngày (Bậc thầy học thuật)!");
     return;
   }
   const input = $("#customWallInput");
@@ -4240,13 +4369,19 @@ async function handleCustomWallpaperUpload(file) {
   reader.readAsDataURL(file);
 }
 
+/* --- HÀO QUANG & MÀU SẮC GRADIENT ĐỘC QUYỀN (Streak >= 50) --- */
 const COLOR_AURAS = [
-  { id: 'emerald', name: 'Ngọc Lục Bảo', color: '#2e7d32', glow: 'rgba(46, 125, 50, 0.4)' },
-  { id: 'cyan', name: 'Cyber Cyan', color: '#00b4d8', glow: 'rgba(0, 180, 216, 0.4)' },
-  { id: 'amber', name: 'Hoàng Hôn Amber', color: '#e76f51', glow: 'rgba(231, 111, 81, 0.4)' },
-  { id: 'purple', name: 'Tím Hoàng Gia', color: '#7209b7', glow: 'rgba(114, 9, 183, 0.4)' },
-  { id: 'rose', name: 'Thạch Anh Hồng', color: '#e63946', glow: 'rgba(230, 57, 70, 0.4)' },
-  { id: 'gold', name: 'Hào Quang Vàng Kim', color: '#d4af37', glow: 'rgba(212, 175, 55, 0.4)' }
+  { id: 'emerald', name: 'Ngọc Lục Bảo', color: '#2e7d32', glow: 'rgba(46, 125, 50, 0.4)', isGradient: false },
+  { id: 'cyan', name: 'Cyber Cyan', color: '#00b4d8', glow: 'rgba(0, 180, 216, 0.4)', isGradient: false },
+  { id: 'amber', name: 'Hoàng Hôn Amber', color: '#e76f51', glow: 'rgba(231, 111, 81, 0.4)', isGradient: false },
+  { id: 'purple', name: 'Tím Hoàng Gia', color: '#7209b7', glow: 'rgba(114, 9, 183, 0.4)', isGradient: false },
+  { id: 'rose', name: 'Thạch Anh Hồng', color: '#e63946', glow: 'rgba(230, 57, 70, 0.4)', isGradient: false },
+  { id: 'gold', name: 'Hào Quang Vàng Kim', color: '#d4af37', glow: 'rgba(212, 175, 55, 0.4)', isGradient: false },
+  // Exclusive Gradients (Streak 50)
+  { id: 'aurora', name: 'Cực Quang Neon (Gradient)', color: 'linear-gradient(135deg, #00f2fe 0%, #4facfe 100%)', glow: 'rgba(0, 242, 254, 0.4)', isGradient: true },
+  { id: 'sunset_grad', name: 'Hoàng Kim Sang Trọng (Gradient)', color: 'linear-gradient(135deg, #f6d365 0%, #fda085 100%)', glow: 'rgba(246, 211, 101, 0.4)', isGradient: true },
+  { id: 'cyberpunk', name: 'Tím Cyberpunk (Gradient)', color: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)', glow: 'rgba(240, 147, 251, 0.4)', isGradient: true },
+  { id: 'cosmic', name: 'Vũ Trụ Huyền Ảo (Gradient)', color: 'linear-gradient(135deg, #5ee7df 0%, #b490ca 100%)', glow: 'rgba(94, 231, 223, 0.4)', isGradient: true }
 ];
 
 function renderColorPalette() {
@@ -4258,7 +4393,7 @@ function renderColorPalette() {
   cont.innerHTML = COLOR_AURAS.map(c => {
     const isSelected = (studySettings.activeAura === c.id);
     return `
-      <button type="button" class="color-swatch ${isSelected ? 'active' : ''}" style="background:${c.color};" title="${c.name}" onclick="${unlocked ? `applyColorAura('${c.id}')` : `notifyPerkLocked(50, 'Hào quang & Tùy biến toàn diện')`}"></button>
+      <button type="button" class="color-swatch ${c.isGradient ? 'gradient' : ''} ${isSelected ? 'active' : ''}" style="background:${c.color};" title="${c.name}" onclick="${unlocked ? `applyColorAura('${c.id}')` : `notifyPerkLocked(50, 'Giao diện độc quyền & Phối màu Gradient')`}"></button>
     `;
   }).join("");
 }
@@ -4271,21 +4406,27 @@ function applyColorAura(auraId) {
 
   const studyEl = $("#study");
   if (studyEl) {
-    studyEl.style.setProperty("--primary", c.color);
-    studyEl.style.setProperty("--primary-glow", c.glow);
+    if (c.isGradient) {
+      studyEl.style.setProperty("--primary", "#4facfe");
+      studyEl.style.setProperty("--primary-glow", c.glow);
+    } else {
+      studyEl.style.setProperty("--primary", c.color);
+      studyEl.style.setProperty("--primary-glow", c.glow);
+    }
   }
   const progCircle = $("#timerProgressCircle");
   if (progCircle) {
-    progCircle.style.stroke = c.color;
+    progCircle.style.stroke = c.isGradient ? "#00f2fe" : c.color;
   }
 
   renderColorPalette();
-  toast(`Đã chuyển hào quang: ${c.name}`);
+  toast(`Đã chuyển giao diện: ${c.name} ✨`);
 }
 
 function resetStudyTheme() {
   studySettings.activeWallpaper = 'default';
   studySettings.activeAura = 'emerald';
+  studySettings.clockColor = 'default';
   saveStudySettings(false);
 
   const bgLayer = $("#studyBackgroundLayer");
@@ -4301,10 +4442,15 @@ function resetStudyTheme() {
   if (progCircle) {
     progCircle.style.removeProperty("stroke");
   }
+  const clock = $("#timerClock");
+  if (clock) {
+    clock.style.removeProperty("color");
+  }
   const nameEl = $("#customWallName");
   if (nameEl) nameEl.textContent = "Chưa chọn ảnh";
 
   renderWallpaperPresets();
+  renderClockColorPicker();
   renderColorPalette();
   toast("Đã đặt lại giao diện mặc định.");
 }
@@ -4564,8 +4710,18 @@ function onEnterStudyLounge() {
   updateStudyStreakPerks();
   fetchStudyLounge();
   loadStudyTodos();
+  renderEnvironmentAudioGrid();
+  renderMixAudioGrid();
   loadCustomAudioFromDB();
+  renderWallpaperPresets();
+  renderClockColorPicker();
+  renderColorPalette();
   updateTimerDisplay();
+
+  // Apply saved clock color
+  if (studySettings.clockColor && studySettings.clockColor !== 'default') {
+    applyClockColor(studySettings.clockColor);
+  }
 
   // Apply saved theme & aura
   if (studySettings.activeWallpaper && studySettings.activeWallpaper !== 'default') {
@@ -4628,59 +4784,52 @@ function initStudyLoungeEvents() {
   const fullscreenBtn = $("#studyFullscreenBtn");
   if (fullscreenBtn) fullscreenBtn.onclick = toggleStudyFullscreen;
 
-  // Sound arena tab switching
+  // Sound arena tab switching: 'env' vs 'mix'
   $$(".sound-tab").forEach(tab => {
     tab.onclick = () => {
       const tabName = tab.dataset.soundTab;
       $$(".sound-tab").forEach(t => t.classList.toggle("active", t === tab));
-      const targetPaneId = (tabName === 'custom' || tabName === 'customAudio') ? 'paneCustomAudio' : (tabName === 'lofi' ? 'paneLofi' : 'paneAmbiance');
+      const targetPaneId = (tabName === 'mix') ? 'paneMixAudio' : 'paneEnvAudio';
       $$(".sound-tab-pane").forEach(p => {
         p.style.display = (p.id === targetPaneId) ? "block" : "none";
       });
       studyState.activeSoundTab = tabName;
-      if (tabName === 'custom' || tabName === 'customAudio') {
-        loadCustomAudioFromDB();
-      }
     };
   });
 
-  // Sound master toggle
+  // Sound master toggle: stop all or play default env
   const masterAmbientBtn = $("#toggleAmbientMaster");
   if (masterAmbientBtn) {
     masterAmbientBtn.onclick = () => {
-      const anyActive = Object.values(studyState.activeSounds).some(v => v);
+      const anyActive = (studyState.activeEnvTrack !== null) ||
+                        (studyState.activeCustomEnvId !== null) ||
+                        Object.values(studyState.activeMixSounds).some(v => v) ||
+                        Object.values(studyState.activeCustomMixSounds).some(v => v);
       if (anyActive) {
-        AMBIENT_TRACKS.forEach(s => {
-          if (studyState.activeSounds[s.id]) toggleSoundTrack(s.id);
-        });
+        stopAllStudyAudio();
       } else {
-        ['rain', 'cafe'].forEach(s => {
-          if (!studyState.activeSounds[s]) toggleSoundTrack(s);
-        });
+        toggleEnvTrack('env_1');
       }
       updateMasterAmbientButtonState();
     };
   }
 
-  // File dropzone & file inputs
-  const audioInput = $("#customAudioInput");
-  if (audioInput) {
-    audioInput.onchange = (e) => {
+  // Custom audio file inputs (Rạch ròi: Môi trường & Phối hợp)
+  const envAudioInput = $("#customEnvAudioInput");
+  if (envAudioInput) {
+    envAudioInput.onchange = (e) => {
       const file = e.target.files && e.target.files[0];
-      if (file) handleCustomAudioUpload(file);
-      audioInput.value = "";
+      if (file) handleCustomEnvAudioUpload(file);
+      envAudioInput.value = "";
     };
   }
 
-  const dropzone = $("#audioDropzone");
-  if (dropzone) {
-    dropzone.ondragover = (e) => { e.preventDefault(); dropzone.classList.add("dragover"); };
-    dropzone.ondragleave = () => { dropzone.classList.remove("dragover"); };
-    dropzone.ondrop = (e) => {
-      e.preventDefault();
-      dropzone.classList.remove("dragover");
-      const file = e.dataTransfer.files && e.dataTransfer.files[0];
-      if (file) handleCustomAudioUpload(file);
+  const mixAudioInput = $("#customMixAudioInput");
+  if (mixAudioInput) {
+    mixAudioInput.onchange = (e) => {
+      const file = e.target.files && e.target.files[0];
+      if (file) handleCustomMixAudioUpload(file);
+      mixAudioInput.value = "";
     };
   }
 
@@ -4706,9 +4855,11 @@ function initStudyLoungeEvents() {
   if (clearTodoBtn) clearTodoBtn.onclick = clearCompletedTodos;
 
   // Initialize UI components
-  renderAmbianceGrid();
-  renderLofiTracks();
+  renderEnvironmentAudioGrid();
+  renderMixAudioGrid();
+  loadCustomAudioFromDB();
   renderWallpaperPresets();
+  renderClockColorPicker();
   renderColorPalette();
 }
 

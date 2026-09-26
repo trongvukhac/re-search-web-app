@@ -421,70 +421,97 @@
               </div>
             </div>
 
-            <!-- Audio & Ambiance Arena -->
+            <!-- Audio & Ambiance Arena (2 Loại: Môi trường & Phối hợp) -->
             <div class="study-card ambient-card" id="soundArenaCard">
               <div class="ambient-header">
                 <div class="sound-tabs">
-                  <button type="button" class="sound-tab active" data-sound-tab="ambiance">🎧 Môi trường</button>
-                  <button type="button" class="sound-tab" data-sound-tab="lofi" id="tabLofiBtn">
-                    🎵 Nhạc Lo-Fi <span class="perk-badge" id="badgeLofiLock">🔒 7d</span>
+                  <button type="button" class="sound-tab active" data-sound-tab="env" id="tabEnvAudioBtn">
+                    🎧 Âm thanh môi trường <span class="perk-badge" id="badgeEnvLock">🔒 3d</span>
                   </button>
-                  <button type="button" class="sound-tab" data-sound-tab="custom" id="tabCustomAudioBtn">
-                    📁 Tải âm thanh <span class="perk-badge" id="badgeCustomAudioLock">🔒 14d</span>
+                  <button type="button" class="sound-tab" data-sound-tab="mix" id="tabMixAudioBtn">
+                    🎛️ Âm thanh phối hợp <span class="perk-badge" id="badgeMixLock">🔒 7d</span>
                   </button>
                 </div>
                 <div class="sound-master-controls">
-                  <button type="button" class="button button-sm button-outline" id="toggleAmbientMaster">Bật tất cả</button>
+                  <button type="button" class="button button-sm button-outline" id="toggleAmbientMaster">Tắt tất cả</button>
                 </div>
               </div>
 
-              <!-- Tab Content: Ambiance -->
-              <div class="sound-tab-pane active" id="paneAmbiance">
-                <div class="ambient-sub-bar">
-                  <span class="ambient-sub" id="ambianceSubText">Âm thanh thiên nhiên êm dịu, phát trực tiếp trên trình duyệt.</span>
-                  <div class="mix-mode-toggle" id="mixModeWrap">
-                    <span class="mix-label">Phối âm (Mix) <span class="perk-badge" id="badgeMixLock">🔒 3d</span></span>
-                    <input type="checkbox" id="mixModeCheckbox" class="toggle-switch" disabled />
+              <!-- Tab Content: Âm thanh môi trường (4 âm thanh hỗn hợp sẵn, dài ~1 tiếng + Upload cá nhân) -->
+              <div class="sound-tab-pane active" id="paneEnvAudio">
+                <div class="perk-locked-banner" id="bannerEnvLocked" style="display: none;">
+                  <span class="lock-icon">🔒</span>
+                  <div>
+                    <strong>Mở khóa ở chuỗi 3 ngày (Sinh viên năng động)</strong>
+                    <p>Kho 4 âm thanh môi trường tĩnh lặng độ dài 1 tiếng, phát vòng lặp giúp bạn tập trung cao độ.</p>
                   </div>
                 </div>
 
-                <div class="ambient-grid" id="ambianceGrid">
-                  <!-- Dynamically populated by JS with rich ambient tracks -->
+                <div class="ambient-sub-bar">
+                  <span class="ambient-sub">Âm thanh môi trường hỗn hợp sẵn (khoảng 1 tiếng), phát vòng lặp giúp tập trung sâu.</span>
+                </div>
+
+                <!-- 4 Environment Sounds Grid -->
+                <div class="ambient-grid" id="envAudioGrid">
+                  <!-- Rendered dynamically by JS -->
+                </div>
+
+                <!-- Custom Environment Audio Upload (Streak >= 30, max 3 tracks, Streak 50 unlimited) -->
+                <div class="custom-audio-section" id="customEnvSection">
+                  <div class="custom-audio-head">
+                    <div>
+                      <h4>🌿 Âm thanh môi trường của bạn</h4>
+                      <p class="custom-audio-sub">Tự tải lên âm thanh môi trường yêu thích (phát lặp, lưu trên máy).</p>
+                    </div>
+                    <div class="custom-audio-head-right">
+                      <span class="perk-badge" id="badgeCustomEnvLock">🔒 30d</span>
+                      <span class="custom-audio-limit-badge" id="badgeCustomEnvLimit">Tối đa 3 tệp</span>
+                      <button type="button" class="button button-sm button-outline" id="btnUploadEnvAudio" onclick="triggerUploadEnvAudio()">
+                        ➕ Tải lên
+                      </button>
+                    </div>
+                  </div>
+                  <input type="file" id="customEnvAudioInput" accept="audio/*,.mp3,.m4a,.wav,.ogg" style="display: none;" />
+                  <div id="customEnvAudioList" class="custom-audio-list"></div>
                 </div>
               </div>
 
-              <!-- Tab Content: Lo-Fi Study Tracks (Streak >= 7) -->
-              <div class="sound-tab-pane" id="paneLofi" style="display: none;">
-                <div class="perk-locked-banner" id="bannerLofiLocked" style="display: none;">
+              <!-- Tab Content: Âm thanh phối hợp (9 âm thanh đơn lẻ, tự do phối hợp cùng lúc + Upload cá nhân) -->
+              <div class="sound-tab-pane" id="paneMixAudio" style="display: none;">
+                <div class="perk-locked-banner" id="bannerMixLocked" style="display: none;">
                   <span class="lock-icon">🔒</span>
                   <div>
                     <strong>Mở khóa ở chuỗi 7 ngày (Học giả bền bỉ)</strong>
-                    <p>Giữ chuỗi học tập để thưởng thức các bản nhạc Lo-Fi & Instrumental thư giãn sâu.</p>
+                    <p>Kho 9 âm thanh phối hợp đơn lẻ, cho phép bạn tự do phối nhiều âm thanh cùng lúc theo sở thích.</p>
                   </div>
                 </div>
-                <div id="lofiTracksContainer" class="lofi-tracks-list">
-                  <!-- Populated by JS -->
-                </div>
-              </div>
 
-              <!-- Tab Content: Custom Audio Upload (Streak >= 14) -->
-              <div class="sound-tab-pane" id="paneCustomAudio" style="display: none;">
-                <div class="perk-locked-banner" id="bannerCustomAudioLocked" style="display: none;">
-                  <span class="lock-icon">🔒</span>
-                  <div>
-                    <strong>Mở khóa ở chuỗi 14 ngày (Nhà nghiên cứu tài năng)</strong>
-                    <p>Tự tải lên bài nhạc, âm thanh thiền định ưa thích từ máy tính (lưu cục bộ trên trình duyệt của bạn).</p>
-                  </div>
+                <div class="ambient-sub-bar">
+                  <span class="ambient-sub">9 âm thanh đơn lẻ, bật tắt và điều chỉnh âm lượng từng âm để tạo không gian riêng của bạn.</span>
                 </div>
-                <div id="customAudioContent" class="custom-audio-box">
-                  <div class="upload-dropzone" id="audioDropzone">
-                    <input type="file" id="customAudioInput" accept="audio/*,.mp3,.m4a,.wav,.ogg" style="display: none;" />
-                    <button type="button" class="button button-outline" onclick="document.getElementById('customAudioInput').click()">
-                      ➕ Tải tệp âm thanh từ máy (.mp3, .m4a, .wav)
-                    </button>
-                    <p class="dropzone-tip">Lưu an toàn trong bộ nhớ máy của bạn, không tốn dữ liệu mạng.</p>
+
+                <!-- 9 Mixer Sounds Grid -->
+                <div class="ambient-grid" id="mixAudioGrid">
+                  <!-- Rendered dynamically by JS -->
+                </div>
+
+                <!-- Custom Mix Audio Upload (Streak >= 30, max 5 tracks, Streak 50 unlimited) -->
+                <div class="custom-audio-section" id="customMixSection">
+                  <div class="custom-audio-head">
+                    <div>
+                      <h4>🎛️ Âm thanh phối hợp của bạn</h4>
+                      <p class="custom-audio-sub">Tự tải lên hiệu ứng âm thanh để mix chung vào dàn âm thanh.</p>
+                    </div>
+                    <div class="custom-audio-head-right">
+                      <span class="perk-badge" id="badgeCustomMixLock">🔒 30d</span>
+                      <span class="custom-audio-limit-badge" id="badgeCustomMixLimit">Tối đa 5 tệp</span>
+                      <button type="button" class="button button-sm button-outline" id="btnUploadMixAudio" onclick="triggerUploadMixAudio()">
+                        ➕ Tải lên
+                      </button>
+                    </div>
                   </div>
-                  <div id="customAudioList" class="custom-audio-list"></div>
+                  <input type="file" id="customMixAudioInput" accept="audio/*,.mp3,.m4a,.wav,.ogg" style="display: none;" />
+                  <div id="customMixAudioList" class="custom-audio-list"></div>
                 </div>
               </div>
             </div>
@@ -513,6 +540,17 @@
                   </div>
                 </div>
 
+                <!-- Clock Color Customization (Streak >= 14) -->
+                <div class="clock-color-wrap">
+                  <div class="theme-tier-title">
+                    <span>Màu sắc đồng hồ</span>
+                    <span class="perk-badge" id="badgeClockColorLock">🔒 14d</span>
+                  </div>
+                  <div class="clock-color-picker" id="clockColorPicker">
+                    <!-- Clock colors rendered by JS -->
+                  </div>
+                </div>
+
                 <!-- Custom Wallpaper Upload (Streak >= 30) -->
                 <div class="wallpaper-upload-wrap">
                   <div class="theme-tier-title">
@@ -528,14 +566,14 @@
                   </div>
                 </div>
 
-                <!-- Full Master Customization (Streak >= 50) -->
+                <!-- Full Master Customization & Gradient Palettes (Streak >= 50) -->
                 <div class="theme-master-wrap">
                   <div class="theme-tier-title">
-                    <span>Hào quang & Màu sắc chủ đạo</span>
+                    <span>Hào quang & Phối màu độc quyền</span>
                     <span class="perk-badge" id="badgeMasterCustomLock">🔒 50d</span>
                   </div>
                   <div class="color-palette-picker" id="colorPalettePicker">
-                    <!-- Color swatches rendered by JS -->
+                    <!-- Color & gradient swatches rendered by JS -->
                   </div>
                 </div>
               </div>
