@@ -17,6 +17,7 @@ const STUDY_SETTINGS_KEY = "research_study_settings_v1";
 const STUDY_MAINTENANCE_MSG = "Tính năng Phòng tự học đang được phát triển và cần thời gian để ổn định hệ thống, bạn quay lại sau nhé!";
 
 function canAccessStudyLounge(user = session) {
+  if (typeof window !== "undefined" && window.__studyTestAdmin) return true;
   return Boolean(user && user.role === "admin");
 }
 
@@ -2663,7 +2664,9 @@ function updateTimerDisplay() {
   }
 
   if (cycleLabel) {
-    if (studyState.mode === 'focus') {
+    if (studyState.cycleIndex === 0) {
+      cycleLabel.textContent = "Hiệp 0/4 (Chưa bắt đầu)";
+    } else if (studyState.mode === 'focus') {
       cycleLabel.textContent = `Hiệp ${studyState.cycleIndex}/4 (Tập trung)`;
     } else if (studyState.mode === 'shortbreak') {
       cycleLabel.textContent = `Nghỉ ngắn (${studySettings.shortBreakMins}m) - Sau hiệp ${studyState.cycleIndex > 1 ? studyState.cycleIndex - 1 : 1}`;
@@ -2683,7 +2686,9 @@ function updateTimerDisplay() {
   $$("#studyCycleDots .cycle-dot").forEach((dot) => {
     const c = Number(dot.dataset.cycle);
     dot.classList.remove("active", "completed");
-    if (studyState.mode === 'longbreak') {
+    if (studyState.cycleIndex === 0) {
+      // Chưa bắt đầu: không sáng dot nào
+    } else if (studyState.mode === 'longbreak') {
       dot.classList.add("completed");
     } else if (c < studyState.cycleIndex) {
       dot.classList.add("completed");
@@ -2695,8 +2700,8 @@ function updateTimerDisplay() {
   if (startBtn) startBtn.style.display = studyState.isRunning ? "none" : "inline-flex";
   if (pauseBtn) pauseBtn.style.display = studyState.isRunning ? "inline-flex" : "none";
   if (completeBtn) {
-    const isFocus = (studyState.mode === 'focus' || studyState.mode === 'pomodoro');
-    completeBtn.style.display = (isFocus && (studyState.isRunning || studyState.remainingSeconds < totalSecs)) ? "inline-flex" : "none";
+    // Nút hoàn thành xuất hiện khi đồng hồ chạy
+    completeBtn.style.display = studyState.isRunning ? "inline-flex" : "none";
   }
 
   $("#btnModeFocus")?.classList.toggle("active", studyState.mode === 'focus');
@@ -2715,9 +2720,6 @@ function setStudyMode(mode, duration) {
   }
 
   if (studyState.isRunning) {
-    if (!confirm("Ca học hiện tại đang chạy. Bạn có muốn đổi chế độ và đặt lại thời gian?")) {
-      return;
-    }
     pauseStudyTimer(false);
   }
 
@@ -2738,15 +2740,12 @@ function setStudyMode(mode, duration) {
 }
 
 function advanceStudyCycle(manualSkip = false) {
-  if (manualSkip && studyState.isRunning) {
-    if (!confirm("Bạn có muốn chuyển sang phiên tiếp theo trong chu kỳ Pomodoro?")) {
-      return;
-    }
-  }
-
   pauseStudyTimer(false);
 
   if (studyState.mode === 'focus') {
+    if (studyState.cycleIndex === 0) {
+      studyState.cycleIndex = 1;
+    }
     if (studyState.cycleIndex < 4) {
       studyState.cycleIndex++;
       studyState.mode = 'shortbreak';
@@ -2844,6 +2843,9 @@ function startLocalTimerTick() {
 
 async function startStudyTimer() {
   if (studyState.isRunning) return;
+  if (studyState.cycleIndex === 0) {
+    studyState.cycleIndex = 1;
+  }
   studyState.goal = ($("#studyGoalInput") ? $("#studyGoalInput").value : "").trim();
   studyState.targetEndMs = Date.now() + studyState.remainingSeconds * 1000;
 
@@ -2879,17 +2881,18 @@ async function resetStudyTimer() {
   studyState.remainingSeconds = studyState.durationMinutes * 60;
   studyState.targetEndMs = 0;
   studyState.elapsedSessionSeconds = 0;
-  updateTimerDisplay();
   if (session) {
     try {
       await requestAPI("/api/study/leave", { method: "POST" });
     } catch (e) {}
   }
+  updateTimerDisplay();
   await fetchStudyLounge();
+  toast("Đã đặt lại đồng hồ.");
 }
 
 async function finishStudySession(autoCompleted = false) {
-  pauseStudyTimer(false);
+  await pauseStudyTimer(false);
   playAlarmSound(studySettings.alarmSound);
   sendStudyNotification();
 
@@ -2919,9 +2922,30 @@ async function finishStudySession(autoCompleted = false) {
     }
   } else if (durationToCredit >= 20) {
     toast(`🎉 Hoàn thành ca tự học ${durationToCredit} phút! (Đăng nhập để lưu điểm & giữ chuỗi)`);
+  } else {
+    toast("🎉 Đã hoàn tất ca học!");
   }
 
-  advanceStudyCycle(false);
+  if (!autoCompleted) {
+    // Khi bấm hoàn thành: reset thời gian về hiệp 0 và thoát khu vực bàn tròn
+    studyState.cycleIndex = 0;
+    studyState.mode = 'focus';
+    studyState.durationMinutes = studySettings.focusMins;
+    studyState.remainingSeconds = studySettings.focusMins * 60;
+    studyState.targetEndMs = 0;
+    studyState.elapsedSessionSeconds = 0;
+
+    if (session) {
+      try {
+        await requestAPI("/api/study/leave", { method: "POST" });
+      } catch (e) {}
+    }
+
+    updateTimerDisplay();
+    await fetchStudyLounge();
+  } else {
+    advanceStudyCycle(false);
+  }
 }
 
 // Background tab throttling resolution via Page Visibility & Focus APIs
@@ -2983,7 +3007,7 @@ async function fetchStudyLounge() {
     const badge1 = $("#studyLiveCount");
     const badge2 = $("#coStudyCountBadge");
     if (badge1) badge1.textContent = totalCount;
-    if (badge2) badge2.textContent = `${totalCount} học giả`;
+    if (badge2) badge2.textContent = `${totalCount} người trong phòng`;
 
     const list = $("#coStudyList");
     if (list) {

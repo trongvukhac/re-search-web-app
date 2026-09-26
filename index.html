@@ -337,15 +337,12 @@
             <h1>Tập trung sâu,<br /><em>bền bỉ cùng bạn bè.</em></h1>
           </div>
           <div class="study-header-actions">
-            <span class="study-live-badge"><span class="pulse-dot"></span> <span id="studyLiveCount">0</span> học giả đang học</span>
+            <span class="study-live-badge"><span class="pulse-dot"></span> <span id="studyLiveCount">0</span> đang học</span>
             <button type="button" class="study-action-btn" id="studyStreakChip" onclick="openStreakJourneyModal()" title="Xem hành trình mở khóa đặc quyền">
               <span>🔥 Chuỗi:</span> <strong id="studyUserStreakVal">0</strong> ngày
             </button>
             <button type="button" class="study-action-btn icon-only" id="studySettingsBtn" title="Cài đặt Pomodoro" onclick="openStudySettingsModal()">
               ⚙️
-            </button>
-            <button type="button" class="study-action-btn icon-only" id="studyFullscreenBtn" title="Chế độ toàn màn hình tập trung">
-              ⛶
             </button>
           </div>
         </div>
@@ -551,10 +548,10 @@
             <div class="study-card co-study-card">
               <div class="co-study-head">
                 <div>
-                  <h3>👥 Bàn tròn cùng học</h3>
-                  <p class="co-study-tip">Động viên nhau bền bỉ trong từng ca học.</p>
+                  <h3>👥 Không gian chung</h3>
+                  <p class="co-study-tip">Cùng nhau lan toả năng lượng học tập</p>
                 </div>
-                <span class="badge" id="coStudyCountBadge">0 học giả</span>
+                <span class="badge" id="coStudyCountBadge">0 người trong phòng</span>
               </div>
               <div class="co-study-list" id="coStudyList">
                 <div class="co-study-empty">Chưa có ai trong phòng. Bấm <b>Bắt đầu học</b> để là người đầu tiên!</div>
@@ -565,12 +562,12 @@
             <div class="study-card todo-card">
               <div class="todo-head">
                 <div>
-                  <h3>📝 Nhiệm vụ ca học</h3>
+                  <h3>📝 Những việc cần làm</h3>
                   <div class="todo-progress-bar-wrap">
                     <div class="todo-progress-bar" id="todoProgressBar" style="width: 0%;"></div>
                   </div>
                 </div>
-                <button class="button button-sm button-ghost" id="clearCompletedTodos">Dọn việc xong</button>
+                <button class="button button-sm button-ghost" id="clearCompletedTodos">Dọn dẹp</button>
               </div>
               <div class="todo-input-wrap">
                 <input type="text" id="newTodoInput" placeholder="Thêm mục tiêu nhỏ..." maxlength="80" />
@@ -1246,11 +1243,11 @@
             </div>
           </div>
         </div>
+      </div>
 
-        <div class="modal-actions" style="margin-top: 24px;">
-          <button type="button" class="button button-quiet" onclick="this.closest('dialog').close()">Đóng</button>
-          <button type="button" class="button button-primary" onclick="saveStudySettings()">Lưu cài đặt</button>
-        </div>
+      <div class="modal-actions" style="margin-top: 16px;">
+        <button type="button" class="button button-quiet" onclick="this.closest('dialog').close()">Đóng</button>
+        <button type="button" class="button button-primary" onclick="saveStudySettings()">Lưu cài đặt</button>
       </div>
     </dialog>
     <dialog
