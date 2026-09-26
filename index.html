@@ -431,6 +431,9 @@
                   <button type="button" class="sound-tab" data-sound-tab="mix" id="tabMixAudioBtn">
                     🎛️ Âm thanh phối hợp <span class="perk-badge" id="badgeMixLock">🔒 7d</span>
                   </button>
+                  <button type="button" class="sound-tab" data-sound-tab="music" id="tabMusicAudioBtn">
+                    🎵 Âm nhạc <span class="perk-badge" id="badgeMusicLock">🔒 7d</span>
+                  </button>
                 </div>
                 <div class="sound-master-controls">
                   <button type="button" class="button button-sm button-outline" id="toggleAmbientMaster">Tắt tất cả</button>
@@ -512,6 +515,45 @@
                   </div>
                   <input type="file" id="customMixAudioInput" accept="audio/*,.mp3,.m4a,.wav,.ogg" style="display: none;" />
                   <div id="customMixAudioList" class="custom-audio-list"></div>
+                </div>
+              </div>
+
+              <!-- Tab Content: Âm nhạc (4 bản nhạc nhẹ nhàng tập trung, vòng lặp, mở ở Chuỗi 7 ngày) -->
+              <div class="sound-tab-pane" id="paneMusicAudio" style="display: none;">
+                <div class="perk-locked-banner" id="bannerMusicLocked" style="display: none;">
+                  <span class="lock-icon">🔒</span>
+                  <div>
+                    <strong>Mở khóa ở chuỗi 7 ngày (Học giả bền bỉ)</strong>
+                    <p>Kho 4 bản nhạc êm dịu, giúp tinh thần tập trung và sáng tạo khi học tập.</p>
+                  </div>
+                </div>
+
+                <div class="ambient-sub-bar">
+                  <span class="ambient-sub">4 bản nhạc tập trung (phát vòng lặp, có thể kết hợp cùng âm thanh phối hợp).</span>
+                </div>
+
+                <!-- 4 Music Tracks Grid -->
+                <div class="ambient-grid" id="musicAudioGrid">
+                  <!-- Rendered dynamically by JS -->
+                </div>
+
+                <!-- Custom Music Audio Upload (Streak >= 30, max 3 tracks, Streak 50 unlimited) -->
+                <div class="custom-audio-section" id="customMusicSection">
+                  <div class="custom-audio-head">
+                    <div>
+                      <h4>🎵 Âm nhạc của bạn</h4>
+                      <p class="custom-audio-sub">Tự tải lên các bản nhạc/lofi yêu thích (phát lặp, lưu trên máy).</p>
+                    </div>
+                    <div class="custom-audio-head-right">
+                      <span class="perk-badge" id="badgeCustomMusicLock">🔒 30d</span>
+                      <span class="custom-audio-limit-badge" id="badgeCustomMusicLimit">Tối đa 3 tệp</span>
+                      <button type="button" class="button button-sm button-outline" id="btnUploadMusicAudio" onclick="triggerUploadMusicAudio()">
+                        ➕ Tải lên
+                      </button>
+                    </div>
+                  </div>
+                  <input type="file" id="customMusicAudioInput" accept="audio/*,.mp3,.m4a,.wav,.ogg" style="display: none;" />
+                  <div id="customMusicAudioList" class="custom-audio-list"></div>
                 </div>
               </div>
             </div>
