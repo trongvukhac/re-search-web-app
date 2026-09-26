@@ -2956,17 +2956,24 @@ dialog.detail-modal[open] {
 
 .study-layout {
   display: grid;
-  grid-template-columns: 1.18fr 0.82fr;
+  grid-template-columns: minmax(0, 1.18fr) minmax(0, 0.82fr);
   gap: 24px;
   align-items: start;
   position: relative;
   z-index: 2;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 .study-main-col,
 .study-side-col {
   display: flex;
   flex-direction: column;
   gap: 20px;
+  min-width: 0;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 .study-card {
   background: var(--paper);
@@ -2975,6 +2982,10 @@ dialog.detail-modal[open] {
   padding: 24px;
   box-shadow: var(--shadow-sm);
   transition: transform 0.2s ease, box-shadow 0.2s ease;
+  min-width: 0;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 /* Timer Card & Mode Selector */
@@ -2985,17 +2996,19 @@ dialog.detail-modal[open] {
 }
 .timer-mode-selector {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 10px;
   max-width: 460px;
   margin: 0 auto 16px;
   width: 100%;
+  box-sizing: border-box;
+  min-width: 0;
 }
 .study-mode-btn {
   background: var(--surface-bg, #f4f7f5);
   border: 1.5px solid var(--line);
   color: var(--ink);
-  padding: 10px 8px;
+  padding: 10px 6px;
   border-radius: 12px;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -3007,6 +3020,8 @@ dialog.detail-modal[open] {
   min-height: 56px;
   box-sizing: border-box;
   text-align: center;
+  min-width: 0;
+  overflow: hidden;
 }
 .study-mode-btn strong {
   font-size: 13px;
@@ -3014,14 +3029,19 @@ dialog.detail-modal[open] {
   display: block;
   line-height: 1.2;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
 }
 .study-mode-btn span {
   font-size: 11px;
   opacity: 0.8;
   font-weight: 500;
   display: block;
-  line-height: 1.2;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
 }
 .study-mode-btn:hover {
   background: #e9f0ec;
@@ -3322,22 +3342,30 @@ dialog.detail-modal[open] {
   font-weight: 600;
 }
 
-/* Ambient Grid (Single & Multi-track) */
+/* Ambient Grid (Single column: các khối ngang căn dọc trên cả PC & Mobile) */
 .ambient-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  grid-template-columns: 1fr;
   gap: 12px;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  min-width: 0;
 }
 .ambient-track {
   background: var(--surface-bg, #f7faf8);
   border: 1px solid var(--line);
   border-radius: 12px;
-  padding: 12px 14px;
+  padding: 12px 16px;
   transition: all 0.2s ease;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
   gap: 10px;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  min-width: 0;
 }
 .ambient-track.active {
   border-color: var(--primary);
@@ -3352,10 +3380,17 @@ dialog.detail-modal[open] {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 8px;
+  gap: 12px;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  min-width: 0;
+}
+.ambient-track-info > div {
+  min-width: 0;
 }
 .ambient-name {
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
   color: var(--ink);
   white-space: nowrap;
@@ -3364,28 +3399,41 @@ dialog.detail-modal[open] {
 }
 .ambient-track-toggle {
   background: var(--paper);
-  border: 1px solid var(--line);
-  border-radius: 6px;
-  padding: 4px 10px;
-  font-size: 12px;
-  font-weight: 600;
+  border: 1.5px solid var(--line);
+  border-radius: 8px;
+  padding: 6px 14px;
+  font-size: 13px;
+  font-weight: 700;
   cursor: pointer;
   color: var(--ink);
   white-space: nowrap !important;
-  min-width: 48px;
+  min-width: 58px;
   text-align: center;
   box-sizing: border-box;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
 }
 .ambient-track.active .ambient-track-toggle {
   background: var(--primary);
   color: #fff;
   border-color: var(--primary);
 }
+.ambient-slider-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  box-sizing: border-box;
+  min-width: 0;
+}
 .ambient-slider {
   width: 100%;
+  min-width: 0;
   accent-color: var(--primary);
   cursor: pointer;
-  height: 4px;
+  height: 6px;
+  border-radius: 3px;
+  box-sizing: border-box;
 }
 
 /* Lo-Fi & Custom Audio Tabs */
@@ -3848,8 +3896,18 @@ dialog.detail-modal[open] {
 /* Responsive adjustments */
 @media (max-width: 900px) {
   .study-layout {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
     gap: 16px;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+  .study-main-col,
+  .study-side-col {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    min-width: 0;
   }
   .timer-circle {
     width: 220px;
@@ -3862,10 +3920,15 @@ dialog.detail-modal[open] {
   }
   .timer-mode-selector {
     gap: 8px;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
   }
   .study-mode-btn {
     padding: 8px 6px;
     min-height: 52px;
+    min-width: 0;
+    box-sizing: border-box;
   }
   .study-mode-btn strong {
     font-size: 12px;
@@ -3878,15 +3941,17 @@ dialog.detail-modal[open] {
     height: 42px;
     padding: 0 14px;
     font-size: 13px;
+    box-sizing: border-box;
+    max-width: 100%;
   }
 }
 
 @media (max-width: 600px) {
   #study.page {
     padding: 14px 10px 90px;
+    width: 100%;
     max-width: 100vw;
     box-sizing: border-box;
-    overflow-x: hidden;
   }
   .study-bg-layer,
   .study-bg-overlay {
@@ -3900,20 +3965,31 @@ dialog.detail-modal[open] {
     flex-direction: column;
     align-items: flex-start;
     gap: 12px;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
   }
   .study-live-badge {
     align-self: flex-start;
   }
   .study-card {
-    padding: 16px 12px;
+    padding: 14px 12px;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    min-width: 0;
   }
   .timer-mode-selector {
     gap: 6px;
     max-width: 100%;
+    width: 100%;
+    box-sizing: border-box;
   }
   .study-mode-btn {
-    padding: 8px 4px;
+    padding: 6px 3px;
     min-width: 0;
+    min-height: 48px;
+    box-sizing: border-box;
   }
   .study-mode-btn strong {
     font-size: 11px;
@@ -3931,13 +4007,37 @@ dialog.detail-modal[open] {
   }
   .study-actions {
     gap: 8px;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
   }
   .study-action-ctrl {
-    flex: 1 1 calc(50% - 8px);
-    min-width: 110px;
+    flex: 1 1 calc(50% - 6px);
+    min-width: 0 !important;
+    max-width: 100%;
+    padding: 0 10px;
+    font-size: 13px;
   }
   .ambient-grid {
     grid-template-columns: 1fr;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+  .ambient-track {
+    padding: 10px 12px;
+  }
+  .ambient-track-toggle {
+    min-width: 52px;
+    padding: 5px 10px;
+    font-size: 12px;
+  }
+  .sound-tabs {
+    gap: 6px;
+  }
+  .sound-tab {
+    padding: 6px 10px;
+    font-size: 12px;
   }
 }
 

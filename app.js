@@ -17,8 +17,7 @@ const STUDY_SETTINGS_KEY = "research_study_settings_v1";
 const STUDY_MAINTENANCE_MSG = "Tính năng Phòng tự học đang được phát triển và cần thời gian để ổn định hệ thống, bạn quay lại sau nhé!";
 
 function canAccessStudyLounge(user = (session || (typeof window !== "undefined" && window.session))) {
-  if (typeof window !== "undefined" && window.__studyTestAdmin) return true;
-  return Boolean(user && user.role === "admin");
+  return true;
 }
 
 function getInitialStudySettings() {
@@ -472,30 +471,19 @@ function applySession(user) {
   const isAdmin = Boolean(user && user.role === "admin");
   const badgeDesk = $("#studyNavBadgeDesktop");
   const badgeMob = $("#studyNavBadgeMobile");
-  if (badgeDesk) {
-    badgeDesk.textContent = isAdmin ? "Admin Test" : "Bảo trì";
-    badgeDesk.className = `study-nav-badge ${isAdmin ? "admin" : ""}`;
-  }
-  if (badgeMob) {
-    badgeMob.textContent = isAdmin ? "Admin" : "Bảo trì";
-    badgeMob.className = `study-nav-badge mobile ${isAdmin ? "admin" : ""}`;
-  }
+  if (badgeDesk) badgeDesk.style.display = "none";
+  if (badgeMob) badgeMob.style.display = "none";
+
   const notice = $("#studyLockedNotice");
   const mainStudy = $("#studyMainContent");
-  if (notice) notice.style.display = isAdmin ? "none" : "block";
-  if (mainStudy) mainStudy.style.display = isAdmin ? "block" : "none";
+  if (notice) notice.style.display = "none";
+  if (mainStudy) mainStudy.style.display = "block";
 
-  if (isAdmin) {
-    if (typeof updateStudyStreakPerks === "function") {
-      updateStudyStreakPerks();
-    }
-    if (typeof fetchStudyLounge === "function") {
-      fetchStudyLounge();
-    }
-  } else {
-    if (location.hash === "#study") {
-      go("home");
-    }
+  if (typeof updateStudyStreakPerks === "function") {
+    updateStudyStreakPerks();
+  }
+  if (typeof fetchStudyLounge === "function") {
+    fetchStudyLounge();
   }
 }
 
@@ -2562,37 +2550,25 @@ window.updateStudyStreakPerks = function() {
   if (chipVal) chipVal.textContent = isAdmin ? "Admin" : streak;
 
   // Streak 3: Ambient Environment Audio (4 Tracks) & Co-Study interaction
-  const envUnlocked = streak >= 3;
+  const envUnlocked = true;
   const badgeEnvLock = $("#badgeEnvLock");
   const bannerEnvLocked = $("#bannerEnvLocked");
-  if (badgeEnvLock) {
-    badgeEnvLock.className = `perk-badge ${envUnlocked ? 'unlocked' : ''}`;
-    badgeEnvLock.textContent = envUnlocked ? "" : "🔒 3d";
-    badgeEnvLock.style.display = envUnlocked ? "none" : "inline-flex";
-  }
-  if (bannerEnvLocked) bannerEnvLocked.style.display = envUnlocked ? "none" : "flex";
+  if (badgeEnvLock) badgeEnvLock.style.display = "none";
+  if (bannerEnvLocked) bannerEnvLocked.style.display = "none";
 
   // Streak 7: Mixable Sounds (9 Tracks)
-  const mixUnlocked = streak >= 7;
+  const mixUnlocked = true;
   const badgeMixLock = $("#badgeMixLock");
   const bannerMixLocked = $("#bannerMixLocked");
-  if (badgeMixLock) {
-    badgeMixLock.className = `perk-badge ${mixUnlocked ? 'unlocked' : ''}`;
-    badgeMixLock.textContent = mixUnlocked ? "" : "🔒 7d";
-    badgeMixLock.style.display = mixUnlocked ? "none" : "inline-flex";
-  }
-  if (bannerMixLocked) bannerMixLocked.style.display = mixUnlocked ? "none" : "flex";
+  if (badgeMixLock) badgeMixLock.style.display = "none";
+  if (bannerMixLocked) bannerMixLocked.style.display = "none";
 
   // Streak 7: Focus Music (4 Tracks)
-  const musicUnlocked = streak >= 7;
+  const musicUnlocked = true;
   const badgeMusicLock = $("#badgeMusicLock");
   const bannerMusicLocked = $("#bannerMusicLocked");
-  if (badgeMusicLock) {
-    badgeMusicLock.className = `perk-badge ${musicUnlocked ? 'unlocked' : ''}`;
-    badgeMusicLock.textContent = musicUnlocked ? "" : "🔒 7d";
-    badgeMusicLock.style.display = musicUnlocked ? "none" : "inline-flex";
-  }
-  if (bannerMusicLocked) bannerMusicLocked.style.display = musicUnlocked ? "none" : "flex";
+  if (badgeMusicLock) badgeMusicLock.style.display = "none";
+  if (bannerMusicLocked) bannerMusicLocked.style.display = "none";
 
   // Streak 14: Preset Wallpapers & Clock Color Customization
   const wallPresetUnlocked = streak >= 14;
@@ -3267,33 +3243,33 @@ const DEFAULT_MUSIC_AUDIO_SOURCES = {
   music_4: "/api/audio/music_4.mp3"
 };
 
-/* --- 4 ÂM THANH MÔI TRƯỜNG CƠ BẢN (Khoảng 1 tiếng, hỗn hợp sẵn, mở ở Chuỗi 3 ngày) --- */
+/* --- 4 ÂM THANH MÔI TRƯỜNG CƠ BẢN (Khoảng 1 tiếng, hỗn hợp sẵn) --- */
 const AMBIENT_ENV_TRACKS = [
-  { id: 'env_1', name: 'Lửa trại bên bờ suối', sub: 'Ánh lửa ấm bên dòng suối giữa rừng sâu, hòa cùng tiếng nước và âm thanh thiên nhiên tĩnh lặng.', icon: '🪵', reqStreak: 3, defaultVol: 50 },
-  { id: 'env_2', name: 'Thanh âm đảo nhiệt đới', sub: 'Tiếng sóng vỗ dịu dàng hòa cùng tiếng chim giữa không gian đảo nhiệt đới thanh bình.', icon: '🏝️', reqStreak: 3, defaultVol: 50 },
-  { id: 'env_3', name: 'Góc cà phê', sub: 'Âm thanh quán cà phê nhẹ nhàng hòa cùng tiếng ồn trắng và âm nhạc, tạo không gian thư giãn và tập trung.', icon: '☕', reqStreak: 3, defaultVol: 50 },
-  { id: 'env_4', name: 'Bình minh phố thị', sub: 'Thanh âm giao thông buổi sớm hòa cùng nhịp sống khi thành phố dần thức giấc.', icon: '🌅', reqStreak: 3, defaultVol: 50 }
+  { id: 'env_1', name: 'Lửa trại bên bờ suối', sub: 'Ánh lửa ấm bên dòng suối giữa rừng sâu, hòa cùng tiếng nước và âm thanh thiên nhiên tĩnh lặng.', icon: '🪵', reqStreak: 0, defaultVol: 50 },
+  { id: 'env_2', name: 'Thanh âm đảo nhiệt đới', sub: 'Tiếng sóng vỗ dịu dàng hòa cùng tiếng chim giữa không gian đảo nhiệt đới thanh bình.', icon: '🏝️', reqStreak: 0, defaultVol: 50 },
+  { id: 'env_3', name: 'Góc cà phê', sub: 'Âm thanh quán cà phê nhẹ nhàng hòa cùng tiếng ồn trắng và âm nhạc, tạo không gian thư giãn và tập trung.', icon: '☕', reqStreak: 0, defaultVol: 50 },
+  { id: 'env_4', name: 'Bình minh phố thị', sub: 'Thanh âm giao thông buổi sớm hòa cùng nhịp sống khi thành phố dần thức giấc.', icon: '🌅', reqStreak: 0, defaultVol: 50 }
 ];
 
-/* --- 9 ÂM THANH PHỐI HỢP ĐƠN LẺ (Cho phép mix nhiều âm cùng lúc, mở ở Chuỗi 7 ngày) --- */
+/* --- 9 ÂM THANH PHỐI HỢP ĐƠN LẺ (Cho phép mix nhiều âm cùng lúc) --- */
 const MIX_SOUND_TRACKS = [
-  { id: 'mix_1', soundType: 'stream', name: 'Tiếng nước chảy', sub: 'Dòng nước chảy len lỏi qua những dòng suối', icon: '🌊', reqStreak: 7, defaultVol: 40 },
-  { id: 'mix_2', soundType: 'rain', name: 'Tiếng mưa', sub: 'Mưa rơi tí tách trên mái hiên nhà', icon: '🌧️', reqStreak: 7, defaultVol: 40 },
-  { id: 'mix_3', soundType: 'windchime', name: 'Tiếng chuông gió', sub: 'Chuông gió ngân vang khe khẽ trong làn gió', icon: '🎐', reqStreak: 7, defaultVol: 30 },
-  { id: 'mix_4', soundType: 'birds', name: 'Tiếng chim hót', sub: 'Tiếng chim hót trong trẻo giữa không gian yên bình', icon: '🐦', reqStreak: 7, defaultVol: 35 },
-  { id: 'mix_5', soundType: 'leaves', name: 'Tiếng lá xào xạc', sub: 'Tiếng lá xanh xào xạc trên những tán cây', icon: '🍃', reqStreak: 7, defaultVol: 40 },
-  { id: 'mix_6', soundType: 'wind', name: 'Tiếng gió thổi', sub: 'Tiếng gió thổi bên ngoài khung cửa sổ', icon: '💨', reqStreak: 7, defaultVol: 35 },
-  { id: 'mix_7', soundType: 'crickets', name: 'Tiếng dế kêu', sub: 'Tiếng dế rả rích giữa màn đêm yên tĩnh.', icon: '🦗', reqStreak: 7, defaultVol: 30 },
-  { id: 'mix_8', soundType: 'campfire', name: 'Tiếng lửa cháy', sub: 'Tiếng củi cháy tí tách, đều và nhẹ.', icon: '🔥', reqStreak: 7, defaultVol: 35 },
-  { id: 'mix_9', soundType: 'waves', name: 'Tiếng sóng biển', sub: 'Tiếng những con sóng nhẹ nhàng vỗ vào bờ.', icon: '🌊', reqStreak: 7, defaultVol: 45 }
+  { id: 'mix_1', soundType: 'stream', name: 'Tiếng nước chảy', sub: 'Dòng nước chảy len lỏi qua những dòng suối', icon: '🌊', reqStreak: 0, defaultVol: 40 },
+  { id: 'mix_2', soundType: 'rain', name: 'Tiếng mưa', sub: 'Mưa rơi tí tách trên mái hiên nhà', icon: '🌧️', reqStreak: 0, defaultVol: 40 },
+  { id: 'mix_3', soundType: 'windchime', name: 'Tiếng chuông gió', sub: 'Chuông gió ngân vang khe khẽ trong làn gió', icon: '🎐', reqStreak: 0, defaultVol: 30 },
+  { id: 'mix_4', soundType: 'birds', name: 'Tiếng chim hót', sub: 'Tiếng chim hót trong trẻo giữa không gian yên bình', icon: '🐦', reqStreak: 0, defaultVol: 35 },
+  { id: 'mix_5', soundType: 'leaves', name: 'Tiếng lá xào xạc', sub: 'Tiếng lá xanh xào xạc trên những tán cây', icon: '🍃', reqStreak: 0, defaultVol: 40 },
+  { id: 'mix_6', soundType: 'wind', name: 'Tiếng gió thổi', sub: 'Tiếng gió thổi bên ngoài khung cửa sổ', icon: '💨', reqStreak: 0, defaultVol: 35 },
+  { id: 'mix_7', soundType: 'crickets', name: 'Tiếng dế kêu', sub: 'Tiếng dế rả rích giữa màn đêm yên tĩnh.', icon: '🦗', reqStreak: 0, defaultVol: 30 },
+  { id: 'mix_8', soundType: 'campfire', name: 'Tiếng lửa cháy', sub: 'Tiếng củi cháy tí tách, đều và nhẹ.', icon: '🔥', reqStreak: 0, defaultVol: 35 },
+  { id: 'mix_9', soundType: 'waves', name: 'Tiếng sóng biển', sub: 'Tiếng những con sóng nhẹ nhàng vỗ vào bờ.', icon: '🌊', reqStreak: 0, defaultVol: 45 }
 ];
 
-/* --- 4 BẢN ÂM NHẠC TẬP TRUNG (Phát vòng lặp, mở ở Chuỗi 7 ngày) --- */
+/* --- 4 BẢN ÂM NHẠC TẬP TRUNG (Phát vòng lặp) --- */
 const MUSIC_SOUND_TRACKS = [
-  { id: 'music_1', name: 'R&B trầm lắng', sub: 'Playlist những giai điệu R&B hiện đại, trầm lắng và mượt mà, mang theo cảm giác thành phố khi đêm xuống.', icon: '🌃', reqStreak: 7, defaultVol: 45 },
-  { id: 'music_2', name: 'Jazz dịu dàng', sub: 'Playlist nhạc jazz Nhật Bản cổ điển, mang sắc trầm ấm và không khí thư thả, không chút vội vàng.', icon: '🎷', reqStreak: 7, defaultVol: 45 },
-  { id: 'music_3', name: 'Lofi êm dịu', sub: 'Giai điệu lofi êm dịu giữa rừng thông, mang lại cảm giác ấm áp, bình yên và nhẹ nhõm.', icon: '🌲', reqStreak: 7, defaultVol: 45 },
-  { id: 'music_4', name: 'City Pop rực rỡ', sub: 'Giai điệu City Pop hoài niệm đưa bạn về Tokyo thập niên 1990, giữa ánh đèn neon và nhịp sống đêm sôi động.', icon: '🌆', reqStreak: 7, defaultVol: 45 }
+  { id: 'music_1', name: 'R&B trầm lắng', sub: 'Playlist những giai điệu R&B hiện đại, trầm lắng và mượt mà, mang theo cảm giác thành phố khi đêm xuống.', icon: '🌃', reqStreak: 0, defaultVol: 45 },
+  { id: 'music_2', name: 'Jazz dịu dàng', sub: 'Playlist nhạc jazz Nhật Bản cổ điển, mang sắc trầm ấm và không khí thư thả, không chút vội vàng.', icon: '🎷', reqStreak: 0, defaultVol: 45 },
+  { id: 'music_3', name: 'Lofi êm dịu', sub: 'Giai điệu lofi êm dịu giữa rừng thông, mang lại cảm giác ấm áp, bình yên và nhẹ nhõm.', icon: '🌲', reqStreak: 0, defaultVol: 45 },
+  { id: 'music_4', name: 'City Pop rực rỡ', sub: 'Giai điệu City Pop hoài niệm đưa bạn về Tokyo thập niên 1990, giữa ánh đèn neon và nhịp sống đêm sôi động.', icon: '🌆', reqStreak: 0, defaultVol: 45 }
 ];
 
 function getAudioContext() {
@@ -3356,28 +3332,25 @@ function createWhiteNoiseBuffer(ctx) {
 function renderEnvironmentAudioGrid() {
   const grid = $("#envAudioGrid");
   if (!grid) return;
-  const streak = getUserStudyStreak();
 
   grid.innerHTML = AMBIENT_ENV_TRACKS.map(t => {
-    const isLocked = t.reqStreak > streak;
     const isActive = (studyState.activeEnvTrack === t.id);
     const savedVol = studyState.envVolumes[t.id] ?? t.defaultVol;
 
     return `
-      <div class="ambient-track ${isActive ? 'active' : ''} ${isLocked ? 'locked' : ''}" id="cardEnv_${t.id}">
+      <div class="ambient-track ${isActive ? 'active' : ''}" id="cardEnv_${t.id}">
         <div class="ambient-track-info">
-          <span style="font-size:24px;">${t.icon}</span>
-          <div style="flex:1; overflow:hidden;">
+          <span style="font-size:24px; flex-shrink:0;">${t.icon}</span>
+          <div style="flex:1; min-width:0; overflow:hidden;">
             <div class="ambient-name"><strong>${escapeHTML(t.name)}</strong></div>
-            <small style="color:var(--muted); font-size:11px; display:block;">${escapeHTML(t.sub)}</small>
+            <small style="color:var(--muted); font-size:11px; display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${escapeHTML(t.sub)}</small>
           </div>
-          ${isLocked ? `<span class="perk-badge">🔒 ${t.reqStreak}d</span>` : ''}
-          <button type="button" class="ambient-track-toggle button-sm" ${isLocked ? 'disabled' : ''} onclick="toggleEnvTrack('${t.id}')">
+          <button type="button" class="ambient-track-toggle button-sm" onclick="toggleEnvTrack('${t.id}')">
             ${isActive ? 'Tắt' : 'Bật'}
           </button>
         </div>
         <div class="ambient-slider-row" style="display:flex; align-items:center; gap:8px;">
-          <input type="range" class="ambient-slider" id="volEnv_${t.id}" min="0" max="100" value="${savedVol}" ${isLocked ? 'disabled' : ''} oninput="updateEnvVolume('${t.id}', this.value)" />
+          <input type="range" class="ambient-slider" id="volEnv_${t.id}" min="0" max="100" value="${savedVol}" oninput="updateEnvVolume('${t.id}', this.value)" />
         </div>
       </div>
     `;
@@ -3399,12 +3372,7 @@ function updateEnvGridDOM() {
 }
 
 function toggleEnvTrack(trackId) {
-  const streak = getUserStudyStreak();
   const track = AMBIENT_ENV_TRACKS.find(t => t.id === trackId);
-  if (track && track.reqStreak > streak) {
-    toast(`🔒 Âm thanh môi trường mở khóa ở Chuỗi ${track.reqStreak} ngày (Sinh viên năng động)!`);
-    return;
-  }
 
   // 1. Nếu track này đang phát -> Tắt
   if (studyState.activeEnvTrack === trackId) {
@@ -3429,14 +3397,18 @@ function toggleEnvTrack(trackId) {
     if (!player) {
       player = new Audio(DEFAULT_ENV_AUDIO_SOURCES[trackId]);
       player.loop = true; // Phát vòng lặp
+      player.preload = "auto";
       studyState.envAudioPlayers[trackId] = player;
     }
     player.volume = Math.max(0, Math.min(1, userVol));
-    player.play().catch(e => {
-      if (e.name === "AbortError") return;
-      console.warn("Env audio stream error:", e);
-      toast("Đang tải tệp âm thanh môi trường, vui lòng thử lại...");
-    });
+    const playPromise = player.play();
+    if (playPromise !== undefined) {
+      playPromise.catch(e => {
+        if (e.name === "AbortError") return;
+        console.warn("Env audio stream error:", e);
+        toast("Đang tải tệp âm thanh môi trường, vui lòng thử lại...");
+      });
+    }
     studyState.activeEnvTrack = trackId;
   }
 
@@ -3492,31 +3464,29 @@ function updateEnvVolume(trackId, val) {
 }
 
 /* --- 6.2 GIAO DIỆN & PHÁT ÂM THANH PHỐI HỢP (9 Âm thanh đơn lẻ, mix cùng lúc, loop vô tận) --- */
+/* --- 6.2 GIAO DIỆN & PHÁT ÂM THANH PHỐI HỢP (9 Âm thanh đơn lẻ, mix cùng lúc, loop vô tận) --- */
 function renderMixAudioGrid() {
   const grid = $("#mixAudioGrid");
   if (!grid) return;
-  const streak = getUserStudyStreak();
 
   grid.innerHTML = MIX_SOUND_TRACKS.map(t => {
-    const isLocked = t.reqStreak > streak;
     const isActive = !!studyState.activeMixSounds[t.id];
     const savedVol = studyState.mixVolumes[t.id] ?? t.defaultVol;
 
     return `
-      <div class="ambient-track ${isActive ? 'active' : ''} ${isLocked ? 'locked' : ''}" id="cardMix_${t.id}">
+      <div class="ambient-track ${isActive ? 'active' : ''}" id="cardMix_${t.id}">
         <div class="ambient-track-info">
-          <span style="font-size:24px;">${t.icon}</span>
-          <div style="flex:1; overflow:hidden;">
+          <span style="font-size:24px; flex-shrink:0;">${t.icon}</span>
+          <div style="flex:1; min-width:0; overflow:hidden;">
             <div class="ambient-name"><strong>${escapeHTML(t.name)}</strong></div>
-            <small style="color:var(--muted); font-size:11px; display:block;">${escapeHTML(t.sub)}</small>
+            <small style="color:var(--muted); font-size:11px; display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${escapeHTML(t.sub)}</small>
           </div>
-          ${isLocked ? `<span class="perk-badge">🔒 ${t.reqStreak}d</span>` : ''}
-          <button type="button" class="ambient-track-toggle button-sm" ${isLocked ? 'disabled' : ''} onclick="toggleMixTrack('${t.id}')">
+          <button type="button" class="ambient-track-toggle button-sm" onclick="toggleMixTrack('${t.id}')">
             ${isActive ? 'Tắt' : 'Bật'}
           </button>
         </div>
         <div class="ambient-slider-row" style="display:flex; align-items:center; gap:8px;">
-          <input type="range" class="ambient-slider" id="volMix_${t.id}" min="0" max="100" value="${savedVol}" ${isLocked ? 'disabled' : ''} oninput="updateMixVolume('${t.id}', this.value)" />
+          <input type="range" class="ambient-slider" id="volMix_${t.id}" min="0" max="100" value="${savedVol}" oninput="updateMixVolume('${t.id}', this.value)" />
         </div>
       </div>
     `;
@@ -3536,13 +3506,7 @@ function updateMixGridDOM(trackId) {
 }
 
 function toggleMixTrack(trackId) {
-  const streak = getUserStudyStreak();
   const track = MIX_SOUND_TRACKS.find(t => t.id === trackId);
-  if (track && track.reqStreak > streak) {
-    toast(`🔒 Âm thanh phối hợp mở khóa ở Chuỗi ${track.reqStreak} ngày (Học giả bền bỉ)!`);
-    return;
-  }
-
   const isCurrentlyActive = !!studyState.activeMixSounds[trackId];
 
   if (isCurrentlyActive) {
@@ -3563,14 +3527,18 @@ function toggleMixTrack(trackId) {
       if (!player) {
         player = new Audio(DEFAULT_MIX_AUDIO_SOURCES[trackId]);
         player.loop = true; // Phát vòng lặp
+        player.preload = "auto";
         studyState.mixAudioPlayers[trackId] = player;
       }
       player.volume = Math.max(0, Math.min(1, userVol));
-      player.play().catch(e => {
-        if (e.name === "AbortError") return;
-        console.warn("Mix stream error:", e);
-        toast("Đang tải âm thanh phối hợp, vui lòng thử lại sau giây lát.");
-      });
+      const playPromise = player.play();
+      if (playPromise !== undefined) {
+        playPromise.catch(e => {
+          if (e.name === "AbortError") return;
+          console.warn("Mix stream error:", e);
+          toast("Đang tải âm thanh phối hợp, vui lòng thử lại sau giây lát.");
+        });
+      }
       studyState.activeMixSounds[trackId] = true;
     }
   }
@@ -3591,32 +3559,29 @@ function updateMixVolume(trackId, val) {
   }
 }
 
-/* --- 6.3 GIAO DIỆN & PHÁT ÂM NHẠC TẬP TRUNG (4 Bản nhạc, loop vô tận, mở ở Chuỗi 7 ngày) --- */
+/* --- 6.3 GIAO DIỆN & PHÁT ÂM NHẠC TẬP TRUNG (4 Bản nhạc, loop vô tận) --- */
 function renderMusicAudioGrid() {
   const grid = $("#musicAudioGrid");
   if (!grid) return;
-  const streak = getUserStudyStreak();
 
   grid.innerHTML = MUSIC_SOUND_TRACKS.map(t => {
-    const isLocked = t.reqStreak > streak;
     const isActive = (studyState.activeMusicTrack === t.id);
     const savedVol = studyState.musicVolumes[t.id] ?? t.defaultVol;
 
     return `
-      <div class="ambient-track ${isActive ? 'active' : ''} ${isLocked ? 'locked' : ''}" id="cardMusic_${t.id}">
+      <div class="ambient-track ${isActive ? 'active' : ''}" id="cardMusic_${t.id}">
         <div class="ambient-track-info">
-          <span style="font-size:24px;">${t.icon}</span>
-          <div style="flex:1; overflow:hidden;">
+          <span style="font-size:24px; flex-shrink:0;">${t.icon}</span>
+          <div style="flex:1; min-width:0; overflow:hidden;">
             <div class="ambient-name"><strong>${escapeHTML(t.name)}</strong></div>
-            <small style="color:var(--muted); font-size:11px; display:block;">${escapeHTML(t.sub)}</small>
+            <small style="color:var(--muted); font-size:11px; display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${escapeHTML(t.sub)}</small>
           </div>
-          ${isLocked ? `<span class="perk-badge">🔒 ${t.reqStreak}d</span>` : ''}
-          <button type="button" class="ambient-track-toggle button-sm" ${isLocked ? 'disabled' : ''} onclick="toggleMusicTrack('${t.id}')">
+          <button type="button" class="ambient-track-toggle button-sm" onclick="toggleMusicTrack('${t.id}')">
             ${isActive ? 'Tắt' : 'Bật'}
           </button>
         </div>
         <div class="ambient-slider-row" style="display:flex; align-items:center; gap:8px;">
-          <input type="range" class="ambient-slider" id="volMusic_${t.id}" min="0" max="100" value="${savedVol}" ${isLocked ? 'disabled' : ''} oninput="updateMusicVolume('${t.id}', this.value)" />
+          <input type="range" class="ambient-slider" id="volMusic_${t.id}" min="0" max="100" value="${savedVol}" oninput="updateMusicVolume('${t.id}', this.value)" />
         </div>
       </div>
     `;
@@ -3638,12 +3603,7 @@ function updateMusicGridDOM() {
 }
 
 function toggleMusicTrack(trackId) {
-  const streak = getUserStudyStreak();
   const track = MUSIC_SOUND_TRACKS.find(t => t.id === trackId);
-  if (track && track.reqStreak > streak) {
-    toast(`🔒 Âm nhạc mở khóa ở Chuỗi ${track.reqStreak} ngày (Học giả bền bỉ)!`);
-    return;
-  }
 
   // 1. Nếu track này đang phát -> Tắt
   if (studyState.activeMusicTrack === trackId) {
@@ -3667,14 +3627,18 @@ function toggleMusicTrack(trackId) {
     if (!player) {
       player = new Audio(DEFAULT_MUSIC_AUDIO_SOURCES[trackId]);
       player.loop = true; // Phát vòng lặp
+      player.preload = "auto";
       studyState.musicAudioPlayers[trackId] = player;
     }
     player.volume = Math.max(0, Math.min(1, userVol));
-    player.play().catch(e => {
-      if (e.name === "AbortError") return;
-      console.warn("Music audio stream error:", e);
-      toast("Đang tải bản nhạc, vui lòng thử lại sau giây lát.");
-    });
+    const playPromise = player.play();
+    if (playPromise !== undefined) {
+      playPromise.catch(e => {
+        if (e.name === "AbortError") return;
+        console.warn("Music audio stream error:", e);
+        toast("Đang tải bản nhạc, vui lòng thử lại sau giây lát.");
+      });
+    }
     studyState.activeMusicTrack = trackId;
   }
 
