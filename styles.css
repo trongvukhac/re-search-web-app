@@ -21,6 +21,8 @@ html {
   scroll-behavior: smooth;
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
+  max-width: 100vw;
+  overflow-x: hidden;
 }
 body {
   margin: 0;
@@ -3254,6 +3256,14 @@ dialog.detail-modal[open] {
 .sound-tabs {
   display: flex;
   gap: 8px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  max-width: 100%;
+  scrollbar-width: none;
+  padding-bottom: 2px;
+}
+.sound-tabs::-webkit-scrollbar {
+  display: none;
 }
 .sound-tab {
   background: none;
@@ -3268,6 +3278,8 @@ dialog.detail-modal[open] {
   align-items: center;
   gap: 6px;
   transition: all 0.2s ease;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 .sound-tab:hover {
   color: var(--ink);
@@ -3408,6 +3420,25 @@ dialog.detail-modal[open] {
   border: 1px solid var(--line);
   border-radius: 10px;
   transition: all 0.2s ease;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+.custom-audio-name {
+  flex: 1;
+  min-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  word-break: break-word;
+}
+.custom-audio-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  flex-wrap: wrap;
 }
 .lofi-track-item.playing,
 .custom-audio-item.playing {
@@ -3851,6 +3882,20 @@ dialog.detail-modal[open] {
 }
 
 @media (max-width: 600px) {
+  #study.page {
+    padding: 14px 10px 90px;
+    max-width: 100vw;
+    box-sizing: border-box;
+    overflow-x: hidden;
+  }
+  .study-bg-layer,
+  .study-bg-overlay {
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    border-radius: 0;
+  }
   .study-heading {
     flex-direction: column;
     align-items: flex-start;

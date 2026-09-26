@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 /* RE:SEARCH local application server — Node.js 24+ (no third-party runtime). */
 const http = require("node:http");
+const https = require("node:https");
 const fs = require("node:fs");
 const path = require("node:path");
 const crypto = require("node:crypto");
@@ -643,9 +644,141 @@ function bootstrapAdmin() {
 }
 bootstrapAdmin();
 
+/* --- DIRECT AUDIO STREAMING PROXY (GitHub Releases -> Azure Blob Storage with Range / Partial Content support) --- */
+const AUDIO_TRACK_URLS = {
+  // 4 Âm thanh môi trường
+  env_1: "https://github.com/trongvukhac/re-search-web-app/releases/download/v1.0-audio/Campfire.by.the.Forest.Riverbank.mp3",
+  env_2: "https://github.com/trongvukhac/re-search-web-app/releases/download/v1.0-audio/tropical.island-wave.and.bird.sounds.mp3",
+  env_3: "https://github.com/trongvukhac/re-search-web-app/releases/download/v1.0-audio/Cafe.Ambience.mp3",
+  env_4: "https://github.com/trongvukhac/re-search-web-app/releases/download/v1.0-audio/NYC.Sunrise.Morning.Traffic.Sounds.mp3",
+
+  // 9 Âm thanh phối hợp
+  mix_1: "https://github.com/trongvukhac/re-search-web-app/releases/download/v1.0-audio/N.c.ch.y.mp3",
+  mix_2: "https://github.com/trongvukhac/re-search-web-app/releases/download/v1.0-audio/M.a.rao.mp3",
+  mix_3: "https://github.com/trongvukhac/re-search-web-app/releases/download/v1.0-audio/Ti.ng.chuong.gio.mp3",
+  mix_4: "https://github.com/trongvukhac/re-search-web-app/releases/download/v1.0-audio/Ti.ng.chim.hot.mp3",
+  mix_5: "https://github.com/trongvukhac/re-search-web-app/releases/download/v1.0-audio/Ti.ng.la.xao.x.c.mp3",
+  mix_6: "https://github.com/trongvukhac/re-search-web-app/releases/download/v1.0-audio/Ti.ng.gio.th.i.mp3",
+  mix_7: "https://github.com/trongvukhac/re-search-web-app/releases/download/v1.0-audio/Ti.ng.d.keu.mp3",
+  mix_8: "https://github.com/trongvukhac/re-search-web-app/releases/download/v1.0-audio/Ti.ng.l.a.chay.mp3",
+  mix_9: "https://github.com/trongvukhac/re-search-web-app/releases/download/v1.0-audio/Ti.ng.song.bi.n.mp3",
+
+  // 4 Âm nhạc tập trung
+  music_1: "https://github.com/trongvukhac/re-search-web-app/releases/download/v1.0-audio/After.Hours.Moody.R.B.Mix.mp3",
+  music_2: "https://github.com/trongvukhac/re-search-web-app/releases/download/v1.0-audio/soft.and.smooth.japanese.jazz.mp3",
+  music_3: "https://github.com/trongvukhac/re-search-web-app/releases/download/v1.0-audio/summer.lofi.mp3",
+  music_4: "https://github.com/trongvukhac/re-search-web-app/releases/download/v1.0-audio/1.Hour1990s.Tokyo.City.Pop.mp3"
+};
+
+const azureAudioUrlCache = new Map(); // trackId -> { url: string, expiresAt: number }
+
+function resolveGitHubRedirect(ghUrl) {
+  return new Promise((resolve, reject) => {
+    const req = https.get(ghUrl, (res) => {
+      if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
+        resolve(res.headers.location);
+      } else {
+        reject(new Error(`GitHub redirect failed with status ${res.statusCode}`));
+      }
+    });
+    req.on("error", reject);
+  });
+}
+
+async function getAudioAzureUrl(trackId) {
+  const cached = azureAudioUrlCache.get(trackId);
+  if (cached && cached.expiresAt > Date.now()) {
+    return cached.url;
+  }
+  const ghUrl = AUDIO_TRACK_URLS[trackId];
+  if (!ghUrl) return null;
+  const directUrl = await resolveGitHubRedirect(ghUrl);
+  azureAudioUrlCache.set(trackId, {
+    url: directUrl,
+    expiresAt: Date.now() + 50 * 60 * 1000 // Cache 50 mins
+  });
+  return directUrl;
+}
+
+async function streamAudioTrack(request, response, trackId) {
+  try {
+    const directUrl = await getAudioAzureUrl(trackId);
+    if (!directUrl) {
+      return error(response, 404, "Không tìm thấy tệp âm thanh.");
+    }
+
+    const headers = {};
+    if (request.headers.range) {
+      headers["Range"] = request.headers.range;
+    }
+
+    const reqMethod = request.method === "HEAD" ? "HEAD" : "GET";
+    const parsed = new URL(directUrl);
+    const options = {
+      method: reqMethod,
+      hostname: parsed.hostname,
+      path: parsed.pathname + parsed.search,
+      headers
+    };
+
+    const azureReq = https.request(options, (azureRes) => {
+      if (azureRes.statusCode === 403) {
+        azureAudioUrlCache.delete(trackId);
+      }
+
+      const resHeaders = {
+        "Content-Type": "audio/mpeg",
+        "Content-Disposition": "inline",
+        "Accept-Ranges": "bytes",
+        "Cache-Control": "public, max-age=86400, immutable",
+        "X-Content-Type-Options": "nosniff"
+      };
+
+      if (azureRes.headers["content-range"]) {
+        resHeaders["Content-Range"] = azureRes.headers["content-range"];
+      }
+      if (azureRes.headers["content-length"]) {
+        resHeaders["Content-Length"] = azureRes.headers["content-length"];
+      }
+
+      response.writeHead(azureRes.statusCode || 200, resHeaders);
+      if (reqMethod === "HEAD") {
+        response.end();
+      } else {
+        azureRes.pipe(response);
+      }
+    });
+
+    azureReq.on("error", (err) => {
+      console.error(`Audio stream error (${trackId}):`, err.message);
+      if (!response.headersSent) {
+        error(response, 502, "Lỗi kết nối tệp âm thanh.");
+      }
+    });
+
+    azureReq.end();
+
+    request.on("close", () => {
+      try { azureReq.destroy(); } catch (e) {}
+    });
+  } catch (err) {
+    console.error(`Audio stream handler error (${trackId}):`, err.message);
+    if (!response.headersSent) {
+      error(response, 500, "Không thể tải tệp âm thanh.");
+    }
+  }
+}
+
 async function api(request, response, url) {
   const pathName = url.pathname;
   const method = request.method;
+  if (["GET", "HEAD"].includes(method) && pathName.startsWith("/api/audio/")) {
+    const trackId = pathName.replace("/api/audio/", "").replace(".mp3", "").split("/").pop();
+    if (!AUDIO_TRACK_URLS[trackId]) {
+      return error(response, 404, "Không tìm thấy track âm thanh.");
+    }
+    return await streamAudioTrack(request, response, trackId);
+  }
   if (method === "GET" && pathName === "/api/health")
     return json(response, 200, { ok: true });
   if (method === "GET" && pathName === "/api/session") {
@@ -1939,6 +2072,8 @@ const server = http.createServer(async (request, response) => {
           : "Không thể xử lý yêu cầu.",
       );
   }
+});
+
 // --- Cron Job Thưởng Tuần ---
 setInterval(() => {
   try {
@@ -1991,7 +2126,6 @@ setInterval(() => {
   }
 }, 60000);
 
-});
 server.listen(PORT, "::", () =>
   console.log(`RE:SEARCH đang chạy tại http://[::]:${PORT}`),
 );

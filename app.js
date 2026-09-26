@@ -83,7 +83,12 @@ let studyState = {
   customEnvAudioTracks: [],
   customMixAudioTracks: [],
   customMusicAudioTracks: [],
-  activeSoundTab: 'env'
+  activeSoundTab: 'env',
+  // Saved user volume preferences per track
+  envVolumes: {},
+  mixVolumes: {},
+  musicVolumes: {},
+  customVolumes: {}
 };
 
 function setSubmitLoading(formOrEvent, isLoading) {
@@ -3235,31 +3240,31 @@ window.sendStudyCheer = async function(recipientId, cheerType) {
   }
 };
 
-/* --- 6. DEFAULT AUDIO SOURCES (GitHub Releases v1.0-audio CDN Direct Streaming) --- */
+/* --- 6. DEFAULT AUDIO SOURCES (Streamed via server proxy /api/audio/:trackId.mp3) --- */
 const DEFAULT_ENV_AUDIO_SOURCES = {
-  env_1: "https://github.com/trongvukhac/re-search-web-app/releases/download/v1.0-audio/Campfire.by.the.Forest.Riverbank.mp3",
-  env_2: "https://github.com/trongvukhac/re-search-web-app/releases/download/v1.0-audio/tropical.island-wave.and.bird.sounds.mp3",
-  env_3: "https://github.com/trongvukhac/re-search-web-app/releases/download/v1.0-audio/Cafe.Ambience.mp3",
-  env_4: "https://github.com/trongvukhac/re-search-web-app/releases/download/v1.0-audio/NYC.Sunrise.Morning.Traffic.Sounds.mp3"
+  env_1: "/api/audio/env_1.mp3",
+  env_2: "/api/audio/env_2.mp3",
+  env_3: "/api/audio/env_3.mp3",
+  env_4: "/api/audio/env_4.mp3"
 };
 
 const DEFAULT_MIX_AUDIO_SOURCES = {
-  mix_1: "https://github.com/trongvukhac/re-search-web-app/releases/download/v1.0-audio/N.c.ch.y.mp3",
-  mix_2: "https://github.com/trongvukhac/re-search-web-app/releases/download/v1.0-audio/M.a.rao.mp3",
-  mix_3: "https://github.com/trongvukhac/re-search-web-app/releases/download/v1.0-audio/Ti.ng.chuong.gio.mp3",
-  mix_4: "https://github.com/trongvukhac/re-search-web-app/releases/download/v1.0-audio/Ti.ng.chim.hot.mp3",
-  mix_5: "https://github.com/trongvukhac/re-search-web-app/releases/download/v1.0-audio/Ti.ng.la.xao.x.c.mp3",
-  mix_6: "https://github.com/trongvukhac/re-search-web-app/releases/download/v1.0-audio/Ti.ng.gio.th.i.mp3",
-  mix_7: "https://github.com/trongvukhac/re-search-web-app/releases/download/v1.0-audio/Ti.ng.d.keu.mp3",
-  mix_8: "https://github.com/trongvukhac/re-search-web-app/releases/download/v1.0-audio/Ti.ng.l.a.chay.mp3",
-  mix_9: "https://github.com/trongvukhac/re-search-web-app/releases/download/v1.0-audio/Ti.ng.song.bi.n.mp3"
+  mix_1: "/api/audio/mix_1.mp3",
+  mix_2: "/api/audio/mix_2.mp3",
+  mix_3: "/api/audio/mix_3.mp3",
+  mix_4: "/api/audio/mix_4.mp3",
+  mix_5: "/api/audio/mix_5.mp3",
+  mix_6: "/api/audio/mix_6.mp3",
+  mix_7: "/api/audio/mix_7.mp3",
+  mix_8: "/api/audio/mix_8.mp3",
+  mix_9: "/api/audio/mix_9.mp3"
 };
 
 const DEFAULT_MUSIC_AUDIO_SOURCES = {
-  music_1: "https://github.com/trongvukhac/re-search-web-app/releases/download/v1.0-audio/After.Hours.Moody.R.B.Mix.mp3",
-  music_2: "https://github.com/trongvukhac/re-search-web-app/releases/download/v1.0-audio/soft.and.smooth.japanese.jazz.mp3",
-  music_3: "https://github.com/trongvukhac/re-search-web-app/releases/download/v1.0-audio/summer.lofi.mp3",
-  music_4: "https://github.com/trongvukhac/re-search-web-app/releases/download/v1.0-audio/1.Hour1990s.Tokyo.City.Pop.mp3"
+  music_1: "/api/audio/music_1.mp3",
+  music_2: "/api/audio/music_2.mp3",
+  music_3: "/api/audio/music_3.mp3",
+  music_4: "/api/audio/music_4.mp3"
 };
 
 /* --- 4 ÂM THANH MÔI TRƯỜNG CƠ BẢN (Khoảng 1 tiếng, hỗn hợp sẵn, mở ở Chuỗi 3 ngày) --- */
@@ -3356,6 +3361,7 @@ function renderEnvironmentAudioGrid() {
   grid.innerHTML = AMBIENT_ENV_TRACKS.map(t => {
     const isLocked = t.reqStreak > streak;
     const isActive = (studyState.activeEnvTrack === t.id);
+    const savedVol = studyState.envVolumes[t.id] ?? t.defaultVol;
 
     return `
       <div class="ambient-track ${isActive ? 'active' : ''} ${isLocked ? 'locked' : ''}" id="cardEnv_${t.id}">
@@ -3371,13 +3377,25 @@ function renderEnvironmentAudioGrid() {
           </button>
         </div>
         <div class="ambient-slider-row" style="display:flex; align-items:center; gap:8px;">
-          <input type="range" class="ambient-slider" id="volEnv_${t.id}" min="0" max="100" value="${t.defaultVol}" ${isLocked ? 'disabled' : ''} oninput="updateEnvVolume('${t.id}', this.value)" />
+          <input type="range" class="ambient-slider" id="volEnv_${t.id}" min="0" max="100" value="${savedVol}" ${isLocked ? 'disabled' : ''} oninput="updateEnvVolume('${t.id}', this.value)" />
         </div>
       </div>
     `;
   }).join("");
 
   updateMasterAmbientButtonState();
+}
+
+function updateEnvGridDOM() {
+  AMBIENT_ENV_TRACKS.forEach(t => {
+    const card = $(`#cardEnv_${t.id}`);
+    if (card) {
+      const active = (studyState.activeEnvTrack === t.id);
+      card.classList.toggle('active', active);
+      const btn = card.querySelector('.ambient-track-toggle');
+      if (btn) btn.textContent = active ? 'Tắt' : 'Bật';
+    }
+  });
 }
 
 function toggleEnvTrack(trackId) {
@@ -3392,7 +3410,7 @@ function toggleEnvTrack(trackId) {
   if (studyState.activeEnvTrack === trackId) {
     stopCurrentEnvAudio();
     studyState.activeEnvTrack = null;
-    renderEnvironmentAudioGrid();
+    updateEnvGridDOM();
     loadCustomAudioFromDB();
     toast(`Đã tắt ${track ? track.name : ''}.`);
     updateMasterAmbientButtonState();
@@ -3403,64 +3421,26 @@ function toggleEnvTrack(trackId) {
   stopCurrentEnvAudio();
 
   // Bật track mới với loop vô tận
-  const slider = $(`#volEnv_${trackId}`);
-  const userVol = slider ? Number(slider.value) / 100 : 0.5;
+  const savedVol = studyState.envVolumes[trackId] ?? (track ? track.defaultVol : 50);
+  const userVol = savedVol / 100;
 
   if (DEFAULT_ENV_AUDIO_SOURCES && DEFAULT_ENV_AUDIO_SOURCES[trackId]) {
     let player = studyState.envAudioPlayers[trackId];
-    if (!player || player.src !== DEFAULT_ENV_AUDIO_SOURCES[trackId]) {
+    if (!player) {
       player = new Audio(DEFAULT_ENV_AUDIO_SOURCES[trackId]);
       player.loop = true; // Phát vòng lặp
       studyState.envAudioPlayers[trackId] = player;
     }
     player.volume = Math.max(0, Math.min(1, userVol));
     player.play().catch(e => {
-      console.warn("Env audio stream error, falling back to synth:", e);
-      DEFAULT_ENV_AUDIO_SOURCES[trackId] = "";
-      toggleEnvTrack(trackId);
+      if (e.name === "AbortError") return;
+      console.warn("Env audio stream error:", e);
+      toast("Đang tải tệp âm thanh môi trường, vui lòng thử lại...");
     });
     studyState.activeEnvTrack = trackId;
-  } else {
-    // Web Audio Synthesizer Fallback (Ấm áp, phát vòng lặp)
-    const ctx = getAudioContext();
-    if (ctx) {
-      try {
-        const gainNode = ctx.createGain();
-        gainNode.gain.setValueAtTime(userVol * 0.28, ctx.currentTime);
-        gainNode.connect(ctx.destination);
-
-        const buffer = createPinkNoiseBuffer(ctx);
-        const source = ctx.createBufferSource();
-        source.buffer = buffer;
-        source.loop = true; // Phát vòng lặp
-
-        const lowpass = ctx.createBiquadFilter();
-        lowpass.type = 'lowpass';
-        lowpass.frequency.setValueAtTime(550, ctx.currentTime);
-
-        const lfo = ctx.createOscillator();
-        lfo.type = 'sine';
-        lfo.frequency.setValueAtTime(0.08, ctx.currentTime);
-        const lfoGain = ctx.createGain();
-        lfoGain.gain.setValueAtTime(150, ctx.currentTime);
-        lfo.connect(lfoGain);
-        lfoGain.connect(lowpass.frequency);
-        lfo.start();
-
-        source.connect(lowpass);
-        lowpass.connect(gainNode);
-        source.start(0);
-
-        studyState.envNodes = { source, lfo, gainNode };
-        studyState.envGainNode = gainNode;
-        studyState.activeEnvTrack = trackId;
-      } catch (e) {
-        console.error("Env synth error:", e);
-      }
-    }
   }
 
-  renderEnvironmentAudioGrid();
+  updateEnvGridDOM();
   loadCustomAudioFromDB();
   toast(`Đang phát: ${track ? track.name : trackId} (Vòng lặp) 🎧`);
   updateMasterAmbientButtonState();
@@ -3502,6 +3482,7 @@ function stopCurrentEnvAudio() {
 }
 
 function updateEnvVolume(trackId, val) {
+  studyState.envVolumes[trackId] = Number(val);
   const userVol = Number(val) / 100;
   const ext = studyState.envAudioPlayers[trackId];
   if (ext) ext.volume = Math.max(0, Math.min(1, userVol));
@@ -3519,6 +3500,7 @@ function renderMixAudioGrid() {
   grid.innerHTML = MIX_SOUND_TRACKS.map(t => {
     const isLocked = t.reqStreak > streak;
     const isActive = !!studyState.activeMixSounds[t.id];
+    const savedVol = studyState.mixVolumes[t.id] ?? t.defaultVol;
 
     return `
       <div class="ambient-track ${isActive ? 'active' : ''} ${isLocked ? 'locked' : ''}" id="cardMix_${t.id}">
@@ -3534,13 +3516,23 @@ function renderMixAudioGrid() {
           </button>
         </div>
         <div class="ambient-slider-row" style="display:flex; align-items:center; gap:8px;">
-          <input type="range" class="ambient-slider" id="volMix_${t.id}" min="0" max="100" value="${t.defaultVol}" ${isLocked ? 'disabled' : ''} oninput="updateMixVolume('${t.id}', this.value)" />
+          <input type="range" class="ambient-slider" id="volMix_${t.id}" min="0" max="100" value="${savedVol}" ${isLocked ? 'disabled' : ''} oninput="updateMixVolume('${t.id}', this.value)" />
         </div>
       </div>
     `;
   }).join("");
 
   updateMasterAmbientButtonState();
+}
+
+function updateMixGridDOM(trackId) {
+  const card = $(`#cardMix_${trackId}`);
+  if (card) {
+    const active = !!studyState.activeMixSounds[trackId];
+    card.classList.toggle('active', active);
+    const btn = card.querySelector('.ambient-track-toggle');
+    if (btn) btn.textContent = active ? 'Tắt' : 'Bật';
+  }
 }
 
 function toggleMixTrack(trackId) {
@@ -3560,329 +3552,36 @@ function toggleMixTrack(trackId) {
       ext.pause();
       ext.currentTime = 0;
     }
-
-    const nodes = studyState.mixSoundNodes[trackId];
-    if (nodes && studyState.audioCtx) {
-      try {
-        if (nodes.gainNode) {
-          nodes.gainNode.gain.linearRampToValueAtTime(0.0001, studyState.audioCtx.currentTime + 0.1);
-        }
-        setTimeout(() => {
-          try {
-            if (nodes.sources) nodes.sources.forEach(s => s.stop());
-            if (nodes.source) nodes.source.stop();
-            if (nodes.lfos) nodes.lfos.forEach(l => l.stop());
-            if (nodes.lfo) nodes.lfo.stop();
-            if (nodes.hum) nodes.hum.stop();
-            if (nodes.intervals) nodes.intervals.forEach(i => clearInterval(i));
-            if (nodes.interval) clearInterval(nodes.interval);
-          } catch (e) {}
-        }, 120);
-      } catch (e) {}
-    }
-
-    studyState.mixSoundNodes[trackId] = null;
-    studyState.mixSoundGains[trackId] = null;
     studyState.activeMixSounds[trackId] = false;
   } else {
     // START TRACK
-    const slider = $(`#volMix_${trackId}`);
-    const userVol = slider ? Number(slider.value) / 100 : 0.4;
+    const savedVol = studyState.mixVolumes[trackId] ?? (track ? track.defaultVol : 40);
+    const userVol = savedVol / 100;
 
     if (DEFAULT_MIX_AUDIO_SOURCES && DEFAULT_MIX_AUDIO_SOURCES[trackId]) {
       let player = studyState.mixAudioPlayers[trackId];
-      if (!player || player.src !== DEFAULT_MIX_AUDIO_SOURCES[trackId]) {
+      if (!player) {
         player = new Audio(DEFAULT_MIX_AUDIO_SOURCES[trackId]);
         player.loop = true; // Phát vòng lặp
         studyState.mixAudioPlayers[trackId] = player;
       }
       player.volume = Math.max(0, Math.min(1, userVol));
       player.play().catch(e => {
-        console.warn("Mix stream error, falling back to synth:", e);
-        DEFAULT_MIX_AUDIO_SOURCES[trackId] = "";
-        toggleMixTrack(trackId);
+        if (e.name === "AbortError") return;
+        console.warn("Mix stream error:", e);
+        toast("Đang tải âm thanh phối hợp, vui lòng thử lại sau giây lát.");
       });
-      studyState.activeMixSounds[trackId] = true;
-    } else {
-      // Synthesizer Fallback (Web Audio API, Loop vô tận)
-      const ctx = getAudioContext();
-      if (ctx) {
-        try {
-          const gainNode = ctx.createGain();
-          const soundType = track.soundType || 'rain';
-
-          if (soundType === 'rain') {
-            const buffer = createPinkNoiseBuffer(ctx);
-            const source = ctx.createBufferSource();
-            source.buffer = buffer;
-            source.loop = true;
-
-            const lowpass = ctx.createBiquadFilter();
-            lowpass.type = 'lowpass';
-            lowpass.frequency.setValueAtTime(1400, ctx.currentTime);
-
-            const highpass = ctx.createBiquadFilter();
-            highpass.type = 'highpass';
-            highpass.frequency.setValueAtTime(250, ctx.currentTime);
-
-            const dropInterval = setInterval(() => {
-              if (!studyState.activeMixSounds[trackId]) return;
-              try {
-                const dropOsc = ctx.createOscillator();
-                const dropGain = ctx.createGain();
-                dropOsc.type = 'sine';
-                dropOsc.frequency.setValueAtTime(1800 + Math.random() * 1200, ctx.currentTime);
-                dropGain.gain.setValueAtTime(userVol * 0.04, ctx.currentTime);
-                dropGain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.05);
-                dropOsc.connect(dropGain);
-                dropGain.connect(gainNode);
-                dropOsc.start();
-                dropOsc.stop(ctx.currentTime + 0.06);
-              } catch (e) {}
-            }, 400);
-
-            gainNode.gain.setValueAtTime(userVol * 0.28, ctx.currentTime);
-            source.connect(highpass);
-            highpass.connect(lowpass);
-            lowpass.connect(gainNode);
-            gainNode.connect(ctx.destination);
-            source.start(0);
-
-            studyState.mixSoundNodes[trackId] = { source, interval: dropInterval, gainNode };
-          } else if (soundType === 'stream') {
-            const buffer = createPinkNoiseBuffer(ctx);
-            const source = ctx.createBufferSource();
-            source.buffer = buffer;
-            source.loop = true;
-
-            const hipass = ctx.createBiquadFilter();
-            hipass.type = 'highpass';
-            hipass.frequency.setValueAtTime(450, ctx.currentTime);
-
-            const band = ctx.createBiquadFilter();
-            band.type = 'bandpass';
-            band.frequency.setValueAtTime(1300, ctx.currentTime);
-
-            gainNode.gain.setValueAtTime(userVol * 0.24, ctx.currentTime);
-            source.connect(hipass);
-            hipass.connect(band);
-            band.connect(gainNode);
-            gainNode.connect(ctx.destination);
-            source.start(0);
-            studyState.mixSoundNodes[trackId] = { source, gainNode };
-          } else if (soundType === 'birds') {
-            gainNode.gain.setValueAtTime(userVol * 0.22, ctx.currentTime);
-            gainNode.connect(ctx.destination);
-
-            const birdInterval = setInterval(() => {
-              if (!studyState.activeMixSounds[trackId]) return;
-              try {
-                const osc = ctx.createOscillator();
-                const bGain = ctx.createGain();
-                const f1 = 2400 + Math.random() * 900;
-                osc.type = 'sine';
-                osc.frequency.setValueAtTime(f1, ctx.currentTime);
-                osc.frequency.exponentialRampToValueAtTime(f1 + 700, ctx.currentTime + 0.07);
-                osc.frequency.exponentialRampToValueAtTime(f1 - 250, ctx.currentTime + 0.16);
-
-                bGain.gain.setValueAtTime(userVol * 0.1, ctx.currentTime);
-                bGain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.18);
-                osc.connect(bGain);
-                bGain.connect(gainNode);
-                osc.start();
-                osc.stop(ctx.currentTime + 0.2);
-              } catch (e) {}
-            }, 3000);
-
-            studyState.mixSoundNodes[trackId] = { interval: birdInterval, gainNode };
-          } else if (soundType === 'forest') {
-            const buffer = createPinkNoiseBuffer(ctx);
-            const source = ctx.createBufferSource();
-            source.buffer = buffer;
-            source.loop = true;
-
-            const band = ctx.createBiquadFilter();
-            band.type = 'bandpass';
-            band.frequency.setValueAtTime(750, ctx.currentTime);
-            band.Q.setValueAtTime(2.2, ctx.currentTime);
-
-            const windLfo = ctx.createOscillator();
-            windLfo.type = 'sine';
-            windLfo.frequency.setValueAtTime(0.06, ctx.currentTime);
-            const windGain = ctx.createGain();
-            windGain.gain.setValueAtTime(280, ctx.currentTime);
-            windLfo.connect(windGain);
-            windGain.connect(band.frequency);
-            windLfo.start();
-
-            gainNode.gain.setValueAtTime(userVol * 0.28, ctx.currentTime);
-            source.connect(band);
-            band.connect(gainNode);
-            gainNode.connect(ctx.destination);
-            source.start(0);
-
-            studyState.mixSoundNodes[trackId] = { source, lfo: windLfo, gainNode };
-          } else if (soundType === 'campfire') {
-            const buffer = createBrownNoiseBuffer(ctx);
-            const source = ctx.createBufferSource();
-            source.buffer = buffer;
-            source.loop = true;
-
-            const low = ctx.createBiquadFilter();
-            low.type = 'lowpass';
-            low.frequency.setValueAtTime(260, ctx.currentTime);
-
-            gainNode.gain.setValueAtTime(userVol * 0.3, ctx.currentTime);
-            source.connect(low);
-            low.connect(gainNode);
-            gainNode.connect(ctx.destination);
-            source.start(0);
-
-            const crackleInterval = setInterval(() => {
-              if (!studyState.activeMixSounds[trackId]) return;
-              try {
-                const crackleOsc = ctx.createOscillator();
-                const crackleGain = ctx.createGain();
-                crackleOsc.type = 'triangle';
-                crackleOsc.frequency.setValueAtTime(160 + Math.random() * 450, ctx.currentTime);
-                crackleGain.gain.setValueAtTime(userVol * 0.06, ctx.currentTime);
-                crackleGain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.04);
-                crackleOsc.connect(crackleGain);
-                crackleGain.connect(gainNode);
-                crackleOsc.start();
-                crackleOsc.stop(ctx.currentTime + 0.05);
-              } catch (e) {}
-            }, 1100);
-
-            studyState.mixSoundNodes[trackId] = { source, interval: crackleInterval, gainNode };
-          } else if (soundType === 'waves') {
-            const buffer = createBrownNoiseBuffer(ctx);
-            const source = ctx.createBufferSource();
-            source.buffer = buffer;
-            source.loop = true;
-
-            const pinkBuf = createPinkNoiseBuffer(ctx);
-            const pinkSrc = ctx.createBufferSource();
-            pinkBuf.loop = true;
-            pinkSrc.buffer = pinkBuf;
-
-            const filter = ctx.createBiquadFilter();
-            filter.type = 'lowpass';
-            filter.frequency.setValueAtTime(280, ctx.currentTime);
-
-            const swellLfo = ctx.createOscillator();
-            swellLfo.type = 'sine';
-            swellLfo.frequency.setValueAtTime(0.085, ctx.currentTime);
-
-            const lfoFilterGain = ctx.createGain();
-            lfoFilterGain.gain.setValueAtTime(220, ctx.currentTime);
-            swellLfo.connect(lfoFilterGain);
-            lfoFilterGain.connect(filter.frequency);
-
-            const lfoVolGain = ctx.createGain();
-            lfoVolGain.gain.setValueAtTime(userVol * 0.2, ctx.currentTime);
-            swellLfo.connect(lfoVolGain);
-
-            gainNode.gain.setValueAtTime(userVol * 0.38, ctx.currentTime);
-
-            source.connect(filter);
-            pinkSrc.connect(filter);
-            filter.connect(gainNode);
-            gainNode.connect(ctx.destination);
-
-            swellLfo.start();
-            source.start(0);
-            pinkSrc.start(0);
-
-            studyState.mixSoundNodes[trackId] = {
-              sources: [source, pinkSrc],
-              lfo: swellLfo,
-              gainNode
-            };
-          } else if (soundType === 'cafe') {
-            const buffer = createPinkNoiseBuffer(ctx);
-            const source = ctx.createBufferSource();
-            source.buffer = buffer;
-            source.loop = true;
-
-            const f1 = ctx.createBiquadFilter();
-            f1.type = 'bandpass';
-            f1.frequency.setValueAtTime(320, ctx.currentTime);
-            f1.Q.setValueAtTime(1.8, ctx.currentTime);
-
-            const f2 = ctx.createBiquadFilter();
-            f2.type = 'bandpass';
-            f2.frequency.setValueAtTime(850, ctx.currentTime);
-            f2.Q.setValueAtTime(2.2, ctx.currentTime);
-
-            const f3 = ctx.createBiquadFilter();
-            f3.type = 'bandpass';
-            f3.frequency.setValueAtTime(1650, ctx.currentTime);
-            f3.Q.setValueAtTime(2.5, ctx.currentTime);
-
-            gainNode.gain.setValueAtTime(userVol * 0.32, ctx.currentTime);
-            source.connect(f1);
-            source.connect(f2);
-            source.connect(f3);
-            f1.connect(gainNode);
-            f2.connect(gainNode);
-            f3.connect(gainNode);
-            gainNode.connect(ctx.destination);
-            source.start(0);
-
-            studyState.mixSoundNodes[trackId] = { source, gainNode };
-          } else if (soundType === 'whitenoise') {
-            const buffer = createWhiteNoiseBuffer(ctx);
-            const source = ctx.createBufferSource();
-            source.buffer = buffer;
-            source.loop = true;
-
-            gainNode.gain.setValueAtTime(userVol * 0.18, ctx.currentTime);
-            source.connect(gainNode);
-            gainNode.connect(ctx.destination);
-            source.start(0);
-            studyState.mixSoundNodes[trackId] = { source, gainNode };
-          } else if (soundType === 'clock') {
-            gainNode.gain.setValueAtTime(userVol * 0.22, ctx.currentTime);
-            gainNode.connect(ctx.destination);
-
-            let tickToggle = false;
-            const clockInterval = setInterval(() => {
-              if (!studyState.activeMixSounds[trackId]) return;
-              try {
-                const osc = ctx.createOscillator();
-                const clickGain = ctx.createGain();
-                osc.type = 'triangle';
-                osc.frequency.setValueAtTime(tickToggle ? 920 : 720, ctx.currentTime);
-                tickToggle = !tickToggle;
-
-                clickGain.gain.setValueAtTime(userVol * 0.08, ctx.currentTime);
-                clickGain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.045);
-
-                osc.connect(clickGain);
-                clickGain.connect(gainNode);
-                osc.start();
-                osc.stop(ctx.currentTime + 0.05);
-              } catch (e) {}
-            }, 1000);
-
-            studyState.mixSoundNodes[trackId] = { interval: clockInterval, gainNode };
-          }
-
-          studyState.mixSoundGains[trackId] = gainNode;
-        } catch (e) {
-          console.error("Mix synth error:", e);
-        }
-      }
       studyState.activeMixSounds[trackId] = true;
     }
   }
 
-  renderMixAudioGrid();
+  // Update this specific track card in-place (no innerHTML wipe = zero slider reset & instant response!)
+  updateMixGridDOM(trackId);
   updateMasterAmbientButtonState();
 }
 
 function updateMixVolume(trackId, val) {
+  studyState.mixVolumes[trackId] = Number(val);
   const userVol = Number(val) / 100;
   const ext = studyState.mixAudioPlayers[trackId];
   if (ext) ext.volume = Math.max(0, Math.min(1, userVol));
@@ -3901,6 +3600,7 @@ function renderMusicAudioGrid() {
   grid.innerHTML = MUSIC_SOUND_TRACKS.map(t => {
     const isLocked = t.reqStreak > streak;
     const isActive = (studyState.activeMusicTrack === t.id);
+    const savedVol = studyState.musicVolumes[t.id] ?? t.defaultVol;
 
     return `
       <div class="ambient-track ${isActive ? 'active' : ''} ${isLocked ? 'locked' : ''}" id="cardMusic_${t.id}">
@@ -3916,13 +3616,25 @@ function renderMusicAudioGrid() {
           </button>
         </div>
         <div class="ambient-slider-row" style="display:flex; align-items:center; gap:8px;">
-          <input type="range" class="ambient-slider" id="volMusic_${t.id}" min="0" max="100" value="${t.defaultVol}" ${isLocked ? 'disabled' : ''} oninput="updateMusicVolume('${t.id}', this.value)" />
+          <input type="range" class="ambient-slider" id="volMusic_${t.id}" min="0" max="100" value="${savedVol}" ${isLocked ? 'disabled' : ''} oninput="updateMusicVolume('${t.id}', this.value)" />
         </div>
       </div>
     `;
   }).join("");
 
   updateMasterAmbientButtonState();
+}
+
+function updateMusicGridDOM() {
+  MUSIC_SOUND_TRACKS.forEach(t => {
+    const card = $(`#cardMusic_${t.id}`);
+    if (card) {
+      const active = (studyState.activeMusicTrack === t.id);
+      card.classList.toggle('active', active);
+      const btn = card.querySelector('.ambient-track-toggle');
+      if (btn) btn.textContent = active ? 'Tắt' : 'Bật';
+    }
+  });
 }
 
 function toggleMusicTrack(trackId) {
@@ -3937,7 +3649,7 @@ function toggleMusicTrack(trackId) {
   if (studyState.activeMusicTrack === trackId) {
     stopCurrentMusicAudio();
     studyState.activeMusicTrack = null;
-    renderMusicAudioGrid();
+    updateMusicGridDOM();
     loadCustomAudioFromDB();
     toast(`Đã tắt ${track ? track.name : ''}.`);
     updateMasterAmbientButtonState();
@@ -3947,96 +3659,26 @@ function toggleMusicTrack(trackId) {
   // 2. Dừng track nhạc khác (kể cả custom music) trước khi bật
   stopCurrentMusicAudio();
 
-  const slider = $(`#volMusic_${trackId}`);
-  const userVol = slider ? Number(slider.value) / 100 : 0.45;
+  const savedVol = studyState.musicVolumes[trackId] ?? (track ? track.defaultVol : 45);
+  const userVol = savedVol / 100;
 
   if (DEFAULT_MUSIC_AUDIO_SOURCES && DEFAULT_MUSIC_AUDIO_SOURCES[trackId]) {
     let player = studyState.musicAudioPlayers[trackId];
-    if (!player || player.src !== DEFAULT_MUSIC_AUDIO_SOURCES[trackId]) {
+    if (!player) {
       player = new Audio(DEFAULT_MUSIC_AUDIO_SOURCES[trackId]);
       player.loop = true; // Phát vòng lặp
       studyState.musicAudioPlayers[trackId] = player;
     }
     player.volume = Math.max(0, Math.min(1, userVol));
     player.play().catch(e => {
-      console.warn("Music audio stream error, falling back to synth:", e);
-      DEFAULT_MUSIC_AUDIO_SOURCES[trackId] = "";
-      toggleMusicTrack(trackId);
+      if (e.name === "AbortError") return;
+      console.warn("Music audio stream error:", e);
+      toast("Đang tải bản nhạc, vui lòng thử lại sau giây lát.");
     });
     studyState.activeMusicTrack = trackId;
-  } else {
-    // Web Audio Synthesizer Fallback: Gentle Lofi Ambient Chord Progression
-    const ctx = getAudioContext();
-    if (ctx) {
-      try {
-        const gainNode = ctx.createGain();
-        gainNode.gain.setValueAtTime(userVol * 0.22, ctx.currentTime);
-        gainNode.connect(ctx.destination);
-
-        const chords = [
-          [261.63, 329.63, 392.00, 493.88], // Cmaj7
-          [220.00, 261.63, 329.63, 392.00], // Am7
-          [174.61, 220.00, 261.63, 329.63], // Fmaj7
-          [196.00, 246.94, 293.66, 349.23]  // G7
-        ];
-        let chordIdx = 0;
-        let currentOscs = [];
-
-        function playChord() {
-          if (studyState.activeMusicTrack !== trackId) return;
-          const now = ctx.currentTime;
-          currentOscs.forEach(o => {
-            try {
-              o.gain.gain.linearRampToValueAtTime(0.0001, now + 0.8);
-              setTimeout(() => { try { o.osc.stop(); } catch(e){} }, 850);
-            } catch(e){}
-          });
-          currentOscs = [];
-
-          const freqs = chords[chordIdx % chords.length];
-          chordIdx++;
-
-          freqs.forEach(f => {
-            const osc = ctx.createOscillator();
-            const oscGain = ctx.createGain();
-            const filter = ctx.createBiquadFilter();
-            filter.type = 'lowpass';
-            filter.frequency.setValueAtTime(800, now);
-
-            osc.type = 'triangle';
-            osc.frequency.setValueAtTime(f, now);
-
-            oscGain.gain.setValueAtTime(0.0001, now);
-            oscGain.gain.linearRampToValueAtTime(0.06, now + 1.2);
-
-            osc.connect(filter);
-            filter.connect(oscGain);
-            oscGain.connect(gainNode);
-
-            osc.start(now);
-            currentOscs.push({ osc, gain: oscGain });
-          });
-        }
-
-        playChord();
-        const chordInterval = setInterval(() => {
-          if (studyState.activeMusicTrack !== trackId) {
-            clearInterval(chordInterval);
-            return;
-          }
-          playChord();
-        }, 4000);
-
-        studyState.musicNodes = { interval: chordInterval, oscs: currentOscs };
-        studyState.musicGainNode = gainNode;
-        studyState.activeMusicTrack = trackId;
-      } catch (e) {
-        console.error("Music synth error:", e);
-      }
-    }
   }
 
-  renderMusicAudioGrid();
+  updateMusicGridDOM();
   loadCustomAudioFromDB();
   toast(`Đang phát: ${track ? track.name : trackId} (Vòng lặp) 🎵`);
   updateMasterAmbientButtonState();
@@ -4078,6 +3720,7 @@ function stopCurrentMusicAudio() {
 }
 
 function updateMusicVolume(trackId, val) {
+  studyState.musicVolumes[trackId] = Number(val);
   const userVol = Number(val) / 100;
   const ext = studyState.musicAudioPlayers[trackId];
   if (ext) ext.volume = Math.max(0, Math.min(1, userVol));
@@ -4234,6 +3877,7 @@ async function loadCustomAudioFromDB() {
       envListEl.innerHTML = studyState.customEnvAudioTracks.map(t => {
         const isPlaying = (studyState.activeCustomEnvId === t.id);
         const sizeMb = (t.size / (1024 * 1024)).toFixed(1);
+        const savedVol = studyState.customVolumes[t.id] ?? 50;
         return `
           <div class="custom-audio-item ${isPlaying ? 'playing' : ''}">
             <div class="custom-audio-name">
@@ -4242,7 +3886,7 @@ async function loadCustomAudioFromDB() {
             </div>
             <div class="custom-audio-actions">
               ${isPlaying ? `
-                <input type="range" min="0" max="100" value="50" oninput="setCustomAudioVolume('${t.id}', this.value, true)" style="width:65px; height:6px;" />
+                <input type="range" min="0" max="100" value="${savedVol}" oninput="setCustomAudioVolume('${t.id}', this.value, true)" style="width:65px; height:6px;" />
               ` : ''}
               <button type="button" class="button button-sm ${isPlaying ? 'button-dark' : 'button-outline'}" onclick="toggleCustomEnvAudioPlay('${t.id}')">
                 ${isPlaying ? '■ Dừng' : '▶ Phát'}
@@ -4264,6 +3908,7 @@ async function loadCustomAudioFromDB() {
       mixListEl.innerHTML = studyState.customMixAudioTracks.map(t => {
         const isPlaying = !!studyState.activeCustomMixSounds[t.id];
         const sizeMb = (t.size / (1024 * 1024)).toFixed(1);
+        const savedVol = studyState.customVolumes[t.id] ?? 50;
         return `
           <div class="custom-audio-item ${isPlaying ? 'playing' : ''}">
             <div class="custom-audio-name">
@@ -4272,7 +3917,7 @@ async function loadCustomAudioFromDB() {
             </div>
             <div class="custom-audio-actions">
               ${isPlaying ? `
-                <input type="range" min="0" max="100" value="50" oninput="setCustomAudioVolume('${t.id}', this.value, false)" style="width:65px; height:6px;" />
+                <input type="range" min="0" max="100" value="${savedVol}" oninput="setCustomAudioVolume('${t.id}', this.value, false)" style="width:65px; height:6px;" />
               ` : ''}
               <button type="button" class="button button-sm ${isPlaying ? 'button-dark' : 'button-outline'}" onclick="toggleCustomMixAudioPlay('${t.id}')">
                 ${isPlaying ? '■ Dừng' : '▶ Phát'}
@@ -4294,6 +3939,7 @@ async function loadCustomAudioFromDB() {
       musicListEl.innerHTML = studyState.customMusicAudioTracks.map(t => {
         const isPlaying = (studyState.activeCustomMusicId === t.id);
         const sizeMb = (t.size / (1024 * 1024)).toFixed(1);
+        const savedVol = studyState.customVolumes[t.id] ?? 50;
         return `
           <div class="custom-audio-item ${isPlaying ? 'playing' : ''}">
             <div class="custom-audio-name">
@@ -4302,7 +3948,7 @@ async function loadCustomAudioFromDB() {
             </div>
             <div class="custom-audio-actions">
               ${isPlaying ? `
-                <input type="range" min="0" max="100" value="50" oninput="setCustomAudioVolume('${t.id}', this.value, 'music')" style="width:65px; height:6px;" />
+                <input type="range" min="0" max="100" value="${savedVol}" oninput="setCustomAudioVolume('${t.id}', this.value, 'music')" style="width:65px; height:6px;" />
               ` : ''}
               <button type="button" class="button button-sm ${isPlaying ? 'button-dark' : 'button-outline'}" onclick="toggleCustomMusicAudioPlay('${t.id}')">
                 ${isPlaying ? '■ Dừng' : '▶ Phát'}
@@ -4351,6 +3997,7 @@ async function loadCustomAudioFromDB() {
 }
 
 window.setCustomAudioVolume = function(id, val, type) {
+  studyState.customVolumes[id] = Number(val);
   const vol = Math.max(0, Math.min(1, Number(val) / 100));
   if (type === 'env' || type === true) {
     if (studyState.customEnvAudioPlayer) studyState.customEnvAudioPlayer.volume = vol;
