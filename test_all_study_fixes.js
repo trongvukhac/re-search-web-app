@@ -1,21 +1,41 @@
 import puppeteer from 'puppeteer';
+import { spawn } from 'child_process';
+import http from 'http';
+
+function isServerRunning() {
+  return new Promise((resolve) => {
+    const req = http.get("http://localhost:3000/", (res) => {
+      resolve(true);
+    });
+    req.on("error", () => resolve(false));
+  });
+}
 
 async function runTests() {
   console.log("Starting comprehensive Study Lounge verification...");
+
+  let serverProc = null;
+  const running = await isServerRunning();
+  if (!running) {
+    console.log("Starting local server on port 3000...");
+    serverProc = spawn("node", ["server.js"], { stdio: "inherit" });
+    await new Promise(r => setTimeout(r, 1200));
+  }
 
   const browser = await puppeteer.launch({
     headless: "new",
     args: ['--no-sandbox', '--disable-setuid-sandbox']
   });
 
-  const page1 = await browser.newPage();
-  await page1.setViewport({ width: 1280, height: 800 });
+  try {
+    const page1 = await browser.newPage();
+    await page1.setViewport({ width: 1280, height: 800 });
 
-  const pageErrors = [];
-  page1.on('pageerror', err => pageErrors.push(err.toString()));
+    const pageErrors = [];
+    page1.on('pageerror', err => pageErrors.push(err.toString()));
 
-  console.log("1. Navigating to http://localhost:3000/#study on Browser 1...");
-  await page1.goto("http://localhost:3000/#study", { waitUntil: "networkidle0" });
+    console.log("1. Navigating to http://localhost:3000/#study on Browser 1...");
+    await page1.goto("http://localhost:3000/#study", { waitUntil: "networkidle0" });
 
   if (pageErrors.length > 0) {
     console.error("Page errors on load:", pageErrors);
@@ -114,6 +134,11 @@ async function runTests() {
 
   await browser.close();
   console.log("All tests completed successfully!");
+  } finally {
+    if (serverProc) {
+      serverProc.kill();
+    }
+  }
 }
 
 runTests().catch(err => {

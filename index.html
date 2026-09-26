@@ -593,18 +593,36 @@
                   </div>
                 </div>
 
-                <!-- Custom Wallpaper Upload (Streak >= 30) -->
+                <!-- Custom Wallpaper Upload & Gallery (Streak >= 30) -->
                 <div class="wallpaper-upload-wrap">
                   <div class="theme-tier-title">
                     <span>Tải ảnh nền cá nhân</span>
-                    <span class="perk-badge" id="badgeWallUploadLock">🔒 30d</span>
+                    <div style="display: flex; gap: 6px; align-items: center;">
+                      <span class="custom-wall-limit-badge" id="badgeCustomWallLimit">Tối đa 5 ảnh</span>
+                      <span class="perk-badge" id="badgeWallUploadLock">🔒 30d</span>
+                    </div>
                   </div>
                   <div class="custom-wall-box" id="customWallBox">
                     <input type="file" id="customWallInput" accept="image/*,.jpg,.jpeg,.png,.webp" style="display: none;" />
                     <button type="button" class="button button-sm button-outline" id="btnUploadWall" onclick="triggerWallpaperUpload()">
-                      📷 Chọn ảnh từ máy tính
+                      📷 Tải ảnh mới từ máy tính
                     </button>
                     <span class="custom-wall-info" id="customWallName">Chưa chọn ảnh</span>
+                  </div>
+                  <div id="customWallpapersList" class="custom-wallpapers-grid">
+                    <!-- Uploaded wallpapers rendered by JS -->
+                  </div>
+                </div>
+
+                <!-- Wallpaper Overlay & Dimming Control -->
+                <div class="wallpaper-dim-wrap" id="wallpaperDimControl">
+                  <div class="theme-tier-title" style="margin-bottom: 4px;">
+                    <span>Độ tương phản & Làm mờ nền</span>
+                  </div>
+                  <div class="wallpaper-dim-slider-box">
+                    <span style="font-size: 13px; color: var(--ink);">Lớp phủ:</span>
+                    <input type="range" id="wallpaperDimSlider" min="0" max="90" step="5" value="40" oninput="handleWallpaperDimChange(this.value)" style="flex: 1; cursor: pointer;" />
+                    <span id="wallpaperDimVal" style="font-size: 12px; font-weight: 700; width: 36px; text-align: right; color: var(--ink);">40%</span>
                   </div>
                 </div>
 

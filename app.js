@@ -31,6 +31,7 @@ function getInitialStudySettings() {
     browserNotifications: false,
     alarmSound: "bell",
     activeWallpaper: "default",
+    wallpaperDim: 40,
     activeAura: "emerald",
     clockColor: "default"
   };
@@ -2723,6 +2724,7 @@ window.updateStudyStreakPerks = function() {
   renderWallpaperPresets();
   renderClockColorPicker();
   renderColorPalette();
+  renderCustomWallpapersList();
   loadCustomAudioFromDB();
 };
 
@@ -4298,7 +4300,8 @@ function renderWallpaperPresets() {
     return `
       <div class="preset-thumb-card ${isSelected ? 'selected' : ''}" onclick="${unlocked ? `applyStudyWallpaperPreset('${p.id}')` : `notifyPerkLocked(14, 'Kho hình nền học thuật')`}">
         <div class="preset-thumb-color" style="background: ${p.style};"></div>
-        <span>${p.name}</span>
+        <span class="preset-thumb-name">${p.name}</span>
+        ${isSelected ? '<span class="preset-active-indicator">✓</span>' : ''}
       </div>
     `;
   }).join("");
@@ -4310,12 +4313,24 @@ function applyStudyWallpaperPreset(presetId) {
   studySettings.activeWallpaper = presetId;
   saveStudySettings(false);
 
+  const studyEl = $("#study");
   const bgLayer = $("#studyBackgroundLayer");
-  if (bgLayer) {
-    bgLayer.style.backgroundImage = p.style;
-    bgLayer.style.backgroundSize = "cover";
+  if (presetId === 'default') {
+    if (studyEl) studyEl.classList.remove("has-custom-bg");
+    if (bgLayer) bgLayer.style.backgroundImage = "";
+  } else {
+    if (studyEl) studyEl.classList.add("has-custom-bg");
+    if (bgLayer) {
+      bgLayer.style.backgroundImage = p.style;
+      bgLayer.style.backgroundSize = "cover";
+    }
+  }
+  const nameEl = $("#customWallName");
+  if (nameEl && !studySettings.activeWallpaper.startsWith("custom_")) {
+    nameEl.textContent = "Chưa chọn ảnh";
   }
   renderWallpaperPresets();
+  renderCustomWallpapersList();
   toast(`Đã chọn hình nền: ${p.name}`);
 }
 
@@ -4386,19 +4401,29 @@ async function handleCustomWallpaperUpload(file) {
     return;
   }
 
+  const existing = await idbGetAll("custom_wallpapers");
+  if (!isMaxStreak && existing.length >= 5) {
+    toast("Bạn đã đạt giới hạn 5 ảnh nền cá nhân. Vui lòng xoá bớt ảnh cũ hoặc đạt Chuỗi 50 ngày để mở khoá không giới hạn!");
+    return;
+  }
+
   const reader = new FileReader();
   reader.onload = async (e) => {
     const dataUrl = e.target.result;
     const item = {
-      id: `wall_${Date.now()}`,
+      id: `wall_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
       name: file.name,
       dataUrl,
+      size: file.size,
       createdAt: Date.now()
     };
     await idbPut("custom_wallpapers", item);
 
     studySettings.activeWallpaper = `custom_${item.id}`;
     saveStudySettings(false);
+
+    const studyEl = $("#study");
+    if (studyEl) studyEl.classList.add("has-custom-bg");
 
     const bgLayer = $("#studyBackgroundLayer");
     if (bgLayer) {
@@ -4408,9 +4433,117 @@ async function handleCustomWallpaperUpload(file) {
     }
     const nameEl = $("#customWallName");
     if (nameEl) nameEl.textContent = file.name;
+
+    renderWallpaperPresets();
+    await renderCustomWallpapersList();
     toast(isMaxStreak ? `✨ [Chuỗi 50 ngày] Đã áp dụng ảnh nền không giới hạn: ${file.name}` : `Đã áp dụng ảnh nền cá nhân: ${file.name}`);
   };
   reader.readAsDataURL(file);
+}
+
+async function renderCustomWallpapersList() {
+  const cont = $("#customWallpapersList");
+  if (!cont) return;
+  const streak = getUserStudyStreak();
+  const unlocked = streak >= 30;
+  const isMaxStreak = streak >= 50;
+
+  const walls = await idbGetAll("custom_wallpapers");
+
+  const badgeLimit = $("#badgeCustomWallLimit");
+  if (badgeLimit) {
+    if (isMaxStreak) {
+      badgeLimit.textContent = `✨ Không giới hạn (${walls.length})`;
+      badgeLimit.classList.add("unlimited");
+    } else {
+      badgeLimit.textContent = `Tối đa 5 ảnh (${walls.length}/5)`;
+      badgeLimit.classList.remove("unlimited");
+    }
+  }
+
+  if (!walls || walls.length === 0) {
+    cont.innerHTML = `<p style="font-size:12px; color:var(--muted); padding:6px 0; margin:0; grid-column: 1 / -1;">Chưa có ảnh nền cá nhân nào. Hãy tải lên ảnh yêu thích của bạn!</p>`;
+    return;
+  }
+
+  cont.innerHTML = walls.map(w => {
+    const isSelected = studySettings.activeWallpaper === `custom_${w.id}`;
+    const sizeMb = (w.size ? (w.size / (1024 * 1024)).toFixed(1) : "0.0");
+    return `
+      <div class="custom-wallpaper-card ${isSelected ? 'selected' : ''}" onclick="${unlocked ? `applyCustomWallpaper('${w.id}')` : `notifyPerkLocked(30, 'Tải ảnh nền cá nhân')`}">
+        <div class="custom-wallpaper-preview" style="background-image: url(${w.dataUrl});">
+          ${isSelected ? '<span class="custom-wall-active-tag">Đang dùng</span>' : ''}
+          <button type="button" class="custom-wall-del-btn" title="Xoá ảnh này" onclick="event.stopPropagation(); confirmDeleteCustomWallpaper('${w.id}')">✕</button>
+        </div>
+        <div class="custom-wallpaper-meta">
+          <span class="custom-wallpaper-name" title="${w.name}">${w.name}</span>
+          <span class="custom-wallpaper-size">${sizeMb} MB</span>
+        </div>
+      </div>
+    `;
+  }).join("");
+}
+
+async function applyCustomWallpaper(wallId) {
+  const walls = await idbGetAll("custom_wallpapers");
+  const target = walls.find(w => w.id === wallId);
+  if (!target) return;
+
+  studySettings.activeWallpaper = `custom_${target.id}`;
+  saveStudySettings(false);
+
+  const studyEl = $("#study");
+  if (studyEl) studyEl.classList.add("has-custom-bg");
+
+  const bgLayer = $("#studyBackgroundLayer");
+  if (bgLayer) {
+    bgLayer.style.backgroundImage = `url(${target.dataUrl})`;
+    bgLayer.style.backgroundSize = "cover";
+    bgLayer.style.backgroundPosition = "center";
+  }
+  const nameEl = $("#customWallName");
+  if (nameEl) nameEl.textContent = target.name;
+
+  renderWallpaperPresets();
+  renderCustomWallpapersList();
+  toast(`Đã áp dụng ảnh nền: ${target.name}`);
+}
+
+async function confirmDeleteCustomWallpaper(wallId) {
+  const walls = await idbGetAll("custom_wallpapers");
+  const target = walls.find(w => w.id === wallId);
+  const name = target?.name || "ảnh nền";
+  if (!confirm(`Bạn có chắc muốn xoá "${name}" khỏi bộ nhớ máy?`)) return;
+
+  await idbDelete("custom_wallpapers", wallId);
+  toast(`Đã xoá ảnh nền: ${name}`);
+
+  if (studySettings.activeWallpaper === `custom_${wallId}`) {
+    applyStudyWallpaperPreset('default');
+  } else {
+    await renderCustomWallpapersList();
+  }
+}
+
+function handleWallpaperDimChange(val) {
+  val = Math.max(0, Math.min(90, Number(val) || 40));
+  studySettings.wallpaperDim = val;
+  saveStudySettings(false);
+  applyWallpaperDim(val);
+}
+
+function applyWallpaperDim(val) {
+  const dim = (typeof val !== 'undefined' ? val : (studySettings.wallpaperDim ?? 40));
+  const valEl = $("#wallpaperDimVal");
+  if (valEl) valEl.textContent = `${dim}%`;
+  const sliderEl = $("#wallpaperDimSlider");
+  if (sliderEl && sliderEl.value != dim) sliderEl.value = dim;
+
+  const studyEl = $("#study");
+  if (studyEl) {
+    const opacity = (dim / 100).toFixed(2);
+    studyEl.style.setProperty("--study-overlay-opacity", opacity);
+  }
 }
 
 /* --- HÀO QUANG & MÀU SẮC GRADIENT ĐỘC QUYỀN (Streak >= 50) --- */
@@ -4471,16 +4604,19 @@ function resetStudyTheme() {
   studySettings.activeWallpaper = 'default';
   studySettings.activeAura = 'emerald';
   studySettings.clockColor = 'default';
+  studySettings.wallpaperDim = 40;
   saveStudySettings(false);
 
+  const studyEl = $("#study");
+  if (studyEl) {
+    studyEl.classList.remove("has-custom-bg");
+    studyEl.style.removeProperty("--primary");
+    studyEl.style.removeProperty("--primary-glow");
+    studyEl.style.removeProperty("--study-overlay-opacity");
+  }
   const bgLayer = $("#studyBackgroundLayer");
   if (bgLayer) {
     bgLayer.style.backgroundImage = "";
-  }
-  const studyEl = $("#study");
-  if (studyEl) {
-    studyEl.style.removeProperty("--primary");
-    studyEl.style.removeProperty("--primary-glow");
   }
   const progCircle = $("#timerProgressCircle");
   if (progCircle) {
@@ -4493,9 +4629,11 @@ function resetStudyTheme() {
   const nameEl = $("#customWallName");
   if (nameEl) nameEl.textContent = "Chưa chọn ảnh";
 
+  applyWallpaperDim(40);
   renderWallpaperPresets();
   renderClockColorPicker();
   renderColorPalette();
+  renderCustomWallpapersList();
   toast("Đã đặt lại giao diện mặc định.");
 }
 
@@ -4759,9 +4897,13 @@ function onEnterStudyLounge() {
   renderMusicAudioGrid();
   loadCustomAudioFromDB();
   renderWallpaperPresets();
+  renderCustomWallpapersList();
   renderClockColorPicker();
   renderColorPalette();
   updateTimerDisplay();
+
+  // Apply saved wallpaper dim
+  applyWallpaperDim(studySettings.wallpaperDim ?? 40);
 
   // Apply saved clock color
   if (studySettings.clockColor && studySettings.clockColor !== 'default') {
@@ -4769,23 +4911,31 @@ function onEnterStudyLounge() {
   }
 
   // Apply saved theme & aura
+  const studyEl = $("#study");
   if (studySettings.activeWallpaper && studySettings.activeWallpaper !== 'default') {
     if (studySettings.activeWallpaper.startsWith('custom_')) {
       idbGetAll("custom_wallpapers").then(walls => {
         const wallId = studySettings.activeWallpaper.replace('custom_', '');
         const target = walls.find(w => w.id === wallId);
         if (target && target.dataUrl) {
+          if (studyEl) studyEl.classList.add("has-custom-bg");
           const bgLayer = $("#studyBackgroundLayer");
           if (bgLayer) {
             bgLayer.style.backgroundImage = `url(${target.dataUrl})`;
             bgLayer.style.backgroundSize = "cover";
             bgLayer.style.backgroundPosition = "center";
           }
+          const nameEl = $("#customWallName");
+          if (nameEl) nameEl.textContent = target.name;
+        } else {
+          if (studyEl) studyEl.classList.remove("has-custom-bg");
         }
       });
     } else {
       applyStudyWallpaperPreset(studySettings.activeWallpaper);
     }
+  } else {
+    if (studyEl) studyEl.classList.remove("has-custom-bg");
   }
   if (studySettings.activeAura && studySettings.activeAura !== 'emerald') {
     applyColorAura(studySettings.activeAura);
@@ -4916,8 +5066,10 @@ function initStudyLoungeEvents() {
   renderMusicAudioGrid();
   loadCustomAudioFromDB();
   renderWallpaperPresets();
+  renderCustomWallpapersList();
   renderClockColorPicker();
   renderColorPalette();
+  applyWallpaperDim(studySettings.wallpaperDim ?? 40);
 }
 
 window.studyState = studyState;
@@ -4930,6 +5082,15 @@ window.updateMusicVolume = updateMusicVolume;
 window.toggleCustomAudio = toggleCustomAudio;
 window.confirmDeleteCustomAudioTrack = confirmDeleteCustomAudioTrack;
 window.updateCustomAudioVolume = updateCustomAudioVolume;
+window.applyStudyWallpaperPreset = applyStudyWallpaperPreset;
+window.applyCustomWallpaper = applyCustomWallpaper;
+window.confirmDeleteCustomWallpaper = confirmDeleteCustomWallpaper;
+window.triggerWallpaperUpload = triggerWallpaperUpload;
+window.handleCustomWallpaperUpload = handleCustomWallpaperUpload;
+window.handleWallpaperDimChange = handleWallpaperDimChange;
+window.applyClockColor = applyClockColor;
+window.applyColorAura = applyColorAura;
+window.resetStudyTheme = resetStudyTheme;
 
 document.addEventListener("click", () => {
   if (studyState.audioCtx && studyState.audioCtx.state === "suspended") {
