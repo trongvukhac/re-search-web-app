@@ -682,11 +682,17 @@ const azureAudioUrlCache = new Map(); // trackId -> { url: string, expiresAt: nu
 function resolveGitHubRedirect(ghUrl) {
   return new Promise((resolve, reject) => {
     const req = https.get(ghUrl, (res) => {
+      res.resume(); // Ensure stream data is consumed to free the socket
       if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
         resolve(res.headers.location);
+      } else if (res.statusCode === 200) {
+        resolve(ghUrl);
       } else {
         reject(new Error(`GitHub redirect failed with status ${res.statusCode}`));
       }
+    });
+    req.setTimeout(10000, () => {
+      req.destroy(new Error("GitHub redirect request timed out"));
     });
     req.on("error", reject);
   });

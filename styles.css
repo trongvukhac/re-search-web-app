@@ -2917,29 +2917,29 @@ dialog.detail-modal[open] {
 
 /* Glassmorphism theme when custom or preset wallpaper is active */
 #study.has-custom-bg {
-  color: #f1f5f9;
+  color: #f8fafc;
 }
 #study.has-custom-bg .study-heading h1 {
   color: #ffffff;
-  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.6);
+  text-shadow: 0 2px 14px rgba(0, 0, 0, 0.7);
 }
 #study.has-custom-bg .study-heading .eyebrow {
-  color: #a7f3d0;
+  color: #6ee7b7;
   font-weight: 700;
-  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.5);
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.6);
 }
 #study.has-custom-bg .study-live-badge,
 #study.has-custom-bg .study-action-btn {
-  background: rgba(18, 24, 21, 0.6);
+  background: rgba(14, 20, 17, 0.65);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.22);
   color: #ffffff;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
 }
 #study.has-custom-bg .study-action-btn:hover {
-  background: rgba(255, 255, 255, 0.2);
-  border-color: rgba(255, 255, 255, 0.35);
+  background: rgba(255, 255, 255, 0.22);
+  border-color: rgba(255, 255, 255, 0.4);
   color: #ffffff;
 }
 #study.has-custom-bg .study-action-btn.active {
@@ -2950,31 +2950,37 @@ dialog.detail-modal[open] {
 }
 
 #study.has-custom-bg .study-card {
-  background: rgba(14, 20, 17, var(--study-card-opacity, 0.52));
-  backdrop-filter: blur(20px) saturate(170%);
-  -webkit-backdrop-filter: blur(20px) saturate(170%);
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  background: rgba(14, 20, 17, var(--study-card-opacity, 0.58));
+  backdrop-filter: blur(22px) saturate(180%);
+  -webkit-backdrop-filter: blur(22px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.42), inset 0 1px 0 rgba(255, 255, 255, 0.15);
   color: #f8fafc;
 }
 #study.has-custom-bg .study-card h3,
-#study.has-custom-bg .study-card h4 {
+#study.has-custom-bg .study-card h4,
+#study.has-custom-bg .study-card h5 {
   color: #ffffff;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
 }
 #study.has-custom-bg .study-card p,
 #study.has-custom-bg .study-card span {
   color: #e2e8f0;
 }
+#study.has-custom-bg .study-card small {
+  color: #cbd5e1;
+}
+
 #study.has-custom-bg .study-mode-btn {
   background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(255, 255, 255, 0.16);
+  border-color: rgba(255, 255, 255, 0.18);
   color: #f8fafc;
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
 }
 #study.has-custom-bg .study-mode-btn:hover {
-  background: rgba(255, 255, 255, 0.16);
-  border-color: rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.18);
+  border-color: rgba(255, 255, 255, 0.35);
 }
 #study.has-custom-bg .study-mode-btn.active {
   background: var(--primary, #10b981);
@@ -2986,110 +2992,208 @@ dialog.detail-modal[open] {
   color: #ffffff;
 }
 #study.has-custom-bg .study-mode-btn span {
-  color: rgba(255, 255, 255, 0.85);
+  color: #e2e8f0;
 }
 #study.has-custom-bg .timer-bg-circle {
-  stroke: rgba(255, 255, 255, 0.14);
+  stroke: rgba(255, 255, 255, 0.16);
 }
 #study.has-custom-bg .timer-clock {
   color: #ffffff;
-  text-shadow: 0 4px 24px rgba(0, 0, 0, 0.5);
+  text-shadow: 0 4px 24px rgba(0, 0, 0, 0.65);
 }
 #study.has-custom-bg .timer-status-label {
-  background: rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.15);
   color: #ffffff;
-  backdrop-filter: blur(8px);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
 }
 #study.has-custom-bg .study-quote-card {
-  background: rgba(0, 0, 0, 0.28);
-  border-color: rgba(255, 255, 255, 0.12);
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.15);
   color: #f1f5f9;
 }
 #study.has-custom-bg .timer-quote-text {
   color: #e2e8f0;
+  font-weight: 500;
 }
 #study.has-custom-bg .study-goal-box label {
   color: #ffffff;
+  font-weight: 600;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
 }
 #study.has-custom-bg .study-goal-box input {
-  background: rgba(0, 0, 0, 0.35);
-  border-color: rgba(255, 255, 255, 0.2);
+  background: rgba(0, 0, 0, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.22);
   color: #ffffff;
 }
 #study.has-custom-bg .study-goal-box input::placeholder {
-  color: rgba(255, 255, 255, 0.5);
+  color: rgba(255, 255, 255, 0.6);
 }
 #study.has-custom-bg .study-action-ctrl.button-outline {
-  background: rgba(255, 255, 255, 0.1);
-  border-color: rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.28);
   color: #ffffff;
   backdrop-filter: blur(10px);
 }
 #study.has-custom-bg .study-action-ctrl.button-outline:hover {
-  background: rgba(255, 255, 255, 0.2);
-  border-color: rgba(255, 255, 255, 0.4);
+  background: rgba(255, 255, 255, 0.24);
+  border-color: rgba(255, 255, 255, 0.45);
 }
+
+/* Sound Tabs & Ambient Tracks */
 #study.has-custom-bg .sound-tab {
-  color: rgba(255, 255, 255, 0.7);
-  background: rgba(255, 255, 255, 0.06);
-  border-color: rgba(255, 255, 255, 0.1);
+  color: #cbd5e1;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.14);
 }
 #study.has-custom-bg .sound-tab:hover {
   color: #ffffff;
-  background: rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.18);
 }
 #study.has-custom-bg .sound-tab.active {
   color: #ffffff;
   background: var(--primary, #10b981);
   border-color: var(--primary, #10b981);
+  box-shadow: 0 0 14px rgba(16, 185, 129, 0.4);
 }
-#study.has-custom-bg .ambient-track {
-  background: rgba(0, 0, 0, 0.28);
-  border-color: rgba(255, 255, 255, 0.12);
-}
-#study.has-custom-bg .ambient-track-name {
+#study.has-custom-bg #toggleAmbientMaster {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.28);
   color: #ffffff;
 }
+#study.has-custom-bg #toggleAmbientMaster:hover {
+  background: rgba(255, 255, 255, 0.24);
+}
+#study.has-custom-bg .ambient-sub {
+  color: #cbd5e1;
+}
+#study.has-custom-bg .ambient-track {
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+}
+#study.has-custom-bg .ambient-name,
+#study.has-custom-bg .ambient-name strong {
+  color: #ffffff !important;
+  font-weight: 600;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+}
+#study.has-custom-bg .ambient-track small,
 #study.has-custom-bg .ambient-track-sub {
-  color: rgba(255, 255, 255, 0.7);
+  color: #cbd5e1 !important;
 }
 #study.has-custom-bg .ambient-track-toggle {
-  background: rgba(255, 255, 255, 0.12);
-  border-color: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.25);
   color: #ffffff;
 }
 #study.has-custom-bg .ambient-track-toggle:hover {
-  background: rgba(255, 255, 255, 0.22);
+  background: rgba(255, 255, 255, 0.25);
 }
 #study.has-custom-bg .ambient-track.active {
-  background: rgba(16, 185, 129, 0.15);
-  border-color: rgba(16, 185, 129, 0.45);
+  background: rgba(16, 185, 129, 0.22);
+  border-color: rgba(52, 211, 153, 0.6);
+  box-shadow: 0 0 16px rgba(16, 185, 129, 0.25);
 }
+#study.has-custom-bg .ambient-track.active .ambient-track-toggle {
+  background: var(--primary, #10b981);
+  border-color: var(--primary, #10b981);
+}
+#study.has-custom-bg .custom-audio-box {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px dashed rgba(255, 255, 255, 0.2);
+}
+#study.has-custom-bg .custom-audio-sub,
+#study.has-custom-bg .custom-audio-sub small {
+  color: #cbd5e1 !important;
+}
+
+/* Co-Study Lounge List (Không gian chung) */
+#study.has-custom-bg .co-study-head h3 {
+  color: #ffffff;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
+}
+#study.has-custom-bg .co-study-tip {
+  color: #cbd5e1;
+}
+#study.has-custom-bg .co-study-item {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+#study.has-custom-bg .co-study-item:hover {
+  background: rgba(255, 255, 255, 0.14);
+}
+#study.has-custom-bg .co-study-item.is-self {
+  background: rgba(16, 185, 129, 0.22) !important;
+  border: 1.5px solid rgba(52, 211, 153, 0.7) !important;
+  box-shadow: 0 0 16px rgba(16, 185, 129, 0.3);
+}
+#study.has-custom-bg .co-study-name,
+#study.has-custom-bg .co-study-name span,
+#study.has-custom-bg .co-study-user-title {
+  color: #ffffff !important;
+  font-weight: 600;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+}
+#study.has-custom-bg .self-status-pill {
+  background: rgba(16, 185, 129, 0.35);
+  color: #6ee7b7;
+  border: 1px solid rgba(52, 211, 153, 0.5);
+  font-size: 10px;
+  padding: 2px 7px;
+  border-radius: 6px;
+  font-weight: 600;
+}
+#study.has-custom-bg .co-study-goal {
+  color: #cbd5e1 !important;
+}
+#study.has-custom-bg .co-study-time {
+  background: rgba(0, 0, 0, 0.45) !important;
+  color: #a7f3d0 !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  font-weight: 600;
+}
+#study.has-custom-bg .co-study-empty {
+  color: #e2e8f0;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px dashed rgba(255, 255, 255, 0.25);
+}
+
+/* Study Logs & Quick Stats */
+#study.has-custom-bg .study-log-item {
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+}
+#study.has-custom-bg .study-log-title {
+  color: #ffffff !important;
+  font-weight: 600;
+}
+#study.has-custom-bg .study-log-time {
+  color: #a7f3d0 !important;
+}
+#study.has-custom-bg .study-log-meta,
+#study.has-custom-bg .study-empty-logs {
+  color: #cbd5e1 !important;
+}
+#study.has-custom-bg .study-stat-box {
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+}
+#study.has-custom-bg .study-stat-val {
+  color: #ffffff !important;
+  font-weight: 700;
+}
+#study.has-custom-bg .study-stat-label {
+  color: #cbd5e1 !important;
+}
+
 #study.has-custom-bg .custom-wall-box {
-  background: rgba(0, 0, 0, 0.28);
-  border-color: rgba(255, 255, 255, 0.14);
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.16);
 }
 #study.has-custom-bg .custom-wall-info {
-  color: rgba(255, 255, 255, 0.75);
-}
-#study.has-custom-bg .study-task-item {
-  background: rgba(0, 0, 0, 0.28);
-  border-color: rgba(255, 255, 255, 0.12);
-  color: #ffffff;
-}
-#study.has-custom-bg .study-task-text {
-  color: #ffffff;
-}
-#study.has-custom-bg .lounge-presence-item {
-  background: rgba(0, 0, 0, 0.28);
-  border-color: rgba(255, 255, 255, 0.12);
-  color: #ffffff;
-}
-#study.has-custom-bg .lounge-user-name {
-  color: #ffffff;
-}
-#study.has-custom-bg .lounge-user-goal {
-  color: rgba(255, 255, 255, 0.75);
+  color: #cbd5e1;
 }
 
 /* Zen View / Panoramic Mode (Thu gọn bảng để ngắm trọn hình nền) */
@@ -4155,10 +4259,20 @@ dialog.detail-modal[open] {
   color: var(--ink);
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+.self-status-pill {
+  font-size: 10px;
+  background: rgba(16, 185, 129, 0.15);
+  color: var(--primary);
+  padding: 1px 6px;
+  border-radius: 6px;
+  font-weight: 600;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  flex-shrink: 0;
 }
 .co-study-goal {
   font-size: 11px;
@@ -4167,6 +4281,11 @@ dialog.detail-modal[open] {
   overflow: hidden;
   text-overflow: ellipsis;
   margin-top: 2px;
+}
+.co-study-status-badge {
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 .co-study-time {
   font-size: 11px;

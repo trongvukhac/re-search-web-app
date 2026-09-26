@@ -2874,6 +2874,9 @@ function updateTimerDisplay() {
   $("#btnModeLongBreak")?.classList.toggle("active", studyState.mode === 'longbreak');
 
   updateTabTitle();
+  if (typeof renderCoStudyList === 'function') {
+    renderCoStudyList(lastFetchedLearners);
+  }
 }
 
 function setStudyMode(mode, duration) {
@@ -3137,84 +3140,123 @@ window.addEventListener("focus", () => {
 });
 
 /* --- 5. CO-STUDY LOUNGE (Real-Time Synchronized) --- */
+let lastFetchedLearners = [];
+
+function getSelfPresenceData() {
+  const curSession = session || (typeof window !== 'undefined' && window.session);
+  const myStreak = getUserStudyStreak();
+  const goalInput = $("#studyGoalInput");
+  const goalText = (studyState.goal && studyState.goal.trim()) ? studyState.goal.trim() : (goalInput ? goalInput.value.trim() : "") || "Nghiên cứu khoa học";
+
+  return {
+    userId: curSession ? curSession.id : 0,
+    name: curSession ? curSession.displayName : "Bạn",
+    role: curSession ? curSession.role : "student",
+    avatar: curSession ? (curSession.avatar || curSession.initials || (curSession.role === 'admin' ? '🛡️' : (curSession.role === 'ta' ? '🎓' : '🦊'))) : "🦊",
+    streak: myStreak,
+    streakTier: curSession ? (curSession.streakTier || (myStreak >= 28 ? 4 : (myStreak >= 14 ? 3 : (myStreak >= 7 ? 2 : (myStreak >= 3 ? 1 : 0))))) : (myStreak >= 28 ? 4 : (myStreak >= 14 ? 3 : (myStreak >= 7 ? 2 : (myStreak >= 3 ? 1 : 0)))),
+    goal: goalText,
+    mode: studyState.mode || 'focus',
+    durationMinutes: studyState.durationMinutes || 25,
+    remainingSeconds: studyState.remainingSeconds,
+    cycleIndex: studyState.cycleIndex || 1,
+    isRunning: Boolean(studyState.isRunning),
+    isSelf: true
+  };
+}
+
+function renderCoStudyList(rawLearners = []) {
+  let learners = Array.isArray(rawLearners) ? [...rawLearners] : [];
+  const curSession = session || (typeof window !== 'undefined' && window.session);
+  const myStreak = getUserStudyStreak();
+
+  // Find self if already in list and replace with live local state, or unshift self
+  const selfIdx = learners.findIndex(l => l.isSelf || (curSession && l.userId === curSession.id));
+  const selfData = getSelfPresenceData();
+
+  if (selfIdx >= 0) {
+    learners.splice(selfIdx, 1);
+  }
+  // Always guarantee self is at the top of the shared study room
+  learners.unshift(selfData);
+
+  const totalCount = Math.max(learners.length, 1);
+  const badge1 = $("#studyLiveCount");
+  const badge2 = $("#coStudyCountBadge");
+  if (badge1) badge1.textContent = totalCount;
+  if (badge2) badge2.textContent = `${totalCount} người trong phòng`;
+
+  const list = $("#coStudyList");
+  if (!list) return;
+
+  const canCheer = myStreak >= 3;
+
+  list.innerHTML = learners.map(l => {
+    const tierClass = `tier-${l.streakTier || 0}`;
+    const isSelfClass = l.isSelf ? 'is-self' : '';
+    const nameDisplay = l.isSelf ? `${escapeHTML(l.name)} (Bạn)` : escapeHTML(l.name);
+    const roleBadge = l.role === 'admin' ? '<span class="lb-role lb-role-admin">Admin</span>' : (l.role === 'ta' ? '<span class="lb-role lb-role-ta">TA</span>' : '');
+    
+    let statusText = '';
+    let statusIcon = '';
+    if (l.isRunning) {
+      const remainingMin = Math.max(1, Math.ceil((l.remainingSeconds || 0) / 60));
+      if (l.mode === 'shortbreak') {
+        statusIcon = '☕';
+        statusText = `Nghỉ ngắn ${remainingMin}m`;
+      } else if (l.mode === 'longbreak') {
+        statusIcon = '🌿';
+        statusText = `Nghỉ dài ${remainingMin}m`;
+      } else {
+        statusIcon = '🔥';
+        statusText = `Tập trung ${remainingMin}m`;
+      }
+    } else {
+      if (l.remainingSeconds < (l.durationMinutes * 60) && l.remainingSeconds > 0) {
+        statusIcon = '⏸️';
+        statusText = 'Tạm dừng';
+      } else {
+        statusIcon = '✨';
+        statusText = 'Sẵn sàng';
+      }
+    }
+
+    return `
+      <div class="co-study-item ${isSelfClass}">
+        <span class="avatar avatar-sm ${tierClass}">${escapeHTML(l.avatar || '🦊')}</span>
+        <div class="co-study-info">
+          <div class="co-study-name">
+            <span class="co-study-user-title">${nameDisplay}</span> ${roleBadge}
+            ${l.isSelf ? '<span class="self-status-pill">Đang học tại đây</span>' : ''}
+          </div>
+          <div class="co-study-goal">🎯 ${escapeHTML(l.goal || 'Nghiên cứu khoa học')}</div>
+        </div>
+        <div class="co-study-status-badge ${l.isRunning ? 'running' : 'idle'}">
+          <span class="co-study-time">${statusIcon} ${statusText}</span>
+        </div>
+        ${!l.isSelf && curSession ? `
+          <div class="co-study-cheers">
+            <button class="cheer-btn ${canCheer ? '' : 'locked'}" title="${canCheer ? 'Vỗ tay tán thưởng' : 'Mở khóa ở chuỗi 3 ngày 🔥'}" onclick="${canCheer ? `sendStudyCheer(${l.userId}, '👏')` : 'notifyCheerLocked()'}">👏</button>
+            <button class="cheer-btn ${canCheer ? '' : 'locked'}" title="${canCheer ? 'Mời cà phê tỉnh táo' : 'Mở khóa ở chuỗi 3 ngày 🔥'}" onclick="${canCheer ? `sendStudyCheer(${l.userId}, '☕')` : 'notifyCheerLocked()'}">☕</button>
+            <button class="cheer-btn ${canCheer ? '' : 'locked'}" title="${canCheer ? 'Tiếp lửa quyết tâm' : 'Mở khóa ở chuỗi 3 ngày 🔥'}" onclick="${canCheer ? `sendStudyCheer(${l.userId}, '🔥')` : 'notifyCheerLocked()'}">🔥</button>
+            <button class="cheer-btn ${canCheer ? '' : 'locked'}" title="${canCheer ? 'Gửi tim yêu thương' : 'Mở khóa ở chuỗi 3 ngày 🔥'}" onclick="${canCheer ? `sendStudyCheer(${l.userId}, '❤️')` : 'notifyCheerLocked()'}">❤️</button>
+            <button class="cheer-btn ${canCheer ? '' : 'locked'}" title="${canCheer ? 'Gợi ý ý tưởng sáng tạo' : 'Mở khóa ở chuỗi 3 ngày 🔥'}" onclick="${canCheer ? `sendStudyCheer(${l.userId}, '💡')` : 'notifyCheerLocked()'}">💡</button>
+            <button class="cheer-btn ${canCheer ? '' : 'locked'}" title="${canCheer ? 'Tăng tốc về đích' : 'Mở khóa ở chuỗi 3 ngày 🔥'}" onclick="${canCheer ? `sendStudyCheer(${l.userId}, '🚀')` : 'notifyCheerLocked()'}">🚀</button>
+          </div>
+        ` : ''}
+      </div>
+    `;
+  }).join("");
+}
+
 async function fetchStudyLounge() {
   if (!canAccessStudyLounge()) return;
   try {
     const res = await requestAPI("/api/study/lounge");
     if (!res) return;
 
-    let learners = res.learners || [];
-
-    // If local user is currently studying, guarantee they appear in the live list
-    if (studyState.isRunning || (studyState.remainingSeconds < studyState.durationMinutes * 60)) {
-      const hasSelf = learners.some(l => l.isSelf || (session && l.userId === session.id));
-      if (!hasSelf) {
-        const myStreak = getUserStudyStreak();
-        learners.unshift({
-          userId: session ? session.id : 0,
-          name: session ? session.displayName : "Khách",
-          role: session ? session.role : "student",
-          avatar: session ? (session.initials || "🦊") : "🦊",
-          streak: myStreak,
-          streakTier: session ? (session.streakTier || 0) : 0,
-          goal: studyState.goal || "Nghiên cứu khoa học",
-          mode: studyState.mode,
-          durationMinutes: studyState.durationMinutes,
-          remainingSeconds: studyState.remainingSeconds,
-          cycleIndex: studyState.cycleIndex,
-          isRunning: studyState.isRunning,
-          isSelf: true
-        });
-      }
-    }
-
-    const totalCount = Math.max(res.activeCount || 0, learners.length);
-    const badge1 = $("#studyLiveCount");
-    const badge2 = $("#coStudyCountBadge");
-    if (badge1) badge1.textContent = totalCount;
-    if (badge2) badge2.textContent = `${totalCount} người trong phòng`;
-
-    const list = $("#coStudyList");
-    if (list) {
-      if (learners.length === 0) {
-        list.innerHTML = `<div class="co-study-empty">Chưa có ai trong phòng. Bấm <b>Bắt đầu học</b> để là người đầu tiên!</div>`;
-      } else {
-        const userStreak = getUserStudyStreak();
-        const canCheer = userStreak >= 3;
-
-        list.innerHTML = learners.map(l => {
-          const tierClass = `tier-${l.streakTier || 0}`;
-          const isSelfClass = l.isSelf ? 'is-self' : '';
-          const nameDisplay = l.isSelf ? `${escapeHTML(l.name)} (Bạn)` : escapeHTML(l.name);
-          const roleBadge = l.role === 'admin' ? '<span class="lb-role lb-role-admin">Admin</span>' : (l.role === 'ta' ? '<span class="lb-role lb-role-ta">TA</span>' : '');
-          const statusIcon = l.isRunning ? (l.mode === 'shortbreak' ? '☕' : (l.mode === 'longbreak' ? '🌿' : '🔥')) : '⏸️';
-          const remainingMin = Math.ceil((l.remainingSeconds || 0) / 60);
-
-          return `
-            <div class="co-study-item ${isSelfClass}">
-              <span class="avatar avatar-sm ${tierClass}">${escapeHTML(l.avatar || '🦊')}</span>
-              <div class="co-study-info">
-                <div class="co-study-name">
-                  ${nameDisplay} ${roleBadge}
-                </div>
-                <div class="co-study-goal">🎯 ${escapeHTML(l.goal || 'Nghiên cứu khoa học')}</div>
-              </div>
-              <span class="co-study-time">${statusIcon} ${l.isRunning ? `${remainingMin}m` : 'Tạm dừng'}</span>
-              ${!l.isSelf && session ? `
-                <div class="co-study-cheers">
-                  <button class="cheer-btn ${canCheer ? '' : 'locked'}" title="${canCheer ? 'Vỗ tay tán thưởng' : 'Mở khóa ở chuỗi 3 ngày 🔥'}" onclick="${canCheer ? `sendStudyCheer(${l.userId}, '👏')` : 'notifyCheerLocked()'}">👏</button>
-                  <button class="cheer-btn ${canCheer ? '' : 'locked'}" title="${canCheer ? 'Mời cà phê tỉnh táo' : 'Mở khóa ở chuỗi 3 ngày 🔥'}" onclick="${canCheer ? `sendStudyCheer(${l.userId}, '☕')` : 'notifyCheerLocked()'}">☕</button>
-                  <button class="cheer-btn ${canCheer ? '' : 'locked'}" title="${canCheer ? 'Tiếp lửa quyết tâm' : 'Mở khóa ở chuỗi 3 ngày 🔥'}" onclick="${canCheer ? `sendStudyCheer(${l.userId}, '🔥')` : 'notifyCheerLocked()'}">🔥</button>
-                  <button class="cheer-btn ${canCheer ? '' : 'locked'}" title="${canCheer ? 'Gửi tim yêu thương' : 'Mở khóa ở chuỗi 3 ngày 🔥'}" onclick="${canCheer ? `sendStudyCheer(${l.userId}, '❤️')` : 'notifyCheerLocked()'}">❤️</button>
-                  <button class="cheer-btn ${canCheer ? '' : 'locked'}" title="${canCheer ? 'Gợi ý ý tưởng sáng tạo' : 'Mở khóa ở chuỗi 3 ngày 🔥'}" onclick="${canCheer ? `sendStudyCheer(${l.userId}, '💡')` : 'notifyCheerLocked()'}">💡</button>
-                  <button class="cheer-btn ${canCheer ? '' : 'locked'}" title="${canCheer ? 'Tăng tốc về đích' : 'Mở khóa ở chuỗi 3 ngày 🔥'}" onclick="${canCheer ? `sendStudyCheer(${l.userId}, '🚀')` : 'notifyCheerLocked()'}">🚀</button>
-                </div>
-              ` : ''}
-            </div>
-          `;
-        }).join("");
-      }
-    }
+    lastFetchedLearners = res.learners || [];
+    renderCoStudyList(lastFetchedLearners);
 
     // CROSS-DEVICE REAL-TIME SYNC
     if (res.mySession) {
@@ -3256,6 +3298,8 @@ async function fetchStudyLounge() {
     }
   } catch (e) {
     console.error("fetchStudyLounge error:", e);
+    // Even if offline, still render local presence
+    renderCoStudyList(lastFetchedLearners);
   }
 }
 
@@ -3480,12 +3524,14 @@ function toggleEnvTrack(trackId) {
   const savedVol = studyState.envVolumes[trackId] ?? (track ? track.defaultVol : 50);
   const userVol = savedVol / 100;
 
+  getAudioContext();
+
   if (DEFAULT_ENV_AUDIO_SOURCES && DEFAULT_ENV_AUDIO_SOURCES[trackId]) {
     let player = studyState.envAudioPlayers[trackId];
     if (!player || player.error) {
       if (player) { try { player.pause(); player.src = ""; } catch (e) {} }
       player = new Audio(DEFAULT_ENV_AUDIO_SOURCES[trackId]);
-      player.loop = true; // Phát vòng lặp
+      player.loop = true;
       player.preload = "auto";
       studyState.envAudioPlayers[trackId] = player;
     }
@@ -3494,8 +3540,8 @@ function toggleEnvTrack(trackId) {
     if (playPromise !== undefined) {
       playPromise.catch(e => {
         if (e.name === "AbortError") return;
-        console.warn("Env audio stream error:", e);
-        toast("Nhấp vào trang để cho phép phát âm thanh môi trường.");
+        console.warn("Env audio stream warning:", e);
+        toast("Nhấp vào trang để kích hoạt âm thanh môi trường.");
       });
     }
     studyState.activeEnvTrack = trackId;
@@ -3543,7 +3589,221 @@ function updateEnvVolume(trackId, val) {
   }
 }
 
-/* --- 6.2 GIAO DIỆN & PHÁT ÂM THANH PHỐI HỢP (9 Âm thanh đơn lẻ, mix cùng lúc, loop vô tận) --- */
+/* --- PROCEDURAL SOUND GENERATOR ENGINE (Web Audio instant synthesis) --- */
+function startProceduralMixSynth(trackId, userGain = 0.35) {
+  const ctx = getAudioContext();
+  if (!ctx) return;
+  if (studyState.mixSoundNodes[trackId]) return;
+
+  const masterGain = ctx.createGain();
+  masterGain.gain.setValueAtTime(Math.max(0.01, userGain), ctx.currentTime);
+  masterGain.connect(ctx.destination);
+  studyState.mixSoundGains[trackId] = masterGain;
+
+  const nodes = [];
+
+  try {
+    if (trackId === 'mix_1') { // Nước chảy (Stream)
+      const noise = ctx.createBufferSource();
+      noise.buffer = createPinkNoiseBuffer(ctx);
+      noise.loop = true;
+      const filter = ctx.createBiquadFilter();
+      filter.type = 'bandpass';
+      filter.frequency.setValueAtTime(650, ctx.currentTime);
+      filter.Q.value = 1.8;
+
+      const lfo = ctx.createOscillator();
+      lfo.frequency.setValueAtTime(0.35, ctx.currentTime);
+      const lfoGain = ctx.createGain();
+      lfoGain.gain.setValueAtTime(250, ctx.currentTime);
+      lfo.connect(lfoGain);
+      lfoGain.connect(filter.frequency);
+      lfo.start();
+
+      noise.connect(filter);
+      filter.connect(masterGain);
+      noise.start();
+      nodes.push(noise, filter, lfo, lfoGain);
+    } else if (trackId === 'mix_2') { // Tiếng mưa (Rain)
+      const noise = ctx.createBufferSource();
+      noise.buffer = createPinkNoiseBuffer(ctx);
+      noise.loop = true;
+      const filter = ctx.createBiquadFilter();
+      filter.type = 'lowpass';
+      filter.frequency.setValueAtTime(950, ctx.currentTime);
+      noise.connect(filter);
+      filter.connect(masterGain);
+      noise.start();
+      nodes.push(noise, filter);
+    } else if (trackId === 'mix_3') { // Chuông gió (Windchime)
+      const notes = [587.33, 659.25, 783.99, 880.00, 1046.50, 1174.66, 1318.51];
+      const timer = setInterval(() => {
+        if (!studyState.activeMixSounds['mix_3'] || !studyState.mixSoundGains['mix_3']) return;
+        const count = Math.random() > 0.5 ? 2 : 1;
+        for (let i = 0; i < count; i++) {
+          const osc = ctx.createOscillator();
+          const noteGain = ctx.createGain();
+          const freq = notes[Math.floor(Math.random() * notes.length)];
+          const startTime = ctx.currentTime + (i * 0.15);
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(freq, startTime);
+          noteGain.gain.setValueAtTime(0.12, startTime);
+          noteGain.gain.exponentialRampToValueAtTime(0.0001, startTime + 2.5);
+          osc.connect(noteGain);
+          noteGain.connect(masterGain);
+          osc.start(startTime);
+          osc.stop(startTime + 2.6);
+        }
+      }, 2800);
+      nodes.push({ stop: () => clearInterval(timer) });
+    } else if (trackId === 'mix_4') { // Tiếng chim hót (Birds)
+      const timer = setInterval(() => {
+        if (!studyState.activeMixSounds['mix_4'] || !studyState.mixSoundGains['mix_4']) return;
+        const now = ctx.currentTime;
+        const osc = ctx.createOscillator();
+        const birdGain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(2400 + Math.random() * 400, now);
+        osc.frequency.exponentialRampToValueAtTime(3200 + Math.random() * 800, now + 0.12);
+        osc.frequency.exponentialRampToValueAtTime(2000 + Math.random() * 300, now + 0.25);
+        birdGain.gain.setValueAtTime(0.08, now);
+        birdGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.35);
+        osc.connect(birdGain);
+        birdGain.connect(masterGain);
+        osc.start(now);
+        osc.stop(now + 0.38);
+      }, 3200);
+      nodes.push({ stop: () => clearInterval(timer) });
+    } else if (trackId === 'mix_5') { // Tiếng lá xào xạc (Leaves)
+      const noise = ctx.createBufferSource();
+      noise.buffer = createPinkNoiseBuffer(ctx);
+      noise.loop = true;
+      const filter = ctx.createBiquadFilter();
+      filter.type = 'bandpass';
+      filter.frequency.setValueAtTime(1800, ctx.currentTime);
+      filter.Q.value = 0.8;
+      const lfo = ctx.createOscillator();
+      lfo.frequency.setValueAtTime(0.6, ctx.currentTime);
+      const lfoGain = ctx.createGain();
+      lfoGain.gain.setValueAtTime(0.08, ctx.currentTime);
+      lfo.connect(lfoGain.gain);
+      lfo.start();
+      noise.connect(filter);
+      filter.connect(masterGain);
+      noise.start();
+      nodes.push(noise, filter, lfo, lfoGain);
+    } else if (trackId === 'mix_6') { // Tiếng gió thổi (Wind)
+      const noise = ctx.createBufferSource();
+      noise.buffer = createBrownNoiseBuffer(ctx);
+      noise.loop = true;
+      const filter = ctx.createBiquadFilter();
+      filter.type = 'lowpass';
+      filter.frequency.setValueAtTime(350, ctx.currentTime);
+      const lfo = ctx.createOscillator();
+      lfo.frequency.setValueAtTime(0.18, ctx.currentTime);
+      const lfoGain = ctx.createGain();
+      lfoGain.gain.setValueAtTime(200, ctx.currentTime);
+      lfo.connect(lfoGain);
+      lfoGain.connect(filter.frequency);
+      lfo.start();
+      noise.connect(filter);
+      filter.connect(masterGain);
+      noise.start();
+      nodes.push(noise, filter, lfo, lfoGain);
+    } else if (trackId === 'mix_7') { // Tiếng dế kêu (Crickets)
+      const timer = setInterval(() => {
+        if (!studyState.activeMixSounds['mix_7'] || !studyState.mixSoundGains['mix_7']) return;
+        const now = ctx.currentTime;
+        for (let i = 0; i < 3; i++) {
+          const osc = ctx.createOscillator();
+          const pulseGain = ctx.createGain();
+          const start = now + (i * 0.07);
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(4600, start);
+          pulseGain.gain.setValueAtTime(0.04, start);
+          pulseGain.gain.exponentialRampToValueAtTime(0.0001, start + 0.05);
+          osc.connect(pulseGain);
+          pulseGain.connect(masterGain);
+          osc.start(start);
+          osc.stop(start + 0.06);
+        }
+      }, 1200);
+      nodes.push({ stop: () => clearInterval(timer) });
+    } else if (trackId === 'mix_8') { // Tiếng lửa cháy (Campfire)
+      const noise = ctx.createBufferSource();
+      noise.buffer = createBrownNoiseBuffer(ctx);
+      noise.loop = true;
+      const filter = ctx.createBiquadFilter();
+      filter.type = 'lowpass';
+      filter.frequency.setValueAtTime(400, ctx.currentTime);
+      noise.connect(filter);
+      filter.connect(masterGain);
+      noise.start();
+
+      const timer = setInterval(() => {
+        if (!studyState.activeMixSounds['mix_8'] || !studyState.mixSoundGains['mix_8']) return;
+        const now = ctx.currentTime;
+        const osc = ctx.createOscillator();
+        const popGain = ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(120 + Math.random() * 800, now);
+        popGain.gain.setValueAtTime(0.12, now);
+        popGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.03);
+        osc.connect(popGain);
+        popGain.connect(masterGain);
+        osc.start(now);
+        osc.stop(now + 0.04);
+      }, 280);
+
+      nodes.push(noise, filter, { stop: () => clearInterval(timer) });
+    } else if (trackId === 'mix_9') { // Tiếng sóng biển (Waves)
+      const noise = ctx.createBufferSource();
+      noise.buffer = createPinkNoiseBuffer(ctx);
+      noise.loop = true;
+      const filter = ctx.createBiquadFilter();
+      filter.type = 'lowpass';
+      filter.frequency.setValueAtTime(500, ctx.currentTime);
+
+      const waveGain = ctx.createGain();
+      const lfo = ctx.createOscillator();
+      lfo.frequency.setValueAtTime(0.12, ctx.currentTime); // ~8s cycle
+      const lfoGain = ctx.createGain();
+      lfoGain.gain.setValueAtTime(0.18, ctx.currentTime);
+      lfo.connect(lfoGain);
+      lfoGain.connect(waveGain.gain);
+      lfo.start();
+
+      noise.connect(filter);
+      filter.connect(waveGain);
+      waveGain.connect(masterGain);
+      noise.start();
+      nodes.push(noise, filter, waveGain, lfo, lfoGain);
+    }
+  } catch (err) {
+    console.warn("startProceduralMixSynth error:", err);
+  }
+
+  studyState.mixSoundNodes[trackId] = nodes;
+}
+
+function stopProceduralMixSynth(trackId) {
+  const nodes = studyState.mixSoundNodes[trackId];
+  if (nodes && Array.isArray(nodes)) {
+    nodes.forEach(n => {
+      try {
+        if (typeof n.stop === 'function') n.stop();
+        if (typeof n.disconnect === 'function') n.disconnect();
+      } catch (e) {}
+    });
+  }
+  const gain = studyState.mixSoundGains[trackId];
+  if (gain) {
+    try { gain.disconnect(); } catch (e) {}
+  }
+  delete studyState.mixSoundNodes[trackId];
+  delete studyState.mixSoundGains[trackId];
+}
+
 /* --- 6.2 GIAO DIỆN & PHÁT ÂM THANH PHỐI HỢP (9 Âm thanh đơn lẻ, mix cùng lúc, loop vô tận) --- */
 function renderMixAudioGrid() {
   const grid = $("#mixAudioGrid");
@@ -3598,31 +3858,40 @@ function toggleMixTrack(trackId) {
         ext.currentTime = 0;
       } catch (e) {}
     }
+    stopProceduralMixSynth(trackId);
     studyState.activeMixSounds[trackId] = false;
   } else {
     // START TRACK
+    studyState.activeMixSounds[trackId] = true;
     const savedVol = studyState.mixVolumes[trackId] ?? (track ? track.defaultVol : 40);
     const userVol = savedVol / 100;
 
+    // Start procedural synth for immediate responsiveness
+    startProceduralMixSynth(trackId, userVol * 0.35);
+
+    // Also attempt remote stream
     if (DEFAULT_MIX_AUDIO_SOURCES && DEFAULT_MIX_AUDIO_SOURCES[trackId]) {
       let player = studyState.mixAudioPlayers[trackId];
       if (!player || player.error) {
         if (player) { try { player.pause(); player.src = ""; } catch (e) {} }
         player = new Audio(DEFAULT_MIX_AUDIO_SOURCES[trackId]);
-        player.loop = true; // Phát vòng lặp
+        player.loop = true;
         player.preload = "auto";
         studyState.mixAudioPlayers[trackId] = player;
       }
       player.volume = Math.max(0, Math.min(1, userVol));
       const playPromise = player.play();
       if (playPromise !== undefined) {
-        playPromise.catch(e => {
+        playPromise.then(() => {
+          const synthGain = studyState.mixSoundGains[trackId];
+          if (synthGain && studyState.audioCtx) {
+            synthGain.gain.setValueAtTime(0.02, studyState.audioCtx.currentTime);
+          }
+        }).catch(e => {
           if (e.name === "AbortError") return;
-          console.warn("Mix stream error:", e);
-          toast("Nhấp vào trang để cho phép phát âm thanh.");
+          console.log("Using procedural synth for:", trackId);
         });
       }
-      studyState.activeMixSounds[trackId] = true;
     }
   }
 
@@ -3638,7 +3907,7 @@ function updateMixVolume(trackId, val) {
   if (ext) ext.volume = Math.max(0, Math.min(1, userVol));
   const gain = studyState.mixSoundGains[trackId];
   if (gain && studyState.audioCtx) {
-    gain.gain.setValueAtTime(userVol * 0.3, studyState.audioCtx.currentTime);
+    gain.gain.setValueAtTime(userVol * 0.35, studyState.audioCtx.currentTime);
   }
 }
 
@@ -3703,12 +3972,14 @@ function toggleMusicTrack(trackId) {
   const savedVol = studyState.musicVolumes[trackId] ?? (track ? track.defaultVol : 45);
   const userVol = savedVol / 100;
 
+  getAudioContext();
+
   if (DEFAULT_MUSIC_AUDIO_SOURCES && DEFAULT_MUSIC_AUDIO_SOURCES[trackId]) {
     let player = studyState.musicAudioPlayers[trackId];
     if (!player || player.error) {
       if (player) { try { player.pause(); player.src = ""; } catch (e) {} }
       player = new Audio(DEFAULT_MUSIC_AUDIO_SOURCES[trackId]);
-      player.loop = true; // Phát vòng lặp
+      player.loop = true;
       player.preload = "auto";
       studyState.musicAudioPlayers[trackId] = player;
     }
@@ -3718,7 +3989,7 @@ function toggleMusicTrack(trackId) {
       playPromise.catch(e => {
         if (e.name === "AbortError") return;
         console.warn("Music audio stream error:", e);
-        toast("Nhấp vào trang để cho phép phát âm thanh.");
+        toast("Nhấp vào trang để kích hoạt phát nhạc.");
       });
     }
     studyState.activeMusicTrack = trackId;
@@ -3773,7 +4044,16 @@ function stopAllStudyAudio() {
   // Stop all active mix sounds
   MIX_SOUND_TRACKS.forEach(t => {
     if (studyState.activeMixSounds[t.id]) {
-      toggleMixTrack(t.id);
+      const ext = studyState.mixAudioPlayers[t.id];
+      if (ext) {
+        try {
+          ext.pause();
+          ext.currentTime = 0;
+        } catch (e) {}
+      }
+      stopProceduralMixSynth(t.id);
+      studyState.activeMixSounds[t.id] = false;
+      updateMixGridDOM(t.id);
     }
   });
 
@@ -3784,10 +4064,8 @@ function stopAllStudyAudio() {
     }
   });
 
-  renderEnvironmentAudioGrid();
-  renderMixAudioGrid();
-  renderMusicAudioGrid();
-  loadCustomAudioFromDB();
+  updateEnvGridDOM();
+  updateMusicGridDOM();
   updateMasterAmbientButtonState();
 }
 
@@ -4991,6 +5269,7 @@ function onEnterStudyLounge() {
     return;
   }
   updateStudyStreakPerks();
+  renderCoStudyList(lastFetchedLearners);
   fetchStudyLounge();
   loadStudyTodos();
   renderEnvironmentAudioGrid();
