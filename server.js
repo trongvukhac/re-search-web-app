@@ -189,6 +189,13 @@ try { db.exec("ALTER TABLE study_sessions ADD COLUMN is_running INTEGER NOT NULL
 try { db.exec("ALTER TABLE study_sessions ADD COLUMN started_at_ms INTEGER NOT NULL DEFAULT 0;"); } catch (e) {}
 try { db.exec("ALTER TABLE study_sessions ADD COLUMN last_ping_ms INTEGER NOT NULL DEFAULT 0;"); } catch (e) {}
 try { db.exec("ALTER TABLE study_sessions ADD COLUMN cycle_index INTEGER NOT NULL DEFAULT 1;"); } catch (e) {}
+try {
+  db.exec(`
+    INSERT INTO user_streak_shields (user_id, shields, last_milestone_rewarded, updated_at)
+    SELECT id, 1, 0, CURRENT_TIMESTAMP FROM users
+    ON CONFLICT(user_id) DO UPDATE SET shields = CASE WHEN shields = 0 THEN 1 ELSE shields END;
+  `);
+} catch (e) {}
 
 const defaultTopics = [
   "Đề tài", "Lý thuyết", "Phương pháp", 
@@ -371,10 +378,10 @@ function calculateUserStreak(userId, todayDate, formatYMD) {
   let shieldRow = db.prepare("SELECT * FROM user_streak_shields WHERE user_id = ?").get(userId);
   if (!shieldRow) {
     try {
-      db.prepare("INSERT OR IGNORE INTO user_streak_shields (user_id, shields, last_milestone_rewarded) VALUES (?, 0, 0)").run(userId);
-      shieldRow = db.prepare("SELECT * FROM user_streak_shields WHERE user_id = ?").get(userId) || { user_id: userId, shields: 0, last_milestone_rewarded: 0 };
+      db.prepare("INSERT OR IGNORE INTO user_streak_shields (user_id, shields, last_milestone_rewarded) VALUES (?, 1, 0)").run(userId);
+      shieldRow = db.prepare("SELECT * FROM user_streak_shields WHERE user_id = ?").get(userId) || { user_id: userId, shields: 1, last_milestone_rewarded: 0 };
     } catch (e) {
-      shieldRow = { user_id: userId, shields: 0, last_milestone_rewarded: 0 };
+      shieldRow = { user_id: userId, shields: 1, last_milestone_rewarded: 0 };
     }
   }
 

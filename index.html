@@ -135,10 +135,10 @@
                 <div class="streak-number" id="activityStreak">
                   0 <span>ngày</span>
                 </div>
-                <div class="streak-sub-info" id="streakSubInfo">
-                  <span class="streak-shield-badge" id="streakShieldsBadge" title="Khiên bảo vệ chuỗi"><span class="shield-icon">🛡️</span> <b id="streakShieldsCount">0</b> khiên</span>
-                  <span class="streak-tier-label" id="streakTierLabel"></span>
-                </div>
+                <div class="streak-tier-label" id="streakTierLabel">Tân binh</div>
+              </div>
+              <div class="streak-shield-wrap">
+                <span class="streak-shield-badge" id="streakShieldsBadge" title="Khiên bảo vệ chuỗi"><span class="shield-icon">🛡️</span> <b id="streakShieldsCount">0</b> khiên</span>
               </div>
             </div>
 
@@ -340,6 +340,9 @@
             <span class="study-live-badge"><span class="pulse-dot"></span> <span id="studyLiveCount">0</span> đang học</span>
             <button type="button" class="study-action-btn" id="studyStreakChip" onclick="openStreakJourneyModal()" title="Xem hành trình mở khóa đặc quyền">
               <span>🔥 Chuỗi:</span> <strong id="studyUserStreakVal">0</strong> ngày
+            </button>
+            <button type="button" class="study-action-btn" id="studyZenToggleBtn" onclick="toggleStudyZenView()" title="Chế độ Không gian: Thu gọn bảng để xem trọn hình nền">
+              <span id="studyZenIcon">🖼️</span> <span id="studyZenText">Không gian</span>
             </button>
             <button type="button" class="study-action-btn icon-only" id="studySettingsBtn" title="Cài đặt Pomodoro" onclick="openStudySettingsModal()">
               ⚙️
@@ -616,13 +619,18 @@
 
                 <!-- Wallpaper Overlay & Dimming Control -->
                 <div class="wallpaper-dim-wrap" id="wallpaperDimControl">
-                  <div class="theme-tier-title" style="margin-bottom: 4px;">
-                    <span>Độ tương phản & Làm mờ nền</span>
+                  <div class="theme-tier-title" style="margin-bottom: 6px;">
+                    <span>Tùy chỉnh Hiển thị & Độ trong suốt</span>
                   </div>
                   <div class="wallpaper-dim-slider-box">
-                    <span style="font-size: 13px; color: var(--ink);">Lớp phủ:</span>
-                    <input type="range" id="wallpaperDimSlider" min="0" max="90" step="5" value="40" oninput="handleWallpaperDimChange(this.value)" style="flex: 1; cursor: pointer;" />
-                    <span id="wallpaperDimVal" style="font-size: 12px; font-weight: 700; width: 36px; text-align: right; color: var(--ink);">40%</span>
+                    <span style="font-size: 13px; color: var(--ink); min-width: 90px;">Lớp tối nền:</span>
+                    <input type="range" id="wallpaperDimSlider" min="0" max="80" step="5" value="35" oninput="handleWallpaperDimChange(this.value)" style="flex: 1; cursor: pointer;" />
+                    <span id="wallpaperDimVal" style="font-size: 12px; font-weight: 700; width: 36px; text-align: right; color: var(--ink);">35%</span>
+                  </div>
+                  <div class="wallpaper-dim-slider-box" style="margin-top: 8px;">
+                    <span style="font-size: 13px; color: var(--ink); min-width: 90px;">Độ mờ thẻ:</span>
+                    <input type="range" id="studyCardGlassSlider" min="15" max="90" step="5" value="50" oninput="handleCardGlassChange(this.value)" style="flex: 1; cursor: pointer;" />
+                    <span id="studyCardGlassVal" style="font-size: 12px; font-weight: 700; width: 36px; text-align: right; color: var(--ink);">50%</span>
                   </div>
                 </div>
 

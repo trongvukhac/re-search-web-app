@@ -31,7 +31,8 @@ function getInitialStudySettings() {
     browserNotifications: false,
     alarmSound: "bell",
     activeWallpaper: "default",
-    wallpaperDim: 40,
+    wallpaperDim: 35,
+    cardGlassOpacity: 50,
     activeAura: "emerald",
     clockColor: "default"
   };
@@ -271,6 +272,19 @@ const STREAK_MILESTONES = [
     studyDesc: "Chờ nhé, sắp có rồi"
   }
 ];
+
+function getStreakTitle(streak = 0, tier) {
+  const s = Number(streak) || 0;
+  const t = Number(tier !== undefined ? tier : getStreakTier(s));
+  const milestone = STREAK_MILESTONES.slice().reverse().find(m => m.tier <= t && s >= m.days);
+  if (milestone) return milestone.title;
+  if (t === 5) return "Độc nhất vô nhị";
+  if (t === 4) return "Bậc thầy học thuật";
+  if (t === 3) return "Nhà nghiên cứu tài năng";
+  if (t === 2) return "Học giả bền bỉ";
+  if (t === 1) return "Sinh viên năng động";
+  return "Tân binh";
+}
 
 window.openStreakJourneyModal = function() {
   const modal = document.getElementById("streakJourneyModal");
@@ -648,6 +662,11 @@ async function hydrateServer() {
 
           if ($("#activityStreak"))
             $("#activityStreak").innerHTML = `${streak} <span>ngày</span>`;
+
+          const tierLabel = $("#streakTierLabel");
+          if (tierLabel) {
+            tierLabel.textContent = getStreakTitle(streak, streakTier);
+          }
 
           const shieldsCount = $("#streakShieldsCount");
           if (shieldsCount) {
@@ -1705,6 +1724,11 @@ document.addEventListener("DOMContentLoaded", () => {
   const flameHero = $("#streakFlameHero");
   if (flameHero && !flameHero.innerHTML) {
     flameHero.innerHTML = getFlameSVG(0, 46);
+  }
+
+  const tierLabel = $("#streakTierLabel");
+  if (tierLabel && !tierLabel.textContent.trim()) {
+    tierLabel.textContent = getStreakTitle(0, 0);
   }
 
   const grid = $("#activityGrid");
@@ -4304,12 +4328,14 @@ window.handleCustomMusicAudioUpload = (file) => handleCustomAudioUpload(file, 'm
 
 /* --- 9. WALLPAPER PRESETS, CLOCK COLOR & EXCLUSIVE COLOR GRADIENTS --- */
 const WALLPAPER_PRESETS = [
-  { id: 'default', name: 'Mặc định RE:SEARCH', style: 'linear-gradient(135deg, rgba(20,24,22,0.95), rgba(12,16,14,0.98))' },
-  { id: 'library', name: 'Thư viện cổ Oxford', style: 'linear-gradient(135deg, #1f1d1a 0%, #11100e 100%)' },
-  { id: 'cafe', name: 'Góc Cafe ấm áp', style: 'linear-gradient(135deg, #2b1f1a 0%, #17110e 100%)' },
-  { id: 'mountain', name: 'Sương mù trên núi', style: 'linear-gradient(135deg, #182226 0%, #0d1417 100%)' },
-  { id: 'sunset', name: 'Hoàng hôn giảng đường', style: 'linear-gradient(135deg, #2d1822 0%, #150b10 100%)' },
-  { id: 'zen', name: 'Tối giản Than chì (Zen)', style: 'linear-gradient(135deg, #151515 0%, #0a0a0a 100%)' }
+  { id: 'default', name: 'Mặc định RE:SEARCH', type: 'gradient', src: '', style: 'linear-gradient(135deg, rgba(20,24,22,0.95), rgba(12,16,14,0.98))' },
+  { id: 'library', name: 'Thư viện cổ Oxford', type: 'image', src: '/public/assets/wallpapers/library.jpg', style: 'url(/public/assets/wallpapers/library.jpg)' },
+  { id: 'cafe', name: 'Góc Cafe ấm áp', type: 'image', src: '/public/assets/wallpapers/cafe.jpg', style: 'url(/public/assets/wallpapers/cafe.jpg)' },
+  { id: 'mountain', name: 'Sương mù trên núi', type: 'image', src: '/public/assets/wallpapers/mountain.jpg', style: 'url(/public/assets/wallpapers/mountain.jpg)' },
+  { id: 'sunset', name: 'Hoàng hôn giảng đường', type: 'image', src: '/public/assets/wallpapers/sunset.jpg', style: 'url(/public/assets/wallpapers/sunset.jpg)' },
+  { id: 'lofi', name: 'Góc học Lo-fi Chill', type: 'image', src: '/public/assets/wallpapers/lofi.jpg', style: 'url(/public/assets/wallpapers/lofi.jpg)' },
+  { id: 'zen', name: 'Không gian Thiền (Zen)', type: 'image', src: '/public/assets/wallpapers/zen.jpg', style: 'url(/public/assets/wallpapers/zen.jpg)' },
+  { id: 'space', name: 'Vũ trụ & Ngàn sao', type: 'image', src: '/public/assets/wallpapers/space.jpg', style: 'url(/public/assets/wallpapers/space.jpg)' }
 ];
 
 function renderWallpaperPresets() {
@@ -4320,9 +4346,12 @@ function renderWallpaperPresets() {
 
   cont.innerHTML = WALLPAPER_PRESETS.map(p => {
     const isSelected = studySettings.activeWallpaper === p.id;
+    const thumbStyle = (p.type === 'image' && p.src)
+      ? `background-image: url('${p.src}'); background-size: cover; background-position: center;`
+      : `background: ${p.style};`;
     return `
       <div class="preset-thumb-card ${isSelected ? 'selected' : ''}" onclick="${unlocked ? `applyStudyWallpaperPreset('${p.id}')` : `notifyPerkLocked(14, 'Kho hình nền học thuật')`}">
-        <div class="preset-thumb-color" style="background: ${p.style};"></div>
+        <div class="preset-thumb-color" style="${thumbStyle}"></div>
         <span class="preset-thumb-name">${p.name}</span>
         ${isSelected ? '<span class="preset-active-indicator">✓</span>' : ''}
       </div>
@@ -4346,6 +4375,8 @@ function applyStudyWallpaperPreset(presetId) {
     if (bgLayer) {
       bgLayer.style.backgroundImage = p.style;
       bgLayer.style.backgroundSize = "cover";
+      bgLayer.style.backgroundPosition = "center";
+      bgLayer.style.backgroundRepeat = "no-repeat";
     }
   }
   const nameEl = $("#customWallName");
@@ -4354,6 +4385,8 @@ function applyStudyWallpaperPreset(presetId) {
   }
   renderWallpaperPresets();
   renderCustomWallpapersList();
+  applyWallpaperDim(studySettings.wallpaperDim);
+  applyCardGlass(studySettings.cardGlassOpacity);
   toast(`Đã chọn hình nền: ${p.name}`);
 }
 
@@ -4549,14 +4582,14 @@ async function confirmDeleteCustomWallpaper(wallId) {
 }
 
 function handleWallpaperDimChange(val) {
-  val = Math.max(0, Math.min(90, Number(val) || 40));
+  val = Math.max(0, Math.min(80, Number(val) || 35));
   studySettings.wallpaperDim = val;
   saveStudySettings(false);
   applyWallpaperDim(val);
 }
 
 function applyWallpaperDim(val) {
-  const dim = (typeof val !== 'undefined' ? val : (studySettings.wallpaperDim ?? 40));
+  const dim = (typeof val !== 'undefined' ? val : (studySettings.wallpaperDim ?? 35));
   const valEl = $("#wallpaperDimVal");
   if (valEl) valEl.textContent = `${dim}%`;
   const sliderEl = $("#wallpaperDimSlider");
@@ -4566,6 +4599,47 @@ function applyWallpaperDim(val) {
   if (studyEl) {
     const opacity = (dim / 100).toFixed(2);
     studyEl.style.setProperty("--study-overlay-opacity", opacity);
+  }
+}
+
+function handleCardGlassChange(val) {
+  val = Math.max(15, Math.min(90, Number(val) || 50));
+  studySettings.cardGlassOpacity = val;
+  saveStudySettings(false);
+  applyCardGlass(val);
+}
+
+function applyCardGlass(val) {
+  const op = (typeof val !== 'undefined' ? val : (studySettings.cardGlassOpacity ?? 50));
+  const valEl = $("#studyCardGlassVal");
+  if (valEl) valEl.textContent = `${op}%`;
+  const sliderEl = $("#studyCardGlassSlider");
+  if (sliderEl && sliderEl.value != op) sliderEl.value = op;
+
+  const studyEl = $("#study");
+  if (studyEl) {
+    const opacity = (op / 100).toFixed(2);
+    studyEl.style.setProperty("--study-card-opacity", opacity);
+  }
+}
+
+function toggleStudyZenView() {
+  const study = $("#study");
+  if (!study) return;
+  const isZen = study.classList.toggle("study-zen-view");
+  const icon = $("#studyZenIcon");
+  const text = $("#studyZenText");
+  const btn = $("#studyZenToggleBtn");
+  if (isZen) {
+    if (icon) icon.textContent = "📊";
+    if (text) text.textContent = "Đầy đủ";
+    if (btn) btn.classList.add("active");
+    toast("✨ Đã bật Chế độ Không gian: Thu gọn bảng để ngắm trọn hình nền!");
+  } else {
+    if (icon) icon.textContent = "🖼️";
+    if (text) text.textContent = "Không gian";
+    if (btn) btn.classList.remove("active");
+    toast("Đã mở lại toàn bộ bảng điều khiển.");
   }
 }
 
@@ -4627,15 +4701,18 @@ function resetStudyTheme() {
   studySettings.activeWallpaper = 'default';
   studySettings.activeAura = 'emerald';
   studySettings.clockColor = 'default';
-  studySettings.wallpaperDim = 40;
+  studySettings.wallpaperDim = 35;
+  studySettings.cardGlassOpacity = 50;
   saveStudySettings(false);
 
   const studyEl = $("#study");
   if (studyEl) {
     studyEl.classList.remove("has-custom-bg");
+    studyEl.classList.remove("study-zen-view");
     studyEl.style.removeProperty("--primary");
     studyEl.style.removeProperty("--primary-glow");
     studyEl.style.removeProperty("--study-overlay-opacity");
+    studyEl.style.removeProperty("--study-card-opacity");
   }
   const bgLayer = $("#studyBackgroundLayer");
   if (bgLayer) {
@@ -4652,12 +4729,13 @@ function resetStudyTheme() {
   const nameEl = $("#customWallName");
   if (nameEl) nameEl.textContent = "Chưa chọn ảnh";
 
-  applyWallpaperDim(40);
+  applyWallpaperDim(35);
+  applyCardGlass(50);
   renderWallpaperPresets();
   renderClockColorPicker();
   renderColorPalette();
   renderCustomWallpapersList();
-  toast("Đã đặt lại giao diện mặc định.");
+  toast("Đã đặt lại không gian học tập mặc định.");
 }
 
 window.notifyPerkLocked = function(days, perkName) {
@@ -4925,8 +5003,9 @@ function onEnterStudyLounge() {
   renderColorPalette();
   updateTimerDisplay();
 
-  // Apply saved wallpaper dim
-  applyWallpaperDim(studySettings.wallpaperDim ?? 40);
+  // Apply saved wallpaper dim & card glass opacity
+  applyWallpaperDim(studySettings.wallpaperDim ?? 35);
+  applyCardGlass(studySettings.cardGlassOpacity ?? 50);
 
   // Apply saved clock color
   if (studySettings.clockColor && studySettings.clockColor !== 'default') {
@@ -5092,7 +5171,8 @@ function initStudyLoungeEvents() {
   renderCustomWallpapersList();
   renderClockColorPicker();
   renderColorPalette();
-  applyWallpaperDim(studySettings.wallpaperDim ?? 40);
+  applyWallpaperDim(studySettings.wallpaperDim ?? 35);
+  applyCardGlass(studySettings.cardGlassOpacity ?? 50);
 }
 
 window.studyState = studyState;
@@ -5111,6 +5191,9 @@ window.confirmDeleteCustomWallpaper = confirmDeleteCustomWallpaper;
 window.triggerWallpaperUpload = triggerWallpaperUpload;
 window.handleCustomWallpaperUpload = handleCustomWallpaperUpload;
 window.handleWallpaperDimChange = handleWallpaperDimChange;
+window.handleCardGlassChange = handleCardGlassChange;
+window.applyCardGlass = applyCardGlass;
+window.toggleStudyZenView = toggleStudyZenView;
 window.applyClockColor = applyClockColor;
 window.applyColorAura = applyColorAura;
 window.resetStudyTheme = resetStudyTheme;
