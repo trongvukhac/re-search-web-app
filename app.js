@@ -229,7 +229,7 @@ function getAvatarClass(tier, isAnonymous = false, role = '') {
 function getNameClass(tier) {
   const t = Number(tier) || 0;
   if (t >= 3) return `user-name-tier-${t}`;
-  return '';
+  return 'user-name-default';
 }
 
 const STREAK_MILESTONES = [
@@ -3168,20 +3168,50 @@ window.addEventListener("focus", () => {
 let lastFetchedLearners = [];
 
 const WALLPAPER_CARD_GRADIENTS = {
-  default: 'linear-gradient(135deg, rgba(20, 24, 22, 0.88) 0%, rgba(12, 16, 14, 0.94) 100%)',
-  library: 'linear-gradient(135deg, rgba(62, 38, 22, 0.88) 0%, rgba(26, 14, 8, 0.94) 100%)',
-  cafe: 'linear-gradient(135deg, rgba(48, 34, 26, 0.88) 0%, rgba(20, 14, 12, 0.94) 100%)',
-  mountain: 'linear-gradient(135deg, rgba(22, 42, 40, 0.88) 0%, rgba(10, 20, 22, 0.94) 100%)',
-  sunset: 'linear-gradient(135deg, rgba(64, 28, 36, 0.88) 0%, rgba(28, 12, 20, 0.94) 100%)',
-  lofi: 'linear-gradient(135deg, rgba(42, 24, 58, 0.88) 0%, rgba(18, 10, 32, 0.94) 100%)',
-  zen: 'linear-gradient(135deg, rgba(22, 42, 28, 0.88) 0%, rgba(10, 22, 14, 0.94) 100%)',
-  space: 'linear-gradient(135deg, rgba(16, 24, 54, 0.88) 0%, rgba(8, 12, 32, 0.94) 100%)'
+  default_light: 'linear-gradient(135deg, #ffffff 0%, #f0f8f4 100%)',
+  default_light_self: 'linear-gradient(135deg, #ffffff 0%, #e3f5ec 100%)',
+  default_glass: 'linear-gradient(135deg, rgba(255, 255, 255, 0.92) 0%, rgba(240, 248, 243, 0.9) 100%)',
+  default_glass_self: 'linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(228, 245, 236, 0.92) 100%)',
+  library: 'linear-gradient(135deg, #4d2813 0%, #361a0a 50%, #1e0d05 100%)', // Rich Oxford warm mahogany brown
+  cafe: 'linear-gradient(135deg, #3f271a 0%, #29170d 50%, #160b05 100%)', // Warm roasted coffee mocha
+  mountain: 'linear-gradient(135deg, #1b3834 0%, #102522 50%, #071513 100%)', // Mountain pine mist teal slate
+  sunset: 'linear-gradient(135deg, #521e2d 0%, #35101d 50%, #1e0710 100%)', // Sunset dusk burgundy rose
+  lofi: 'linear-gradient(135deg, #371a4f 0%, #220e33 50%, #11051c 100%)', // Lo-fi twilight neon purple
+  zen: 'linear-gradient(135deg, #1e3822 0%, #112315 50%, #061309 100%)', // Zen tranquil bamboo green
+  space: 'linear-gradient(135deg, #131a44 0%, #090e29 50%, #030514 100%)' // Space cosmic midnight navy
 };
 
-function getWallpaperCardGradient(wallId) {
-  if (!wallId || wallId === 'default') return WALLPAPER_CARD_GRADIENTS.default;
-  if (WALLPAPER_CARD_GRADIENTS[wallId]) return WALLPAPER_CARD_GRADIENTS[wallId];
-  return 'linear-gradient(135deg, rgba(28, 32, 40, 0.88) 0%, rgba(14, 16, 22, 0.94) 100%)';
+function getWallpaperCardInfo(wallId, isSelf) {
+  const isDefault = (!wallId || wallId === 'default');
+  const studyEl = document.getElementById("study");
+  const hasCustomBg = studyEl ? studyEl.classList.contains("has-custom-bg") : false;
+
+  if (isDefault) {
+    if (hasCustomBg) {
+      return {
+        gradient: isSelf ? WALLPAPER_CARD_GRADIENTS.default_glass_self : WALLPAPER_CARD_GRADIENTS.default_glass,
+        isDark: false
+      };
+    } else {
+      return {
+        gradient: isSelf ? WALLPAPER_CARD_GRADIENTS.default_light_self : WALLPAPER_CARD_GRADIENTS.default_light,
+        isDark: false
+      };
+    }
+  }
+
+  if (WALLPAPER_CARD_GRADIENTS[wallId]) {
+    return {
+      gradient: WALLPAPER_CARD_GRADIENTS[wallId],
+      isDark: true
+    };
+  }
+
+  // Custom uploaded wallpaper or others
+  return {
+    gradient: 'linear-gradient(135deg, rgba(26, 32, 44, 0.88) 0%, rgba(15, 19, 28, 0.94) 100%)',
+    isDark: true
+  };
 }
 
 const AURA_STYLES = {
@@ -3197,12 +3227,12 @@ const AURA_STYLES = {
   cosmic: { border: 'rgba(94, 231, 223, 0.9)', glow: 'rgba(94, 231, 223, 0.45)', primary: '#5ee7df' }
 };
 
-function getAuraCardStyle(auraId, isSelf) {
+function getAuraCardStyle(auraId, isSelf, isDark = true) {
   const a = AURA_STYLES[auraId] || (isSelf ? AURA_STYLES.emerald : null);
   if (!a) {
     return {
-      border: 'rgba(255, 255, 255, 0.18)',
-      glow: 'none'
+      border: isDark ? 'rgba(255, 255, 255, 0.18)' : 'rgba(18, 61, 48, 0.12)',
+      glow: isDark ? 'none' : '0 2px 8px rgba(18, 61, 48, 0.04)'
     };
   }
   return {
@@ -3292,14 +3322,15 @@ function renderCoStudyList(rawLearners = []) {
       }
     }
 
-    const cardGrad = getWallpaperCardGradient(l.wallpaper);
-    const auraStyle = getAuraCardStyle(l.aura, l.isSelf);
-    const cardInlineStyle = `background: ${cardGrad}; border: 1.5px solid ${auraStyle.border}; box-shadow: ${auraStyle.glow};`;
+    const cardInfo = getWallpaperCardInfo(l.wallpaper, l.isSelf);
+    const auraStyle = getAuraCardStyle(l.aura, l.isSelf, cardInfo.isDark);
+    const cardThemeClass = cardInfo.isDark ? 'theme-dark-card' : 'theme-light-card';
+    const cardInlineStyle = `background: ${cardInfo.gradient}; border: 1.5px solid ${auraStyle.border}; box-shadow: ${auraStyle.glow};`;
     const avatarClass = getAvatarClass(l.streakTier, false, l.role);
     const nameClass = getNameClass(l.streakTier);
 
     return `
-      <div class="co-study-item ${isSelfClass}" style="${cardInlineStyle}">
+      <div class="co-study-item ${isSelfClass} ${cardThemeClass}" style="${cardInlineStyle}">
         <span class="avatar avatar-sm ${avatarClass}">${escapeHTML(l.avatar || '🦊')}</span>
         <div class="co-study-info">
           <div class="co-study-name">
