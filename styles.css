@@ -5889,7 +5889,7 @@ body.study-zen-fullscreen .study-main-col {
 }
 
 /* Mobile Responsive Overrides */
-@media (max-width: 768px) {
+@media (max-width: 900px) {
   .doc-viewer-dialog {
     width: calc(100vw - 16px) !important;
     height: calc(100vh - 24px) !important;

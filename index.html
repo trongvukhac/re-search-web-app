@@ -15,12 +15,27 @@
     <link href="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.snow.css" rel="stylesheet" />
     <script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js"></script>
-    <link rel="stylesheet" href="styles.css?v=27" />
+    <link rel="stylesheet" href="styles.css?v=30" />
   </head>
   <body>
     <dialog
       id="documentViewerModal"
-      class="modal doc-viewer-dialog"
+      class="doc-viewer-dialog"
+      style="
+        position: fixed;
+        inset: 0;
+        margin: auto;
+        width: 92vw;
+        max-width: 1300px;
+        height: 92vh;
+        max-height: 920px;
+        padding: 0;
+        border: none;
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 24px 65px rgba(0, 0, 0, 0.4);
+        z-index: 1000;
+      "
     >
       <div class="doc-viewer-container">
         <div class="modal-head doc-viewer-head">
@@ -1454,6 +1469,6 @@
         </div>
       </div>
     </dialog>
-    <script src="app.js?v=43" defer></script>
+    <script src="app.js?v=45" defer></script>
   </body>
 </html>
