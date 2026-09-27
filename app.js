@@ -239,7 +239,7 @@ const STREAK_MILESTONES = [
     title: "Sinh viên năng động",
     color: "Xanh lam",
     forumDesc: "Mở khoá giao diện thẻ thành tích mới",
-    studyDesc: "Chờ nhé, sắp có rồi"
+    studyDesc: "Mở khoá 4 âm thanh môi trường thư giãn & tương tác trong Không gian chung"
   },
   {
     days: 7,
@@ -247,7 +247,7 @@ const STREAK_MILESTONES = [
     title: "Học giả bền bỉ",
     color: "Vàng ánh kim",
     forumDesc: "Mở khoá viền avatar đặc sắc",
-    studyDesc: "Chờ nhé, sắp có rồi"
+    studyDesc: "Mở khoá 9 âm thanh phối hợp tự do, 4 bản nhạc tập trung & cổ vũ bạn bè"
   },
   {
     days: 14,
@@ -255,7 +255,7 @@ const STREAK_MILESTONES = [
     title: "Nhà nghiên cứu tài năng",
     color: "Tím huyền bí",
     forumDesc: "Mở khoá màu tên rực rỡ và avatar đặc sắc",
-    studyDesc: "Chờ nhé, sắp có rồi"
+    studyDesc: "Mở khoá Kho hình nền học thuật & Tùy chỉnh màu sắc đồng hồ số"
   },
   {
     days: 30,
@@ -263,7 +263,7 @@ const STREAK_MILESTONES = [
     title: "Bậc thầy học thuật",
     color: "Đỏ ruby",
     forumDesc: "Mở khóa giao diện độc quyền, màu tên rực rỡ và avatar đặc sắc",
-    studyDesc: "Chờ nhé, sắp có rồi"
+    studyDesc: "Mở khoá Tự tải lên âm thanh cá nhân (môi trường, mix, nhạc) & ảnh nền riêng"
   },
   {
     days: 50,
@@ -271,7 +271,7 @@ const STREAK_MILESTONES = [
     title: "Độc nhất vô nhị",
     color: "Gradient tím + đỏ",
     forumDesc: "Mở khoá giao diện đẳng cấp sang trọng, hào quang rực rỡ đón chờ!",
-    studyDesc: "Chờ nhé, sắp có rồi"
+    studyDesc: "Mở khoá Phối màu Hào quang động & Tên gradient chuyển màu độc quyền"
   }
 ];
 
@@ -486,42 +486,29 @@ function applySession(user) {
     }
   }
 
-  const isAdmin = Boolean(user && user.role === "admin");
   const badgeDesk = $("#studyNavBadgeDesktop");
   const badgeMob = $("#studyNavBadgeMobile");
   if (badgeDesk) {
-    badgeDesk.textContent = isAdmin ? "Admin Test" : "Bảo trì";
-    badgeDesk.className = `study-nav-badge ${isAdmin ? "admin" : ""}`;
+    badgeDesk.textContent = "BETA";
+    badgeDesk.className = "study-nav-badge beta";
     badgeDesk.style.display = "inline-block";
   }
   if (badgeMob) {
-    badgeMob.textContent = isAdmin ? "Admin" : "Bảo trì";
-    badgeMob.className = `study-nav-badge mobile ${isAdmin ? "admin" : ""}`;
+    badgeMob.textContent = "BETA";
+    badgeMob.className = "study-nav-badge mobile beta";
     badgeMob.style.display = "inline-block";
   }
 
   const notice = $("#studyLockedNotice");
   const mainStudy = $("#studyMainContent");
-  if (notice) notice.style.display = isAdmin ? "none" : "block";
-  if (mainStudy) mainStudy.style.display = isAdmin ? "block" : "none";
+  if (notice) notice.style.display = "none";
+  if (mainStudy) mainStudy.style.display = "block";
 
-  if (isAdmin) {
-    if (typeof updateStudyStreakPerks === "function") {
-      updateStudyStreakPerks();
-    }
-    if (typeof fetchStudyLounge === "function") {
-      fetchStudyLounge();
-    }
-  } else {
-    if (typeof stopAllStudyAudio === "function") {
-      stopAllStudyAudio();
-    }
-    if (typeof pauseStudyTimer === "function" && studyState.isRunning) {
-      pauseStudyTimer(false);
-    }
-    if (location.hash === "#study") {
-      go("home");
-    }
+  if (typeof updateStudyStreakPerks === "function") {
+    updateStudyStreakPerks();
+  }
+  if (typeof fetchStudyLounge === "function") {
+    fetchStudyLounge();
   }
 }
 

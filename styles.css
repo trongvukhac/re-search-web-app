@@ -374,13 +374,13 @@ h1 em {
     #f06595 75%,
     #7950f2 100%
   ) !important;
-  background-size: 200% 100% !important;
+  background-size: 200% auto !important;
   -webkit-background-clip: text !important;
   background-clip: text !important;
   -webkit-text-fill-color: transparent !important;
   color: transparent !important;
   font-weight: 800 !important;
-  animation: shimmerName 7.5s linear infinite;
+  animation: shimmerName 3s linear infinite !important;
   display: inline-block;
   vertical-align: middle;
   text-shadow: none !important;
@@ -389,8 +389,12 @@ h1 em {
 }
 
 @keyframes shimmerName {
-  0% { background-position: 0% 50%; }
-  100% { background-position: 200% 50%; }
+  0% {
+    background-position: 0% 50%;
+  }
+  100% {
+    background-position: 200% 50%;
+  }
 }
 
 /* Theme Shift overrides */
@@ -4762,21 +4766,27 @@ dialog.detail-modal[open] {
   }
 }
 
-/* Study Lounge Maintenance / Admin Test Badges & Card */
+/* Study Lounge BETA Badges & Card */
 .study-nav-badge {
   display: inline-block;
   font-size: 9px;
   font-weight: 700;
-  padding: 1px 5px;
+  padding: 1px 6px;
   border-radius: 999px;
-  background: rgba(239, 68, 68, 0.12);
-  color: #ef4444;
-  border: 1px solid rgba(239, 68, 68, 0.28);
+  background: rgba(99, 102, 241, 0.12);
+  color: #6366f1;
+  border: 1px solid rgba(99, 102, 241, 0.3);
   margin-left: 5px;
   vertical-align: middle;
   text-transform: uppercase;
-  letter-spacing: 0.3px;
+  letter-spacing: 0.5px;
   line-height: 1.2;
+}
+
+.study-nav-badge.beta {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.14) 0%, rgba(168, 85, 247, 0.14) 100%);
+  color: #6366f1;
+  border-color: rgba(99, 102, 241, 0.35);
 }
 
 .study-nav-badge.admin {
