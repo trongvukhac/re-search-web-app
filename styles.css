@@ -406,6 +406,10 @@ div.user-name-tier-5,
   animation: shimmerName 3.5s linear infinite;
   -webkit-animation: shimmerName 3.5s linear infinite;
   will-change: background-position;
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
   display: inline-block;
   vertical-align: middle;
   text-shadow: none;

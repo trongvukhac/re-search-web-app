@@ -3185,8 +3185,8 @@ function updateTimerDisplay() {
   $("#btnModeLongBreak")?.classList.toggle("active", studyState.mode === 'longbreak');
 
   updateTabTitle();
-  if (typeof renderCoStudyList === 'function') {
-    renderCoStudyList(lastFetchedLearners);
+  if (typeof updateSelfCoStudyCard === 'function') {
+    updateSelfCoStudyCard();
   }
 }
 
@@ -3576,7 +3576,51 @@ function getSelfPresenceData() {
   };
 }
 
-function renderCoStudyList(rawLearners = []) {
+let lastRenderedCoStudySig = "";
+
+function updateSelfCoStudyCard() {
+  const selfCard = document.querySelector("#coStudyList .co-study-item.is-self");
+  if (!selfCard) return;
+
+  const selfData = getSelfPresenceData();
+  let statusText = '';
+  let statusIcon = '';
+  if (selfData.isRunning) {
+    const remainingMin = Math.max(1, Math.ceil((selfData.remainingSeconds || 0) / 60));
+    if (selfData.mode === 'shortbreak') {
+      statusIcon = '☕';
+      statusText = `${remainingMin}m`;
+    } else if (selfData.mode === 'longbreak') {
+      statusIcon = '🌿';
+      statusText = `${remainingMin}m`;
+    } else {
+      statusIcon = '🔥';
+      statusText = `${remainingMin}m`;
+    }
+  } else {
+    if (selfData.remainingSeconds < (selfData.durationMinutes * 60) && selfData.remainingSeconds > 0) {
+      statusIcon = '⏸️';
+      statusText = 'Tạm dừng';
+    } else {
+      statusIcon = '✨';
+      statusText = 'Sẵn sàng';
+    }
+  }
+
+  const badgeEl = selfCard.querySelector(".co-study-status-badge");
+  const timeEl = selfCard.querySelector(".co-study-time");
+  if (badgeEl) {
+    badgeEl.className = `co-study-status-badge ${selfData.isRunning ? 'running' : 'idle'}`;
+  }
+  if (timeEl) {
+    const newHtml = `${statusIcon} ${statusText}`;
+    if (timeEl.innerHTML !== newHtml) {
+      timeEl.innerHTML = newHtml;
+    }
+  }
+}
+
+function renderCoStudyList(rawLearners = [], force = false) {
   let learners = Array.isArray(rawLearners) ? [...rawLearners] : [];
   const curSession = session || (typeof window !== 'undefined' && window.session);
   const myStreak = getUserStudyStreak();
@@ -3600,6 +3644,15 @@ function renderCoStudyList(rawLearners = []) {
 
   const list = $("#coStudyList");
   if (!list) return;
+
+  // Generate a signature of learners data to avoid resetting DOM & CSS animations if unchanged
+  const sig = learners.map(l => `${l.userId}_${l.name}_${l.streakTier}_${l.goal}_${l.isRunning}_${l.mode}_${l.wallpaper}_${l.aura}`).join("|");
+  if (!force && sig === lastRenderedCoStudySig && list.children.length === learners.length) {
+    // If only timer changed for self, do an in-place update without re-creating nodes
+    updateSelfCoStudyCard();
+    return;
+  }
+  lastRenderedCoStudySig = sig;
 
   const canCheer = myStreak >= 3;
 
