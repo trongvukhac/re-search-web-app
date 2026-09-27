@@ -3227,6 +3227,12 @@ dialog.detail-modal[open] {
   border: 1px solid rgba(255, 255, 255, 0.2) !important;
   font-weight: 600;
 }
+.co-study-item.theme-dark-card .co-study-cheers-row {
+  border-top-color: rgba(255, 255, 255, 0.14);
+}
+.co-study-item.theme-dark-card .co-study-cheers-label {
+  color: #cbd5e1;
+}
 .co-study-item.theme-dark-card .cheer-btn {
   background: rgba(255, 255, 255, 0.12);
   border-color: rgba(255, 255, 255, 0.25);
@@ -3252,6 +3258,12 @@ dialog.detail-modal[open] {
   color: var(--primary, #10b981) !important;
   border: 1px solid var(--line, #e2e8f0) !important;
   font-weight: 700;
+}
+.co-study-item.theme-light-card .co-study-cheers-row {
+  border-top-color: rgba(0, 0, 0, 0.08);
+}
+.co-study-item.theme-light-card .co-study-cheers-label {
+  color: #64748b;
 }
 .co-study-item.theme-light-card .cheer-btn {
   background: #ffffff;
@@ -4473,13 +4485,21 @@ dialog.detail-modal[open] {
 }
 .co-study-item {
   display: flex;
-  align-items: center;
-  gap: 10px;
+  flex-direction: column;
+  gap: 7px;
   padding: 10px 12px;
   background: var(--surface-bg, #f7faf8);
   border: 1px solid var(--line);
   border-radius: 12px;
   transition: transform 0.15s ease;
+  box-sizing: border-box;
+  width: 100%;
+}
+.co-study-header-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
 }
 .co-study-item.is-self {
   border-color: var(--primary);
@@ -4519,6 +4539,7 @@ dialog.detail-modal[open] {
   display: flex;
   align-items: center;
   gap: 4px;
+  flex-shrink: 0;
 }
 .co-study-time {
   font-size: 11px;
@@ -4530,18 +4551,44 @@ dialog.detail-modal[open] {
   border-radius: 8px;
   white-space: nowrap;
 }
-.co-study-cheers { display: flex; gap: 3px; }
+.co-study-cheers-row {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  width: 100%;
+  padding-top: 6px;
+  border-top: 1px solid rgba(125, 125, 125, 0.12);
+  box-sizing: border-box;
+}
+.co-study-cheers-label {
+  font-size: 10px;
+  font-weight: 600;
+  opacity: 0.75;
+  margin-right: auto;
+  letter-spacing: 0.2px;
+}
+.co-study-cheers {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+}
 .cheer-btn {
   background: var(--paper);
   border: 1px solid var(--line);
   border-radius: 6px;
-  padding: 2px 4px;
-  font-size: 11px;
+  padding: 3px 6px;
+  font-size: 13px;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   cursor: pointer;
   transition: transform 0.15s ease, background-color 0.15s;
 }
 .cheer-btn:hover:not(:disabled) {
-  transform: scale(1.2);
+  transform: scale(1.18);
   background: #fff8e1;
 }
 .cheer-btn:disabled,

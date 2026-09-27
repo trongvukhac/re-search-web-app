@@ -2912,7 +2912,7 @@ function rotateStudyQuote(animate = true) {
 function getUserStudyStreak() {
   const curSession = session || (typeof window !== 'undefined' && window.session);
   if (!curSession) return 0;
-  if (curSession.role === 'admin') return 999;
+  if (curSession.role === 'admin' || curSession.role === 'ta' || curSession.role === 'lecturer') return 999;
   return Number(curSession.streak || 0);
 }
 
@@ -3641,24 +3641,29 @@ function renderCoStudyList(rawLearners = []) {
 
     return `
       <div class="co-study-item ${isSelfClass} ${cardThemeClass}" style="${cardInlineStyle}">
-        <span class="avatar avatar-sm ${avatarClass}">${escapeHTML(l.avatar || '🦊')}</span>
-        <div class="co-study-info">
-          <div class="co-study-name">
-            <span class="co-study-user-title ${nameClass}">${nameDisplay}</span> ${roleBadge}
+        <div class="co-study-header-row">
+          <span class="avatar avatar-sm ${avatarClass}">${escapeHTML(l.avatar || '🦊')}</span>
+          <div class="co-study-info">
+            <div class="co-study-name">
+              <span class="co-study-user-title ${nameClass}">${nameDisplay}</span> ${roleBadge}
+            </div>
+            <div class="co-study-goal">🎯 ${escapeHTML(l.goal || 'Nghiên cứu khoa học')}</div>
           </div>
-          <div class="co-study-goal">🎯 ${escapeHTML(l.goal || 'Nghiên cứu khoa học')}</div>
-        </div>
-        <div class="co-study-status-badge ${l.isRunning ? 'running' : 'idle'}">
-          <span class="co-study-time">${statusIcon} ${statusText}</span>
+          <div class="co-study-status-badge ${l.isRunning ? 'running' : 'idle'}">
+            <span class="co-study-time">${statusIcon} ${statusText}</span>
+          </div>
         </div>
         ${!l.isSelf && curSession ? `
-          <div class="co-study-cheers">
-            <button class="cheer-btn ${canCheer ? '' : 'locked'}" title="${canCheer ? 'Vỗ tay tán thưởng' : 'Mở khóa ở chuỗi 3 ngày 🔥'}" onclick="${canCheer ? `sendStudyCheer(${l.userId}, '👏')` : 'notifyCheerLocked()'}">👏</button>
-            <button class="cheer-btn ${canCheer ? '' : 'locked'}" title="${canCheer ? 'Mời cà phê tỉnh táo' : 'Mở khóa ở chuỗi 3 ngày 🔥'}" onclick="${canCheer ? `sendStudyCheer(${l.userId}, '☕')` : 'notifyCheerLocked()'}">☕</button>
-            <button class="cheer-btn ${canCheer ? '' : 'locked'}" title="${canCheer ? 'Tiếp lửa quyết tâm' : 'Mở khóa ở chuỗi 3 ngày 🔥'}" onclick="${canCheer ? `sendStudyCheer(${l.userId}, '🔥')` : 'notifyCheerLocked()'}">🔥</button>
-            <button class="cheer-btn ${canCheer ? '' : 'locked'}" title="${canCheer ? 'Gửi tim yêu thương' : 'Mở khóa ở chuỗi 3 ngày 🔥'}" onclick="${canCheer ? `sendStudyCheer(${l.userId}, '❤️')` : 'notifyCheerLocked()'}">❤️</button>
-            <button class="cheer-btn ${canCheer ? '' : 'locked'}" title="${canCheer ? 'Gợi ý ý tưởng sáng tạo' : 'Mở khóa ở chuỗi 3 ngày 🔥'}" onclick="${canCheer ? `sendStudyCheer(${l.userId}, '💡')` : 'notifyCheerLocked()'}">💡</button>
-            <button class="cheer-btn ${canCheer ? '' : 'locked'}" title="${canCheer ? 'Tăng tốc về đích' : 'Mở khóa ở chuỗi 3 ngày 🔥'}" onclick="${canCheer ? `sendStudyCheer(${l.userId}, '🚀')` : 'notifyCheerLocked()'}">🚀</button>
+          <div class="co-study-cheers-row">
+            <span class="co-study-cheers-label">Gửi cổ vũ:</span>
+            <div class="co-study-cheers">
+              <button class="cheer-btn ${canCheer ? '' : 'locked'}" title="${canCheer ? 'Vỗ tay tán thưởng' : 'Mở khóa ở chuỗi 3 ngày 🔥'}" onclick="${canCheer ? `sendStudyCheer(${l.userId}, '👏')` : 'notifyCheerLocked()'}">👏</button>
+              <button class="cheer-btn ${canCheer ? '' : 'locked'}" title="${canCheer ? 'Mời cà phê tỉnh táo' : 'Mở khóa ở chuỗi 3 ngày 🔥'}" onclick="${canCheer ? `sendStudyCheer(${l.userId}, '☕')` : 'notifyCheerLocked()'}">☕</button>
+              <button class="cheer-btn ${canCheer ? '' : 'locked'}" title="${canCheer ? 'Tiếp lửa quyết tâm' : 'Mở khóa ở chuỗi 3 ngày 🔥'}" onclick="${canCheer ? `sendStudyCheer(${l.userId}, '🔥')` : 'notifyCheerLocked()'}">🔥</button>
+              <button class="cheer-btn ${canCheer ? '' : 'locked'}" title="${canCheer ? 'Gửi tim yêu thương' : 'Mở khóa ở chuỗi 3 ngày 🔥'}" onclick="${canCheer ? `sendStudyCheer(${l.userId}, '❤️')` : 'notifyCheerLocked()'}">❤️</button>
+              <button class="cheer-btn ${canCheer ? '' : 'locked'}" title="${canCheer ? 'Gợi ý ý tưởng sáng tạo' : 'Mở khóa ở chuỗi 3 ngày 🔥'}" onclick="${canCheer ? `sendStudyCheer(${l.userId}, '💡')` : 'notifyCheerLocked()'}">💡</button>
+              <button class="cheer-btn ${canCheer ? '' : 'locked'}" title="${canCheer ? 'Tăng tốc về đích' : 'Mở khóa ở chuỗi 3 ngày 🔥'}" onclick="${canCheer ? `sendStudyCheer(${l.userId}, '🚀')` : 'notifyCheerLocked()'}">🚀</button>
+            </div>
           </div>
         ` : ''}
       </div>
@@ -3720,7 +3725,18 @@ async function fetchStudyLounge() {
   }
 }
 
+const seenCheerIds = new Set();
+
 function showCheerToast(c) {
+  if (!c || !c.id) return;
+  const toastKey = `${c.id}_${c.timestamp || ''}`;
+  if (seenCheerIds.has(toastKey)) return;
+  seenCheerIds.add(toastKey);
+  if (seenCheerIds.size > 200) {
+    const firstKey = seenCheerIds.values().next().value;
+    seenCheerIds.delete(firstKey);
+  }
+
   const toastId = `cheer-${c.id}`;
   if (document.getElementById(toastId)) return;
   const toastEl = document.createElement("div");
@@ -3737,6 +3753,8 @@ window.notifyCheerLocked = function() {
   toast("🔒 Tính năng Cổ vũ tương tác mở khóa ở Chuỗi 3 ngày (Sinh viên năng động)!");
 };
 
+let isSendingStudyCheer = false;
+
 window.sendStudyCheer = async function(recipientId, cheerType) {
   if (!canAccessStudyLounge()) {
     toast(STUDY_MAINTENANCE_MSG);
@@ -3752,13 +3770,19 @@ window.sendStudyCheer = async function(recipientId, cheerType) {
     return;
   }
 
+  if (isSendingStudyCheer) return;
+  isSendingStudyCheer = true;
+  setTimeout(() => { isSendingStudyCheer = false; }, 1200);
+
   try {
     const res = await requestAPI("/api/study/cheer", {
       method: "POST",
       body: JSON.stringify({ recipientId, cheerType })
     });
     if (res && res.success) {
-      toast(`Đã gửi ${cheerType} cổ vũ bạn cùng học!`);
+      if (!res.debounced) {
+        toast(`Đã gửi ${cheerType} cổ vũ bạn cùng học!`);
+      }
     } else if (res && res.error) {
       toast(res.error);
     }

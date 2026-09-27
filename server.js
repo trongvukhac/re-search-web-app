@@ -1786,8 +1786,8 @@ async function api(request, response, url) {
     if (!user) return;
     try {
       const senderStreak = calculateUserStreak(user.id);
-      if ((senderStreak.streak || 0) < 7 && user.role !== 'admin') {
-        return error(response, 403, "Cần đạt chuỗi hoạt động từ 7 ngày để mở khóa tính năng cổ vũ.");
+      if ((senderStreak.streak || 0) < 3 && !isAdmin(user)) {
+        return error(response, 403, "Cần đạt chuỗi hoạt động từ 3 ngày để mở khóa tính năng cổ vũ.");
       }
       const body = await readJSON(request);
       const recipientId = Number(body.recipientId);
@@ -1796,13 +1796,24 @@ async function api(request, response, url) {
       if (!recipientId || recipientId === user.id) {
         return error(response, 400, "Người nhận không hợp lệ.");
       }
+
+      // Debounce cheer from same sender to same recipient within 2 seconds
+      const now = Date.now();
+      const recentDup = recentCheers.find(
+        c => c.recipientId === recipientId && c.senderId === user.id && (now - c.timestamp) < 2000
+      );
+      if (recentDup) {
+        return json(response, 200, { success: true, debounced: true });
+      }
+
       cleanupCheers();
       recentCheers.push({
         id: Date.now() + Math.random(),
         recipientId,
-        senderName: user.displayName || user.email.split("@")[0],
+        senderId: user.id,
+        senderName: user.display_name || user.displayName || user.email.split("@")[0],
         senderAvatar: user.avatar || "🦊",
-        senderStreakTier: getAuthorStreakTier(user.id),
+        senderStreakTier: senderStreak.streakTier !== undefined ? senderStreak.streakTier : getAuthorStreakTier(user.id),
         cheerType,
         timestamp: Date.now()
       });
