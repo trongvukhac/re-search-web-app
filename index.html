@@ -20,7 +20,7 @@
   <body>
     <dialog
       id="documentViewerModal"
-      class="modal"
+      class="modal doc-viewer-dialog"
       style="
         width: 90vw;
         max-width: 1200px;
@@ -28,20 +28,27 @@
         max-height: 900px;
         padding: 0;
         overflow: hidden;
+        position: relative;
       "
     >
-      <div style="display: flex; flex-direction: column; height: 100%">
+      <div style="display: flex; flex-direction: column; height: 100%; position: relative; overflow: hidden;">
         <div
           class="modal-head"
           style="
-            padding: 16px;
+            padding: 14px 18px;
             border-bottom: 1px solid var(--sage-2);
             background: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
           "
         >
-          <h2 id="viewerTitle" style="font-size: 16px; margin: 0">
-            Xem tài liệu
-          </h2>
+          <div style="display: flex; align-items: center; gap: 8px; overflow: hidden;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--primary); flex-shrink: 0;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+            <h2 id="viewerTitle" style="font-size: 15px; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 700;">
+              Xem tài liệu
+            </h2>
+          </div>
           <button
             class="close-modal"
             type="button"
@@ -55,6 +62,62 @@
           id="viewerIframe"
           style="flex: 1; width: 100%; border: none; background: #f8f9fa"
         ></iframe>
+
+        <!-- Document Discussion Bottom Panel (Overlaid half height, without closing viewer) -->
+        <div id="docDiscussionPanel" class="doc-discussion-panel" style="display: none;">
+          <div class="doc-discussion-header">
+            <div class="doc-discussion-title-wrap">
+              <svg class="icon-chat-svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+              <span class="doc-discussion-heading">Thảo luận tài liệu</span>
+              <span class="doc-discussion-count-pill" id="docCommentCountBadge">0</span>
+            </div>
+            <p class="doc-discussion-hint">Không gian hỏi đáp &amp; trao đổi trực tiếp về tài liệu</p>
+          </div>
+          <div class="doc-discussion-body" id="docDiscussionList">
+            <!-- Rendered dynamically -->
+          </div>
+          <div class="doc-discussion-footer">
+            <form id="docDiscussionForm" onsubmit="handleSendDocComment(event)">
+              <div class="doc-discussion-input-row">
+                <textarea
+                  id="docCommentInput"
+                  class="doc-comment-textarea"
+                  placeholder="Đặt câu hỏi hoặc chia sẻ ý kiến về tài liệu này..."
+                  rows="1"
+                  required
+                ></textarea>
+                <div class="doc-discussion-controls">
+                  <label class="doc-anon-label" title="Thảo luận ẩn danh">
+                    <input type="checkbox" id="docCommentAnon" />
+                    <span>Ẩn danh</span>
+                  </label>
+                  <button type="submit" class="button button-primary button-sm doc-submit-btn" id="btnSendDocComment">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+                    <span>Gửi</span>
+                  </button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <!-- Floating Discussion Button: Toggles Discussion & Transforms to '✕' -->
+        <button
+          type="button"
+          id="docDiscussionToggleBtn"
+          class="doc-discussion-toggle-btn"
+          onclick="toggleDocDiscussion()"
+          title="Thảo luận tài liệu"
+          aria-label="Thảo luận tài liệu"
+        >
+          <span class="doc-btn-icon-chat" id="docBtnIconChat">
+            <svg class="icon-chat-svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            <span class="doc-btn-badge" id="docFabBadge" style="display: none;">0</span>
+          </span>
+          <span class="doc-btn-icon-close" id="docBtnIconClose" style="display: none;">
+            ✕
+          </span>
+        </button>
       </div>
     </dialog>
     <dialog id="assignmentBanner" class="banner-modal" style="padding:0; border:none; border-radius:12px; max-width:700px; width:90%; box-shadow:0 10px 30px rgba(0,0,0,0.2); overflow:hidden;">
@@ -1404,6 +1467,6 @@
         </div>
       </div>
     </dialog>
-    <script src="app.js?v=41" defer></script>
+    <script src="app.js?v=42" defer></script>
   </body>
 </html>

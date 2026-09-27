@@ -100,6 +100,14 @@ db.exec(`
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
   );
+  CREATE TABLE IF NOT EXISTS document_comments (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    document_id INTEGER NOT NULL REFERENCES documents(id) ON DELETE CASCADE,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    content TEXT NOT NULL,
+    is_anonymous INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+  );
   CREATE TABLE IF NOT EXISTS contribution_events (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id INTEGER NOT NULL REFERENCES users(id),
@@ -190,6 +198,18 @@ try { db.exec("ALTER TABLE study_sessions ADD COLUMN started_at_ms INTEGER NOT N
 try { db.exec("ALTER TABLE study_sessions ADD COLUMN cycle_index INTEGER NOT NULL DEFAULT 1;"); } catch (e) {}
 try { db.exec("ALTER TABLE study_sessions ADD COLUMN wallpaper TEXT DEFAULT 'default';"); } catch (e) {}
 try { db.exec("ALTER TABLE study_sessions ADD COLUMN aura TEXT DEFAULT 'emerald';"); } catch (e) {}
+try {
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS document_comments (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      document_id INTEGER NOT NULL REFERENCES documents(id) ON DELETE CASCADE,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      content TEXT NOT NULL,
+      is_anonymous INTEGER NOT NULL DEFAULT 0,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    );
+  `);
+} catch (e) {}
 try {
   db.exec(`
     INSERT INTO user_streak_shields (user_id, shields, last_milestone_rewarded, updated_at)
@@ -1516,6 +1536,139 @@ async function api(request, response, url) {
         ).run(viewer.id, "document_read", 0, "document", docId, "Xem tài liệu giữ chuỗi");
       }
     }
+    return json(response, 200, { success: true });
+  }
+
+  // --- DOCUMENT DISCUSSION / COMMENTS ENDPOINTS ---
+  const docCommentsMatch = pathName.match(/^\/api\/documents\/(\d+)\/comments$/);
+  if (method === "GET" && docCommentsMatch) {
+    const docId = Number(docCommentsMatch[1]);
+    const doc = db.prepare("SELECT id FROM documents WHERE id=?").get(docId);
+    if (!doc) return error(response, 404, "Không tìm thấy tài liệu.");
+    const viewer = sessionFrom(request);
+    const comments = db
+      .prepare(
+        `SELECT c.*, u.display_name, u.avatar, u.role
+         FROM document_comments c
+         JOIN users u ON u.id = c.user_id
+         WHERE c.document_id = ?
+         ORDER BY c.created_at ASC`
+      )
+      .all(docId)
+      .map((c) => ({
+        id: c.id,
+        documentId: c.document_id,
+        content: c.content,
+        createdAt: c.created_at.replace(' ', 'T') + 'Z',
+        isAuthor: viewer && viewer.id === c.user_id,
+        author: c.is_anonymous && !isAdmin(viewer)
+          ? {
+              displayName: "Sinh viên ẩn danh",
+              role: "student",
+              initials: "?",
+              streakTier: 0,
+            }
+          : {
+              displayName: c.display_name,
+              role: c.role,
+              initials: c.avatar || getAvatarEmoji(c.display_name),
+              streakTier: getAuthorStreakTier(c.user_id),
+            },
+        anonymous: Boolean(c.is_anonymous),
+      }));
+    return json(response, 200, { comments });
+  }
+
+  if (method === "POST" && docCommentsMatch) {
+    const user = requireUser(request, response);
+    if (!user || !requireCsrf(request, response, user)) return;
+    if (!rateLimit(`doc_comment:${user.id}`, 25, 60 * 60 * 1000))
+      return error(response, 429, "Bạn đã gửi quá nhiều thảo luận. Hãy thử lại sau.");
+
+    const docId = Number(docCommentsMatch[1]);
+    const doc = db.prepare("SELECT id, title FROM documents WHERE id=?").get(docId);
+    if (!doc) return error(response, 404, "Không tìm thấy tài liệu.");
+
+    const { content, isAnonymous } = await readJSON(request);
+    if (typeof content !== "string" || content.trim().length === 0) {
+      return error(response, 400, "Vui lòng nhập nội dung thảo luận.");
+    }
+    if (content.trim().length > 3000) {
+      return error(response, 400, "Nội dung thảo luận không được vượt quá 3000 ký tự.");
+    }
+
+    const res = db
+      .prepare(
+        "INSERT INTO document_comments(document_id, user_id, content, is_anonymous) VALUES (?,?,?,?)"
+      )
+      .run(docId, user.id, content.trim(), isAnonymous ? 1 : 0);
+
+    const todayVN = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Ho_Chi_Minh" }).format(new Date());
+    db.prepare("INSERT OR IGNORE INTO activity_days(user_id,activity_date) VALUES (?,?)").run(user.id, todayVN);
+
+    recordContribution(
+      user.id,
+      "document_discussion",
+      5,
+      "document",
+      docId,
+      `Thảo luận tài liệu: ${doc.title.slice(0, 40)}`
+    );
+
+    const inserted = db
+      .prepare(
+        `SELECT c.*, u.display_name, u.avatar, u.role
+         FROM document_comments c
+         JOIN users u ON u.id = c.user_id
+         WHERE c.id = ?`
+      )
+      .get(res.lastInsertRowid);
+
+    return json(response, 201, {
+      comment: {
+        id: inserted.id,
+        documentId: inserted.document_id,
+        content: inserted.content,
+        createdAt: inserted.created_at.replace(' ', 'T') + 'Z',
+        isAuthor: true,
+        author: inserted.is_anonymous && !isAdmin(user)
+          ? {
+              displayName: "Sinh viên ẩn danh",
+              role: "student",
+              initials: "?",
+              streakTier: 0,
+            }
+          : {
+              displayName: inserted.display_name,
+              role: inserted.role,
+              initials: inserted.avatar || getAvatarEmoji(inserted.display_name),
+              streakTier: getAuthorStreakTier(inserted.user_id),
+            },
+        anonymous: Boolean(inserted.is_anonymous),
+      }
+    });
+  }
+
+  const delDocCommentMatch = pathName.match(/^\/api\/documents\/comments\/(\d+)$/);
+  if (method === "DELETE" && delDocCommentMatch) {
+    const user = requireUser(request, response);
+    if (!user || !requireCsrf(request, response, user)) return;
+
+    const commentId = Number(delDocCommentMatch[1]);
+    const comment = db.prepare("SELECT * FROM document_comments WHERE id=?").get(commentId);
+    if (!comment) return error(response, 404, "Không tìm thấy thảo luận.");
+
+    const canDelete =
+      user.id === comment.user_id ||
+      user.role === "admin" ||
+      user.role === "ta" ||
+      user.role === "lecturer";
+
+    if (!canDelete) {
+      return error(response, 403, "Bạn không có quyền xoá thảo luận này.");
+    }
+
+    db.prepare("DELETE FROM document_comments WHERE id=?").run(commentId);
     return json(response, 200, { success: true });
   }
 

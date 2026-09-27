@@ -958,7 +958,7 @@ function postCard(post) {
       <h3 style="margin-top: 0;">${escapeHTML(post.title)}</h3>
       <div class="post-copy-preview">${escapeHTML(post.excerpt)}</div>
     </div>
-    <div class="post-stats"><span class="post-tag">${post.topic}</span><span style="font-weight:600; color:var(--primary)">▲ ${post.upvotes}</span><span style="font-weight:600; color:var(--sage-5)">💬 ${post.responses}</span></div>
+    <div class="post-stats"><span class="post-tag">${post.topic}</span><span style="font-weight:600; color:var(--primary)">▲ ${post.upvotes}</span><span style="font-weight:600; color:var(--sage-5); display: inline-flex; align-items: center; gap: 4px;"><svg class="icon-chat-svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>${post.responses}</span></div>
   </article>`;
 }
 
@@ -1085,6 +1085,10 @@ function renderDocuments() {
         ) {
           previewUrl = previewUrl.replace(/\/view.*$/, "/preview");
         }
+        currentViewingDocId = doc.id;
+        isDocDiscussionOpen = false;
+        updateDocDiscussionUIState();
+        loadDocComments(doc.id);
         $("#viewerIframe").src = previewUrl;
         $("#viewerTitle").textContent = doc.title;
         $("#documentViewerModal").showModal();
@@ -1162,6 +1166,7 @@ function go(route, scrollToTop = true) {
   }
 
   if (route === "forum") renderPosts();
+  if (route === "documents") renderDocuments();
   if (route === "study") onEnterStudyLounge();
   else onLeaveStudyLounge();
   updateResponsiveAsidePlacement();
@@ -1297,12 +1302,156 @@ if (detailModalEl) {
   });
 }
 
+let currentViewingDocId = null;
+let isDocDiscussionOpen = false;
+
+window.toggleDocDiscussion = function() {
+  if (!currentViewingDocId) return;
+  isDocDiscussionOpen = !isDocDiscussionOpen;
+  updateDocDiscussionUIState();
+  if (isDocDiscussionOpen) {
+    loadDocComments(currentViewingDocId);
+    setTimeout(() => {
+      const input = $("#docCommentInput");
+      if (input) input.focus();
+    }, 150);
+  }
+};
+
+function updateDocDiscussionUIState() {
+  const panel = $("#docDiscussionPanel");
+  const iconChat = $("#docBtnIconChat");
+  const iconClose = $("#docBtnIconClose");
+  const toggleBtn = $("#docDiscussionToggleBtn");
+
+  if (panel) {
+    panel.style.display = isDocDiscussionOpen ? "flex" : "none";
+  }
+  if (iconChat) iconChat.style.display = isDocDiscussionOpen ? "none" : "flex";
+  if (iconClose) iconClose.style.display = isDocDiscussionOpen ? "flex" : "none";
+  if (toggleBtn) {
+    toggleBtn.classList.toggle("is-open", isDocDiscussionOpen);
+    toggleBtn.setAttribute("title", isDocDiscussionOpen ? "Đóng thảo luận" : "Thảo luận tài liệu");
+    toggleBtn.setAttribute("aria-label", isDocDiscussionOpen ? "Đóng thảo luận" : "Thảo luận tài liệu");
+  }
+}
+
+async function loadDocComments(docId) {
+  if (!docId) return;
+  try {
+    const res = await requestAPI(`/api/documents/${docId}/comments`);
+    const comments = res?.comments || [];
+    renderDocCommentsList(comments);
+    const countBadge = $("#docCommentCountBadge");
+    if (countBadge) countBadge.textContent = comments.length;
+    const fabBadge = $("#docFabBadge");
+    if (fabBadge) {
+      fabBadge.textContent = comments.length;
+      fabBadge.style.display = comments.length > 0 ? "flex" : "none";
+    }
+  } catch (e) {
+    console.error("Error loading document comments:", e);
+  }
+}
+
+function renderDocCommentsList(comments) {
+  const listEl = $("#docDiscussionList");
+  if (!listEl) return;
+  if (!comments || comments.length === 0) {
+    listEl.innerHTML = `
+      <div class="doc-comment-empty">
+        <div class="doc-comment-empty-icon">
+          <svg class="icon-chat-svg" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        </div>
+        <p>Chưa có thảo luận nào cho tài liệu này.</p>
+        <span>Hãy là người đầu tiên đặt câu hỏi hoặc trao đổi!</span>
+      </div>
+    `;
+    return;
+  }
+  const isPrivileged = session?.role === "admin" || session?.role === "ta" || session?.role === "lecturer";
+  listEl.innerHTML = comments.map(c => {
+    const canDelete = c.isAuthor || isPrivileged;
+    const delBtn = canDelete ? `
+      <button type="button" class="doc-comment-del-btn" onclick="deleteDocComment(${c.id})" title="Xoá thảo luận" aria-label="Xoá thảo luận">✕</button>
+    ` : "";
+    const roleBadge = c.author.role === "lecturer" ? ' <span class="doc-comment-role-badge">[Giảng viên]</span>'
+      : (c.author.role === "ta" ? ' <span class="doc-comment-role-badge">[TA]</span>'
+      : (c.author.role === "admin" ? ' <span class="doc-comment-role-badge">[Admin]</span>' : ''));
+
+    return `
+      <div class="doc-comment-card" id="docComment-${c.id}">
+        <div class="doc-comment-top">
+          <div class="doc-comment-author-info">
+            <span class="avatar avatar-xs ${getAvatarClass(c.author.streakTier, c.anonymous, c.author.role)}">${escapeHTML(c.author.initials || '?')}</span>
+            <strong class="${getNameClass(c.author.streakTier)}">${escapeHTML(c.author.displayName)}</strong>
+            ${roleBadge}
+            ${c.anonymous ? '<span class="doc-comment-anon-badge">· Ẩn danh</span>' : ''}
+          </div>
+          ${delBtn}
+        </div>
+        <div class="doc-comment-content">${escapeHTML(c.content)}</div>
+      </div>
+    `;
+  }).join("");
+  listEl.scrollTop = listEl.scrollHeight;
+}
+
+window.handleSendDocComment = async function(e) {
+  if (e) e.preventDefault();
+  if (!session) {
+    openAuth();
+    toast("Vui lòng đăng nhập để tham gia thảo luận tài liệu.");
+    return;
+  }
+  if (!currentViewingDocId) return;
+  const input = $("#docCommentInput");
+  const anonCheck = $("#docCommentAnon");
+  const content = input ? input.value.trim() : "";
+  if (!content) return;
+  const isAnonymous = anonCheck ? anonCheck.checked : false;
+
+  const btn = $("#btnSendDocComment");
+  if (btn) btn.disabled = true;
+
+  try {
+    await requestAPI(`/api/documents/${currentViewingDocId}/comments`, {
+      method: "POST",
+      body: JSON.stringify({ content, isAnonymous })
+    });
+    if (input) input.value = "";
+    toast("Đã gửi thảo luận thành công! 🎉");
+    await loadDocComments(currentViewingDocId);
+    if (typeof loadContributions === "function") loadContributions();
+  } catch (err) {
+    toast(err.message || "Gửi thảo luận thất bại.");
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+};
+
+window.deleteDocComment = async function(commentId) {
+  if (!confirm("Bạn có chắc chắn muốn xoá thảo luận này không?")) return;
+  try {
+    await requestAPI(`/api/documents/comments/${commentId}`, {
+      method: "DELETE"
+    });
+    toast("Đã xoá thảo luận.");
+    await loadDocComments(currentViewingDocId);
+  } catch (err) {
+    toast(err.message || "Xoá thảo luận thất bại.");
+  }
+};
+
 const docViewerModalEl = $("#documentViewerModal");
 if (docViewerModalEl) {
   docViewerModalEl.addEventListener("close", () => {
     stopDocReadTracking();
     const iframe = $("#viewerIframe");
     if (iframe) iframe.src = "about:blank";
+    currentViewingDocId = null;
+    isDocDiscussionOpen = false;
+    updateDocDiscussionUIState();
   });
 }
 
@@ -1460,7 +1609,7 @@ async function openDetail(id) {
         <button class="button button-outline button-sm" onclick="votePost(${post.id}, 1)">▲ <span>Hữu ích</span></button>
         <span style="font-weight:600; color:var(--primary)">${post.helpfulCount || post.upvotes || 0}</span>
         <button class="button button-outline button-sm" onclick="votePost(${post.id}, -1)">▼ <span>Không hữu ích</span></button>
-        <span style="margin: 0 0 0 12px; font-weight:600; color:var(--sage-5); font-size: 11px; display: flex; align-items: center;">💬 ${post.responseCount} phản hồi</span>
+        <span style="margin: 0 0 0 12px; font-weight:600; color:var(--sage-5); font-size: 11px; display: inline-flex; align-items: center; gap: 4px;"><svg class="icon-chat-svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>${post.responseCount} phản hồi</span>
         <button class="button button-outline button-sm" style="margin-left: 12px; border: none; padding: 0 8px; color: ${post.isSaved ? 'var(--primary)' : 'var(--sage-5)'};" onclick="toggleSavePost(${post.id})">
           ${post.isSaved ? '★ Đã lưu' : '☆ Lưu'}
         </button>
