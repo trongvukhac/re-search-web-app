@@ -1175,7 +1175,129 @@ function go(route, scrollToTop = true) {
   if (route === "study") onEnterStudyLounge();
   else onLeaveStudyLounge();
   updateResponsiveAsidePlacement();
+  showMobileNav();
 }
+/* ==========================================================================
+   MOBILE FLOATING NAVIGATION SMART SCROLL HIDE/SHOW
+   ========================================================================== */
+let lastMobileScrollY = typeof window !== "undefined" ? window.scrollY || 0 : 0;
+let mobileScrollUpAccumulator = 0;
+let mobileScrollDownAccumulator = 0;
+let mobileNavScrollTimeout = null;
+let isMobileNavHidden = false;
+let isMobileNavSuspended = true;
+
+function hideMobileNav() {
+  const nav = document.querySelector(".mobile-nav");
+  const fab = document.querySelector(".mobile-fab");
+  if (nav) nav.classList.add("nav-hidden");
+  if (fab) fab.classList.add("nav-hidden");
+  isMobileNavHidden = true;
+}
+
+function showMobileNav() {
+  const nav = document.querySelector(".mobile-nav");
+  const fab = document.querySelector(".mobile-fab");
+  if (nav) nav.classList.remove("nav-hidden");
+  if (fab) fab.classList.remove("nav-hidden");
+  isMobileNavHidden = false;
+}
+
+window.hideMobileNav = hideMobileNav;
+window.showMobileNav = showMobileNav;
+
+function initMobileNavScrollHandler() {
+  lastMobileScrollY = Math.max(
+    0,
+    (typeof window !== "undefined" &&
+      (window.scrollY ||
+        window.pageYOffset ||
+        document.documentElement.scrollTop)) ||
+      0
+  );
+  showMobileNav();
+
+  setTimeout(() => {
+    isMobileNavSuspended = false;
+    lastMobileScrollY = Math.max(0, window.scrollY || 0);
+  }, 350);
+
+  const onScroll = () => {
+    if (window.innerWidth > 900) return;
+    if (document.querySelector("dialog[open]")) return;
+
+    const currentY = Math.max(
+      0,
+      window.scrollY ||
+        window.pageYOffset ||
+        document.documentElement.scrollTop ||
+        0
+    );
+
+    if (isMobileNavSuspended) {
+      lastMobileScrollY = currentY;
+      return;
+    }
+
+    const delta = currentY - lastMobileScrollY;
+
+    // Always restore when near top
+    if (currentY <= 40) {
+      showMobileNav();
+      mobileScrollUpAccumulator = 0;
+      mobileScrollDownAccumulator = 0;
+      lastMobileScrollY = currentY;
+      return;
+    }
+
+    if (delta > 0) {
+      // Scrolling DOWN -> hide after minor threshold
+      mobileScrollDownAccumulator += delta;
+      mobileScrollUpAccumulator = 0;
+
+      if (mobileScrollDownAccumulator > 20 && currentY > 60) {
+        hideMobileNav();
+      }
+    } else if (delta < 0) {
+      // Scrolling UP -> accumulate and wait for scroll end or significant upward gesture
+      const upDelta = Math.abs(delta);
+      mobileScrollUpAccumulator += upDelta;
+      mobileScrollDownAccumulator = 0;
+
+      if (mobileNavScrollTimeout) {
+        clearTimeout(mobileNavScrollTimeout);
+      }
+
+      // If user scrolls up by a clear intentional amount (>= 30px)
+      if (mobileScrollUpAccumulator >= 30) {
+        showMobileNav();
+      } else {
+        // Debounce when gesture stops: only show if user made a deliberate upward movement (>= 15px) or reached near top
+        mobileNavScrollTimeout = setTimeout(() => {
+          if (mobileScrollUpAccumulator >= 15 || currentY <= 50) {
+            showMobileNav();
+          }
+          mobileScrollUpAccumulator = 0;
+        }, 150);
+      }
+    }
+
+    lastMobileScrollY = currentY;
+  };
+
+  window.addEventListener("scroll", onScroll, { passive: true });
+
+  if ("onscrollend" in window) {
+    window.addEventListener("scrollend", () => {
+      if (window.innerWidth > 900) return;
+      if (mobileScrollUpAccumulator >= 30 || (window.scrollY || 0) <= 50) {
+        showMobileNav();
+      }
+      mobileScrollUpAccumulator = 0;
+    }, { passive: true });
+  }
+}
+
 /* ==========================================================================
    UNIVERSAL MODAL SCROLL LOCK & BACKGROUND INTERACTION BLOCKER
    ========================================================================== */
@@ -6369,6 +6491,7 @@ document.addEventListener("click", () => {
 }, { once: true });
 
 initStudyLoungeEvents();
+initMobileNavScrollHandler();
 
 renderHome();
 renderPosts();
