@@ -5436,6 +5436,7 @@ body.study-zen-fullscreen .study-main-col {
   word-break: break-word;
   display: -webkit-box;
   -webkit-line-clamp: 2;
+  line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
@@ -5904,6 +5905,7 @@ body.study-zen-fullscreen .study-main-col {
   .doc-viewer-title {
     font-size: 13.5px;
     -webkit-line-clamp: 2;
+    line-clamp: 2;
   }
 
   /* Discussion Panel: Overlays 80% bottom sheet on Mobile */
