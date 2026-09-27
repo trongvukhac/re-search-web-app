@@ -390,20 +390,22 @@ div.user-name-tier-5,
 .document-footer span.user-name-tier-5 {
   background-image: linear-gradient(
     90deg,
-    #7950f2 0%,
+    #7048e8 0%,
     #d6336c 25%,
-    #e03131 50%,
-    #f06595 75%,
-    #7950f2 100%
+    #ff6b6b 50%,
+    #f783ac 75%,
+    #7048e8 100%
   );
-  background-size: 200% auto;
+  background-size: 250% 100%;
   background-position: 0% 50%;
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
   color: transparent;
   font-weight: 800;
-  animation: shimmerName 3s linear infinite;
+  animation: shimmerName 3.5s linear infinite;
+  -webkit-animation: shimmerName 3.5s linear infinite;
+  will-change: background-position;
   display: inline-block;
   vertical-align: middle;
   text-shadow: none;
@@ -416,7 +418,16 @@ div.user-name-tier-5,
     background-position: 0% 50%;
   }
   100% {
-    background-position: 200% 50%;
+    background-position: 250% 50%;
+  }
+}
+
+@-webkit-keyframes shimmerName {
+  0% {
+    background-position: 0% 50%;
+  }
+  100% {
+    background-position: 250% 50%;
   }
 }
 
