@@ -34,8 +34,33 @@ body {
   word-break: break-word;
   overflow-wrap: break-word;
 }
+/* Modal Open & Scroll Locking across all browsers & devices */
+html.modal-scroll-locked,
+body.modal-scroll-locked {
+  overflow: hidden !important;
+  overscroll-behavior: none !important;
+  touch-action: none !important;
+  -webkit-overflow-scrolling: auto !important;
+}
+
+html:has(dialog[open]),
 body:has(dialog[open]) {
-  overflow: hidden;
+  overflow: hidden !important;
+  overscroll-behavior: none !important;
+  touch-action: none !important;
+  -webkit-overflow-scrolling: auto !important;
+}
+
+dialog[open] {
+  overscroll-behavior: contain !important;
+  touch-action: auto !important;
+  pointer-events: auto !important;
+}
+
+dialog::backdrop {
+  overscroll-behavior: none !important;
+  touch-action: none !important;
+  pointer-events: auto !important;
 }
 .noise {
   position: fixed;
@@ -1966,10 +1991,17 @@ dialog:not([open]) {
   box-shadow: 0 24px 65px #0827194a;
   width: min(620px, calc(100vw - 28px));
   max-height: min(86vh, 760px);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
 }
-.modal::backdrop {
+.modal::backdrop,
+dialog::backdrop {
   background: #0a2c1e80;
   backdrop-filter: blur(3px);
+  overscroll-behavior: none;
+  touch-action: none;
+  pointer-events: auto;
 }
 .modal form,
 .admin-modal {
@@ -3007,10 +3039,38 @@ dialog.detail-modal[open] {
   white-space: nowrap;
 }
 
-/* Fix iOS Auto-Zoom on Inputs & Accessibility Scaling */
-@media (max-width: 800px) {
-  input, textarea, select, .ql-container, .ql-container .ql-editor {
-    font-size: max(16px, 1rem) !important;
+/* Fix iOS & Mobile Auto-Zoom on Inputs, Textareas & Editors */
+input,
+textarea,
+select,
+button,
+.ql-editor,
+[contenteditable="true"] {
+  touch-action: manipulation;
+}
+
+@media (max-width: 900px) {
+  input,
+  textarea,
+  select,
+  .modal input,
+  .modal textarea,
+  .modal select,
+  .doc-reply-textarea,
+  .doc-comment-textarea,
+  .search-panel input,
+  .search-inline input,
+  .study-goal-box input,
+  .todo-input-wrap input,
+  .study-settings-modal input,
+  .study-settings-modal .stepper-input input,
+  .auth-modal input,
+  .ql-container.ql-snow,
+  .ql-container .ql-editor,
+  .ql-editor,
+  [contenteditable="true"] {
+    font-size: 16px !important;
+    touch-action: manipulation !important;
   }
 }
 
@@ -5953,7 +6013,7 @@ body.study-zen-fullscreen .study-main-col {
   }
 
   .doc-reply-textarea {
-    font-size: 12.5px !important;
+    font-size: 16px !important;
   }
 
   .doc-btn-send {

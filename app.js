@@ -1176,6 +1176,149 @@ function go(route, scrollToTop = true) {
   else onLeaveStudyLounge();
   updateResponsiveAsidePlacement();
 }
+/* ==========================================================================
+   UNIVERSAL MODAL SCROLL LOCK & BACKGROUND INTERACTION BLOCKER
+   ========================================================================== */
+let savedBodyScrollY = 0;
+let isBodyScrollLocked = false;
+
+function lockBodyScroll() {
+  if (isBodyScrollLocked) return;
+  savedBodyScrollY =
+    window.scrollY ||
+    window.pageYOffset ||
+    document.documentElement.scrollTop ||
+    0;
+  const scrollbarWidth =
+    window.innerWidth - document.documentElement.clientWidth;
+
+  document.documentElement.classList.add("modal-scroll-locked");
+  document.body.classList.add("modal-scroll-locked");
+
+  document.body.style.position = "fixed";
+  document.body.style.top = `-${savedBodyScrollY}px`;
+  document.body.style.left = "0";
+  document.body.style.right = "0";
+  document.body.style.width = "100%";
+  if (scrollbarWidth > 0) {
+    document.body.style.paddingRight = `${scrollbarWidth}px`;
+  }
+  isBodyScrollLocked = true;
+}
+
+function unlockBodyScroll() {
+  if (!isBodyScrollLocked) return;
+  document.documentElement.classList.remove("modal-scroll-locked");
+  document.body.classList.remove("modal-scroll-locked");
+
+  const restoreY = savedBodyScrollY;
+  document.body.style.position = "";
+  document.body.style.top = "";
+  document.body.style.left = "";
+  document.body.style.right = "";
+  document.body.style.width = "";
+  document.body.style.paddingRight = "";
+
+  isBodyScrollLocked = false;
+  window.scrollTo(0, restoreY);
+}
+
+function syncModalScrollLock() {
+  const openDialogs = document.querySelectorAll("dialog[open]");
+  if (openDialogs && openDialogs.length > 0) {
+    lockBodyScroll();
+  } else {
+    unlockBodyScroll();
+  }
+}
+
+window.lockBodyScroll = lockBodyScroll;
+window.unlockBodyScroll = unlockBodyScroll;
+window.syncModalScrollLock = syncModalScrollLock;
+
+// Intercept prototype methods of HTMLDialogElement for automatic sync
+if (typeof HTMLDialogElement !== "undefined" && HTMLDialogElement.prototype) {
+  const originalShowModal = HTMLDialogElement.prototype.showModal;
+  HTMLDialogElement.prototype.showModal = function (...args) {
+    const res = originalShowModal.apply(this, args);
+    syncModalScrollLock();
+    return res;
+  };
+
+  const originalShow = HTMLDialogElement.prototype.show;
+  HTMLDialogElement.prototype.show = function (...args) {
+    const res = originalShow.apply(this, args);
+    syncModalScrollLock();
+    return res;
+  };
+
+  const originalClose = HTMLDialogElement.prototype.close;
+  HTMLDialogElement.prototype.close = function (...args) {
+    const res = originalClose.apply(this, args);
+    requestAnimationFrame(() => syncModalScrollLock());
+    return res;
+  };
+}
+
+// Intercept close/cancel events on all dialogs
+window.addEventListener("close", () => requestAnimationFrame(syncModalScrollLock), true);
+window.addEventListener("cancel", () => requestAnimationFrame(syncModalScrollLock), true);
+
+// MutationObserver for any dynamic [open] attribute changes
+try {
+  const dialogObserver = new MutationObserver(() => {
+    syncModalScrollLock();
+  });
+  dialogObserver.observe(document.documentElement, {
+    attributes: true,
+    attributeFilter: ["open"],
+    subtree: true,
+  });
+} catch (e) {
+  console.warn("Dialog MutationObserver error:", e);
+}
+
+// Block touchmove & wheel outside active modal content
+function handleModalOutsideScroll(e) {
+  const openDialogs = document.querySelectorAll("dialog[open]");
+  if (!openDialogs || openDialogs.length === 0) return;
+
+  const closestDialog = e.target && e.target.closest ? e.target.closest("dialog[open]") : null;
+  if (!closestDialog) {
+    if (e.cancelable) e.preventDefault();
+    return;
+  }
+
+  // If target is the dialog itself (clicking or dragging on backdrop area outside inner box)
+  if (e.target === closestDialog) {
+    const rect = closestDialog.getBoundingClientRect();
+    const isInsideDialogBox =
+      e.clientX >= rect.left &&
+      e.clientX <= rect.right &&
+      e.clientY >= rect.top &&
+      e.clientY <= rect.bottom;
+    if (!isInsideDialogBox && e.cancelable) {
+      e.preventDefault();
+    }
+  }
+}
+
+window.addEventListener("wheel", handleModalOutsideScroll, { passive: false });
+window.addEventListener("touchmove", handleModalOutsideScroll, { passive: false });
+
+// Ensure input focusout cleans up any visual viewport translation on mobile
+document.addEventListener("focusout", (e) => {
+  if (
+    e.target &&
+    (e.target.tagName === "INPUT" ||
+      e.target.tagName === "TEXTAREA" ||
+      e.target.tagName === "SELECT" ||
+      e.target.isContentEditable)
+  ) {
+    window.scrollTo(window.scrollX, window.scrollY);
+  }
+});
+
 window.addEventListener("click", (e) => {
   if (e.target.tagName === "DIALOG") {
     const noBackdropCloseIds = [
