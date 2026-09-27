@@ -1436,6 +1436,7 @@ async function api(request, response, url) {
         format: d.format,
         status: d.status,
         submittedBy: d.display_name,
+        submittedByStreakTier: getAuthorStreakTier(d.submitted_by),
         createdAt: d.created_at.replace(' ', 'T') + 'Z',
       })),
     });
@@ -1801,6 +1802,7 @@ async function api(request, response, url) {
         recipientId,
         senderName: user.displayName || user.email.split("@")[0],
         senderAvatar: user.avatar || "🦊",
+        senderStreakTier: getAuthorStreakTier(user.id),
         cheerType,
         timestamp: Date.now()
       });

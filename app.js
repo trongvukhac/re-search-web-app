@@ -623,6 +623,7 @@ async function hydrateServer() {
           title: d.title,
           desc: d.desc || d.description,
           author: d.submittedBy || d.author,
+          streakTier: Number(d.submittedByStreakTier || d.streakTier || 0),
           date: formatTime(d.createdAt || d.date),
           url: d.url || d.sourceUrl,
         });
@@ -1069,7 +1070,7 @@ function renderDocuments() {
     .map(
       (d) => {
         const delBtn = isAdminOrTA ? `<button class="delete-doc-btn" onclick="deleteDocument(event, ${d.id})" style="position:absolute; top:8px; right:8px; background:transparent; color:var(--error); border:none; padding:8px; cursor:pointer; font-size:16px; line-height:1; z-index:10;" aria-label="Xoá tài liệu">✕</button>` : "";
-        return `<article class="document-card" data-doc="${d.id}" style="position:relative;">${delBtn}<div class="document-type" data-format="${d.format}">${d.format}</div><p class="eyebrow">${d.type === "course" ? "TÀI LIỆU MÔN HỌC" : "TÀI LIỆU THAM KHẢO"}</p><h2>${d.title}</h2><div class="document-desc ql-editor">${DOMPurify.sanitize(d.desc)}</div><div class="document-footer"><span>${d.author}</span><span>${d.date}</span></div></article>`;
+        return `<article class="document-card" data-doc="${d.id}" style="position:relative;">${delBtn}<div class="document-type" data-format="${d.format}">${d.format}</div><p class="eyebrow">${d.type === "course" ? "TÀI LIỆU MÔN HỌC" : "TÀI LIỆU THAM KHẢO"}</p><h2>${d.title}</h2><div class="document-desc ql-editor">${DOMPurify.sanitize(d.desc)}</div><div class="document-footer"><span class="${getNameClass(d.streakTier)}">${escapeHTML(d.author)}</span><span>${d.date}</span></div></article>`;
       }
     )
     .join("");
@@ -1967,7 +1968,7 @@ async function loadAdminMembers() {
     .map(
       (u) => `
     <tr style="border-bottom: 1px solid var(--sage-2);">
-      <td style="padding: 12px 8px;"><strong>${u.displayName}</strong><br><small>${u.email}</small></td>
+      <td style="padding: 12px 8px;"><strong class="${getNameClass(u.streakTier)}">${escapeHTML(u.displayName)}</strong><br><small>${escapeHTML(u.email)}</small></td>
       <td style="padding: 12px 8px;">${getRoleDisplay(u.role)}</td>
       <td style="padding: 12px 8px;"><strong style="color: var(--primary)">${u.totalPoints || 0}</strong></td>
       <td style="padding: 12px 8px; display: flex; gap: 8px;">
@@ -3725,7 +3726,7 @@ function showCheerToast(c) {
   const toastEl = document.createElement("div");
   toastEl.id = toastId;
   toastEl.className = "floating-cheer";
-  toastEl.innerHTML = `<span>${c.cheerType}</span> <span><b>${escapeHTML(c.senderName)}</b> vừa gửi cổ vũ đến bạn!</span>`;
+  toastEl.innerHTML = `<span>${c.cheerType}</span> <span><b class="${getNameClass(c.senderStreakTier)}">${escapeHTML(c.senderName)}</b> vừa gửi cổ vũ đến bạn!</span>`;
   document.body.appendChild(toastEl);
   setTimeout(() => {
     if (toastEl.parentElement) toastEl.remove();

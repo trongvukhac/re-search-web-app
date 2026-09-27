@@ -354,38 +354,61 @@ h1 em {
 .user-name-tier-1,
 .user-name-tier-2,
 .user-name-default {
-  color: #2f5e45 !important;
-  font-weight: 700 !important;
+  color: #2f5e45;
+  font-weight: 700;
 }
-.user-name-tier-3 {
-  color: #7048e8 !important;
-  font-weight: 700 !important;
+.user-name-tier-3,
+b.user-name-tier-3,
+span.user-name-tier-3,
+strong.user-name-tier-3,
+h1.user-name-tier-3 {
+  color: #7048e8;
+  font-weight: 700;
 }
-.user-name-tier-4 {
-  color: #e03131 !important;
-  font-weight: 700 !important;
+.user-name-tier-4,
+b.user-name-tier-4,
+span.user-name-tier-4,
+strong.user-name-tier-4,
+h1.user-name-tier-4 {
+  color: #e03131;
+  font-weight: 700;
 }
-.user-name-tier-5 {
-  background: linear-gradient(
+.user-name-tier-5,
+b.user-name-tier-5,
+span.user-name-tier-5,
+strong.user-name-tier-5,
+h1.user-name-tier-5,
+div.user-name-tier-5,
+.post-meta b.user-name-tier-5,
+.post-meta div b.user-name-tier-5,
+.reply-header b.user-name-tier-5,
+.post-detail-header b.user-name-tier-5,
+.profile-chip-text span.user-name-tier-5,
+.lb-name.user-name-tier-5,
+.co-study-user-title.user-name-tier-5,
+.account-header h1.user-name-tier-5,
+.document-footer span.user-name-tier-5 {
+  background-image: linear-gradient(
     90deg,
     #7950f2 0%,
     #d6336c 25%,
     #e03131 50%,
     #f06595 75%,
     #7950f2 100%
-  ) !important;
-  background-size: 200% auto !important;
-  -webkit-background-clip: text !important;
-  background-clip: text !important;
-  -webkit-text-fill-color: transparent !important;
-  color: transparent !important;
-  font-weight: 800 !important;
-  animation: shimmerName 3s linear infinite !important;
+  );
+  background-size: 200% auto;
+  background-position: 0% 50%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+  font-weight: 800;
+  animation: shimmerName 3s linear infinite;
   display: inline-block;
   vertical-align: middle;
-  text-shadow: none !important;
-  filter: none !important;
-  box-shadow: none !important;
+  text-shadow: none;
+  filter: none;
+  box-shadow: none;
 }
 
 @keyframes shimmerName {
@@ -1337,7 +1360,7 @@ h1 em {
   color: #718178;
   margin-bottom: 5px;
 }
-.post-meta b {
+.post-meta b:not([class*="user-name"]):not(.user-name-default) {
   color: #416f55;
 }
 .post-card h3 {
@@ -2859,12 +2882,14 @@ dialog.detail-modal[open] {
   min-width: 0;
 }
 .lb-name {
-  color: var(--ink);
   font-weight: 500;
   font-size: 13px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+.lb-name:not([class*="user-name"]):not(.user-name-default) {
+  color: var(--ink);
 }
 .lb-role {
   font-size: 10px;
