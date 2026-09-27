@@ -1753,21 +1753,21 @@ async function api(request, response, url) {
       let toastMessage = "";
       let reason = "";
 
-      // Phải hoàn thành tối thiểu 2 hiệp (hoặc >= 40 phút) và chưa nhận trong tuần
+      // Phải hoàn thành tối thiểu 2 lượt (hoặc >= 40 phút) và chưa nhận trong tuần
       if (cycles >= 2 || minutes >= 40) {
         if (!hasWeeklyStudyReward) {
           pointsAwarded = 10;
-          reason = `Hoàn thành ca tự học Pomodoro (${cycles} hiệp, ${minutes} phút) - Thưởng tuần +10đ`;
-          toastMessage = `🎉 Hoàn thành xuất sắc ca tự học (${cycles} hiệp)! +10 điểm thưởng tuần & giữ chuỗi thành công!`;
+          reason = `Hoàn thành ca tự học Pomodoro (${cycles} lượt, ${minutes} phút) - Thưởng tuần +10đ`;
+          toastMessage = `🎉 Hoàn thành xuất sắc ca tự học (${cycles} lượt)! +10 điểm thưởng tuần & giữ chuỗi thành công!`;
         } else {
           pointsAwarded = 0;
-          reason = `Hoàn thành ca tự học Pomodoro (${cycles} hiệp, ${minutes} phút) - Đã nhận thưởng tuần này (1 lần/tuần)`;
-          toastMessage = `🎉 Hoàn tất ca tự học (${cycles} hiệp)! Tuần này bạn đã nhận 10đ thưởng ca học (tối đa 1 lần/tuần). Hoạt động đã được ghi nhận giữ chuỗi!`;
+          reason = `Hoàn thành ca tự học Pomodoro (${cycles} lượt, ${minutes} phút) - Đã nhận thưởng tuần này (1 lần/tuần)`;
+          toastMessage = `🎉 Hoàn tất ca tự học (${cycles} lượt)! Tuần này bạn đã nhận 10đ thưởng ca học (tối đa 1 lần/tuần). Hoạt động đã được ghi nhận giữ chuỗi!`;
         }
       } else {
         pointsAwarded = 0;
-        reason = `Hoàn thành ca tự học (${minutes} phút, ${cycles} hiệp) - Cần tối thiểu 2 hiệp để nhận thưởng tuần (+10đ)`;
-        toastMessage = `🎉 Hoàn tất ca học (${minutes} phút)! Bạn cần hoàn thành tối thiểu 2 hiệp Pomodoro để nhận 10đ thưởng tuần. Hoạt động đã được ghi nhận giữ chuỗi!`;
+        reason = `Hoàn thành ca tự học (${minutes} phút, ${cycles} lượt) - Cần tối thiểu 2 lượt để nhận thưởng tuần (+10đ)`;
+        toastMessage = `🎉 Hoàn tất ca học (${minutes} phút)! Bạn cần hoàn thành tối thiểu 2 lượt Pomodoro để nhận 10đ thưởng tuần. Hoạt động đã được ghi nhận giữ chuỗi!`;
       }
 
       if (minutes >= 20 || cycles >= 1) {

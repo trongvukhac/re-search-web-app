@@ -4334,11 +4334,36 @@ dialog.detail-modal[open] {
 .co-study-head {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
+  align-items: center;
+  gap: 8px;
   margin-bottom: 12px;
 }
 .co-study-head h3 { font-size: 16px; margin: 0; color: var(--ink); }
 .co-study-tip { font-size: 12px; color: var(--muted); margin: 2px 0 0; }
+#coStudyCountBadge {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 8px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  border-radius: 12px;
+}
+@media (max-width: 600px) {
+  .co-study-head {
+    align-items: center;
+    gap: 6px;
+  }
+  .co-study-head h3 {
+    font-size: 14.5px;
+  }
+  .co-study-tip {
+    font-size: 11px;
+  }
+  #coStudyCountBadge {
+    font-size: 10.5px;
+    padding: 2px 6px;
+  }
+}
 .co-study-list {
   display: flex;
   flex-direction: column;

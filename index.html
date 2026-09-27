@@ -295,7 +295,7 @@
         <div class="forum-heading docs-heading">
           <div>
             <p class="eyebrow">KHO TÀI LIỆU</p>
-            <h1>Đọc để hiểu,<br /><em>chia sẻ để cùng tiến.</em></h1>
+            <h1>Đọc để hiểu,<br /><em>chia sẻ để cùng tiến bộ.</em></h1>
           </div>
           <button class="button button-primary" id="shareDocument">
             <span>+</span> Đề xuất tài liệu
@@ -333,7 +333,7 @@
         <div id="studyMainContent" style="display: none;">
           <div class="forum-heading study-heading">
           <div>
-            <p class="eyebrow">KHÔNG GIAN TỰ HỌC NCKH</p>
+            <p class="eyebrow">KHÔNG GIAN TỰ HỌC</p>
             <h1>Tập trung sâu,<br /><em>bền bỉ cùng bạn bè.</em></h1>
           </div>
           <div class="study-header-actions">
@@ -341,8 +341,8 @@
             <button type="button" class="study-action-btn" id="studyStreakChip" onclick="openStreakJourneyModal()" title="Xem hành trình mở khóa đặc quyền">
               <span>🔥 Chuỗi:</span> <strong id="studyUserStreakVal">0</strong> ngày
             </button>
-            <button type="button" class="study-action-btn" id="studyZenToggleBtn" onclick="toggleStudyZenView()" title="Chế độ Không gian: Thu gọn bảng để xem trọn hình nền">
-              <span id="studyZenIcon">🖼️</span> <span id="studyZenText">Không gian</span>
+            <button type="button" class="study-action-btn" id="studyZenToggleBtn" onclick="toggleStudyZenView()" title="Chế độ Tối giản: Thu gọn bảng để ngắm trọn hình nền">
+              <span id="studyZenIcon">🖼️</span> <span id="studyZenText">Tối giản</span>
             </button>
             <button type="button" class="study-action-btn icon-only" id="studySettingsBtn" title="Cài đặt Pomodoro" onclick="openStudySettingsModal()">
               ⚙️
@@ -371,12 +371,12 @@
 
               <!-- Pomodoro Cycle Indicator (1/4 -> 4/4) -->
               <div class="study-cycle-container">
-                <span class="study-cycle-label" id="studyCycleLabel">Hiệp 1/4 (Pomodoro)</span>
+                <span class="study-cycle-label" id="studyCycleLabel">Lượt 1/4 (Pomodoro)</span>
                 <div class="study-cycle-dots" id="studyCycleDots">
-                  <span class="cycle-dot active" data-cycle="1" title="Hiệp 1"></span>
-                  <span class="cycle-dot" data-cycle="2" title="Hiệp 2"></span>
-                  <span class="cycle-dot" data-cycle="3" title="Hiệp 3"></span>
-                  <span class="cycle-dot" data-cycle="4" title="Hiệp 4"></span>
+                  <span class="cycle-dot active" data-cycle="1" title="Lượt 1"></span>
+                  <span class="cycle-dot" data-cycle="2" title="Lượt 2"></span>
+                  <span class="cycle-dot" data-cycle="3" title="Lượt 3"></span>
+                  <span class="cycle-dot" data-cycle="4" title="Lượt 4"></span>
                 </div>
               </div>
 
@@ -412,7 +412,7 @@
               </div>
 
               <div class="study-actions">
-                <button type="button" class="button button-outline study-action-ctrl" id="studyResetBtn" title="Đặt lại hiệp này">
+                <button type="button" class="button button-outline study-action-ctrl" id="studyResetBtn" title="Đặt lại lượt này">
                   <span class="btn-icon">↺</span> <span class="btn-label">Đặt lại</span>
                 </button>
                 <button type="button" class="button button-primary study-btn-pulse study-action-ctrl" id="studyStartBtn">
@@ -421,8 +421,8 @@
                 <button type="button" class="button button-outline study-action-ctrl" id="studyPauseBtn" style="display: none;">
                   <span class="btn-icon">⏸</span> <span class="btn-label">Tạm dừng</span>
                 </button>
-                <button type="button" class="button button-outline study-action-ctrl" id="studyNextBtn" title="Bỏ qua / Sang phiên kế tiếp">
-                  <span class="btn-icon">⏭</span> <span class="btn-label">Chuyển phiên</span>
+                <button type="button" class="button button-outline study-action-ctrl" id="studyNextBtn" title="Bỏ qua / Sang lượt kế tiếp">
+                  <span class="btn-icon">⏭</span> <span class="btn-label">Qua lượt kế tiếp</span>
                 </button>
                 <button type="button" class="button button-quiet study-action-ctrl" id="studyCompleteBtn" style="display: none;">
                   <span class="btn-icon">✓</span> <span class="btn-label">Hoàn tất</span>
@@ -460,7 +460,7 @@
                 </div>
 
                 <div class="ambient-sub-bar">
-                  <span class="ambient-sub">Âm thanh môi trường hỗn hợp sẵn (khoảng 1 tiếng), phát vòng lặp giúp tập trung sâu.</span>
+                  <span class="ambient-sub">Âm thanh môi trường hỗn hợp. Có thể phát cùng âm thanh phối hợp.</span>
                 </div>
 
                 <!-- 4 Environment Sounds Grid -->
@@ -473,7 +473,7 @@
                   <div class="custom-audio-head">
                     <div>
                       <h4>🌿 Âm thanh môi trường của bạn</h4>
-                      <p class="custom-audio-sub">Tự tải lên âm thanh môi trường yêu thích (phát lặp, lưu trên máy).</p>
+                      <p class="custom-audio-sub">Tự tải lên các âm thanh ưa thích của bạn (không đồng bộ với thiết bị khác)</p>
                     </div>
                     <div class="custom-audio-head-right">
                       <span class="perk-badge" id="badgeCustomEnvLock">🔒 30d</span>
@@ -499,7 +499,7 @@
                 </div>
 
                 <div class="ambient-sub-bar">
-                  <span class="ambient-sub">9 âm thanh đơn lẻ, bật tắt và điều chỉnh âm lượng từng âm để tạo không gian riêng của bạn.</span>
+                  <span class="ambient-sub">Tự phối âm thanh tập trung cho riêng bạn.</span>
                 </div>
 
                 <!-- 9 Mixer Sounds Grid -->
@@ -538,7 +538,7 @@
                 </div>
 
                 <div class="ambient-sub-bar">
-                  <span class="ambient-sub">4 bản nhạc tập trung (phát vòng lặp, có thể kết hợp cùng âm thanh phối hợp).</span>
+                  <span class="ambient-sub">Playlist nhạc theo gu khác nhau. Có thể phát cùng âm thanh phối hợp.</span>
                 </div>
 
                 <!-- 4 Music Tracks Grid -->
@@ -551,7 +551,7 @@
                   <div class="custom-audio-head">
                     <div>
                       <h4>🎵 Âm nhạc của bạn</h4>
-                      <p class="custom-audio-sub">Tự tải lên các bản nhạc/lofi yêu thích (phát lặp, lưu trên máy).</p>
+                      <p class="custom-audio-sub">Tải lên các bản nhạc ưa thích của bạn (không đồng bộ với thiết bị khác).</p>
                     </div>
                     <div class="custom-audio-head-right">
                       <span class="perk-badge" id="badgeCustomMusicLock">🔒 30d</span>
@@ -571,7 +571,7 @@
             <div class="study-card theme-card" id="themeArenaCard">
               <div class="theme-card-header">
                 <div>
-                  <h3>🖼️ Không gian & Hình nền</h3>
+                  <h3>Hình nền</h3>
                   <p class="theme-card-sub">Cá nhân hóa góc học tập theo phong cách của bạn.</p>
                 </div>
                 <div class="theme-actions">
@@ -583,7 +583,7 @@
                 <!-- Wallpaper Presets (Streak >= 14) -->
                 <div class="wallpaper-presets-wrap">
                   <div class="theme-tier-title">
-                    <span>Kho hình nền học thuật</span>
+                    <span>Kho hình nền</span>
                     <span class="perk-badge" id="badgeWallPresetLock">🔒 14d</span>
                   </div>
                   <div class="preset-thumbs" id="wallpaperPresetsList">
@@ -594,7 +594,7 @@
                 <!-- Clock Color Customization (Streak >= 14) -->
                 <div class="clock-color-wrap">
                   <div class="theme-tier-title">
-                    <span>Màu sắc đồng hồ</span>
+                    <span>Màu sắc đồng hồ số</span>
                     <span class="perk-badge" id="badgeClockColorLock">🔒 14d</span>
                   </div>
                   <div class="clock-color-picker" id="clockColorPicker">
@@ -629,12 +629,12 @@
                     <span>Tùy chỉnh Hiển thị & Độ trong suốt</span>
                   </div>
                   <div class="wallpaper-dim-slider-box">
-                    <span style="font-size: 13px; color: var(--ink); min-width: 90px;">Lớp tối nền:</span>
+                    <span style="font-size: 13px; color: var(--ink); min-width: 90px;">Độ mờ nền:</span>
                     <input type="range" id="wallpaperDimSlider" min="0" max="80" step="5" value="35" oninput="handleWallpaperDimChange(this.value)" style="flex: 1; cursor: pointer;" />
                     <span id="wallpaperDimVal" style="font-size: 12px; font-weight: 700; width: 36px; text-align: right; color: var(--ink);">35%</span>
                   </div>
                   <div class="wallpaper-dim-slider-box" style="margin-top: 8px;">
-                    <span style="font-size: 13px; color: var(--ink); min-width: 90px;">Độ mờ thẻ:</span>
+                    <span style="font-size: 13px; color: var(--ink); min-width: 90px;">Độ mờ giao diện:</span>
                     <input type="range" id="studyCardGlassSlider" min="15" max="90" step="5" value="50" oninput="handleCardGlassChange(this.value)" style="flex: 1; cursor: pointer;" />
                     <span id="studyCardGlassVal" style="font-size: 12px; font-weight: 700; width: 36px; text-align: right; color: var(--ink);">50%</span>
                   </div>
@@ -643,7 +643,7 @@
                 <!-- Full Master Customization & Gradient Palettes (Streak >= 50) -->
                 <div class="theme-master-wrap">
                   <div class="theme-tier-title">
-                    <span>Hào quang & Phối màu độc quyền</span>
+                    <span>Phối màu</span>
                     <span class="perk-badge" id="badgeMasterCustomLock">🔒 50d</span>
                   </div>
                   <div class="color-palette-picker" id="colorPalettePicker">
@@ -1345,11 +1345,11 @@
             <div class="alarm-field">
               <label>Âm báo hết giờ:</label>
               <select id="settingEndAlarm">
-                <option value="bell">Chuông nhẹ (Bell)</option>
-                <option value="ding">Tiếng Ding thanh thoát</option>
-                <option value="servicebell">Chuông tiếp tân (Service Bell)</option>
-                <option value="singingbowl">Chuông thiền Tây Tạng (Singing Bowl)</option>
-                <option value="chime">Giai điệu Chime vui tươi</option>
+                <option value="bell">Tín hiệu</option>
+                <option value="ding">Rộn ràng</option>
+                <option value="servicebell">Báo động</option>
+                <option value="singingbowl">Thiền định</option>
+                <option value="chime">Vui tươi</option>
               </select>
               <button type="button" class="button button-sm button-outline" onclick="previewSelectedAlarm()">▶ Nghe thử</button>
             </div>

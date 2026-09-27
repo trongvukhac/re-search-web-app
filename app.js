@@ -3124,13 +3124,13 @@ function updateTimerDisplay() {
 
   if (cycleLabel) {
     if (studyState.cycleIndex === 0) {
-      cycleLabel.textContent = "Hiệp 0/4 (Chưa bắt đầu)";
+      cycleLabel.textContent = "Lượt 0/4 (Chưa bắt đầu)";
     } else if (studyState.mode === 'focus') {
-      cycleLabel.textContent = `Hiệp ${studyState.cycleIndex}/4 (Tập trung)`;
+      cycleLabel.textContent = `Lượt ${studyState.cycleIndex}/4 (Tập trung)`;
     } else if (studyState.mode === 'shortbreak') {
-      cycleLabel.textContent = `Nghỉ ngắn (${studySettings.shortBreakMins}m) - Sau hiệp ${studyState.cycleIndex > 1 ? studyState.cycleIndex - 1 : 1}`;
+      cycleLabel.textContent = `Nghỉ ngắn (${studySettings.shortBreakMins}m) - Sau lượt ${studyState.cycleIndex > 1 ? studyState.cycleIndex - 1 : 1}`;
     } else if (studyState.mode === 'longbreak') {
-      cycleLabel.textContent = `Nghỉ dài (${studySettings.longBreakMins}m) - Hoàn tất chu kỳ 4 hiệp!`;
+      cycleLabel.textContent = `Nghỉ dài (${studySettings.longBreakMins}m) - Hoàn tất chu kỳ 4 lượt!`;
     }
   }
 
@@ -3213,7 +3213,7 @@ function advanceStudyCycle(manualSkip = false) {
       studyState.mode = 'shortbreak';
       studyState.durationMinutes = studySettings.shortBreakMins;
       studyState.remainingSeconds = studySettings.shortBreakMins * 60;
-      toast(`☕ Hoàn thành hiệp tập trung! Nghỉ giải lao ${studySettings.shortBreakMins} phút.`);
+      toast(`☕ Hoàn thành lượt tập trung! Nghỉ giải lao ${studySettings.shortBreakMins} phút.`);
       if (studySettings.autoStartBreaks) {
         startStudyTimer();
       }
@@ -3222,7 +3222,7 @@ function advanceStudyCycle(manualSkip = false) {
       studyState.mode = 'longbreak';
       studyState.durationMinutes = studySettings.longBreakMins;
       studyState.remainingSeconds = studySettings.longBreakMins * 60;
-      toast(`🏆 Hoàn thành trọn vẹn 4 hiệp Pomodoro! Nghỉ dài ${studySettings.longBreakMins} phút.`);
+      toast(`🏆 Hoàn thành trọn vẹn 4 lượt Pomodoro! Nghỉ dài ${studySettings.longBreakMins} phút.`);
       if (studySettings.autoStartBreaks) {
         startStudyTimer();
       }
@@ -3235,7 +3235,7 @@ function advanceStudyCycle(manualSkip = false) {
     studyState.mode = 'focus';
     studyState.durationMinutes = studySettings.focusMins;
     studyState.remainingSeconds = studySettings.focusMins * 60;
-    toast(`⏱️ Bắt đầu hiệp tập trung ${studyState.cycleIndex}/4! Hãy giữ nhịp độ.`);
+    toast(`⏱️ Bắt đầu lượt tập trung ${studyState.cycleIndex}/4! Hãy giữ nhịp độ.`);
     if (studySettings.autoStartPomodoros) {
       startStudyTimer();
     }
@@ -3394,9 +3394,9 @@ async function finishStudySession(autoCompleted = false) {
         if (res.message) {
           toast(res.message);
         } else if (res.pointsAwarded > 0) {
-          toast(`🎉 Hoàn thành xuất sắc ca tự học (${cyclesToCredit} hiệp)! +${res.pointsAwarded} điểm thưởng tuần & giữ chuỗi!`);
+          toast(`🎉 Hoàn thành xuất sắc ca tự học (${cyclesToCredit} lượt)! +${res.pointsAwarded} điểm thưởng tuần & giữ chuỗi!`);
         } else {
-          toast(`🎉 Hoàn tất ca học (${cyclesToCredit} hiệp)! Hoạt động đã được ghi nhận.`);
+          toast(`🎉 Hoàn tất ca học (${cyclesToCredit} lượt)! Hoạt động đã được ghi nhận.`);
         }
         loadContributions();
       }
@@ -3410,7 +3410,7 @@ async function finishStudySession(autoCompleted = false) {
   }
 
   if (!autoCompleted) {
-    // Khi bấm hoàn thành: reset thời gian về hiệp 0 và thoát khu vực bàn tròn
+    // Khi bấm hoàn thành: reset thời gian về lượt 0 và thoát khu vực bàn tròn
     studyState.completedFocusCycles = 0;
     studyState.accumulatedFocusMinutes = 0;
     studyState.cycleIndex = 0;
@@ -3574,10 +3574,11 @@ function renderCoStudyList(rawLearners = []) {
   // Always guarantee self is at the top of the shared study room
   learners.unshift(selfData);
 
-  const totalCount = Math.max(learners.length, 1);
+  const activeCount = learners.filter(l => Boolean(l.isRunning)).length;
+  const totalCount = learners.length;
   const badge1 = $("#studyLiveCount");
   const badge2 = $("#coStudyCountBadge");
-  if (badge1) badge1.textContent = totalCount;
+  if (badge1) badge1.textContent = activeCount;
   if (badge2) badge2.textContent = `${totalCount} người trong phòng`;
 
   const list = $("#coStudyList");
@@ -5049,10 +5050,10 @@ function toggleStudyZenView() {
     if (icon) icon.textContent = "📊";
     if (text) text.textContent = "Đầy đủ";
     if (btn) btn.classList.add("active");
-    toast("✨ Đã bật Chế độ Không gian: Thu gọn bảng để ngắm trọn hình nền!");
+    toast("✨ Đã bật chế độ tối giản");
   } else {
     if (icon) icon.textContent = "🖼️";
-    if (text) text.textContent = "Không gian";
+    if (text) text.textContent = "Tối giản";
     if (btn) btn.classList.remove("active");
     toast("Đã mở lại toàn bộ bảng điều khiển.");
   }
@@ -5272,10 +5273,10 @@ function sendStudyNotification() {
   if (!("Notification" in window)) return;
   if (Notification.permission === "granted") {
     const isFocus = (studyState.mode === 'focus');
-    const title = isFocus ? "🎉 Hoàn thành hiệp tập trung!" : "⏰ Hết giờ nghỉ giải lao!";
+    const title = isFocus ? "🎉 Hoàn thành lượt tập trung!" : "⏰ Hết giờ nghỉ giải lao!";
     const body = isFocus
-      ? "Bạn đã hoàn thành xuất sắc hiệp học. Hãy đứng dậy vươn vai và thư giãn nhé!"
-      : "Thời gian nghỉ đã hết. Sẵn sàng bắt đầu hiệp tập trung mới nào!";
+      ? "Bạn đã hoàn thành xuất sắc lượt học. Hãy đứng dậy vươn vai và thư giãn nhé!"
+      : "Thời gian nghỉ đã hết. Sẵn sàng bắt đầu lượt tập trung mới nào!";
     try {
       new Notification(title, {
         body,
