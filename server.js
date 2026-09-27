@@ -2162,11 +2162,17 @@ function serveStatic(request, response, url) {
   )
     return error(response, 404, "Không tìm thấy trang.");
   const extension = path.extname(file);
-  response.writeHead(200, {
+  const headers = {
     "Content-Type": MIME[extension] || "application/octet-stream",
     "X-Content-Type-Options": "nosniff",
     "Referrer-Policy": "same-origin",
-  });
+  };
+  if (relative.startsWith("/public/") || [".png", ".jpg", ".jpeg", ".webp", ".gif", ".svg", ".ico", ".mp3", ".wav", ".woff2", ".ttf"].includes(extension)) {
+    headers["Cache-Control"] = "public, max-age=86400, stale-while-revalidate=604800";
+  } else if ([".css", ".js"].includes(extension)) {
+    headers["Cache-Control"] = "public, max-age=3600";
+  }
+  response.writeHead(200, headers);
   fs.createReadStream(file).pipe(response);
 }
 const server = http.createServer(async (request, response) => {

@@ -3970,6 +3970,13 @@ function renderEnvironmentAudioGrid() {
   const grid = $("#envAudioGrid");
   if (!grid) return;
 
+  const existingCards = grid.querySelectorAll(".ambient-track");
+  if (existingCards.length === AMBIENT_ENV_TRACKS.length) {
+    updateEnvGridDOM();
+    updateMasterAmbientButtonState();
+    return;
+  }
+
   grid.innerHTML = AMBIENT_ENV_TRACKS.map(t => {
     const isActive = (studyState.activeEnvTrack === t.id);
     const savedVol = studyState.envVolumes[t.id] ?? t.defaultVol;
@@ -4087,6 +4094,13 @@ function renderMixAudioGrid() {
   const grid = $("#mixAudioGrid");
   if (!grid) return;
 
+  const existingCards = grid.querySelectorAll(".ambient-track");
+  if (existingCards.length === MIX_SOUND_TRACKS.length) {
+    MIX_SOUND_TRACKS.forEach(t => updateMixGridDOM(t.id));
+    updateMasterAmbientButtonState();
+    return;
+  }
+
   grid.innerHTML = MIX_SOUND_TRACKS.map(t => {
     const isActive = !!studyState.activeMixSounds[t.id];
     const savedVol = studyState.mixVolumes[t.id] ?? t.defaultVol;
@@ -4175,6 +4189,13 @@ function updateMixVolume(trackId, val) {
 function renderMusicAudioGrid() {
   const grid = $("#musicAudioGrid");
   if (!grid) return;
+
+  const existingCards = grid.querySelectorAll(".ambient-track");
+  if (existingCards.length === MUSIC_SOUND_TRACKS.length) {
+    updateMusicGridDOM();
+    updateMasterAmbientButtonState();
+    return;
+  }
 
   grid.innerHTML = MUSIC_SOUND_TRACKS.map(t => {
     const isActive = (studyState.activeMusicTrack === t.id);
@@ -4505,18 +4526,38 @@ async function loadCustomAudioFromDB() {
   updateMasterAmbientButtonState();
 }
 
+const customAudioListSignatures = {};
+
 function renderCustomAudioList(category, containerEl, tracks) {
   if (!containerEl) return;
   if (!tracks || tracks.length === 0) {
-    const emptyHints = {
-      env: "Chưa có âm thanh môi trường tải lên nào. Bạn có thể tải bài dài yêu thích (mưa, sóng biển, suối...) để phát lặp!",
-      mix: "Chưa có âm thanh phối hợp tải lên nào. Bạn có thể tải hiệu ứng âm thanh để mix cùng lúc!",
-      music: "Chưa có bản nhạc tải lên nào. Bạn có thể tải các bản nhạc lofi/nhẹ nhàng yêu thích của bạn!"
-    };
-    containerEl.innerHTML = `<p style="font-size:12px; color:var(--muted); padding:10px 0; margin:0;">${emptyHints[category] || "Chưa có tệp tải lên."}</p>`;
+    if (customAudioListSignatures[category] !== "empty") {
+      const emptyHints = {
+        env: "Chưa có âm thanh môi trường tải lên nào. Bạn có thể tải bài dài yêu thích (mưa, sóng biển, suối...) để phát lặp!",
+        mix: "Chưa có âm thanh phối hợp tải lên nào. Bạn có thể tải hiệu ứng âm thanh để mix cùng lúc!",
+        music: "Chưa có bản nhạc tải lên nào. Bạn có thể tải các bản nhạc lofi/nhẹ nhàng yêu thích của bạn!"
+      };
+      containerEl.innerHTML = `<p style="font-size:12px; color:var(--muted); padding:10px 0; margin:0;">${emptyHints[category] || "Chưa có tệp tải lên."}</p>`;
+      customAudioListSignatures[category] = "empty";
+    }
     return;
   }
 
+  const listSig = tracks.map(t => `${t.id}_${t.name}_${t.size}`).join("|");
+  const existingCards = containerEl.querySelectorAll(".custom-track");
+
+  if (customAudioListSignatures[category] === listSig && existingCards.length === tracks.length) {
+    tracks.forEach(t => {
+      let isActive = false;
+      if (category === 'env') isActive = (studyState.activeCustomEnvId === t.id);
+      else if (category === 'music') isActive = (studyState.activeCustomMusicId === t.id);
+      else isActive = !!studyState.activeCustomMixSounds[t.id];
+      updateCustomTrackDOM(t.id, isActive);
+    });
+    return;
+  }
+
+  customAudioListSignatures[category] = listSig;
   const categoryIcons = { env: '🌿', mix: '🎛️', music: '🎵' };
   const icon = categoryIcons[category] || '🎵';
 
@@ -4889,6 +4930,32 @@ function renderWallpaperPresets() {
   if (!cont) return;
   const streak = getUserStudyStreak();
 
+  const existingCards = cont.querySelectorAll(".preset-thumb-card");
+  if (existingCards.length === WALLPAPER_PRESETS.length) {
+    existingCards.forEach((card, idx) => {
+      const p = WALLPAPER_PRESETS[idx];
+      if (!p) return;
+      const isSelected = studySettings.activeWallpaper === p.id;
+      const isUnlocked = (p.id === 'default' || streak >= 14);
+      const clickAction = isUnlocked
+        ? `applyStudyWallpaperPreset('${p.id}')`
+        : `notifyPerkLocked(14, 'Kho hình nền cơ bản')`;
+
+      card.classList.toggle("selected", isSelected);
+      card.classList.toggle("locked", !isUnlocked);
+      card.setAttribute("onclick", clickAction);
+      card.title = `${p.name}${!isUnlocked ? ' (Mở khóa ở Chuỗi 14 ngày)' : ''}`;
+
+      let indicator = card.querySelector(".preset-active-indicator");
+      if (isSelected && !indicator) {
+        card.insertAdjacentHTML("beforeend", '<span class="preset-active-indicator">✓</span>');
+      } else if (!isSelected && indicator) {
+        indicator.remove();
+      }
+    });
+    return;
+  }
+
   cont.innerHTML = WALLPAPER_PRESETS.map(p => {
     const isSelected = studySettings.activeWallpaper === p.id;
     const isUnlocked = (p.id === 'default' || streak >= 14);
@@ -4900,7 +4967,7 @@ function renderWallpaperPresets() {
       : `notifyPerkLocked(14, 'Kho hình nền cơ bản')`;
 
     return `
-      <div class="preset-thumb-card ${isSelected ? 'selected' : ''} ${!isUnlocked ? 'locked' : ''}" onclick="${clickAction}" title="${escapeHTML(p.name)}${!isUnlocked ? ' (Mở khóa ở Chuỗi 14 ngày)' : ''}">
+      <div class="preset-thumb-card ${isSelected ? 'selected' : ''} ${!isUnlocked ? 'locked' : ''}" data-preset-id="${p.id}" onclick="${clickAction}" title="${escapeHTML(p.name)}${!isUnlocked ? ' (Mở khóa ở Chuỗi 14 ngày)' : ''}">
         <div class="preset-thumb-color" style="${thumbStyle}"></div>
         <span class="preset-thumb-name">${escapeHTML(p.name)}</span>
         ${isSelected ? '<span class="preset-active-indicator">✓</span>' : ''}
@@ -4964,6 +5031,23 @@ function renderClockColorPicker() {
   const cont = $("#clockColorPicker");
   if (!cont) return;
   const streak = getUserStudyStreak();
+
+  const existingSwatches = cont.querySelectorAll(".clock-color-swatch");
+  if (existingSwatches.length === CLOCK_COLORS.length) {
+    existingSwatches.forEach((btn, idx) => {
+      const c = CLOCK_COLORS[idx];
+      if (!c) return;
+      const isSelected = (studySettings.clockColor || 'default') === c.id;
+      const isUnlocked = (c.id === 'default' || streak >= 14);
+      btn.classList.toggle("active", isSelected);
+      btn.classList.toggle("locked", !isUnlocked);
+      const clickAction = isUnlocked
+        ? `applyClockColor('${c.id}')`
+        : `notifyPerkLocked(14, 'Tinh chỉnh màu sắc đồng hồ số')`;
+      btn.setAttribute("onclick", clickAction);
+    });
+    return;
+  }
 
   cont.innerHTML = CLOCK_COLORS.map(c => {
     const isSelected = (studySettings.clockColor || 'default') === c.id;
@@ -5050,13 +5134,15 @@ async function handleCustomWallpaperUpload(file) {
   reader.readAsDataURL(file);
 }
 
+let lastRenderedCustomWallpapersSig = "";
+
 async function renderCustomWallpapersList() {
   const cont = $("#customWallpapersList");
   if (!cont) return;
   const streak = getUserStudyStreak();
   const unlocked = streak >= 50;
 
-  const walls = await idbGetAll("custom_wallpapers");
+  const walls = (await idbGetAll("custom_wallpapers")) || [];
 
   const badgeLimit = $("#badgeCustomWallLimit");
   if (badgeLimit) {
@@ -5069,11 +5155,39 @@ async function renderCustomWallpapersList() {
     }
   }
 
-  if (!walls || walls.length === 0) {
-    cont.innerHTML = `<p style="font-size:12px; color:var(--muted); padding:6px 0; margin:0; grid-column: 1 / -1;">Chưa có ảnh nền cá nhân nào. Hãy tải lên ảnh yêu thích của bạn!</p>`;
+  if (walls.length === 0) {
+    if (lastRenderedCustomWallpapersSig !== "empty") {
+      cont.innerHTML = `<p style="font-size:12px; color:var(--muted); padding:6px 0; margin:0; grid-column: 1 / -1;">Chưa có ảnh nền cá nhân nào. Hãy tải lên ảnh yêu thích của bạn!</p>`;
+      lastRenderedCustomWallpapersSig = "empty";
+    }
     return;
   }
 
+  const listSig = walls.map(w => `${w.id}_${w.name}_${w.size}`).join("|") + `_unlocked:${unlocked}`;
+  const existingCards = cont.querySelectorAll(".custom-wallpaper-card");
+
+  if (lastRenderedCustomWallpapersSig === listSig && existingCards.length === walls.length) {
+    existingCards.forEach((card, idx) => {
+      const w = walls[idx];
+      if (!w) return;
+      const isSelected = studySettings.activeWallpaper === `custom_${w.id}`;
+      card.classList.toggle("selected", isSelected);
+      card.classList.toggle("locked", !unlocked);
+
+      const preview = card.querySelector(".custom-wallpaper-preview");
+      if (preview) {
+        let tag = preview.querySelector(".custom-wall-active-tag");
+        if (isSelected && !tag) {
+          preview.insertAdjacentHTML("afterbegin", '<span class="custom-wall-active-tag">Đang dùng</span>');
+        } else if (!isSelected && tag) {
+          tag.remove();
+        }
+      }
+    });
+    return;
+  }
+
+  lastRenderedCustomWallpapersSig = listSig;
   cont.innerHTML = walls.map(w => {
     const isSelected = studySettings.activeWallpaper === `custom_${w.id}`;
     const sizeMb = (w.size ? (w.size / (1024 * 1024)).toFixed(1) : "0.0");
@@ -5297,6 +5411,32 @@ function renderColorPalette() {
   const cont = $("#colorPalettePicker");
   if (!cont) return;
   const streak = getUserStudyStreak();
+
+  const existingSwatches = cont.querySelectorAll(".color-swatch");
+  if (existingSwatches.length === COLOR_AURAS.length) {
+    existingSwatches.forEach((btn, idx) => {
+      const c = COLOR_AURAS[idx];
+      if (!c) return;
+      const isSelected = (studySettings.activeAura === c.id);
+      let isUnlocked = true;
+      let reqDays = 0;
+      if (idx >= 1 && idx <= 4) {
+        isUnlocked = streak >= 30;
+        reqDays = 30;
+      } else if (idx >= 5) {
+        isUnlocked = streak >= 50;
+        reqDays = 50;
+      }
+
+      btn.classList.toggle("active", isSelected);
+      btn.classList.toggle("locked", !isUnlocked);
+      const clickAction = isUnlocked
+        ? `applyColorAura('${c.id}')`
+        : `notifyPerkLocked(${reqDays}, 'Phối màu ${escapeHTML(c.name)}')`;
+      btn.setAttribute("onclick", clickAction);
+    });
+    return;
+  }
 
   cont.innerHTML = COLOR_AURAS.map((c, idx) => {
     const isSelected = (studySettings.activeAura === c.id);
