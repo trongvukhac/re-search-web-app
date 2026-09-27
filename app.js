@@ -3526,47 +3526,56 @@ function getAudioContext() {
   return studyState.audioCtx;
 }
 
-function createPinkNoiseBuffer(ctx) {
-  const bufferSize = ctx.sampleRate * 3;
-  const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
-  const data = buffer.getChannelData(0);
-  let b0 = 0, b1 = 0, b2 = 0, b3 = 0, b4 = 0, b5 = 0, b6 = 0;
-  for (let i = 0; i < bufferSize; i++) {
-    const white = Math.random() * 2 - 1;
-    b0 = 0.99886 * b0 + white * 0.0555179;
-    b1 = 0.99332 * b1 + white * 0.0750759;
-    b2 = 0.96900 * b2 + white * 0.1538520;
-    b3 = 0.86650 * b3 + white * 0.3104856;
-    b4 = 0.55000 * b4 + white * 0.5329522;
-    b5 = -0.7616 * b5 - white * 0.0168980;
-    data[i] = (b0 + b1 + b2 + b3 + b4 + b5 + b6 + white * 0.5362) * 0.08;
-    b6 = white * 0.115926;
+function fadeAudioIn(player, targetVol, durationMs = 250) {
+  if (!player) return;
+  const target = Math.max(0, Math.min(1, targetVol));
+  player.volume = 0;
+  const playPromise = player.play();
+  if (playPromise !== undefined) {
+    playPromise.then(() => {
+      const steps = 10;
+      const stepTime = Math.max(10, Math.floor(durationMs / steps));
+      let currentStep = 0;
+      const interval = setInterval(() => {
+        currentStep++;
+        if (player.paused) {
+          clearInterval(interval);
+          return;
+        }
+        player.volume = Math.min(target, (currentStep / steps) * target);
+        if (currentStep >= steps) {
+          clearInterval(interval);
+          player.volume = target;
+        }
+      }, stepTime);
+    }).catch(e => {
+      if (e.name === "AbortError") return;
+      console.warn("Audio play warning:", e);
+    });
   }
-  return buffer;
 }
 
-function createBrownNoiseBuffer(ctx) {
-  const bufferSize = ctx.sampleRate * 3;
-  const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
-  const data = buffer.getChannelData(0);
-  let lastOut = 0.0;
-  for (let i = 0; i < bufferSize; i++) {
-    const white = Math.random() * 2 - 1;
-    data[i] = (lastOut + (0.02 * white)) / 1.02;
-    lastOut = data[i];
-    data[i] *= 2.5;
+function fadeAudioOut(player, durationMs = 180, onComplete) {
+  if (!player || player.paused) {
+    if (onComplete) onComplete();
+    return;
   }
-  return buffer;
-}
-
-function createWhiteNoiseBuffer(ctx) {
-  const bufferSize = ctx.sampleRate * 2;
-  const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
-  const data = buffer.getChannelData(0);
-  for (let i = 0; i < bufferSize; i++) {
-    data[i] = (Math.random() * 2 - 1) * 0.2;
-  }
-  return buffer;
+  const startVol = player.volume;
+  const steps = 8;
+  const stepTime = Math.max(10, Math.floor(durationMs / steps));
+  let currentStep = 0;
+  const interval = setInterval(() => {
+    currentStep++;
+    player.volume = Math.max(0, startVol * (1 - (currentStep / steps)));
+    if (currentStep >= steps) {
+      clearInterval(interval);
+      try {
+        player.pause();
+        player.currentTime = 0;
+      } catch (e) {}
+      if (onComplete) onComplete();
+    }
+  }, stepTime);
 }
 
 /* --- 6.1 GIAO DIỆN & PHÁT ÂM THANH MÔI TRƯỜNG (4 Âm thanh hỗn hợp sẵn, loop vô tận) --- */
@@ -3642,15 +3651,7 @@ function toggleEnvTrack(trackId) {
       player.preload = "auto";
       studyState.envAudioPlayers[trackId] = player;
     }
-    player.volume = Math.max(0, Math.min(1, userVol));
-    const playPromise = player.play();
-    if (playPromise !== undefined) {
-      playPromise.catch(e => {
-        if (e.name === "AbortError") return;
-        console.warn("Env audio stream warning:", e);
-        toast("Nhấp vào trang để kích hoạt âm thanh môi trường.");
-      });
-    }
+    fadeAudioIn(player, userVol, 250);
     studyState.activeEnvTrack = trackId;
   }
 
@@ -3663,10 +3664,7 @@ function stopCurrentEnvAudio() {
   if (studyState.activeEnvTrack) {
     const ext = studyState.envAudioPlayers[studyState.activeEnvTrack];
     if (ext) {
-      try {
-        ext.pause();
-        ext.currentTime = 0;
-      } catch (e) {}
+      fadeAudioOut(ext, 180);
     }
     studyState.activeEnvTrack = null;
     updateEnvGridDOM();
@@ -3674,11 +3672,9 @@ function stopCurrentEnvAudio() {
 
   if (studyState.activeCustomEnvId) {
     if (studyState.customEnvAudioPlayer) {
-      try {
-        studyState.customEnvAudioPlayer.pause();
-        studyState.customEnvAudioPlayer.currentTime = 0;
-      } catch (e) {}
-      studyState.customEnvAudioPlayer = null;
+      fadeAudioOut(studyState.customEnvAudioPlayer, 180, () => {
+        studyState.customEnvAudioPlayer = null;
+      });
     }
     const oldCustomId = studyState.activeCustomEnvId;
     studyState.activeCustomEnvId = null;
@@ -3691,224 +3687,6 @@ function updateEnvVolume(trackId, val) {
   const userVol = Number(val) / 100;
   const ext = studyState.envAudioPlayers[trackId];
   if (ext) ext.volume = Math.max(0, Math.min(1, userVol));
-  if (studyState.envGainNode && studyState.audioCtx) {
-    studyState.envGainNode.gain.setValueAtTime(userVol * 0.28, studyState.audioCtx.currentTime);
-  }
-}
-
-/* --- PROCEDURAL SOUND GENERATOR ENGINE (Web Audio instant synthesis) --- */
-function startProceduralMixSynth(trackId, userGain = 0.35) {
-  const ctx = getAudioContext();
-  if (!ctx) return;
-  if (studyState.mixSoundNodes[trackId]) return;
-
-  const masterGain = ctx.createGain();
-  masterGain.gain.setValueAtTime(Math.max(0.01, userGain), ctx.currentTime);
-  masterGain.connect(ctx.destination);
-  studyState.mixSoundGains[trackId] = masterGain;
-
-  const nodes = [];
-
-  try {
-    if (trackId === 'mix_1') { // Nước chảy (Stream)
-      const noise = ctx.createBufferSource();
-      noise.buffer = createPinkNoiseBuffer(ctx);
-      noise.loop = true;
-      const filter = ctx.createBiquadFilter();
-      filter.type = 'bandpass';
-      filter.frequency.setValueAtTime(650, ctx.currentTime);
-      filter.Q.value = 1.8;
-
-      const lfo = ctx.createOscillator();
-      lfo.frequency.setValueAtTime(0.35, ctx.currentTime);
-      const lfoGain = ctx.createGain();
-      lfoGain.gain.setValueAtTime(250, ctx.currentTime);
-      lfo.connect(lfoGain);
-      lfoGain.connect(filter.frequency);
-      lfo.start();
-
-      noise.connect(filter);
-      filter.connect(masterGain);
-      noise.start();
-      nodes.push(noise, filter, lfo, lfoGain);
-    } else if (trackId === 'mix_2') { // Tiếng mưa (Rain)
-      const noise = ctx.createBufferSource();
-      noise.buffer = createPinkNoiseBuffer(ctx);
-      noise.loop = true;
-      const filter = ctx.createBiquadFilter();
-      filter.type = 'lowpass';
-      filter.frequency.setValueAtTime(950, ctx.currentTime);
-      noise.connect(filter);
-      filter.connect(masterGain);
-      noise.start();
-      nodes.push(noise, filter);
-    } else if (trackId === 'mix_3') { // Chuông gió (Windchime)
-      const notes = [587.33, 659.25, 783.99, 880.00, 1046.50, 1174.66, 1318.51];
-      const timer = setInterval(() => {
-        if (!studyState.activeMixSounds['mix_3'] || !studyState.mixSoundGains['mix_3']) return;
-        const count = Math.random() > 0.5 ? 2 : 1;
-        for (let i = 0; i < count; i++) {
-          const osc = ctx.createOscillator();
-          const noteGain = ctx.createGain();
-          const freq = notes[Math.floor(Math.random() * notes.length)];
-          const startTime = ctx.currentTime + (i * 0.15);
-          osc.type = 'sine';
-          osc.frequency.setValueAtTime(freq, startTime);
-          noteGain.gain.setValueAtTime(0.12, startTime);
-          noteGain.gain.exponentialRampToValueAtTime(0.0001, startTime + 2.5);
-          osc.connect(noteGain);
-          noteGain.connect(masterGain);
-          osc.start(startTime);
-          osc.stop(startTime + 2.6);
-        }
-      }, 2800);
-      nodes.push({ stop: () => clearInterval(timer) });
-    } else if (trackId === 'mix_4') { // Tiếng chim hót (Birds)
-      const timer = setInterval(() => {
-        if (!studyState.activeMixSounds['mix_4'] || !studyState.mixSoundGains['mix_4']) return;
-        const now = ctx.currentTime;
-        const osc = ctx.createOscillator();
-        const birdGain = ctx.createGain();
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(2400 + Math.random() * 400, now);
-        osc.frequency.exponentialRampToValueAtTime(3200 + Math.random() * 800, now + 0.12);
-        osc.frequency.exponentialRampToValueAtTime(2000 + Math.random() * 300, now + 0.25);
-        birdGain.gain.setValueAtTime(0.08, now);
-        birdGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.35);
-        osc.connect(birdGain);
-        birdGain.connect(masterGain);
-        osc.start(now);
-        osc.stop(now + 0.38);
-      }, 3200);
-      nodes.push({ stop: () => clearInterval(timer) });
-    } else if (trackId === 'mix_5') { // Tiếng lá xào xạc (Leaves)
-      const noise = ctx.createBufferSource();
-      noise.buffer = createPinkNoiseBuffer(ctx);
-      noise.loop = true;
-      const filter = ctx.createBiquadFilter();
-      filter.type = 'bandpass';
-      filter.frequency.setValueAtTime(1800, ctx.currentTime);
-      filter.Q.value = 0.8;
-      const lfo = ctx.createOscillator();
-      lfo.frequency.setValueAtTime(0.6, ctx.currentTime);
-      const lfoGain = ctx.createGain();
-      lfoGain.gain.setValueAtTime(0.08, ctx.currentTime);
-      lfo.connect(lfoGain.gain);
-      lfo.start();
-      noise.connect(filter);
-      filter.connect(masterGain);
-      noise.start();
-      nodes.push(noise, filter, lfo, lfoGain);
-    } else if (trackId === 'mix_6') { // Tiếng gió thổi (Wind)
-      const noise = ctx.createBufferSource();
-      noise.buffer = createBrownNoiseBuffer(ctx);
-      noise.loop = true;
-      const filter = ctx.createBiquadFilter();
-      filter.type = 'lowpass';
-      filter.frequency.setValueAtTime(350, ctx.currentTime);
-      const lfo = ctx.createOscillator();
-      lfo.frequency.setValueAtTime(0.18, ctx.currentTime);
-      const lfoGain = ctx.createGain();
-      lfoGain.gain.setValueAtTime(200, ctx.currentTime);
-      lfo.connect(lfoGain);
-      lfoGain.connect(filter.frequency);
-      lfo.start();
-      noise.connect(filter);
-      filter.connect(masterGain);
-      noise.start();
-      nodes.push(noise, filter, lfo, lfoGain);
-    } else if (trackId === 'mix_7') { // Tiếng dế kêu (Crickets)
-      const timer = setInterval(() => {
-        if (!studyState.activeMixSounds['mix_7'] || !studyState.mixSoundGains['mix_7']) return;
-        const now = ctx.currentTime;
-        for (let i = 0; i < 3; i++) {
-          const osc = ctx.createOscillator();
-          const pulseGain = ctx.createGain();
-          const start = now + (i * 0.07);
-          osc.type = 'triangle';
-          osc.frequency.setValueAtTime(4600, start);
-          pulseGain.gain.setValueAtTime(0.04, start);
-          pulseGain.gain.exponentialRampToValueAtTime(0.0001, start + 0.05);
-          osc.connect(pulseGain);
-          pulseGain.connect(masterGain);
-          osc.start(start);
-          osc.stop(start + 0.06);
-        }
-      }, 1200);
-      nodes.push({ stop: () => clearInterval(timer) });
-    } else if (trackId === 'mix_8') { // Tiếng lửa cháy (Campfire)
-      const noise = ctx.createBufferSource();
-      noise.buffer = createBrownNoiseBuffer(ctx);
-      noise.loop = true;
-      const filter = ctx.createBiquadFilter();
-      filter.type = 'lowpass';
-      filter.frequency.setValueAtTime(400, ctx.currentTime);
-      noise.connect(filter);
-      filter.connect(masterGain);
-      noise.start();
-
-      const timer = setInterval(() => {
-        if (!studyState.activeMixSounds['mix_8'] || !studyState.mixSoundGains['mix_8']) return;
-        const now = ctx.currentTime;
-        const osc = ctx.createOscillator();
-        const popGain = ctx.createGain();
-        osc.type = 'triangle';
-        osc.frequency.setValueAtTime(120 + Math.random() * 800, now);
-        popGain.gain.setValueAtTime(0.12, now);
-        popGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.03);
-        osc.connect(popGain);
-        popGain.connect(masterGain);
-        osc.start(now);
-        osc.stop(now + 0.04);
-      }, 280);
-
-      nodes.push(noise, filter, { stop: () => clearInterval(timer) });
-    } else if (trackId === 'mix_9') { // Tiếng sóng biển (Waves)
-      const noise = ctx.createBufferSource();
-      noise.buffer = createPinkNoiseBuffer(ctx);
-      noise.loop = true;
-      const filter = ctx.createBiquadFilter();
-      filter.type = 'lowpass';
-      filter.frequency.setValueAtTime(500, ctx.currentTime);
-
-      const waveGain = ctx.createGain();
-      const lfo = ctx.createOscillator();
-      lfo.frequency.setValueAtTime(0.12, ctx.currentTime); // ~8s cycle
-      const lfoGain = ctx.createGain();
-      lfoGain.gain.setValueAtTime(0.18, ctx.currentTime);
-      lfo.connect(lfoGain);
-      lfoGain.connect(waveGain.gain);
-      lfo.start();
-
-      noise.connect(filter);
-      filter.connect(waveGain);
-      waveGain.connect(masterGain);
-      noise.start();
-      nodes.push(noise, filter, waveGain, lfo, lfoGain);
-    }
-  } catch (err) {
-    console.warn("startProceduralMixSynth error:", err);
-  }
-
-  studyState.mixSoundNodes[trackId] = nodes;
-}
-
-function stopProceduralMixSynth(trackId) {
-  const nodes = studyState.mixSoundNodes[trackId];
-  if (nodes && Array.isArray(nodes)) {
-    nodes.forEach(n => {
-      try {
-        if (typeof n.stop === 'function') n.stop();
-        if (typeof n.disconnect === 'function') n.disconnect();
-      } catch (e) {}
-    });
-  }
-  const gain = studyState.mixSoundGains[trackId];
-  if (gain) {
-    try { gain.disconnect(); } catch (e) {}
-  }
-  delete studyState.mixSoundNodes[trackId];
-  delete studyState.mixSoundGains[trackId];
 }
 
 /* --- 6.2 GIAO DIỆN & PHÁT ÂM THANH PHỐI HỢP (9 Âm thanh đơn lẻ, mix cùng lúc, loop vô tận) --- */
@@ -3958,25 +3736,17 @@ function toggleMixTrack(trackId) {
 
   if (isCurrentlyActive) {
     // STOP TRACK
+    studyState.activeMixSounds[trackId] = false;
     const ext = studyState.mixAudioPlayers[trackId];
     if (ext) {
-      try {
-        ext.pause();
-        ext.currentTime = 0;
-      } catch (e) {}
+      fadeAudioOut(ext, 180);
     }
-    stopProceduralMixSynth(trackId);
-    studyState.activeMixSounds[trackId] = false;
   } else {
     // START TRACK
     studyState.activeMixSounds[trackId] = true;
     const savedVol = studyState.mixVolumes[trackId] ?? (track ? track.defaultVol : 40);
     const userVol = savedVol / 100;
 
-    // Start procedural synth for immediate responsiveness
-    startProceduralMixSynth(trackId, userVol * 0.35);
-
-    // Also attempt remote stream
     if (DEFAULT_MIX_AUDIO_SOURCES && DEFAULT_MIX_AUDIO_SOURCES[trackId]) {
       let player = studyState.mixAudioPlayers[trackId];
       if (!player || player.error) {
@@ -3986,19 +3756,7 @@ function toggleMixTrack(trackId) {
         player.preload = "auto";
         studyState.mixAudioPlayers[trackId] = player;
       }
-      player.volume = Math.max(0, Math.min(1, userVol));
-      const playPromise = player.play();
-      if (playPromise !== undefined) {
-        playPromise.then(() => {
-          const synthGain = studyState.mixSoundGains[trackId];
-          if (synthGain && studyState.audioCtx) {
-            synthGain.gain.setValueAtTime(0.02, studyState.audioCtx.currentTime);
-          }
-        }).catch(e => {
-          if (e.name === "AbortError") return;
-          console.log("Using procedural synth for:", trackId);
-        });
-      }
+      fadeAudioIn(player, userVol, 250);
     }
   }
 
@@ -4012,10 +3770,6 @@ function updateMixVolume(trackId, val) {
   const userVol = Number(val) / 100;
   const ext = studyState.mixAudioPlayers[trackId];
   if (ext) ext.volume = Math.max(0, Math.min(1, userVol));
-  const gain = studyState.mixSoundGains[trackId];
-  if (gain && studyState.audioCtx) {
-    gain.gain.setValueAtTime(userVol * 0.35, studyState.audioCtx.currentTime);
-  }
 }
 
 /* --- 6.3 GIAO DIỆN & PHÁT ÂM NHẠC TẬP TRUNG (4 Bản nhạc, loop vô tận) --- */
@@ -4090,15 +3844,7 @@ function toggleMusicTrack(trackId) {
       player.preload = "auto";
       studyState.musicAudioPlayers[trackId] = player;
     }
-    player.volume = Math.max(0, Math.min(1, userVol));
-    const playPromise = player.play();
-    if (playPromise !== undefined) {
-      playPromise.catch(e => {
-        if (e.name === "AbortError") return;
-        console.warn("Music audio stream error:", e);
-        toast("Nhấp vào trang để kích hoạt phát nhạc.");
-      });
-    }
+    fadeAudioIn(player, userVol, 250);
     studyState.activeMusicTrack = trackId;
   }
 
@@ -4111,10 +3857,7 @@ function stopCurrentMusicAudio() {
   if (studyState.activeMusicTrack) {
     const ext = studyState.musicAudioPlayers[studyState.activeMusicTrack];
     if (ext) {
-      try {
-        ext.pause();
-        ext.currentTime = 0;
-      } catch (e) {}
+      fadeAudioOut(ext, 180);
     }
     studyState.activeMusicTrack = null;
     updateMusicGridDOM();
@@ -4122,11 +3865,9 @@ function stopCurrentMusicAudio() {
 
   if (studyState.activeCustomMusicId) {
     if (studyState.customMusicAudioPlayer) {
-      try {
-        studyState.customMusicAudioPlayer.pause();
-        studyState.customMusicAudioPlayer.currentTime = 0;
-      } catch (e) {}
-      studyState.customMusicAudioPlayer = null;
+      fadeAudioOut(studyState.customMusicAudioPlayer, 180, () => {
+        studyState.customMusicAudioPlayer = null;
+      });
     }
     const oldCustomId = studyState.activeCustomMusicId;
     studyState.activeCustomMusicId = null;
@@ -4139,9 +3880,6 @@ function updateMusicVolume(trackId, val) {
   const userVol = Number(val) / 100;
   const ext = studyState.musicAudioPlayers[trackId];
   if (ext) ext.volume = Math.max(0, Math.min(1, userVol));
-  if (studyState.musicGainNode && studyState.audioCtx) {
-    studyState.musicGainNode.gain.setValueAtTime(userVol * 0.22, studyState.audioCtx.currentTime);
-  }
 }
 
 function stopAllStudyAudio() {
@@ -4153,12 +3891,8 @@ function stopAllStudyAudio() {
     if (studyState.activeMixSounds[t.id]) {
       const ext = studyState.mixAudioPlayers[t.id];
       if (ext) {
-        try {
-          ext.pause();
-          ext.currentTime = 0;
-        } catch (e) {}
+        fadeAudioOut(ext, 180);
       }
-      stopProceduralMixSynth(t.id);
       studyState.activeMixSounds[t.id] = false;
       updateMixGridDOM(t.id);
     }
