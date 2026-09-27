@@ -2484,55 +2484,120 @@ dialog::backdrop {
   .admin-panel {
     padding: 20px;
   }
+  body {
+    padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px)) !important;
+  }
+  /* ==========================================================================
+     iOS 26 CONCEPT FLOATING ISLAND MOBILE NAVIGATION
+     ========================================================================== */
   .mobile-nav {
     display: flex;
     position: fixed;
-    z-index: 20;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    height: 67px;
-    background: #fffdf9;
-    border-top: 1px solid #e2e7df;
-    justify-content: space-around;
+    z-index: 100;
+    bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+    left: 50%;
+    transform: translateX(-50%);
+    width: calc(100% - 24px);
+    max-width: 440px;
+    height: 62px;
+    background: rgba(255, 255, 255, 0.84);
+    backdrop-filter: blur(28px) saturate(190%);
+    -webkit-backdrop-filter: blur(28px) saturate(190%);
+    border: 1px solid rgba(255, 255, 255, 0.85);
+    outline: 1px solid rgba(18, 61, 48, 0.08);
+    border-radius: 9999px;
+    box-shadow: 
+      0 12px 32px -4px rgba(10, 44, 30, 0.14),
+      0 4px 12px -2px rgba(0, 0, 0, 0.06),
+      inset 0 1px 1px rgba(255, 255, 255, 0.9);
+    justify-content: space-evenly;
     align-items: center;
-    padding: 4px 6px env(safe-area-inset-bottom);
+    padding: 4px 8px;
+    margin: 0 auto;
+    pointer-events: auto;
+    user-select: none;
+    -webkit-user-select: none;
   }
+
+  [data-user-theme="dark"] .mobile-nav,
+  [data-user-theme="midnight"] .mobile-nav,
+  body.dark-theme .mobile-nav {
+    background: rgba(18, 24, 21, 0.85);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    outline: 1px solid rgba(255, 255, 255, 0.04);
+    box-shadow: 
+      0 12px 32px -4px rgba(0, 0, 0, 0.5),
+      0 4px 12px -2px rgba(0, 0, 0, 0.3),
+      inset 0 1px 1px rgba(255, 255, 255, 0.1);
+  }
+
   .mobile-link {
-    color: #77857d;
+    color: #64748b;
     text-decoration: none;
-    font-size: 8px;
-    font-weight: 800;
+    font-size: 9.5px;
+    font-weight: 700;
     text-align: center;
     display: flex;
     flex-direction: column;
+    align-items: center;
+    justify-content: center;
     gap: 2px;
-    width: 25%;
+    flex: 1;
+    min-width: 0;
+    height: 100%;
+    padding: 4px 2px;
+    border-radius: 9999px;
+    position: relative;
+    transition: color 0.2s ease, transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    -webkit-tap-highlight-color: transparent;
   }
+
   .mobile-link svg {
-    width: 22px;
-    height: 22px;
-    margin: 0 auto 2px auto;
+    width: 21px;
+    height: 21px;
+    margin: 0 auto;
+    transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), stroke 0.2s ease;
+    stroke: currentColor;
   }
+
   .mobile-link.active {
-    color: #196044;
+    color: var(--primary, #123d30);
+    font-weight: 800;
   }
+
+  .mobile-link.active svg {
+    transform: translateY(-1px) scale(1.08);
+    stroke-width: 2.3;
+    stroke: var(--primary, #123d30);
+  }
+
+  .mobile-link:active {
+    transform: scale(0.92);
+  }
+
   .mobile-fab {
     display: grid;
     place-items: center;
     position: fixed;
-    right: 19px;
-    bottom: 83px;
-    z-index: 19;
-    width: 48px;
-    height: 48px;
-    background: #123d30;
+    right: 18px;
+    bottom: calc(88px + env(safe-area-inset-bottom, 0px));
+    z-index: 99;
+    width: 50px;
+    height: 50px;
+    background: linear-gradient(135deg, #123d30 0%, #1a5743 100%);
     color: #fff;
     border: 0;
     border-radius: 50%;
     font-size: 26px;
-    box-shadow: 0 6px 16px #183b2b45;
+    box-shadow: 0 8px 24px rgba(18, 61, 48, 0.35), 0 2px 6px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease;
+    -webkit-tap-highlight-color: transparent;
   }
+
+  .mobile-fab:active {
+    transform: scale(0.9);
+  }
+
   .modal {
     width: calc(100vw - 20px);
     max-height: 90vh;
@@ -2552,7 +2617,7 @@ dialog::backdrop {
     grid-template-columns: repeat(2, 1fr);
   }
   .toast {
-    bottom: 82px;
+    bottom: calc(88px + env(safe-area-inset-bottom, 0px));
     width: max-content;
     max-width: calc(100vw - 30px);
   }
@@ -3039,21 +3104,21 @@ dialog.detail-modal[open] {
   white-space: nowrap;
 }
 
-/* Fix iOS & Mobile Auto-Zoom on Inputs, Textareas & Editors */
-input,
+/* Fix iOS & Mobile Auto-Zoom ONLY on interactive typing form inputs */
+input:not([type="checkbox"]):not([type="radio"]),
 textarea,
 select,
-button,
-.ql-editor,
-[contenteditable="true"] {
+.editor-container .ql-editor,
+form .ql-editor,
+.reply-bar .ql-editor {
   touch-action: manipulation;
 }
 
 @media (max-width: 900px) {
-  input,
+  input:not([type="checkbox"]):not([type="radio"]),
   textarea,
   select,
-  .modal input,
+  .modal input:not([type="checkbox"]):not([type="radio"]),
   .modal textarea,
   .modal select,
   .doc-reply-textarea,
@@ -3065,12 +3130,32 @@ button,
   .study-settings-modal input,
   .study-settings-modal .stepper-input input,
   .auth-modal input,
-  .ql-container.ql-snow,
-  .ql-container .ql-editor,
-  .ql-editor,
-  [contenteditable="true"] {
+  .editor-container .ql-editor,
+  form .ql-editor,
+  .reply-bar .ql-editor {
     font-size: 16px !important;
-    touch-action: manipulation !important;
+  }
+
+  /* Protect rendered cards, post previews, and descriptions from blowing up */
+  .post-copy-preview,
+  .post-copy-preview.ql-editor {
+    font-size: 11px !important;
+  }
+  .detail-copy,
+  .detail-copy.ql-editor {
+    font-size: 14px !important;
+  }
+  .response-copy,
+  .response-copy.ql-editor {
+    font-size: 13px !important;
+  }
+  .document-desc,
+  .document-desc.ql-editor {
+    font-size: 12px !important;
+  }
+  .collapsible-content,
+  .collapsible-content.ql-editor {
+    font-size: 13px !important;
   }
 }
 
