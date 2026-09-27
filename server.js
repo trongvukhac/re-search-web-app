@@ -2253,7 +2253,13 @@ function checkAndAwardWeeklyRewards() {
   }
 }
 
-// Chạy kiểm tra khi khởi động và định kỳ mỗi 1 phút
+// Dọn dẹp dữ liệu cũ nếu từng tồn tại sự kiện thưởng tuần +10đ trùng lặp
+try {
+  db.prepare("DELETE FROM contribution_events WHERE event_type = 'weekly_active_reward' AND (points = 10 OR reason = 'Thưởng điểm hoạt động tích cực tuần vừa rồi')").run();
+  db.prepare("DELETE FROM kv_store WHERE key LIKE 'reward_given_%'").run();
+} catch (e) {}
+
+// Chạy kiểm tra khi khởi động và định kỳ mỗi 1 phút (+5 điểm năng động tuần)
 checkAndAwardWeeklyRewards();
 setInterval(checkAndAwardWeeklyRewards, 60000);
 

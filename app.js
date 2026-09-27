@@ -862,7 +862,7 @@ function renderActivityRow(r) {
       case "post_deleted": return `Câu hỏi của bạn đã bị xóa`;
       case "post_hidden": return `Bài đăng của bạn đã bị xoá`;
       case "response_hidden": return `Bài đăng gốc đã bị xoá. Phản hồi của bạn không được tính điểm.`;
-      case "weekly_active_reward": return r.reason || `Thưởng điểm hoạt động tích cực tuần vừa rồi`;
+      case "weekly_active_reward": return r.reason || `Điểm năng động tuần`;
       default: return r.action;
     }
   };
