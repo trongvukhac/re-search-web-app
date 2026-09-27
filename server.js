@@ -210,6 +210,7 @@ try {
     );
   `);
 } catch (e) {}
+try { db.exec("ALTER TABLE document_comments ADD COLUMN edited_at TEXT;"); } catch (e) {}
 try {
   db.exec(`
     INSERT INTO user_streak_shields (user_id, shields, last_milestone_rewarded, updated_at)
@@ -569,7 +570,7 @@ function recordContribution(
   db.prepare(
     "INSERT OR IGNORE INTO activity_days(user_id,activity_date) VALUES (?,?)",
   ).run(userId, today);
-  const limits = { post_created: 5, response_created: 10, document_approved: 5 };
+  const limits = { post_created: 5, response_created: 10, document_approved: 5, document_discussion: 20 };
   const maxAllowed = limits[type];
   if (maxAllowed) {
     const countObj = db.prepare(
@@ -1315,7 +1316,7 @@ async function api(request, response, url) {
         END as reference_content
       FROM contribution_events c 
       WHERE c.user_id=? 
-      ORDER BY c.created_at DESC
+      ORDER BY c.created_at DESC, c.id DESC
     `;
     const recent = db.prepare(query + " LIMIT 5").all(user.id);
     return json(response, 200, {
@@ -1354,7 +1355,7 @@ async function api(request, response, url) {
           END as reference_content
         FROM contribution_events c 
         WHERE c.user_id=? 
-        ORDER BY c.created_at DESC
+        ORDER BY c.created_at DESC, c.id DESC
       `)
       .all(user.id);
     return json(response, 200, {
@@ -1560,6 +1561,7 @@ async function api(request, response, url) {
         documentId: c.document_id,
         content: c.content,
         createdAt: c.created_at.replace(' ', 'T') + 'Z',
+        editedAt: c.edited_at ? c.edited_at.replace(' ', 'T') + 'Z' : null,
         isAuthor: viewer && viewer.id === c.user_id,
         author: c.is_anonymous && !isAdmin(viewer)
           ? {
@@ -1609,10 +1611,10 @@ async function api(request, response, url) {
     recordContribution(
       user.id,
       "document_discussion",
-      5,
+      3,
       "document",
       docId,
-      `Thảo luận tài liệu: ${doc.title.slice(0, 40)}`
+      `Bạn đã thảo luận về tài liệu "${doc.title.trim()}"`
     );
 
     const inserted = db
@@ -1630,6 +1632,7 @@ async function api(request, response, url) {
         documentId: inserted.document_id,
         content: inserted.content,
         createdAt: inserted.created_at.replace(' ', 'T') + 'Z',
+        editedAt: null,
         isAuthor: true,
         author: inserted.is_anonymous && !isAdmin(user)
           ? {
@@ -1649,6 +1652,41 @@ async function api(request, response, url) {
     });
   }
 
+  const patchDocCommentMatch = pathName.match(/^\/api\/documents\/comments\/(\d+)$/);
+  if (method === "PATCH" && patchDocCommentMatch) {
+    const user = requireUser(request, response);
+    if (!user || !requireCsrf(request, response, user)) return;
+
+    const commentId = Number(patchDocCommentMatch[1]);
+    const comment = db.prepare("SELECT * FROM document_comments WHERE id=?").get(commentId);
+    if (!comment) return error(response, 404, "Không tìm thấy thảo luận.");
+
+    if (comment.user_id !== user.id) {
+      return error(response, 403, "Chỉ tác giả mới được phép chỉnh sửa thảo luận.");
+    }
+
+    // Kiểm tra thời hạn 30 phút
+    const createdAtTime = new Date(comment.created_at.replace(' ', 'T') + 'Z').getTime();
+    if (Date.now() - createdAtTime > 30 * 60 * 1000) {
+      return error(response, 403, "Đã hết thời hạn 30 phút để chỉnh sửa thảo luận.");
+    }
+
+    const { content } = await readJSON(request);
+    if (typeof content !== "string" || content.trim().length === 0) {
+      return error(response, 400, "Vui lòng nhập nội dung thảo luận.");
+    }
+    if (content.trim().length > 3000) {
+      return error(response, 400, "Nội dung thảo luận không được vượt quá 3000 ký tự.");
+    }
+
+    db.prepare("UPDATE document_comments SET content=?, edited_at=CURRENT_TIMESTAMP WHERE id=?").run(
+      content.trim(),
+      commentId
+    );
+
+    return json(response, 200, { success: true });
+  }
+
   const delDocCommentMatch = pathName.match(/^\/api\/documents\/comments\/(\d+)$/);
   if (method === "DELETE" && delDocCommentMatch) {
     const user = requireUser(request, response);
@@ -1658,15 +1696,23 @@ async function api(request, response, url) {
     const comment = db.prepare("SELECT * FROM document_comments WHERE id=?").get(commentId);
     if (!comment) return error(response, 404, "Không tìm thấy thảo luận.");
 
-    const canDelete =
-      user.id === comment.user_id ||
-      user.role === "admin" ||
-      user.role === "ta" ||
-      user.role === "lecturer";
-
-    if (!canDelete) {
-      return error(response, 403, "Bạn không có quyền xoá thảo luận này.");
+    // Chỉ Admin hoặc Giảng viên (và TA) mới có quyền xoá thảo luận tài liệu
+    const isPrivileged = user.role === "admin" || user.role === "lecturer" || user.role === "ta";
+    if (!isPrivileged) {
+      return error(response, 403, "Chỉ Admin hoặc Giảng viên mới có quyền xoá thảo luận tài liệu.");
     }
+
+    const doc = db.prepare("SELECT title FROM documents WHERE id=?").get(comment.document_id);
+
+    // Hoàn trả (trừ lại) 3 điểm cho thảo luận bị xoá
+    recordContribution(
+      comment.user_id,
+      "document_comment_deleted",
+      -3,
+      "document",
+      comment.document_id,
+      `Thảo luận về tài liệu "${doc?.title ? doc.title.trim() : ''}" đã bị xóa`
+    );
 
     db.prepare("DELETE FROM document_comments WHERE id=?").run(commentId);
     return json(response, 200, { success: true });

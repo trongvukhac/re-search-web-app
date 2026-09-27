@@ -5845,6 +5845,21 @@ body.study-zen-fullscreen .study-main-col {
   color: var(--muted, #64748b);
 }
 
+.doc-comment-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.doc-comment-actions .edit-timer-btn {
+  position: relative !important;
+  top: auto !important;
+  right: auto !important;
+  width: 20px !important;
+  height: 20px !important;
+}
+
 .doc-comment-del-btn {
   background: transparent;
   border: none;

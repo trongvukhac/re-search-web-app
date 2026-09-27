@@ -839,7 +839,9 @@ function renderActivityRow(r) {
     weekly_active_reward: "🎁",
     post_read: "📖",
     document_read: "📄",
-    study_session: "🎧"
+    study_session: "🎧",
+    document_discussion: "💬",
+    document_comment_deleted: "✕"
   };
   
   const getSnippet = () => {
@@ -858,6 +860,8 @@ function renderActivityRow(r) {
       case "post_read": return `Đọc bài đăng${getSnippet()} (giữ chuỗi)`;
       case "document_read": return `Xem tài liệu${getSnippet()} (giữ chuỗi)`;
       case "study_session": return `Hoàn thành ca tự học NCKH: ${escapeHTML(r.reason || 'Tự học tập trung')}`;
+      case "document_discussion": return escapeHTML(r.reason || `Bạn đã thảo luận về tài liệu`);
+      case "document_comment_deleted": return escapeHTML(r.reason || `Thảo luận tài liệu của bạn đã bị xóa`);
       case "admin_adjustment": return r.points > 0 ? `Được TA cộng điểm: ${escapeHTML(r.reason || '')}` : `Bị trừ điểm do vi phạm quy định: ${escapeHTML(r.reason || '')}`;
       case "response_deleted": return `Phản hồi của bạn đã bị xóa`;
       case "post_deleted": return `Câu hỏi của bạn đã bị xóa`;
@@ -1681,10 +1685,10 @@ function renderDocCommentsList(comments) {
   }
   const isPrivileged = session?.role === "admin" || session?.role === "ta" || session?.role === "lecturer";
   listEl.innerHTML = comments.map(c => {
-    const canDelete = c.isAuthor || isPrivileged;
-    const delBtn = canDelete ? `
+    const delBtn = isPrivileged ? `
       <button type="button" class="doc-comment-del-btn" onclick="deleteDocComment(${c.id})" title="Xoá thảo luận" aria-label="Xoá thảo luận">✕</button>
     ` : "";
+    const editBtn = c.isAuthor ? renderEditBtn(c.id, c.createdAt, "document_comments") : "";
     const roleBadge = c.author.role === "lecturer" ? ' <span class="doc-comment-role-badge">[Giảng viên]</span>'
       : (c.author.role === "ta" ? ' <span class="doc-comment-role-badge">[TA]</span>'
       : (c.author.role === "admin" ? ' <span class="doc-comment-role-badge">[Admin]</span>' : ''));
@@ -1698,13 +1702,17 @@ function renderDocCommentsList(comments) {
             ${roleBadge}
             ${c.anonymous ? '<span class="doc-comment-anon-badge">· Ẩn danh</span>' : ''}
           </div>
-          ${delBtn}
+          <div class="doc-comment-actions">
+            ${editBtn}
+            ${delBtn}
+          </div>
         </div>
         <div class="doc-comment-content">${escapeHTML(c.content)}</div>
       </div>
     `;
   }).join("");
   listEl.scrollTop = listEl.scrollHeight;
+  if (typeof updateEditTimers === "function") updateEditTimers();
 }
 
 window.handleSendDocComment = async function(e) {
@@ -1748,6 +1756,7 @@ window.deleteDocComment = async function(commentId) {
     });
     toast("Đã xoá thảo luận.");
     await loadDocComments(currentViewingDocId);
+    if (typeof loadContributions === "function") loadContributions();
   } catch (err) {
     toast(err.message || "Xoá thảo luận thất bại.");
   }
@@ -2230,13 +2239,19 @@ window.openEditModal = async (type, id) => {
       $("#editTitle").value = title;
     }
   } else if (type === "responses") {
-    const r = document.querySelector(`.response .detail-actions button[onclick*="voteResponse(${id},"]`).closest(".response");
+    const r = document.querySelector(`.response .detail-actions button[onclick*="voteResponse(${id},"]`)?.closest(".response");
     if (r) {
       const contentEl = r.querySelector(".collapsible-content") || r.querySelector(".response-copy");
-      content = contentEl.innerHTML; // Using innerHTML as fallback
-      // Actually we'd better fetch raw from API, but we don't have a direct GET /responses/:id.
-      // Wait, we can get it from the detail view response map, but we'll fetch from DOM for now or request it.
-      // To be safe, we'll try to find it in the DOM and unescape or use Quill.
+      content = contentEl ? contentEl.innerHTML : "";
+    }
+    $("#editTitleLabel").style.display = "none";
+  } else if (type === "document_comments") {
+    const card = document.getElementById(`docComment-${id}`);
+    if (card) {
+      const contentEl = card.querySelector(".doc-comment-content");
+      if (contentEl) {
+        content = contentEl.innerText || contentEl.textContent || "";
+      }
     }
     $("#editTitleLabel").style.display = "none";
   }
@@ -2244,7 +2259,11 @@ window.openEditModal = async (type, id) => {
   $("#editType").value = type;
   $("#editId").value = id;
   if (editEditor) {
-    editEditor.root.innerHTML = DOMPurify.sanitize(content);
+    if (type === "document_comments") {
+      editEditor.setText(content.trim() ? content.trim() + "\n" : "");
+    } else {
+      editEditor.root.innerHTML = DOMPurify.sanitize(content);
+    }
   }
   $("#editModal").showModal();
 };
@@ -2255,17 +2274,19 @@ $("#editForm").addEventListener("submit", async (e) => {
   const type = $("#editType").value;
   const id = $("#editId").value;
   const rawText = editEditor ? editEditor.getText().trim() : "";
-  if (rawText.length < 5) {
+  const minLen = type === "document_comments" ? 1 : 5;
+  if (rawText.length < minLen) {
     toast("Nội dung quá ngắn.");
     setSubmitLoading(e, false);
     return;
   }
   
-  const content = editEditor.root.innerHTML;
+  const content = type === "document_comments" ? rawText : editEditor.root.innerHTML;
   const title = type === "posts" ? $("#editTitle").value.trim() : "";
 
   try {
-    await requestAPI(`/api/${type}/${id}`, {
+    const endpoint = type === "document_comments" ? `/api/documents/comments/${id}` : `/api/${type}/${id}`;
+    await requestAPI(endpoint, {
       method: "PATCH",
       body: JSON.stringify({ content, title })
     });
@@ -2278,9 +2299,13 @@ $("#editForm").addEventListener("submit", async (e) => {
       if ($("#detailModal").open) {
         openDetail(id);
       }
+    } else if (type === "document_comments") {
+      if (currentViewingDocId) {
+        loadDocComments(currentViewingDocId);
+      }
     } else {
       // For response, refresh the current post detail
-      const currentPostId = document.querySelector("#detailContent").getAttribute("data-current-post");
+      const currentPostId = document.querySelector("#detailContent")?.getAttribute("data-current-post");
       if (currentPostId) {
         openDetail(currentPostId);
       } else {
