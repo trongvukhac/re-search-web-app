@@ -2589,15 +2589,275 @@ async function idbDelete(storeName, id) {
 
 
 const STUDY_QUOTES = [
-  "“Từng bước nhỏ tạo nên bước tiến lớn.”",
-  "“Sự tập trung hôm nay là thành tựu nghiên cứu ngày mai.”",
-  "“Nghiên cứu không phải chạy nước rút, mà là marathon bền bỉ.”",
-  "“Đơn giản hóa vấn đề, kiên trì từng hiệp Pomodoro.”",
-  "“Kỷ luật là cầu nối giữa mục tiêu và sự hoàn thành.”",
-  "“Một tâm trí tĩnh lặng là cội nguồn của mọi sáng tạo.”"
+  {
+    en: "There are no secrets to success. It results from preparation, hard work, and learning from failure.",
+    author: "General Colin Powell",
+    vi: "Thành công không đến từ những bí quyết, thành công đến từ sự có chuẩn bị, chăm chỉ làm việc và bài học sau những lần thất bại."
+  },
+  {
+    en: "However difficult life may seem, there is always something you can do and succeed at.",
+    author: "Stephen Hawking",
+    vi: "Dù cuộc đời bạn có khó khăn tới đâu, sẽ luôn tồn tại điều mà bạn có thể làm và thành công rực rỡ."
+  },
+  {
+    en: "The best way to predict your future is to create it.",
+    author: "Abraham Lincoln",
+    vi: "Cách tốt nhất để dự đoán tương lai của bạn chính là tạo ra nó."
+  },
+  {
+    en: "Hard work beats talent when talent doesn’t work hard.",
+    author: "Tim Notke",
+    vi: "Chăm chỉ sẽ chiến thắng Tài năng khi sự tài năng không chịu làm việc chăm chỉ."
+  },
+  {
+    en: "Ninety-nine percent of failure comes from people who have the habit of making excuses.",
+    author: "John Maxwell",
+    vi: "Chín mươi chín phần trăm của sự thất bại đến từ những người luôn có thói quen trốn tránh công việc."
+  },
+  {
+    en: "There are no shortcuts to any place worth going.",
+    author: "Beverly Sills",
+    vi: "Không có con đường tắt nào dẫn tới nơi tốt đẹp."
+  },
+  {
+    en: "Success is not final; failure is not fatal. It’s the courage to continue that counts.",
+    author: "Winston Churchill",
+    vi: "Thành công chưa phải đã xong, thất bại không phải là kết thúc. Điều quan trọng nhất là dũng cảm bước tiếp trên con đường mình đã chọn."
+  },
+  {
+    en: "The harder I work, the more luck I seem to have.",
+    author: "Leonardo da Vinci",
+    vi: "Tôi càng làm việc chăm chỉ bao nhiêu, tôi càng cảm thấy mình trở nên may mắn bấy nhiêu."
+  },
+  {
+    en: "Failure is the opportunity to begin again intelligently.",
+    author: "Henry Ford",
+    vi: "Thất bại là cơ hội giúp bạn bắt đầu lại theo một cách sáng suốt hơn."
+  },
+  {
+    en: "I don’t measure a man’s success by how he climbs but by how he bounces when he hits bottom.",
+    author: "George S. Patton",
+    vi: "Quan điểm của tôi không đánh giá thành công của một người qua cách anh ta phát triển đi lên mà qua cách anh ta vực dậy sau những lần chạm đáy."
+  },
+  {
+    en: "Procrastination makes easy things hard, hard things hardest.",
+    author: "Mason Cooley",
+    vi: "Sự trì hoãn khiến những điều đơn giản trở nên khó khăn, và những điều đang khó khăn trở nên càng khó khăn hơn."
+  },
+  {
+    en: "The secret of success is to do the common things uncommonly well.",
+    author: "John D. Rockefeller",
+    vi: "Bí mật của thành công là đó làm tốt từ những điều nhỏ nhặt nhất."
+  },
+  {
+    en: "There’s no substitute for hard work.",
+    author: "Thomas Edison",
+    vi: "Không gì có thể thay thế được sự chăm chỉ."
+  },
+  {
+    en: "Procrastination is like a credit card: it’s a lot of fun until you get the bill.",
+    author: "Christopher Parker",
+    vi: "Cảm giác của sự trì hoãn giống như khi ta dùng thẻ tín dụng: rất thích thú cho đến khi bạn nhận được cái giá phải trả."
+  },
+  {
+    en: "If your dreams don’t scare you, they aren’t big enough.",
+    author: "Muhammad Ali",
+    vi: "Nếu những ước mơ không khiến bạn cảm thấy sợ hãi khi nghĩ đến, những ước mơ đó chắc chắn chưa đủ lớn."
+  },
+  {
+    en: "The Success warrior is an average man with laser-like focus.",
+    author: "Bruce Lee",
+    vi: "Những chiến binh thành công thực chất là những con người bình thường với sự tập trung cao độ."
+  },
+  {
+    en: "By perseverance, the snail reached the ark.",
+    author: "Charles Spurgeon",
+    vi: "Bằng sự bền bỉ, những chú ốc sên đã tới được con tàu Nô-ê."
+  },
+  {
+    en: "Forget the mistake; remember the lesson.",
+    author: "Khuyết danh",
+    vi: "Bạn có thể quên đi những lỗi sai nhưng phải nhớ được những bài học."
+  },
+  {
+    en: "To change your life, you must first change your day.",
+    author: "Khuyết danh",
+    vi: "Muốn thay đổi cuộc đời bạn, đầu tiên hãy thay đổi mỗi ngày của bạn."
+  },
+  {
+    en: "Life has two rules. 1. Never quit. 2. Never forget the first one.",
+    author: "Khuyết danh",
+    vi: "Cuộc sống có 2 nguyên tắc: 1. Không bao giờ bỏ cuộc. 2. Không bao giờ quên nguyên tắc 1."
+  },
+  {
+    en: "You don’t drown by falling in the water; you drown by staying there.",
+    author: "Ed Cole",
+    vi: "Bạn bị nhấn chìm không phải do ngã xuống nước, bạn bị nhấn chìm bởi việc không biết tiến lên."
+  },
+  {
+    en: "If you cannot do great things, do little things in a great way.",
+    author: "Napoleon Hill",
+    vi: "Nếu bạn không thể làm được những điều vĩ đại, hãy làm một điều nhỏ bé một cách vĩ đại."
+  },
+  {
+    en: "You may encounter defeats, but you must not be defeated.",
+    author: "Maya Angelou",
+    vi: "Bạn có thể đối mặt với sự thất bại, nhưng nhất định bạn không được phép thất bại."
+  },
+  {
+    en: "You cannot change your future, but you can change your habits, and surely your habits will change your future.",
+    author: "Dr. A.P.J. Abdul Kalam",
+    vi: "Bạn không thể thay đổi tương lai của mình, nhưng bạn có thể thay đổi những thói quen, và những thói quen sẽ thay đổi tương lai của bạn."
+  },
+  {
+    en: "Doubt kills more dreams than failure ever will.",
+    author: "Karim Siddiki",
+    vi: "Sự nghi ngờ sẽ giết chết những ước mơ của bạn nhiều hơn là những thất bại sẽ làm."
+  },
+  {
+    en: "My advice is never do tomorrow what you can do today.",
+    author: "Charles Dickens",
+    vi: "Lời khuyên của tôi là không bao giờ để ngày mai làm những điều hôm nay bạn có thể làm."
+  },
+  {
+    en: "The beautiful thing about learning is that no one can take it from you.",
+    author: "B.B. King",
+    vi: "Vẻ đẹp của việc học hành là không ai có quyền tước nó khỏi tay bạn."
+  },
+  {
+    en: "If you can dream it, you can do it.",
+    author: "Walt Disney",
+    vi: "Nếu bạn có thể mơ về nó, thì bạn có thể làm được nó."
+  },
+  {
+    en: "Things do not happen; they are made to happen.",
+    author: "John F. Kennedy",
+    vi: "Những sự việc không tự nhiên mà xảy ra, chúng được tác động để xảy ra."
+  },
+  {
+    en: "All of us don’t have equal talents. But all of us have an equal opportunity to develop our talents.",
+    author: "Dr. A.P.J. Abdul Kalam",
+    vi: "Chúng ta không công bằng trong việc sở hữu tài năng, nhưng chúng ta được công bằng ở việc nắm giữ cơ hội phát triển tài năng."
+  },
+  {
+    en: "Success is the sum of all efforts, repeated day in and day out.",
+    author: "Robert Collier",
+    vi: "Thành công là tổng hợp của tất cả sự nỗ lực, cố gắng ngày qua ngày."
+  },
+  {
+    en: "Success doesn’t come to you; you go to it.",
+    author: "Marva Collins",
+    vi: "Thành công không tự đến với bạn, chính bạn sẽ đi tìm nó."
+  },
+  {
+    en: "Success is the Progressive Realisation of a worthy goal.",
+    author: "Earl Nightingale",
+    vi: "Thành công là quá trình nhận thức được những mục tiêu xứng đáng."
+  },
+  {
+    en: "Be the Boss - like Beyoncé",
+    author: "Beyoncé",
+    vi: "Hãy làm chủ - hãy như Beyoncé."
+  },
+  {
+    en: "To be a winner, you must plan, prepare to win, and expect to win.",
+    author: "Zig Ziglar",
+    vi: "Để trở thành người chiến thắng, bạn buộc phải lên kế hoạch, chuẩn bị và mưu cầu chiến thắng."
+  },
+  {
+    en: "And why do we fall, Bruce? So we learn to pick ourselves up.",
+    author: "Thomas Wayne",
+    vi: "Anh có biết tại sao chúng ta lại vấp ngã không Bruce? Bởi vì chúng ta sẽ học được cách tự nâng bản thân dậy sau đó."
+  },
+  {
+    en: "If you fell down yesterday, stand up today.",
+    author: "H. G. Wells",
+    vi: "Nếu như bạn vừa vấp ngã ngày hôm qua, hãy đứng dậy và bước tiếp vào hôm nay."
+  },
+  {
+    en: "The day you take complete responsibility for yourself and the day you stop making any excuses, that’s the day you start at the top.",
+    author: "O.J. Simpson",
+    vi: "Ngày mà bạn hoàn toàn biết tự chịu trách nhiệm và ngừng đưa ra những lời biện minh, đó là ngày mà bạn thành công nhất."
+  },
+  {
+    en: "Do the best you can until you know better. Then, when you know better, do better.",
+    author: "Maya Angelou",
+    vi: "Hãy cố gắng hết sức cho đến khi bạn biết nhiều hơn. Sau khi biết nhiều hơn, hãy làm tốt hơn."
+  },
+  {
+    en: "Don’t say you don’t have enough time. You have the same hours per day given to Helen Keller, Pasteur, Michelangelo, Mother Teresa, Leonardo da Vinci, Thomas Jefferson, and Albert Einstein.",
+    author: "H. Jackson Brown Jr.",
+    vi: "Đừng nói rằng bạn không có đủ thời gian. Quỹ thời gian mỗi ngày bằng với quỹ thời gian mỗi ngày mà những người thành công như Albert Einstein có."
+  },
+  {
+    en: "When we are no longer able to change a situation, we are challenged to change ourselves.",
+    author: "Viktor Frankl",
+    vi: "Khi mà bạn không thể thay đổi tình huống xảy ra được nữa, đó là lúc chúng ta được thử thách để thay đổi bản thân."
+  },
+  {
+    en: "Make sure your own worst enemy doesn’t live between your two ears.",
+    author: "Laird Hamilton",
+    vi: "Hãy đảm bảo rằng kẻ thù lớn nhất của bạn không nằm ngay trong đầu bạn."
+  },
+  {
+    en: "Don’t wish it was easier; wish you’re better.",
+    author: "Jim Rohn",
+    vi: "Đừng mong mọi chuyện dễ dàng hơn, hãy mong chúng tốt hơn."
+  },
+  {
+    en: "Start where you are. Use what you have. Do what you can.",
+    author: "Arthur Ashe",
+    vi: "Bắt đầu tại nơi bạn đứng. Dùng những thứ bạn có. Làm những điều mà bạn có thể."
+  },
+  {
+    en: "Good things come to people who wait, but better things come to people who go and get them.",
+    author: "Khuyết danh",
+    vi: "Những điều tốt đẹp sẽ đến với những người biết kiên nhẫn, nhưng những điều tốt hơn sẽ dành cho những người biết tự giành lấy nó."
+  },
+  {
+    en: "I don’t regret the things I have done. I regret what I didn’t when I had the chance.",
+    author: "Khuyết danh",
+    vi: "Tôi không bao giờ hối hận về những điều tôi đã làm. Tôi hối hận về những điều tôi không làm khi mình đã có cơ hội để làm nó."
+  },
+  {
+    en: "The Expert in everything was once a beginner.",
+    author: "Khuyết danh",
+    vi: "Bất kỳ chuyên gia nào cũng đều có thời gian mới bắt đầu."
+  },
+  {
+    en: "The only place where success comes before work is the dictionary.",
+    author: "Vidal Sassoon",
+    vi: "Nơi duy nhất mà thành công đến trước cả khi làm là ở cuốn từ điển."
+  },
+  {
+    en: "If it’s important to you, you’ll find a way. If not, you’ll find an excuse.",
+    author: "Ryan Blair",
+    vi: "Nếu điều đó là đủ quan trọng, bạn sẽ tìm cách. Nếu không, bạn chắc chắn sẽ tìm sự biện minh."
+  },
+  {
+    en: "Challenges are what make life interesting. Overcoming them is what makes life meaningful.",
+    author: "Joshua J. Marine",
+    vi: "Sự thử thách là những điều khiến cho cuộc sống trở nên thú vị. Vượt qua chúng khiến cuộc sống trở nên đáng sống hơn."
+  },
+  {
+    en: "It’s going to be easy, but it’s going to be worth it.",
+    author: "Khuyết danh",
+    vi: "Mọi chuyện sẽ trở nên đơn giản hơn, và mọi chuyện sẽ trở nên xứng đáng."
+  },
+  {
+    en: "The pain you feel today is the strength you’ll feel tomorrow.",
+    author: "Khuyết danh",
+    vi: "Nỗi đau của bạn ngày hôm nay sẽ là sức mạnh cho bạn vào ngày hôm sau."
+  },
+  {
+    en: "Believe you can do, and you’re halfway done.",
+    author: "Khuyết danh",
+    vi: "Tin vào bản thân mình, bạn đã thành công được một nửa."
+  }
 ];
 
 let defaultStudyDocTitle = document.title || "RE:SEARCH - Diễn đàn Sinh viên & NCKH";
+let lastStudyQuoteIndex = -1;
 
 function formatMMSS(totalSecs) {
   const safe = Math.max(0, Math.floor(totalSecs));
@@ -2617,11 +2877,43 @@ function updateTabTitle() {
   }
 }
 
-function rotateStudyQuote() {
+function rotateStudyQuote(animate = true) {
+  const quoteWrap = $("#timerQuoteWrap");
   const quoteEl = $("#timerQuoteText");
   if (!quoteEl) return;
-  const rand = STUDY_QUOTES[Math.floor(Math.random() * STUDY_QUOTES.length)];
-  quoteEl.textContent = rand;
+
+  let nextIdx;
+  if (STUDY_QUOTES.length <= 1) {
+    nextIdx = 0;
+  } else {
+    do {
+      nextIdx = Math.floor(Math.random() * STUDY_QUOTES.length);
+    } while (nextIdx === lastStudyQuoteIndex);
+  }
+  lastStudyQuoteIndex = nextIdx;
+  const q = STUDY_QUOTES[nextIdx];
+
+  const renderContent = () => {
+    const authorSpan = (q.author && q.author !== "Khuyết danh" && q.author !== "Unknown")
+      ? ` <span class="quote-author">— ${q.author}</span>`
+      : "";
+    quoteEl.innerHTML = `<span class="quote-vi">“${q.vi.replace(/^["“]|["”]$/g, "")}”</span>${authorSpan}`;
+    if (quoteWrap) {
+      quoteWrap.title = q.en ? `“${q.en}”\n(Bấm để đổi câu nói truyền cảm hứng)` : "Bấm để đổi câu nói truyền cảm hứng";
+    }
+  };
+
+  if (animate) {
+    quoteEl.style.opacity = "0";
+    quoteEl.style.transform = "translateY(3px)";
+    setTimeout(() => {
+      renderContent();
+      quoteEl.style.opacity = "1";
+      quoteEl.style.transform = "translateY(0)";
+    }, 180);
+  } else {
+    renderContent();
+  }
 }
 
 /* --- 3. STREAK PERKS EVALUATOR --- */
@@ -5211,6 +5503,7 @@ function onEnterStudyLounge() {
   renderClockColorPicker();
   renderColorPalette();
   updateTimerDisplay();
+  rotateStudyQuote(false);
 
   // Apply saved wallpaper dim & card glass opacity
   applyWallpaperDim(studySettings.wallpaperDim ?? 35);
@@ -5369,6 +5662,13 @@ function initStudyLoungeEvents() {
   const clearTodoBtn = $("#clearCompletedTodos");
   if (clearTodoBtn) clearTodoBtn.onclick = clearCompletedTodos;
 
+  // Motivational quote interaction
+  const quoteWrap = $("#timerQuoteWrap");
+  if (quoteWrap) {
+    quoteWrap.onclick = () => rotateStudyQuote(true);
+  }
+  rotateStudyQuote(false);
+
   // Initialize UI components
   renderEnvironmentAudioGrid();
   renderMixAudioGrid();
@@ -5404,6 +5704,8 @@ window.toggleStudyZenView = toggleStudyZenView;
 window.applyClockColor = applyClockColor;
 window.applyColorAura = applyColorAura;
 window.resetStudyTheme = resetStudyTheme;
+window.STUDY_QUOTES = STUDY_QUOTES;
+window.rotateStudyQuote = rotateStudyQuote;
 
 document.addEventListener("click", () => {
   if (studyState.audioCtx && studyState.audioCtx.state === "suspended") {
