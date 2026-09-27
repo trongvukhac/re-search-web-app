@@ -222,6 +222,40 @@
           </aside>
         </div>
 
+        <!-- MODULE HOẠT ĐỘNG THI ĐUA HÀNG TUẦN -->
+        <div id="weeklyCompetitionModule" class="weekly-competition-card" style="display: none;" onclick="openCompetitionModal()">
+          <div class="comp-card-glow"></div>
+          <div class="comp-card-content">
+            <div class="comp-left">
+              <div class="comp-badge-row">
+                <span id="compStatusBadge" class="comp-status-badge">
+                  <span class="pulse-dot"></span>
+                  <span id="compStatusBadgeText">ĐANG MỞ CỔNG</span>
+                </span>
+                <span class="comp-week-tag" id="compWeekTag">Tuần thi đấu</span>
+              </div>
+              <h3 id="compTopicTitle" class="comp-topic-title">Phương pháp Nghiên cứu & Xử lý Dữ liệu Khoa học</h3>
+              <p id="compPhaseSubtitle" class="comp-phase-subtitle">Giai đoạn 1: Phương pháp & Thiết kế Nghiên cứu Khoa học</p>
+            </div>
+            <div class="comp-right">
+              <div class="comp-timer-box">
+                <span class="comp-timer-label" id="compTimerLabel">Thời gian mở cổng còn lại:</span>
+                <div class="comp-countdown" id="compCountdownTicker">00:00:00</div>
+              </div>
+              <div class="comp-action-box">
+                <div class="comp-user-status" id="compUserStatusTeaser">
+                  <span id="compAttemptsTeaser">Lượt thi: 2/2</span>
+                  <span id="compBestScoreTeaser" class="comp-star-score" style="display: none;">⭐ 0</span>
+                </div>
+                <button type="button" class="comp-cta-button" id="compCtaBtn" onclick="event.stopPropagation(); handleCompetitionCtaClick()">
+                  <span id="compCtaText">Tham gia ngay</span>
+                  <span class="comp-cta-arrow">→</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div class="search-panel">
           <span class="search-glyph">⌕</span>
           <input
@@ -1223,6 +1257,13 @@
         >
           Tài liệu & Chủ đề
         </button>
+        <button
+          type="button"
+          class="auth-tab admin-tab"
+          data-admin-tab="competition"
+        >
+          Thi đua tuần
+        </button>
       </div>
 
       <div id="adminTabOverview" class="admin-tab-content">
@@ -1293,6 +1334,92 @@
           "
         >
           <!-- Topics populated by JS -->
+        </div>
+      </div>
+
+      <div
+        id="adminTabCompetition"
+        class="admin-tab-content"
+        style="display: none"
+      >
+        <!-- SIMULATOR BAR -->
+        <div class="admin-comp-sim-bar" style="background: var(--sage-2); border: 1px solid var(--line); border-radius: 8px; padding: 14px; margin-bottom: 16px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 8px;">
+            <strong style="color: var(--ink); font-size: 13px;">⏰ Giả lập thời gian máy chủ (Dành cho Admin/TA kiểm thử):</strong>
+            <span id="adminSimCurrentTime" style="font-weight: 700; color: #246247; font-size: 12px; background: rgba(36,98,71,0.1); padding: 3px 8px; border-radius: 4px;">Đang tải...</span>
+          </div>
+          <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+            <button type="button" class="button button-sm button-outline" onclick="adminSetSimTime('upcoming')">⏳ 16:30 (Sắp mở cổng)</button>
+            <button type="button" class="button button-sm button-outline" onclick="adminSetSimTime('open')">🟢 19:30 (Đang mở cổng)</button>
+            <button type="button" class="button button-sm button-outline" onclick="adminSetSimTime('reviewing')">📊 23:30 (Đang tổng kết)</button>
+            <button type="button" class="button button-sm button-outline" onclick="adminSetSimTime('sunday')">👑 Chủ Nhật (Tổng kết tuần)</button>
+            <button type="button" class="button button-sm" style="background:#246247; color:#fff;" onclick="adminSetSimTime('real')">🔄 Giờ thực tế</button>
+          </div>
+        </div>
+
+        <!-- TOPIC SETTINGS -->
+        <div class="admin-card" style="margin-bottom: 16px; padding: 16px; background: #fff; border: 1px solid var(--line); border-radius: 8px;">
+          <h3 style="margin-top:0; font-size: 14px; margin-bottom: 10px;">1. Thông tin Chủ đề Tuần thi đấu</h3>
+          <div style="display: grid; gap: 10px;">
+            <div>
+              <label style="font-size: 12px; font-weight: 600; display: block; margin-bottom: 4px;">Chủ đề chung toàn tuần:</label>
+              <input type="text" id="adminWeekTopicName" class="input-field" style="width: 100%;" placeholder="VD: Phương pháp Nghiên cứu & Xử lý Dữ liệu Khoa học" />
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 8px;">
+              <div>
+                <label style="font-size: 11px; font-weight: 600; display: block; margin-bottom: 2px;">Chủ đề GĐ 1 (T2-T3):</label>
+                <input type="text" id="adminPhase1Topic" class="input-field" style="width: 100%; font-size: 12px;" />
+              </div>
+              <div>
+                <label style="font-size: 11px; font-weight: 600; display: block; margin-bottom: 2px;">Chủ đề GĐ 2 (T4-T5):</label>
+                <input type="text" id="adminPhase2Topic" class="input-field" style="width: 100%; font-size: 12px;" />
+              </div>
+              <div>
+                <label style="font-size: 11px; font-weight: 600; display: block; margin-bottom: 2px;">Chủ đề GĐ 3 (T6-T7):</label>
+                <input type="text" id="adminPhase3Topic" class="input-field" style="width: 100%; font-size: 12px;" />
+              </div>
+            </div>
+            <div style="text-align: right; margin-top: 4px;">
+              <button type="button" class="button button-primary button-sm" onclick="saveAdminCompetitionTopics()">💾 Lưu thông tin chủ đề</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- QUESTION MANAGEMENT BY PHASE -->
+        <div class="admin-card" style="margin-bottom: 16px; padding: 16px; background: #fff; border: 1px solid var(--line); border-radius: 8px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+            <h3 style="margin: 0; font-size: 14px;">2. Thiết lập Bộ 10 câu hỏi theo Giai đoạn</h3>
+            <button type="button" class="button button-sm button-outline" onclick="adminSeedSampleQuestions()">⚡ Tải bộ 30 câu hỏi mẫu NCKH</button>
+          </div>
+
+          <div style="display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; align-items: center;">
+            <button type="button" class="button button-sm admin-phase-tab-btn active" id="adminBtnPhase1" onclick="switchAdminPhaseTab(1)">Giai đoạn 1 (T2-T3)</button>
+            <button type="button" class="button button-sm admin-phase-tab-btn" id="adminBtnPhase2" onclick="switchAdminPhaseTab(2)">Giai đoạn 2 (T4-T5)</button>
+            <button type="button" class="button button-sm admin-phase-tab-btn" id="adminBtnPhase3" onclick="switchAdminPhaseTab(3)">Giai đoạn 3 (T6-T7)</button>
+            <span id="adminPhaseStatusBadge" style="margin-left: auto; font-size: 12px; font-weight: 700; color: #246247;">🟢 10/10 câu</span>
+          </div>
+
+          <p style="font-size: 12px; color: var(--muted); margin-bottom: 12px;">
+            ⚠️ <em>Hạn chót thiết lập: trước 15h30 ngày đầu tiên của mỗi giai đoạn. Nếu chưa đủ 10 câu hỏi, module sẽ tự động ẩn trên trang chủ.</em>
+          </p>
+
+          <div id="adminQuestionsList" style="max-height: 380px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; padding-right: 4px;">
+            <!-- Rendered by JS -->
+          </div>
+
+          <div style="margin-top: 14px; display: flex; justify-content: space-between; gap: 8px;">
+            <button type="button" class="button button-sm button-outline" onclick="adminAddEmptyQuestion()">+ Thêm câu hỏi</button>
+            <button type="button" class="button button-primary button-sm" onclick="adminSaveQuestions()">💾 Lưu 10 câu hỏi giai đoạn</button>
+          </div>
+        </div>
+
+        <!-- REWARD TRIGGER -->
+        <div class="admin-card" style="padding: 16px; background: var(--sage-2); border-radius: 8px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+          <div>
+            <strong style="display: block; font-size: 13px;">3. Thao tác Tổng kết & Trao thưởng Tuần:</strong>
+            <span style="font-size: 12px; color: var(--muted);">Tự động chạy vào Chủ Nhật hoặc bấm để chốt điểm và trao thưởng (+điểm hoạt động & khiên) ngay.</span>
+          </div>
+          <button type="button" class="button button-primary button-sm" onclick="adminConcludeWeekNow()">🏆 Tổng kết & Trao thưởng</button>
         </div>
       </div>
     </dialog>
@@ -1469,6 +1596,341 @@
         </div>
       </div>
     </dialog>
+    <!-- MODAL TỔNG QUAN THI ĐUA ĐỊNH KỲ HÀNG TUẦN -->
+    <dialog id="competitionModal" class="modal competition-modal" style="max-width: 860px; width: 95vw;">
+      <div class="modal-head">
+        <div class="comp-modal-title-wrap">
+          <p class="eyebrow">RE:SEARCH ARENA</p>
+          <h2 id="compModalTitle">Hoạt động Thi đua Định kỳ Hàng tuần</h2>
+        </div>
+        <button class="close-modal" id="closeCompetitionModal" onclick="closeCompetitionModal()" aria-label="Đóng">×</button>
+      </div>
+
+      <div class="comp-nav-tabs">
+        <button type="button" class="comp-tab-btn active" data-comp-tab="gateway" onclick="switchCompTab('gateway')">
+          <span>🎮</span> Cổng thi đấu
+        </button>
+        <button type="button" class="comp-tab-btn" data-comp-tab="leaderboard" onclick="switchCompTab('leaderboard')">
+          <span>🏆</span> Bảng xếp hạng
+        </button>
+        <button type="button" class="comp-tab-btn" data-comp-tab="rules" onclick="switchCompTab('rules')">
+          <span>📋</span> Thể lệ & Phần thưởng
+        </button>
+      </div>
+
+      <!-- TAB 1: CỔNG THI ĐẤU -->
+      <div id="compTabGateway" class="comp-tab-panel active">
+        <div class="comp-gateway-hero">
+          <div class="comp-gateway-badge-row">
+            <span id="gatewayStatusBadge" class="comp-status-badge">
+              <span class="pulse-dot"></span>
+              <span id="gatewayStatusText">ĐANG MỞ CỔNG</span>
+            </span>
+            <span class="comp-phase-tag" id="gatewayPhaseTag">Giai đoạn 1</span>
+          </div>
+          <h3 id="gatewayPhaseTitle">Phương pháp & Thiết kế Nghiên cứu Khoa học</h3>
+          <p id="gatewayWeekTitle">Chủ đề tuần: Phương pháp Nghiên cứu & Xử lý Dữ liệu Khoa học</p>
+
+          <div class="gateway-clock-card">
+            <div class="gateway-clock-label" id="gatewayClockLabel">Thời gian mở cổng còn lại:</div>
+            <div class="gateway-clock-digits" id="gatewayClockDigits">00:00:00</div>
+          </div>
+        </div>
+
+        <div class="comp-user-attempts-card">
+          <div class="attempts-header">
+            <h4>Trạng thái tham gia của bạn</h4>
+            <span class="attempts-phase-label" id="attemptsPhaseLabel">Giai đoạn hiện tại</span>
+          </div>
+          <div class="attempts-grid">
+            <div class="attempt-stat-box">
+              <span class="attempt-stat-label">Số lượt đã tham gia</span>
+              <div class="attempt-stat-val" id="userAttemptsCount">0 / 2 <span class="attempt-sub">lượt</span></div>
+            </div>
+            <div class="attempt-stat-box">
+              <span class="attempt-stat-label">Điểm chính thức (Cao nhất)</span>
+              <div class="attempt-stat-val star-val" id="userPhaseBestScore">0 <span class="attempt-sub">⭐</span></div>
+            </div>
+            <div class="attempt-stat-box">
+              <span class="attempt-stat-label">Thời gian làm bài</span>
+              <div class="attempt-stat-val">10 <span class="attempt-sub">phút / 10 câu</span></div>
+            </div>
+          </div>
+          <p class="attempts-note">💡 Hệ thống luôn tự động lưu <strong>kết quả cao nhất</strong> trong tối đa 2 lượt để làm kết quả chính thức của giai đoạn.</p>
+        </div>
+
+        <div class="gateway-action-container">
+          <button type="button" class="button button-primary button-lg gateway-play-btn" id="gatewayStartQuizBtn" onclick="startCompetitionQuiz()">
+            <span>🔥</span> <span id="gatewayStartBtnText">Bắt đầu lượt thi #1</span>
+          </button>
+          <div id="gatewayBlockedMsg" class="gateway-blocked-msg" style="display: none;"></div>
+        </div>
+      </div>
+
+      <!-- TAB 2: BẢNG XẾP HẠNG -->
+      <div id="compTabLeaderboard" class="comp-tab-panel" style="display: none;">
+        <div class="lb-header-controls">
+          <div class="lb-phase-selectors">
+            <button type="button" class="lb-phase-btn active" data-lb-phase="1" onclick="switchLbPhase(1)">GĐ 1 (T2-T3)</button>
+            <button type="button" class="lb-phase-btn" data-lb-phase="2" onclick="switchLbPhase(2)">GĐ 2 (T4-T5)</button>
+            <button type="button" class="lb-phase-btn" data-lb-phase="3" onclick="switchLbPhase(3)">GĐ 3 (T6-T7)</button>
+            <button type="button" class="lb-phase-btn week-lb-btn" data-lb-phase="week" onclick="switchLbPhase('week')">👑 Toàn tuần</button>
+          </div>
+          <div class="lb-summary-notice" id="lbSummaryNotice">
+            📊 Bảng xếp hạng tạm thời giai đoạn (Cập nhật sau các khung giờ thi đấu)
+          </div>
+        </div>
+
+        <!-- PODIUM TOP 3 -->
+        <div class="comp-podium-wrap" id="compPodiumWrap">
+          <!-- Rendered via JS -->
+        </div>
+
+        <!-- TOP 4 - 10 + TOP 11+ LIST -->
+        <div class="comp-lb-list-container">
+          <div class="comp-lb-list-header">
+            <span>Hạng</span>
+            <span>Thành viên</span>
+            <span style="text-align: right;">Tổng sao</span>
+          </div>
+          <div class="comp-lb-list" id="compLbList">
+            <!-- Rendered via JS -->
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 3: THỂ LỆ & PHẦN THƯỞNG -->
+      <div id="compTabRules" class="comp-tab-panel" style="display: none;">
+        <div class="rules-scrollable">
+          <section class="rules-section">
+            <h3 class="rules-heading"><span>🗓️</span> 1. Chu kỳ thi đấu & 3 Giai đoạn trong tuần</h3>
+            <p>Hoạt động thi đua được tổ chức định kỳ mỗi tuần từ Thứ Hai đến Chủ Nhật, chia làm 3 giai đoạn độc lập:</p>
+            <div class="rules-phase-cards">
+              <div class="rules-p-card">
+                <span class="p-badge">Giai đoạn 1</span>
+                <strong>Thứ Hai – Thứ Ba</strong>
+                <p>Bộ 10 câu hỏi trắc nghiệm riêng (3 đáp án A, B, C).</p>
+              </div>
+              <div class="rules-p-card">
+                <span class="p-badge">Giai đoạn 2</span>
+                <strong>Thứ Tư – Thứ Năm</strong>
+                <p>Bộ 10 câu hỏi trắc nghiệm riêng (3 đáp án A, B, C).</p>
+              </div>
+              <div class="rules-p-card">
+                <span class="p-badge">Giai đoạn 3</span>
+                <strong>Thứ Sáu – Thứ Bảy</strong>
+                <p>Bộ 10 câu hỏi trắc nghiệm riêng (3 đáp án A, B, C).</p>
+              </div>
+            </div>
+            <div class="rules-sunday-card">
+              <span class="sunday-tag">👑 Chủ Nhật</span>
+              <div>
+                <strong>Tổng kết toàn tuần & Trao thưởng</strong>
+                <p>Khóa điểm 3 giai đoạn, cộng dồn điểm tích lũy, cộng thưởng tham gia và chính thức trao thưởng Điểm hoạt động + Khiên giữ chuỗi.</p>
+              </div>
+            </div>
+          </section>
+
+          <section class="rules-section">
+            <h3 class="rules-heading"><span>⏱️</span> 2. Khung giờ hoạt động hàng ngày (Giờ máy chủ)</h3>
+            <ul class="rules-list">
+              <li><strong>19h00 – 23h00:</strong> 🟢 <strong>Đang mở cổng</strong> — Người dùng tham gia làm bài (tối đa 2 lượt / giai đoạn).</li>
+              <li><strong>23h00 – 16h00 hôm sau:</strong> 📊 <strong>Đang tổng kết</strong> — Đóng cổng thi, hiển thị Bảng xếp hạng tạm thời giai đoạn.</li>
+              <li><strong>16h00 – 19h00:</strong> ⏳ <strong>Sắp mở cổng</strong> — Hiển thị đồng hồ đếm ngược mở cổng 19h00.</li>
+            </ul>
+          </section>
+
+          <section class="rules-section">
+            <h3 class="rules-heading"><span>🎯</span> 3. Cơ chế làm bài, Tính điểm & Trừ thời gian</h3>
+            <div class="rules-formula-card">
+              <div class="formula-title">TỔNG ĐIỂM = ĐIỂM CÂU ĐÚNG + THƯỞNG ĐÚNG LẦN ĐẦU + GIÂY CÒN LẠI</div>
+              <div class="formula-grid">
+                <div class="f-item">
+                  <span class="f-num">+40 ⭐</span>
+                  <span class="f-label">Mỗi câu trả lời đúng (Tối đa 400 sao)</span>
+                </div>
+                <div class="f-item">
+                  <span class="f-num">+10 ⭐</span>
+                  <span class="f-label">Thưởng đúng ngay lần 1 (Tối đa 100 sao)</span>
+                </div>
+                <div class="f-item">
+                  <span class="f-num">+1 ⭐ / giây</span>
+                  <span class="f-label">Thời gian còn lại của 10 phút (Tối đa 600 sao)</span>
+                </div>
+              </div>
+              <div class="formula-max">✨ Điểm tối đa lý thuyết: <strong>1.100 sao</strong></div>
+            </div>
+            <div class="rules-penalty-box">
+              <h4>⚠️ Quy tắc trả lời sai theo từng câu:</h4>
+              <p>Mỗi câu hỏi được chọn tối đa <strong>3 lần</strong>:</p>
+              <ul>
+                <li><strong>Sai lần 1:</strong> Trừ <strong>30 giây</strong> và được chọn lại câu đó.</li>
+                <li><strong>Sai lần 2:</strong> Tiếp tục trừ <strong>30 giây</strong> và chọn lại lần cuối.</li>
+                <li><strong>Sai lần 3:</strong> Câu hỏi bị đóng (0 điểm) và chuyển sang câu tiếp theo. Tổng trừ tối đa 90 giây.</li>
+                <li>Nếu đồng hồ về <strong>0 giây</strong>, bài thi kết thúc ngay lập tức.</li>
+              </ul>
+            </div>
+          </section>
+
+          <section class="rules-section">
+            <h3 class="rules-heading"><span>🎁</span> 4. Cơ cấu Giải thưởng Tuần & Điểm thưởng Giai đoạn</h3>
+            <p>Sau khi kết thúc Giai đoạn 3 vào thứ Bảy, Chủ Nhật là thời điểm hệ thống chốt Bảng xếp hạng tuần và trao thưởng chính thức:</p>
+            
+            <div class="rules-rewards-table-wrap">
+              <table class="rules-rewards-table">
+                <thead>
+                  <tr>
+                    <th>Thứ hạng Tuần</th>
+                    <th>Điểm hoạt động</th>
+                    <th>Khiên giữ chuỗi</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr class="rank-top1">
+                    <td>🥇 <strong>Quán quân (Top 1)</strong></td>
+                    <td><strong class="pts-val">+20 điểm</strong></td>
+                    <td>🛡️🛡️ 2 khiên</td>
+                  </tr>
+                  <tr class="rank-top2">
+                    <td>🥈 <strong>Á quân (Top 2)</strong></td>
+                    <td><strong class="pts-val">+18 điểm</strong></td>
+                    <td>🛡️🛡️ 2 khiên</td>
+                  </tr>
+                  <tr class="rank-top3">
+                    <td>🥉 <strong>Quý quân (Top 3)</strong></td>
+                    <td><strong class="pts-val">+15 điểm</strong></td>
+                    <td>🛡️🛡️ 2 khiên</td>
+                  </tr>
+                  <tr>
+                    <td>🏅 <strong>Top 4 – Top 10</strong></td>
+                    <td><strong class="pts-val">+10 điểm</strong></td>
+                    <td>🛡️ 1 khiên</td>
+                  </tr>
+                  <tr>
+                    <td>👥 <strong>Tất cả thành viên tham gia (≥ 1 GĐ)</strong></td>
+                    <td><strong class="pts-val">+5 điểm</strong></td>
+                    <td>🛡️ 1 khiên</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="rules-bonus-box">
+              <h4>🌟 Điểm thưởng tham gia theo số giai đoạn (Cộng vào Chủ Nhật):</h4>
+              <div class="bonus-chips">
+                <span class="bonus-chip">Tham gia 1 giai đoạn: <strong>+1 điểm hoạt động</strong></span>
+                <span class="bonus-chip">Tham gia 2 giai đoạn: <strong>+3 điểm hoạt động</strong></span>
+                <span class="bonus-chip highlight">Tham gia đủ cả 3 giai đoạn: <strong>+5 điểm hoạt động</strong></span>
+              </div>
+            </div>
+          </section>
+        </div>
+      </div>
+    </dialog>
+
+    <!-- MODAL ĐẤU TRƯỜNG QUIZ 10 PHÚT -->
+    <dialog id="competitionQuizModal" class="modal quiz-arena-modal" style="max-width: 900px; width: 95vw; padding: 0;">
+      <!-- QUIZ GAMEPLAY VIEW -->
+      <div id="quizPlayView" class="quiz-play-container">
+        <div class="quiz-header-bar">
+          <div class="quiz-info-left">
+            <span class="quiz-phase-badge" id="quizPhaseBadge">Giai đoạn 1</span>
+            <span class="quiz-q-counter" id="quizQuestionCounter">Câu 1 / 10</span>
+          </div>
+          <div class="quiz-timer-center">
+            <div class="quiz-timer-track">
+              <div class="quiz-timer-bar" id="quizTimerProgressBar" style="width: 100%;"></div>
+            </div>
+            <div class="quiz-timer-display" id="quizTimerDisplay">
+              <span class="timer-icon">⏱️</span>
+              <span id="quizTimerDigits">10:00</span>
+            </div>
+          </div>
+          <div class="quiz-score-right">
+            <span class="quiz-stars-badge" id="quizLiveStars">⭐ 0</span>
+          </div>
+        </div>
+
+        <div class="quiz-body-content">
+          <div class="quiz-penalty-toast" id="quizPenaltyToast" style="display: none;">-30s</div>
+          <div class="quiz-bonus-toast" id="quizBonusToast" style="display: none;">+50 ⭐</div>
+
+          <div class="quiz-question-card" id="quizQuestionCard">
+            <div class="q-tries-pill" id="quizTriesPill">
+              <span class="tries-dot active"></span>
+              <span class="tries-dot"></span>
+              <span class="tries-dot"></span>
+              <span class="tries-text" id="quizTriesText">Lần thử 1/3 (Sai: -30s)</span>
+            </div>
+            <h3 class="quiz-question-text" id="quizQuestionText">Nội dung câu hỏi đang tải...</h3>
+          </div>
+
+          <div class="quiz-options-grid" id="quizOptionsGrid">
+            <button type="button" class="quiz-option-btn" data-option="A" onclick="submitQuizAnswer('A')">
+              <span class="opt-letter">A</span>
+              <span class="opt-text" id="quizOptA">Đáp án A</span>
+            </button>
+            <button type="button" class="quiz-option-btn" data-option="B" onclick="submitQuizAnswer('B')">
+              <span class="opt-letter">B</span>
+              <span class="opt-text" id="quizOptB">Đáp án B</span>
+            </button>
+            <button type="button" class="quiz-option-btn" data-option="C" onclick="submitQuizAnswer('C')">
+              <span class="opt-letter">C</span>
+              <span class="opt-text" id="quizOptC">Đáp án C</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- QUIZ RESULT VIEW (PERSONAL SCORE) -->
+      <div id="quizResultView" class="quiz-result-container" style="display: none;">
+        <canvas id="quizConfettiCanvas" class="quiz-confetti-canvas"></canvas>
+        <div class="result-card-inner">
+          <div class="result-badge-anim">🏆</div>
+          <h2>KẾT THÚC LƯỢT THI</h2>
+          <p class="result-subtitle" id="resultSubtitle">Chúc mừng bạn đã hoàn thành bài thi!</p>
+
+          <div class="result-hero-score">
+            <span class="score-star-icon">⭐</span>
+            <span class="score-number" id="resultTotalScore">0</span>
+            <span class="score-max-label">/ 1.100 sao</span>
+          </div>
+
+          <div class="result-breakdown-grid">
+            <div class="res-item">
+              <span class="res-label">🎯 Số câu đúng</span>
+              <strong id="resultCorrectCount">0 / 10</strong>
+              <span class="res-pts" id="resultCorrectPts">+0 ⭐</span>
+            </div>
+            <div class="res-item">
+              <span class="res-label">⚡ Thưởng đúng lần đầu</span>
+              <strong id="resultFirstTryCount">0 / 10</strong>
+              <span class="res-pts" id="resultFirstTryPts">+0 ⭐</span>
+            </div>
+            <div class="res-item">
+              <span class="res-label">⏱️ Thời gian còn lại</span>
+              <strong id="resultRemainingTime">0 giây</strong>
+              <span class="res-pts" id="resultTimePts">+0 ⭐</span>
+            </div>
+          </div>
+
+          <div class="result-phase-record-box">
+            <span>📊 Kết quả giai đoạn:</span>
+            <strong id="resultPhaseRecordText">Kỷ lục: 0 ⭐ (Lấy điểm cao nhất trong 2 lượt)</strong>
+          </div>
+
+          <p class="result-leaderboard-notice">
+            ℹ️ <em>Bảng xếp hạng chính thức của giai đoạn sẽ được cập nhật và công khai trong khung giờ tổng kết (23h00 – 16h00).</em>
+          </p>
+
+          <div class="result-actions">
+            <button type="button" class="button button-outline" onclick="closeQuizAndGoHome()">🏠 Về trang chủ</button>
+            <button type="button" class="button button-primary" onclick="closeQuizAndOpenLeaderboard()">📊 Xem bảng xếp hạng</button>
+          </div>
+        </div>
+      </div>
+    </dialog>
+
     <script src="app.js?v=47" defer></script>
   </body>
 </html>

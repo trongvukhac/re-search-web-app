@@ -1,5 +1,7 @@
 node_modules
 npm-debug.log
 data/
+*.db*
+scratch/
 .git
 .DS_Store

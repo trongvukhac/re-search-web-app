@@ -219,6 +219,104 @@ try {
   `);
 } catch (e) {}
 
+// --- BẢNG DỮ LIỆU HOẠT ĐỘNG THI ĐUA HÀNG TUẦN (WEEKLY COMPETITION) ---
+db.exec(`
+  CREATE TABLE IF NOT EXISTS weekly_competitions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    year INTEGER NOT NULL,
+    week_number INTEGER NOT NULL,
+    week_key TEXT UNIQUE NOT NULL,
+    start_date TEXT NOT NULL,
+    end_date TEXT NOT NULL,
+    topic_name TEXT NOT NULL,
+    phase1_topic TEXT NOT NULL,
+    phase2_topic TEXT NOT NULL,
+    phase3_topic TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'active' CHECK(status IN ('active','concluded')),
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+  );
+
+  CREATE TABLE IF NOT EXISTS competition_questions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    competition_id INTEGER NOT NULL REFERENCES weekly_competitions(id) ON DELETE CASCADE,
+    phase INTEGER NOT NULL CHECK(phase IN (1, 2, 3)),
+    question_index INTEGER NOT NULL CHECK(question_index BETWEEN 1 AND 10),
+    question_text TEXT NOT NULL,
+    option_a TEXT NOT NULL,
+    option_b TEXT NOT NULL,
+    option_c TEXT NOT NULL,
+    correct_option TEXT NOT NULL CHECK(correct_option IN ('A','B','C')),
+    explanation TEXT,
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(competition_id, phase, question_index)
+  );
+
+  CREATE TABLE IF NOT EXISTS competition_sessions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    session_token TEXT UNIQUE NOT NULL,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    competition_id INTEGER NOT NULL REFERENCES weekly_competitions(id) ON DELETE CASCADE,
+    phase INTEGER NOT NULL CHECK(phase IN (1, 2, 3)),
+    attempt_number INTEGER NOT NULL CHECK(attempt_number IN (1, 2)),
+    started_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    finished_at TEXT,
+    initial_seconds INTEGER NOT NULL DEFAULT 600,
+    remaining_seconds INTEGER NOT NULL DEFAULT 600,
+    server_start_timestamp_ms INTEGER NOT NULL,
+    accumulated_penalty_seconds INTEGER NOT NULL DEFAULT 0,
+    current_question_index INTEGER NOT NULL DEFAULT 1,
+    correct_count INTEGER NOT NULL DEFAULT 0,
+    first_try_correct_count INTEGER NOT NULL DEFAULT 0,
+    correct_points INTEGER NOT NULL DEFAULT 0,
+    first_try_bonus INTEGER NOT NULL DEFAULT 0,
+    time_points INTEGER NOT NULL DEFAULT 0,
+    total_score INTEGER NOT NULL DEFAULT 0,
+    status TEXT NOT NULL DEFAULT 'in_progress' CHECK(status IN ('in_progress', 'completed', 'expired')),
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+  );
+
+  CREATE TABLE IF NOT EXISTS competition_answers (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    session_id INTEGER NOT NULL REFERENCES competition_sessions(id) ON DELETE CASCADE,
+    question_id INTEGER NOT NULL REFERENCES competition_questions(id),
+    question_index INTEGER NOT NULL,
+    tries_count INTEGER NOT NULL DEFAULT 0,
+    is_correct INTEGER NOT NULL DEFAULT 0,
+    is_first_try INTEGER NOT NULL DEFAULT 0,
+    history_json TEXT NOT NULL DEFAULT '[]',
+    penalty_seconds INTEGER NOT NULL DEFAULT 0,
+    is_finalized INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(session_id, question_index)
+  );
+
+  CREATE TABLE IF NOT EXISTS competition_phase_results (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    competition_id INTEGER NOT NULL REFERENCES weekly_competitions(id) ON DELETE CASCADE,
+    phase INTEGER NOT NULL CHECK(phase IN (1, 2, 3)),
+    best_session_id INTEGER REFERENCES competition_sessions(id),
+    best_score INTEGER NOT NULL DEFAULT 0,
+    attempts_used INTEGER NOT NULL DEFAULT 1,
+    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(user_id, competition_id, phase)
+  );
+
+  CREATE TABLE IF NOT EXISTS competition_weekly_rewards (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    competition_id INTEGER NOT NULL REFERENCES weekly_competitions(id) ON DELETE CASCADE,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    rank INTEGER NOT NULL,
+    total_stars INTEGER NOT NULL,
+    phases_participated INTEGER NOT NULL,
+    participation_bonus INTEGER NOT NULL,
+    activity_points_awarded INTEGER NOT NULL,
+    shields_awarded INTEGER NOT NULL,
+    awarded_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(competition_id, user_id)
+  );
+`);
+
 const defaultTopics = [
   "Đề tài", "Lý thuyết", "Phương pháp", 
   "Dữ liệu & phân tích", "Viết nghiên cứu", 
@@ -825,6 +923,614 @@ async function prewarmAudioUrls() {
 }
 prewarmAudioUrls();
 setInterval(prewarmAudioUrls, 20 * 60 * 1000);
+
+// =========================================================================
+// HOẠT ĐỘNG THI ĐUA ĐỊNH KỲ HÀNG TUẦN (WEEKLY COMPETITION MODULE)
+// =========================================================================
+
+let simulatedTimeOffsetMs = 0;
+
+function getVietnamNow() {
+  const effectiveMs = Date.now() + simulatedTimeOffsetMs;
+  return new Date(new Date(effectiveMs).toLocaleString("en-US", { timeZone: "Asia/Ho_Chi_Minh" }));
+}
+
+function getVietnamRealNow() {
+  return new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Ho_Chi_Minh" }));
+}
+
+function getVietnamTimestampMs() {
+  return Date.now() + simulatedTimeOffsetMs;
+}
+
+function formatYMD(d) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+function getWeekRange(date) {
+  const d = new Date(date);
+  const day = d.getDay(); // 0 = Sunday, 1 = Monday, ...
+  const diffToMonday = day === 0 ? -6 : 1 - day;
+  const monday = new Date(d);
+  monday.setDate(d.getDate() + diffToMonday);
+  monday.setHours(0, 0, 0, 0);
+
+  const sunday = new Date(monday);
+  sunday.setDate(monday.getDate() + 6);
+  sunday.setHours(23, 59, 59, 999);
+
+  // ISO week calculation
+  const target = new Date(monday.valueOf());
+  const dayNr = (monday.getDay() + 6) % 7;
+  target.setDate(target.getDate() - dayNr + 3);
+  const firstThursday = target.valueOf();
+  target.setMonth(0, 1);
+  if (target.getDay() !== 4) {
+    target.setMonth(0, 1 + ((4 - target.getDay()) + 7) % 7);
+  }
+  const weekNumber = 1 + Math.ceil((firstThursday - target) / 604800000);
+  const year = monday.getFullYear();
+  const weekKey = `${year}-W${String(weekNumber).padStart(2, "0")}`;
+
+  return { monday, sunday, mondayStr: formatYMD(monday), sundayStr: formatYMD(sunday), year, weekNumber, weekKey };
+}
+
+function getPhaseForDayOfWeek(dayOfWeek) {
+  if (dayOfWeek === 1 || dayOfWeek === 2) return 1;
+  if (dayOfWeek === 3 || dayOfWeek === 4) return 2;
+  if (dayOfWeek === 5 || dayOfWeek === 6) return 3;
+  return 0; // Sunday
+}
+
+const SAMPLE_COMPETITION_QUESTIONS = {
+  1: [ // Giai đoạn 1: Thứ Hai – Thứ Ba
+    {
+      index: 1,
+      text: "Khoảng trống nghiên cứu (Research Gap) trong bài báo khoa học là gì?",
+      optionA: "Vùng kiến thức chưa được giải quyết hoặc chưa được khám phá đầy đủ trong các tài liệu trước đây.",
+      optionB: "Khoảng cách thời gian nghỉ giữa hai dự án nghiên cứu khoa học.",
+      optionC: "Số trang tài liệu còn thiếu trong báo cáo nghiệm thu đề tài.",
+      correct: "A",
+      explanation: "Research Gap là vấn đề hoặc khoảng trống tri thức mà các công trình nghiên cứu trước chưa giải quyết trọn vẹn."
+    },
+    {
+      index: 2,
+      text: "Biến độc lập (Independent Variable) trong mô hình nghiên cứu có vai trò gì?",
+      optionA: "Biến chịu sự tác động và thay đổi theo sự biến thiên của biến khác.",
+      optionB: "Biến được xem là nguyên nhân hoặc yếu tố chủ động tạo ra sự thay đổi ở biến phụ thuộc.",
+      optionC: "Biến hoàn toàn không có bất kỳ mối tương quan nào trong mô hình nghiên cứu.",
+      correct: "B",
+      explanation: "Biến độc lập là yếu tố tác động, nguyên nhân làm thay đổi giá trị của biến phụ thuộc."
+    },
+    {
+      index: 3,
+      text: "Mục đích quan trọng nhất của việc Tổng quan tài liệu (Literature Review) là gì?",
+      optionA: "Tóm tắt lại toàn bộ sách giáo khoa nhập môn của chuyên ngành.",
+      optionB: "Sao chép lại nguyên văn bảng số liệu của các nghiên cứu trước để tiết kiệm chi phí.",
+      optionC: "Hệ thống hóa nền tảng lý thuyết và xác định khoảng trống nghiên cứu cần giải quyết.",
+      correct: "C",
+      explanation: "Tổng quan tài liệu giúp xác định cơ sở lý thuyết, các nghiên cứu tương tự và tìm ra khoảng trống tri thức cần thực hiện."
+    },
+    {
+      index: 4,
+      text: "Phương pháp chọn mẫu ngẫu nhiên đơn giản (Simple Random Sampling) có đặc điểm nào?",
+      optionA: "Mọi phần tử trong tổng thể đều có xác suất được chọn vào mẫu như nhau.",
+      optionB: "Chỉ chọn những đối tượng thuận tiện nhất ở gần người nghiên cứu.",
+      optionC: "Chọn đối tượng dựa trên sự quen biết cá nhân của nghiên cứu viên.",
+      correct: "A",
+      explanation: "Chọn mẫu ngẫu nhiên đơn giản đảm bảo mọi phần tử trong quần thể đều có cơ hội được chọn ngang nhau."
+    },
+    {
+      index: 5,
+      text: "Giả thuyết không (Null Hypothesis - H0) thường phát biểu điều gì?",
+      optionA: "Có sự khác biệt hoặc mối quan hệ tác động rất lớn giữa các biến số.",
+      optionB: "Không có sự khác biệt hoặc không có mối liên hệ có ý nghĩa thống kê giữa các biến.",
+      optionC: "Đề tài nghiên cứu đã thất bại và không thể thu thập dữ liệu.",
+      correct: "B",
+      explanation: "Giả thuyết không (H0) giả định rằng không có sự khác biệt hoặc không có tác động giữa các nhóm khảo sát."
+    },
+    {
+      index: 6,
+      text: "Độ tin cậy (Reliability) của thang đo phản ánh tiêu chí nào sau đây?",
+      optionA: "Mức độ thang đo đo đúng bản chất của khái niệm cần đo lường.",
+      optionB: "Mức độ ổn định và tính nhất quán của kết quả qua các lần đo lường lặp lại.",
+      optionC: "Tốc độ phản hồi khảo sát trung bình của người tham gia.",
+      correct: "B",
+      explanation: "Độ tin cậy thể hiện tính nhất quán và khả năng lặp lại kết quả của công cụ đo lường."
+    },
+    {
+      index: 7,
+      text: "Phương pháp nghiên cứu định tính (Qualitative Research) phù hợp nhất khi nào?",
+      optionA: "Khi muốn đo lường chính xác số liệu và kiểm định mô hình định lượng diện rộng.",
+      optionB: "Khi muốn khám phá sâu hiện tượng mới, tìm hiểu ý nghĩa, động cơ và bối cảnh trải nghiệm.",
+      optionC: "Khi muốn khảo sát tự động hàng triệu đối tượng trong thời gian 1 giờ.",
+      correct: "B",
+      explanation: "Nghiên cứu định tính tập trung vào việc hiểu sâu bản chất, hành vi, động cơ và bối cảnh hiện tượng."
+    },
+    {
+      index: 8,
+      text: "Tính giá trị nội tại (Internal Validity) của nghiên cứu đề cập đến điều gì?",
+      optionA: "Mức độ kết luận về mối quan hệ nhân quả có thực sự đúng và không bị biến nhiễu chi phối.",
+      optionB: "Khả năng mở rộng và khái quát hóa kết quả nghiên cứu ra toàn bộ thế giới.",
+      optionC: "Tổng số nguồn tài trợ tài chính được duyệt nội bộ cho đề tài.",
+      correct: "A",
+      explanation: "Tính giá trị nội tại phản ánh độ tin cậy của mối quan hệ nhân quả giữa biến độc lập và phụ thuộc."
+    },
+    {
+      index: 9,
+      text: "Thiết kế nghiên cứu cắt ngang (Cross-sectional Study) có đặc trưng cơ bản nào?",
+      optionA: "Thu thập dữ liệu từ các đối tượng nghiên cứu tại một thời điểm xác định duy nhất.",
+      optionB: "Theo dõi và đo lường sự biến đổi của một nhóm đối tượng liên tục trong nhiều năm.",
+      optionC: "Thực hiện thí nghiệm có đối chứng lặp đi lặp lại trong phòng lab kín.",
+      correct: "A",
+      explanation: "Nghiên cứu cắt ngang thu thập dữ liệu tại một thời điểm xác định nhằm mô tả thực trạng hiện tượng."
+    },
+    {
+      index: 10,
+      text: "Nguyên tắc đạo đức cốt lõi hàng đầu trong nghiên cứu có người tham gia là gì?",
+      optionA: "Công khai toàn bộ danh tính và số điện thoại của người tham gia lên báo cáo.",
+      optionB: "Sự đồng thuận tự nguyện có hiểu biết (Informed Consent) và bảo mật thông tin cá nhân.",
+      optionC: "Ép buộc người tham gia phải trả lời đúng theo kỳ vọng của nghiên cứu viên.",
+      correct: "B",
+      explanation: "Sự đồng thuận có hiểu biết (Informed Consent) là nguyên tắc đạo đức cốt lõi trong nghiên cứu với con người."
+    }
+  ],
+  2: [ // Giai đoạn 2: Thứ Tư – Thứ Năm
+    {
+      index: 1,
+      text: "Trong kiểm định thống kê, giá trị p-value < 0.05 (mức ý nghĩa 5%) cho thấy điều gì?",
+      optionA: "Bác bỏ giả thuyết không H0 và kết luận kết quả có ý nghĩa thống kê.",
+      optionB: "Chấp nhận giả thuyết H0 và kết luận không có sự khác biệt nào.",
+      optionC: "Dữ liệu khảo sát không hợp lệ và phải xóa bỏ toàn bộ tập mẫu.",
+      correct: "A",
+      explanation: "p-value < 0.05 chỉ ra rằng xác suất xảy ra ngẫu nhiên là rất nhỏ, do đó bác bỏ H0 để chấp nhận H1."
+    },
+    {
+      index: 2,
+      text: "Hệ số tương quan Pearson (r) có giá trị nằm trong khoảng giới hạn nào?",
+      optionA: "Từ 0 đến +1.",
+      optionB: "Từ -1 đến +1.",
+      optionC: "Từ -100 đến +100.",
+      correct: "B",
+      explanation: "Hệ số tương quan Pearson luôn nằm trong khoảng [-1, 1], với -1 là tương quan nghịch hoàn hảo và +1 là thuận hoàn hảo."
+    },
+    {
+      index: 3,
+      text: "Hệ số Cronbach's Alpha thường được dùng trong phân tích dữ liệu nhằm mục đích gì?",
+      optionA: "Đánh giá độ tin cậy và sự nhất quán nội tại (Internal Consistency) của thang đo.",
+      optionB: "Đo lường thời gian chạy thuật toán hồi quy của máy tính.",
+      optionC: "Tính toán giá trị trung bình cộng của biến định lượng.",
+      correct: "A",
+      explanation: "Cronbach's Alpha đo lường độ tin cậy và sự nhất quán nội tại giữa các câu hỏi trong cùng một thang đo."
+    },
+    {
+      index: 4,
+      text: "Kiểm định Independent Samples T-Test phù hợp để sử dụng trong trường hợp nào?",
+      optionA: "So sánh giá trị trung bình của 2 nhóm mẫu độc lập trên một biến định lượng liên tục.",
+      optionB: "So sánh tỷ lệ phần trăm của 10 nhóm định danh khác nhau.",
+      optionC: "Dự báo giá trị của chuỗi thời gian trong tương lai 5 năm.",
+      correct: "A",
+      explanation: "Independent Samples T-Test dùng để so sánh trung bình (mean) giữa hai nhóm mẫu riêng biệt độc lập."
+    },
+    {
+      index: 5,
+      text: "Phân tích phương sai một yếu tố (One-Way ANOVA) được sử dụng khi nào?",
+      optionA: "So sánh giá trị trung bình giữa 3 nhóm mẫu độc lập trở lên.",
+      optionB: "Kiểm tra mối quan hệ phi tuyến tính giữa 2 biến nhị phân.",
+      optionC: "Tính toán khoảng cách Euclid giữa các cụm dữ liệu.",
+      correct: "A",
+      explanation: "ANOVA một yếu tố cho phép so sánh giá trị trung bình giữa 3 nhóm mẫu độc lập trở lên."
+    },
+    {
+      index: 6,
+      text: "Trong phân tích hồi quy tuyến tính, hệ số xác định R-squared (R²) cho biết điều gì?",
+      optionA: "Tỷ lệ phần trăm sự biến thiên của biến phụ thuộc được giải thích bởi các biến độc lập.",
+      optionB: "Số lượng quan sát tối thiểu cần có để chạy mô hình.",
+      optionC: "Sai số ngẫu nhiên của mô hình phân tích.",
+      correct: "A",
+      explanation: "R² (Hệ số xác định) phản ánh mức độ phù hợp của mô hình, biểu thị phần trăm biến thiên của Y do các X giải thích."
+    },
+    {
+      index: 7,
+      text: "Điểm dị biệt (Outlier) trong tập dữ liệu khảo sát là gì?",
+      optionA: "Giá trị nằm cách biệt bất thường so với phần lớn các quan sát khác trong mẫu dữ liệu.",
+      optionB: "Giá trị xuất hiện với tần số nhiều nhất trong mẫu (Mode).",
+      optionC: "Dòng dữ liệu bị bỏ trống do người dùng không nhập thông tin.",
+      correct: "A",
+      explanation: "Outlier là các giá trị ngoại lai, quá lớn hoặc quá nhỏ bất thường so với phân phối dữ liệu chung."
+    },
+    {
+      index: 8,
+      text: "Thang đo Likert 5 mức độ (từ 'Rất không đồng ý' đến 'Rất đồng ý') thuộc loại thang đo nào?",
+      optionA: "Thang đo định danh (Nominal Scale).",
+      optionB: "Thang đo thứ bậc (Ordinal Scale).",
+      optionC: "Thang đo tỷ lệ tuyệt đối (Ratio Scale).",
+      correct: "B",
+      explanation: "Thang đo Likert sắp xếp theo thứ tự mức độ thái độ/ý kiến nên bản chất là thang đo thứ bậc (Ordinal)."
+    },
+    {
+      index: 9,
+      text: "Độ lệch chuẩn (Standard Deviation) đo lường đặc trưng thống kê nào sau đây?",
+      optionA: "Mức độ phân tán của các giá trị quan sát xung quanh giá trị trung bình.",
+      optionB: "Tổng số lượng câu hỏi có trong bảng khảo sát.",
+      optionC: "Thời gian trung bình để hoàn thành một lượt khảo sát.",
+      correct: "A",
+      explanation: "Độ lệch chuẩn phản ánh độ phân tán hay mức độ biến động của các quan sát so với giá trị trung bình."
+    },
+    {
+      index: 10,
+      text: "Hiện tượng Đa cộng tuyến (Multicollinearity) trong mô hình hồi quy xảy ra khi nào?",
+      optionA: "Các biến độc lập trong mô hình có mối tương quan tuyến tính rất cao với nhau.",
+      optionB: "Kích thước mẫu khảo sát vượt quá 10.000 đối tượng.",
+      optionC: "Biến phụ thuộc có giá trị hoàn toàn không đổi.",
+      correct: "A",
+      explanation: "Đa cộng tuyến xảy ra khi giữa các biến độc lập có tương quan cao, làm sai lệch ước lượng hệ số hồi quy."
+    }
+  ],
+  3: [ // Giai đoạn 3: Thứ Sáu – Thứ Bảy
+    {
+      index: 1,
+      text: "Cấu trúc IMRaD phổ biến trong bài báo khoa học quốc tế gồm những phần cốt lõi nào?",
+      optionA: "Introduction, Methodology, Results, and Discussion.",
+      optionB: "Index, Main text, References, and Data analysis.",
+      optionC: "Information, Motivation, Research, and Documentation.",
+      correct: "A",
+      explanation: "IMRaD gồm 4 phần cốt lõi: Mở đầu (Introduction), Phương pháp (Methods), Kết quả (Results) và Thảo luận (Discussion)."
+    },
+    {
+      index: 2,
+      text: "Hành vi Đạo văn (Plagiarism) trong công bố học thuật được định nghĩa là gì?",
+      optionA: "Trích dẫn đầy đủ nguồn gốc bài báo của tác giả khác theo đúng chuẩn quy định.",
+      optionB: "Sử dụng ý tưởng, từ ngữ hoặc kết quả của người khác mà không trích dẫn nguồn hợp lệ.",
+      optionC: "Hợp tác nghiên cứu với tác giả thuộc trường đại học khác.",
+      correct: "B",
+      explanation: "Đạo văn là việc sử dụng công trình, ý tưởng hoặc từ ngữ của người khác mà không trích dẫn hoặc thừa nhận quyền tác giả."
+    },
+    {
+      index: 3,
+      text: "Mã định danh số DOI (Digital Object Identifier) trên ấn phẩm khoa học dùng để làm gì?",
+      optionA: "Cung cấp đường liên kết truy cập vĩnh viễn và duy nhất đến bài báo trên internet.",
+      optionB: "Giới hạn số lượt xem bài báo chỉ dành riêng cho tác giả.",
+      optionC: "Tính toán số tiền bản quyền tác giả phải nộp hàng năm.",
+      correct: "A",
+      explanation: "DOI là chuỗi ký tự duy nhất cung cấp liên kết truy cập cố định và đáng tin cậy đến ấn phẩm khoa học trực tuyến."
+    },
+    {
+      index: 4,
+      text: "Quy trình phản biện kín kép (Double-Blind Peer Review) có đặc điểm nào sau đây?",
+      optionA: "Cả tác giả bài báo và người phản biện đều được giấu danh tính đối với nhau.",
+      optionB: "Tác giả biết người phản biện nhưng người phản biện không biết tác giả.",
+      optionC: "Bài viết được công khai bình chọn trực tiếp trên diễn đàn mở.",
+      correct: "A",
+      explanation: "Double-blind review ẩn danh tính của cả hai bên nhằm đảm bảo tính khách quan và công bằng tối đa trong đánh giá học thuật."
+    },
+    {
+      index: 5,
+      text: "Theo chuẩn trích dẫn APA 7th, định dạng trích dẫn trong văn bản (In-text citation) nào là đúng?",
+      optionA: "[Nguyen, 2023, tap 1]",
+      optionB: "(Nguyen, 2023) hoặc Nguyen (2023)",
+      optionC: "<Citation: Nguyen_2023>",
+      correct: "B",
+      explanation: "Chuẩn APA 7th quy định trích dẫn họ tác giả và năm xuất bản trong ngoặc đơn dạng (Author, Year)."
+    },
+    {
+      index: 6,
+      text: "Phần Tóm tắt bài báo (Abstract) có dung lượng phổ biến khoảng bao nhiêu từ?",
+      optionA: "Từ 150 đến 250 từ.",
+      optionB: "Từ 1.000 đến 2.000 từ.",
+      optionC: "Chỉ đúng 1 câu duy nhất.",
+      correct: "A",
+      explanation: "Tóm tắt bài báo (Abstract) thường cô đọng toàn bộ nghiên cứu trong khoảng 150 - 250 từ."
+    },
+    {
+      index: 7,
+      text: "Chỉ số H-index của một nhà khoa học thể hiện điều gì?",
+      optionA: "Số năm thâm niên làm việc tại các viện nghiên cứu khoa học.",
+      optionB: "Số lượng bài báo (h) đã được trích dẫn ít nhất (h) lần, đo lường năng suất và tầm ảnh hưởng.",
+      optionC: "Số lượng đề tài nghiên cứu đã được nghiệm thu loại xuất sắc.",
+      correct: "B",
+      explanation: "H-index đánh giá đồng thời cả năng suất công bố và tầm ảnh hưởng trích dẫn của nhà khoa học."
+    },
+    {
+      index: 8,
+      text: "Phần Thảo luận (Discussion) trong bài báo khoa học có vai trò quan trọng nhất là gì?",
+      optionA: "Chép lại toàn bộ các bảng số liệu kết quả mà không đưa ra nhận xét.",
+      optionB: "Diễn giải ý nghĩa phát hiện, so sánh với các nghiên cứu trước và nêu hạn chế của đề tài.",
+      optionC: "Cung cấp thông tin tiểu sử cá nhân và sở thích của nhóm tác giả.",
+      correct: "B",
+      explanation: "Phần Discussion diễn giải ý nghĩa phát hiện, liên hệ với lý thuyết/thực nghiệm trước đó và chỉ ra giới hạn nghiên cứu."
+    },
+    {
+      index: 9,
+      text: "Hiện tượng Tự đạo văn (Self-plagiarism) xảy ra trong trường hợp nào?",
+      optionA: "Sử dụng lại các đoạn nội dung lớn từ bài viết đã công bố của chính mình mà không trích dẫn.",
+      optionB: "Trích dẫn đầy đủ và chuẩn xác các công trình trước đây của chính mình.",
+      optionC: "Đăng tải bài báo lên website cá nhân sau khi được tạp chí cho phép.",
+      correct: "A",
+      explanation: "Tự đạo văn là việc tái sử dụng nội dung công trình đã công bố của chính mình mà không có trích dẫn rõ ràng."
+    },
+    {
+      index: 10,
+      text: "Từ khóa (Keywords) trong bài báo khoa học nhằm phục vụ mục đích chính nào?",
+      optionA: "Giúp người đọc và hệ thống cơ sở dữ liệu học thuật dễ dàng tìm kiếm và lập chỉ mục bài báo.",
+      optionB: "Đếm số lượng chữ cái có trong bài báo khoa học.",
+      optionC: "Thay thế hoàn toàn cho danh mục tài liệu tham khảo ở cuối bài.",
+      correct: "A",
+      explanation: "Keywords giúp định vị, lập chỉ mục và tăng khả năng bài báo được tìm thấy trong các cơ sở dữ liệu học thuật."
+    }
+  ]
+};
+
+function seedSampleCompetitionQuestions(competitionId) {
+  const insertQuestion = db.prepare(`
+    INSERT OR IGNORE INTO competition_questions (
+      competition_id, phase, question_index, question_text, option_a, option_b, option_c, correct_option, explanation
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `);
+
+  for (const phase of [1, 2, 3]) {
+    const list = SAMPLE_COMPETITION_QUESTIONS[phase] || [];
+    for (const q of list) {
+      insertQuestion.run(
+        competitionId,
+        phase,
+        q.index,
+        q.text,
+        q.optionA,
+        q.optionB,
+        q.optionC,
+        q.correct,
+        q.explanation
+      );
+    }
+  }
+}
+
+function getOrCreateCurrentCompetition(vnDate) {
+  const { weekKey, mondayStr, sundayStr, year, weekNumber } = getWeekRange(vnDate);
+  let comp = db.prepare("SELECT * FROM weekly_competitions WHERE week_key = ?").get(weekKey);
+  if (!comp) {
+    db.prepare(`
+      INSERT INTO weekly_competitions (
+        year, week_number, week_key, start_date, end_date, topic_name, phase1_topic, phase2_topic, phase3_topic, status
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'active')
+    `).run(
+      year,
+      weekNumber,
+      weekKey,
+      mondayStr,
+      sundayStr,
+      "Phương pháp Nghiên cứu & Xử lý Dữ liệu Khoa học",
+      "Phương pháp & Thiết kế Nghiên cứu Khoa học",
+      "Thu thập & Phân tích Dữ liệu Nghiên cứu",
+      "Viết báo cáo & Trích dẫn Khoa học"
+    );
+    comp = db.prepare("SELECT * FROM weekly_competitions WHERE week_key = ?").get(weekKey);
+    seedSampleCompetitionQuestions(comp.id);
+  }
+  return comp;
+}
+
+function getCompetitionTimeState(vnDate, comp) {
+  const dayOfWeek = vnDate.getDay(); // 0 = Sun, 1 = Mon, ..., 6 = Sat
+  const hours = vnDate.getHours();
+  const minutes = vnDate.getMinutes();
+  const seconds = vnDate.getSeconds();
+  const timeInMinutes = hours * 60 + minutes;
+
+  // Sunday = Summary Day
+  if (dayOfWeek === 0) {
+    const secondsUntilMonday = ((24 - hours - 1) * 3600) + ((59 - minutes) * 60) + (60 - seconds);
+    return {
+      phase: 3,
+      isSunday: true,
+      state: "sunday_summary",
+      stateLabel: "Vinh danh & Tổng kết tuần",
+      ctaText: "Xem bảng vinh danh",
+      phaseName: "Tổng kết tuần thi đấu",
+      phaseTopic: comp.topic_name,
+      secondsUntilNext: Math.max(0, secondsUntilMonday),
+      nextStateLabel: "Tuần thi đấu mới",
+      isReady: true,
+      visible: true
+    };
+  }
+
+  const phase = getPhaseForDayOfWeek(dayOfWeek);
+  const phaseTopic = phase === 1 ? comp.phase1_topic : phase === 2 ? comp.phase2_topic : comp.phase3_topic;
+  const phaseDays = phase === 1 ? "Thứ Hai – Thứ Ba" : phase === 2 ? "Thứ Tư – Thứ Năm" : "Thứ Sáu – Thứ Bảy";
+  const phaseName = `Giai đoạn ${phase} (${phaseDays})`;
+
+  // Check if phase has 10 questions
+  const qCount = db.prepare("SELECT count(*) as c FROM competition_questions WHERE competition_id = ? AND phase = ?").get(comp.id, phase)?.c || 0;
+  const isReady = qCount >= 10;
+
+  let state = "reviewing";
+  let stateLabel = "Đang tổng kết";
+  let ctaText = "Xem bảng xếp hạng";
+  let secondsUntilNext = 0;
+  let nextStateLabel = "Sắp mở cổng (16:00)";
+
+  // 19:00 – 23:00 (1140 to 1380 mins): Đang mở cổng
+  if (timeInMinutes >= 19 * 60 && timeInMinutes < 23 * 60) {
+    state = "open";
+    stateLabel = "Đang mở cổng (19:00 - 23:00)";
+    ctaText = "Tham gia ngay";
+    secondsUntilNext = ((23 * 60 - timeInMinutes - 1) * 60) + (60 - seconds);
+    nextStateLabel = "Đóng cổng & Tổng kết (23:00)";
+  }
+  // 16:00 – 19:00 (960 to 1140 mins): Sắp mở cổng
+  else if (timeInMinutes >= 16 * 60 && timeInMinutes < 19 * 60) {
+    state = "upcoming";
+    stateLabel = "Sắp mở cổng thi đấu";
+    ctaText = "Xem thể lệ & Chuẩn bị";
+    secondsUntilNext = ((19 * 60 - timeInMinutes - 1) * 60) + (60 - seconds);
+    nextStateLabel = "Mở cổng trả lời (19:00)";
+  }
+  // 23:00 – 16:00 hôm sau: Đang tổng kết
+  else {
+    state = "reviewing";
+    stateLabel = "Đang tổng kết & Xếp hạng";
+    ctaText = "Xem bảng xếp hạng";
+    if (hours >= 23) {
+      secondsUntilNext = ((24 - hours + 16 - 1) * 3600) + ((59 - minutes) * 60) + (60 - seconds);
+    } else {
+      secondsUntilNext = ((16 - hours - 1) * 3600) + ((59 - minutes) * 60) + (60 - seconds);
+    }
+    nextStateLabel = "Sắp mở cổng (16:00)";
+  }
+
+  return {
+    phase,
+    isSunday: false,
+    state: isReady ? state : "not_ready",
+    stateLabel,
+    ctaText,
+    phaseName,
+    phaseTopic,
+    secondsUntilNext: Math.max(0, secondsUntilNext),
+    nextStateLabel,
+    isReady,
+    questionsCount: qCount,
+    visible: isReady
+  };
+}
+
+function awardCompetitionSundayRewards(competitionId) {
+  try {
+    const comp = db.prepare("SELECT * FROM weekly_competitions WHERE id = ?").get(competitionId);
+    if (!comp) return { error: "Không tìm thấy tuần thi đấu." };
+
+    // Get all participants who have played at least 1 phase
+    const participants = db.prepare(`
+      SELECT 
+        u.id as userId,
+        u.display_name as displayName,
+        u.email,
+        u.role,
+        count(DISTINCT r.phase) as phasesParticipated,
+        sum(r.best_score) as totalStars,
+        min(r.updated_at) as firstCompletedAt
+      FROM users u
+      JOIN competition_phase_results r ON u.id = r.user_id
+      WHERE r.competition_id = ?
+      GROUP BY u.id
+      ORDER BY totalStars DESC, firstCompletedAt ASC
+    `).all(competitionId);
+
+    if (!participants.length) {
+      return { awarded: 0, message: "Chưa có thành viên nào tham gia tuần này." };
+    }
+
+    const insertReward = db.prepare(`
+      INSERT OR IGNORE INTO competition_weekly_rewards (
+        competition_id, user_id, rank, total_stars, phases_participated, participation_bonus, activity_points_awarded, shields_awarded
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+
+    const insertEvent = db.prepare(`
+      INSERT INTO contribution_events (
+        user_id, event_type, points, reference_type, reference_id, reason
+      ) VALUES (?, ?, ?, ?, ?, ?)
+    `);
+
+    let awardedCount = 0;
+
+    db.exec("BEGIN");
+    try {
+      for (let i = 0; i < participants.length; i++) {
+        const p = participants[i];
+        const rank = i + 1;
+
+        // Check if already awarded
+        const existing = db.prepare("SELECT id FROM competition_weekly_rewards WHERE competition_id = ? AND user_id = ?").get(competitionId, p.userId);
+        if (existing) continue;
+
+        // Participation bonus
+        let partBonus = 1;
+        if (p.phasesParticipated === 2) partBonus = 3;
+        else if (p.phasesParticipated >= 3) partBonus = 5;
+
+        // Rank base reward
+        let rankActivityPoints = 5;
+        let shields = 1;
+
+        if (rank === 1) {
+          rankActivityPoints = 20;
+          shields = 2;
+        } else if (rank === 2) {
+          rankActivityPoints = 18;
+          shields = 2;
+        } else if (rank === 3) {
+          rankActivityPoints = 15;
+          shields = 2;
+        } else if (rank <= 10) {
+          rankActivityPoints = 10;
+          shields = 1;
+        }
+
+        const totalPointsToAward = rankActivityPoints + partBonus;
+
+        // Add activity points
+        insertEvent.run(
+          p.userId,
+          "competition_reward",
+          rankActivityPoints,
+          "competition",
+          competitionId,
+          `Thưởng Top ${rank} Hoạt động thi đua tuần (${comp.week_key}): +${rankActivityPoints}đ, +${shields} khiên bảo vệ chuỗi`
+        );
+
+        if (partBonus > 0) {
+          insertEvent.run(
+            p.userId,
+            "competition_phase_bonus",
+            partBonus,
+            "competition",
+            competitionId,
+            `Thưởng tham gia ${p.phasesParticipated}/3 giai đoạn thi đua tuần (${comp.week_key}): +${partBonus}đ hoạt động`
+          );
+        }
+
+        // Add shields
+        db.prepare(`
+          INSERT INTO user_streak_shields (user_id, shields, last_milestone_rewarded, updated_at)
+          VALUES (?, ?, 0, CURRENT_TIMESTAMP)
+          ON CONFLICT(user_id) DO UPDATE SET 
+            shields = MIN(3, shields + ?),
+            updated_at = CURRENT_TIMESTAMP
+        `).run(p.userId, shields, shields);
+
+        insertReward.run(
+          competitionId,
+          p.userId,
+          rank,
+          p.totalStars,
+          p.phasesParticipated,
+          partBonus,
+          totalPointsToAward,
+          shields
+        );
+
+        awardedCount++;
+      }
+
+      db.prepare("UPDATE weekly_competitions SET status = 'concluded' WHERE id = ?").run(competitionId);
+      db.exec("COMMIT");
+      console.log(`[Weekly Competition] Đã tổng kết và trao thưởng cho ${awardedCount} thành viên tuần ${comp.week_key}`);
+      return { awarded: awardedCount, ok: true };
+    } catch (e) {
+      db.exec("ROLLBACK");
+      throw e;
+    }
+  } catch (err) {
+    console.error("Lỗi trao thưởng thi đua tuần:", err);
+    return { error: err.message };
+  }
+}
 
 async function api(request, response, url) {
   const pathName = url.pathname;
@@ -2345,6 +3051,947 @@ async function api(request, response, url) {
     );
     return json(response, 200, { ok: true });
   }
+
+  // --- WEEKLY COMPETITION APIS ---
+  function updateUserPhaseBestScore(userId, competitionId, phase, score, sessionId) {
+    const existing = db.prepare(
+      "SELECT * FROM competition_phase_results WHERE user_id = ? AND competition_id = ? AND phase = ?"
+    ).get(userId, competitionId, phase);
+
+    if (existing) {
+      const newBest = Math.max(existing.best_score, score);
+      const newAttempts = existing.attempts_used + 1;
+      const bestSessionId = (score >= existing.best_score) ? sessionId : existing.best_session_id;
+
+      db.prepare(`
+        UPDATE competition_phase_results 
+        SET best_score = ?, attempts_used = ?, best_session_id = ?, updated_at = CURRENT_TIMESTAMP
+        WHERE id = ?
+      `).run(newBest, newAttempts, bestSessionId, existing.id);
+      return newBest;
+    } else {
+      db.prepare(`
+        INSERT INTO competition_phase_results (user_id, competition_id, phase, best_session_id, best_score, attempts_used)
+        VALUES (?, ?, ?, ?, ?, 1)
+      `).run(userId, competitionId, phase, sessionId, score);
+      return score;
+    }
+  }
+
+  if (method === "GET" && pathName === "/api/competition/status") {
+    const vnNow = getVietnamNow();
+    const comp = getOrCreateCurrentCompetition(vnNow);
+    const timeState = getCompetitionTimeState(vnNow, comp);
+    const user = sessionFrom(request);
+
+    let userStatus = {
+      authenticated: false,
+      attemptsUsed: 0,
+      maxAttempts: 2,
+      canPlay: false,
+      bestScore: 0,
+      hasPlayedPhase: false
+    };
+
+    if (user) {
+      const phaseToQuery = timeState.phase || 1;
+      const phaseRes = db.prepare(
+        "SELECT best_score, attempts_used FROM competition_phase_results WHERE user_id = ? AND competition_id = ? AND phase = ?"
+      ).get(user.id, comp.id, phaseToQuery);
+
+      const attemptsUsed = phaseRes?.attempts_used || 0;
+      const bestScore = phaseRes?.best_score || 0;
+      const hasPlayedPhase = attemptsUsed > 0;
+      const canPlay = (timeState.state === "open" || isSuperAdmin(user)) && timeState.isReady && attemptsUsed < 2;
+
+      userStatus = {
+        authenticated: true,
+        attemptsUsed,
+        maxAttempts: 2,
+        canPlay,
+        bestScore,
+        hasPlayedPhase
+      };
+    }
+
+    return json(response, 200, {
+      ok: true,
+      serverTime: vnNow.toISOString(),
+      serverTimestampMs: getVietnamTimestampMs(),
+      isSimulated: simulatedTimeOffsetMs !== 0,
+      week: {
+        id: comp.id,
+        weekKey: comp.week_key,
+        startDate: comp.start_date,
+        endDate: comp.end_date,
+        topicName: comp.topic_name,
+        phase1Topic: comp.phase1_topic,
+        phase2Topic: comp.phase2_topic,
+        phase3Topic: comp.phase3_topic,
+        status: comp.status
+      },
+      ...timeState,
+      userStatus
+    });
+  }
+
+  if (method === "GET" && pathName === "/api/competition/overview") {
+    const vnNow = getVietnamNow();
+    const comp = getOrCreateCurrentCompetition(vnNow);
+    const timeState = getCompetitionTimeState(vnNow, comp);
+    const user = sessionFrom(request);
+
+    let userSummary = null;
+    if (user) {
+      const p1 = db.prepare("SELECT best_score FROM competition_phase_results WHERE user_id = ? AND competition_id = ? AND phase = 1").get(user.id, comp.id)?.best_score || 0;
+      const p2 = db.prepare("SELECT best_score FROM competition_phase_results WHERE user_id = ? AND competition_id = ? AND phase = 2").get(user.id, comp.id)?.best_score || 0;
+      const p3 = db.prepare("SELECT best_score FROM competition_phase_results WHERE user_id = ? AND competition_id = ? AND phase = 3").get(user.id, comp.id)?.best_score || 0;
+      
+      let phasesParticipated = 0;
+      if (p1 > 0) phasesParticipated++;
+      if (p2 > 0) phasesParticipated++;
+      if (p3 > 0) phasesParticipated++;
+
+      let bonusPoints = 0;
+      if (phasesParticipated === 1) bonusPoints = 1;
+      else if (phasesParticipated === 2) bonusPoints = 3;
+      else if (phasesParticipated >= 3) bonusPoints = 5;
+
+      const weeklyTotal = p1 + p2 + p3;
+
+      userSummary = {
+        phase1Score: p1,
+        phase2Score: p2,
+        phase3Score: p3,
+        weeklyTotal,
+        phasesParticipated,
+        bonusPoints
+      };
+    }
+
+    return json(response, 200, {
+      ok: true,
+      week: comp,
+      timeState,
+      userSummary
+    });
+  }
+
+  if (method === "GET" && pathName === "/api/competition/leaderboard") {
+    const vnNow = getVietnamNow();
+    const comp = getOrCreateCurrentCompetition(vnNow);
+    const timeState = getCompetitionTimeState(vnNow, comp);
+    const user = sessionFrom(request);
+
+    const phaseParam = url.searchParams.get("phase") || (timeState.isSunday ? "week" : String(timeState.phase || 1));
+
+    let results = [];
+    if (phaseParam === "week") {
+      results = db.prepare(`
+        SELECT 
+          u.id as userId,
+          u.display_name as displayName,
+          u.email,
+          u.avatar,
+          u.role,
+          coalesce(s.shields, 0) as shields,
+          sum(r.best_score) as totalScore,
+          count(DISTINCT r.phase) as phasesCount,
+          min(r.updated_at) as firstCompletedAt
+        FROM users u
+        JOIN competition_phase_results r ON u.id = r.user_id
+        LEFT JOIN user_streak_shields s ON s.user_id = u.id
+        WHERE r.competition_id = ?
+        GROUP BY u.id
+        ORDER BY totalScore DESC, firstCompletedAt ASC
+      `).all(comp.id);
+    } else {
+      const phaseNum = Math.min(3, Math.max(1, Number(phaseParam) || 1));
+      results = db.prepare(`
+        SELECT 
+          u.id as userId,
+          u.display_name as displayName,
+          u.email,
+          u.avatar,
+          u.role,
+          coalesce(s.shields, 0) as shields,
+          r.best_score as totalScore,
+          r.attempts_used as attemptsUsed,
+          r.updated_at as completedAt
+        FROM users u
+        JOIN competition_phase_results r ON u.id = r.user_id
+        LEFT JOIN user_streak_shields s ON s.user_id = u.id
+        WHERE r.competition_id = ? AND r.phase = ?
+        ORDER BY r.best_score DESC, r.updated_at ASC
+      `).all(comp.id, phaseNum);
+    }
+
+    const todayDate = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Ho_Chi_Minh" }));
+    const formatted = results.map((row, idx) => {
+      const streakInfo = calculateUserStreak(row.userId, todayDate);
+      return {
+        rank: idx + 1,
+        userId: row.userId,
+        displayName: row.displayName,
+        avatar: row.avatar || getAvatarEmoji(row.displayName),
+        role: row.role,
+        streak: streakInfo.streak,
+        streakTier: streakInfo.streakTier,
+        shields: row.shields,
+        score: row.totalScore,
+        phasesCount: row.phasesCount,
+        isCurrentUser: Boolean(user && user.id === row.userId)
+      };
+    });
+
+    const top10 = formatted.slice(0, 10);
+    let currentUserEntry = null;
+
+    if (user) {
+      const myIndex = formatted.findIndex(r => r.userId === user.id);
+      if (myIndex !== -1) {
+        const myRank = myIndex + 1;
+        const myItem = formatted[myIndex];
+        currentUserEntry = {
+          rank: myRank,
+          userId: myItem.userId,
+          displayName: myItem.displayName,
+          initials: myItem.initials || myItem.displayName?.slice(0, 2) || "U",
+          score: myItem.score,
+          isTop10: myRank <= 10,
+          isTop11Plus: myRank > 10,
+          label: myRank > 10 ? "Top 11+" : `#${myRank}`
+        };
+      }
+    }
+
+    let phaseTitle = "Toàn tuần: " + (comp.topic_name || "Nghiên cứu Khoa học");
+    if (phaseParam === "1") phaseTitle = "Giai đoạn 1 (Thứ 2 - Thứ 3): " + (comp.phase1_topic || "Phương pháp & Thiết kế");
+    if (phaseParam === "2") phaseTitle = "Giai đoạn 2 (Thứ 4 - Thứ 5): " + (comp.phase2_topic || "Thu thập & Phân tích");
+    if (phaseParam === "3") phaseTitle = "Giai đoạn 3 (Thứ 6 - Thứ 7): " + (comp.phase3_topic || "Báo cáo & Trích dẫn");
+
+    return json(response, 200, {
+      ok: true,
+      phase: phaseParam,
+      phaseTitle,
+      totalParticipants: formatted.length,
+      top10,
+      currentUserEntry,
+      currentUserRank: currentUserEntry,
+      isLocked: (phaseParam === "week") ? Boolean(timeState.isSunday) : (timeState.phase > Number(phaseParam) || Boolean(timeState.isSunday))
+    });
+  }
+
+  if (method === "POST" && pathName === "/api/competition/session/start") {
+    const user = requireUser(request, response);
+    if (!user) return;
+    if (!requireCsrf(request, response, user)) return;
+
+    const vnNow = getVietnamNow();
+    const comp = getOrCreateCurrentCompetition(vnNow);
+    const timeState = getCompetitionTimeState(vnNow, comp);
+
+    if (timeState.state !== "open" && !isSuperAdmin(user)) {
+      return error(response, 403, "Cổng thi đấu hiện không mở. Khung giờ thi đấu là 19h00 - 23h00.");
+    }
+
+    const phase = timeState.phase || 1;
+    const questions = db.prepare(
+      "SELECT id, question_index, question_text, option_a, option_b, option_c FROM competition_questions WHERE competition_id = ? AND phase = ? ORDER BY question_index ASC"
+    ).all(comp.id, phase);
+
+    if (questions.length < 10) {
+      return error(response, 400, "Bộ câu hỏi cho giai đoạn này chưa sẵn sàng.");
+    }
+
+    const completedSessions = db.prepare(
+      "SELECT count(*) as c FROM competition_sessions WHERE user_id = ? AND competition_id = ? AND phase = ? AND status IN ('completed', 'expired')"
+    ).get(user.id, comp.id, phase)?.c || 0;
+
+    if (completedSessions >= 2 && !isSuperAdmin(user)) {
+      return error(response, 400, "Bạn đã sử dụng tối đa 2 lượt thi trong giai đoạn này.");
+    }
+
+    let activeSession = db.prepare(
+      "SELECT * FROM competition_sessions WHERE user_id = ? AND competition_id = ? AND phase = ? AND status = 'in_progress'"
+    ).get(user.id, comp.id, phase);
+
+    const nowMs = getVietnamTimestampMs();
+
+    if (activeSession) {
+      const elapsed = Math.floor((nowMs - activeSession.server_start_timestamp_ms) / 1000);
+      const remaining = 600 - elapsed - activeSession.accumulated_penalty_seconds;
+      if (remaining <= 0) {
+        db.prepare("UPDATE competition_sessions SET status = 'expired', remaining_seconds = 0, finished_at = CURRENT_TIMESTAMP WHERE id = ?").run(activeSession.id);
+        activeSession = null;
+      }
+    }
+
+    if (!activeSession) {
+      if (completedSessions >= 2 && !isSuperAdmin(user)) {
+        return error(response, 400, "Bạn đã sử dụng tối đa 2 lượt thi trong giai đoạn này.");
+      }
+
+      const sessionToken = randomToken();
+      const attemptNumber = completedSessions + 1;
+
+      db.prepare(`
+        INSERT INTO competition_sessions (
+          session_token, user_id, competition_id, phase, attempt_number, server_start_timestamp_ms, initial_seconds, remaining_seconds, status
+        ) VALUES (?, ?, ?, ?, ?, ?, 600, 600, 'in_progress')
+      `).run(sessionToken, user.id, comp.id, phase, attemptNumber, nowMs);
+
+      activeSession = db.prepare("SELECT * FROM competition_sessions WHERE session_token = ?").get(sessionToken);
+    }
+
+    const currentQIndex = activeSession.current_question_index || 1;
+    const currentQ = questions.find(q => q.question_index === currentQIndex) || questions[0];
+
+    const elapsed = Math.floor((nowMs - activeSession.server_start_timestamp_ms) / 1000);
+    const remainingSeconds = Math.max(0, 600 - elapsed - activeSession.accumulated_penalty_seconds);
+
+    const answerRow = db.prepare("SELECT tries_count, is_correct, is_finalized, history_json FROM competition_answers WHERE session_id = ? AND question_index = ?").get(activeSession.id, currentQ.question_index);
+
+    const formattedQuestions = questions.map(q => ({
+      id: q.id,
+      questionIndex: q.question_index,
+      questionText: q.question_text,
+      optionA: q.option_a,
+      optionB: q.option_b,
+      optionC: q.option_c
+    }));
+
+    return json(response, 200, {
+      ok: true,
+      sessionToken: activeSession.session_token,
+      phase,
+      phaseName: timeState.phaseName,
+      phaseTopic: timeState.phaseTopic,
+      attemptNumber: activeSession.attempt_number,
+      totalQuestions: 10,
+      currentQuestionIndex: currentQ.question_index,
+      remainingSeconds,
+      durationSeconds: remainingSeconds,
+      initialSeconds: 600,
+      correctCount: activeSession.correct_count,
+      firstTryCorrectCount: activeSession.first_try_correct_count,
+      correctPoints: activeSession.correct_points,
+      firstTryBonus: activeSession.first_try_bonus,
+      currentTriesCount: answerRow?.tries_count || 0,
+      disabledOptions: answerRow ? JSON.parse(answerRow.history_json || "[]") : [],
+      questions: formattedQuestions,
+      question: {
+        id: currentQ.id,
+        index: currentQ.question_index,
+        text: currentQ.question_text,
+        optionA: currentQ.option_a,
+        optionB: currentQ.option_b,
+        optionC: currentQ.option_c
+      }
+    });
+  }
+
+  if (method === "POST" && pathName === "/api/competition/session/answer") {
+    const user = requireUser(request, response);
+    if (!user) return;
+    if (!requireCsrf(request, response, user)) return;
+
+    const body = await readJSON(request);
+    const { sessionToken, selectedOption } = body;
+    let questionIndex = body.questionIndex;
+
+    if (!sessionToken || !selectedOption) {
+      return error(response, 400, "Thông tin câu trả lời không hợp lệ.");
+    }
+
+    const session = db.prepare("SELECT * FROM competition_sessions WHERE session_token = ? AND user_id = ?").get(sessionToken, user.id);
+    if (!session) return error(response, 404, "Không tìm thấy phiên thi đấu.");
+
+    if (!questionIndex && body.questionId) {
+      const qRow = db.prepare("SELECT question_index FROM competition_questions WHERE id = ?").get(body.questionId);
+      if (qRow) questionIndex = qRow.question_index;
+    }
+    if (!questionIndex) {
+      questionIndex = session.current_question_index || 1;
+    }
+
+    if (session.status !== "in_progress") {
+      const resData = {
+        totalScore: session.total_score,
+        correctPoints: session.correct_points,
+        firstTryBonus: session.first_try_bonus,
+        firstTryBonusPoints: session.first_try_bonus,
+        timePoints: session.time_points,
+        remainingSeconds: session.remaining_seconds,
+        correctCount: session.correct_count,
+        correctAnswersCount: session.correct_count,
+        firstTryCount: session.first_try_correct_count,
+        phaseBestScore: session.total_score
+      };
+      return json(response, 200, {
+        sessionCompleted: true,
+        isQuizCompleted: true,
+        message: "Phiên thi đấu đã kết thúc.",
+        result: resData,
+        finalResult: resData
+      });
+    }
+
+    const nowMs = getVietnamTimestampMs();
+    const elapsed = Math.floor((nowMs - session.server_start_timestamp_ms) / 1000);
+    let effectiveRemaining = 600 - elapsed - session.accumulated_penalty_seconds;
+
+    if (effectiveRemaining <= 0 || selectedOption === "TIMEOUT") {
+      effectiveRemaining = 0;
+      const finalScore = session.correct_points + session.first_try_bonus;
+      db.prepare(`
+        UPDATE competition_sessions 
+        SET status = 'expired', remaining_seconds = 0, time_points = 0, total_score = ?, finished_at = CURRENT_TIMESTAMP 
+        WHERE id = ?
+      `).run(finalScore, session.id);
+
+      const bestScore = updateUserPhaseBestScore(user.id, session.competition_id, session.phase, finalScore, session.id);
+
+      const resData = {
+        totalScore: finalScore,
+        correctPoints: session.correct_points,
+        firstTryBonus: session.first_try_bonus,
+        firstTryBonusPoints: session.first_try_bonus,
+        timePoints: 0,
+        remainingSeconds: 0,
+        correctCount: session.correct_count,
+        correctAnswersCount: session.correct_count,
+        firstTryCount: session.first_try_correct_count,
+        bestScore,
+        phaseBestScore: bestScore
+      };
+
+      return json(response, 200, {
+        isCorrect: false,
+        sessionCompleted: true,
+        isQuizCompleted: true,
+        timeExpired: true,
+        remainingSeconds: 0,
+        remainingTime: 0,
+        result: resData,
+        finalResult: resData
+      });
+    }
+
+    const question = db.prepare(
+      "SELECT * FROM competition_questions WHERE competition_id = ? AND phase = ? AND question_index = ?"
+    ).get(session.competition_id, session.phase, questionIndex);
+
+    if (!question) return error(response, 404, "Không tìm thấy câu hỏi.");
+
+    let answerRow = db.prepare(
+      "SELECT * FROM competition_answers WHERE session_id = ? AND question_index = ?"
+    ).get(session.id, questionIndex);
+
+    if (!answerRow) {
+      db.prepare(`
+        INSERT INTO competition_answers (session_id, question_id, question_index, tries_count, is_correct, history_json)
+        VALUES (?, ?, ?, 0, 0, '[]')
+      `).run(session.id, question.id, questionIndex);
+      answerRow = db.prepare("SELECT * FROM competition_answers WHERE session_id = ? AND question_index = ?").get(session.id, questionIndex);
+    }
+
+    if (answerRow.is_finalized) {
+      return error(response, 400, "Câu hỏi này đã hoàn thành.");
+    }
+
+    const history = JSON.parse(answerRow.history_json || "[]");
+    if (history.includes(selectedOption)) {
+      return error(response, 400, "Bạn đã chọn đáp án này rồi.");
+    }
+
+    history.push(selectedOption);
+    const triesCount = answerRow.tries_count + 1;
+    const isCorrect = (selectedOption === question.correct_option);
+
+    if (isCorrect) {
+      const isFirstTry = (triesCount === 1) ? 1 : 0;
+      const addCorrectPts = 40;
+      const addBonusPts = isFirstTry ? 10 : 0;
+      const pointsEarned = addCorrectPts + addBonusPts;
+
+      const newCorrectPoints = session.correct_points + addCorrectPts;
+      const newFirstTryBonus = session.first_try_bonus + addBonusPts;
+      const newCorrectCount = session.correct_count + 1;
+      const newFirstTryCount = session.first_try_correct_count + isFirstTry;
+
+      db.prepare(`
+        UPDATE competition_answers 
+        SET tries_count = ?, is_correct = 1, is_first_try = ?, history_json = ?, is_finalized = 1
+        WHERE id = ?
+      `).run(triesCount, isFirstTry, JSON.stringify(history), answerRow.id);
+
+      const nextQIndex = questionIndex + 1;
+
+      if (nextQIndex > 10) {
+        const timeBonus = effectiveRemaining;
+        const totalScore = newCorrectPoints + newFirstTryBonus + timeBonus;
+
+        db.prepare(`
+          UPDATE competition_sessions
+          SET current_question_index = 10,
+              correct_count = ?,
+              first_try_correct_count = ?,
+              correct_points = ?,
+              first_try_bonus = ?,
+              time_points = ?,
+              total_score = ?,
+              remaining_seconds = ?,
+              status = 'completed',
+              finished_at = CURRENT_TIMESTAMP
+          WHERE id = ?
+        `).run(newCorrectCount, newFirstTryCount, newCorrectPoints, newFirstTryBonus, timeBonus, totalScore, effectiveRemaining, session.id);
+
+        const bestScore = updateUserPhaseBestScore(user.id, session.competition_id, session.phase, totalScore, session.id);
+
+        const resData = {
+          totalScore,
+          correctPoints: newCorrectPoints,
+          firstTryBonus: newFirstTryBonus,
+          firstTryBonusPoints: newFirstTryBonus,
+          timePoints: timeBonus,
+          remainingSeconds: effectiveRemaining,
+          correctCount: newCorrectCount,
+          correctAnswersCount: newCorrectCount,
+          firstTryCount: newFirstTryCount,
+          bestScore,
+          phaseBestScore: bestScore
+        };
+
+        return json(response, 200, {
+          isCorrect: true,
+          isFirstTry: Boolean(isFirstTry),
+          isFirstTryBonus: Boolean(isFirstTry),
+          pointsEarned,
+          correctOption: question.correct_option,
+          explanation: question.explanation,
+          sessionCompleted: true,
+          isQuizCompleted: true,
+          remainingSeconds: effectiveRemaining,
+          remainingTime: effectiveRemaining,
+          result: resData,
+          finalResult: resData
+        });
+      } else {
+        db.prepare(`
+          UPDATE competition_sessions
+          SET current_question_index = ?,
+              correct_count = ?,
+              first_try_correct_count = ?,
+              correct_points = ?,
+              first_try_bonus = ?,
+              remaining_seconds = ?
+          WHERE id = ?
+        `).run(nextQIndex, newCorrectCount, newFirstTryCount, newCorrectPoints, newFirstTryBonus, effectiveRemaining, session.id);
+
+        const nextQ = db.prepare(
+          "SELECT id, question_index, question_text, option_a, option_b, option_c FROM competition_questions WHERE competition_id = ? AND phase = ? AND question_index = ?"
+        ).get(session.competition_id, session.phase, nextQIndex);
+
+        return json(response, 200, {
+          isCorrect: true,
+          isFirstTry: Boolean(isFirstTry),
+          isFirstTryBonus: Boolean(isFirstTry),
+          pointsEarned,
+          correctOption: question.correct_option,
+          explanation: question.explanation,
+          sessionCompleted: false,
+          isQuizCompleted: false,
+          currentQuestionIndex: nextQIndex,
+          remainingSeconds: effectiveRemaining,
+          remainingTime: effectiveRemaining,
+          correctCount: newCorrectCount,
+          firstTryCorrectCount: newFirstTryCount,
+          correctPoints: newCorrectPoints,
+          firstTryBonus: newFirstTryBonus,
+          nextQuestion: nextQ ? {
+            id: nextQ.id,
+            index: nextQ.question_index,
+            text: nextQ.question_text,
+            optionA: nextQ.option_a,
+            optionB: nextQ.option_b,
+            optionC: nextQ.option_c
+          } : null
+        });
+      }
+    } else {
+      // WRONG ANSWER
+      const penalty = 30;
+      const newPenaltyTotal = session.accumulated_penalty_seconds + penalty;
+      effectiveRemaining = Math.max(0, effectiveRemaining - penalty);
+
+      if (effectiveRemaining === 0) {
+        db.prepare(`
+          UPDATE competition_answers 
+          SET tries_count = ?, history_json = ?, is_finalized = 1, penalty_seconds = penalty_seconds + ?
+          WHERE id = ?
+        `).run(triesCount, JSON.stringify(history), penalty, answerRow.id);
+
+        const finalScore = session.correct_points + session.first_try_bonus;
+        db.prepare(`
+          UPDATE competition_sessions 
+          SET accumulated_penalty_seconds = ?,
+              remaining_seconds = 0,
+              time_points = 0,
+              total_score = ?,
+              status = 'expired',
+              finished_at = CURRENT_TIMESTAMP
+          WHERE id = ?
+        `).run(newPenaltyTotal, finalScore, session.id);
+
+        const bestScore = updateUserPhaseBestScore(user.id, session.competition_id, session.phase, finalScore, session.id);
+
+        const resData = {
+          totalScore: finalScore,
+          correctPoints: session.correct_points,
+          firstTryBonus: session.first_try_bonus,
+          firstTryBonusPoints: session.first_try_bonus,
+          timePoints: 0,
+          remainingSeconds: 0,
+          correctCount: session.correct_count,
+          correctAnswersCount: session.correct_count,
+          firstTryCount: session.first_try_correct_count,
+          bestScore,
+          phaseBestScore: bestScore
+        };
+
+        return json(response, 200, {
+          isCorrect: false,
+          triesCount,
+          penaltySeconds: penalty,
+          remainingSeconds: 0,
+          remainingTime: 0,
+          sessionCompleted: true,
+          isQuizCompleted: true,
+          timeExpired: true,
+          result: resData,
+          finalResult: resData
+        });
+      }
+
+      if (triesCount < 3) {
+        db.prepare(`
+          UPDATE competition_answers 
+          SET tries_count = ?, history_json = ?, penalty_seconds = penalty_seconds + ?
+          WHERE id = ?
+        `).run(triesCount, JSON.stringify(history), penalty, answerRow.id);
+
+        db.prepare(`
+          UPDATE competition_sessions 
+          SET accumulated_penalty_seconds = ?,
+              remaining_seconds = ?
+          WHERE id = ?
+        `).run(newPenaltyTotal, effectiveRemaining, session.id);
+
+        return json(response, 200, {
+          isCorrect: false,
+          triesCount,
+          penaltySeconds: penalty,
+          remainingSeconds: effectiveRemaining,
+          remainingTime: effectiveRemaining,
+          allowRetry: true,
+          disabledOptions: history,
+          sessionCompleted: false,
+          isQuizCompleted: false
+        });
+      } else {
+        db.prepare(`
+          UPDATE competition_answers 
+          SET tries_count = ?, history_json = ?, is_finalized = 1, penalty_seconds = penalty_seconds + ?
+          WHERE id = ?
+        `).run(triesCount, JSON.stringify(history), penalty, answerRow.id);
+
+        const nextQIndex = questionIndex + 1;
+
+        if (nextQIndex > 10) {
+          const timeBonus = effectiveRemaining;
+          const totalScore = session.correct_points + session.first_try_bonus + timeBonus;
+
+          db.prepare(`
+            UPDATE competition_sessions 
+            SET current_question_index = 10,
+                accumulated_penalty_seconds = ?,
+                time_points = ?,
+                total_score = ?,
+                remaining_seconds = ?,
+                status = 'completed',
+                finished_at = CURRENT_TIMESTAMP
+            WHERE id = ?
+          `).run(newPenaltyTotal, timeBonus, totalScore, effectiveRemaining, session.id);
+
+          const bestScore = updateUserPhaseBestScore(user.id, session.competition_id, session.phase, totalScore, session.id);
+
+          const resData = {
+            totalScore,
+            correctPoints: session.correct_points,
+            firstTryBonus: session.first_try_bonus,
+            firstTryBonusPoints: session.first_try_bonus,
+            timePoints: timeBonus,
+            remainingSeconds: effectiveRemaining,
+            correctCount: session.correct_count,
+            correctAnswersCount: session.correct_count,
+            firstTryCount: session.first_try_correct_count,
+            bestScore,
+            phaseBestScore: bestScore
+          };
+
+          return json(response, 200, {
+            isCorrect: false,
+            triesCount: 3,
+            penaltySeconds: penalty,
+            correctOption: question.correct_option,
+            explanation: question.explanation,
+            sessionCompleted: true,
+            isQuizCompleted: true,
+            remainingSeconds: effectiveRemaining,
+            remainingTime: effectiveRemaining,
+            result: resData,
+            finalResult: resData
+          });
+        } else {
+          db.prepare(`
+            UPDATE competition_sessions 
+            SET current_question_index = ?,
+                accumulated_penalty_seconds = ?,
+                remaining_seconds = ?
+            WHERE id = ?
+          `).run(nextQIndex, newPenaltyTotal, effectiveRemaining, session.id);
+
+          const nextQ = db.prepare(
+            "SELECT id, question_index, question_text, option_a, option_b, option_c FROM competition_questions WHERE competition_id = ? AND phase = ? AND question_index = ?"
+          ).get(session.competition_id, session.phase, nextQIndex);
+
+          return json(response, 200, {
+            isCorrect: false,
+            triesCount: 3,
+            penaltySeconds: penalty,
+            isLocked: true,
+            correctOption: question.correct_option,
+            explanation: question.explanation,
+            sessionCompleted: false,
+            isQuizCompleted: false,
+            currentQuestionIndex: nextQIndex,
+            remainingSeconds: effectiveRemaining,
+            remainingTime: effectiveRemaining,
+            nextQuestion: nextQ ? {
+              id: nextQ.id,
+              index: nextQ.question_index,
+              text: nextQ.question_text,
+              optionA: nextQ.option_a,
+              optionB: nextQ.option_b,
+              optionC: nextQ.option_c
+            } : null
+          });
+        }
+      }
+    }
+  }
+
+  if (method === "POST" && pathName === "/api/competition/session/heartbeat") {
+    const user = requireUser(request, response);
+    if (!user) return;
+    const { sessionToken } = await readJSON(request);
+    const session = db.prepare("SELECT * FROM competition_sessions WHERE session_token = ? AND user_id = ?").get(sessionToken, user.id);
+    if (!session) return error(response, 404, "Không tìm thấy phiên.");
+    
+    const nowMs = getVietnamTimestampMs();
+    const elapsed = Math.floor((nowMs - session.server_start_timestamp_ms) / 1000);
+    const remaining = Math.max(0, 600 - elapsed - session.accumulated_penalty_seconds);
+    return json(response, 200, { ok: true, remainingSeconds: remaining, status: session.status });
+  }
+
+  // --- ADMIN COMPETITION APIS ---
+  if (method === "GET" && pathName === "/api/admin/competition/overview") {
+    const user = requireUser(request, response);
+    if (!user || !isSuperAdmin(user)) return user ? error(response, 403, "Chỉ TA/Admin mới có quyền này.") : undefined;
+
+    const vnNow = getVietnamNow();
+    const comp = getOrCreateCurrentCompetition(vnNow);
+    const timeState = getCompetitionTimeState(vnNow, comp);
+
+    const qCounts = {
+      phase1: db.prepare("SELECT count(*) as c FROM competition_questions WHERE competition_id = ? AND phase = 1").get(comp.id)?.c || 0,
+      phase2: db.prepare("SELECT count(*) as c FROM competition_questions WHERE competition_id = ? AND phase = 2").get(comp.id)?.c || 0,
+      phase3: db.prepare("SELECT count(*) as c FROM competition_questions WHERE competition_id = ? AND phase = 3").get(comp.id)?.c || 0
+    };
+
+    const participantsCount = db.prepare(
+      "SELECT count(DISTINCT user_id) as c FROM competition_phase_results WHERE competition_id = ?"
+    ).get(comp.id)?.c || 0;
+
+    const totalSessions = db.prepare(
+      "SELECT count(*) as c FROM competition_sessions WHERE competition_id = ?"
+    ).get(comp.id)?.c || 0;
+
+    const allWeeks = db.prepare("SELECT * FROM weekly_competitions ORDER BY id DESC LIMIT 10").all();
+
+    return json(response, 200, {
+      ok: true,
+      currentCompetition: comp,
+      timeState,
+      qCounts,
+      participantsCount,
+      totalSessions,
+      simulatedTimeOffsetMs,
+      serverTime: vnNow.toISOString(),
+      allWeeks
+    });
+  }
+
+  if (method === "GET" && pathName === "/api/admin/competition/questions") {
+    const user = requireUser(request, response);
+    if (!user || !isSuperAdmin(user)) return user ? error(response, 403, "Chỉ TA/Admin mới có quyền này.") : undefined;
+
+    const vnNow = getVietnamNow();
+    const comp = getOrCreateCurrentCompetition(vnNow);
+    const compId = Number(url.searchParams.get("competitionId")) || comp.id;
+    const phase = Math.min(3, Math.max(1, Number(url.searchParams.get("phase")) || 1));
+
+    const questions = db.prepare(
+      "SELECT id, question_index, question_text, option_a, option_b, option_c, correct_option, explanation FROM competition_questions WHERE competition_id = ? AND phase = ? ORDER BY question_index ASC"
+    ).all(compId, phase);
+
+    return json(response, 200, {
+      ok: true,
+      competitionId: compId,
+      phase,
+      questions
+    });
+  }
+
+  if (method === "POST" && pathName === "/api/admin/competition/questions") {
+    const user = requireUser(request, response);
+    if (!user || !isSuperAdmin(user)) return user ? error(response, 403, "Chỉ TA/Admin mới có quyền này.") : undefined;
+    if (!requireCsrf(request, response, user)) return;
+
+    const { competitionId, phase, questions } = await readJSON(request);
+    if (!competitionId || !phase || !Array.isArray(questions)) {
+      return error(response, 400, "Dữ liệu câu hỏi không hợp lệ.");
+    }
+
+    db.exec("BEGIN");
+    try {
+      db.prepare("DELETE FROM competition_questions WHERE competition_id = ? AND phase = ?").run(competitionId, phase);
+      const insert = db.prepare(`
+        INSERT INTO competition_questions (
+          competition_id, phase, question_index, question_text, option_a, option_b, option_c, correct_option, explanation
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `);
+
+      for (let i = 0; i < questions.length; i++) {
+        const q = questions[i];
+        const idx = i + 1;
+        insert.run(
+          competitionId,
+          phase,
+          idx,
+          q.question_text || q.text || `Câu hỏi ${idx}`,
+          q.option_a || q.optionA || "Đáp án A",
+          q.option_b || q.optionB || "Đáp án B",
+          q.option_c || q.optionC || "Đáp án C",
+          q.correct_option || q.correct || "A",
+          q.explanation || ""
+        );
+      }
+      db.exec("COMMIT");
+      return json(response, 200, { ok: true, count: questions.length });
+    } catch (e) {
+      db.exec("ROLLBACK");
+      return error(response, 500, e.message);
+    }
+  }
+
+  if (method === "POST" && pathName === "/api/admin/competition/update-topics") {
+    const user = requireUser(request, response);
+    if (!user || !isSuperAdmin(user)) return user ? error(response, 403, "Chỉ TA/Admin mới có quyền này.") : undefined;
+    if (!requireCsrf(request, response, user)) return;
+
+    const { competitionId, topicName, phase1Topic, phase2Topic, phase3Topic } = await readJSON(request);
+    if (!competitionId) return error(response, 400, "Thiếu competitionId.");
+
+    db.prepare(`
+      UPDATE weekly_competitions 
+      SET topic_name = coalesce(?, topic_name),
+          phase1_topic = coalesce(?, phase1_topic),
+          phase2_topic = coalesce(?, phase2_topic),
+          phase3_topic = coalesce(?, phase3_topic)
+      WHERE id = ?
+    `).run(topicName, phase1Topic, phase2Topic, phase3Topic, competitionId);
+
+    return json(response, 200, { ok: true });
+  }
+
+  if (method === "POST" && pathName === "/api/admin/competition/seed-samples") {
+    const user = requireUser(request, response);
+    if (!user || !isSuperAdmin(user)) return user ? error(response, 403, "Chỉ TA/Admin mới có quyền này.") : undefined;
+    if (!requireCsrf(request, response, user)) return;
+
+    const vnNow = getVietnamNow();
+    const comp = getOrCreateCurrentCompetition(vnNow);
+    seedSampleCompetitionQuestions(comp.id);
+    return json(response, 200, { ok: true, message: "Đã nạp 30 câu hỏi mẫu cho 3 giai đoạn." });
+  }
+
+  if (method === "POST" && pathName === "/api/admin/competition/simulate-time") {
+    const user = requireUser(request, response);
+    if (!user || !isSuperAdmin(user)) return user ? error(response, 403, "Chỉ TA/Admin mới có quyền này.") : undefined;
+    if (!requireCsrf(request, response, user)) return;
+
+    const { preset, customIso } = await readJSON(request);
+    const realVnNow = getVietnamRealNow();
+
+    if (preset === "real" || preset === "reset") {
+      simulatedTimeOffsetMs = 0;
+    } else if (preset === "upcoming" || preset === "16:30") {
+      const target = new Date(realVnNow);
+      if (target.getDay() === 0) target.setDate(target.getDate() + 1);
+      target.setHours(16, 30, 0, 0);
+      simulatedTimeOffsetMs = target.getTime() - realVnNow.getTime();
+    } else if (preset === "open" || preset === "19:30") {
+      const target = new Date(realVnNow);
+      if (target.getDay() === 0) target.setDate(target.getDate() + 1);
+      target.setHours(19, 30, 0, 0);
+      simulatedTimeOffsetMs = target.getTime() - realVnNow.getTime();
+    } else if (preset === "reviewing" || preset === "23:30") {
+      const target = new Date(realVnNow);
+      if (target.getDay() === 0) target.setDate(target.getDate() + 1);
+      target.setHours(23, 30, 0, 0);
+      simulatedTimeOffsetMs = target.getTime() - realVnNow.getTime();
+    } else if (preset === "sunday" || preset === "summary") {
+      const { sunday } = getWeekRange(realVnNow);
+      const target = new Date(sunday);
+      target.setHours(10, 0, 0, 0);
+      simulatedTimeOffsetMs = target.getTime() - realVnNow.getTime();
+    } else if (customIso) {
+      const target = new Date(customIso);
+      simulatedTimeOffsetMs = target.getTime() - realVnNow.getTime();
+    }
+
+    const currentSimVnNow = getVietnamNow();
+    return json(response, 200, {
+      ok: true,
+      simulatedTimeOffsetMs,
+      serverTime: currentSimVnNow.toISOString(),
+      displayTime: currentSimVnNow.toLocaleString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh" })
+    });
+  }
+
+  if (method === "POST" && pathName === "/api/admin/competition/conclude-week") {
+    const user = requireUser(request, response);
+    if (!user || !isSuperAdmin(user)) return user ? error(response, 403, "Chỉ TA/Admin mới có quyền này.") : undefined;
+    if (!requireCsrf(request, response, user)) return;
+
+    const vnNow = getVietnamNow();
+    const comp = getOrCreateCurrentCompetition(vnNow);
+    const result = awardCompetitionSundayRewards(comp.id);
+    return json(response, 200, { ok: true, result });
+  }
+
   return error(response, 404, "Không tìm thấy API này.");
 }
 
@@ -2477,9 +4124,25 @@ try {
   db.prepare("DELETE FROM kv_store WHERE key LIKE 'reward_given_%'").run();
 } catch (e) {}
 
-// Chạy kiểm tra khi khởi động và định kỳ mỗi 1 phút (+5 điểm năng động tuần)
+// Chạy kiểm tra khi khởi động và định kỳ mỗi 1 phút (+5 điểm năng động tuần và tổng kết thi đua Chủ Nhật)
+function checkAndAwardSundayCompetitionRewards() {
+  try {
+    const vnNow = getVietnamNow();
+    if (vnNow.getDay() === 0) {
+      const comp = getOrCreateCurrentCompetition(vnNow);
+      if (comp && comp.status !== 'concluded') {
+        awardCompetitionSundayRewards(comp.id);
+      }
+    }
+  } catch (e) {
+    console.error("Cronjob thi đua tuần lỗi:", e);
+  }
+}
+
 checkAndAwardWeeklyRewards();
+checkAndAwardSundayCompetitionRewards();
 setInterval(checkAndAwardWeeklyRewards, 60000);
+setInterval(checkAndAwardSundayCompetitionRewards, 60000);
 
 server.listen(PORT, "::", () =>
   console.log(`RE:SEARCH đang chạy tại http://[::]:${PORT}`),
