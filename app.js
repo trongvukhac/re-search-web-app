@@ -17,9 +17,13 @@ const STUDY_SETTINGS_KEY = "research_study_settings_v1";
 const STUDY_MAINTENANCE_MSG = "Tính năng Phòng tự học đang được phát triển và cần thời gian để ổn định hệ thống, bạn quay lại sau nhé!";
 
 function canAccessStudyLounge(user = (session || (typeof window !== "undefined" && window.session))) {
-  return Boolean(user && user.role === "admin");
+  return true;
 }
 window.canAccessStudyLounge = canAccessStudyLounge;
+
+window.notifyPerkLocked = function(days, featureName) {
+  toast(`🔒 Tính năng "${featureName}" mở khóa ở Chuỗi ${days} ngày! Bền bỉ học tập mỗi ngày để mở khóa nhé 🔥`);
+};
 
 function getInitialStudySettings() {
   const defaults = {
@@ -239,7 +243,7 @@ const STREAK_MILESTONES = [
     title: "Sinh viên năng động",
     color: "Xanh lam",
     forumDesc: "Mở khoá giao diện thẻ thành tích mới",
-    studyDesc: "Mở khoá 4 âm thanh môi trường thư giãn & tương tác trong Không gian chung"
+    studyDesc: "Mở kho âm thanh môi trường cơ bản, mở khoá tính năng tương tác trong không gian chung"
   },
   {
     days: 7,
@@ -247,7 +251,7 @@ const STREAK_MILESTONES = [
     title: "Học giả bền bỉ",
     color: "Vàng ánh kim",
     forumDesc: "Mở khoá viền avatar đặc sắc",
-    studyDesc: "Mở khoá 9 âm thanh phối hợp tự do, 4 bản nhạc tập trung & cổ vũ bạn bè"
+    studyDesc: "Mở khoá toàn bộ âm thanh phối âm cơ bản, cho phép bạn tự tạo âm thanh theo ý thích"
   },
   {
     days: 14,
@@ -255,7 +259,7 @@ const STREAK_MILESTONES = [
     title: "Nhà nghiên cứu tài năng",
     color: "Tím huyền bí",
     forumDesc: "Mở khoá màu tên rực rỡ và avatar đặc sắc",
-    studyDesc: "Mở khoá Kho hình nền học thuật & Tùy chỉnh màu sắc đồng hồ số"
+    studyDesc: "Mở khoá kho hình nền cơ bản và tinh chỉnh màu sắc đồng hồ số"
   },
   {
     days: 30,
@@ -263,7 +267,7 @@ const STREAK_MILESTONES = [
     title: "Bậc thầy học thuật",
     color: "Đỏ ruby",
     forumDesc: "Mở khóa giao diện độc quyền, màu tên rực rỡ và avatar đặc sắc",
-    studyDesc: "Mở khoá Tự tải lên âm thanh cá nhân (môi trường, mix, nhạc) & ảnh nền riêng"
+    studyDesc: "Mở khoá tính năng tải âm thanh, cho phép bạn tuỳ biến theo sở thích cá nhân"
   },
   {
     days: 50,
@@ -271,7 +275,7 @@ const STREAK_MILESTONES = [
     title: "Độc nhất vô nhị",
     color: "Gradient tím + đỏ",
     forumDesc: "Mở khoá giao diện đẳng cấp sang trọng, hào quang rực rỡ đón chờ!",
-    studyDesc: "Mở khoá Phối màu Hào quang động & Tên gradient chuyển màu độc quyền"
+    studyDesc: "Mở khoá các giao diện độc quyền"
   }
 ];
 
@@ -313,7 +317,7 @@ window.openStreakJourneyModal = function() {
               </div>
               <div class="milestone-perk-row">
                 <span class="milestone-perk-tag perk-study">Phòng tự học</span>
-                <span class="milestone-perk-text perk-study-waiting">${m.studyDesc}</span>
+                <span class="milestone-perk-text">${m.studyDesc}</span>
               </div>
             </div>
           </div>
@@ -2920,27 +2924,44 @@ window.updateStudyStreakPerks = function() {
   if (chipVal) chipVal.textContent = isAdmin ? "Admin" : streak;
 
   // Streak 3: Ambient Environment Audio (4 Tracks) & Co-Study interaction
-  const envUnlocked = true;
+  const envUnlocked = streak >= 3;
   const badgeEnvLock = $("#badgeEnvLock");
   const bannerEnvLocked = $("#bannerEnvLocked");
-  if (badgeEnvLock) badgeEnvLock.style.display = "none";
-  if (bannerEnvLocked) bannerEnvLocked.style.display = "none";
+  if (badgeEnvLock) {
+    badgeEnvLock.className = `perk-badge ${envUnlocked ? 'unlocked' : ''}`;
+    badgeEnvLock.textContent = envUnlocked ? "" : "🔒 3d";
+    badgeEnvLock.style.display = envUnlocked ? "none" : "inline-flex";
+  }
+  if (bannerEnvLocked) {
+    bannerEnvLocked.style.display = envUnlocked ? "none" : "block";
+  }
 
-  // Streak 7: Mixable Sounds (9 Tracks)
-  const mixUnlocked = true;
+  // Streak 7: Mixable Sounds (9 Tracks) & Focus Music (4 Tracks)
+  const mixUnlocked = streak >= 7;
   const badgeMixLock = $("#badgeMixLock");
   const bannerMixLocked = $("#bannerMixLocked");
-  if (badgeMixLock) badgeMixLock.style.display = "none";
-  if (bannerMixLocked) bannerMixLocked.style.display = "none";
+  if (badgeMixLock) {
+    badgeMixLock.className = `perk-badge ${mixUnlocked ? 'unlocked' : ''}`;
+    badgeMixLock.textContent = mixUnlocked ? "" : "🔒 7d";
+    badgeMixLock.style.display = mixUnlocked ? "none" : "inline-flex";
+  }
+  if (bannerMixLocked) {
+    bannerMixLocked.style.display = mixUnlocked ? "none" : "block";
+  }
 
-  // Streak 7: Focus Music (4 Tracks)
-  const musicUnlocked = true;
+  const musicUnlocked = streak >= 7;
   const badgeMusicLock = $("#badgeMusicLock");
   const bannerMusicLocked = $("#bannerMusicLocked");
-  if (badgeMusicLock) badgeMusicLock.style.display = "none";
-  if (bannerMusicLocked) bannerMusicLocked.style.display = "none";
+  if (badgeMusicLock) {
+    badgeMusicLock.className = `perk-badge ${musicUnlocked ? 'unlocked' : ''}`;
+    badgeMusicLock.textContent = musicUnlocked ? "" : "🔒 7d";
+    badgeMusicLock.style.display = musicUnlocked ? "none" : "inline-flex";
+  }
+  if (bannerMusicLocked) {
+    bannerMusicLocked.style.display = musicUnlocked ? "none" : "block";
+  }
 
-  // Streak 14: Preset Wallpapers & Clock Color Customization
+  // Streak 14: Preset Wallpapers (7 System Wallpapers) & Clock Color Customization (5 Colors)
   const wallPresetUnlocked = streak >= 14;
   const badgeWallPresetLock = $("#badgeWallPresetLock");
   if (badgeWallPresetLock) {
@@ -2961,7 +2982,7 @@ window.updateStudyStreakPerks = function() {
   const clockColorWrap = $(".clock-color-wrap");
   if (clockColorWrap) clockColorWrap.classList.toggle("locked-feature", !clockColorUnlocked);
 
-  // Streak 30: Custom Audio Upload (Max 3 Env, Max 5 Mix, Max 3 Music) & Custom Wallpaper Upload
+  // Streak 30: Custom Audio Upload (Max 3 Env, Max 5 Mix, Max 3 Music) & First 5 Color Palettes
   const customAudioUnlocked = streak >= 30;
   const badgeCustomEnvLock = $("#badgeCustomEnvLock");
   const badgeCustomMixLock = $("#badgeCustomMixLock");
@@ -2988,26 +3009,31 @@ window.updateStudyStreakPerks = function() {
   if (btnUploadMixAudio) btnUploadMixAudio.disabled = !customAudioUnlocked;
   if (btnUploadMusicAudio) btnUploadMusicAudio.disabled = !customAudioUnlocked;
 
-  const wallUploadUnlocked = streak >= 30;
+  // Streak 50: Master Customization (All 10 Color Palettes), Unlimited Audio Uploads & Custom Wallpaper Upload
+  const wallUploadUnlocked = streak >= 50;
   const badgeWallUploadLock = $("#badgeWallUploadLock");
   const btnUploadWall = $("#btnUploadWall");
   if (badgeWallUploadLock) {
     badgeWallUploadLock.className = `perk-badge ${wallUploadUnlocked ? 'unlocked' : ''}`;
-    badgeWallUploadLock.textContent = wallUploadUnlocked ? "" : "🔒 30d";
+    badgeWallUploadLock.textContent = wallUploadUnlocked ? "" : "🔒 50d";
     badgeWallUploadLock.style.display = wallUploadUnlocked ? "none" : "inline-flex";
   }
   if (btnUploadWall) btnUploadWall.disabled = !wallUploadUnlocked;
 
-  // Streak 50: Master Customization & Gradient Palettes & Unlimited Uploads
-  const masterCustomUnlocked = streak >= 50;
   const badgeMasterCustomLock = $("#badgeMasterCustomLock");
   if (badgeMasterCustomLock) {
-    badgeMasterCustomLock.className = `perk-badge ${masterCustomUnlocked ? 'unlocked' : ''}`;
-    badgeMasterCustomLock.textContent = masterCustomUnlocked ? "" : "🔒 50d";
-    badgeMasterCustomLock.style.display = masterCustomUnlocked ? "none" : "inline-flex";
+    if (streak >= 50) {
+      badgeMasterCustomLock.style.display = "none";
+    } else if (streak >= 30) {
+      badgeMasterCustomLock.className = "perk-badge";
+      badgeMasterCustomLock.textContent = "🔒 50d (Thêm 5 phối màu)";
+      badgeMasterCustomLock.style.display = "inline-flex";
+    } else {
+      badgeMasterCustomLock.className = "perk-badge";
+      badgeMasterCustomLock.textContent = "🔒 30d (Mở 5 phối màu)";
+      badgeMasterCustomLock.style.display = "inline-flex";
+    }
   }
-  const palettePicker = $("#colorPalettePicker");
-  if (palettePicker) palettePicker.classList.toggle("locked-feature", !masterCustomUnlocked);
 
   const badgeCustomEnvLimit = $("#badgeCustomEnvLimit");
   const badgeCustomMixLimit = $("#badgeCustomMixLimit");
@@ -3044,11 +3070,14 @@ window.updateStudyStreakPerks = function() {
   if (customWallName && !studySettings.activeWallpaper?.startsWith("custom_")) {
     if (streak >= 50) {
       customWallName.textContent = "Không giới hạn dung lượng ảnh (Chuỗi 50 ngày)";
+    } else {
+      customWallName.textContent = "Mở khóa tải ảnh riêng ở Chuỗi 50 ngày";
     }
   }
 
   renderEnvironmentAudioGrid();
   renderMixAudioGrid();
+  renderMusicAudioGrid();
   renderWallpaperPresets();
   renderClockColorPicker();
   renderColorPalette();
@@ -3902,6 +3931,12 @@ function updateEnvGridDOM() {
 }
 
 function toggleEnvTrack(trackId) {
+  const streak = getUserStudyStreak();
+  if (streak < 3) {
+    notifyPerkLocked(3, "Kho âm thanh môi trường cơ bản");
+    return;
+  }
+
   const track = AMBIENT_ENV_TRACKS.find(t => t.id === trackId);
 
   // 1. Nếu track này đang phát -> Tắt
@@ -4011,6 +4046,12 @@ function updateMixGridDOM(trackId) {
 }
 
 function toggleMixTrack(trackId) {
+  const streak = getUserStudyStreak();
+  if (streak < 7) {
+    notifyPerkLocked(7, "Toàn bộ âm thanh phối âm cơ bản");
+    return;
+  }
+
   const track = MIX_SOUND_TRACKS.find(t => t.id === trackId);
   const isCurrentlyActive = !!studyState.activeMixSounds[trackId];
 
@@ -4096,6 +4137,12 @@ function updateMusicGridDOM() {
 }
 
 function toggleMusicTrack(trackId) {
+  const streak = getUserStudyStreak();
+  if (streak < 7) {
+    notifyPerkLocked(7, "Kho âm nhạc tập trung");
+    return;
+  }
+
   const track = MUSIC_SOUND_TRACKS.find(t => t.id === trackId);
 
   // 1. Nếu track này đang phát -> Tắt
@@ -4661,16 +4708,31 @@ window.confirmDeleteCustomAudioTrack = async function(id) {
 };
 
 window.triggerUploadEnvAudio = function() {
+  const streak = getUserStudyStreak();
+  if (streak < 30) {
+    notifyPerkLocked(30, "Tính năng tải âm thanh tùy biến");
+    return;
+  }
   const input = $("#customEnvAudioInput");
   if (input) input.click();
 };
 
 window.triggerUploadMixAudio = function() {
+  const streak = getUserStudyStreak();
+  if (streak < 30) {
+    notifyPerkLocked(30, "Tính năng tải âm thanh tùy biến");
+    return;
+  }
   const input = $("#customMixAudioInput");
   if (input) input.click();
 };
 
 window.triggerUploadMusicAudio = function() {
+  const streak = getUserStudyStreak();
+  if (streak < 30) {
+    notifyPerkLocked(30, "Tính năng tải âm thanh tùy biến");
+    return;
+  }
   const input = $("#customMusicAudioInput");
   if (input) input.click();
 };
@@ -4679,6 +4741,11 @@ async function handleCustomAudioUpload(file, category) {
   if (!file) return;
 
   const streak = getUserStudyStreak();
+  if (streak < 30) {
+    notifyPerkLocked(30, "Tính năng tải âm thanh tùy biến");
+    return;
+  }
+
   const isMaxStreak = streak >= 50;
 
   if (!isMaxStreak && file.size > 50 * 1024 * 1024) {
@@ -4688,9 +4755,11 @@ async function handleCustomAudioUpload(file, category) {
 
   const allTracks = await idbGetAll("custom_audio");
   const countInCategory = allTracks.filter(t => t.category === category).length;
+  // Giới hạn: tối đa 3 âm thanh môi trường, 3 âm nhạc và 5 âm thanh phối âm
   const maxAllowed = (category === 'mix' ? 5 : 3);
   if (!isMaxStreak && countInCategory >= maxAllowed) {
-    toast(`Bạn đã tải tối đa ${maxAllowed} tệp cho mục này. Đạt Chuỗi 50 ngày để mở khóa tải không giới hạn!`);
+    const catName = category === 'env' ? 'âm thanh môi trường' : (category === 'mix' ? 'âm thanh phối hợp' : 'bản nhạc');
+    toast(`Bạn đã tải tối đa ${maxAllowed} ${catName}. Đạt Chuỗi 50 ngày để mở khóa tải không giới hạn!`);
     return;
   }
 
@@ -4741,17 +4810,21 @@ function renderWallpaperPresets() {
   const cont = $("#wallpaperPresetsList");
   if (!cont) return;
   const streak = getUserStudyStreak();
-  const unlocked = streak >= 14;
 
   cont.innerHTML = WALLPAPER_PRESETS.map(p => {
     const isSelected = studySettings.activeWallpaper === p.id;
+    const isUnlocked = (p.id === 'default' || streak >= 14);
     const thumbStyle = (p.type === 'image' && p.src)
       ? `background-image: url('${p.src}'); background-size: cover; background-position: center;`
       : `background: ${p.style};`;
+    const clickAction = isUnlocked
+      ? `applyStudyWallpaperPreset('${p.id}')`
+      : `notifyPerkLocked(14, 'Kho hình nền cơ bản')`;
+
     return `
-      <div class="preset-thumb-card ${isSelected ? 'selected' : ''}" onclick="${unlocked ? `applyStudyWallpaperPreset('${p.id}')` : `notifyPerkLocked(14, 'Kho hình nền học thuật')`}">
+      <div class="preset-thumb-card ${isSelected ? 'selected' : ''} ${!isUnlocked ? 'locked' : ''}" onclick="${clickAction}" title="${escapeHTML(p.name)}${!isUnlocked ? ' (Mở khóa ở Chuỗi 14 ngày)' : ''}">
         <div class="preset-thumb-color" style="${thumbStyle}"></div>
-        <span class="preset-thumb-name">${p.name}</span>
+        <span class="preset-thumb-name">${escapeHTML(p.name)}</span>
         ${isSelected ? '<span class="preset-active-indicator">✓</span>' : ''}
       </div>
     `;
@@ -4759,6 +4832,12 @@ function renderWallpaperPresets() {
 }
 
 function applyStudyWallpaperPreset(presetId) {
+  const streak = getUserStudyStreak();
+  if (presetId !== 'default' && streak < 14) {
+    notifyPerkLocked(14, "Kho hình nền cơ bản");
+    return;
+  }
+
   const p = WALLPAPER_PRESETS.find(x => x.id === presetId);
   if (!p) return;
   studySettings.activeWallpaper = presetId;
@@ -4807,12 +4886,16 @@ function renderClockColorPicker() {
   const cont = $("#clockColorPicker");
   if (!cont) return;
   const streak = getUserStudyStreak();
-  const unlocked = streak >= 14;
 
   cont.innerHTML = CLOCK_COLORS.map(c => {
     const isSelected = (studySettings.clockColor || 'default') === c.id;
+    const isUnlocked = (c.id === 'default' || streak >= 14);
+    const clickAction = isUnlocked
+      ? `applyClockColor('${c.id}')`
+      : `notifyPerkLocked(14, 'Tinh chỉnh màu sắc đồng hồ số')`;
+
     return `
-      <button type="button" class="clock-color-swatch ${isSelected ? 'active' : ''}" style="background:${c.color};" title="${c.name}" onclick="${unlocked ? `applyClockColor('${c.id}')` : `notifyPerkLocked(14, 'Tinh chỉnh màu sắc đồng hồ')`}"></button>
+      <button type="button" class="clock-color-swatch ${isSelected ? 'active' : ''} ${!isUnlocked ? 'locked' : ''}" style="background:${c.color};" title="${escapeHTML(c.name)}${!isUnlocked ? ' (Mở khóa ở Chuỗi 14 ngày)' : ''}" onclick="${clickAction}"></button>
     `;
   }).join("");
 }
@@ -4820,6 +4903,12 @@ function renderClockColorPicker() {
 function applyClockColor(colorId) {
   const c = CLOCK_COLORS.find(x => x.id === colorId);
   if (!c) return;
+  const streak = getUserStudyStreak();
+  if (c.id !== 'default' && streak < 14) {
+    notifyPerkLocked(14, "Tinh chỉnh màu sắc đồng hồ số");
+    return;
+  }
+
   studySettings.clockColor = colorId;
   saveStudySettings(false);
 
@@ -4833,8 +4922,8 @@ function applyClockColor(colorId) {
 
 async function triggerWallpaperUpload() {
   const streak = getUserStudyStreak();
-  if (streak < 30) {
-    toast("🔒 Tính năng Tải hình nền cá nhân mở khóa ở Chuỗi 30 ngày (Bậc thầy học thuật)!");
+  if (streak < 50) {
+    notifyPerkLocked(50, "Tải ảnh nền cá nhân");
     return;
   }
   const input = $("#customWallInput");
@@ -4844,21 +4933,8 @@ async function triggerWallpaperUpload() {
 async function handleCustomWallpaperUpload(file) {
   if (!file) return;
   const streak = getUserStudyStreak();
-  if (streak < 30) {
-    toast("🔒 Tính năng Tải hình nền cá nhân mở khóa ở Chuỗi 30 ngày (Bậc thầy học thuật)!");
-    return;
-  }
-
-  // Chuỗi 50 ngày (Độc nhất vô nhị): Mở khóa tải lên KHÔNG GIỚI HẠN dung lượng ảnh nền!
-  const isMaxStreak = streak >= 50;
-  if (!isMaxStreak && file.size > 10 * 1024 * 1024) {
-    toast("Ảnh nền quá lớn (tối đa 10MB cho chuỗi dưới 50 ngày). Đạt Chuỗi 50 ngày để mở khóa không giới hạn!");
-    return;
-  }
-
-  const existing = await idbGetAll("custom_wallpapers");
-  if (!isMaxStreak && existing.length >= 5) {
-    toast("Bạn đã đạt giới hạn 5 ảnh nền cá nhân. Vui lòng xoá bớt ảnh cũ hoặc đạt Chuỗi 50 ngày để mở khoá không giới hạn!");
+  if (streak < 50) {
+    notifyPerkLocked(50, "Tải ảnh nền cá nhân");
     return;
   }
 
@@ -4891,7 +4967,7 @@ async function handleCustomWallpaperUpload(file) {
 
     renderWallpaperPresets();
     await renderCustomWallpapersList();
-    toast(isMaxStreak ? `✨ [Chuỗi 50 ngày] Đã áp dụng ảnh nền không giới hạn: ${file.name}` : `Đã áp dụng ảnh nền cá nhân: ${file.name}`);
+    toast(`✨ [Chuỗi 50 ngày] Đã áp dụng ảnh nền cá nhân: ${file.name}`);
   };
   reader.readAsDataURL(file);
 }
@@ -4900,18 +4976,17 @@ async function renderCustomWallpapersList() {
   const cont = $("#customWallpapersList");
   if (!cont) return;
   const streak = getUserStudyStreak();
-  const unlocked = streak >= 30;
-  const isMaxStreak = streak >= 50;
+  const unlocked = streak >= 50;
 
   const walls = await idbGetAll("custom_wallpapers");
 
   const badgeLimit = $("#badgeCustomWallLimit");
   if (badgeLimit) {
-    if (isMaxStreak) {
+    if (unlocked) {
       badgeLimit.textContent = `✨ Không giới hạn (${walls.length})`;
       badgeLimit.classList.add("unlimited");
     } else {
-      badgeLimit.textContent = `Tối đa 5 ảnh (${walls.length}/5)`;
+      badgeLimit.textContent = `Mở khóa ở Chuỗi 50 ngày`;
       badgeLimit.classList.remove("unlimited");
     }
   }
@@ -4924,14 +4999,18 @@ async function renderCustomWallpapersList() {
   cont.innerHTML = walls.map(w => {
     const isSelected = studySettings.activeWallpaper === `custom_${w.id}`;
     const sizeMb = (w.size ? (w.size / (1024 * 1024)).toFixed(1) : "0.0");
+    const clickAction = unlocked
+      ? `applyCustomWallpaper('${w.id}')`
+      : `notifyPerkLocked(50, 'Tải ảnh nền cá nhân')`;
+
     return `
-      <div class="custom-wallpaper-card ${isSelected ? 'selected' : ''}" onclick="${unlocked ? `applyCustomWallpaper('${w.id}')` : `notifyPerkLocked(30, 'Tải ảnh nền cá nhân')`}">
+      <div class="custom-wallpaper-card ${isSelected ? 'selected' : ''} ${!unlocked ? 'locked' : ''}" onclick="${clickAction}">
         <div class="custom-wallpaper-preview" style="background-image: url(${w.dataUrl});">
           ${isSelected ? '<span class="custom-wall-active-tag">Đang dùng</span>' : ''}
           <button type="button" class="custom-wall-del-btn" title="Xoá ảnh này" onclick="event.stopPropagation(); confirmDeleteCustomWallpaper('${w.id}')">✕</button>
         </div>
         <div class="custom-wallpaper-meta">
-          <span class="custom-wallpaper-name" title="${w.name}">${w.name}</span>
+          <span class="custom-wallpaper-name" title="${escapeHTML(w.name)}">${escapeHTML(w.name)}</span>
           <span class="custom-wallpaper-size">${sizeMb} MB</span>
         </div>
       </div>
@@ -4940,6 +5019,12 @@ async function renderCustomWallpapersList() {
 }
 
 async function applyCustomWallpaper(wallId) {
+  const streak = getUserStudyStreak();
+  if (streak < 50) {
+    notifyPerkLocked(50, "Tải ảnh nền cá nhân");
+    return;
+  }
+
   const walls = await idbGetAll("custom_wallpapers");
   const target = walls.find(w => w.id === wallId);
   if (!target) return;
@@ -5046,7 +5131,7 @@ function toggleStudyZenView() {
   }
 }
 
-/* --- HÀO QUANG & MÀU SẮC GRADIENT ĐỘC QUYỀN (Streak >= 50) --- */
+/* --- HÀO QUANG & MÀU SẮC GRADIENT ĐỘC QUYỀN (Streak >= 30: 5 đầu; Streak >= 50: cả 10) --- */
 const COLOR_AURAS = [
   { 
     id: 'emerald', 
@@ -5134,18 +5219,43 @@ function renderColorPalette() {
   const cont = $("#colorPalettePicker");
   if (!cont) return;
   const streak = getUserStudyStreak();
-  const unlocked = streak >= 50;
 
-  cont.innerHTML = COLOR_AURAS.map(c => {
+  cont.innerHTML = COLOR_AURAS.map((c, idx) => {
     const isSelected = (studySettings.activeAura === c.id);
+    let isUnlocked = true;
+    let reqDays = 0;
+    if (idx >= 1 && idx <= 4) {
+      isUnlocked = streak >= 30;
+      reqDays = 30;
+    } else if (idx >= 5) {
+      isUnlocked = streak >= 50;
+      reqDays = 50;
+    }
+
+    const clickAction = isUnlocked
+      ? `applyColorAura('${c.id}')`
+      : `notifyPerkLocked(${reqDays}, 'Phối màu ${escapeHTML(c.name)}')`;
+
     return `
-      <button type="button" class="color-swatch ${isSelected ? 'active' : ''}" style="background:${c.gradient};" title="${c.name}" onclick="${unlocked ? `applyColorAura('${c.id}')` : `notifyPerkLocked(50, 'Giao diện độc quyền & Phối màu Gradient')`}"></button>
+      <button type="button" class="color-swatch ${isSelected ? 'active' : ''} ${!isUnlocked ? 'locked' : ''}" style="background:${c.gradient};" title="${escapeHTML(c.name)}${!isUnlocked ? ` (Mở khóa ở Chuỗi ${reqDays} ngày)` : ''}" onclick="${clickAction}"></button>
     `;
   }).join("");
 }
 
 function applyColorAura(auraId) {
-  const c = COLOR_AURAS.find(x => x.id === auraId) || COLOR_AURAS[0];
+  const idx = COLOR_AURAS.findIndex(x => x.id === auraId);
+  const c = idx !== -1 ? COLOR_AURAS[idx] : COLOR_AURAS[0];
+  const streak = getUserStudyStreak();
+
+  if (idx >= 1 && idx <= 4 && streak < 30) {
+    notifyPerkLocked(30, `Phối màu ${c.name}`);
+    return;
+  }
+  if (idx >= 5 && streak < 50) {
+    notifyPerkLocked(50, `Phối màu ${c.name}`);
+    return;
+  }
+
   studySettings.activeAura = c.id;
   saveStudySettings(false);
 
