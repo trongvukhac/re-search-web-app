@@ -1088,9 +1088,14 @@ function renderDocuments() {
         currentViewingDocId = doc.id;
         isDocDiscussionOpen = false;
         updateDocDiscussionUIState();
+        if (typeof setDocAnonymousReply === "function") setDocAnonymousReply(false);
         loadDocComments(doc.id);
         $("#viewerIframe").src = previewUrl;
-        $("#viewerTitle").textContent = doc.title;
+        const titleEl = $("#viewerTitle");
+        if (titleEl) {
+          titleEl.textContent = doc.title;
+          titleEl.setAttribute("title", doc.title);
+        }
         $("#documentViewerModal").showModal();
         startDocReadTracking(doc.id);
       } else {
@@ -1334,7 +1339,47 @@ function updateDocDiscussionUIState() {
     toggleBtn.setAttribute("title", isDocDiscussionOpen ? "Đóng thảo luận" : "Thảo luận tài liệu");
     toggleBtn.setAttribute("aria-label", isDocDiscussionOpen ? "Đóng thảo luận" : "Thảo luận tài liệu");
   }
+  if (isDocDiscussionOpen && typeof setDocAnonymousReply === "function") {
+    const anonInput = $("#docCommentAnon");
+    setDocAnonymousReply(anonInput ? anonInput.checked : false);
+  }
 }
+
+window.toggleDocAnonymousDropdown = function(e) {
+  const dd = document.getElementById("docAnonymousDropdown");
+  if (dd) {
+    dd.classList.toggle("show");
+    if (e) e.stopPropagation();
+  }
+};
+
+window.setDocAnonymousReply = function(isAnon, e) {
+  const anonInput = document.getElementById("docCommentAnon");
+  if (anonInput) anonInput.checked = isAnon;
+  const avatarLabel = document.getElementById("docReplyAvatarLabel");
+  if (avatarLabel) {
+    if (isAnon) {
+      avatarLabel.textContent = "🎭";
+      avatarLabel.className = "avatar avatar-sm";
+      avatarLabel.style.background = "#64748b";
+      avatarLabel.style.color = "#ffffff";
+    } else {
+      const initials = (session && session.initials) || "?";
+      avatarLabel.textContent = initials;
+      avatarLabel.className = `avatar avatar-sm ${getAvatarClass(session?.streakTier, false, session?.role)}`;
+      if (!session?.role || session?.role === "student") {
+        avatarLabel.style.background = ((session?.streakTier || 0) >= 3) ? "" : "var(--primary)";
+        avatarLabel.style.color = "#ffffff";
+      } else {
+        avatarLabel.style.background = "";
+        avatarLabel.style.color = "";
+      }
+    }
+  }
+  const dd = document.getElementById("docAnonymousDropdown");
+  if (dd) dd.classList.remove("show");
+  if (e) e.stopPropagation();
+};
 
 async function loadDocComments(docId) {
   if (!docId) return;
@@ -2629,6 +2674,8 @@ window.setAnonymousReply = function(isAnon) {
 document.addEventListener('click', () => {
   const dd = document.getElementById('anonymousDropdown');
   if (dd) dd.classList.remove('show');
+  const ddDoc = document.getElementById('docAnonymousDropdown');
+  if (ddDoc) ddDoc.classList.remove('show');
 });
 
 /* ==========================================================================

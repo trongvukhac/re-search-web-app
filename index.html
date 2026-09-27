@@ -21,31 +21,12 @@
     <dialog
       id="documentViewerModal"
       class="modal doc-viewer-dialog"
-      style="
-        width: 90vw;
-        max-width: 1200px;
-        height: 90vh;
-        max-height: 900px;
-        padding: 0;
-        overflow: hidden;
-        position: relative;
-      "
     >
-      <div style="display: flex; flex-direction: column; height: 100%; position: relative; overflow: hidden;">
-        <div
-          class="modal-head"
-          style="
-            padding: 14px 18px;
-            border-bottom: 1px solid var(--sage-2);
-            background: #fff;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-          "
-        >
-          <div style="display: flex; align-items: center; gap: 8px; overflow: hidden;">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--primary); flex-shrink: 0;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
-            <h2 id="viewerTitle" style="font-size: 15px; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 700;">
+      <div class="doc-viewer-container">
+        <div class="modal-head doc-viewer-head">
+          <div class="doc-viewer-head-title">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="doc-viewer-icon"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+            <h2 id="viewerTitle" class="doc-viewer-title">
               Xem tài liệu
             </h2>
           </div>
@@ -60,10 +41,10 @@
         </div>
         <iframe
           id="viewerIframe"
-          style="flex: 1; width: 100%; border: none; background: #f8f9fa"
+          class="doc-viewer-iframe"
         ></iframe>
 
-        <!-- Document Discussion Bottom Panel (Overlaid half height, without closing viewer) -->
+        <!-- Document Discussion Panel (Right half on Desktop, 80% bottom sheet on Mobile) -->
         <div id="docDiscussionPanel" class="doc-discussion-panel" style="display: none;">
           <div class="doc-discussion-header">
             <div class="doc-discussion-title-wrap">
@@ -71,32 +52,38 @@
               <span class="doc-discussion-heading">Thảo luận tài liệu</span>
               <span class="doc-discussion-count-pill" id="docCommentCountBadge">0</span>
             </div>
-            <p class="doc-discussion-hint">Không gian hỏi đáp &amp; trao đổi trực tiếp về tài liệu</p>
+            <p class="doc-discussion-hint">Hỏi đáp &amp; trao đổi trực tiếp về tài liệu</p>
           </div>
           <div class="doc-discussion-body" id="docDiscussionList">
             <!-- Rendered dynamically -->
           </div>
           <div class="doc-discussion-footer">
-            <form id="docDiscussionForm" onsubmit="handleSendDocComment(event)">
-              <div class="doc-discussion-input-row">
+            <form id="docDiscussionForm" onsubmit="handleSendDocComment(event)" class="doc-reply-bar">
+              <div class="doc-reply-avatar-dropdown" id="docAnonDropdownTrigger" onclick="toggleDocAnonymousDropdown(event)" title="Chọn chế độ gửi (Công khai / Ẩn danh)">
+                <span class="avatar avatar-sm" id="docReplyAvatarLabel">?</span>
+                <span class="dropdown-arrow">▼</span>
+                <div id="docAnonymousDropdown" class="dropdown-menu">
+                  <div onclick="setDocAnonymousReply(false, event)">Thảo luận công khai</div>
+                  <div onclick="setDocAnonymousReply(true, event)">Thảo luận ẩn danh 🎭</div>
+                </div>
+              </div>
+              <div class="doc-reply-pill">
                 <textarea
                   id="docCommentInput"
-                  class="doc-comment-textarea"
-                  placeholder="Đặt câu hỏi hoặc chia sẻ ý kiến về tài liệu này..."
+                  class="doc-reply-textarea"
+                  placeholder="Hỏi hoặc chia sẻ ý kiến về tài liệu..."
                   rows="1"
                   required
                 ></textarea>
-                <div class="doc-discussion-controls">
-                  <label class="doc-anon-label" title="Thảo luận ẩn danh">
-                    <input type="checkbox" id="docCommentAnon" />
-                    <span>Ẩn danh</span>
-                  </label>
-                  <button type="submit" class="button button-primary button-sm doc-submit-btn" id="btnSendDocComment">
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
-                    <span>Gửi</span>
+                <div class="doc-reply-actions">
+                  <button type="submit" class="doc-btn-send" id="btnSendDocComment" aria-label="Gửi thảo luận" title="Gửi thảo luận">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+                    </svg>
                   </button>
                 </div>
               </div>
+              <input type="checkbox" id="docCommentAnon" style="display: none;" />
             </form>
           </div>
         </div>
@@ -1467,6 +1454,6 @@
         </div>
       </div>
     </dialog>
-    <script src="app.js?v=42" defer></script>
+    <script src="app.js?v=43" defer></script>
   </body>
 </html>
