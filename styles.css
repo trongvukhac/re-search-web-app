@@ -3799,15 +3799,19 @@ form .ql-editor,
   align-items: center;
   margin: 8px 0 12px;
 }
-.timer-display .timer-circle {
-  position: relative;
+.timer-circle {
+  display: grid;
+  place-items: center;
   width: 240px;
   height: 240px;
+  flex-shrink: 0;
 }
 .timer-svg {
-  width: 100%;
-  height: 100%;
+  grid-area: 1 / 1;
+  width: 240px;
+  height: 240px;
   transform: rotate(-90deg);
+  transform-origin: center center;
 }
 .timer-bg-circle {
   fill: none;
@@ -3824,15 +3828,15 @@ form .ql-editor,
   transition: stroke-dashoffset 0.8s ease, stroke 0.3s ease;
 }
 .timer-center-content {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
+  grid-area: 1 / 1;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  width: 88%;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1;
 }
 .timer-clock {
   font-family: 'Outfit', 'Inter', -apple-system, BlinkMacSystemFont, monospace, sans-serif;
@@ -5019,7 +5023,11 @@ form .ql-editor,
   #themeArenaCard {
     order: 5;
   }
-  .timer-display .timer-circle {
+  .timer-circle {
+    width: 220px;
+    height: 220px;
+  }
+  .timer-svg {
     width: 220px;
     height: 220px;
   }
@@ -5108,7 +5116,11 @@ form .ql-editor,
   .study-mode-btn span {
     font-size: 9px;
   }
-  .timer-display .timer-circle {
+  .timer-circle {
+    width: 200px;
+    height: 200px;
+  }
+  .timer-svg {
     width: 200px;
     height: 200px;
   }
@@ -6682,22 +6694,23 @@ body.study-zen-fullscreen .study-main-col {
 }
 
 .podium-avatar {
-  width: 52px;
-  height: 52px;
+  width: 52px !important;
+  height: 52px !important;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 24px;
-  background: #fff;
+  font-size: 22px;
+  background: var(--sage-2);
   box-shadow: 0 4px 12px rgba(0,0,0,0.12);
   border: 2px solid #fff;
+  flex-shrink: 0;
 }
 
 .podium-col.rank-1 .podium-avatar {
-  width: 64px;
-  height: 64px;
-  font-size: 30px;
+  width: 64px !important;
+  height: 64px !important;
+  font-size: 28px;
   border-color: #facc15;
   box-shadow: 0 0 18px rgba(250, 204, 21, 0.45);
 }
@@ -6708,6 +6721,7 @@ body.study-zen-fullscreen .study-main-col {
   font-size: 22px;
   filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
   animation: crownBob 2s ease-in-out infinite alternate;
+  z-index: 2;
 }
 
 @keyframes crownBob {
@@ -6726,6 +6740,10 @@ body.study-zen-fullscreen .study-main-col {
   text-overflow: ellipsis;
   white-space: nowrap;
   margin-bottom: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
 }
 
 .podium-score-tag,
@@ -7551,12 +7569,14 @@ body.study-zen-fullscreen .study-main-col {
 /* Responsive queries */
 @media (max-width: 768px) {
   .weekly-competition-card {
-    padding: 16px 18px;
+    padding: 14px 16px;
+    margin-top: 20px; /* tách khỏi thẻ thành tích */
+    border-radius: 14px;
   }
   .comp-card-content {
     flex-direction: column;
     align-items: stretch;
-    gap: 16px;
+    gap: 14px;
   }
   .comp-right {
     justify-content: space-between;
@@ -7569,6 +7589,19 @@ body.study-zen-fullscreen .study-main-col {
   }
   .comp-action-box {
     align-items: flex-end;
+  }
+  .comp-topic-title {
+    font-size: 15px;
+  }
+  .comp-phase-subtitle {
+    font-size: 12px;
+  }
+  .comp-countdown {
+    font-size: 18px;
+  }
+  .comp-cta-button {
+    font-size: 12px;
+    padding: 7px 14px;
   }
   .attempts-grid,
   .rules-phase-cards,

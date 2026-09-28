@@ -12,6 +12,12 @@ const PORT = Number(process.env.PORT || 3000);
 const DATABASE_DIR = path.join(ROOT, "data");
 const DATABASE_PATH = path.join(DATABASE_DIR, "research.db");
 const SESSION_AGE_SECONDS = 60 * 60 * 24 * 14;
+
+// ============================================================
+// FEATURE FLAG: Kĩa tạm thời tính năng RE:SEARCH ARENA
+// Đổi thành `true` khi mờ lại
+// ============================================================
+const ARENA_ENABLED = false;
 const MIME = {
   ".html": "text/html; charset=utf-8",
   ".css": "text/css; charset=utf-8",
@@ -3079,6 +3085,10 @@ async function api(request, response, url) {
   }
 
   if (method === "GET" && pathName === "/api/competition/status") {
+    // Feature flag: khoá tạm thời Arena
+    if (!ARENA_ENABLED) {
+      return json(response, 200, { ok: true, visible: false, isReady: false, locked: true });
+    }
     const vnNow = getVietnamNow();
     const comp = getOrCreateCurrentCompetition(vnNow);
     const timeState = getCompetitionTimeState(vnNow, comp);
@@ -3257,6 +3267,10 @@ async function api(request, response, url) {
           userId: myItem.userId,
           displayName: myItem.displayName,
           initials: myItem.initials || myItem.displayName?.slice(0, 2) || "U",
+          avatar: myItem.avatar,
+          role: myItem.role,
+          streak: myItem.streak,
+          streakTier: myItem.streakTier,
           score: myItem.score,
           isTop10: myRank <= 10,
           isTop11Plus: myRank > 10,
@@ -3869,7 +3883,13 @@ async function api(request, response, url) {
     if (!user || !isSuperAdmin(user)) return user ? error(response, 403, "Chỉ TA/Admin mới có quyền này.") : undefined;
     if (!requireCsrf(request, response, user)) return;
 
-    const { competitionId, phase, questions } = await readJSON(request);
+    const body = await readJSON(request);
+    const { phase, questions } = body;
+    // competitionId optional - auto-resolve from current competition
+    const vnNow = getVietnamNow();
+    const currentComp = getOrCreateCurrentCompetition(vnNow);
+    const competitionId = body.competitionId || currentComp.id;
+
     if (!competitionId || !phase || !Array.isArray(questions)) {
       return error(response, 400, "Dữ liệu câu hỏi không hợp lệ.");
     }
@@ -3911,7 +3931,13 @@ async function api(request, response, url) {
     if (!user || !isSuperAdmin(user)) return user ? error(response, 403, "Chỉ TA/Admin mới có quyền này.") : undefined;
     if (!requireCsrf(request, response, user)) return;
 
-    const { competitionId, topicName, phase1Topic, phase2Topic, phase3Topic } = await readJSON(request);
+    const body = await readJSON(request);
+    // competitionId optional - auto-resolve; accept weekTopic or topicName
+    const vnNow = getVietnamNow();
+    const currentComp = getOrCreateCurrentCompetition(vnNow);
+    const competitionId = body.competitionId || currentComp.id;
+    const topicName = body.topicName || body.weekTopic || null;
+    const { phase1Topic = null, phase2Topic = null, phase3Topic = null } = body;
     if (!competitionId) return error(response, 400, "Thiếu competitionId.");
 
     db.prepare(`

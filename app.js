@@ -2209,15 +2209,16 @@ window.closeBanner = function(hours) {
   const banner = document.getElementById("assignmentBanner");
   if (banner) banner.close();
   const nextTime = new Date().getTime() + hours * 60 * 60 * 1000;
-  localStorage.setItem("bannerNextShow", nextTime.toString());
+  localStorage.setItem("bannerNextShow_newupdate", nextTime.toString());
 };
 
 function checkAndShowBanner() {
   const now = new Date();
-  const cutoff = new Date("2026-09-16T00:00:00+07:00"); 
+  // Hiện banner "New update" đến hết ngày 05/10/2026 giờ Việt Nam
+  const cutoff = new Date("2026-10-05T23:59:59+07:00");
   if (now > cutoff) return;
 
-  const nextShow = localStorage.getItem("bannerNextShow");
+  const nextShow = localStorage.getItem("bannerNextShow_newupdate");
   if (nextShow && now.getTime() < parseInt(nextShow, 10)) {
     return;
   }
@@ -7075,13 +7076,15 @@ function renderLeaderboardUI(data) {
   let podiumHTML = "";
 
   if (top2) {
+    const top2AvatarClass = getAvatarClass(top2.streakTier, false, top2.role);
+    const top2NameClass = getNameClass(top2.streakTier);
     podiumHTML += `
       <div class="podium-col rank-2">
         <div class="podium-avatar-wrap">
           <span class="podium-crown silver">🥈</span>
-          <div class="podium-avatar">${escapeHTML(top2.initials || top2.displayName?.slice(0, 2) || "U")}</div>
+          <div class="podium-avatar avatar ${top2AvatarClass}">${escapeHTML(top2.avatar || top2.initials || "U")}</div>
         </div>
-        <div class="podium-name" title="${escapeHTML(top2.displayName)}">${escapeHTML(top2.displayName)}</div>
+        <div class="podium-name ${top2NameClass}" title="${escapeHTML(top2.displayName)}">${getFlameSVG(top2.streakTier, 14)} <span>${escapeHTML(top2.displayName)}</span></div>
         <div class="podium-score">⭐ ${top2.score}</div>
         <div class="podium-stand stand-2">
           <span class="stand-num">2</span>
@@ -7093,13 +7096,15 @@ function renderLeaderboardUI(data) {
   }
 
   if (top1) {
+    const top1AvatarClass = getAvatarClass(top1.streakTier, false, top1.role);
+    const top1NameClass = getNameClass(top1.streakTier);
     podiumHTML += `
       <div class="podium-col rank-1">
         <div class="podium-avatar-wrap">
           <span class="podium-crown gold">👑</span>
-          <div class="podium-avatar rank-1-avatar">${escapeHTML(top1.initials || top1.displayName?.slice(0, 2) || "U")}</div>
+          <div class="podium-avatar rank-1-avatar avatar avatar-lg ${top1AvatarClass}">${escapeHTML(top1.avatar || top1.initials || "U")}</div>
         </div>
-        <div class="podium-name font-bold" title="${escapeHTML(top1.displayName)}">${escapeHTML(top1.displayName)}</div>
+        <div class="podium-name font-bold ${top1NameClass}" title="${escapeHTML(top1.displayName)}">${getFlameSVG(top1.streakTier, 16)} <span>${escapeHTML(top1.displayName)}</span></div>
         <div class="podium-score gold-score">⭐ ${top1.score}</div>
         <div class="podium-stand stand-1">
           <span class="stand-num">1</span>
@@ -7109,13 +7114,15 @@ function renderLeaderboardUI(data) {
   }
 
   if (top3) {
+    const top3AvatarClass = getAvatarClass(top3.streakTier, false, top3.role);
+    const top3NameClass = getNameClass(top3.streakTier);
     podiumHTML += `
       <div class="podium-col rank-3">
         <div class="podium-avatar-wrap">
           <span class="podium-crown bronze">🥉</span>
-          <div class="podium-avatar">${escapeHTML(top3.initials || top3.displayName?.slice(0, 2) || "U")}</div>
+          <div class="podium-avatar avatar ${top3AvatarClass}">${escapeHTML(top3.avatar || top3.initials || "U")}</div>
         </div>
-        <div class="podium-name" title="${escapeHTML(top3.displayName)}">${escapeHTML(top3.displayName)}</div>
+        <div class="podium-name ${top3NameClass}" title="${escapeHTML(top3.displayName)}">${getFlameSVG(top3.streakTier, 14)} <span>${escapeHTML(top3.displayName)}</span></div>
         <div class="podium-score">⭐ ${top3.score}</div>
         <div class="podium-stand stand-3">
           <span class="stand-num">3</span>
@@ -7133,12 +7140,14 @@ function renderLeaderboardUI(data) {
 
   rest.forEach(u => {
     const isCurrent = currentUserEntry && currentUserEntry.userId === u.userId;
+    const avatarClass = getAvatarClass(u.streakTier, false, u.role);
+    const nameClass = getNameClass(u.streakTier);
     rowsHTML += `
       <div class="comp-lb-row ${isCurrent ? "is-current-user" : ""}">
         <span class="comp-lb-rank">#${u.rank}</span>
         <div class="comp-lb-user">
-          <div class="comp-lb-avatar">${escapeHTML(u.initials || u.displayName?.slice(0, 2) || "U")}</div>
-          <span class="comp-lb-name">${escapeHTML(u.displayName)} ${isCurrent ? '<span class="you-tag">(Bạn)</span>' : ""}</span>
+          <span class="avatar avatar-sm ${avatarClass}">${escapeHTML(u.avatar || u.initials || "U")}</span>
+          <span class="comp-lb-name ${nameClass}">${getFlameSVG(u.streakTier, 15)} <span>${escapeHTML(u.displayName)}</span> ${isCurrent ? '<span class="you-tag">(Bạn)</span>' : ""}</span>
         </div>
         <span class="comp-lb-score">⭐ ${u.score}</span>
       </div>
@@ -7146,12 +7155,14 @@ function renderLeaderboardUI(data) {
   });
 
   if (currentUserEntry && currentUserEntry.rank > 10) {
+    const myAvatarClass = getAvatarClass(currentUserEntry.streakTier, false, currentUserEntry.role);
+    const myNameClass = getNameClass(currentUserEntry.streakTier);
     rowsHTML += `
       <div class="comp-lb-row is-current-user top-11-plus-row">
         <span class="comp-lb-rank">Top 11+</span>
         <div class="comp-lb-user">
-          <div class="comp-lb-avatar">${escapeHTML(currentUserEntry.initials || currentUserEntry.displayName?.slice(0, 2) || "U")}</div>
-          <span class="comp-lb-name">${escapeHTML(currentUserEntry.displayName)} <span class="you-tag">(Bạn - Hạng #${currentUserEntry.rank})</span></span>
+          <span class="avatar avatar-sm ${myAvatarClass}">${escapeHTML(currentUserEntry.avatar || currentUserEntry.initials || "U")}</span>
+          <span class="comp-lb-name ${myNameClass}">${getFlameSVG(currentUserEntry.streakTier, 15)} <span>${escapeHTML(currentUserEntry.displayName)}</span> <span class="you-tag">(Bạn - Hạng #${currentUserEntry.rank})</span></span>
         </div>
         <span class="comp-lb-score">⭐ ${currentUserEntry.score}</span>
       </div>
