@@ -790,6 +790,7 @@
           <div class="arena-banner-img-wrap">
             <img src="public/assets/arena-banner.jpg" alt="RE:SEARCH Arena" class="arena-banner-img" />
             <div class="arena-banner-overlay"></div>
+            <div class="arena-banner-glow"></div>
           </div>
           <div class="arena-banner-content">
             <div class="arena-badge-row">
@@ -797,6 +798,7 @@
                 <span class="arena-badge-icon">🏆</span>
                 <span>RE:SEARCH ARENA</span>
               </span>
+              <span class="arena-badge-season">MÙA 1 • 2026</span>
               <span class="arena-badge-status" id="arenaHeroStatusTag">ĐẤU TRƯỜNG HỌC THUẬT</span>
             </div>
             <h1 class="arena-hero-title">Đấu trường Tri thức &amp; Thi đua NCKH</h1>
@@ -806,25 +808,49 @@
           </div>
         </div>
 
-        <!-- LOCKED NOTICE FOR NON-ADMIN USERS -->
+        <!-- LOCKED NOTICE FOR NON-ADMIN USERS (PREVIEW MODE) -->
         <div id="arenaLockedNotice" class="arena-locked-card" style="display: none;">
+          <div class="arena-locked-halo"></div>
           <div class="arena-locked-icon-wrap">
             <div class="arena-locked-icon">🔒</div>
+            <span class="arena-locked-ring"></span>
           </div>
-          <div class="arena-locked-badge">TÍNH NĂNG ĐANG THỬ NGHIỆM NỘI BỘ</div>
-          <h2 class="arena-locked-title">RE:SEARCH Arena Tạm Khóa</h2>
+          <div class="arena-locked-badge">
+            <span class="pulse-dot"></span>
+            <span>TÍNH NĂNG ĐANG THỬ NGHIỆM NỘI BỘ</span>
+          </div>
+          <h2 class="arena-locked-title">Đấu Trường Arena Sắp Khởi Tranh!</h2>
           <p class="arena-locked-desc">
-            Tính năng Đấu trường Học thuật RE:SEARCH Arena hiện đang trong giai đoạn thử nghiệm nội bộ dành riêng cho Ban Quản trị. Chúng tôi đang tích cực hoàn thiện nội dung và cơ chế để sẵn sàng mở cổng cho toàn bộ sinh viên trong sự kiện thi đua sắp tới!
+            Sàn đấu học thuật RE:SEARCH Arena hiện đang trong giai đoạn thử nghiệm và tối ưu nội bộ bởi Ban Quản trị. Chúng tôi đang tích cực chuẩn bị kho câu hỏi chất lượng cao để mở cổng cho toàn thể sinh viên trong sự kiện thi đua sắp tới.
           </p>
+
+          <div class="arena-locked-preview-grid">
+            <div class="arena-preview-card">
+              <div class="preview-card-icon">⚡</div>
+              <div class="preview-card-title">3 Giai đoạn mỗi tuần</div>
+              <p class="preview-card-desc">Thử thách 10 câu hỏi trắc nghiệm NCKH theo chủ đề (T2-T3, T4-T5, T6-T7).</p>
+            </div>
+            <div class="arena-preview-card highlight">
+              <div class="preview-card-icon">👑</div>
+              <div class="preview-card-title">Bảng Vàng Vinh Danh</div>
+              <p class="preview-card-desc">Cạnh tranh thời gian thực, vinh danh Quán quân, Á quân, Quý quân toàn tuần.</p>
+            </div>
+            <div class="arena-preview-card">
+              <div class="preview-card-icon">🎁</div>
+              <div class="preview-card-title">Phần thưởng Độc quyền</div>
+              <p class="preview-card-desc">Nhận Khiên bảo vệ chuỗi tự học + Điểm rèn luyện hoạt động khoa học.</p>
+            </div>
+          </div>
+
           <div class="arena-locked-actions">
-            <button type="button" class="button button-primary" onclick="go('home')">
+            <button type="button" class="button button-primary arena-cta-home" onclick="go('home')">
               <span>🏠</span> Về Trang chủ
+            </button>
+            <button type="button" class="button button-outline" onclick="go('study')">
+              <span>🎧</span> Phòng tự học Pomodoro
             </button>
             <button type="button" class="button button-outline" onclick="go('forum')">
               <span>💬</span> Diễn đàn NCKH
-            </button>
-            <button type="button" class="button button-outline" onclick="go('study')">
-              <span>🎧</span> Phòng tự học
             </button>
           </div>
         </div>
