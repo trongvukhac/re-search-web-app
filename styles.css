@@ -5239,6 +5239,18 @@ body.dark-theme .arena-nav-badge.beta {
   background: rgba(245, 158, 11, 0.2);
 }
 
+.nav-link-arena {
+  display: inline-flex;
+  align-items: center;
+}
+
+.nav-link-arena svg {
+  vertical-align: -2px;
+  margin-right: 4px;
+  flex-shrink: 0;
+  stroke: currentColor;
+}
+
 .study-maintenance-card {
   background: var(--surface);
   border: 1px dashed var(--border);
@@ -6434,6 +6446,9 @@ body.study-zen-fullscreen .study-main-col {
 /* 1. ARENA PAGE HEADER (MATCHING DEMO TITLE & SLOGAN) */
 .arena-header-block {
   margin-bottom: 18px;
+  max-width: 780px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .arena-header-top {
@@ -6446,7 +6461,7 @@ body.study-zen-fullscreen .study-main-col {
 }
 
 .arena-brand-title {
-  font-size: 26px;
+  font-size: 24px;
   font-weight: 900;
   color: #064e3b;
   margin: 0;
@@ -6488,20 +6503,21 @@ body.dark-theme .arena-status-pill {
 }
 
 .arena-brand-subtitle {
-  font-size: 14.5px;
+  font-size: 14px;
   color: var(--muted);
   margin: 0;
   font-weight: 500;
   line-height: 1.5;
 }
 
-/* 2. ARENA ARTWORK SHOWCASE (FULL TROPHY & CHARACTERS VISIBLE AS IN DEMO) */
+/* 2. ARENA ARTWORK SHOWCASE (BALANCED SIZE FOR PC & MOBILE) */
 .arena-artwork-card {
   width: 100%;
-  border-radius: 20px;
+  max-width: 780px;
+  margin: 0 auto 22px auto;
+  border-radius: 18px;
   overflow: hidden;
-  margin-bottom: 24px;
-  box-shadow: 0 14px 40px -10px rgba(18, 61, 48, 0.18), 0 0 0 1px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 10px 30px -8px rgba(18, 61, 48, 0.16), 0 0 0 1px rgba(0, 0, 0, 0.06);
   background: #0f2e24;
   line-height: 0;
   border: 1px solid rgba(255, 255, 255, 0.1);
@@ -6509,15 +6525,20 @@ body.dark-theme .arena-status-pill {
 
 .arena-artwork-img {
   width: 100%;
-  height: auto;
+  height: 240px;
   display: block;
-  object-fit: contain;
-  max-height: 480px;
+  object-fit: cover;
+  object-position: center 25%;
   transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .arena-artwork-card:hover .arena-artwork-img {
   transform: scale(1.015);
+}
+
+.arena-main-content {
+  max-width: 780px;
+  margin: 0 auto;
 }
 
 /* 3. ARENA LOCKED CARD (GUEST / NON-ADMIN USERS PREVIEW) */
