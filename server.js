@@ -3085,14 +3085,14 @@ async function api(request, response, url) {
   }
 
   if (method === "GET" && pathName === "/api/competition/status") {
-    // Feature flag: khoá tạm thời Arena
-    if (!ARENA_ENABLED) {
-      return json(response, 200, { ok: true, visible: false, isReady: false, locked: true });
+    const user = sessionFrom(request);
+    // Feature flag: khoá tạm thời Arena với người dùng không phải là Admin
+    if (!ARENA_ENABLED && (!user || user.role !== "admin")) {
+      return json(response, 200, { ok: true, visible: true, isReady: false, locked: true });
     }
     const vnNow = getVietnamNow();
     const comp = getOrCreateCurrentCompetition(vnNow);
     const timeState = getCompetitionTimeState(vnNow, comp);
-    const user = sessionFrom(request);
 
     let userStatus = {
       authenticated: false,
@@ -3146,10 +3146,13 @@ async function api(request, response, url) {
   }
 
   if (method === "GET" && pathName === "/api/competition/overview") {
+    const user = sessionFrom(request);
+    if (!ARENA_ENABLED && (!user || user.role !== "admin")) {
+      return json(response, 200, { ok: true, locked: true });
+    }
     const vnNow = getVietnamNow();
     const comp = getOrCreateCurrentCompetition(vnNow);
     const timeState = getCompetitionTimeState(vnNow, comp);
-    const user = sessionFrom(request);
 
     let userSummary = null;
     if (user) {
@@ -3300,6 +3303,10 @@ async function api(request, response, url) {
     const user = requireUser(request, response);
     if (!user) return;
     if (!requireCsrf(request, response, user)) return;
+
+    if (!ARENA_ENABLED && user.role !== "admin") {
+      return error(response, 403, "Đấu trường Arena đang tạm khoá để thử nghiệm nội bộ.");
+    }
 
     const vnNow = getVietnamNow();
     const comp = getOrCreateCurrentCompetition(vnNow);

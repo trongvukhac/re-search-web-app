@@ -21,6 +21,47 @@ function canAccessStudyLounge(user = (session || (typeof window !== "undefined" 
 }
 window.canAccessStudyLounge = canAccessStudyLounge;
 
+function canAccessArena(user = (session || (typeof window !== "undefined" && window.session))) {
+  return Boolean(user && user.role === "admin");
+}
+window.canAccessArena = canAccessArena;
+
+const compState = {
+  status: null,
+  overview: null,
+  currentSession: null,
+  activeTab: "gateway",
+  activeLbPhase: "1",
+  cachedLeaderboard: {},
+  
+  // Tickers
+  homeTimerInterval: null,
+  gatewayTimerInterval: null,
+  quizTimerInterval: null,
+  
+  // Quiz live state
+  currentQIndex: 0,
+  questionTries: 0,
+  isSubmittingAnswer: false,
+  quizRemainingSeconds: 600,
+  quizLiveStars: 0,
+  quizTotalCorrect: 0,
+  quizFirstTryBonusCount: 0,
+  activeQuestions: [],
+  sessionToken: null,
+  
+  // Confetti
+  confettiAnimationId: null,
+  
+  // Admin
+  adminSelectedPhase: 1,
+  adminQuestions: [],
+  
+  // Audio
+  audioCtx: null
+};
+window.compState = compState;
+
 window.notifyPerkLocked = function(days, featureName) {
   toast(`🔒 Tính năng "${featureName}" mở khóa ở Chuỗi ${days} ngày! Bền bỉ học tập mỗi ngày để mở khóa nhé 🔥`);
 };
@@ -508,11 +549,26 @@ function applySession(user) {
   if (notice) notice.style.display = "none";
   if (mainStudy) mainStudy.style.display = "block";
 
+  const arenaNotice = $("#arenaLockedNotice");
+  const arenaMain = $("#arenaMainContent");
+  if (canAccessArena(user)) {
+    if (arenaNotice) arenaNotice.style.display = "none";
+    if (arenaMain) arenaMain.style.display = "block";
+    const adminBar = $("#arenaAdminBar");
+    if (adminBar) adminBar.style.display = "flex";
+  } else {
+    if (arenaNotice) arenaNotice.style.display = "block";
+    if (arenaMain) arenaMain.style.display = "none";
+  }
+
   if (typeof updateStudyStreakPerks === "function") {
     updateStudyStreakPerks();
   }
   if (typeof fetchStudyLounge === "function") {
     fetchStudyLounge();
+  }
+  if (currentActiveRoute === "arena") {
+    onEnterArena();
   }
 }
 
@@ -1181,6 +1237,8 @@ function go(route, scrollToTop = true) {
   if (route === "documents") renderDocuments();
   if (route === "study") onEnterStudyLounge();
   else onLeaveStudyLounge();
+  if (route === "arena") onEnterArena();
+  else onLeaveArena();
   updateResponsiveAsidePlacement();
   showMobileNav();
 }
@@ -6541,40 +6599,7 @@ hydrateServer();
    RE:SEARCH - HOẠT ĐỘNG THI ĐUA ĐỊNH KỲ HÀNG TUẦN (WEEKLY COMPETITION ARENA)
    ========================================================================== */
 
-const compState = {
-  status: null,
-  overview: null,
-  currentSession: null,
-  activeTab: "gateway",
-  activeLbPhase: "1",
-  cachedLeaderboard: {},
-  
-  // Tickers
-  homeTimerInterval: null,
-  gatewayTimerInterval: null,
-  quizTimerInterval: null,
-  
-  // Quiz live state
-  currentQIndex: 0,
-  questionTries: 0,
-  isSubmittingAnswer: false,
-  quizRemainingSeconds: 600,
-  quizLiveStars: 0,
-  quizTotalCorrect: 0,
-  quizFirstTryBonusCount: 0,
-  activeQuestions: [],
-  sessionToken: null,
-  
-  // Confetti
-  confettiAnimationId: null,
-  
-  // Admin
-  adminSelectedPhase: 1,
-  adminQuestions: [],
-  
-  // Audio
-  audioCtx: null
-};
+
 
 function playCompSound(type) {
   try {
@@ -6846,9 +6871,21 @@ function renderWeeklyCompetitionCard(raw) {
   }, 1000);
 }
 
-async function openCompetitionModal(initialTab = null) {
-  const modal = $("#competitionModal");
-  if (!modal) return;
+async function onEnterArena() {
+  const isAdmin = canAccessArena();
+  const lockedNotice = $("#arenaLockedNotice");
+  const mainContent = $("#arenaMainContent");
+
+  if (!isAdmin) {
+    if (lockedNotice) lockedNotice.style.display = "block";
+    if (mainContent) mainContent.style.display = "none";
+    return;
+  }
+
+  if (lockedNotice) lockedNotice.style.display = "none";
+  if (mainContent) mainContent.style.display = "block";
+  const adminBar = $("#arenaAdminBar");
+  if (adminBar) adminBar.style.display = "flex";
 
   try {
     const overview = await requestAPI("/api/competition/overview");
@@ -6856,23 +6893,35 @@ async function openCompetitionModal(initialTab = null) {
     renderCompetitionOverview(overview);
 
     const norm = normalizeCompData(overview);
-    if (initialTab) {
-      switchCompTab(initialTab);
-    } else if (norm.state === "open" || norm.state === "countdown") {
-      switchCompTab("gateway");
+    if (!compState.activeTab) {
+      if (norm.state === "open" || norm.state === "countdown") {
+        switchCompTab("gateway");
+      } else {
+        switchCompTab("leaderboard");
+      }
     } else {
-      switchCompTab("leaderboard");
+      switchCompTab(compState.activeTab);
     }
-
-    modal.showModal();
   } catch (e) {
-    toast(e.message || "Không thể tải thông tin thi đua.");
+    console.error("Error loading Arena overview:", e);
+  }
+}
+
+function onLeaveArena() {
+  if (compState.gatewayTimerInterval) clearInterval(compState.gatewayTimerInterval);
+}
+
+window.onEnterArena = onEnterArena;
+window.onLeaveArena = onLeaveArena;
+
+async function openCompetitionModal(initialTab = null) {
+  go("arena");
+  if (initialTab) {
+    switchCompTab(initialTab);
   }
 }
 
 function closeCompetitionModal() {
-  const modal = $("#competitionModal");
-  if (modal) modal.close();
   if (compState.gatewayTimerInterval) clearInterval(compState.gatewayTimerInterval);
 }
 
@@ -6897,20 +6946,24 @@ function switchCompTab(tabName) {
   });
 
   if (tabName === "gateway") {
-    $("#compTabGateway").style.display = "block";
+    const gEl = $("#compTabGateway");
+    if (gEl) gEl.style.display = "block";
     if (compState.overview) renderGatewayTab(compState.overview);
   } else if (tabName === "leaderboard") {
-    $("#compTabLeaderboard").style.display = "block";
+    const lEl = $("#compTabLeaderboard");
+    if (lEl) lEl.style.display = "block";
     loadAndRenderLeaderboard(compState.activeLbPhase || 1);
   } else if (tabName === "rules") {
-    $("#compTabRules").style.display = "block";
+    const rEl = $("#compTabRules");
+    if (rEl) rEl.style.display = "block";
   }
 }
 
 function renderCompetitionOverview(raw) {
   const data = normalizeCompData(raw);
-  if ($("#compModalTitle")) {
-    $("#compModalTitle").textContent = data.weekTopic || "Hoạt động Thi đua Định kỳ Hàng tuần";
+  const heroStatusTag = $("#arenaHeroStatusTag");
+  if (heroStatusTag && data.phaseName) {
+    heroStatusTag.textContent = data.phaseName.toUpperCase();
   }
 }
 

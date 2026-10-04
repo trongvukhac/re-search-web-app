@@ -5200,6 +5200,45 @@ form .ql-editor,
   padding: 0 4px;
 }
 
+/* Arena Navigation Badges */
+.arena-nav-badge {
+  display: inline-block;
+  font-size: 9px;
+  font-weight: 800;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: rgba(245, 158, 11, 0.15);
+  color: #d97706;
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  margin-left: 5px;
+  vertical-align: middle;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  line-height: 1.2;
+}
+
+.arena-nav-badge.beta {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.16) 0%, rgba(239, 68, 68, 0.14) 100%);
+  color: #b45309;
+  border-color: rgba(245, 158, 11, 0.4);
+}
+
+.arena-nav-badge.mobile {
+  position: absolute;
+  top: 1px;
+  right: 6px;
+  font-size: 7px;
+  padding: 0 4px;
+}
+
+[data-user-theme="dark"] .arena-nav-badge.beta,
+[data-user-theme="midnight"] .arena-nav-badge.beta,
+body.dark-theme .arena-nav-badge.beta {
+  color: #fbbf24;
+  border-color: rgba(251, 191, 36, 0.4);
+  background: rgba(245, 158, 11, 0.2);
+}
+
 .study-maintenance-card {
   background: var(--surface);
   border: 1px dashed var(--border);
@@ -6388,20 +6427,244 @@ body.study-zen-fullscreen .study-main-col {
   transform: translateX(3px);
 }
 
-/* COMPETITION MODAL */
-.competition-modal {
-  background: var(--paper);
-  border-radius: 16px;
-  box-shadow: 0 24px 60px rgba(0,0,0,0.25);
-  padding: 24px 28px;
+/* ==========================================================================
+   RESEARCH ARENA (ĐẤU TRƯỜNG HỌC THUẬT & THI ĐUA NCKH)
+   ========================================================================== */
+.arena-hero-banner {
+  position: relative;
+  border-radius: 20px;
+  overflow: hidden;
+  margin-bottom: 24px;
+  min-height: 280px;
+  display: flex;
+  align-items: flex-end;
+  box-shadow: 0 16px 40px -10px rgba(18, 61, 48, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.arena-banner-img-wrap {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+}
+
+.arena-banner-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 32%;
+  filter: saturate(1.1) brightness(0.92);
+  transition: transform 0.6s ease;
+}
+
+.arena-hero-banner:hover .arena-banner-img {
+  transform: scale(1.02);
+}
+
+.arena-banner-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(8, 28, 21, 0.15) 0%, rgba(8, 28, 21, 0.65) 55%, rgba(8, 28, 21, 0.94) 100%);
+  backdrop-filter: blur(1px);
+}
+
+.arena-banner-content {
+  position: relative;
+  z-index: 2;
+  padding: 32px 32px 28px 32px;
+  color: #ffffff;
+  width: 100%;
+}
+
+.arena-badge-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+
+.arena-badge-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.35) 0%, rgba(217, 119, 6, 0.35) 100%);
+  border: 1px solid rgba(245, 158, 11, 0.6);
+  color: #fef08a;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  box-shadow: 0 2px 10px rgba(245, 158, 11, 0.2);
+}
+
+.arena-badge-status {
+  font-size: 11px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.9);
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(8px);
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  letter-spacing: 0.5px;
+}
+
+.arena-hero-title {
+  font-size: 28px;
+  font-weight: 900;
+  line-height: 1.25;
+  margin: 0 0 8px 0;
+  color: #ffffff;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.6);
+}
+
+.arena-hero-subtitle {
+  font-size: 14.5px;
+  line-height: 1.55;
+  color: rgba(255, 255, 255, 0.9);
+  margin: 0;
+  max-width: 650px;
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.5);
+}
+
+/* Arena Locked Card */
+.arena-locked-card {
+  background: var(--surface);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  border-radius: 20px;
+  padding: 44px 24px;
+  text-align: center;
+  max-width: 640px;
+  margin: 20px auto 48px auto;
+  box-shadow: 0 20px 50px -10px rgba(0, 0, 0, 0.08);
+  position: relative;
   overflow: hidden;
 }
 
-.comp-modal-title-wrap h2 {
-  margin: 0;
-  font-size: 20px;
+.arena-locked-card::before {
+  content: "";
+  position: absolute;
+  top: -60px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 260px;
+  height: 160px;
+  background: radial-gradient(circle, rgba(245, 158, 11, 0.2) 0%, transparent 70%);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.arena-locked-icon-wrap {
+  width: 72px;
+  height: 72px;
+  margin: 0 auto 16px auto;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.15) 0%, rgba(239, 68, 68, 0.15) 100%);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32px;
+  box-shadow: 0 8px 24px rgba(245, 158, 11, 0.15);
+}
+
+.arena-locked-badge {
+  display: inline-block;
+  font-size: 11px;
   font-weight: 800;
-  color: var(--ink);
+  color: #d97706;
+  background: rgba(245, 158, 11, 0.12);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  padding: 4px 14px;
+  border-radius: 999px;
+  margin-bottom: 14px;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+}
+
+.arena-locked-title {
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--text);
+  margin: 0 0 12px 0;
+}
+
+.arena-locked-desc {
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--muted);
+  max-width: 500px;
+  margin: 0 auto 28px auto;
+}
+
+.arena-locked-actions {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+/* Arena Admin Bar */
+.arena-admin-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(168, 85, 247, 0.1) 100%);
+  border: 1px solid rgba(99, 102, 241, 0.25);
+  padding: 12px 18px;
+  border-radius: 12px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  font-size: 13.5px;
+  color: var(--text);
+}
+
+.admin-bar-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.admin-badge-icon {
+  font-size: 18px;
+}
+
+/* Arena Tabs Container */
+.arena-tabs-container {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 24px 28px;
+  box-shadow: 0 10px 30px -5px rgba(0,0,0,0.04);
+}
+
+@media (max-width: 768px) {
+  .arena-hero-banner {
+    min-height: 220px;
+    margin-bottom: 18px;
+  }
+  .arena-banner-content {
+    padding: 20px 16px 18px 16px;
+  }
+  .arena-hero-title {
+    font-size: 20px;
+  }
+  .arena-hero-subtitle {
+    font-size: 13px;
+  }
+  .arena-tabs-container {
+    padding: 16px 14px;
+    border-radius: 14px;
+  }
+  .arena-admin-bar {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
 }
 
 .comp-nav-tabs {
