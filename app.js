@@ -7735,6 +7735,255 @@ async function adminConcludeWeekNow() {
   }
 }
 
+// --- EXCEL TEMPLATE & IMPORT FOR ARENA QUESTIONS ---
+function adminDownloadExcelTemplate() {
+  const currentPhase = compState.adminSelectedPhase || 1;
+  const sampleData = [
+    {
+      "STT": 1,
+      "Giai đoạn": currentPhase,
+      "Câu hỏi": "Bước đầu tiên trong quy trình nghiên cứu khoa học chuẩn là gì?",
+      "Đáp án A": "Xác định vấn đề và câu hỏi nghiên cứu",
+      "Đáp án B": "Tiến hành thu thập dữ liệu thực địa ngay",
+      "Đáp án C": "Viết báo cáo kết quả và thảo luận",
+      "Đáp án đúng (A/B/C)": "A"
+    },
+    {
+      "STT": 2,
+      "Giai đoạn": currentPhase,
+      "Câu hỏi": "Phương pháp nghiên cứu nào thường sử dụng bảng hỏi (survey) để thu thập dữ liệu định lượng?",
+      "Đáp án A": "Nghiên cứu định tính phỏng vấn sâu",
+      "Đáp án B": "Nghiên cứu điều tra khảo sát (Survey research)",
+      "Đáp án C": "Phương pháp quan sát tham dự",
+      "Đáp án đúng (A/B/C)": "B"
+    },
+    {
+      "STT": 3,
+      "Giai đoạn": currentPhase,
+      "Câu hỏi": "Chỉ số nào thường dùng để đo lường độ tin cậy nhất quán nội tại của thang đo trong SPSS?",
+      "Đáp án A": "Hệ số tương quan Pearson",
+      "Đáp án B": "Chỉ số R bình phương (R-squared)",
+      "Đáp án C": "Hệ số Cronbach's Alpha",
+      "Đáp án đúng (A/B/C)": "C"
+    },
+    {
+      "STT": 4,
+      "Giai đoạn": currentPhase,
+      "Câu hỏi": "Biến độc lập (Independent Variable) trong mô hình nghiên cứu có đặc điểm gì?",
+      "Đáp án A": "Là nguyên nhân tác động đến biến phụ thuộc",
+      "Đáp án B": "Là kết quả bị chi phối bởi biến phụ thuộc",
+      "Đáp án C": "Là biến không bao giờ thay đổi giá trị",
+      "Đáp án đúng (A/B/C)": "A"
+    },
+    {
+      "STT": 5,
+      "Giai đoạn": currentPhase,
+      "Câu hỏi": "Khi trích dẫn tài liệu tham khảo theo chuẩn APA, thứ tự thông tin mở đầu là gì?",
+      "Đáp án A": "Tên bài báo rồi đến năm xuất bản",
+      "Đáp án B": "Họ tác giả rồi đến năm xuất bản trong ngoặc đơn",
+      "Đáp án C": "Tên nhà xuất bản rồi đến tên tác giả",
+      "Đáp án đúng (A/B/C)": "B"
+    },
+    {
+      "STT": 6,
+      "Giai đoạn": currentPhase,
+      "Câu hỏi": "Giả thuyết nghiên cứu (Hypothesis) là gì?",
+      "Đáp án A": "Một kết luận chắc chắn đã được chứng minh 100%",
+      "Đáp án B": "Một câu hỏi chưa có hướng trả lời",
+      "Đáp án C": "Một phỏng đoán có căn cứ khoa học về mối quan hệ giữa các biến",
+      "Đáp án đúng (A/B/C)": "C"
+    },
+    {
+      "STT": 7,
+      "Giai đoạn": currentPhase,
+      "Câu hỏi": "Chọn mẫu ngẫu nhiên đơn giản (Simple Random Sampling) thuộc loại chọn mẫu nào?",
+      "Đáp án A": "Chọn mẫu theo xác suất (Probability sampling)",
+      "Đáp án B": "Chọn mẫu phi xác suất (Non-probability sampling)",
+      "Đáp án C": "Chọn mẫu thuận tiện (Convenience sampling)",
+      "Đáp án đúng (A/B/C)": "A"
+    },
+    {
+      "STT": 8,
+      "Giai đoạn": currentPhase,
+      "Câu hỏi": "Giá trị p-value nhỏ hơn bao nhiêu thường được xem là có ý nghĩa thống kê (mức 5%)?",
+      "Đáp án A": "p > 0.05",
+      "Đáp án B": "p < 0.05",
+      "Đáp án C": "p = 0.50",
+      "Đáp án đúng (A/B/C)": "B"
+    },
+    {
+      "STT": 9,
+      "Giai đoạn": currentPhase,
+      "Câu hỏi": "Dữ liệu thứ cấp (Secondary Data) là loại dữ liệu nào sau đây?",
+      "Đáp án A": "Dữ liệu do nhà nghiên cứu tự làm khảo sát thu thập trực tiếp",
+      "Đáp án B": "Dữ liệu có sẵn từ niên giám thống kê, báo cáo, nghiên cứu trước",
+      "Đáp án C": "Dữ liệu chỉ bao gồm hình ảnh và video ghi hình",
+      "Đáp án đúng (A/B/C)": "B"
+    },
+    {
+      "STT": 10,
+      "Giai đoạn": currentPhase,
+      "Câu hỏi": "Hành vi nào sau đây vi phạm nghiêm trọng nhất đạo đức trong nghiên cứu khoa học?",
+      "Đáp án A": "Sử dụng mẫu nghiên cứu có quy mô lớn hơn 500 người",
+      "Đáp án B": "Trích dẫn đầy đủ nguồn tham khảo học thuật",
+      "Đáp án C": "Đạo văn (Plagiarism) và ngụy tạo số liệu khảo sát",
+      "Đáp án đúng (A/B/C)": "C"
+    }
+  ];
+
+  if (window.XLSX) {
+    const ws = XLSX.utils.json_to_sheet(sampleData);
+    ws['!cols'] = [
+      { wch: 6 },  // STT
+      { wch: 12 }, // Giai đoạn
+      { wch: 65 }, // Câu hỏi
+      { wch: 38 }, // A
+      { wch: 38 }, // B
+      { wch: 38 }, // C
+      { wch: 22 }  // Đáp án đúng
+    ];
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, `Cau_Hoi_Giai_Doan_${currentPhase}`);
+    XLSX.writeFile(wb, `RE_SEARCH_Arena_Mau_Cau_Hoi_GD${currentPhase}.xlsx`);
+    toast("📥 Đã tải file Excel mẫu (.xlsx) thành công!");
+  } else {
+    // Fallback CSV with UTF-8 BOM
+    let csv = "\uFEFFSTT,Giai đoạn,Câu hỏi,Đáp án A,Đáp án B,Đáp án C,Đáp án đúng (A/B/C)\n";
+    sampleData.forEach(r => {
+      csv += `${r["STT"]},${r["Giai đoạn"]},"${r["Câu hỏi"].replace(/"/g, '""')}","${r["Đáp án A"].replace(/"/g, '""')}","${r["Đáp án B"].replace(/"/g, '""')}","${r["Đáp án C"].replace(/"/g, '""')}",${r["Đáp án đúng (A/B/C)"]}\n`;
+    });
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `RE_SEARCH_Arena_Mau_Cau_Hoi_GD${currentPhase}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast("📥 Đã tải file mẫu (.csv) thành công!");
+  }
+}
+
+async function adminHandleExcelUpload(event) {
+  const file = event.target.files?.[0];
+  if (!file) return;
+  event.target.value = ""; // reset file input
+
+  try {
+    const data = await file.arrayBuffer();
+    let rows = [];
+
+    if (window.XLSX) {
+      const wb = XLSX.read(data, { type: "array" });
+      const firstSheet = wb.Sheets[wb.SheetNames[0]];
+      rows = XLSX.utils.sheet_to_json(firstSheet, { defval: "" });
+    } else {
+      // Basic CSV fallback
+      const text = new TextDecoder("utf-8").decode(data);
+      const lines = text.split(/\r?\n/).filter(l => l.trim());
+      if (lines.length < 2) throw new Error("File không chứa dữ liệu câu hỏi.");
+      const headers = lines[0].split(",").map(h => h.replace(/^["'\s]+|["'\s]+$/g, ""));
+      for (let i = 1; i < lines.length; i++) {
+        const cols = lines[i].split(",").map(c => c.replace(/^["'\s]+|["'\s]+$/g, ""));
+        const obj = {};
+        headers.forEach((h, idx) => { obj[h] = cols[idx] || ""; });
+        rows.push(obj);
+      }
+    }
+
+    if (!rows || rows.length === 0) {
+      throw new Error("Không tìm thấy dữ liệu dòng nào trong file Excel.");
+    }
+
+    const currentPhase = compState.adminSelectedPhase || 1;
+    const parsedQuestions = [];
+
+    rows.forEach((row, i) => {
+      // Detect question text column
+      const qText = (
+        row["Câu hỏi"] || row["Cau hoi"] || row["Question"] ||
+        row["Nội dung"] || row["Nội dung câu hỏi"] || Object.values(row)[2] || ""
+      ).toString().trim();
+
+      // Detect option A
+      const optA = (
+        row["Đáp án A"] || row["Dap an A"] || row["Option A"] ||
+        row["A"] || Object.values(row)[3] || ""
+      ).toString().trim();
+
+      // Detect option B
+      const optB = (
+        row["Đáp án B"] || row["Dap an B"] || row["Option B"] ||
+        row["B"] || Object.values(row)[4] || ""
+      ).toString().trim();
+
+      // Detect option C
+      const optC = (
+        row["Đáp án C"] || row["Dap an C"] || row["Option C"] ||
+        row["C"] || Object.values(row)[5] || ""
+      ).toString().trim();
+
+      // Detect correct option
+      let correct = (
+        row["Đáp án đúng (A/B/C)"] || row["Đáp án đúng"] || row["Dap an dung"] ||
+        row["Đáp án"] || row["Correct"] || row["Correct Option"] || Object.values(row)[6] || "A"
+      ).toString().trim().toUpperCase();
+
+      if (!["A", "B", "C"].includes(correct)) {
+        if (correct.includes("A")) correct = "A";
+        else if (correct.includes("B")) correct = "B";
+        else if (correct.includes("C")) correct = "C";
+        else correct = "A";
+      }
+
+      // Detect phase column if present
+      const rawPhase = row["Giai đoạn"] || row["Giai doan"] || row["Phase"] || currentPhase;
+      const phaseVal = parseInt(rawPhase, 10);
+
+      if (qText && optA && optB && optC) {
+        parsedQuestions.push({
+          phase: isNaN(phaseVal) ? currentPhase : phaseVal,
+          questionText: qText,
+          optionA: optA,
+          optionB: optB,
+          optionC: optC,
+          correctOption: correct
+        });
+      }
+    });
+
+    if (parsedQuestions.length === 0) {
+      throw new Error("Không nhận diện được câu hỏi hợp lệ. Vui lòng sử dụng file theo đúng định dạng template mẫu (Câu hỏi, Đáp án A, Đáp án B, Đáp án C, Đáp án đúng).");
+    }
+
+    // Filter questions for the selected phase if specified in file, or take up to 10
+    const phaseQuestions = parsedQuestions.filter(q => q.phase === currentPhase);
+    const targetQuestions = phaseQuestions.length > 0 ? phaseQuestions : parsedQuestions;
+
+    compState.adminQuestions = targetQuestions.slice(0, 10).map((q, idx) => ({
+      questionNumber: idx + 1,
+      questionText: q.questionText,
+      optionA: q.optionA,
+      optionB: q.optionB,
+      optionC: q.optionC,
+      correctOption: q.correctOption
+    }));
+
+    renderAdminQuestionsList();
+
+    const badge = $("#adminPhaseStatusBadge");
+    if (badge) {
+      const cnt = compState.adminQuestions.length;
+      badge.textContent = cnt === 10 ? `🟢 ${cnt}/10 câu (Đạt chuẩn)` : `⚠️ ${cnt}/10 câu (Cần đủ 10 câu)`;
+      badge.style.color = cnt === 10 ? "#246247" : "#d97706";
+    }
+
+    toast(`🎉 Đã nhận diện và fill ${compState.adminQuestions.length} câu hỏi vào Giai đoạn ${currentPhase}! Hãy bấm "Lưu 10 câu hỏi giai đoạn" để hoàn tất.`);
+  } catch (err) {
+    console.error("Lỗi đọc file Excel:", err);
+    toast(`❌ Lỗi đọc file: ${err.message}`);
+  }
+}
+
 // Window attachments for inline HTML onclick attributes
 window.openCompetitionModal = openCompetitionModal;
 window.closeCompetitionModal = closeCompetitionModal;
@@ -7754,6 +8003,8 @@ window.adminSaveQuestions = adminSaveQuestions;
 window.adminSetSimTime = adminSetSimTime;
 window.adminConcludeWeekNow = adminConcludeWeekNow;
 window.loadWeeklyCompetitionStatus = loadWeeklyCompetitionStatus;
+window.adminDownloadExcelTemplate = adminDownloadExcelTemplate;
+window.adminHandleExcelUpload = adminHandleExcelUpload;
 
 
 

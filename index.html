@@ -15,6 +15,7 @@
     <link href="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.snow.css" rel="stylesheet" />
     <script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <link rel="stylesheet" href="styles.css?v=35" />
   </head>
   <body>
@@ -1688,7 +1689,12 @@
         <div class="admin-card" style="margin-bottom: 16px; padding: 16px; background: #fff; border: 1px solid var(--line); border-radius: 8px;">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
             <h3 style="margin: 0; font-size: 14px;">2. Thiết lập Bộ 10 câu hỏi theo Giai đoạn</h3>
-            <button type="button" class="button button-sm button-outline" onclick="adminSeedSampleQuestions()">⚡ Tải bộ 30 câu hỏi mẫu NCKH</button>
+            <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+              <button type="button" class="button button-sm button-outline" onclick="adminDownloadExcelTemplate()" title="Tải file Excel mẫu chuẩn cấu trúc câu hỏi và đáp án">📥 Tải Excel mẫu</button>
+              <button type="button" class="button button-sm button-outline" onclick="$('#adminImportExcelInput').click()" title="Tải file Excel câu hỏi lên để hệ thống tự động nhận diện và điền">📤 Nhập từ Excel</button>
+              <input type="file" id="adminImportExcelInput" accept=".xlsx, .xls, .csv" style="display: none;" onchange="adminHandleExcelUpload(event)" />
+              <button type="button" class="button button-sm button-outline" onclick="adminSeedSampleQuestions()" title="Nạp 30 câu hỏi mẫu NCKH mặc định">⚡ 30 câu mẫu NCKH</button>
+            </div>
           </div>
 
           <div style="display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; align-items: center;">
