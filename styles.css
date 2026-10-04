@@ -6440,108 +6440,117 @@ body.study-zen-fullscreen .study-main-col {
 }
 
 /* ==========================================================================
-   RESEARCH ARENA (ĐẤU TRƯỜNG HỌC THUẬT & THI ĐUA NCKH) - MATCHING DEMO BOX 6
+   RESEARCH ARENA (ĐẤU TRƯỜNG HỌC THUẬT & THI ĐUA NCKH) - MATCHING DEMO HERO
    ========================================================================== */
 
-/* 1. ARENA PAGE HEADER (MATCHING DEMO TITLE & SLOGAN) */
-.arena-header-block {
-  margin-bottom: 18px;
-  max-width: 780px;
-  margin-left: auto;
-  margin-right: auto;
-}
-
-.arena-header-top {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 4px;
-  flex-wrap: wrap;
-}
-
-.arena-brand-title {
-  font-size: 24px;
-  font-weight: 900;
-  color: #064e3b;
-  margin: 0;
-  letter-spacing: -0.3px;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-}
-
-[data-user-theme="dark"] .arena-brand-title,
-[data-user-theme="midnight"] .arena-brand-title,
-body.dark-theme .arena-brand-title {
-  color: #34d399;
-}
-
-.arena-asterisk {
-  color: #10b981;
-  font-weight: 800;
-}
-
-.arena-status-pill {
-  font-size: 11px;
-  font-weight: 800;
-  color: #047857;
-  background: #ecfdf5;
-  border: 1px solid #a7f3d0;
-  padding: 4px 12px;
-  border-radius: 999px;
-  letter-spacing: 0.5px;
-  text-transform: uppercase;
-}
-
-[data-user-theme="dark"] .arena-status-pill,
-[data-user-theme="midnight"] .arena-status-pill,
-body.dark-theme .arena-status-pill {
-  background: rgba(16, 185, 129, 0.15);
-  border-color: rgba(52, 211, 153, 0.3);
-  color: #6ee7b7;
-}
-
-.arena-brand-subtitle {
-  font-size: 14px;
-  color: var(--muted);
-  margin: 0;
-  font-weight: 500;
-  line-height: 1.5;
-}
-
-/* 2. ARENA ARTWORK SHOWCASE (BALANCED SIZE FOR PC & MOBILE) */
-.arena-artwork-card {
-  width: 100%;
-  max-width: 780px;
-  margin: 0 auto 22px auto;
-  border-radius: 18px;
-  overflow: hidden;
-  box-shadow: 0 10px 30px -8px rgba(18, 61, 48, 0.16), 0 0 0 1px rgba(0, 0, 0, 0.06);
-  background: #0f2e24;
-  line-height: 0;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.arena-artwork-img {
-  width: 100%;
-  height: 240px;
-  display: block;
-  object-fit: cover;
-  object-position: center 25%;
-  transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.arena-artwork-card:hover .arena-artwork-img {
-  transform: scale(1.015);
-}
-
-.arena-main-content {
-  max-width: 780px;
+#arena.page {
+  max-width: 1040px;
   margin: 0 auto;
 }
 
-/* 3. ARENA LOCKED CARD (GUEST / NON-ADMIN USERS PREVIEW) */
+/* 1. ARENA HERO BANNER (MATCHING DEMO EXACTLY) */
+.arena-hero-banner {
+  position: relative;
+  width: 100%;
+  min-height: 290px;
+  border-radius: 24px;
+  overflow: hidden;
+  margin-bottom: 22px;
+  background: #0f2e24 url('public/assets/arena-banner.jpg') center 22% / cover no-repeat;
+  box-shadow: 0 16px 40px -12px rgba(15, 46, 36, 0.25), 0 0 0 1px rgba(0, 0, 0, 0.06);
+  display: flex;
+  align-items: flex-end;
+}
+
+.arena-banner-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to right,
+    rgba(10, 30, 24, 0.94) 0%,
+    rgba(10, 30, 24, 0.78) 45%,
+    rgba(10, 30, 24, 0.25) 80%,
+    rgba(10, 30, 24, 0.1) 100%
+  ),
+  linear-gradient(
+    to top,
+    rgba(10, 30, 24, 0.8) 0%,
+    transparent 60%
+  );
+  pointer-events: none;
+}
+
+.arena-banner-content {
+  position: relative;
+  z-index: 2;
+  padding: 36px 36px 32px 36px;
+  max-width: 760px;
+}
+
+.arena-banner-tags {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+
+.arena-tag-gold {
+  background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 4px 12px;
+  border-radius: 999px;
+  letter-spacing: 0.5px;
+  box-shadow: 0 2px 8px rgba(180, 83, 9, 0.3);
+}
+
+.arena-tag-season {
+  background: rgba(16, 185, 129, 0.25);
+  border: 1px solid rgba(110, 231, 183, 0.45);
+  color: #ecfdf5;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 4px 12px;
+  border-radius: 999px;
+  letter-spacing: 0.5px;
+  backdrop-filter: blur(8px);
+}
+
+.arena-tag-type {
+  background: rgba(0, 0, 0, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  color: #f3f4f6;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 4px 12px;
+  border-radius: 999px;
+  letter-spacing: 0.5px;
+  backdrop-filter: blur(8px);
+  text-transform: uppercase;
+}
+
+.arena-hero-title {
+  font-size: 32px;
+  font-weight: 900;
+  color: #ffffff;
+  margin: 0 0 10px 0;
+  line-height: 1.25;
+  letter-spacing: -0.5px;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
+}
+
+.arena-hero-subtitle {
+  font-size: 14.5px;
+  color: rgba(255, 255, 255, 0.92);
+  margin: 0;
+  line-height: 1.55;
+  font-weight: 400;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+}
+
+/* 2. ARENA LOCKED CARD (GUEST / NON-ADMIN USERS PREVIEW) */
 .arena-locked-card {
   background: var(--surface);
   border: 1px solid rgba(245, 158, 11, 0.35);
@@ -6682,20 +6691,21 @@ body.dark-theme .arena-status-pill {
   border-radius: 999px !important;
 }
 
-/* 4. ARENA ADMIN COMMAND BAR */
+/* 3. ARENA ADMIN COMMAND BAR */
 .arena-admin-bar {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 14px;
-  background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(168, 85, 247, 0.1) 50%, rgba(16, 185, 129, 0.08) 100%);
-  border: 1px solid rgba(99, 102, 241, 0.28);
-  padding: 12px 18px;
-  border-radius: 14px;
-  margin-bottom: 20px;
+  background: linear-gradient(135deg, #eef2ff 0%, #f5f3ff 100%);
+  border: 1px solid #c7d2fe;
+  padding: 12px 20px;
+  border-radius: 16px;
+  margin-bottom: 22px;
   flex-wrap: wrap;
   font-size: 13.5px;
-  color: var(--text);
+  color: #1e293b;
+  box-shadow: 0 2px 10px rgba(99, 102, 241, 0.05);
 }
 
 .admin-bar-left {
@@ -6708,33 +6718,45 @@ body.dark-theme .arena-status-pill {
   font-size: 18px;
 }
 
-/* 5. ARENA TABS CONTAINER & SEGMENTED PILLS */
+.admin-bar-actions .button {
+  background: #ffffff !important;
+  color: #334155 !important;
+  border: 1px solid #cbd5e1 !important;
+  border-radius: 999px !important;
+  padding: 6px 16px !important;
+  font-weight: 700 !important;
+  font-size: 12.5px !important;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+}
+
+/* 4. ARENA TABS CONTAINER & SEGMENTED PILLS (FOREST GREEN ACTIVE PILL MATCHING DEMO) */
 .arena-tabs-container {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 20px;
-  padding: 24px 28px;
-  box-shadow: 0 12px 36px -10px rgba(0, 0, 0, 0.05);
+  padding: 28px 32px;
+  box-shadow: 0 8px 30px -10px rgba(0, 0, 0, 0.04);
 }
 
 .comp-nav-tabs.arena-nav-tabs {
   display: flex;
   gap: 8px;
-  background: var(--sage-2);
+  background: #f1f5f3;
   padding: 6px;
   border-radius: 999px;
-  border: 1px solid var(--line);
-  margin-bottom: 22px;
+  border: 1px solid #e2e8f0;
+  margin-bottom: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
 }
 
 .comp-tab-btn {
   flex: 1;
-  background: none;
+  background: transparent;
   border: none;
-  padding: 10px 16px;
-  font-size: 13.5px;
+  padding: 11px 20px;
+  font-size: 14px;
   font-weight: 700;
-  color: var(--muted);
+  color: #475569;
   cursor: pointer;
   border-radius: 999px;
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
@@ -6745,14 +6767,15 @@ body.dark-theme .arena-status-pill {
 }
 
 .comp-tab-btn:hover:not(.active) {
-  color: var(--ink);
-  background: rgba(0, 0, 0, 0.04);
+  color: #0f172a;
+  background: rgba(255, 255, 255, 0.7);
 }
 
 .comp-tab-btn.active {
-  background: linear-gradient(135deg, #123d30 0%, #1e5944 100%);
+  background: #194d3e !important;
   color: #ffffff !important;
-  box-shadow: 0 4px 14px rgba(18, 61, 48, 0.28);
+  font-weight: 800 !important;
+  box-shadow: 0 4px 14px rgba(25, 77, 62, 0.3) !important;
 }
 
 .comp-tab-btn.active::after {
@@ -7581,23 +7604,20 @@ body.dark-theme .comp-tab-btn.active {
 
 /* 10. RESPONSIVE MOBILE ADJUSTMENTS (FLAWLESS & MATCHING DEMO) */
 @media (max-width: 768px) {
-  .arena-header-top {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 6px;
-  }
-  .arena-brand-title {
-    font-size: 21px;
-  }
-  .arena-brand-subtitle {
-    font-size: 13px;
-  }
-  .arena-artwork-card {
-    border-radius: 14px;
+  .arena-hero-banner {
+    min-height: 230px;
     margin-bottom: 16px;
+    border-radius: 18px;
+    background-position: center 20%;
   }
-  .arena-artwork-img {
-    max-height: 240px;
+  .arena-banner-content {
+    padding: 22px 18px 20px 18px;
+  }
+  .arena-hero-title {
+    font-size: 22px;
+  }
+  .arena-hero-subtitle {
+    font-size: 13px;
   }
   .arena-locked-card {
     padding: 28px 16px;
