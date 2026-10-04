@@ -6456,33 +6456,45 @@ body.study-zen-fullscreen .study-main-col {
   border-radius: 24px;
   overflow: hidden;
   margin-bottom: 22px;
-  background: #0f2e24 url('public/assets/arena-banner.jpg') center 22% / cover no-repeat;
+  background: #0f2e24;
   box-shadow: 0 16px 40px -12px rgba(15, 46, 36, 0.25), 0 0 0 1px rgba(0, 0, 0, 0.06);
   display: flex;
   align-items: flex-end;
 }
 
+.arena-banner-bg-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 25%;
+  z-index: 1;
+  pointer-events: none;
+}
+
 .arena-banner-overlay {
   position: absolute;
   inset: 0;
+  z-index: 2;
   background: linear-gradient(
     to right,
     rgba(10, 30, 24, 0.94) 0%,
-    rgba(10, 30, 24, 0.78) 45%,
+    rgba(10, 30, 24, 0.8) 45%,
     rgba(10, 30, 24, 0.25) 80%,
     rgba(10, 30, 24, 0.1) 100%
   ),
   linear-gradient(
     to top,
-    rgba(10, 30, 24, 0.8) 0%,
-    transparent 60%
+    rgba(10, 30, 24, 0.75) 0%,
+    transparent 55%
   );
   pointer-events: none;
 }
 
 .arena-banner-content {
   position: relative;
-  z-index: 2;
+  z-index: 3;
   padding: 36px 36px 32px 36px;
   max-width: 760px;
 }
@@ -6500,31 +6512,34 @@ body.study-zen-fullscreen .study-main-col {
   color: #ffffff;
   font-size: 11px;
   font-weight: 800;
-  padding: 4px 12px;
+  padding: 5px 14px;
   border-radius: 999px;
   letter-spacing: 0.5px;
-  box-shadow: 0 2px 8px rgba(180, 83, 9, 0.3);
+  box-shadow: 0 2px 8px rgba(180, 83, 9, 0.35);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
 }
 
 .arena-tag-season {
-  background: rgba(16, 185, 129, 0.25);
-  border: 1px solid rgba(110, 231, 183, 0.45);
-  color: #ecfdf5;
+  background: rgba(16, 185, 129, 0.3);
+  border: 1px solid rgba(110, 231, 183, 0.5);
+  color: #ffffff;
   font-size: 11px;
   font-weight: 800;
-  padding: 4px 12px;
+  padding: 5px 14px;
   border-radius: 999px;
   letter-spacing: 0.5px;
   backdrop-filter: blur(8px);
 }
 
 .arena-tag-type {
-  background: rgba(0, 0, 0, 0.45);
-  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.3);
   color: #f3f4f6;
   font-size: 11px;
   font-weight: 800;
-  padding: 4px 12px;
+  padding: 5px 14px;
   border-radius: 999px;
   letter-spacing: 0.5px;
   backdrop-filter: blur(8px);
@@ -6691,21 +6706,21 @@ body.study-zen-fullscreen .study-main-col {
   border-radius: 999px !important;
 }
 
-/* 3. ARENA ADMIN COMMAND BAR */
+/* 3. ARENA ADMIN COMMAND BAR (CLEAN NEUTRAL CARD MATCHING DEMO) */
 .arena-admin-bar {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 14px;
-  background: linear-gradient(135deg, #eef2ff 0%, #f5f3ff 100%);
-  border: 1px solid #c7d2fe;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
   padding: 12px 20px;
-  border-radius: 16px;
+  border-radius: 14px;
   margin-bottom: 22px;
   flex-wrap: wrap;
   font-size: 13.5px;
   color: #1e293b;
-  box-shadow: 0 2px 10px rgba(99, 102, 241, 0.05);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 }
 
 .admin-bar-left {
@@ -6726,7 +6741,14 @@ body.study-zen-fullscreen .study-main-col {
   padding: 6px 16px !important;
   font-weight: 700 !important;
   font-size: 12.5px !important;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.admin-bar-actions .button:hover {
+  background: #f1f5f9 !important;
+  color: #0f172a !important;
 }
 
 /* 4. ARENA TABS CONTAINER & SEGMENTED PILLS (FOREST GREEN ACTIVE PILL MATCHING DEMO) */
@@ -6753,7 +6775,7 @@ body.study-zen-fullscreen .study-main-col {
   flex: 1;
   background: transparent;
   border: none;
-  padding: 11px 20px;
+  padding: 12px 22px;
   font-size: 14px;
   font-weight: 700;
   color: #475569;
@@ -6775,11 +6797,12 @@ body.study-zen-fullscreen .study-main-col {
   background: #194d3e !important;
   color: #ffffff !important;
   font-weight: 800 !important;
+  border-radius: 999px !important;
   box-shadow: 0 4px 14px rgba(25, 77, 62, 0.3) !important;
 }
 
 .comp-tab-btn.active::after {
-  display: none;
+  display: none !important;
 }
 
 /* 6. TAB 1: CỔNG THI ĐẤU (GATEWAY TOURNAMENT CARD) */
@@ -7604,98 +7627,185 @@ body.dark-theme .comp-tab-btn.active {
 
 /* 10. RESPONSIVE MOBILE ADJUSTMENTS (FLAWLESS & MATCHING DEMO) */
 @media (max-width: 768px) {
+  #arena.page {
+    padding: 20px 14px 80px 14px;
+  }
+
   .arena-hero-banner {
-    min-height: 230px;
+    min-height: 250px;
     margin-bottom: 16px;
     border-radius: 18px;
-    background-position: center 20%;
   }
+
+  .arena-banner-bg-img {
+    object-position: 65% center;
+  }
+
+  .arena-banner-overlay {
+    background: linear-gradient(
+      to right,
+      rgba(10, 30, 24, 0.96) 0%,
+      rgba(10, 30, 24, 0.85) 55%,
+      rgba(10, 30, 24, 0.45) 100%
+    ),
+    linear-gradient(
+      to top,
+      rgba(10, 30, 24, 0.9) 0%,
+      transparent 60%
+    );
+  }
+
   .arena-banner-content {
-    padding: 22px 18px 20px 18px;
+    padding: 20px 16px 18px 16px;
   }
+
+  .arena-banner-tags {
+    gap: 6px;
+    margin-bottom: 10px;
+  }
+
+  .arena-tag-gold,
+  .arena-tag-season,
+  .arena-tag-type {
+    font-size: 10px;
+    padding: 3px 10px;
+  }
+
   .arena-hero-title {
-    font-size: 22px;
+    font-size: 20px;
+    line-height: 1.3;
+    margin: 0 0 6px 0;
   }
+
   .arena-hero-subtitle {
-    font-size: 13px;
+    font-size: 12.5px;
+    line-height: 1.45;
   }
+
+  .arena-admin-bar {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 12px 14px;
+    border-radius: 14px;
+    font-size: 12.5px;
+  }
+
+  .admin-bar-actions {
+    width: 100%;
+  }
+
+  .admin-bar-actions .button {
+    width: 100%;
+    text-align: center;
+    justify-content: center;
+    padding: 8px 14px !important;
+  }
+
   .arena-locked-card {
     padding: 28px 16px;
     border-radius: 16px;
   }
+
   .arena-locked-preview-grid {
     grid-template-columns: 1fr;
     gap: 10px;
   }
+
   .arena-tabs-container {
     padding: 16px 12px;
     border-radius: 16px;
   }
+
   .comp-nav-tabs.arena-nav-tabs {
     display: flex;
     flex-direction: row;
     flex-wrap: nowrap;
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
-    gap: 4px;
+    gap: 6px;
     padding: 4px;
     border-radius: 999px;
+    background: #f1f5f3;
+    scrollbar-width: none;
   }
+  .comp-nav-tabs.arena-nav-tabs::-webkit-scrollbar {
+    display: none;
+  }
+
   .comp-tab-btn {
     flex: 0 0 auto;
     white-space: nowrap;
-    padding: 8px 12px;
-    font-size: 12px;
+    padding: 8px 14px;
+    font-size: 12.5px;
+    border-radius: 999px;
   }
+
+  .comp-tab-btn.active {
+    background: #194d3e !important;
+    color: #ffffff !important;
+  }
+
   .comp-gateway-hero {
     padding: 16px 14px;
     border-radius: 12px;
   }
+
   .comp-gateway-hero h3 {
     font-size: 17px;
   }
+
   .gateway-clock-card {
     flex-direction: column;
     align-items: flex-start;
     gap: 6px;
     width: 100%;
   }
+
   .comp-podium-wrap {
     gap: 6px;
     padding: 16px 0 6px 0;
     width: 100%;
     justify-content: space-around;
   }
+
   .podium-col {
     width: 31%;
     max-width: 110px;
   }
+
   .podium-avatar {
     width: 44px !important;
     height: 44px !important;
     font-size: 18px;
   }
+
   .podium-col.rank-1 .podium-avatar {
     width: 56px !important;
     height: 56px !important;
     font-size: 22px;
   }
+
   .podium-crown {
     font-size: 18px;
     top: -14px;
   }
+
   .podium-crown.gold {
     font-size: 22px;
     top: -18px;
   }
+
   .podium-name {
     font-size: 11px;
     max-width: 90px;
   }
+
   .podium-score {
     font-size: 10.5px;
     padding: 2px 6px;
   }
+
   .podium-stand.stand-1 {
     height: 85px;
   }
@@ -7708,23 +7818,39 @@ body.dark-theme .comp-tab-btn.active {
   .stand-num {
     font-size: 20px;
   }
+
   .comp-lb-list-header,
   .comp-lb-row {
     grid-template-columns: 36px 1fr 75px;
     padding: 9px 10px;
     font-size: 12px;
   }
+
   .comp-lb-avatar {
     width: 26px;
     height: 26px;
     font-size: 12px;
   }
+
   .comp-lb-score {
     font-size: 12px;
   }
-  .rules-phase-cards,
+
+  .rules-phase-cards {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .rules-sunday-card {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 12px 14px;
+  }
+
   .formula-grid {
     grid-template-columns: 1fr;
+    gap: 8px;
   }
 }
 
