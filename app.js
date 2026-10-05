@@ -6783,6 +6783,7 @@ function normalizeCompData(raw) {
   const maxAttempts = raw.maxAttempts || raw.userStatus?.maxAttempts || 1;
   const totalOnTimeBonus = raw.totalOnTimeBonus ?? raw.userStatus?.totalOnTimeBonus ?? 0;
   const defaultAvailablePhase = raw.defaultAvailablePhase || raw.phase || 1;
+  const weekNumber = raw.week?.week_number || raw.week?.weekNumber || raw.currentCompetition?.week_number || raw.weekNumber || 1;
 
   return {
     isSunday,
@@ -6792,6 +6793,7 @@ function normalizeCompData(raw) {
     weekTopic,
     phaseTopic,
     weekTitle,
+    weekNumber,
     remainingSeconds,
     userAttempts,
     userBestScore,
@@ -6982,6 +6984,11 @@ function renderCompetitionOverview(raw) {
   const heroStatusTag = $("#arenaHeroStatusTag");
   if (heroStatusTag && data.phaseName) {
     heroStatusTag.textContent = data.phaseName.toUpperCase();
+  }
+  const seasonTag = $("#arenaTagSeason");
+  if (seasonTag) {
+    const weekNum = data.weekNumber || 1;
+    seasonTag.textContent = `TUẦN ${String(weekNum).padStart(2, "0")}`;
   }
 }
 
@@ -7915,10 +7922,12 @@ function closeQuizAndOpenLeaderboard() {
 async function loadAdminCompetition() {
   try {
     const data = await requestAPI("/api/admin/competition/overview");
-    if ($("#adminWeekTopicName")) $("#adminWeekTopicName").value = data.weekTopic || "";
-    if ($("#adminPhase1Topic")) $("#adminPhase1Topic").value = data.phase1Topic || "";
-    if ($("#adminPhase2Topic")) $("#adminPhase2Topic").value = data.phase2Topic || "";
-    if ($("#adminPhase3Topic")) $("#adminPhase3Topic").value = data.phase3Topic || "";
+    const comp = data.currentCompetition || {};
+    if ($("#adminWeekNumber")) $("#adminWeekNumber").value = comp.week_number || data.week_number || 1;
+    if ($("#adminWeekTopicName")) $("#adminWeekTopicName").value = comp.topic_name || data.weekTopic || "";
+    if ($("#adminPhase1Topic")) $("#adminPhase1Topic").value = comp.phase1_topic || data.phase1Topic || "";
+    if ($("#adminPhase2Topic")) $("#adminPhase2Topic").value = comp.phase2_topic || data.phase2Topic || "";
+    if ($("#adminPhase3Topic")) $("#adminPhase3Topic").value = comp.phase3_topic || data.phase3Topic || "";
 
     const simLabel = $("#adminSimCurrentTime");
     if (simLabel) {
@@ -7933,9 +7942,11 @@ async function loadAdminCompetition() {
 
 async function saveAdminCompetitionTopics() {
   try {
+    const weekNum = parseInt($("#adminWeekNumber")?.value, 10);
     await requestAPI("/api/admin/competition/update-topics", {
       method: "POST",
       body: JSON.stringify({
+        weekNumber: isNaN(weekNum) ? null : weekNum,
         weekTopic: $("#adminWeekTopicName")?.value || "",
         phase1Topic: $("#adminPhase1Topic")?.value || "",
         phase2Topic: $("#adminPhase2Topic")?.value || "",
@@ -8124,131 +8135,98 @@ async function adminConcludeWeekNow() {
   }
 }
 
-// --- EXCEL TEMPLATE & IMPORT FOR ARENA QUESTIONS ---
+// --- EXCEL TEMPLATE & IMPORT FOR ARENA QUESTIONS (HỖ TRỢ 1 GIAI ĐOẠN HOẶC CẢ 3 GIAI ĐOẠN) ---
 function adminDownloadExcelTemplate() {
   const currentPhase = compState.adminSelectedPhase || 1;
-  const sampleData = [
-    {
-      "STT": 1,
-      "Giai đoạn": currentPhase,
-      "Câu hỏi": "Bước đầu tiên trong quy trình nghiên cứu khoa học chuẩn là gì?",
-      "Đáp án A": "Xác định vấn đề và câu hỏi nghiên cứu",
-      "Đáp án B": "Tiến hành thu thập dữ liệu thực địa ngay",
-      "Đáp án C": "Viết báo cáo kết quả và thảo luận",
-      "Đáp án đúng (A/B/C)": "A"
-    },
-    {
-      "STT": 2,
-      "Giai đoạn": currentPhase,
-      "Câu hỏi": "Phương pháp nghiên cứu nào thường sử dụng bảng hỏi (survey) để thu thập dữ liệu định lượng?",
-      "Đáp án A": "Nghiên cứu định tính phỏng vấn sâu",
-      "Đáp án B": "Nghiên cứu điều tra khảo sát (Survey research)",
-      "Đáp án C": "Phương pháp quan sát tham dự",
-      "Đáp án đúng (A/B/C)": "B"
-    },
-    {
-      "STT": 3,
-      "Giai đoạn": currentPhase,
-      "Câu hỏi": "Chỉ số nào thường dùng để đo lường độ tin cậy nhất quán nội tại của thang đo trong SPSS?",
-      "Đáp án A": "Hệ số tương quan Pearson",
-      "Đáp án B": "Chỉ số R bình phương (R-squared)",
-      "Đáp án C": "Hệ số Cronbach's Alpha",
-      "Đáp án đúng (A/B/C)": "C"
-    },
-    {
-      "STT": 4,
-      "Giai đoạn": currentPhase,
-      "Câu hỏi": "Biến độc lập (Independent Variable) trong mô hình nghiên cứu có đặc điểm gì?",
-      "Đáp án A": "Là nguyên nhân tác động đến biến phụ thuộc",
-      "Đáp án B": "Là kết quả bị chi phối bởi biến phụ thuộc",
-      "Đáp án C": "Là biến không bao giờ thay đổi giá trị",
-      "Đáp án đúng (A/B/C)": "A"
-    },
-    {
-      "STT": 5,
-      "Giai đoạn": currentPhase,
-      "Câu hỏi": "Khi trích dẫn tài liệu tham khảo theo chuẩn APA, thứ tự thông tin mở đầu là gì?",
-      "Đáp án A": "Tên bài báo rồi đến năm xuất bản",
-      "Đáp án B": "Họ tác giả rồi đến năm xuất bản trong ngoặc đơn",
-      "Đáp án C": "Tên nhà xuất bản rồi đến tên tác giả",
-      "Đáp án đúng (A/B/C)": "B"
-    },
-    {
-      "STT": 6,
-      "Giai đoạn": currentPhase,
-      "Câu hỏi": "Giả thuyết nghiên cứu (Hypothesis) là gì?",
-      "Đáp án A": "Một kết luận chắc chắn đã được chứng minh 100%",
-      "Đáp án B": "Một câu hỏi chưa có hướng trả lời",
-      "Đáp án C": "Một phỏng đoán có căn cứ khoa học về mối quan hệ giữa các biến",
-      "Đáp án đúng (A/B/C)": "C"
-    },
-    {
-      "STT": 7,
-      "Giai đoạn": currentPhase,
-      "Câu hỏi": "Chọn mẫu ngẫu nhiên đơn giản (Simple Random Sampling) thuộc loại chọn mẫu nào?",
-      "Đáp án A": "Chọn mẫu theo xác suất (Probability sampling)",
-      "Đáp án B": "Chọn mẫu phi xác suất (Non-probability sampling)",
-      "Đáp án C": "Chọn mẫu thuận tiện (Convenience sampling)",
-      "Đáp án đúng (A/B/C)": "A"
-    },
-    {
-      "STT": 8,
-      "Giai đoạn": currentPhase,
-      "Câu hỏi": "Giá trị p-value nhỏ hơn bao nhiêu thường được xem là có ý nghĩa thống kê (mức 5%)?",
-      "Đáp án A": "p > 0.05",
-      "Đáp án B": "p < 0.05",
-      "Đáp án C": "p = 0.50",
-      "Đáp án đúng (A/B/C)": "B"
-    },
-    {
-      "STT": 9,
-      "Giai đoạn": currentPhase,
-      "Câu hỏi": "Dữ liệu thứ cấp (Secondary Data) là loại dữ liệu nào sau đây?",
-      "Đáp án A": "Dữ liệu do nhà nghiên cứu tự làm khảo sát thu thập trực tiếp",
-      "Đáp án B": "Dữ liệu có sẵn từ niên giám thống kê, báo cáo, nghiên cứu trước",
-      "Đáp án C": "Dữ liệu chỉ bao gồm hình ảnh và video ghi hình",
-      "Đáp án đúng (A/B/C)": "B"
-    },
-    {
-      "STT": 10,
-      "Giai đoạn": currentPhase,
-      "Câu hỏi": "Hành vi nào sau đây vi phạm nghiêm trọng nhất đạo đức trong nghiên cứu khoa học?",
-      "Đáp án A": "Sử dụng mẫu nghiên cứu có quy mô lớn hơn 500 người",
-      "Đáp án B": "Trích dẫn đầy đủ nguồn tham khảo học thuật",
-      "Đáp án C": "Đạo văn (Plagiarism) và ngụy tạo số liệu khảo sát",
-      "Đáp án đúng (A/B/C)": "C"
-    }
+  
+  const p1Questions = [
+    { "STT": 1, "Giai đoạn": 1, "Câu hỏi": "Bước đầu tiên trong quy trình nghiên cứu khoa học chuẩn là gì?", "Đáp án A": "Xác định vấn đề và câu hỏi nghiên cứu", "Đáp án B": "Tiến hành thu thập dữ liệu thực địa ngay", "Đáp án C": "Viết báo cáo kết quả và thảo luận", "Đáp án đúng (A/B/C)": "A" },
+    { "STT": 2, "Giai đoạn": 1, "Câu hỏi": "Phương pháp nghiên cứu nào thường sử dụng bảng hỏi (survey) để thu thập dữ liệu định lượng?", "Đáp án A": "Nghiên cứu định tính phỏng vấn sâu", "Đáp án B": "Nghiên cứu điều tra khảo sát (Survey research)", "Đáp án C": "Phương pháp quan sát tham dự", "Đáp án đúng (A/B/C)": "B" },
+    { "STT": 3, "Giai đoạn": 1, "Câu hỏi": "Biến độc lập (Independent Variable) trong mô hình nghiên cứu có đặc điểm gì?", "Đáp án A": "Là nguyên nhân tác động đến biến phụ thuộc", "Đáp án B": "Là kết quả bị chi phối bởi biến phụ thuộc", "Đáp án C": "Là biến không bao giờ thay đổi giá trị", "Đáp án đúng (A/B/C)": "A" },
+    { "STT": 4, "Giai đoạn": 1, "Câu hỏi": "Giả thuyết nghiên cứu (Hypothesis) là gì?", "Đáp án A": "Một kết luận chắc chắn đã được chứng minh 100%", "Đáp án B": "Một câu hỏi chưa có hướng trả lời", "Đáp án C": "Một phỏng đoán có căn cứ khoa học về mối quan hệ giữa các biến", "Đáp án đúng (A/B/C)": "C" },
+    { "STT": 5, "Giai đoạn": 1, "Câu hỏi": "Chọn mẫu ngẫu nhiên đơn giản (Simple Random Sampling) thuộc loại chọn mẫu nào?", "Đáp án A": "Chọn mẫu theo xác suất (Probability sampling)", "Đáp án B": "Chọn mẫu phi xác suất (Non-probability sampling)", "Đáp án C": "Chọn mẫu thuận tiện (Convenience sampling)", "Đáp án đúng (A/B/C)": "A" },
+    { "STT": 6, "Giai đoạn": 1, "Câu hỏi": "Tổng quan tài liệu (Literature Review) đóng vai trò gì quan trọng nhất?", "Đáp án A": "Chỉ để làm cho bài viết dài hơn", "Đáp án B": "Xác định khoảng trống nghiên cứu và xây dựng khung lý thuyết", "Đáp án C": "Sao chép nguyên văn các công trình trước", "Đáp án đúng (A/B/C)": "B" },
+    { "STT": 7, "Giai đoạn": 1, "Câu hỏi": "Nghiên cứu thực nghiệm (Experimental Research) có ưu thế nổi bật nào?", "Đáp án A": "Dễ tiến hành và không tốn kém", "Đáp án B": "Khẳng định mối quan hệ nhân quả mạnh mẽ nhờ kiểm soát biến ngoại lai", "Đáp án C": "Không cần thu thập dữ liệu", "Đáp án đúng (A/B/C)": "B" },
+    { "STT": 8, "Giai đoạn": 1, "Câu hỏi": "Khái niệm 'Khoảng trống nghiên cứu' (Research Gap) nghĩa là gì?", "Đáp án A": "Vấn đề chưa được giải quyết hoặc chưa được khám phá thấu đáo", "Đáp án B": "Khoảng cách địa lý giữa các nhà nghiên cứu", "Đáp án C": "Thời gian nghỉ giữa hai đợt khảo sát", "Đáp án đúng (A/B/C)": "A" },
+    { "STT": 9, "Giai đoạn": 1, "Câu hỏi": "Thang đo Likert 5 mức độ thường được xếp vào loại thang đo nào?", "Đáp án A": "Thang đo định danh (Nominal)", "Đáp án B": "Thang đo thứ bậc (Ordinal) hoặc giả định khoảng cách (Interval)", "Đáp án C": "Thang đo tỷ lệ (Ratio)", "Đáp án đúng (A/B/C)": "B" },
+    { "STT": 10, "Giai đoạn": 1, "Câu hỏi": "Hành vi nào sau đây vi phạm nghiêm trọng nhất đạo đức trong nghiên cứu khoa học?", "Đáp án A": "Trích dẫn đầy đủ nguồn tham khảo học thuật", "Đáp án B": "Bảo mật danh tính người tham gia khảo sát", "Đáp án C": "Đạo văn (Plagiarism) và ngụy tạo số liệu khảo sát", "Đáp án đúng (A/B/C)": "C" }
+  ];
+
+  const p2Questions = [
+    { "STT": 1, "Giai đoạn": 2, "Câu hỏi": "Chỉ số Cronbach's Alpha thường dùng để đo lường điều gì trong SPSS?", "Đáp án A": "Độ tin cậy nhất quán nội tại của thang đo", "Đáp án B": "Mức độ tương quan giữa hai biến định lượng", "Đáp án C": "Sự khác biệt trung bình giữa hai nhóm", "Đáp án đúng (A/B/C)": "A" },
+    { "STT": 2, "Giai đoạn": 2, "Câu hỏi": "Giá trị Cronbach's Alpha đạt từ bao nhiêu trở lên được xem là thang đo sử dụng tốt?", "Đáp án A": "Từ 0.70 trở lên", "Đáp án B": "Từ 0.30 trở lên", "Đáp án C": "Từ 0.99 trở lên", "Đáp án đúng (A/B/C)": "A" },
+    { "STT": 3, "Giai đoạn": 2, "Câu hỏi": "Hệ số tương quan biến - tổng (Corrected Item-Total Correlation) nhỏ hơn bao nhiêu thì nên loại biến quan sát?", "Đáp án A": "Nhỏ hơn 0.30", "Đáp án B": "Nhỏ hơn 0.70", "Đáp án C": "Nhỏ hơn 0.50", "Đáp án đúng (A/B/C)": "A" },
+    { "STT": 4, "Giai đoạn": 2, "Câu hỏi": "Chỉ số KMO trong phân tích nhân tố khám phá (EFA) cần đạt tối thiểu bao nhiêu?", "Đáp án A": "KMO >= 0.50", "Đáp án B": "KMO >= 0.05", "Đáp án C": "KMO >= 0.90", "Đáp án đúng (A/B/C)": "A" },
+    { "STT": 5, "Giai đoạn": 2, "Câu hỏi": "Giá trị p-value trong kiểm định Sig nhỏ hơn bao nhiêu thì bác bỏ giả thuyết H0 (mức 5%)?", "Đáp án A": "p > 0.05", "Đáp án B": "p < 0.05", "Đáp án C": "p = 0.50", "Đáp án đúng (A/B/C)": "B" },
+    { "STT": 6, "Giai đoạn": 2, "Câu hỏi": "Hệ số R bình phương hiệu chỉnh (Adjusted R-squared) biểu thị điều gì?", "Đáp án A": "Mức độ phù hợp của mô hình hồi quy đối với dữ liệu thực tế", "Đáp án B": "Số lượng quan sát của mẫu", "Đáp án C": "Độ phân tán của biến phụ thuộc", "Đáp án đúng (A/B/C)": "A" },
+    { "STT": 7, "Giai đoạn": 2, "Câu hỏi": "Hiện tượng đa cộng tuyến trong hồi quy tuyến tính thường được phát hiện qua chỉ số nào?", "Đáp án A": "Hệ số phóng đại phương sai VIF", "Đáp án B": "Hệ số skewness", "Đáp án C": "Chỉ số kurtosis", "Đáp án đúng (A/B/C)": "A" },
+    { "STT": 8, "Giai đoạn": 2, "Câu hỏi": "Kiểm định Independent Samples T-Test dùng để so sánh gì?", "Đáp án A": "Trung bình của 2 nhóm độc lập", "Đáp án B": "Tỷ lệ của nhiều nhóm", "Đáp án C": "Độ lệch chuẩn của 3 nhóm trở lên", "Đáp án đúng (A/B/C)": "A" },
+    { "STT": 9, "Giai đoạn": 2, "Câu hỏi": "Phân tích phương sai một yếu tố (One-way ANOVA) dùng khi nào?", "Đáp án A": "So sánh trung bình của từ 3 nhóm độc lập trở lên", "Đáp án B": "So sánh 2 biến định tính", "Đáp án C": "Xác định hệ số tương quan", "Đáp án đúng (A/B/C)": "A" },
+    { "STT": 10, "Giai đoạn": 2, "Câu hỏi": "Dữ liệu thứ cấp (Secondary Data) là loại dữ liệu nào sau đây?", "Đáp án A": "Dữ liệu do nhà nghiên cứu tự làm khảo sát thu thập trực tiếp", "Đáp án B": "Dữ liệu có sẵn từ niên giám thống kê, báo cáo, nghiên cứu trước", "Đáp án C": "Dữ liệu chỉ bao gồm hình ảnh và video ghi hình", "Đáp án đúng (A/B/C)": "B" }
+  ];
+
+  const p3Questions = [
+    { "STT": 1, "Giai đoạn": 3, "Câu hỏi": "Cấu trúc chuẩn IMRAD của một bài báo khoa học gồm những phần nào?", "Đáp án A": "Introduction, Methods, Results, and Discussion", "Đáp án B": "Index, Main, Review, Appendix, Data", "Đáp án C": "Idea, Model, Research, Action, Draft", "Đáp án đúng (A/B/C)": "A" },
+    { "STT": 2, "Giai đoạn": 3, "Câu hỏi": "Trong trích dẫn theo chuẩn APA 7th, tài liệu có 3 tác giả trở lên trong bài viết được trích thế nào?", "Đáp án A": "Liệt kê đầy đủ tất cả tên tác giả", "Đáp án B": "Tên tác giả đầu tiên kèm 'et al.' (hoặc 'và cs.')", "Đáp án C": "Chỉ ghi tên nhà xuất bản", "Đáp án đúng (A/B/C)": "B" },
+    { "STT": 3, "Giai đoạn": 3, "Câu hỏi": "Phần Tóm tắt (Abstract) của bài báo khoa học thường có độ dài khoảng bao nhiêu từ?", "Đáp án A": "Khoảng 150 - 250 từ", "Đáp án B": "Trên 1.000 từ", "Đáp án C": "Dưới 20 từ", "Đáp án đúng (A/B/C)": "A" },
+    { "STT": 4, "Giai đoạn": 3, "Câu hỏi": "Phần Thảo luận (Discussion) có nhiệm vụ chính là gì?", "Đáp án A": "Liệt kê lại toàn bộ các số liệu bảng biểu", "Đáp án B": "Diễn giải ý nghĩa kết quả, so sánh với các nghiên cứu trước và nêu hàm ý", "Đáp án C": "Mô tả cách thu thập dữ liệu", "Đáp án đúng (A/B/C)": "B" },
+    { "STT": 5, "Giai đoạn": 3, "Câu hỏi": "Mã số định danh số học thuật quốc tế của bài báo khoa học là gì?", "Đáp án A": "ISBN", "Đáp án B": "DOI (Digital Object Identifier)", "Đáp án C": "ISSN", "Đáp án đúng (A/B/C)": "B" },
+    { "STT": 6, "Giai đoạn": 3, "Câu hỏi": "Chỉ số H-index đo lường điều gì của một nhà nghiên cứu?", "Đáp án A": "Tổng số tiền tài trợ nghiên cứu nhận được", "Đáp án B": "Cả năng suất công bố và tầm ảnh hưởng trích dẫn", "Đáp án C": "Số năm kinh nghiệm giảng dạy", "Đáp án đúng (A/B/C)": "B" },
+    { "STT": 7, "Giai đoạn": 3, "Câu hỏi": "Bình duyệt kín hai chiều (Double-blind peer review) nghĩa là gì?", "Đáp án A": "Cả tác giả và người phản biện đều không biết danh tính của nhau", "Đáp án B": "Tác giả biết người phản biện nhưng người phản biện không biết tác giả", "Đáp án C": "Bài viết được công khai cho cộng đồng nhận xét tự do", "Đáp án đúng (A/B/C)": "A" },
+    { "STT": 8, "Giai đoạn": 3, "Câu hỏi": "Khi diễn giải lại (paraphrase) ý tưởng của tác giả khác, ta có cần trích dẫn nguồn không?", "Đáp án A": "Không cần vì đã viết lại bằng lời của mình", "Đáp án B": "Bắt buộc phải ghi nguồn trích dẫn đầy đủ", "Đáp án C": "Chỉ cần trích dẫn nếu copy nguyên văn", "Đáp án đúng (A/B/C)": "B" },
+    { "STT": 9, "Giai đoạn": 3, "Câu hỏi": "Phần Hàm ý quản trị (Managerial Implications) nhằm trả lời câu hỏi nào?", "Đáp án A": "Nghiên cứu tốn bao nhiêu chi phí?", "Đáp án B": "Ai là người hướng dẫn nghiên cứu?", "Đáp án C": "Kết quả nghiên cứu này giúp ích gì cho các nhà quản lý trong thực tiễn?", "Đáp án đúng (A/B/C)": "C" },
+    { "STT": 10, "Giai đoạn": 3, "Câu hỏi": "Phần Giới hạn nghiên cứu (Limitations) được đưa vào nhằm mục đích gì?", "Đáp án A": "Chỉ ra những ranh giới, hạn chế của đề tài và mở ra hướng nghiên cứu tiếp theo", "Đáp án B": "Thừa nhận bài báo không đạt chất lượng", "Đáp án C": "Tránh bị người đọc đặt câu hỏi", "Đáp án đúng (A/B/C)": "A" }
+  ];
+
+  const all3Phases = [...p1Questions, ...p2Questions, ...p3Questions];
+
+  const colWidths = [
+    { wch: 6 },  // STT
+    { wch: 12 }, // Giai đoạn
+    { wch: 65 }, // Câu hỏi
+    { wch: 38 }, // A
+    { wch: 38 }, // B
+    { wch: 38 }, // C
+    { wch: 22 }  // Đáp án đúng
   ];
 
   if (window.XLSX) {
-    const ws = XLSX.utils.json_to_sheet(sampleData);
-    ws['!cols'] = [
-      { wch: 6 },  // STT
-      { wch: 12 }, // Giai đoạn
-      { wch: 65 }, // Câu hỏi
-      { wch: 38 }, // A
-      { wch: 38 }, // B
-      { wch: 38 }, // C
-      { wch: 22 }  // Đáp án đúng
-    ];
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, `Cau_Hoi_Giai_Doan_${currentPhase}`);
-    XLSX.writeFile(wb, `RE_SEARCH_Arena_Mau_Cau_Hoi_GD${currentPhase}.xlsx`);
-    toast("📥 Đã tải file Excel mẫu (.xlsx) thành công!");
+
+    // Sheet 1: Tất cả 3 giai đoạn (30 câu)
+    const wsAll = XLSX.utils.json_to_sheet(all3Phases);
+    wsAll['!cols'] = colWidths;
+    XLSX.utils.book_append_sheet(wb, wsAll, "Tat_Ca_3_Giai_Doan");
+
+    // Sheet 2, 3, 4: Từng giai đoạn riêng biệt
+    const ws1 = XLSX.utils.json_to_sheet(p1Questions);
+    ws1['!cols'] = colWidths;
+    XLSX.utils.book_append_sheet(wb, ws1, "Giai_Doan_1");
+
+    const ws2 = XLSX.utils.json_to_sheet(p2Questions);
+    ws2['!cols'] = colWidths;
+    XLSX.utils.book_append_sheet(wb, ws2, "Giai_Doan_2");
+
+    const ws3 = XLSX.utils.json_to_sheet(p3Questions);
+    ws3['!cols'] = colWidths;
+    XLSX.utils.book_append_sheet(wb, ws3, "Giai_Doan_3");
+
+    XLSX.writeFile(wb, "RE_SEARCH_Arena_Mau_Cau_Hoi_3_Giai_Doan.xlsx");
+    toast("📥 Đã tải file Excel mẫu 3 giai đoạn (.xlsx) thành công! Bạn có thể nhập 1 giai đoạn hoặc cả 3 giai đoạn cùng lúc.");
   } else {
-    // Fallback CSV with UTF-8 BOM
+    // Fallback CSV with all 30 rows
     let csv = "\uFEFFSTT,Giai đoạn,Câu hỏi,Đáp án A,Đáp án B,Đáp án C,Đáp án đúng (A/B/C)\n";
-    sampleData.forEach(r => {
+    all3Phases.forEach(r => {
       csv += `${r["STT"]},${r["Giai đoạn"]},"${r["Câu hỏi"].replace(/"/g, '""')}","${r["Đáp án A"].replace(/"/g, '""')}","${r["Đáp án B"].replace(/"/g, '""')}","${r["Đáp án C"].replace(/"/g, '""')}",${r["Đáp án đúng (A/B/C)"]}\n`;
     });
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `RE_SEARCH_Arena_Mau_Cau_Hoi_GD${currentPhase}.csv`;
+    a.download = "RE_SEARCH_Arena_Mau_Cau_Hoi_3_Giai_Doan.csv";
     a.click();
     URL.revokeObjectURL(url);
-    toast("📥 Đã tải file mẫu (.csv) thành công!");
+    toast("📥 Đã tải file mẫu (.csv) 3 giai đoạn thành công!");
   }
 }
 
@@ -8259,12 +8237,76 @@ async function adminHandleExcelUpload(event) {
 
   try {
     const data = await file.arrayBuffer();
-    let rows = [];
+    const currentPhase = compState.adminSelectedPhase || 1;
+    const phaseMap = { 1: [], 2: [], 3: [] };
 
     if (window.XLSX) {
       const wb = XLSX.read(data, { type: "array" });
-      const firstSheet = wb.Sheets[wb.SheetNames[0]];
-      rows = XLSX.utils.sheet_to_json(firstSheet, { defval: "" });
+      
+      // Đọc toàn bộ các sheet trong workbook
+      wb.SheetNames.forEach(sheetName => {
+        const sheet = wb.Sheets[sheetName];
+        const sheetRows = XLSX.utils.sheet_to_json(sheet, { defval: "" });
+        
+        let sheetDefaultPhase = currentPhase;
+        const sLower = sheetName.toLowerCase().replace(/[\s_-]+/g, "");
+        if (sLower.includes("giaidoan1") || sLower.includes("gd1") || sLower === "1") sheetDefaultPhase = 1;
+        else if (sLower.includes("giaidoan2") || sLower.includes("gd2") || sLower === "2") sheetDefaultPhase = 2;
+        else if (sLower.includes("giaidoan3") || sLower.includes("gd3") || sLower === "3") sheetDefaultPhase = 3;
+
+        sheetRows.forEach(row => {
+          const qText = (
+            row["Câu hỏi"] || row["Cau hoi"] || row["Question"] ||
+            row["Nội dung"] || row["Nội dung câu hỏi"] || Object.values(row)[2] || ""
+          ).toString().trim();
+
+          const optA = (
+            row["Đáp án A"] || row["Dap an A"] || row["Option A"] ||
+            row["A"] || Object.values(row)[3] || ""
+          ).toString().trim();
+
+          const optB = (
+            row["Đáp án B"] || row["Dap an B"] || row["Option B"] ||
+            row["B"] || Object.values(row)[4] || ""
+          ).toString().trim();
+
+          const optC = (
+            row["Đáp án C"] || row["Dap an C"] || row["Option C"] ||
+            row["C"] || Object.values(row)[5] || ""
+          ).toString().trim();
+
+          let correct = (
+            row["Đáp án đúng (A/B/C)"] || row["Đáp án đúng"] || row["Dap an dung"] ||
+            row["Đáp án"] || row["Correct"] || row["Correct Option"] || Object.values(row)[6] || "A"
+          ).toString().trim().toUpperCase();
+
+          if (!["A", "B", "C"].includes(correct)) {
+            if (correct.includes("A")) correct = "A";
+            else if (correct.includes("B")) correct = "B";
+            else if (correct.includes("C")) correct = "C";
+            else correct = "A";
+          }
+
+          const rawPhase = row["Giai đoạn"] || row["Giai doan"] || row["Phase"] || sheetDefaultPhase;
+          let phaseVal = parseInt(rawPhase, 10);
+          if (isNaN(phaseVal) || ![1, 2, 3].includes(phaseVal)) phaseVal = sheetDefaultPhase;
+
+          if (qText && optA && optB && optC) {
+            // Tránh trùng lặp câu hỏi trong cùng giai đoạn nếu file có cả sheet tổng hợp và sheet riêng
+            const exists = phaseMap[phaseVal].some(q => q.questionText === qText);
+            if (!exists) {
+              phaseMap[phaseVal].push({
+                phase: phaseVal,
+                questionText: qText,
+                optionA: optA,
+                optionB: optB,
+                optionC: optC,
+                correctOption: correct
+              });
+            }
+          }
+        });
+      });
     } else {
       // Basic CSV fallback
       const text = new TextDecoder("utf-8").decode(data);
@@ -8273,82 +8315,83 @@ async function adminHandleExcelUpload(event) {
       const headers = lines[0].split(",").map(h => h.replace(/^["'\s]+|["'\s]+$/g, ""));
       for (let i = 1; i < lines.length; i++) {
         const cols = lines[i].split(",").map(c => c.replace(/^["'\s]+|["'\s]+$/g, ""));
-        const obj = {};
-        headers.forEach((h, idx) => { obj[h] = cols[idx] || ""; });
-        rows.push(obj);
+        const row = {};
+        headers.forEach((h, idx) => { row[h] = cols[idx] || ""; });
+
+        const qText = (row["Câu hỏi"] || row["Cau hoi"] || row["Question"] || Object.values(row)[2] || "").trim();
+        const optA = (row["Đáp án A"] || row["Dap an A"] || row["Option A"] || Object.values(row)[3] || "").trim();
+        const optB = (row["Đáp án B"] || row["Dap an B"] || row["Option B"] || Object.values(row)[4] || "").trim();
+        const optC = (row["Đáp án C"] || row["Dap an C"] || row["Option C"] || Object.values(row)[5] || "").trim();
+        let correct = (row["Đáp án đúng (A/B/C)"] || row["Đáp án đúng"] || Object.values(row)[6] || "A").trim().toUpperCase();
+        if (!["A", "B", "C"].includes(correct)) correct = "A";
+
+        let phaseVal = parseInt(row["Giai đoạn"] || row["Phase"] || currentPhase, 10);
+        if (isNaN(phaseVal) || ![1, 2, 3].includes(phaseVal)) phaseVal = currentPhase;
+
+        if (qText && optA && optB && optC) {
+          phaseMap[phaseVal].push({
+            phase: phaseVal,
+            questionText: qText,
+            optionA: optA,
+            optionB: optB,
+            optionC: optC,
+            correctOption: correct
+          });
+        }
       }
     }
 
-    if (!rows || rows.length === 0) {
-      throw new Error("Không tìm thấy dữ liệu dòng nào trong file Excel.");
+    const phasesWithQuestions = [1, 2, 3].filter(p => phaseMap[p].length > 0);
+    const totalFound = phasesWithQuestions.reduce((acc, p) => acc + phaseMap[p].length, 0);
+
+    if (totalFound === 0) {
+      throw new Error("Không nhận diện được câu hỏi hợp lệ. Vui lòng kiểm tra file Excel theo đúng định dạng template mẫu (Câu hỏi, Đáp án A, B, C, Đáp án đúng).");
     }
 
-    const currentPhase = compState.adminSelectedPhase || 1;
-    const parsedQuestions = [];
+    // Trường hợp file chứa câu hỏi cho NHIỀU HƠN 1 GIAI ĐOẠN (ví dụ cả 3 giai đoạn)
+    if (phasesWithQuestions.length > 1) {
+      const summaryList = phasesWithQuestions.map(p => `• Giai đoạn ${p}: ${phaseMap[p].length} câu`).join("\n");
+      const autoSave = confirm(
+        `🎉 Phát hiện file Excel chứa câu hỏi cho ${phasesWithQuestions.length} giai đoạn:\n${summaryList}\n\n` +
+        `Bạn có muốn HỆ THỐNG TỰ ĐỘNG LƯU TRỰC TIẾP TẤT CẢ các giai đoạn này vào cơ sở dữ liệu không?\n\n` +
+        `• Bấm [OK]: Tự động lưu tất cả ${phasesWithQuestions.length} giai đoạn ngay lập tức.\n` +
+        `• Bấm [Cancel]: Chỉ điền vào Giai đoạn ${currentPhase} đang mở để bạn xem trước.`
+      );
 
-    rows.forEach((row, i) => {
-      // Detect question text column
-      const qText = (
-        row["Câu hỏi"] || row["Cau hoi"] || row["Question"] ||
-        row["Nội dung"] || row["Nội dung câu hỏi"] || Object.values(row)[2] || ""
-      ).toString().trim();
+      if (autoSave) {
+        let savedTotal = 0;
+        for (const p of phasesWithQuestions) {
+          const qList = phaseMap[p].slice(0, 10).map((q, idx) => ({
+            question_index: idx + 1,
+            question_text: q.questionText,
+            option_a: q.optionA,
+            option_b: q.optionB,
+            option_c: q.optionC,
+            correct_option: q.correctOption,
+            explanation: ""
+          }));
 
-      // Detect option A
-      const optA = (
-        row["Đáp án A"] || row["Dap an A"] || row["Option A"] ||
-        row["A"] || Object.values(row)[3] || ""
-      ).toString().trim();
+          await requestAPI("/api/admin/competition/questions", {
+            method: "POST",
+            body: JSON.stringify({
+              phase: p,
+              questions: qList
+            })
+          });
+          savedTotal += qList.length;
+        }
 
-      // Detect option B
-      const optB = (
-        row["Đáp án B"] || row["Dap an B"] || row["Option B"] ||
-        row["B"] || Object.values(row)[4] || ""
-      ).toString().trim();
-
-      // Detect option C
-      const optC = (
-        row["Đáp án C"] || row["Dap an C"] || row["Option C"] ||
-        row["C"] || Object.values(row)[5] || ""
-      ).toString().trim();
-
-      // Detect correct option
-      let correct = (
-        row["Đáp án đúng (A/B/C)"] || row["Đáp án đúng"] || row["Dap an dung"] ||
-        row["Đáp án"] || row["Correct"] || row["Correct Option"] || Object.values(row)[6] || "A"
-      ).toString().trim().toUpperCase();
-
-      if (!["A", "B", "C"].includes(correct)) {
-        if (correct.includes("A")) correct = "A";
-        else if (correct.includes("B")) correct = "B";
-        else if (correct.includes("C")) correct = "C";
-        else correct = "A";
+        toast(`🎉 Đã nạp và lưu thành công ${savedTotal} câu hỏi cho cả ${phasesWithQuestions.length} giai đoạn!`);
+        await loadAdminPhaseQuestions(currentPhase);
+        loadWeeklyCompetitionStatus();
+        return;
       }
-
-      // Detect phase column if present
-      const rawPhase = row["Giai đoạn"] || row["Giai doan"] || row["Phase"] || currentPhase;
-      const phaseVal = parseInt(rawPhase, 10);
-
-      if (qText && optA && optB && optC) {
-        parsedQuestions.push({
-          phase: isNaN(phaseVal) ? currentPhase : phaseVal,
-          questionText: qText,
-          optionA: optA,
-          optionB: optB,
-          optionC: optC,
-          correctOption: correct
-        });
-      }
-    });
-
-    if (parsedQuestions.length === 0) {
-      throw new Error("Không nhận diện được câu hỏi hợp lệ. Vui lòng sử dụng file theo đúng định dạng template mẫu (Câu hỏi, Đáp án A, Đáp án B, Đáp án C, Đáp án đúng).");
     }
 
-    // Filter questions for the selected phase if specified in file, or take up to 10
-    const phaseQuestions = parsedQuestions.filter(q => q.phase === currentPhase);
-    const targetQuestions = phaseQuestions.length > 0 ? phaseQuestions : parsedQuestions;
-
-    compState.adminQuestions = targetQuestions.slice(0, 10).map((q, idx) => ({
+    // Nếu chỉ nhập 1 giai đoạn hoặc người dùng chọn Cancel để xem trước giai đoạn hiện tại
+    const targetList = phaseMap[currentPhase].length > 0 ? phaseMap[currentPhase] : (phaseMap[phasesWithQuestions[0]] || []);
+    
+    compState.adminQuestions = targetList.slice(0, 10).map((q, idx) => ({
       questionNumber: idx + 1,
       questionText: q.questionText,
       optionA: q.optionA,

@@ -16,7 +16,7 @@
     <script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-    <link rel="stylesheet" href="styles.css?v=39" />
+    <link rel="stylesheet" href="styles.css?v=41" />
   </head>
   <body>
     <dialog
@@ -793,7 +793,7 @@
           <div class="arena-banner-content">
             <div class="arena-banner-tags">
               <span class="arena-tag-gold">🏆 RE:SEARCH ARENA</span>
-              <span class="arena-tag-season">MÙA 1 • 2026</span>
+              <span class="arena-tag-season" id="arenaTagSeason">TUẦN 01</span>
               <span class="arena-tag-type" id="arenaHeroStatusTag">ĐẤU TRƯỜNG HỌC THUẬT</span>
             </div>
             <h1 class="arena-hero-title">Đấu trường Tri thức &amp; Thi đua NCKH</h1>
@@ -866,13 +866,13 @@
           <div class="arena-tabs-container">
             <div class="comp-nav-tabs arena-nav-tabs">
               <button type="button" class="comp-tab-btn active" data-comp-tab="gateway" onclick="switchCompTab('gateway')">
-                <span>🎮</span> Cổng thi đấu
+                <span class="tab-icon">🎮</span> <span class="tab-text">Cổng thi đấu</span>
               </button>
               <button type="button" class="comp-tab-btn" data-comp-tab="leaderboard" onclick="switchCompTab('leaderboard')">
-                <span>🏆</span> Bảng xếp hạng
+                <span class="tab-icon">🏆</span> <span class="tab-text"><span class="desktop-only-inline">Bảng </span>xếp hạng</span>
               </button>
               <button type="button" class="comp-tab-btn" data-comp-tab="rules" onclick="switchCompTab('rules')">
-                <span>📋</span> Thể lệ &amp; Phần thưởng
+                <span class="tab-icon">📋</span> <span class="tab-text">Thể lệ</span>
               </button>
             </div>
 
@@ -890,35 +890,46 @@
                 <p id="gatewayWeekTitle">Chủ đề tuần: Phương pháp Nghiên cứu &amp; Xử lý Dữ liệu Khoa học</p>
 
                 <div class="gateway-clock-card">
-                  <div class="gateway-clock-label" id="gatewayClockLabel">Thời gian mở cổng còn lại:</div>
-                  <div class="gateway-clock-digits" id="gatewayClockDigits">00:00:00</div>
+                  <div class="gateway-clock-icon">⏳</div>
+                  <div class="gateway-clock-body">
+                    <div class="gateway-clock-label" id="gatewayClockLabel">Thời gian mở cổng còn lại</div>
+                    <div class="gateway-clock-digits" id="gatewayClockDigits">00:00:00</div>
+                  </div>
                 </div>
               </div>
 
               <div class="comp-user-attempts-card">
                 <div class="attempts-header">
-                  <h4>Trạng thái tham gia của bạn</h4>
+                  <div class="attempts-header-title">
+                    <span class="attempts-title-icon">📊</span>
+                    <h4>Trạng thái tham gia của bạn</h4>
+                  </div>
                   <span class="attempts-phase-label" id="attemptsPhaseLabel">Giai đoạn hiện tại</span>
                 </div>
-                <div class="attempts-grid" style="grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));">
+                <div class="attempts-grid">
                   <div class="attempt-stat-box">
-                    <span class="attempt-stat-label">Lượt thi giai đoạn này</span>
+                    <span class="attempt-stat-label">🎯 Lượt thi giai đoạn</span>
                     <div class="attempt-stat-val" id="userAttemptsCount">0 / 1 <span class="attempt-sub">lượt</span></div>
                   </div>
                   <div class="attempt-stat-box">
-                    <span class="attempt-stat-label">Điểm chính thức GĐ</span>
+                    <span class="attempt-stat-label">⭐ Điểm chính thức GĐ</span>
                     <div class="attempt-stat-val star-val" id="userPhaseBestScore">0 <span class="attempt-sub">⭐</span></div>
                   </div>
                   <div class="attempt-stat-box">
-                    <span class="attempt-stat-label">Thưởng đúng hạn tuần</span>
+                    <span class="attempt-stat-label">🎁 Thưởng đúng hạn tuần</span>
                     <div class="attempt-stat-val bonus-val" id="userTotalOnTimeBonus">0 / 100 <span class="attempt-sub">⭐</span></div>
                   </div>
                   <div class="attempt-stat-box">
-                    <span class="attempt-stat-label">Quy cách bài thi</span>
+                    <span class="attempt-stat-label">⏱️ Quy cách bài thi</span>
                     <div class="attempt-stat-val">10 <span class="attempt-sub">phút / 10 câu</span></div>
                   </div>
                 </div>
-                <p class="attempts-note">💡 <strong>Mỗi giai đoạn chỉ có duy nhất 1 lượt thi!</strong> Thí sinh làm bài đúng hạn ở Giai đoạn 1 &amp; 2 nhận thêm <strong>+50 ⭐</strong> mỗi đợt. Nếu lỡ, bạn vẫn có thể <strong>làm bù trong tuần</strong> (không cộng thưởng đúng hạn). Tổng điểm tối đa: <strong>1.200 ⭐</strong>.</p>
+                <div class="attempts-note-banner">
+                  <span class="note-banner-icon">💡</span>
+                  <div class="note-banner-text">
+                    <strong>Mỗi giai đoạn chỉ có duy nhất 1 lượt thi!</strong> Thí sinh làm bài đúng hạn ở GĐ 1 &amp; GĐ 2 nhận thêm <strong>+50 ⭐</strong> mỗi đợt. Nếu lỡ, bạn vẫn có thể <strong>làm bù trong tuần</strong> (không cộng thưởng đúng hạn). Tổng điểm tối đa: <strong>1.200 ⭐</strong>.
+                  </div>
+                </div>
               </div>
 
               <!-- HÀNH TRÌNH 3 GIAI ĐOẠN (LÀM BÙ & ĐÚNG HẠN) -->
@@ -974,59 +985,95 @@
 
             <!-- TAB 3: THỂ LỆ & PHẦN THƯỞNG -->
             <div id="compTabRules" class="comp-tab-panel" style="display: none;">
-              <div class="rules-scrollable">
+              <div class="rules-content-body">
+                <!-- SECTION 1 -->
                 <section class="rules-section">
                   <h3 class="rules-heading"><span>🗓️</span> 1. Chu kỳ thi đấu &amp; 3 Giai đoạn trong tuần</h3>
-                  <p>Hoạt động thi đua được tổ chức định kỳ mỗi tuần từ Thứ Hai đến Chủ Nhật, chia làm 3 giai đoạn độc lập. <strong>Mỗi giai đoạn người chơi có duy nhất 1 lượt thi:</strong></p>
+                  <p class="rules-intro-text">
+                    Đấu trường được tổ chức định kỳ mỗi tuần từ <strong>Thứ Hai đến Chủ Nhật</strong>, chia làm 3 giai đoạn độc lập. <strong>Mỗi giai đoạn người chơi có duy nhất 1 lượt thi:</strong>
+                  </p>
                   <div class="rules-phase-cards">
-                    <div class="rules-p-card">
-                      <span class="p-badge">Giai đoạn 1</span>
+                    <div class="rules-p-card phase-1">
+                      <div class="p-card-top">
+                        <span class="p-badge">Giai đoạn 1</span>
+                        <span class="p-bonus-tag">+50 ⭐</span>
+                      </div>
                       <strong>Thứ Hai – Thứ Ba</strong>
-                      <p>Bộ 10 câu hỏi riêng. Làm đúng hạn nhận <strong>+50 ⭐ thưởng</strong>.</p>
+                      <p>10 câu trắc nghiệm chuyên đề. Làm đúng hạn nhận <strong>+50 ⭐ thưởng</strong>.</p>
                     </div>
-                    <div class="rules-p-card">
-                      <span class="p-badge">Giai đoạn 2</span>
+                    <div class="rules-p-card phase-2">
+                      <div class="p-card-top">
+                        <span class="p-badge">Giai đoạn 2</span>
+                        <span class="p-bonus-tag">+50 ⭐</span>
+                      </div>
                       <strong>Thứ Tư – Thứ Năm</strong>
-                      <p>Bộ 10 câu hỏi riêng. Làm đúng hạn nhận <strong>+50 ⭐ thưởng</strong>.</p>
+                      <p>10 câu trắc nghiệm chuyên đề. Làm đúng hạn nhận <strong>+50 ⭐ thưởng</strong>.</p>
                     </div>
-                    <div class="rules-p-card">
-                      <span class="p-badge">Giai đoạn 3</span>
+                    <div class="rules-p-card phase-3">
+                      <div class="p-card-top">
+                        <span class="p-badge">Giai đoạn 3</span>
+                        <span class="p-bonus-tag finale">Chặng cuối</span>
+                      </div>
                       <strong>Thứ Sáu – Thứ Bảy</strong>
-                      <p>Bộ 10 câu hỏi riêng (Chặng cuối tuần, không cộng thưởng đúng hạn).</p>
+                      <p>10 câu trắc nghiệm chuyên đề (Chặng cuối tuần, không cộng thưởng đúng hạn).</p>
                     </div>
                   </div>
-                  <div class="rules-sunday-card" style="margin-top: 12px; background: rgba(14, 165, 233, 0.1); border-color: rgba(14, 165, 233, 0.3);">
-                    <span class="sunday-tag" style="background: #0284c7;">🔄 Cơ chế làm bù</span>
-                    <div>
-                      <strong>Lỡ Giai đoạn 1 hoặc 2 trong tuần vẫn có cơ hội làm bù:</strong>
-                      <p>• Nếu lỡ Giai đoạn 1 (Thứ 2, 3): Đến Thứ 4 có thể làm bù GĐ 1 và làm cả GĐ 2.<br>
-                         • Nếu lỡ cả GĐ 1 và 2: Đến Thứ 6 có thể làm bù cả GĐ 1, GĐ 2 và làm GĐ 3.<br>
-                         • <strong>Lưu ý:</strong> Làm bài đúng hạn GĐ 1 và 2 được đặc quyền thưởng <strong>+50 ⭐ / giai đoạn</strong> (tối đa +100 ⭐). Khi làm bù, bạn vẫn nhận điểm bài thi bình thường nhưng <em>không được cộng điểm thưởng đúng hạn</em>.<br>
-                         • ⚠️ Riêng <strong>Giai đoạn 3 lỡ sẽ không có cơ hội làm bù</strong> vì Chủ Nhật là ngày tổng kết toàn tuần!</p>
+
+                  <!-- CƠ CHẾ LÀM BÙ -->
+                  <div class="rules-callout-card rules-catchup-card">
+                    <div class="callout-header">
+                      <span class="callout-badge-tag blue">🔄 Cơ chế làm bù trong tuần</span>
+                      <strong>Không lo mất điểm nếu bận rộn:</strong>
                     </div>
+                    <ul class="callout-bullets">
+                      <li>• <strong>Lỡ Giai đoạn 1 (Thứ 2, 3):</strong> Đến Thứ 4 có thể làm bù GĐ 1 và làm cả GĐ 2.</li>
+                      <li>• <strong>Lỡ cả GĐ 1 và 2:</strong> Đến Thứ 6 có thể làm bù cả GĐ 1, GĐ 2 và làm GĐ 3.</li>
+                      <li>• <strong>Đặc quyền đúng hạn:</strong> Làm đúng hạn GĐ 1 và 2 được cộng thưởng <strong>+50 ⭐ / giai đoạn</strong> (tối đa +100 ⭐). Khi làm bù, bạn vẫn nhận điểm bài thi bình thường nhưng <em>không có điểm thưởng đúng hạn</em>.</li>
+                      <li>• ⚠️ <strong>Giai đoạn 3 lỡ sẽ không thể làm bù</strong> vì Chủ Nhật là ngày hệ thống chốt sổ và trao giải toàn tuần!</li>
+                    </ul>
                   </div>
-                  <div class="rules-sunday-card" style="margin-top: 12px;">
-                    <span class="sunday-tag">👑 Chủ Nhật</span>
-                    <div>
+
+                  <!-- CHỦ NHẬT TỔNG KẾT -->
+                  <div class="rules-callout-card rules-sunday-card">
+                    <div class="callout-header">
+                      <span class="callout-badge-tag gold">👑 Chủ Nhật</span>
                       <strong>Tổng kết toàn tuần &amp; Trao thưởng</strong>
-                      <p>Khóa điểm 3 giai đoạn, cộng dồn điểm tích lũy + thưởng đúng hạn, trao thưởng Điểm hoạt động + Khiên giữ chuỗi.</p>
                     </div>
+                    <p class="callout-desc">
+                      Khóa điểm 3 giai đoạn, cộng dồn điểm tích lũy + thưởng đúng hạn, vinh danh Bảng vàng và trao tặng <strong>Điểm hoạt động NCKH + Khiên giữ chuỗi tự học</strong>.
+                    </p>
                   </div>
                 </section>
 
+                <!-- SECTION 2 -->
                 <section class="rules-section">
                   <h3 class="rules-heading"><span>⏱️</span> 2. Khung giờ hoạt động hàng ngày (Giờ máy chủ)</h3>
-                  <ul class="rules-list">
-                    <li><strong>19h00 – 23h00:</strong> 🟢 <strong>Đang mở cổng</strong> — Người dùng tham gia làm bài (1 lượt duy nhất / giai đoạn, có thể làm bù giai đoạn trước).</li>
-                    <li><strong>23h00 – 16h00 hôm sau:</strong> 📊 <strong>Đang tổng kết</strong> — Đóng cổng thi, hiển thị Bảng xếp hạng tạm thời giai đoạn.</li>
-                    <li><strong>16h00 – 19h00:</strong> ⏳ <strong>Sắp mở cổng</strong> — Hiển thị đồng hồ đếm ngược mở cổng 19h00.</li>
-                  </ul>
+                  <div class="rules-schedule-grid">
+                    <div class="schedule-card gate-open">
+                      <div class="schedule-badge">
+                        <span class="pulse-dot"></span> ĐANG MỞ CỔNG
+                      </div>
+                      <div class="schedule-time">19h00 – 23h00</div>
+                      <p>Thí sinh tham gia làm bài (10 phút / 10 câu). Mỗi giai đoạn 1 lượt duy nhất (hoặc làm bù).</p>
+                    </div>
+                    <div class="schedule-card gate-summary">
+                      <div class="schedule-badge">📊 ĐANG TỔNG KẾT</div>
+                      <div class="schedule-time">23h00 – 16h00 hôm sau</div>
+                      <p>Đóng cổng thi, đồng bộ điểm số và công khai Bảng xếp hạng tạm thời giai đoạn.</p>
+                    </div>
+                    <div class="schedule-card gate-countdown">
+                      <div class="schedule-badge">⏳ SẮP MỞ CỔNG</div>
+                      <div class="schedule-time">16h00 – 19h00</div>
+                      <p>Hiển thị đồng hồ đếm ngược mở cổng 19h00, chuẩn bị đề thi cho thí sinh.</p>
+                    </div>
+                  </div>
                 </section>
 
+                <!-- SECTION 3 -->
                 <section class="rules-section">
                   <h3 class="rules-heading"><span>🎯</span> 3. Cơ chế làm bài, Tính điểm &amp; Trừ thời gian</h3>
                   <div class="rules-formula-card">
-                    <div class="formula-title">TỔNG ĐIỂM = ĐIỂM ĐÚNG (400⭐) + THƯỞNG LẦN ĐẦU (100⭐) + GIÂY CÒN LẠI (600⭐) + THƯỞNG ĐÚNG HẠN (+100⭐)</div>
+                    <div class="formula-title">TỔNG ĐIỂM = ĐIỂM ĐÚNG (400⭐) + THƯỞNG LẦN 1 (100⭐) + GIÂY CÒN LẠI (600⭐) + THƯỞNG ĐÚNG HẠN (+100⭐)</div>
                     <div class="formula-grid">
                       <div class="f-item">
                         <span class="f-num">+40 ⭐</span>
@@ -1037,32 +1084,48 @@
                         <span class="f-label">Thưởng đúng ngay lần 1 (Tối đa 100 sao)</span>
                       </div>
                       <div class="f-item">
-                        <span class="f-num">+1 ⭐ / giây</span>
-                        <span class="f-label">Thời gian còn lại của 10 phút (Tối đa 600 sao)</span>
+                        <span class="f-num">+1 ⭐ / s</span>
+                        <span class="f-label">Thời gian còn lại (Tối đa 600 sao)</span>
                       </div>
                       <div class="f-item">
                         <span class="f-num">+50 ⭐ / GĐ</span>
-                        <span class="f-label">Đặc quyền đúng hạn GĐ 1 &amp; GĐ 2 (Tối đa 100 sao)</span>
+                        <span class="f-label">Đúng hạn GĐ 1 &amp; GĐ 2 (Tối đa 100 sao)</span>
                       </div>
                     </div>
                     <div class="formula-max">✨ Điểm tối đa lý thuyết toàn bài: <strong>1.200 sao</strong></div>
                   </div>
+
                   <div class="rules-penalty-box">
-                    <h4>⚠️ Quy tắc trả lời sai theo từng câu:</h4>
-                    <p>Mỗi câu hỏi được chọn tối đa <strong>3 lần</strong>:</p>
-                    <ul>
-                      <li><strong>Sai lần 1:</strong> Trừ <strong>30 giây</strong> và được chọn lại câu đó.</li>
-                      <li><strong>Sai lần 2:</strong> Tiếp tục trừ <strong>30 giây</strong> và chọn lại lần cuối.</li>
-                      <li><strong>Sai lần 3:</strong> Câu hỏi bị đóng (0 điểm) và chuyển sang câu tiếp theo. Tổng trừ tối đa 90 giây.</li>
-                      <li>Nếu đồng hồ về <strong>0 giây</strong>, bài thi kết thúc ngay lập tức.</li>
-                    </ul>
+                    <div class="penalty-header">
+                      <span class="penalty-icon">⚠️</span>
+                      <h4>Quy tắc trả lời sai theo từng câu (Tối đa 3 lần chọn):</h4>
+                    </div>
+                    <div class="penalty-steps-grid">
+                      <div class="penalty-step">
+                        <div class="step-badge step-1">Lần 1</div>
+                        <div class="step-info"><strong>Trừ 30 giây</strong>, được chọn lại câu đó</div>
+                      </div>
+                      <div class="penalty-step">
+                        <div class="step-badge step-2">Lần 2</div>
+                        <div class="step-info"><strong>Trừ tiếp 30 giây</strong>, chọn lại lần cuối</div>
+                      </div>
+                      <div class="penalty-step">
+                        <div class="step-badge step-3">Lần 3</div>
+                        <div class="step-info"><strong>Khóa câu (0 điểm)</strong>, sang câu kế tiếp</div>
+                      </div>
+                      <div class="penalty-step step-timeout">
+                        <div class="step-badge step-zero">0 giây</div>
+                        <div class="step-info"><strong>Hết giờ</strong>, dừng và nộp bài ngay</div>
+                      </div>
+                    </div>
                   </div>
                 </section>
 
+                <!-- SECTION 4 -->
                 <section class="rules-section">
                   <h3 class="rules-heading"><span>🎁</span> 4. Cơ cấu Giải thưởng Tuần &amp; Điểm thưởng Giai đoạn</h3>
-                  <p>Sau khi kết thúc Giai đoạn 3 vào thứ Bảy, Chủ Nhật là thời điểm hệ thống chốt Bảng xếp hạng tuần và trao thưởng chính thức:</p>
-                  
+                  <p class="rules-intro-text">Sau khi kết thúc Giai đoạn 3 vào thứ Bảy, Chủ Nhật là thời điểm hệ thống chốt Bảng xếp hạng tuần và trao thưởng chính thức:</p>
+
                   <div class="rules-rewards-table-wrap">
                     <table class="rules-rewards-table">
                       <thead>
@@ -1108,6 +1171,15 @@
                       <span class="bonus-chip">Tham gia 1 giai đoạn: <strong>+1 điểm hoạt động</strong></span>
                       <span class="bonus-chip">Tham gia 2 giai đoạn: <strong>+3 điểm hoạt động</strong></span>
                       <span class="bonus-chip highlight">Tham gia đủ cả 3 giai đoạn: <strong>+5 điểm hoạt động</strong></span>
+                    </div>
+                  </div>
+
+                  <!-- GIẢI THÍCH KHIÊN BẢO VỆ CHUỖI -->
+                  <div class="rules-shield-explain">
+                    <span class="shield-explain-icon">🛡️</span>
+                    <div>
+                      <strong>Đặc quyền Khiên giữ chuỗi tự học:</strong>
+                      <p>Khiên bảo vệ sẽ tự động kích hoạt để giữ chuỗi ngày tự học (Pomodoro Streak) của bạn không bị gián đoạn nếu bạn lỡ quên đăng nhập học trong 1 ngày bất kỳ.</p>
                     </div>
                   </div>
                 </section>
@@ -1689,10 +1761,15 @@
         <!-- TOPIC SETTINGS -->
         <div class="admin-card" style="margin-bottom: 16px; padding: 16px; background: #fff; border: 1px solid var(--line); border-radius: 8px;">
           <h3 style="margin-top:0; font-size: 14px; margin-bottom: 10px;">1. Thông tin Chủ đề Tuần thi đấu</h3>
-          <div style="display: grid; gap: 10px;">
-            <div>
-              <label style="font-size: 12px; font-weight: 600; display: block; margin-bottom: 4px;">Chủ đề chung toàn tuần:</label>
-              <input type="text" id="adminWeekTopicName" class="input-field" style="width: 100%;" placeholder="VD: Phương pháp Nghiên cứu & Xử lý Dữ liệu Khoa học" />
+            <div style="display: grid; grid-template-columns: 140px 1fr; gap: 10px;">
+              <div>
+                <label style="font-size: 12px; font-weight: 600; display: block; margin-bottom: 4px;">Tuần thi đấu số:</label>
+                <input type="number" id="adminWeekNumber" class="input-field" min="1" max="53" style="width: 100%; font-weight: 700;" placeholder="VD: 1" />
+              </div>
+              <div>
+                <label style="font-size: 12px; font-weight: 600; display: block; margin-bottom: 4px;">Chủ đề chung toàn tuần:</label>
+                <input type="text" id="adminWeekTopicName" class="input-field" style="width: 100%;" placeholder="VD: Phương pháp Nghiên cứu & Xử lý Dữ liệu Khoa học" />
+              </div>
             </div>
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 8px;">
               <div>

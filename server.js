@@ -4233,19 +4233,23 @@ async function api(request, response, url) {
     const currentComp = getOrCreateCurrentCompetition(vnNow);
     const competitionId = body.competitionId || currentComp.id;
     const topicName = body.topicName || body.weekTopic || null;
+    const weekNumber = (body.weekNumber !== undefined && body.weekNumber !== null && !isNaN(parseInt(body.weekNumber, 10))) 
+      ? parseInt(body.weekNumber, 10) 
+      : null;
     const { phase1Topic = null, phase2Topic = null, phase3Topic = null } = body;
     if (!competitionId) return error(response, 400, "Thiếu competitionId.");
 
     db.prepare(`
       UPDATE weekly_competitions 
-      SET topic_name = coalesce(?, topic_name),
+      SET week_number = coalesce(?, week_number),
+          topic_name = coalesce(?, topic_name),
           phase1_topic = coalesce(?, phase1_topic),
           phase2_topic = coalesce(?, phase2_topic),
           phase3_topic = coalesce(?, phase3_topic)
       WHERE id = ?
-    `).run(topicName, phase1Topic, phase2Topic, phase3Topic, competitionId);
+    `).run(weekNumber, topicName, phase1Topic, phase2Topic, phase3Topic, competitionId);
 
-    return json(response, 200, { ok: true });
+    return json(response, 200, { ok: true, weekNumber });
   }
 
   if (method === "POST" && pathName === "/api/admin/competition/seed-samples") {
