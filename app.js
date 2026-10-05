@@ -6780,7 +6780,8 @@ function normalizeCompData(raw) {
   const stateLabel = raw.stateLabel || raw.timeState?.stateLabel || "Cổng thi đấu";
   const weekTopic = raw.weekTopic || raw.week?.topic_name || raw.week?.topicName || "Phương pháp Nghiên cứu & Xử lý Dữ liệu Khoa học";
   const phaseTopic = raw.phaseTopic || raw.timeState?.phaseTopic || raw.week?.[`phase${phase}_topic`] || raw.week?.[`phase${phase}Topic`] || "";
-  const weekTitle = raw.weekTitle || (raw.week?.week_key ? `Tuần ${raw.week.week_key}` : (raw.week?.weekKey ? `Tuần ${raw.week.weekKey}` : "Tuần thi đấu"));
+  const weekNumber = raw.week?.week_number || raw.week?.weekNumber || raw.currentCompetition?.week_number || raw.weekNumber || 1;
+  const weekTitle = raw.weekTitle || `TUẦN ${String(weekNumber).padStart(2, "0")}`;
   const remainingSeconds = typeof raw.secondsUntilNext === "number" ? raw.secondsUntilNext : (typeof raw.timeState?.secondsUntilNext === "number" ? raw.timeState.secondsUntilNext : (raw.remainingSeconds || 0));
   const userAttempts = raw.userStatus?.attemptsUsed ?? (raw.userAttempts || 0);
   const userBestScore = raw.userStatus?.bestScore ?? (raw.userBestScore || 0);
@@ -6795,7 +6796,6 @@ function normalizeCompData(raw) {
   const defaultAvailablePhase = (raw.userStatus?.defaultAvailablePhase !== undefined)
     ? raw.userStatus.defaultAvailablePhase
     : (raw.defaultAvailablePhase !== undefined ? raw.defaultAvailablePhase : null);
-  const weekNumber = raw.week?.week_number || raw.week?.weekNumber || raw.currentCompetition?.week_number || raw.weekNumber || 1;
 
   return {
     isSunday,
@@ -6847,10 +6847,10 @@ function renderWeeklyCompetitionCard(raw) {
       phaseSubtitle.textContent = `Giai đoạn ${data.phase}: ${data.phaseTopic || ""}`;
     }
   }
-  if (weekTag) weekTag.textContent = data.weekTitle || "Tuần thi đấu";
+  if (weekTag) weekTag.textContent = data.weekTitle || `TUẦN ${String(data.weekNumber || 1).padStart(2, "0")}`;
 
   if (attemptsTeaser) {
-    attemptsTeaser.textContent = `Lượt thi: ${data.userAttempts || 0}/2`;
+    attemptsTeaser.textContent = `Số lượt thi: ${data.userAttempts || 0}/1`;
   }
   if (bestScoreTeaser) {
     if (data.userBestScore > 0) {
@@ -7078,35 +7078,35 @@ function renderGatewayTab(raw) {
         chipHTML = '<span class="pj-status-chip chip-completed">✅ ĐÃ XONG</span>';
         const phaseScore = (p.score !== undefined) ? p.score : (p.bestScore ?? 0);
         scoreInfoHTML = `<div class="pj-score-box"><span class="pj-score-label">Điểm:</span><span class="pj-score-val">⭐ ${phaseScore}</span></div>`;
-        actionBtnHTML = `<button type="button" class="pj-action-btn btn-view-result" onclick="openPhaseResultModal(${p.phase})">📜 Xem lịch sử hoàn thành</button>`;
+        actionBtnHTML = `<button type="button" class="pj-action-btn btn-view-result" onclick="openPhaseResultModal(${p.phase})">Xem lịch sử hoàn thành</button>`;
       } else if (p.hasActiveSession) {
         cardClass += " card-on-time";
         chipHTML = '<span class="pj-status-chip chip-on-time">⏸️ ĐANG LÀM DỞ</span>';
         scoreInfoHTML = `<div class="pj-score-box"><span class="pj-score-label">Còn lại:</span><span class="pj-score-val">${formatCompSeconds(p.activeRemaining || 600)}</span></div>`;
-        actionBtnHTML = `<button type="button" class="pj-action-btn btn-resume" onclick="startCompetitionQuiz(${p.phase})">▶️ Tiếp tục bài thi</button>`;
+        actionBtnHTML = `<button type="button" class="pj-action-btn btn-resume" onclick="startCompetitionQuiz(${p.phase})">Tiếp tục bài thi</button>`;
       } else if (data.state === "open" && p.isAvailable) {
         if (p.isOnTime) {
           cardClass += " card-on-time";
           chipHTML = '<span class="pj-status-chip chip-on-time">🟢 ĐÚNG HẠN (+50⭐)</span>';
           scoreInfoHTML = `<div class="pj-score-box"><span class="pj-score-label">Đặc quyền:</span><span class="pj-score-val" style="color: #34d399;">+50 ⭐ đúng hạn</span></div>`;
-          actionBtnHTML = `<button type="button" class="pj-action-btn btn-play-ontime" onclick="openQuizStartConfirmModal(${p.phase})">🔥 Bắt đầu thi (+50 ⭐)</button>`;
+          actionBtnHTML = `<button type="button" class="pj-action-btn btn-play-ontime" onclick="openQuizStartConfirmModal(${p.phase})">Bắt đầu thi (+50 ⭐)</button>`;
         } else if (p.isCatchUp) {
           cardClass += " card-catch-up";
           chipHTML = '<span class="pj-status-chip chip-catch-up">🔄 LÀM BÙ TUẦN</span>';
           scoreInfoHTML = `<div class="pj-score-box"><span class="pj-score-label">Chế độ:</span><span class="pj-score-val" style="color: #fbbf24;">Làm bù (Không +50⭐)</span></div>`;
-          actionBtnHTML = `<button type="button" class="pj-action-btn btn-play-catchup" onclick="openQuizStartConfirmModal(${p.phase})">🔄 Làm bù GĐ ${p.phase}</button>`;
+          actionBtnHTML = `<button type="button" class="pj-action-btn btn-play-catchup" onclick="openQuizStartConfirmModal(${p.phase})">Làm bù GĐ ${p.phase}</button>`;
         } else {
           cardClass += " card-on-time";
           chipHTML = '<span class="pj-status-chip chip-on-time">🟢 ĐANG MỞ</span>';
           scoreInfoHTML = `<div class="pj-score-box"><span class="pj-score-label">Chặng cuối tuần:</span><span class="pj-score-val">Tối đa 1.100 ⭐</span></div>`;
-          actionBtnHTML = `<button type="button" class="pj-action-btn btn-play-ontime" onclick="openQuizStartConfirmModal(${p.phase})">🚀 Bắt đầu Giai đoạn 3</button>`;
+          actionBtnHTML = `<button type="button" class="pj-action-btn btn-play-ontime" onclick="openQuizStartConfirmModal(${p.phase})">Bắt đầu Giai đoạn 3</button>`;
         }
       } else {
         cardClass += " card-locked";
         const lockLabel = (data.state === "countdown") ? "SẮP MỞ CỔNG" : (p.phase > data.phase ? "CHƯA MỞ" : "ĐÃ ĐÓNG CỔNG");
         chipHTML = `<span class="pj-status-chip chip-locked">🔒 ${lockLabel}</span>`;
         scoreInfoHTML = `<div class="pj-score-box"><span class="pj-score-label">Trạng thái:</span><span class="pj-score-val" style="color: #94a3b8;">${lockLabel}</span></div>`;
-        actionBtnHTML = `<button type="button" class="pj-action-btn btn-disabled" disabled>🔒 ${lockLabel}</button>`;
+        actionBtnHTML = `<button type="button" class="pj-action-btn btn-disabled" disabled>${lockLabel}</button>`;
       }
 
       gridHTML += `
@@ -7135,7 +7135,7 @@ function renderGatewayTab(raw) {
         startBtn.style.opacity = "1";
         startBtn.style.cursor = "pointer";
         const remTime = formatCompSeconds(data.activeRemaining || 600);
-        if (startBtnText) startBtnText.textContent = `▶️ Tiếp tục bài thi (còn ${remTime})`;
+        if (startBtnText) startBtnText.textContent = `Tiếp tục bài thi (còn ${remTime})`;
         startBtn.onclick = () => startCompetitionQuiz();
         if (blockedMsg) {
           blockedMsg.style.display = "block";
@@ -7154,11 +7154,11 @@ function renderGatewayTab(raw) {
         const targetP = data.defaultAvailablePhase;
         const pObj = (data.phasesStatus || []).find(p => p.phase === targetP);
         if (pObj && pObj.isCatchUp) {
-          if (startBtnText) startBtnText.textContent = `🔄 Làm bù Giai đoạn ${targetP}`;
+          if (startBtnText) startBtnText.textContent = `Làm bù Giai đoạn ${targetP}`;
         } else if (targetP === 3) {
-          if (startBtnText) startBtnText.textContent = `🚀 Bắt đầu Giai đoạn 3 (Chặng cuối tuần)`;
+          if (startBtnText) startBtnText.textContent = `Bắt đầu Giai đoạn 3 (Chặng cuối tuần)`;
         } else {
-          if (startBtnText) startBtnText.textContent = `🔥 Bắt đầu Giai đoạn ${targetP} (+50 ⭐ đúng hạn)`;
+          if (startBtnText) startBtnText.textContent = `Bắt đầu Giai đoạn ${targetP} (+50 ⭐ đúng hạn)`;
         }
         startBtn.onclick = () => openQuizStartConfirmModal(targetP);
       } else {
@@ -7167,7 +7167,7 @@ function renderGatewayTab(raw) {
         startBtn.disabled = false;
         startBtn.style.opacity = "1";
         startBtn.style.cursor = "pointer";
-        if (startBtnText) startBtnText.textContent = `📜 Xem lịch sử hoàn thành (GĐ ${targetReviewPhase})`;
+        if (startBtnText) startBtnText.textContent = `Xem lịch sử hoàn thành (GĐ ${targetReviewPhase})`;
         startBtn.onclick = () => openPhaseResultModal(targetReviewPhase);
         if (blockedMsg) {
           blockedMsg.style.display = "block";
@@ -7186,7 +7186,7 @@ function renderGatewayTab(raw) {
         startBtn.disabled = false;
         startBtn.style.opacity = "1";
         startBtn.style.cursor = "pointer";
-        if (startBtnText) startBtnText.textContent = `📜 Xem lịch sử hoàn thành (GĐ ${targetReviewPhase})`;
+        if (startBtnText) startBtnText.textContent = `Xem lịch sử hoàn thành (GĐ ${targetReviewPhase})`;
         startBtn.onclick = () => openPhaseResultModal(targetReviewPhase);
         if (blockedMsg) {
           blockedMsg.style.display = "block";
@@ -7470,7 +7470,7 @@ function openQuizStartConfirmModal(phase) {
   }
 
   if (proceedBtnEl) {
-    proceedBtnEl.innerHTML = isOnTime ? "🚀 Bắt đầu thi (+50 ⭐)" : (isCatchUp ? `🔄 Bắt đầu làm bù GĐ ${targetPhase}` : "🚀 Bắt đầu thi ngay");
+    proceedBtnEl.innerHTML = isOnTime ? "Bắt đầu thi (+50 ⭐)" : (isCatchUp ? `Bắt đầu làm bù GĐ ${targetPhase}` : "Bắt đầu thi ngay");
   }
 
   modal.showModal();
@@ -7629,7 +7629,7 @@ function promptQuizExit() {
     }
     if (confirmBtn) {
       confirmBtn.className = "button button-outline quiz-exit-confirm-btn";
-      confirmBtn.innerHTML = `🚪 Thoát & Tạm dừng thời gian`;
+      confirmBtn.innerHTML = `Thoát & Tạm dừng thời gian`;
     }
   }
 
@@ -7645,7 +7645,7 @@ function cancelQuizExit() {
 
 async function confirmQuizExit() {
   const confirmBtn = $("#quizExitConfirmBtn");
-  const originalText = confirmBtn ? confirmBtn.innerHTML : "🚪 Thoát & Tạm dừng thời gian";
+  const originalText = confirmBtn ? confirmBtn.innerHTML : "Thoát & Tạm dừng thời gian";
   if (confirmBtn) {
     confirmBtn.disabled = true;
     confirmBtn.innerHTML = `⏳ Đang xử lý...`;

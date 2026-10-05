@@ -3103,7 +3103,7 @@ async function api(request, response, url) {
     let userStatus = {
       authenticated: false,
       attemptsUsed: 0,
-      maxAttempts: 2,
+      maxAttempts: 1,
       canPlay: false,
       bestScore: 0,
       hasPlayedPhase: false
@@ -3118,12 +3118,12 @@ async function api(request, response, url) {
       const attemptsUsed = phaseRes?.attempts_used || 0;
       const bestScore = phaseRes?.best_score || 0;
       const hasPlayedPhase = attemptsUsed > 0;
-      const canPlay = (timeState.state === "open" || isSuperAdmin(user)) && timeState.isReady && attemptsUsed < 2;
+      const canPlay = (timeState.state === "open" || isSuperAdmin(user)) && timeState.isReady && attemptsUsed < 1;
 
       userStatus = {
         authenticated: true,
         attemptsUsed,
-        maxAttempts: 2,
+        maxAttempts: 1,
         canPlay,
         bestScore,
         hasPlayedPhase
@@ -3138,6 +3138,7 @@ async function api(request, response, url) {
       week: {
         id: comp.id,
         weekKey: comp.week_key,
+        weekNumber: comp.week_number,
         startDate: comp.start_date,
         endDate: comp.end_date,
         topicName: comp.topic_name,
