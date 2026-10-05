@@ -6774,6 +6774,10 @@ function normalizeCompData(raw) {
   const remainingSeconds = typeof raw.secondsUntilNext === "number" ? raw.secondsUntilNext : (typeof raw.timeState?.secondsUntilNext === "number" ? raw.timeState.secondsUntilNext : (raw.remainingSeconds || 0));
   const userAttempts = raw.userStatus?.attemptsUsed ?? (raw.userAttempts || 0);
   const userBestScore = raw.userStatus?.bestScore ?? (raw.userBestScore || 0);
+  const hasActiveSession = Boolean(raw.userStatus?.hasActiveSession || raw.hasActiveSession);
+  const activeRemaining = raw.userStatus?.activeRemaining ?? (raw.activeRemaining || 0);
+  const activeQuestionIndex = raw.userStatus?.activeQuestionIndex ?? (raw.activeQuestionIndex || 1);
+  const isPaused = Boolean(raw.userStatus?.isPaused || raw.isPaused);
 
   return {
     isSunday,
@@ -6786,6 +6790,10 @@ function normalizeCompData(raw) {
     remainingSeconds,
     userAttempts,
     userBestScore,
+    hasActiveSession,
+    activeRemaining,
+    activeQuestionIndex,
+    isPaused,
     visible: raw.visible ?? raw.timeState?.visible ?? true,
     isReady: raw.isReady ?? raw.timeState?.isReady ?? true
   };
@@ -7024,7 +7032,22 @@ function renderGatewayTab(raw) {
   if (blockedMsg) blockedMsg.style.display = "none";
   if (startBtn) {
     if (data.state === "open") {
-      if (attempts < 2) {
+      if (data.hasActiveSession) {
+        startBtn.disabled = false;
+        startBtn.style.opacity = "1";
+        startBtn.style.cursor = "pointer";
+        const remTime = formatCompSeconds(data.activeRemaining || 600);
+        if (startBtnText) startBtnText.textContent = `▶️ Tiếp tục bài thi (còn ${remTime})`;
+        if (blockedMsg) {
+          blockedMsg.style.display = "block";
+          blockedMsg.style.color = "#10b981";
+          blockedMsg.style.background = "rgba(16, 185, 129, 0.12)";
+          blockedMsg.style.border = "1px solid rgba(16, 185, 129, 0.3)";
+          blockedMsg.style.borderRadius = "8px";
+          blockedMsg.style.padding = "8px 12px";
+          blockedMsg.textContent = `⏸️ Bạn có một bài thi đang tạm dừng (Câu ${data.activeQuestionIndex || 1}/10, còn ${remTime}). Lượt thi này được bảo lưu an toàn!`;
+        }
+      } else if (attempts < 2) {
         startBtn.disabled = false;
         startBtn.style.opacity = "1";
         startBtn.style.cursor = "pointer";
@@ -7036,6 +7059,11 @@ function renderGatewayTab(raw) {
         if (startBtnText) startBtnText.textContent = "Đã hết lượt giai đoạn này (2/2)";
         if (blockedMsg) {
           blockedMsg.style.display = "block";
+          blockedMsg.style.color = "";
+          blockedMsg.style.background = "";
+          blockedMsg.style.border = "";
+          blockedMsg.style.borderRadius = "";
+          blockedMsg.style.padding = "";
           blockedMsg.textContent = "Bạn đã hoàn thành đủ 2 lượt của giai đoạn này. Kết quả cao nhất sẽ được dùng để xếp hạng.";
         }
       }
@@ -7238,13 +7266,14 @@ async function startCompetitionQuiz() {
 
     compState.sessionToken = res.sessionToken;
     compState.activeQuestions = res.questions || [];
-    compState.currentQIndex = 0;
-    compState.questionTries = 0;
-    compState.quizRemainingSeconds = res.durationSeconds || 600;
-    compState.quizLiveStars = 0;
-    compState.quizTotalCorrect = 0;
-    compState.quizFirstTryBonusCount = 0;
+    compState.currentQIndex = res.currentQuestionIndex ? Math.max(0, res.currentQuestionIndex - 1) : 0;
+    compState.questionTries = res.currentTriesCount || 0;
+    compState.quizRemainingSeconds = typeof res.remainingSeconds === "number" ? res.remainingSeconds : (res.durationSeconds || 600);
+    compState.quizLiveStars = (res.correctPoints || 0) + (res.firstTryBonus || 0);
+    compState.quizTotalCorrect = res.correctCount || 0;
+    compState.quizFirstTryBonusCount = res.firstTryCorrectCount || 0;
     compState.isSubmittingAnswer = false;
+    compState.initialDisabledOptions = Array.isArray(res.disabledOptions) ? res.disabledOptions : [];
 
     closeCompetitionModal();
     const quizModal = $("#competitionQuizModal");
@@ -7262,6 +7291,90 @@ async function startCompetitionQuiz() {
     startQuizTimer();
   } catch (e) {
     toast(e.message || "Không thể bắt đầu lượt thi.");
+  }
+}
+
+function promptQuizExit() {
+  const exitModal = $("#quizExitConfirmModal");
+  if (!exitModal) return;
+
+  // Pause client timer interval while dialog is open
+  if (compState.quizTimerInterval) {
+    clearInterval(compState.quizTimerInterval);
+    compState.quizTimerInterval = null;
+  }
+
+  const timeLeftEl = $("#quizExitTimeLeft");
+  const currentQEl = $("#quizExitCurrentQ");
+  const currentStarsEl = $("#quizExitCurrentStars");
+
+  if (timeLeftEl) {
+    timeLeftEl.textContent = formatCompSeconds(compState.quizRemainingSeconds || 0);
+  }
+  if (currentQEl) {
+    const totalQ = compState.activeQuestions?.length || 10;
+    currentQEl.textContent = `Câu ${compState.currentQIndex + 1} / ${totalQ}`;
+  }
+  if (currentStarsEl) {
+    currentStarsEl.textContent = `⭐ ${compState.quizLiveStars || 0}`;
+  }
+
+  exitModal.showModal();
+}
+
+function cancelQuizExit() {
+  const exitModal = $("#quizExitConfirmModal");
+  if (exitModal && exitModal.open) {
+    exitModal.close();
+  }
+  const quizModal = $("#competitionQuizModal");
+  if (quizModal && quizModal.open) {
+    startQuizTimer();
+  }
+}
+
+async function confirmQuizExit() {
+  const confirmBtn = $("#quizExitConfirmBtn");
+  const originalText = confirmBtn ? confirmBtn.innerHTML : "🚪 Xác nhận thoát & Lưu";
+  if (confirmBtn) {
+    confirmBtn.disabled = true;
+    confirmBtn.innerHTML = `⏳ Đang lưu...`;
+  }
+
+  try {
+    if (compState.sessionToken) {
+      await requestAPI("/api/competition/session/pause", {
+        method: "POST",
+        body: JSON.stringify({
+          sessionToken: compState.sessionToken,
+          clientRemainingSeconds: compState.quizRemainingSeconds
+        })
+      });
+    }
+  } catch (err) {
+    console.warn("Lỗi khi tạm dừng bài thi:", err);
+  }
+
+  if (compState.quizTimerInterval) {
+    clearInterval(compState.quizTimerInterval);
+    compState.quizTimerInterval = null;
+  }
+
+  const exitModal = $("#quizExitConfirmModal");
+  if (exitModal && exitModal.open) exitModal.close();
+
+  const quizModal = $("#competitionQuizModal");
+  if (quizModal && quizModal.open) quizModal.close();
+
+  if (confirmBtn) {
+    confirmBtn.disabled = false;
+    confirmBtn.innerHTML = originalText;
+  }
+
+  toast("✅ Đã lưu tiến trình bài thi! Lượt thi của bạn được bảo lưu an toàn.");
+
+  if (typeof loadWeeklyCompetitionOverview === "function") {
+    loadWeeklyCompetitionOverview();
   }
 }
 
@@ -7323,13 +7436,22 @@ function renderQuizQuestion() {
   if (optB) optB.textContent = q.optionB;
   if (optC) optC.textContent = q.optionC;
 
-  updateTriesUI(0);
+  updateTriesUI(compState.questionTries || 0);
 
+  const disabledOpts = compState.initialDisabledOptions || [];
   $$(".quiz-option-btn").forEach(btn => {
-    btn.disabled = false;
-    btn.className = "quiz-option-btn";
-    btn.style.pointerEvents = "auto";
+    const opt = btn.getAttribute("data-option");
+    if (disabledOpts.includes(opt)) {
+      btn.disabled = true;
+      btn.className = "quiz-option-btn opt-wrong";
+      btn.style.pointerEvents = "none";
+    } else {
+      btn.disabled = false;
+      btn.className = "quiz-option-btn";
+      btn.style.pointerEvents = "auto";
+    }
   });
+  compState.initialDisabledOptions = [];
 
   compState.isSubmittingAnswer = false;
 }
@@ -8005,6 +8127,42 @@ window.adminConcludeWeekNow = adminConcludeWeekNow;
 window.loadWeeklyCompetitionStatus = loadWeeklyCompetitionStatus;
 window.adminDownloadExcelTemplate = adminDownloadExcelTemplate;
 window.adminHandleExcelUpload = adminHandleExcelUpload;
+window.promptQuizExit = promptQuizExit;
+window.cancelQuizExit = cancelQuizExit;
+window.confirmQuizExit = confirmQuizExit;
+
+// Safe cancel listeners for Arena Quiz modals
+document.addEventListener("DOMContentLoaded", () => {
+  const quizModal = $("#competitionQuizModal");
+  if (quizModal) {
+    quizModal.addEventListener("cancel", (e) => {
+      e.preventDefault();
+      promptQuizExit();
+    });
+  }
+  const exitModal = $("#quizExitConfirmModal");
+  if (exitModal) {
+    exitModal.addEventListener("cancel", () => {
+      cancelQuizExit();
+    });
+  }
+});
+
+// Auto-pause if user closes tab or navigates away
+window.addEventListener("beforeunload", () => {
+  const quizModal = $("#competitionQuizModal");
+  if (quizModal && quizModal.open && compState.sessionToken && compState.quizRemainingSeconds > 0) {
+    const payload = JSON.stringify({
+      sessionToken: compState.sessionToken,
+      clientRemainingSeconds: compState.quizRemainingSeconds
+    });
+    if (navigator.sendBeacon) {
+      const blob = new Blob([payload], { type: "application/json" });
+      navigator.sendBeacon("/api/competition/session/pause", blob);
+    }
+  }
+});
+
 
 
 

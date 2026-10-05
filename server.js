@@ -322,6 +322,8 @@ db.exec(`
     UNIQUE(competition_id, user_id)
   );
 `);
+try { db.exec("ALTER TABLE competition_sessions ADD COLUMN is_paused INTEGER NOT NULL DEFAULT 0;"); } catch (e) {}
+try { db.exec("ALTER TABLE competition_sessions ADD COLUMN paused_remaining_seconds INTEGER;"); } catch (e) {}
 
 const defaultTopics = [
   "Đề tài", "Lý thuyết", "Phương pháp", 
@@ -3180,13 +3182,52 @@ async function api(request, response, url) {
         phasesParticipated,
         bonusPoints
       };
+
+      const curPhase = timeState.phase || 1;
+      const completedSessions = db.prepare(
+        "SELECT count(*) as c FROM competition_sessions WHERE user_id = ? AND competition_id = ? AND phase = ? AND status IN ('completed', 'expired')"
+      ).get(user.id, comp.id, curPhase)?.c || 0;
+
+      const activeSession = db.prepare(
+        "SELECT * FROM competition_sessions WHERE user_id = ? AND competition_id = ? AND phase = ? AND status = 'in_progress'"
+      ).get(user.id, comp.id, curPhase);
+
+      let hasActiveSession = false;
+      let activeRemaining = 0;
+      let activeQuestionIndex = 1;
+      let isPaused = false;
+
+      if (activeSession) {
+        let remaining = activeSession.remaining_seconds;
+        if (!activeSession.is_paused) {
+          const nowMs = getVietnamTimestampMs();
+          const elapsed = Math.floor((nowMs - activeSession.server_start_timestamp_ms) / 1000);
+          remaining = Math.max(0, 600 - elapsed - (activeSession.accumulated_penalty_seconds || 0));
+        }
+        if (remaining > 0) {
+          hasActiveSession = true;
+          activeRemaining = remaining;
+          activeQuestionIndex = activeSession.current_question_index || 1;
+          isPaused = Boolean(activeSession.is_paused);
+        }
+      }
+
+      userStatus = {
+        attemptsUsed: completedSessions,
+        hasActiveSession,
+        activeRemaining,
+        activeQuestionIndex,
+        isPaused,
+        bestScore: (curPhase === 1 ? p1 : (curPhase === 2 ? p2 : p3))
+      };
     }
 
     return json(response, 200, {
       ok: true,
       week: comp,
       timeState,
-      userSummary
+      userSummary,
+      userStatus
     });
   }
 
@@ -3329,10 +3370,6 @@ async function api(request, response, url) {
       "SELECT count(*) as c FROM competition_sessions WHERE user_id = ? AND competition_id = ? AND phase = ? AND status IN ('completed', 'expired')"
     ).get(user.id, comp.id, phase)?.c || 0;
 
-    if (completedSessions >= 2 && !isSuperAdmin(user)) {
-      return error(response, 400, "Bạn đã sử dụng tối đa 2 lượt thi trong giai đoạn này.");
-    }
-
     let activeSession = db.prepare(
       "SELECT * FROM competition_sessions WHERE user_id = ? AND competition_id = ? AND phase = ? AND status = 'in_progress'"
     ).get(user.id, comp.id, phase);
@@ -3340,11 +3377,26 @@ async function api(request, response, url) {
     const nowMs = getVietnamTimestampMs();
 
     if (activeSession) {
-      const elapsed = Math.floor((nowMs - activeSession.server_start_timestamp_ms) / 1000);
-      const remaining = 600 - elapsed - activeSession.accumulated_penalty_seconds;
-      if (remaining <= 0) {
-        db.prepare("UPDATE competition_sessions SET status = 'expired', remaining_seconds = 0, finished_at = CURRENT_TIMESTAMP WHERE id = ?").run(activeSession.id);
-        activeSession = null;
+      if (activeSession.is_paused) {
+        const remaining = activeSession.remaining_seconds;
+        if (remaining <= 0) {
+          db.prepare("UPDATE competition_sessions SET status = 'expired', remaining_seconds = 0, is_paused = 0, finished_at = CURRENT_TIMESTAMP WHERE id = ?").run(activeSession.id);
+          activeSession = null;
+        } else {
+          // Adjust server_start_timestamp_ms so elapsed time matches current remaining seconds
+          const elapsedSec = Math.max(0, 600 - remaining - (activeSession.accumulated_penalty_seconds || 0));
+          const adjustedStartMs = nowMs - (elapsedSec * 1000);
+          db.prepare("UPDATE competition_sessions SET is_paused = 0, server_start_timestamp_ms = ? WHERE id = ?").run(adjustedStartMs, activeSession.id);
+          activeSession.server_start_timestamp_ms = adjustedStartMs;
+          activeSession.is_paused = 0;
+        }
+      } else {
+        const elapsed = Math.floor((nowMs - activeSession.server_start_timestamp_ms) / 1000);
+        const remaining = 600 - elapsed - (activeSession.accumulated_penalty_seconds || 0);
+        if (remaining <= 0) {
+          db.prepare("UPDATE competition_sessions SET status = 'expired', remaining_seconds = 0, finished_at = CURRENT_TIMESTAMP WHERE id = ?").run(activeSession.id);
+          activeSession = null;
+        }
       }
     }
 
@@ -3358,8 +3410,8 @@ async function api(request, response, url) {
 
       db.prepare(`
         INSERT INTO competition_sessions (
-          session_token, user_id, competition_id, phase, attempt_number, server_start_timestamp_ms, initial_seconds, remaining_seconds, status
-        ) VALUES (?, ?, ?, ?, ?, ?, 600, 600, 'in_progress')
+          session_token, user_id, competition_id, phase, attempt_number, server_start_timestamp_ms, initial_seconds, remaining_seconds, is_paused, status
+        ) VALUES (?, ?, ?, ?, ?, ?, 600, 600, 0, 'in_progress')
       `).run(sessionToken, user.id, comp.id, phase, attemptNumber, nowMs);
 
       activeSession = db.prepare("SELECT * FROM competition_sessions WHERE session_token = ?").get(sessionToken);
@@ -3820,10 +3872,57 @@ async function api(request, response, url) {
     const session = db.prepare("SELECT * FROM competition_sessions WHERE session_token = ? AND user_id = ?").get(sessionToken, user.id);
     if (!session) return error(response, 404, "Không tìm thấy phiên.");
     
+    if (session.is_paused) {
+      return json(response, 200, { ok: true, remainingSeconds: session.remaining_seconds, status: "paused" });
+    }
     const nowMs = getVietnamTimestampMs();
     const elapsed = Math.floor((nowMs - session.server_start_timestamp_ms) / 1000);
-    const remaining = Math.max(0, 600 - elapsed - session.accumulated_penalty_seconds);
+    const remaining = Math.max(0, 600 - elapsed - (session.accumulated_penalty_seconds || 0));
     return json(response, 200, { ok: true, remainingSeconds: remaining, status: session.status });
+  }
+
+  if (method === "POST" && pathName === "/api/competition/session/pause") {
+    const user = requireUser(request, response);
+    if (!user) return;
+    if (request.headers["x-csrf-token"] && !requireCsrf(request, response, user)) return;
+
+    const body = await readJSON(request);
+    const { sessionToken, clientRemainingSeconds } = body;
+    if (!sessionToken) return error(response, 400, "Thiếu sessionToken.");
+
+    const session = db.prepare("SELECT * FROM competition_sessions WHERE session_token = ? AND user_id = ?").get(sessionToken, user.id);
+    if (!session) return error(response, 404, "Không tìm thấy phiên thi đấu.");
+
+    if (session.status !== "in_progress") {
+      return json(response, 200, { ok: true, status: session.status, isPaused: false, message: "Phiên thi đấu đã kết thúc." });
+    }
+
+    const nowMs = getVietnamTimestampMs();
+    let currentRemaining = session.remaining_seconds;
+    if (!session.is_paused) {
+      const elapsed = Math.floor((nowMs - session.server_start_timestamp_ms) / 1000);
+      const serverCalcRemaining = Math.max(0, 600 - elapsed - (session.accumulated_penalty_seconds || 0));
+      currentRemaining = serverCalcRemaining;
+      if (typeof clientRemainingSeconds === "number" && clientRemainingSeconds >= 0 && clientRemainingSeconds <= (serverCalcRemaining + 2)) {
+        currentRemaining = Math.min(serverCalcRemaining, clientRemainingSeconds);
+      }
+    }
+
+    db.prepare(`
+      UPDATE competition_sessions 
+      SET is_paused = 1,
+          remaining_seconds = ?,
+          paused_remaining_seconds = ?
+      WHERE id = ?
+    `).run(currentRemaining, currentRemaining, session.id);
+
+    return json(response, 200, {
+      ok: true,
+      isPaused: true,
+      remainingSeconds: currentRemaining,
+      currentQuestionIndex: session.current_question_index,
+      message: "Đã tạm dừng bài thi và lưu tiến trình thành công."
+    });
   }
 
   // --- ADMIN COMPETITION APIS ---
