@@ -6801,9 +6801,10 @@ body.study-zen-fullscreen .study-main-col {
   overflow: hidden;
   box-shadow: 0 12px 30px rgba(13, 40, 31, 0.3);
   border: 1px solid rgba(255, 255, 255, 0.12);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: space-between !important;
   gap: 28px;
 }
 
@@ -6851,12 +6852,14 @@ body.study-zen-fullscreen .study-main-col {
 
 .gateway-clock-card {
   flex: 0 0 auto;
+  margin-left: auto;
   background: rgba(0, 0, 0, 0.45);
   backdrop-filter: blur(12px);
   border: 1px solid rgba(250, 204, 21, 0.3);
   border-radius: 14px;
   padding: 12px 20px;
   display: inline-flex;
+  flex-direction: row;
   align-items: center;
   gap: 16px;
   position: relative;
@@ -6864,14 +6867,15 @@ body.study-zen-fullscreen .study-main-col {
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
 }
 
-.gateway-clock-icon {
+.gateway-clock-card .gateway-clock-icon {
+  order: 1;
   font-size: 32px;
   line-height: 1;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   transform-origin: center center;
-  animation: hourglassFlip 5s infinite cubic-bezier(0.35, 0, 0.25, 1);
+  animation: hourglassFlip 5.2s infinite cubic-bezier(0.35, 0, 0.25, 1);
   will-change: transform;
   filter: drop-shadow(0 2px 8px rgba(250, 204, 21, 0.45));
 }
@@ -6880,19 +6884,19 @@ body.study-zen-fullscreen .study-main-col {
   0% {
     transform: rotate(0deg);
   }
-  8% {
+  7.5% {
     transform: rotate(185deg);
   }
-  10% {
+  11% {
     transform: rotate(180deg);
   }
   50% {
     transform: rotate(180deg);
   }
-  58% {
+  57.5% {
     transform: rotate(365deg);
   }
-  60% {
+  61% {
     transform: rotate(360deg);
   }
   100% {
@@ -6900,7 +6904,8 @@ body.study-zen-fullscreen .study-main-col {
   }
 }
 
-.gateway-clock-body {
+.gateway-clock-card .gateway-clock-body {
+  order: 2;
   display: flex;
   flex-direction: column;
   gap: 2px;
@@ -8072,11 +8077,15 @@ body.dark-theme .comp-tab-btn.active {
   }
 
   .comp-gateway-hero {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 14px;
-    padding: 16px 16px;
-    border-radius: 14px;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 16px !important;
+    padding: 16px 16px !important;
+    border-radius: 14px !important;
+  }
+
+  .comp-gateway-hero-left {
+    width: 100% !important;
   }
 
   .comp-gateway-hero h3 {
@@ -8088,25 +8097,34 @@ body.dark-theme .comp-tab-btn.active {
   }
 
   .gateway-clock-card {
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    justify-content: space-between;
-    width: 100%;
-    padding: 12px 18px;
-    box-sizing: border-box;
-    border-radius: 12px;
-    gap: 14px;
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    width: 100% !important;
+    margin-left: 0 !important;
+    padding: 14px 18px !important;
+    box-sizing: border-box !important;
+    border-radius: 14px !important;
+    gap: 16px !important;
+    min-height: 84px !important;
   }
 
-  .gateway-clock-body {
-    flex: 1;
+  .gateway-clock-card .gateway-clock-body {
+    order: 1 !important;
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
   }
 
-  .gateway-clock-icon {
-    font-size: 46px; /* phóng to gần bằng kích cỡ modal */
-    line-height: 1;
-    flex: 0 0 auto;
+  .gateway-clock-card .gateway-clock-icon {
+    order: 2 !important;
+    margin-left: auto !important;
+    font-size: 56px !important; /* phóng to gần bằng kích cỡ modal */
+    line-height: 1 !important;
+    flex: 0 0 auto !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
   }
 
   .comp-podium-wrap {
