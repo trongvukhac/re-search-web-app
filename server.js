@@ -3198,17 +3198,15 @@ async function api(request, response, url) {
       let isPaused = false;
 
       if (activeSession) {
-        let remaining = activeSession.remaining_seconds;
-        if (!activeSession.is_paused) {
-          const nowMs = getVietnamTimestampMs();
-          const elapsed = Math.floor((nowMs - activeSession.server_start_timestamp_ms) / 1000);
-          remaining = Math.max(0, 600 - elapsed - (activeSession.accumulated_penalty_seconds || 0));
-        }
+        const nowMs = getVietnamTimestampMs();
+        const elapsed = Math.floor((nowMs - activeSession.server_start_timestamp_ms) / 1000);
+        const remaining = Math.max(0, 600 - elapsed - (activeSession.accumulated_penalty_seconds || 0));
         if (remaining > 0) {
           hasActiveSession = true;
           activeRemaining = remaining;
           activeQuestionIndex = activeSession.current_question_index || 1;
-          isPaused = Boolean(activeSession.is_paused);
+        } else {
+          db.prepare("UPDATE competition_sessions SET status = 'expired', remaining_seconds = 0, is_paused = 0, finished_at = CURRENT_TIMESTAMP WHERE id = ?").run(activeSession.id);
         }
       }
 
@@ -3376,27 +3374,17 @@ async function api(request, response, url) {
 
     const nowMs = getVietnamTimestampMs();
 
+    const isResumed = Boolean(activeSession);
     if (activeSession) {
-      if (activeSession.is_paused) {
-        const remaining = activeSession.remaining_seconds;
-        if (remaining <= 0) {
-          db.prepare("UPDATE competition_sessions SET status = 'expired', remaining_seconds = 0, is_paused = 0, finished_at = CURRENT_TIMESTAMP WHERE id = ?").run(activeSession.id);
-          activeSession = null;
-        } else {
-          // Adjust server_start_timestamp_ms so elapsed time matches current remaining seconds
-          const elapsedSec = Math.max(0, 600 - remaining - (activeSession.accumulated_penalty_seconds || 0));
-          const adjustedStartMs = nowMs - (elapsedSec * 1000);
-          db.prepare("UPDATE competition_sessions SET is_paused = 0, server_start_timestamp_ms = ? WHERE id = ?").run(adjustedStartMs, activeSession.id);
-          activeSession.server_start_timestamp_ms = adjustedStartMs;
-          activeSession.is_paused = 0;
-        }
+      const elapsed = Math.floor((nowMs - activeSession.server_start_timestamp_ms) / 1000);
+      const remaining = 600 - elapsed - (activeSession.accumulated_penalty_seconds || 0);
+      if (remaining <= 0) {
+        db.prepare("UPDATE competition_sessions SET status = 'expired', remaining_seconds = 0, is_paused = 0, finished_at = CURRENT_TIMESTAMP WHERE id = ?").run(activeSession.id);
+        activeSession = null;
       } else {
-        const elapsed = Math.floor((nowMs - activeSession.server_start_timestamp_ms) / 1000);
-        const remaining = 600 - elapsed - (activeSession.accumulated_penalty_seconds || 0);
-        if (remaining <= 0) {
-          db.prepare("UPDATE competition_sessions SET status = 'expired', remaining_seconds = 0, finished_at = CURRENT_TIMESTAMP WHERE id = ?").run(activeSession.id);
-          activeSession = null;
-        }
+        db.prepare("UPDATE competition_sessions SET remaining_seconds = ?, is_paused = 0 WHERE id = ?").run(remaining, activeSession.id);
+        activeSession.remaining_seconds = remaining;
+        activeSession.is_paused = 0;
       }
     }
 
@@ -3436,6 +3424,7 @@ async function api(request, response, url) {
 
     return json(response, 200, {
       ok: true,
+      isResumed: isResumed && Boolean(activeSession),
       sessionToken: activeSession.session_token,
       phase,
       phaseName: timeState.phaseName,
@@ -3872,9 +3861,6 @@ async function api(request, response, url) {
     const session = db.prepare("SELECT * FROM competition_sessions WHERE session_token = ? AND user_id = ?").get(sessionToken, user.id);
     if (!session) return error(response, 404, "Không tìm thấy phiên.");
     
-    if (session.is_paused) {
-      return json(response, 200, { ok: true, remainingSeconds: session.remaining_seconds, status: "paused" });
-    }
     const nowMs = getVietnamTimestampMs();
     const elapsed = Math.floor((nowMs - session.server_start_timestamp_ms) / 1000);
     const remaining = Math.max(0, 600 - elapsed - (session.accumulated_penalty_seconds || 0));
@@ -3887,7 +3873,7 @@ async function api(request, response, url) {
     if (request.headers["x-csrf-token"] && !requireCsrf(request, response, user)) return;
 
     const body = await readJSON(request);
-    const { sessionToken, clientRemainingSeconds } = body;
+    const { sessionToken } = body;
     if (!sessionToken) return error(response, 400, "Thiếu sessionToken.");
 
     const session = db.prepare("SELECT * FROM competition_sessions WHERE session_token = ? AND user_id = ?").get(sessionToken, user.id);
@@ -3898,30 +3884,20 @@ async function api(request, response, url) {
     }
 
     const nowMs = getVietnamTimestampMs();
-    let currentRemaining = session.remaining_seconds;
-    if (!session.is_paused) {
-      const elapsed = Math.floor((nowMs - session.server_start_timestamp_ms) / 1000);
-      const serverCalcRemaining = Math.max(0, 600 - elapsed - (session.accumulated_penalty_seconds || 0));
-      currentRemaining = serverCalcRemaining;
-      if (typeof clientRemainingSeconds === "number" && clientRemainingSeconds >= 0 && clientRemainingSeconds <= (serverCalcRemaining + 2)) {
-        currentRemaining = Math.min(serverCalcRemaining, clientRemainingSeconds);
-      }
-    }
+    const elapsed = Math.floor((nowMs - session.server_start_timestamp_ms) / 1000);
+    const serverRemaining = Math.max(0, 600 - elapsed - (session.accumulated_penalty_seconds || 0));
 
     db.prepare(`
       UPDATE competition_sessions 
-      SET is_paused = 1,
-          remaining_seconds = ?,
-          paused_remaining_seconds = ?
+      SET remaining_seconds = ?
       WHERE id = ?
-    `).run(currentRemaining, currentRemaining, session.id);
+    `).run(serverRemaining, session.id);
 
     return json(response, 200, {
       ok: true,
-      isPaused: true,
-      remainingSeconds: currentRemaining,
+      remainingSeconds: serverRemaining,
       currentQuestionIndex: session.current_question_index,
-      message: "Đã tạm dừng bài thi và lưu tiến trình thành công."
+      message: "Đã lưu tiến trình câu hỏi. Lưu ý thời gian 10 phút vẫn tiếp tục đếm ngược."
     });
   }
 

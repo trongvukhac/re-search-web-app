@@ -7040,12 +7040,12 @@ function renderGatewayTab(raw) {
         if (startBtnText) startBtnText.textContent = `▶️ Tiếp tục bài thi (còn ${remTime})`;
         if (blockedMsg) {
           blockedMsg.style.display = "block";
-          blockedMsg.style.color = "#10b981";
-          blockedMsg.style.background = "rgba(16, 185, 129, 0.12)";
-          blockedMsg.style.border = "1px solid rgba(16, 185, 129, 0.3)";
+          blockedMsg.style.color = "#f59e0b";
+          blockedMsg.style.background = "rgba(245, 158, 11, 0.12)";
+          blockedMsg.style.border = "1px solid rgba(245, 158, 11, 0.35)";
           blockedMsg.style.borderRadius = "8px";
           blockedMsg.style.padding = "8px 12px";
-          blockedMsg.textContent = `⏸️ Bạn có một bài thi đang tạm dừng (Câu ${data.activeQuestionIndex || 1}/10, còn ${remTime}). Lượt thi này được bảo lưu an toàn!`;
+          blockedMsg.innerHTML = `⏱️ <strong>Bạn có bài thi đang diễn ra (Câu ${data.activeQuestionIndex || 1}/10, còn ${remTime}):</strong> Thời gian vẫn đang tiếp tục đếm ngược. Hãy bấm nút trên để hoàn thành bài thi trước khi hết giờ!`;
         }
       } else if (attempts < 2) {
         startBtn.disabled = false;
@@ -7298,12 +7298,6 @@ function promptQuizExit() {
   const exitModal = $("#quizExitConfirmModal");
   if (!exitModal) return;
 
-  // Pause client timer interval while dialog is open
-  if (compState.quizTimerInterval) {
-    clearInterval(compState.quizTimerInterval);
-    compState.quizTimerInterval = null;
-  }
-
   const timeLeftEl = $("#quizExitTimeLeft");
   const currentQEl = $("#quizExitCurrentQ");
   const currentStarsEl = $("#quizExitCurrentStars");
@@ -7327,18 +7321,14 @@ function cancelQuizExit() {
   if (exitModal && exitModal.open) {
     exitModal.close();
   }
-  const quizModal = $("#competitionQuizModal");
-  if (quizModal && quizModal.open) {
-    startQuizTimer();
-  }
 }
 
 async function confirmQuizExit() {
   const confirmBtn = $("#quizExitConfirmBtn");
-  const originalText = confirmBtn ? confirmBtn.innerHTML : "🚪 Xác nhận thoát & Lưu";
+  const originalText = confirmBtn ? confirmBtn.innerHTML : "🚪 Thoát ra ngoài (Đồng hồ vẫn chạy)";
   if (confirmBtn) {
     confirmBtn.disabled = true;
-    confirmBtn.innerHTML = `⏳ Đang lưu...`;
+    confirmBtn.innerHTML = `⏳ Đang thoát...`;
   }
 
   try {
@@ -7346,13 +7336,12 @@ async function confirmQuizExit() {
       await requestAPI("/api/competition/session/pause", {
         method: "POST",
         body: JSON.stringify({
-          sessionToken: compState.sessionToken,
-          clientRemainingSeconds: compState.quizRemainingSeconds
+          sessionToken: compState.sessionToken
         })
       });
     }
   } catch (err) {
-    console.warn("Lỗi khi tạm dừng bài thi:", err);
+    console.warn("Lỗi khi lưu phiên thi đấu:", err);
   }
 
   if (compState.quizTimerInterval) {
@@ -7371,7 +7360,7 @@ async function confirmQuizExit() {
     confirmBtn.innerHTML = originalText;
   }
 
-  toast("✅ Đã lưu tiến trình bài thi! Lượt thi của bạn được bảo lưu an toàn.");
+  toast("⏱️ Đã lưu tiến trình câu hỏi. Lưu ý thời gian 10 phút vẫn đang tiếp tục đếm ngược!");
 
   if (typeof loadWeeklyCompetitionOverview === "function") {
     loadWeeklyCompetitionOverview();
@@ -7402,7 +7391,12 @@ function updateQuizTimerUI() {
   const displayWrap = $("#quizTimerDisplay");
 
   const sec = compState.quizRemainingSeconds;
-  if (digits) digits.textContent = formatCompSeconds(sec);
+  const timeFormatted = formatCompSeconds(sec);
+  if (digits) digits.textContent = timeFormatted;
+
+  // Live update exit modal time counter if open
+  const exitTimeLeftEl = $("#quizExitTimeLeft");
+  if (exitTimeLeftEl) exitTimeLeftEl.textContent = timeFormatted;
 
   const pct = Math.max(0, Math.min(100, (sec / 600) * 100));
   if (bar) {

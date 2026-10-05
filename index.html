@@ -16,7 +16,7 @@
     <script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-    <link rel="stylesheet" href="styles.css?v=36" />
+    <link rel="stylesheet" href="styles.css?v=37" />
   </head>
   <body>
     <dialog
@@ -2012,10 +2012,10 @@
     <dialog id="quizExitConfirmModal" class="modal quiz-exit-confirm-modal" style="max-width: 490px; width: 92vw; padding: 0;">
       <div class="quiz-exit-modal-card">
         <div class="quiz-exit-header">
-          <div class="quiz-exit-badge-icon">⏸️</div>
+          <div class="quiz-exit-badge-icon">⚠️</div>
           <div class="quiz-exit-title-group">
             <h3>Tạm dừng & Thoát bài thi</h3>
-            <p>Tiến trình và thời gian của bạn sẽ được bảo lưu an toàn</p>
+            <p>Tiến trình câu hỏi được lưu, đồng hồ làm bài vẫn tiếp tục đếm ngược</p>
           </div>
         </div>
 
@@ -2035,26 +2035,26 @@
             </div>
           </div>
 
-          <div class="quiz-exit-guarantee-card">
-            <div class="guarantee-icon">🛡️</div>
+          <div class="quiz-exit-guarantee-card warning-mode">
+            <div class="guarantee-icon">⏱️</div>
             <div class="guarantee-text">
-              <strong>Bảo lưu lượt thi hoàn toàn:</strong>
-              Thoát ra bây giờ <em>KHÔNG bị tính là mất lượt thi</em>. Hệ thống lưu lại chính xác thời gian và câu hỏi hiện tại để bạn có thể bấm <strong>"Tiếp tục bài thi"</strong> bất cứ khi nào.
+              <strong>Lưu ý quan trọng chống gian lận:</strong><br>
+              Thời gian 10 phút của bài thi <strong>vẫn tiếp tục đếm ngược</strong> trong lúc bạn thoát (để đảm bảo tính công bằng, tránh tạm dừng để tra cứu đáp án). Lượt thi này <em>KHÔNG bị tính là mất</em> — bạn cần bấm <strong>"Tiếp tục bài thi"</strong> để hoàn thành trước khi hết giờ!
             </div>
           </div>
         </div>
 
         <div class="quiz-exit-footer">
-          <button type="button" class="button button-outline quiz-exit-resume-btn" onclick="cancelQuizExit()">
-            ▶️ Tiếp tục làm bài
+          <button type="button" class="button button-primary quiz-exit-resume-btn" onclick="cancelQuizExit()">
+            ▶️ Tiếp tục làm bài ngay
           </button>
-          <button type="button" class="button button-danger quiz-exit-confirm-btn" id="quizExitConfirmBtn" onclick="confirmQuizExit()">
-            🚪 Xác nhận thoát & Lưu
+          <button type="button" class="button button-outline quiz-exit-confirm-btn" id="quizExitConfirmBtn" onclick="confirmQuizExit()">
+            🚪 Thoát ra ngoài (Đồng hồ vẫn chạy)
           </button>
         </div>
       </div>
     </dialog>
 
-    <script src="app.js?v=49" defer></script>
+    <script src="app.js?v=50" defer></script>
   </body>
 </html>
