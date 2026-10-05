@@ -2664,6 +2664,16 @@ $$(".admin-tab").forEach((tab) => {
   });
 });
 
+function switchAdminTab(targetTab) {
+  const modal = $("#adminModal");
+  if (modal && !modal.open) {
+    try { modal.showModal(); } catch (e) {}
+  }
+  const tabBtn = $(`.admin-tab[data-admin-tab="${targetTab}"]`);
+  if (tabBtn) tabBtn.click();
+}
+window.switchAdminTab = switchAdminTab;
+
 $("#adminButton").onclick = async () => {
   if (serverMode) {
     try {
@@ -8083,12 +8093,57 @@ async function saveAdminCompetitionTopics() {
   }
 }
 
+function collectCurrentAdminQuestionsFromDOM() {
+  const cards = $$("#adminQuestionsList .admin-q-card");
+  if (!cards || !cards.length) return null;
+  const list = [];
+  cards.forEach((card, idx) => {
+    const text = card.querySelector(".admin-q-text")?.value?.trim() || "";
+    const optA = card.querySelector(".admin-q-a")?.value?.trim() || "";
+    const optB = card.querySelector(".admin-q-b")?.value?.trim() || "";
+    const optC = card.querySelector(".admin-q-c")?.value?.trim() || "";
+    const correct = card.querySelector(".admin-q-correct")?.value || "A";
+    list.push({
+      questionNumber: idx + 1,
+      questionText: text,
+      optionA: optA,
+      optionB: optB,
+      optionC: optC,
+      correctOption: correct
+    });
+  });
+  return list;
+}
+
 async function switchAdminPhaseTab(phase) {
+  const oldPhase = compState.adminSelectedPhase || 1;
+  if (oldPhase !== phase) {
+    // Lưu các câu hỏi đang sửa trên giao diện vào bản nháp bộ nhớ tạm
+    const currentEdits = collectCurrentAdminQuestionsFromDOM();
+    if (currentEdits && currentEdits.some(q => q.questionText || q.optionA)) {
+      if (!compState.adminPhaseDrafts) compState.adminPhaseDrafts = {};
+      compState.adminPhaseDrafts[oldPhase] = currentEdits;
+    }
+  }
+
   compState.adminSelectedPhase = phase;
   $$(".admin-phase-tab-btn").forEach((btn, i) => {
     btn.classList.toggle("active", i === (phase - 1));
   });
-  await loadAdminPhaseQuestions(phase);
+
+  // Nếu giai đoạn này đang có bản nháp (do vừa nhập Excel hoặc vừa gõ), ưu tiên hiển thị ngay
+  if (compState.adminPhaseDrafts && compState.adminPhaseDrafts[phase] && compState.adminPhaseDrafts[phase].length > 0) {
+    compState.adminQuestions = compState.adminPhaseDrafts[phase];
+    renderAdminQuestionsList();
+    const badge = $("#adminPhaseStatusBadge");
+    if (badge) {
+      const cnt = compState.adminQuestions.length;
+      badge.textContent = `📝 ${cnt}/10 câu (Bản nháp chưa lưu)`;
+      badge.style.color = "#d97706";
+    }
+  } else {
+    await loadAdminPhaseQuestions(phase);
+  }
 }
 
 async function loadAdminPhaseQuestions(phase) {
@@ -8100,7 +8155,17 @@ async function loadAdminPhaseQuestions(phase) {
 
   try {
     const res = await requestAPI(`/api/admin/competition/questions?phase=${phase}`);
-    compState.adminQuestions = res.questions || [];
+    // Chuẩn hóa mọi biến thể thuộc tính từ server để hiển thị trọn vẹn lên giao diện
+    compState.adminQuestions = (res.questions || []).map((q, idx) => ({
+      id: q.id,
+      questionNumber: q.questionNumber || q.question_index || (idx + 1),
+      questionText: q.questionText || q.question_text || "",
+      optionA: q.optionA || q.option_a || "",
+      optionB: q.optionB || q.option_b || "",
+      optionC: q.optionC || q.option_c || "",
+      correctOption: (q.correctOption || q.correct_option || "A").toUpperCase(),
+      explanation: q.explanation || ""
+    }));
 
     if (badge) {
       const cnt = compState.adminQuestions.length;
@@ -8119,29 +8184,36 @@ function renderAdminQuestionsList() {
   if (!container) return;
 
   if (compState.adminQuestions.length === 0) {
-    container.innerHTML = `<div style="padding:16px; text-align:center; color:var(--muted);">Giai đoạn này chưa có câu hỏi nào. Bấm "+ Thêm câu hỏi" hoặc "Tải bộ 30 câu hỏi mẫu".</div>`;
+    container.innerHTML = `<div style="padding:16px; text-align:center; color:var(--muted);">Giai đoạn này chưa có câu hỏi nào. Bấm "+ Thêm câu hỏi", "Nhập từ Excel" hoặc "Tải bộ 30 câu hỏi mẫu".</div>`;
     return;
   }
 
-  container.innerHTML = compState.adminQuestions.map((q, idx) => `
-    <div class="admin-q-card" data-idx="${idx}" style="background:var(--sage-2); border:1px solid var(--line); border-radius:6px; padding:10px;">
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-        <strong style="font-size:12px; color:var(--ink);">Câu ${idx + 1}</strong>
-        <button type="button" class="button button-sm button-outline" style="color:#ef4444; padding:2px 6px; font-size:11px;" onclick="adminRemoveQuestion(${idx})">Xóa</button>
+  container.innerHTML = compState.adminQuestions.map((q, idx) => {
+    const qText = q.questionText || q.question_text || "";
+    const optA = q.optionA || q.option_a || "";
+    const optB = q.optionB || q.option_b || "";
+    const optC = q.optionC || q.option_c || "";
+    const correct = (q.correctOption || q.correct_option || "A").toUpperCase();
+    return `
+      <div class="admin-q-card" data-idx="${idx}" style="background:var(--sage-2); border:1px solid var(--line); border-radius:6px; padding:10px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+          <strong style="font-size:12px; color:var(--ink);">Câu ${idx + 1}</strong>
+          <button type="button" class="button button-sm button-outline" style="color:#ef4444; padding:2px 6px; font-size:11px;" onclick="adminRemoveQuestion(${idx})">Xóa</button>
+        </div>
+        <input type="text" class="input-field admin-q-text" style="width:100%; margin-bottom:6px; font-size:12px;" placeholder="Nội dung câu hỏi..." value="${escapeHTML(qText)}" />
+        <div style="display:grid; grid-template-columns: 1fr 1fr 1fr 110px; gap:6px; align-items:center;">
+          <input type="text" class="input-field admin-q-a" style="font-size:11px;" placeholder="Đáp án A" value="${escapeHTML(optA)}" />
+          <input type="text" class="input-field admin-q-b" style="font-size:11px;" placeholder="Đáp án B" value="${escapeHTML(optB)}" />
+          <input type="text" class="input-field admin-q-c" style="font-size:11px;" placeholder="Đáp án C" value="${escapeHTML(optC)}" />
+          <select class="input-field admin-q-correct" style="font-size:11px; padding:4px;">
+            <option value="A" ${correct === "A" ? "selected" : ""}>Đúng: A</option>
+            <option value="B" ${correct === "B" ? "selected" : ""}>Đúng: B</option>
+            <option value="C" ${correct === "C" ? "selected" : ""}>Đúng: C</option>
+          </select>
+        </div>
       </div>
-      <input type="text" class="input-field admin-q-text" style="width:100%; margin-bottom:6px; font-size:12px;" placeholder="Nội dung câu hỏi..." value="${escapeHTML(q.questionText || "")}" />
-      <div style="display:grid; grid-template-columns: 1fr 1fr 1fr 110px; gap:6px; align-items:center;">
-        <input type="text" class="input-field admin-q-a" style="font-size:11px;" placeholder="Đáp án A" value="${escapeHTML(q.optionA || "")}" />
-        <input type="text" class="input-field admin-q-b" style="font-size:11px;" placeholder="Đáp án B" value="${escapeHTML(q.optionB || "")}" />
-        <input type="text" class="input-field admin-q-c" style="font-size:11px;" placeholder="Đáp án C" value="${escapeHTML(q.optionC || "")}" />
-        <select class="input-field admin-q-correct" style="font-size:11px; padding:4px;">
-          <option value="A" ${q.correctOption === "A" ? "selected" : ""}>Đúng: A</option>
-          <option value="B" ${q.correctOption === "B" ? "selected" : ""}>Đúng: B</option>
-          <option value="C" ${q.correctOption === "C" ? "selected" : ""}>Đúng: C</option>
-        </select>
-      </div>
-    </div>
-  `).join("");
+    `;
+  }).join("");
 }
 
 function adminAddEmptyQuestion() {
@@ -8201,16 +8273,21 @@ async function adminSaveQuestions() {
     }
   }
 
+  const curPhase = compState.adminSelectedPhase || 1;
   try {
     await requestAPI("/api/admin/competition/questions", {
       method: "POST",
       body: JSON.stringify({
-        phase: compState.adminSelectedPhase || 1,
+        phase: curPhase,
         questions: questions
       })
     });
+    // Xóa bản nháp tạm của giai đoạn này sau khi đã lưu DB thành công
+    if (compState.adminPhaseDrafts) {
+      delete compState.adminPhaseDrafts[curPhase];
+    }
     toast("✅ Đã lưu bộ câu hỏi giai đoạn thành công!");
-    await loadAdminPhaseQuestions(compState.adminSelectedPhase || 1);
+    await loadAdminPhaseQuestions(curPhase);
     loadWeeklyCompetitionStatus();
   } catch (e) {
     toast(e.message || "Lỗi khi lưu bộ câu hỏi.");
@@ -8363,6 +8440,35 @@ async function adminHandleExcelUpload(event) {
     const currentPhase = compState.adminSelectedPhase || 1;
     const phaseMap = { 1: [], 2: [], 3: [] };
 
+    // Trợ lý đọc ô theo từ khóa tiếng Việt linh hoạt (không phân biệt hoa thường, dấu, khoảng trắng)
+    function getCellVal(row, keywords, fallbackIndex) {
+      const entries = Object.entries(row);
+      // 1. So khớp chính xác sau khi chuẩn hóa
+      for (const [k, v] of entries) {
+        const cleanK = k.trim().toLowerCase();
+        for (const kw of keywords) {
+          if (cleanK === kw.toLowerCase()) {
+            if (v !== undefined && v !== null && String(v).trim()) return String(v).trim();
+          }
+        }
+      }
+      // 2. So khớp chứa từ khóa
+      for (const [k, v] of entries) {
+        const cleanK = k.trim().toLowerCase();
+        for (const kw of keywords) {
+          if (cleanK.includes(kw.toLowerCase())) {
+            if (v !== undefined && v !== null && String(v).trim()) return String(v).trim();
+          }
+        }
+      }
+      // 3. Fallback theo vị trí cột nếu có
+      if (fallbackIndex !== undefined && fallbackIndex < entries.length) {
+        const v = entries[fallbackIndex][1];
+        if (v !== undefined && v !== null) return String(v).trim();
+      }
+      return "";
+    }
+
     if (window.XLSX) {
       const wb = XLSX.read(data, { type: "array" });
       
@@ -8378,48 +8484,29 @@ async function adminHandleExcelUpload(event) {
         else if (sLower.includes("giaidoan3") || sLower.includes("gd3") || sLower === "3") sheetDefaultPhase = 3;
 
         sheetRows.forEach(row => {
-          const qText = (
-            row["Câu hỏi"] || row["Cau hoi"] || row["Question"] ||
-            row["Nội dung"] || row["Nội dung câu hỏi"] || Object.values(row)[2] || ""
-          ).toString().trim();
+          const qText = getCellVal(row, ["câu hỏi", "cau hoi", "nội dung câu hỏi", "nội dung", "noi dung", "đề bài", "de bai", "question", "bài tập", "câu"]);
+          const optA = getCellVal(row, ["đáp án a", "dap an a", "lựa chọn a", "phương án a", "option a", "a"]);
+          const optB = getCellVal(row, ["đáp án b", "dap an b", "lựa chọn b", "phương án b", "option b", "b"]);
+          const optC = getCellVal(row, ["đáp án c", "dap an c", "lựa chọn c", "phương án c", "option c", "c"]);
 
-          const optA = (
-            row["Đáp án A"] || row["Dap an A"] || row["Option A"] ||
-            row["A"] || Object.values(row)[3] || ""
-          ).toString().trim();
+          let rawCorrect = getCellVal(row, ["đáp án đúng (a/b/c)", "đáp án đúng", "dap an dung", "đáp án", "dap an", "kết quả", "đúng", "dung", "correct option", "correct", "key", "answer"]).toUpperCase().trim();
+          let correct = "A";
+          if (rawCorrect.includes("A") || rawCorrect === "1") correct = "A";
+          else if (rawCorrect.includes("B") || rawCorrect === "2") correct = "B";
+          else if (rawCorrect.includes("C") || rawCorrect === "3") correct = "C";
 
-          const optB = (
-            row["Đáp án B"] || row["Dap an B"] || row["Option B"] ||
-            row["B"] || Object.values(row)[4] || ""
-          ).toString().trim();
-
-          const optC = (
-            row["Đáp án C"] || row["Dap an C"] || row["Option C"] ||
-            row["C"] || Object.values(row)[5] || ""
-          ).toString().trim();
-
-          let correct = (
-            row["Đáp án đúng (A/B/C)"] || row["Đáp án đúng"] || row["Dap an dung"] ||
-            row["Đáp án"] || row["Correct"] || row["Correct Option"] || Object.values(row)[6] || "A"
-          ).toString().trim().toUpperCase();
-
-          if (!["A", "B", "C"].includes(correct)) {
-            if (correct.includes("A")) correct = "A";
-            else if (correct.includes("B")) correct = "B";
-            else if (correct.includes("C")) correct = "C";
-            else correct = "A";
+          const rawPhase = getCellVal(row, ["giai đoạn", "giai doan", "gđ", "gd", "phase", "đợt", "dot", "chặng"]);
+          let phaseVal = sheetDefaultPhase;
+          if (rawPhase) {
+            const m = rawPhase.match(/[1-3]/);
+            if (m) phaseVal = parseInt(m[0], 10);
           }
 
-          const rawPhase = row["Giai đoạn"] || row["Giai doan"] || row["Phase"] || sheetDefaultPhase;
-          let phaseVal = parseInt(rawPhase, 10);
-          if (isNaN(phaseVal) || ![1, 2, 3].includes(phaseVal)) phaseVal = sheetDefaultPhase;
-
           if (qText && optA && optB && optC) {
-            // Tránh trùng lặp câu hỏi trong cùng giai đoạn nếu file có cả sheet tổng hợp và sheet riêng
             const exists = phaseMap[phaseVal].some(q => q.questionText === qText);
             if (!exists) {
               phaseMap[phaseVal].push({
-                phase: phaseVal,
+                questionNumber: phaseMap[phaseVal].length + 1,
                 questionText: qText,
                 optionA: optA,
                 optionB: optB,
@@ -8441,19 +8528,26 @@ async function adminHandleExcelUpload(event) {
         const row = {};
         headers.forEach((h, idx) => { row[h] = cols[idx] || ""; });
 
-        const qText = (row["Câu hỏi"] || row["Cau hoi"] || row["Question"] || Object.values(row)[2] || "").trim();
-        const optA = (row["Đáp án A"] || row["Dap an A"] || row["Option A"] || Object.values(row)[3] || "").trim();
-        const optB = (row["Đáp án B"] || row["Dap an B"] || row["Option B"] || Object.values(row)[4] || "").trim();
-        const optC = (row["Đáp án C"] || row["Dap an C"] || row["Option C"] || Object.values(row)[5] || "").trim();
-        let correct = (row["Đáp án đúng (A/B/C)"] || row["Đáp án đúng"] || Object.values(row)[6] || "A").trim().toUpperCase();
-        if (!["A", "B", "C"].includes(correct)) correct = "A";
+        const qText = getCellVal(row, ["câu hỏi", "cau hoi", "nội dung câu hỏi", "nội dung", "noi dung", "đề bài", "de bai", "question", "bài tập", "câu"]);
+        const optA = getCellVal(row, ["đáp án a", "dap an a", "lựa chọn a", "phương án a", "option a", "a"]);
+        const optB = getCellVal(row, ["đáp án b", "dap an b", "lựa chọn b", "phương án b", "option b", "b"]);
+        const optC = getCellVal(row, ["đáp án c", "dap an c", "lựa chọn c", "phương án c", "option c", "c"]);
+        let rawCorrect = getCellVal(row, ["đáp án đúng (a/b/c)", "đáp án đúng", "dap an dung", "đáp án", "dap an", "kết quả", "đúng", "dung", "correct option", "correct", "key", "answer"]).toUpperCase().trim();
+        let correct = "A";
+        if (rawCorrect.includes("A") || rawCorrect === "1") correct = "A";
+        else if (rawCorrect.includes("B") || rawCorrect === "2") correct = "B";
+        else if (rawCorrect.includes("C") || rawCorrect === "3") correct = "C";
 
-        let phaseVal = parseInt(row["Giai đoạn"] || row["Phase"] || currentPhase, 10);
-        if (isNaN(phaseVal) || ![1, 2, 3].includes(phaseVal)) phaseVal = currentPhase;
+        const rawPhase = getCellVal(row, ["giai đoạn", "giai doan", "gđ", "gd", "phase", "đợt", "dot", "chặng"]);
+        let phaseVal = currentPhase;
+        if (rawPhase) {
+          const m = rawPhase.match(/[1-3]/);
+          if (m) phaseVal = parseInt(m[0], 10);
+        }
 
         if (qText && optA && optB && optC) {
           phaseMap[phaseVal].push({
-            phase: phaseVal,
+            questionNumber: phaseMap[phaseVal].length + 1,
             questionText: qText,
             optionA: optA,
             optionB: optB,
@@ -8468,7 +8562,15 @@ async function adminHandleExcelUpload(event) {
     const totalFound = phasesWithQuestions.reduce((acc, p) => acc + phaseMap[p].length, 0);
 
     if (totalFound === 0) {
-      throw new Error("Không nhận diện được câu hỏi hợp lệ. Vui lòng kiểm tra file Excel theo đúng định dạng template mẫu (Câu hỏi, Đáp án A, B, C, Đáp án đúng).");
+      throw new Error("Không nhận diện được câu hỏi hợp lệ. Vui lòng kiểm tra file Excel theo đúng định dạng mẫu (Câu hỏi, Đáp án A, B, C, Đáp án đúng).");
+    }
+
+    // Lưu toàn bộ câu hỏi của tất cả các giai đoạn vào bản nháp bộ nhớ tạm
+    if (!compState.adminPhaseDrafts) compState.adminPhaseDrafts = {};
+    for (const p of [1, 2, 3]) {
+      if (phaseMap[p].length > 0) {
+        compState.adminPhaseDrafts[p] = phaseMap[p].slice(0, 10);
+      }
     }
 
     // Trường hợp file chứa câu hỏi cho NHIỀU HƠN 1 GIAI ĐOẠN (ví dụ cả 3 giai đoạn)
@@ -8478,7 +8580,7 @@ async function adminHandleExcelUpload(event) {
         `🎉 Phát hiện file Excel chứa câu hỏi cho ${phasesWithQuestions.length} giai đoạn:\n${summaryList}\n\n` +
         `Bạn có muốn HỆ THỐNG TỰ ĐỘNG LƯU TRỰC TIẾP TẤT CẢ các giai đoạn này vào cơ sở dữ liệu không?\n\n` +
         `• Bấm [OK]: Tự động lưu tất cả ${phasesWithQuestions.length} giai đoạn ngay lập tức.\n` +
-        `• Bấm [Cancel]: Chỉ điền vào Giai đoạn ${currentPhase} đang mở để bạn xem trước.`
+        `• Bấm [Cancel]: Lưu vào bản nháp để bạn có thể xem duyệt qua từng giai đoạn trước khi bấm Lưu.`
       );
 
       if (autoSave) {
@@ -8501,6 +8603,7 @@ async function adminHandleExcelUpload(event) {
               questions: qList
             })
           });
+          delete compState.adminPhaseDrafts[p];
           savedTotal += qList.length;
         }
 
@@ -8511,28 +8614,26 @@ async function adminHandleExcelUpload(event) {
       }
     }
 
-    // Nếu chỉ nhập 1 giai đoạn hoặc người dùng chọn Cancel để xem trước giai đoạn hiện tại
-    const targetList = phaseMap[currentPhase].length > 0 ? phaseMap[currentPhase] : (phaseMap[phasesWithQuestions[0]] || []);
-    
-    compState.adminQuestions = targetList.slice(0, 10).map((q, idx) => ({
-      questionNumber: idx + 1,
-      questionText: q.questionText,
-      optionA: q.optionA,
-      optionB: q.optionB,
-      optionC: q.optionC,
-      correctOption: q.correctOption
-    }));
+    // Nếu chỉ nhập 1 giai đoạn hoặc người dùng chọn Cancel để duyệt trước
+    const targetPhase = phaseMap[currentPhase].length > 0 ? currentPhase : phasesWithQuestions[0];
+    if (targetPhase !== currentPhase) {
+      compState.adminSelectedPhase = targetPhase;
+      $$(".admin-phase-tab-btn").forEach((btn, i) => {
+        btn.classList.toggle("active", i === (targetPhase - 1));
+      });
+    }
 
+    compState.adminQuestions = (compState.adminPhaseDrafts[targetPhase] || []).slice(0, 10);
     renderAdminQuestionsList();
 
     const badge = $("#adminPhaseStatusBadge");
     if (badge) {
       const cnt = compState.adminQuestions.length;
-      badge.textContent = cnt === 10 ? `🟢 ${cnt}/10 câu (Đạt chuẩn)` : `⚠️ ${cnt}/10 câu (Cần đủ 10 câu)`;
-      badge.style.color = cnt === 10 ? "#246247" : "#d97706";
+      badge.textContent = `📝 ${cnt}/10 câu (Bản nháp Excel - Chưa lưu)`;
+      badge.style.color = "#d97706";
     }
 
-    toast(`🎉 Đã nhận diện và fill ${compState.adminQuestions.length} câu hỏi vào Giai đoạn ${currentPhase}! Hãy bấm "Lưu 10 câu hỏi giai đoạn" để hoàn tất.`);
+    toast(`🎉 Đã nạp ${compState.adminQuestions.length} câu hỏi cho Giai đoạn ${targetPhase}! Bạn có thể chuyển tab để xem các giai đoạn khác, hoặc bấm "Lưu 10 câu hỏi giai đoạn" để hoàn tất.`);
   } catch (err) {
     console.error("Lỗi đọc file Excel:", err);
     toast(`❌ Lỗi đọc file: ${err.message}`);

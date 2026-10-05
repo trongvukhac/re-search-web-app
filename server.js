@@ -4297,11 +4297,29 @@ async function api(request, response, url) {
       "SELECT id, question_index, question_text, option_a, option_b, option_c, correct_option, explanation FROM competition_questions WHERE competition_id = ? AND phase = ? ORDER BY question_index ASC"
     ).all(compId, phase);
 
+    const formatted = questions.map(q => ({
+      id: q.id,
+      question_index: q.question_index,
+      question_text: q.question_text,
+      option_a: q.option_a,
+      option_b: q.option_b,
+      option_c: q.option_c,
+      correct_option: q.correct_option,
+      explanation: q.explanation || "",
+      // Aliases for camelCase
+      questionNumber: q.question_index,
+      questionText: q.question_text,
+      optionA: q.option_a,
+      optionB: q.option_b,
+      optionC: q.option_c,
+      correctOption: q.correct_option
+    }));
+
     return json(response, 200, {
       ok: true,
       competitionId: compId,
       phase,
-      questions
+      questions: formatted
     });
   }
 
@@ -4323,7 +4341,17 @@ async function api(request, response, url) {
 
     db.exec("BEGIN");
     try {
+      // 1. Delete dependent answers to prevent FOREIGN KEY constraint failed error
+      db.prepare(`
+        DELETE FROM competition_answers 
+        WHERE question_id IN (
+          SELECT id FROM competition_questions WHERE competition_id = ? AND phase = ?
+        )
+      `).run(competitionId, phase);
+
+      // 2. Delete old questions for this phase
       db.prepare("DELETE FROM competition_questions WHERE competition_id = ? AND phase = ?").run(competitionId, phase);
+
       const insert = db.prepare(`
         INSERT INTO competition_questions (
           competition_id, phase, question_index, question_text, option_a, option_b, option_c, correct_option, explanation
@@ -4337,11 +4365,11 @@ async function api(request, response, url) {
           competitionId,
           phase,
           idx,
-          q.question_text || q.text || `Câu hỏi ${idx}`,
+          q.question_text || q.questionText || q.text || `Câu hỏi ${idx}`,
           q.option_a || q.optionA || "Đáp án A",
           q.option_b || q.optionB || "Đáp án B",
           q.option_c || q.optionC || "Đáp án C",
-          q.correct_option || q.correct || "A",
+          q.correct_option || q.correctOption || q.correct || "A",
           q.explanation || ""
         );
       }
