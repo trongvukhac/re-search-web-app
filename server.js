@@ -324,6 +324,7 @@ db.exec(`
 `);
 try { db.exec("ALTER TABLE competition_sessions ADD COLUMN is_paused INTEGER NOT NULL DEFAULT 0;"); } catch (e) {}
 try { db.exec("ALTER TABLE competition_sessions ADD COLUMN paused_remaining_seconds INTEGER;"); } catch (e) {}
+try { db.exec("ALTER TABLE competition_sessions ADD COLUMN exit_count INTEGER NOT NULL DEFAULT 0;"); } catch (e) {}
 
 const defaultTopics = [
   "Đề tài", "Lý thuyết", "Phương pháp", 
@@ -3196,15 +3197,22 @@ async function api(request, response, url) {
       let activeRemaining = 0;
       let activeQuestionIndex = 1;
       let isPaused = false;
+      let exitCount = 0;
 
       if (activeSession) {
         const nowMs = getVietnamTimestampMs();
-        const elapsed = Math.floor((nowMs - activeSession.server_start_timestamp_ms) / 1000);
-        const remaining = Math.max(0, 600 - elapsed - (activeSession.accumulated_penalty_seconds || 0));
+        let remaining = activeSession.remaining_seconds;
+        if (!activeSession.is_paused) {
+          const elapsed = Math.floor((nowMs - activeSession.server_start_timestamp_ms) / 1000);
+          remaining = Math.max(0, activeSession.remaining_seconds - elapsed - (activeSession.accumulated_penalty_seconds || 0));
+        }
+
         if (remaining > 0) {
           hasActiveSession = true;
           activeRemaining = remaining;
           activeQuestionIndex = activeSession.current_question_index || 1;
+          isPaused = Boolean(activeSession.is_paused);
+          exitCount = activeSession.exit_count || 0;
         } else {
           db.prepare("UPDATE competition_sessions SET status = 'expired', remaining_seconds = 0, is_paused = 0, finished_at = CURRENT_TIMESTAMP WHERE id = ?").run(activeSession.id);
         }
@@ -3216,6 +3224,7 @@ async function api(request, response, url) {
         activeRemaining,
         activeQuestionIndex,
         isPaused,
+        exitCount,
         bestScore: (curPhase === 1 ? p1 : (curPhase === 2 ? p2 : p3))
       };
     }
@@ -3376,14 +3385,19 @@ async function api(request, response, url) {
 
     const isResumed = Boolean(activeSession);
     if (activeSession) {
-      const elapsed = Math.floor((nowMs - activeSession.server_start_timestamp_ms) / 1000);
-      const remaining = 600 - elapsed - (activeSession.accumulated_penalty_seconds || 0);
+      let remaining = activeSession.remaining_seconds;
+      if (!activeSession.is_paused) {
+        const elapsed = Math.floor((nowMs - activeSession.server_start_timestamp_ms) / 1000);
+        remaining = Math.max(0, activeSession.remaining_seconds - elapsed - (activeSession.accumulated_penalty_seconds || 0));
+      }
+
       if (remaining <= 0) {
         db.prepare("UPDATE competition_sessions SET status = 'expired', remaining_seconds = 0, is_paused = 0, finished_at = CURRENT_TIMESTAMP WHERE id = ?").run(activeSession.id);
         activeSession = null;
       } else {
-        db.prepare("UPDATE competition_sessions SET remaining_seconds = ?, is_paused = 0 WHERE id = ?").run(remaining, activeSession.id);
+        db.prepare("UPDATE competition_sessions SET server_start_timestamp_ms = ?, remaining_seconds = ?, accumulated_penalty_seconds = 0, is_paused = 0 WHERE id = ?").run(nowMs, remaining, activeSession.id);
         activeSession.remaining_seconds = remaining;
+        activeSession.server_start_timestamp_ms = nowMs;
         activeSession.is_paused = 0;
       }
     }
@@ -3398,8 +3412,8 @@ async function api(request, response, url) {
 
       db.prepare(`
         INSERT INTO competition_sessions (
-          session_token, user_id, competition_id, phase, attempt_number, server_start_timestamp_ms, initial_seconds, remaining_seconds, is_paused, status
-        ) VALUES (?, ?, ?, ?, ?, ?, 600, 600, 0, 'in_progress')
+          session_token, user_id, competition_id, phase, attempt_number, server_start_timestamp_ms, initial_seconds, remaining_seconds, is_paused, exit_count, status
+        ) VALUES (?, ?, ?, ?, ?, ?, 600, 600, 0, 0, 'in_progress')
       `).run(sessionToken, user.id, comp.id, phase, attemptNumber, nowMs);
 
       activeSession = db.prepare("SELECT * FROM competition_sessions WHERE session_token = ?").get(sessionToken);
@@ -3407,9 +3421,6 @@ async function api(request, response, url) {
 
     const currentQIndex = activeSession.current_question_index || 1;
     const currentQ = questions.find(q => q.question_index === currentQIndex) || questions[0];
-
-    const elapsed = Math.floor((nowMs - activeSession.server_start_timestamp_ms) / 1000);
-    const remainingSeconds = Math.max(0, 600 - elapsed - activeSession.accumulated_penalty_seconds);
 
     const answerRow = db.prepare("SELECT tries_count, is_correct, is_finalized, history_json FROM competition_answers WHERE session_id = ? AND question_index = ?").get(activeSession.id, currentQ.question_index);
 
@@ -3432,9 +3443,12 @@ async function api(request, response, url) {
       attemptNumber: activeSession.attempt_number,
       totalQuestions: 10,
       currentQuestionIndex: currentQ.question_index,
-      remainingSeconds,
-      durationSeconds: remainingSeconds,
+      remainingSeconds: activeSession.remaining_seconds,
+      durationSeconds: activeSession.remaining_seconds,
       initialSeconds: 600,
+      exitCount: activeSession.exit_count || 0,
+      exitsLeft: Math.max(0, 2 - (activeSession.exit_count || 0)),
+      isPaused: false,
       correctCount: activeSession.correct_count,
       firstTryCorrectCount: activeSession.first_try_correct_count,
       correctPoints: activeSession.correct_points,
@@ -3500,8 +3514,11 @@ async function api(request, response, url) {
     }
 
     const nowMs = getVietnamTimestampMs();
-    const elapsed = Math.floor((nowMs - session.server_start_timestamp_ms) / 1000);
-    let effectiveRemaining = 600 - elapsed - session.accumulated_penalty_seconds;
+    let effectiveRemaining = session.remaining_seconds;
+    if (!session.is_paused) {
+      const elapsed = Math.floor((nowMs - session.server_start_timestamp_ms) / 1000);
+      effectiveRemaining = Math.max(0, session.remaining_seconds - elapsed - (session.accumulated_penalty_seconds || 0));
+    }
 
     if (effectiveRemaining <= 0 || selectedOption === "TIMEOUT") {
       effectiveRemaining = 0;
@@ -3647,9 +3664,11 @@ async function api(request, response, url) {
               first_try_correct_count = ?,
               correct_points = ?,
               first_try_bonus = ?,
-              remaining_seconds = ?
+              remaining_seconds = ?,
+              server_start_timestamp_ms = ?,
+              accumulated_penalty_seconds = 0
           WHERE id = ?
-        `).run(nextQIndex, newCorrectCount, newFirstTryCount, newCorrectPoints, newFirstTryBonus, effectiveRemaining, session.id);
+        `).run(nextQIndex, newCorrectCount, newFirstTryCount, newCorrectPoints, newFirstTryBonus, effectiveRemaining, nowMs, session.id);
 
         const nextQ = db.prepare(
           "SELECT id, question_index, question_text, option_a, option_b, option_c FROM competition_questions WHERE competition_id = ? AND phase = ? AND question_index = ?"
@@ -3745,10 +3764,11 @@ async function api(request, response, url) {
 
         db.prepare(`
           UPDATE competition_sessions 
-          SET accumulated_penalty_seconds = ?,
-              remaining_seconds = ?
+          SET remaining_seconds = ?,
+              server_start_timestamp_ms = ?,
+              accumulated_penalty_seconds = 0
           WHERE id = ?
-        `).run(newPenaltyTotal, effectiveRemaining, session.id);
+        `).run(effectiveRemaining, nowMs, session.id);
 
         return json(response, 200, {
           isCorrect: false,
@@ -3819,10 +3839,11 @@ async function api(request, response, url) {
           db.prepare(`
             UPDATE competition_sessions 
             SET current_question_index = ?,
-                accumulated_penalty_seconds = ?,
-                remaining_seconds = ?
+                remaining_seconds = ?,
+                server_start_timestamp_ms = ?,
+                accumulated_penalty_seconds = 0
             WHERE id = ?
-          `).run(nextQIndex, newPenaltyTotal, effectiveRemaining, session.id);
+          `).run(nextQIndex, effectiveRemaining, nowMs, session.id);
 
           const nextQ = db.prepare(
             "SELECT id, question_index, question_text, option_a, option_b, option_c FROM competition_questions WHERE competition_id = ? AND phase = ? AND question_index = ?"
@@ -3862,9 +3883,12 @@ async function api(request, response, url) {
     if (!session) return error(response, 404, "Không tìm thấy phiên.");
     
     const nowMs = getVietnamTimestampMs();
-    const elapsed = Math.floor((nowMs - session.server_start_timestamp_ms) / 1000);
-    const remaining = Math.max(0, 600 - elapsed - (session.accumulated_penalty_seconds || 0));
-    return json(response, 200, { ok: true, remainingSeconds: remaining, status: session.status });
+    let remaining = session.remaining_seconds;
+    if (!session.is_paused) {
+      const elapsed = Math.floor((nowMs - session.server_start_timestamp_ms) / 1000);
+      remaining = Math.max(0, session.remaining_seconds - elapsed - (session.accumulated_penalty_seconds || 0));
+    }
+    return json(response, 200, { ok: true, remainingSeconds: remaining, status: session.status, isPaused: Boolean(session.is_paused), exitCount: session.exit_count || 0 });
   }
 
   if (method === "POST" && pathName === "/api/competition/session/pause") {
@@ -3884,20 +3908,88 @@ async function api(request, response, url) {
     }
 
     const nowMs = getVietnamTimestampMs();
-    const elapsed = Math.floor((nowMs - session.server_start_timestamp_ms) / 1000);
-    const serverRemaining = Math.max(0, 600 - elapsed - (session.accumulated_penalty_seconds || 0));
+    let serverRemaining = session.remaining_seconds;
+    if (!session.is_paused) {
+      const elapsed = Math.floor((nowMs - session.server_start_timestamp_ms) / 1000);
+      serverRemaining = Math.max(0, session.remaining_seconds - elapsed - (session.accumulated_penalty_seconds || 0));
+    }
+
+    const currentExits = session.exit_count || 0;
+    const newExitCount = currentExits + 1;
+
+    // Check if this is the 3rd exit: LIMIT IS MAX 2 EXITS!
+    if (newExitCount >= 3) {
+      // Dừng và tính điểm bài thi luôn
+      const totalScore = (session.correct_points || 0) + (session.first_try_bonus || 0);
+      db.prepare(`
+        UPDATE competition_sessions 
+        SET status = 'completed',
+            remaining_seconds = 0,
+            is_paused = 0,
+            exit_count = ?,
+            total_score = ?,
+            finished_at = CURRENT_TIMESTAMP
+        WHERE id = ?
+      `).run(newExitCount, totalScore, session.id);
+
+      const bestScore = updateUserPhaseBestScore(user.id, session.competition_id, session.phase, totalScore, session.id);
+
+      const resData = {
+        totalScore,
+        correctPoints: session.correct_points,
+        firstTryBonus: session.first_try_bonus,
+        firstTryBonusPoints: session.first_try_bonus,
+        timePoints: 0,
+        remainingSeconds: 0,
+        correctCount: session.correct_count,
+        correctAnswersCount: session.correct_count,
+        firstTryCount: session.first_try_correct_count,
+        bestScore,
+        phaseBestScore: bestScore
+      };
+
+      return json(response, 200, {
+        ok: true,
+        completed: true,
+        forcedSubmit: true,
+        exitCount: newExitCount,
+        message: "Bạn đã thoát lần thứ 3. Hệ thống đã dừng và tính điểm bài thi của bạn!",
+        result: resData
+      });
+    }
+
+    // Normal exit (lần 1 hoặc 2): Lưu tiến trình và tạm dừng thời gian
+    if (serverRemaining <= 0) {
+      db.prepare("UPDATE competition_sessions SET status = 'expired', remaining_seconds = 0, is_paused = 0, exit_count = ?, finished_at = CURRENT_TIMESTAMP WHERE id = ?").run(newExitCount, session.id);
+      return json(response, 200, {
+        ok: true,
+        completed: true,
+        timeExpired: true,
+        exitCount: newExitCount,
+        remainingSeconds: 0,
+        message: "Bài thi đã hết thời gian làm bài."
+      });
+    }
 
     db.prepare(`
       UPDATE competition_sessions 
-      SET remaining_seconds = ?
+      SET remaining_seconds = ?,
+          server_start_timestamp_ms = ?,
+          accumulated_penalty_seconds = 0,
+          is_paused = 1,
+          exit_count = ?
       WHERE id = ?
-    `).run(serverRemaining, session.id);
+    `).run(serverRemaining, nowMs, newExitCount, session.id);
 
     return json(response, 200, {
       ok: true,
+      completed: false,
+      isPaused: true,
       remainingSeconds: serverRemaining,
       currentQuestionIndex: session.current_question_index,
-      message: "Đã lưu tiến trình câu hỏi. Lưu ý thời gian 10 phút vẫn tiếp tục đếm ngược."
+      exitCount: newExitCount,
+      exitsLeft: 2 - newExitCount,
+      message: `Đã lưu tiến trình câu hỏi và tạm dừng thời gian. Bạn còn ${2 - newExitCount} lần thoát.`
     });
   }
 

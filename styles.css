@@ -8513,5 +8513,35 @@ body.dark-theme .comp-tab-btn.active {
   color: #ffffff !important;
 }
 
+.quiz-exit-guarantee-card.pause-mode {
+  background: rgba(14, 165, 233, 0.12);
+  border: 1px solid rgba(14, 165, 233, 0.35);
+  color: #e0f2fe;
+}
+.quiz-exit-guarantee-card.pause-mode .guarantee-text strong {
+  color: #38bdf8;
+}
+
+.quiz-exit-guarantee-card.danger-mode {
+  background: rgba(239, 68, 68, 0.14);
+  border: 1px solid rgba(239, 68, 68, 0.45);
+  color: #fee2e2;
+}
+.quiz-exit-guarantee-card.danger-mode .guarantee-text strong {
+  color: #f87171;
+}
+
+.danger-confirm-btn {
+  background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%) !important;
+  border: 1px solid rgba(239, 68, 68, 0.8) !important;
+  color: #ffffff !important;
+  font-weight: 700 !important;
+  box-shadow: 0 4px 14px rgba(239, 68, 68, 0.4) !important;
+}
+.danger-confirm-btn:hover {
+  background: linear-gradient(135deg, #f87171 0%, #dc2626 100%) !important;
+  box-shadow: 0 6px 18px rgba(239, 68, 68, 0.6) !important;
+}
+
 
 

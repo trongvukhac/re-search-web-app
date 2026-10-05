@@ -2009,20 +2009,20 @@
     </dialog>
 
     <!-- MODAL XÁC NHẬN THOÁT VÀ TẠM DỪNG BÀI THI ARENA -->
-    <dialog id="quizExitConfirmModal" class="modal quiz-exit-confirm-modal" style="max-width: 490px; width: 92vw; padding: 0;">
+    <dialog id="quizExitConfirmModal" class="modal quiz-exit-confirm-modal" style="max-width: 500px; width: 92vw; padding: 0;">
       <div class="quiz-exit-modal-card">
         <div class="quiz-exit-header">
-          <div class="quiz-exit-badge-icon">⚠️</div>
+          <div class="quiz-exit-badge-icon" id="quizExitBadgeIcon">⏸️</div>
           <div class="quiz-exit-title-group">
-            <h3>Tạm dừng & Thoát bài thi</h3>
-            <p>Tiến trình câu hỏi được lưu, đồng hồ làm bài vẫn tiếp tục đếm ngược</p>
+            <h3 id="quizExitTitle">Tạm dừng & Thoát bài thi</h3>
+            <p id="quizExitSubTitle">Lưu tiến trình & tạm dừng đồng hồ khi ra màn hình chính</p>
           </div>
         </div>
 
         <div class="quiz-exit-body">
-          <div class="quiz-exit-stats-grid">
+          <div class="quiz-exit-stats-grid" style="grid-template-columns: repeat(4, 1fr);">
             <div class="quiz-exit-stat-box">
-              <span class="stat-box-label">⏱️ Thời gian còn lại</span>
+              <span class="stat-box-label">⏱️ Thời gian</span>
               <strong class="stat-box-val" id="quizExitTimeLeft">10:00</strong>
             </div>
             <div class="quiz-exit-stat-box">
@@ -2030,16 +2030,22 @@
               <strong class="stat-box-val" id="quizExitCurrentQ">Câu 1 / 10</strong>
             </div>
             <div class="quiz-exit-stat-box">
-              <span class="stat-box-label">⭐ Điểm tạm tính</span>
+              <span class="stat-box-label">⭐ Tạm tính</span>
               <strong class="stat-box-val" id="quizExitCurrentStars">⭐ 0</strong>
+            </div>
+            <div class="quiz-exit-stat-box">
+              <span class="stat-box-label">🚪 Lần thoát</span>
+              <strong class="stat-box-val" id="quizExitCountBadge">0 / 2</strong>
             </div>
           </div>
 
-          <div class="quiz-exit-guarantee-card warning-mode">
-            <div class="guarantee-icon">⏱️</div>
-            <div class="guarantee-text">
-              <strong>Lưu ý quan trọng chống gian lận:</strong><br>
-              Thời gian 10 phút của bài thi <strong>vẫn tiếp tục đếm ngược</strong> trong lúc bạn thoát (để đảm bảo tính công bằng, tránh tạm dừng để tra cứu đáp án). Lượt thi này <em>KHÔNG bị tính là mất</em> — bạn cần bấm <strong>"Tiếp tục bài thi"</strong> để hoàn thành trước khi hết giờ!
+          <div class="quiz-exit-guarantee-card pause-mode" id="quizExitGuaranteeCard">
+            <div class="guarantee-icon" id="quizExitGuaranteeIcon">⏸️</div>
+            <div class="guarantee-text" id="quizExitGuaranteeText">
+              <strong>⏸️ Tạm dừng thời gian & Lưu tiến trình:</strong><br>
+              Khi bạn bấm xác nhận thoát ra màn hình chính, thời gian sẽ được <strong>TẠM DỪNG</strong> và lưu lại toàn bộ tiến trình. Lượt thi này <em>KHÔNG bị tính là mất</em>.<br>
+              ⚠️ <strong>Giới hạn:</strong> Bạn chỉ được thoát tối đa <strong>2 lần</strong>. Nếu thoát lần thứ 3, hệ thống sẽ dừng và tính điểm bài thi luôn!<br>
+              <span style="font-size: 12px; color: #f59e0b; margin-top: 4px; display: inline-block;">⏱️ <em>Lưu ý: Trong lúc đang mở bảng này (chưa bấm xác nhận thoát), đồng hồ vẫn tiếp tục đếm ngược để chống gian lận!</em></span>
             </div>
           </div>
         </div>
@@ -2049,12 +2055,12 @@
             ▶️ Tiếp tục làm bài ngay
           </button>
           <button type="button" class="button button-outline quiz-exit-confirm-btn" id="quizExitConfirmBtn" onclick="confirmQuizExit()">
-            🚪 Thoát ra ngoài (Đồng hồ vẫn chạy)
+            🚪 Thoát & Tạm dừng thời gian
           </button>
         </div>
       </div>
     </dialog>
 
-    <script src="app.js?v=50" defer></script>
+    <script src="app.js?v=51" defer></script>
   </body>
 </html>

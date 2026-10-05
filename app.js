@@ -6778,6 +6778,7 @@ function normalizeCompData(raw) {
   const activeRemaining = raw.userStatus?.activeRemaining ?? (raw.activeRemaining || 0);
   const activeQuestionIndex = raw.userStatus?.activeQuestionIndex ?? (raw.activeQuestionIndex || 1);
   const isPaused = Boolean(raw.userStatus?.isPaused || raw.isPaused);
+  const exitCount = raw.userStatus?.exitCount ?? (raw.exitCount || 0);
 
   return {
     isSunday,
@@ -6794,6 +6795,7 @@ function normalizeCompData(raw) {
     activeRemaining,
     activeQuestionIndex,
     isPaused,
+    exitCount,
     visible: raw.visible ?? raw.timeState?.visible ?? true,
     isReady: raw.isReady ?? raw.timeState?.isReady ?? true
   };
@@ -7040,12 +7042,13 @@ function renderGatewayTab(raw) {
         if (startBtnText) startBtnText.textContent = `▶️ Tiếp tục bài thi (còn ${remTime})`;
         if (blockedMsg) {
           blockedMsg.style.display = "block";
-          blockedMsg.style.color = "#f59e0b";
-          blockedMsg.style.background = "rgba(245, 158, 11, 0.12)";
-          blockedMsg.style.border = "1px solid rgba(245, 158, 11, 0.35)";
+          blockedMsg.style.color = "#38bdf8";
+          blockedMsg.style.background = "rgba(14, 165, 233, 0.12)";
+          blockedMsg.style.border = "1px solid rgba(14, 165, 233, 0.35)";
           blockedMsg.style.borderRadius = "8px";
           blockedMsg.style.padding = "8px 12px";
-          blockedMsg.innerHTML = `⏱️ <strong>Bạn có bài thi đang diễn ra (Câu ${data.activeQuestionIndex || 1}/10, còn ${remTime}):</strong> Thời gian vẫn đang tiếp tục đếm ngược. Hãy bấm nút trên để hoàn thành bài thi trước khi hết giờ!`;
+          const exitCount = data.exitCount || 0;
+          blockedMsg.innerHTML = `⏸️ <strong>Bài thi đang tạm dừng (Câu ${data.activeQuestionIndex || 1}/10, còn ${remTime}):</strong> Đã sử dụng <strong>${exitCount}/2 lần thoát</strong> (còn ${Math.max(0, 2 - exitCount)} lần). Bấm nút trên để tiếp tục làm bài!`;
         }
       } else if (attempts < 2) {
         startBtn.disabled = false;
@@ -7269,6 +7272,7 @@ async function startCompetitionQuiz() {
     compState.currentQIndex = res.currentQuestionIndex ? Math.max(0, res.currentQuestionIndex - 1) : 0;
     compState.questionTries = res.currentTriesCount || 0;
     compState.quizRemainingSeconds = typeof res.remainingSeconds === "number" ? res.remainingSeconds : (res.durationSeconds || 600);
+    compState.exitCount = res.exitCount || 0;
     compState.quizLiveStars = (res.correctPoints || 0) + (res.firstTryBonus || 0);
     compState.quizTotalCorrect = res.correctCount || 0;
     compState.quizFirstTryBonusCount = res.firstTryCorrectCount || 0;
@@ -7301,6 +7305,16 @@ function promptQuizExit() {
   const timeLeftEl = $("#quizExitTimeLeft");
   const currentQEl = $("#quizExitCurrentQ");
   const currentStarsEl = $("#quizExitCurrentStars");
+  const exitCountEl = $("#quizExitCountBadge");
+  const guaranteeCard = $("#quizExitGuaranteeCard");
+  const guaranteeText = $("#quizExitGuaranteeText");
+  const confirmBtn = $("#quizExitConfirmBtn");
+  const exitBadgeIcon = $("#quizExitBadgeIcon");
+  const exitTitle = $("#quizExitTitle");
+  const exitSubTitle = $("#quizExitSubTitle");
+
+  const currentExits = compState.exitCount || 0;
+  const isFinalExit = currentExits >= 2;
 
   if (timeLeftEl) {
     timeLeftEl.textContent = formatCompSeconds(compState.quizRemainingSeconds || 0);
@@ -7311,6 +7325,50 @@ function promptQuizExit() {
   }
   if (currentStarsEl) {
     currentStarsEl.textContent = `⭐ ${compState.quizLiveStars || 0}`;
+  }
+  if (exitCountEl) {
+    exitCountEl.textContent = `${currentExits} / 2`;
+    exitCountEl.style.color = isFinalExit ? "#ef4444" : "#38bdf8";
+  }
+
+  if (isFinalExit) {
+    if (exitBadgeIcon) exitBadgeIcon.textContent = "🚨";
+    if (exitTitle) exitTitle.textContent = "Cảnh báo thoát lần 3";
+    if (exitSubTitle) exitSubTitle.textContent = "Hệ thống sẽ dừng và tính điểm bài thi luôn!";
+    if (guaranteeCard) {
+      guaranteeCard.className = "quiz-exit-guarantee-card danger-mode";
+    }
+    if (guaranteeText) {
+      guaranteeText.innerHTML = `
+        <strong style="color: #f87171; font-size: 14px;">🚨 CẢNH BÁO: ĐÃ HẾT LƯỢT THOÁT CHO PHÉP!</strong><br>
+        Bạn đã sử dụng đủ <strong>2/2 lần thoát</strong>. Nếu bạn xác nhận thoát bây giờ (lần thứ 3), hệ thống sẽ <strong>DỪNG VÀ TÍNH ĐIỂM BÀI THI NGAY LẬP TỨC</strong> theo kết quả các câu đã làm (lượt thi này sẽ kết thúc hoàn toàn)!<br>
+        <span style="font-size: 12px; color: #fca5a5; margin-top: 4px; display: inline-block;">💡 <em>Khuyên bạn nên bấm "Tiếp tục làm bài ngay" để không bị mất lượt thi này!</em></span>
+      `;
+    }
+    if (confirmBtn) {
+      confirmBtn.className = "button quiz-exit-confirm-btn danger-confirm-btn";
+      confirmBtn.innerHTML = `🔴 Dừng bài thi & Nộp điểm ngay`;
+    }
+  } else {
+    if (exitBadgeIcon) exitBadgeIcon.textContent = "⏸️";
+    if (exitTitle) exitTitle.textContent = "Tạm dừng & Thoát bài thi";
+    if (exitSubTitle) exitSubTitle.textContent = "Lưu tiến trình & tạm dừng đồng hồ khi ra màn hình chính";
+    if (guaranteeCard) {
+      guaranteeCard.className = "quiz-exit-guarantee-card pause-mode";
+    }
+    if (guaranteeText) {
+      const exitsAfter = 1 - currentExits;
+      guaranteeText.innerHTML = `
+        <strong>⏸️ Tạm dừng thời gian & Lưu tiến trình:</strong><br>
+        Khi bạn bấm xác nhận thoát ra màn hình chính, thời gian sẽ được <strong>TẠM DỪNG</strong> và lưu lại toàn bộ tiến trình. Lượt thi này <em>KHÔNG bị tính là mất</em>.<br>
+        ⚠️ <strong>Giới hạn:</strong> Bạn chỉ được thoát tối đa <strong>2 lần</strong> (sau lần này còn <strong>${exitsAfter}</strong> lần). Nếu thoát lần thứ 3, hệ thống sẽ dừng và tính điểm bài thi luôn!<br>
+        <span style="font-size: 12px; color: #f59e0b; margin-top: 4px; display: inline-block;">⏱️ <em>Lưu ý: Trong lúc đang mở bảng này (chưa bấm xác nhận thoát), đồng hồ vẫn tiếp tục đếm ngược để chống gian lận!</em></span>
+      `;
+    }
+    if (confirmBtn) {
+      confirmBtn.className = "button button-outline quiz-exit-confirm-btn";
+      confirmBtn.innerHTML = `🚪 Thoát & Tạm dừng thời gian`;
+    }
   }
 
   exitModal.showModal();
@@ -7325,15 +7383,16 @@ function cancelQuizExit() {
 
 async function confirmQuizExit() {
   const confirmBtn = $("#quizExitConfirmBtn");
-  const originalText = confirmBtn ? confirmBtn.innerHTML : "🚪 Thoát ra ngoài (Đồng hồ vẫn chạy)";
+  const originalText = confirmBtn ? confirmBtn.innerHTML : "🚪 Thoát & Tạm dừng thời gian";
   if (confirmBtn) {
     confirmBtn.disabled = true;
-    confirmBtn.innerHTML = `⏳ Đang thoát...`;
+    confirmBtn.innerHTML = `⏳ Đang xử lý...`;
   }
 
+  let res = null;
   try {
     if (compState.sessionToken) {
-      await requestAPI("/api/competition/session/pause", {
+      res = await requestAPI("/api/competition/session/pause", {
         method: "POST",
         body: JSON.stringify({
           sessionToken: compState.sessionToken
@@ -7341,7 +7400,7 @@ async function confirmQuizExit() {
       });
     }
   } catch (err) {
-    console.warn("Lỗi khi lưu phiên thi đấu:", err);
+    console.warn("Lỗi khi thoát phiên thi đấu:", err);
   }
 
   if (compState.quizTimerInterval) {
@@ -7360,7 +7419,16 @@ async function confirmQuizExit() {
     confirmBtn.innerHTML = originalText;
   }
 
-  toast("⏱️ Đã lưu tiến trình câu hỏi. Lưu ý thời gian 10 phút vẫn đang tiếp tục đếm ngược!");
+  if (res && res.completed && res.forcedSubmit) {
+    toast(res.message || "⚠️ Đã dừng và tính điểm bài thi do thoát lần thứ 3!");
+    if (res.result) {
+      renderQuizFinalResult(res.result);
+      if (quizModal) quizModal.showModal();
+    }
+  } else {
+    compState.exitCount = res?.exitCount ?? ((compState.exitCount || 0) + 1);
+    toast(res?.message || `⏸️ Đã lưu tiến trình câu hỏi và tạm dừng thời gian. Bạn còn ${Math.max(0, 2 - compState.exitCount)} lần thoát.`);
+  }
 
   if (typeof loadWeeklyCompetitionOverview === "function") {
     loadWeeklyCompetitionOverview();
