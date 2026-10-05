@@ -14,10 +14,9 @@ const DATABASE_PATH = path.join(DATABASE_DIR, "research.db");
 const SESSION_AGE_SECONDS = 60 * 60 * 24 * 14;
 
 // ============================================================
-// FEATURE FLAG: Kĩa tạm thời tính năng RE:SEARCH ARENA
-// Đổi thành `true` khi mờ lại
+// FEATURE FLAG: Kích hoạt tính năng RE:SEARCH ARENA
 // ============================================================
-const ARENA_ENABLED = false;
+const ARENA_ENABLED = true;
 const MIME = {
   ".html": "text/html; charset=utf-8",
   ".css": "text/css; charset=utf-8",
@@ -325,6 +324,9 @@ db.exec(`
 try { db.exec("ALTER TABLE competition_sessions ADD COLUMN is_paused INTEGER NOT NULL DEFAULT 0;"); } catch (e) {}
 try { db.exec("ALTER TABLE competition_sessions ADD COLUMN paused_remaining_seconds INTEGER;"); } catch (e) {}
 try { db.exec("ALTER TABLE competition_sessions ADD COLUMN exit_count INTEGER NOT NULL DEFAULT 0;"); } catch (e) {}
+try { db.exec("ALTER TABLE competition_sessions ADD COLUMN is_on_time INTEGER NOT NULL DEFAULT 0;"); } catch (e) {}
+try { db.exec("ALTER TABLE competition_sessions ADD COLUMN on_time_bonus INTEGER NOT NULL DEFAULT 0;"); } catch (e) {}
+try { db.exec("ALTER TABLE competition_phase_results ADD COLUMN on_time_bonus INTEGER NOT NULL DEFAULT 0;"); } catch (e) {}
 
 const defaultTopics = [
   "Đề tài", "Lý thuyết", "Phương pháp", 
@@ -3062,7 +3064,7 @@ async function api(request, response, url) {
   }
 
   // --- WEEKLY COMPETITION APIS ---
-  function updateUserPhaseBestScore(userId, competitionId, phase, score, sessionId) {
+  function updateUserPhaseBestScore(userId, competitionId, phase, score, sessionId, onTimeBonus = 0) {
     const existing = db.prepare(
       "SELECT * FROM competition_phase_results WHERE user_id = ? AND competition_id = ? AND phase = ?"
     ).get(userId, competitionId, phase);
@@ -3071,18 +3073,19 @@ async function api(request, response, url) {
       const newBest = Math.max(existing.best_score, score);
       const newAttempts = existing.attempts_used + 1;
       const bestSessionId = (score >= existing.best_score) ? sessionId : existing.best_session_id;
+      const bestBonus = Math.max(existing.on_time_bonus || 0, onTimeBonus || 0);
 
       db.prepare(`
         UPDATE competition_phase_results 
-        SET best_score = ?, attempts_used = ?, best_session_id = ?, updated_at = CURRENT_TIMESTAMP
+        SET best_score = ?, attempts_used = ?, best_session_id = ?, on_time_bonus = ?, updated_at = CURRENT_TIMESTAMP
         WHERE id = ?
-      `).run(newBest, newAttempts, bestSessionId, existing.id);
+      `).run(newBest, newAttempts, bestSessionId, bestBonus, existing.id);
       return newBest;
     } else {
       db.prepare(`
-        INSERT INTO competition_phase_results (user_id, competition_id, phase, best_session_id, best_score, attempts_used)
-        VALUES (?, ?, ?, ?, ?, 1)
-      `).run(userId, competitionId, phase, sessionId, score);
+        INSERT INTO competition_phase_results (user_id, competition_id, phase, best_session_id, best_score, attempts_used, on_time_bonus)
+        VALUES (?, ?, ?, ?, ?, 1, ?)
+      `).run(userId, competitionId, phase, sessionId, score, onTimeBonus || 0);
       return score;
     }
   }
@@ -3158,21 +3161,33 @@ async function api(request, response, url) {
     const timeState = getCompetitionTimeState(vnNow, comp);
 
     let userSummary = null;
+    let userStatus = null;
     if (user) {
-      const p1 = db.prepare("SELECT best_score FROM competition_phase_results WHERE user_id = ? AND competition_id = ? AND phase = 1").get(user.id, comp.id)?.best_score || 0;
-      const p2 = db.prepare("SELECT best_score FROM competition_phase_results WHERE user_id = ? AND competition_id = ? AND phase = 2").get(user.id, comp.id)?.best_score || 0;
-      const p3 = db.prepare("SELECT best_score FROM competition_phase_results WHERE user_id = ? AND competition_id = ? AND phase = 3").get(user.id, comp.id)?.best_score || 0;
+      const curPhase = timeState.phase || 1;
+
+      const pResults = db.prepare(
+        "SELECT phase, best_score, attempts_used, on_time_bonus FROM competition_phase_results WHERE user_id = ? AND competition_id = ?"
+      ).all(user.id, comp.id);
+
+      const p1Row = pResults.find(r => r.phase === 1);
+      const p2Row = pResults.find(r => r.phase === 2);
+      const p3Row = pResults.find(r => r.phase === 3);
+
+      const p1 = p1Row?.best_score || 0;
+      const p2 = p2Row?.best_score || 0;
+      const p3 = p3Row?.best_score || 0;
       
       let phasesParticipated = 0;
-      if (p1 > 0) phasesParticipated++;
-      if (p2 > 0) phasesParticipated++;
-      if (p3 > 0) phasesParticipated++;
+      if (p1 > 0 || (p1Row && p1Row.attempts_used > 0)) phasesParticipated++;
+      if (p2 > 0 || (p2Row && p2Row.attempts_used > 0)) phasesParticipated++;
+      if (p3 > 0 || (p3Row && p3Row.attempts_used > 0)) phasesParticipated++;
 
       let bonusPoints = 0;
       if (phasesParticipated === 1) bonusPoints = 1;
       else if (phasesParticipated === 2) bonusPoints = 3;
       else if (phasesParticipated >= 3) bonusPoints = 5;
 
+      const totalOnTimeBonus = (p1Row?.on_time_bonus || 0) + (p2Row?.on_time_bonus || 0);
       const weeklyTotal = p1 + p2 + p3;
 
       userSummary = {
@@ -3180,20 +3195,21 @@ async function api(request, response, url) {
         phase2Score: p2,
         phase3Score: p3,
         weeklyTotal,
+        totalOnTimeBonus,
         phasesParticipated,
         bonusPoints
       };
 
-      const curPhase = timeState.phase || 1;
-      const completedSessions = db.prepare(
-        "SELECT count(*) as c FROM competition_sessions WHERE user_id = ? AND competition_id = ? AND phase = ? AND status IN ('completed', 'expired')"
-      ).get(user.id, comp.id, curPhase)?.c || 0;
+      const completedP1 = db.prepare("SELECT count(*) as c FROM competition_sessions WHERE user_id = ? AND competition_id = ? AND phase = 1 AND status IN ('completed', 'expired')").get(user.id, comp.id)?.c || 0;
+      const completedP2 = db.prepare("SELECT count(*) as c FROM competition_sessions WHERE user_id = ? AND competition_id = ? AND phase = 2 AND status IN ('completed', 'expired')").get(user.id, comp.id)?.c || 0;
+      const completedP3 = db.prepare("SELECT count(*) as c FROM competition_sessions WHERE user_id = ? AND competition_id = ? AND phase = 3 AND status IN ('completed', 'expired')").get(user.id, comp.id)?.c || 0;
 
       const activeSession = db.prepare(
-        "SELECT * FROM competition_sessions WHERE user_id = ? AND competition_id = ? AND phase = ? AND status = 'in_progress'"
-      ).get(user.id, comp.id, curPhase);
+        "SELECT * FROM competition_sessions WHERE user_id = ? AND competition_id = ? AND status = 'in_progress'"
+      ).get(user.id, comp.id);
 
       let hasActiveSession = false;
+      let activePhase = curPhase;
       let activeRemaining = 0;
       let activeQuestionIndex = 1;
       let isPaused = false;
@@ -3209,6 +3225,7 @@ async function api(request, response, url) {
 
         if (remaining > 0) {
           hasActiveSession = true;
+          activePhase = activeSession.phase;
           activeRemaining = remaining;
           activeQuestionIndex = activeSession.current_question_index || 1;
           isPaused = Boolean(activeSession.is_paused);
@@ -3218,13 +3235,77 @@ async function api(request, response, url) {
         }
       }
 
+      const phasesStatus = [
+        {
+          phase: 1,
+          name: "Giai đoạn 1",
+          days: "Thứ Hai – Thứ Ba",
+          topic: comp.phase1_topic,
+          isCompleted: completedP1 >= 1,
+          score: p1,
+          isCurrent: curPhase === 1 && !timeState.isSunday,
+          isAvailable: !timeState.isSunday && (curPhase >= 1) && (completedP1 < 1 || (hasActiveSession && activePhase === 1)),
+          isCatchUp: !timeState.isSunday && curPhase > 1 && completedP1 < 1,
+          isOnTime: curPhase === 1 && !timeState.isSunday,
+          onTimeBonusEligible: (curPhase === 1 && !timeState.isSunday) ? 50 : 0,
+          onTimeBonusEarned: p1Row?.on_time_bonus || 0,
+          hasActive: hasActiveSession && activePhase === 1
+        },
+        {
+          phase: 2,
+          name: "Giai đoạn 2",
+          days: "Thứ Tư – Thứ Năm",
+          topic: comp.phase2_topic,
+          isCompleted: completedP2 >= 1,
+          score: p2,
+          isCurrent: curPhase === 2 && !timeState.isSunday,
+          isAvailable: !timeState.isSunday && (curPhase >= 2) && (completedP2 < 1 || (hasActiveSession && activePhase === 2)),
+          isCatchUp: !timeState.isSunday && curPhase > 2 && completedP2 < 1,
+          isOnTime: curPhase === 2 && !timeState.isSunday,
+          onTimeBonusEligible: (curPhase === 2 && !timeState.isSunday) ? 50 : 0,
+          onTimeBonusEarned: p2Row?.on_time_bonus || 0,
+          hasActive: hasActiveSession && activePhase === 2
+        },
+        {
+          phase: 3,
+          name: "Giai đoạn 3",
+          days: "Thứ Sáu – Thứ Bảy",
+          topic: comp.phase3_topic,
+          isCompleted: completedP3 >= 1,
+          score: p3,
+          isCurrent: curPhase === 3 && !timeState.isSunday,
+          isAvailable: !timeState.isSunday && (curPhase >= 3) && (completedP3 < 1 || (hasActiveSession && activePhase === 3)),
+          isCatchUp: false,
+          isOnTime: false,
+          onTimeBonusEligible: 0,
+          onTimeBonusEarned: 0,
+          hasActive: hasActiveSession && activePhase === 3
+        }
+      ];
+
+      let defaultAvailablePhase = curPhase;
+      if (!hasActiveSession) {
+        const firstUncompleted = phasesStatus.find(p => p.isAvailable && !p.isCompleted);
+        if (firstUncompleted) {
+          defaultAvailablePhase = firstUncompleted.phase;
+        }
+      } else {
+        defaultAvailablePhase = activePhase;
+      }
+
+      const curCompleted = (curPhase === 1 ? completedP1 : curPhase === 2 ? completedP2 : completedP3);
+
       userStatus = {
-        attemptsUsed: completedSessions,
+        attemptsUsed: curCompleted,
+        maxAttempts: 1,
         hasActiveSession,
+        activePhase,
         activeRemaining,
         activeQuestionIndex,
         isPaused,
         exitCount,
+        defaultAvailablePhase,
+        phasesStatus,
         bestScore: (curPhase === 1 ? p1 : (curPhase === 2 ? p2 : p3))
       };
     }
@@ -3364,7 +3445,43 @@ async function api(request, response, url) {
       return error(response, 403, "Cổng thi đấu hiện không mở. Khung giờ thi đấu là 19h00 - 23h00.");
     }
 
-    const phase = timeState.phase || 1;
+    const body = await readJSON(request);
+    const requestedPhase = Number(body?.phase || body?.targetPhase);
+
+    const nowMs = getVietnamTimestampMs();
+    const currentPhase = timeState.phase || 1;
+
+    let activeSession = db.prepare(
+      "SELECT * FROM competition_sessions WHERE user_id = ? AND competition_id = ? AND status = 'in_progress'"
+    ).get(user.id, comp.id);
+
+    let sessionPhase = currentPhase;
+
+    if (activeSession) {
+      sessionPhase = activeSession.phase;
+      if (requestedPhase && requestedPhase !== activeSession.phase) {
+        return error(response, 400, `Bạn đang có bài thi Giai đoạn ${activeSession.phase} dở dang. Vui lòng hoàn thành trước khi bắt đầu giai đoạn khác.`);
+      }
+    } else {
+      if (requestedPhase) {
+        if (requestedPhase < 1 || requestedPhase > currentPhase) {
+          return error(response, 400, "Giai đoạn này không hợp lệ hoặc chưa mở.");
+        }
+        sessionPhase = requestedPhase;
+      } else {
+        sessionPhase = currentPhase;
+      }
+
+      const completedSessions = db.prepare(
+        "SELECT count(*) as c FROM competition_sessions WHERE user_id = ? AND competition_id = ? AND phase = ? AND status IN ('completed', 'expired')"
+      ).get(user.id, comp.id, sessionPhase)?.c || 0;
+
+      if (completedSessions >= 1 && !isSuperAdmin(user)) {
+        return error(response, 400, "Bạn chỉ có 1 lượt thi duy nhất cho giai đoạn này và đã hoàn thành.");
+      }
+    }
+
+    const phase = sessionPhase;
     const questions = db.prepare(
       "SELECT id, question_index, question_text, option_a, option_b, option_c FROM competition_questions WHERE competition_id = ? AND phase = ? ORDER BY question_index ASC"
     ).all(comp.id, phase);
@@ -3372,16 +3489,6 @@ async function api(request, response, url) {
     if (questions.length < 10) {
       return error(response, 400, "Bộ câu hỏi cho giai đoạn này chưa sẵn sàng.");
     }
-
-    const completedSessions = db.prepare(
-      "SELECT count(*) as c FROM competition_sessions WHERE user_id = ? AND competition_id = ? AND phase = ? AND status IN ('completed', 'expired')"
-    ).get(user.id, comp.id, phase)?.c || 0;
-
-    let activeSession = db.prepare(
-      "SELECT * FROM competition_sessions WHERE user_id = ? AND competition_id = ? AND phase = ? AND status = 'in_progress'"
-    ).get(user.id, comp.id, phase);
-
-    const nowMs = getVietnamTimestampMs();
 
     const isResumed = Boolean(activeSession);
     if (activeSession) {
@@ -3403,18 +3510,15 @@ async function api(request, response, url) {
     }
 
     if (!activeSession) {
-      if (completedSessions >= 2 && !isSuperAdmin(user)) {
-        return error(response, 400, "Bạn đã sử dụng tối đa 2 lượt thi trong giai đoạn này.");
-      }
-
       const sessionToken = randomToken();
-      const attemptNumber = completedSessions + 1;
+      const attemptNumber = 1;
+      const isOnTime = (phase === currentPhase && (phase === 1 || phase === 2)) ? 1 : 0;
 
       db.prepare(`
         INSERT INTO competition_sessions (
-          session_token, user_id, competition_id, phase, attempt_number, server_start_timestamp_ms, initial_seconds, remaining_seconds, is_paused, exit_count, status
-        ) VALUES (?, ?, ?, ?, ?, ?, 600, 600, 0, 0, 'in_progress')
-      `).run(sessionToken, user.id, comp.id, phase, attemptNumber, nowMs);
+          session_token, user_id, competition_id, phase, attempt_number, server_start_timestamp_ms, initial_seconds, remaining_seconds, is_paused, exit_count, is_on_time, on_time_bonus, status
+        ) VALUES (?, ?, ?, ?, ?, ?, 600, 600, 0, 0, ?, 0, 'in_progress')
+      `).run(sessionToken, user.id, comp.id, phase, attemptNumber, nowMs, isOnTime);
 
       activeSession = db.prepare("SELECT * FROM competition_sessions WHERE session_token = ?").get(sessionToken);
     }
@@ -3433,13 +3537,20 @@ async function api(request, response, url) {
       optionC: q.option_c
     }));
 
+    const phaseTopic = phase === 1 ? comp.phase1_topic : (phase === 2 ? comp.phase2_topic : comp.phase3_topic);
+    const phaseDays = phase === 1 ? "Thứ Hai – Thứ Ba" : (phase === 2 ? "Thứ Tư – Thứ Năm" : "Thứ Sáu – Thứ Bảy");
+    const phaseName = `Giai đoạn ${phase} (${phaseDays})`;
+
     return json(response, 200, {
       ok: true,
       isResumed: isResumed && Boolean(activeSession),
       sessionToken: activeSession.session_token,
       phase,
-      phaseName: timeState.phaseName,
-      phaseTopic: timeState.phaseTopic,
+      phaseName,
+      phaseTopic,
+      isOnTime: Boolean(activeSession.is_on_time),
+      potentialOnTimeBonus: activeSession.is_on_time ? 50 : 0,
+      isCatchUp: phase < currentPhase,
       attemptNumber: activeSession.attempt_number,
       totalQuestions: 10,
       currentQuestionIndex: currentQ.question_index,
@@ -3522,14 +3633,15 @@ async function api(request, response, url) {
 
     if (effectiveRemaining <= 0 || selectedOption === "TIMEOUT") {
       effectiveRemaining = 0;
-      const finalScore = session.correct_points + session.first_try_bonus;
+      const onTimeBonus = (session.is_on_time === 1 && (session.phase === 1 || session.phase === 2)) ? 50 : 0;
+      const finalScore = session.correct_points + session.first_try_bonus + onTimeBonus;
       db.prepare(`
         UPDATE competition_sessions 
-        SET status = 'expired', remaining_seconds = 0, time_points = 0, total_score = ?, finished_at = CURRENT_TIMESTAMP 
+        SET status = 'expired', remaining_seconds = 0, time_points = 0, on_time_bonus = ?, total_score = ?, finished_at = CURRENT_TIMESTAMP 
         WHERE id = ?
-      `).run(finalScore, session.id);
+      `).run(onTimeBonus, finalScore, session.id);
 
-      const bestScore = updateUserPhaseBestScore(user.id, session.competition_id, session.phase, finalScore, session.id);
+      const bestScore = updateUserPhaseBestScore(user.id, session.competition_id, session.phase, finalScore, session.id, onTimeBonus);
 
       const resData = {
         totalScore: finalScore,
@@ -3537,6 +3649,7 @@ async function api(request, response, url) {
         firstTryBonus: session.first_try_bonus,
         firstTryBonusPoints: session.first_try_bonus,
         timePoints: 0,
+        onTimeBonus,
         remainingSeconds: 0,
         correctCount: session.correct_count,
         correctAnswersCount: session.correct_count,
@@ -3609,7 +3722,8 @@ async function api(request, response, url) {
 
       if (nextQIndex > 10) {
         const timeBonus = effectiveRemaining;
-        const totalScore = newCorrectPoints + newFirstTryBonus + timeBonus;
+        const onTimeBonus = (session.is_on_time === 1 && (session.phase === 1 || session.phase === 2)) ? 50 : 0;
+        const totalScore = newCorrectPoints + newFirstTryBonus + timeBonus + onTimeBonus;
 
         db.prepare(`
           UPDATE competition_sessions
@@ -3619,14 +3733,15 @@ async function api(request, response, url) {
               correct_points = ?,
               first_try_bonus = ?,
               time_points = ?,
+              on_time_bonus = ?,
               total_score = ?,
               remaining_seconds = ?,
               status = 'completed',
               finished_at = CURRENT_TIMESTAMP
           WHERE id = ?
-        `).run(newCorrectCount, newFirstTryCount, newCorrectPoints, newFirstTryBonus, timeBonus, totalScore, effectiveRemaining, session.id);
+        `).run(newCorrectCount, newFirstTryCount, newCorrectPoints, newFirstTryBonus, timeBonus, onTimeBonus, totalScore, effectiveRemaining, session.id);
 
-        const bestScore = updateUserPhaseBestScore(user.id, session.competition_id, session.phase, totalScore, session.id);
+        const bestScore = updateUserPhaseBestScore(user.id, session.competition_id, session.phase, totalScore, session.id, onTimeBonus);
 
         const resData = {
           totalScore,
@@ -3634,6 +3749,7 @@ async function api(request, response, url) {
           firstTryBonus: newFirstTryBonus,
           firstTryBonusPoints: newFirstTryBonus,
           timePoints: timeBonus,
+          onTimeBonus,
           remainingSeconds: effectiveRemaining,
           correctCount: newCorrectCount,
           correctAnswersCount: newCorrectCount,
@@ -3792,21 +3908,23 @@ async function api(request, response, url) {
 
         if (nextQIndex > 10) {
           const timeBonus = effectiveRemaining;
-          const totalScore = session.correct_points + session.first_try_bonus + timeBonus;
+          const onTimeBonus = (session.is_on_time === 1 && (session.phase === 1 || session.phase === 2)) ? 50 : 0;
+          const totalScore = session.correct_points + session.first_try_bonus + timeBonus + onTimeBonus;
 
           db.prepare(`
             UPDATE competition_sessions 
             SET current_question_index = 10,
                 accumulated_penalty_seconds = ?,
                 time_points = ?,
+                on_time_bonus = ?,
                 total_score = ?,
                 remaining_seconds = ?,
                 status = 'completed',
                 finished_at = CURRENT_TIMESTAMP
             WHERE id = ?
-          `).run(newPenaltyTotal, timeBonus, totalScore, effectiveRemaining, session.id);
+          `).run(newPenaltyTotal, timeBonus, onTimeBonus, totalScore, effectiveRemaining, session.id);
 
-          const bestScore = updateUserPhaseBestScore(user.id, session.competition_id, session.phase, totalScore, session.id);
+          const bestScore = updateUserPhaseBestScore(user.id, session.competition_id, session.phase, totalScore, session.id, onTimeBonus);
 
           const resData = {
             totalScore,
@@ -3814,6 +3932,7 @@ async function api(request, response, url) {
             firstTryBonus: session.first_try_bonus,
             firstTryBonusPoints: session.first_try_bonus,
             timePoints: timeBonus,
+            onTimeBonus,
             remainingSeconds: effectiveRemaining,
             correctCount: session.correct_count,
             correctAnswersCount: session.correct_count,
@@ -3920,19 +4039,21 @@ async function api(request, response, url) {
     // Check if this is the 3rd exit: LIMIT IS MAX 2 EXITS!
     if (newExitCount >= 3) {
       // Dừng và tính điểm bài thi luôn
-      const totalScore = (session.correct_points || 0) + (session.first_try_bonus || 0);
+      const onTimeBonus = (session.is_on_time === 1 && (session.phase === 1 || session.phase === 2)) ? 50 : 0;
+      const totalScore = (session.correct_points || 0) + (session.first_try_bonus || 0) + onTimeBonus;
       db.prepare(`
         UPDATE competition_sessions 
         SET status = 'completed',
             remaining_seconds = 0,
             is_paused = 0,
             exit_count = ?,
+            on_time_bonus = ?,
             total_score = ?,
             finished_at = CURRENT_TIMESTAMP
         WHERE id = ?
-      `).run(newExitCount, totalScore, session.id);
+      `).run(newExitCount, onTimeBonus, totalScore, session.id);
 
-      const bestScore = updateUserPhaseBestScore(user.id, session.competition_id, session.phase, totalScore, session.id);
+      const bestScore = updateUserPhaseBestScore(user.id, session.competition_id, session.phase, totalScore, session.id, onTimeBonus);
 
       const resData = {
         totalScore,
@@ -3940,6 +4061,7 @@ async function api(request, response, url) {
         firstTryBonus: session.first_try_bonus,
         firstTryBonusPoints: session.first_try_bonus,
         timePoints: 0,
+        onTimeBonus,
         remainingSeconds: 0,
         correctCount: session.correct_count,
         correctAnswersCount: session.correct_count,

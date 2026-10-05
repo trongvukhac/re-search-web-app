@@ -6779,6 +6779,10 @@ function normalizeCompData(raw) {
   const activeQuestionIndex = raw.userStatus?.activeQuestionIndex ?? (raw.activeQuestionIndex || 1);
   const isPaused = Boolean(raw.userStatus?.isPaused || raw.isPaused);
   const exitCount = raw.userStatus?.exitCount ?? (raw.exitCount || 0);
+  const phasesStatus = Array.isArray(raw.phasesStatus) ? raw.phasesStatus : (Array.isArray(raw.userStatus?.phasesStatus) ? raw.userStatus.phasesStatus : []);
+  const maxAttempts = raw.maxAttempts || raw.userStatus?.maxAttempts || 1;
+  const totalOnTimeBonus = raw.totalOnTimeBonus ?? raw.userStatus?.totalOnTimeBonus ?? 0;
+  const defaultAvailablePhase = raw.defaultAvailablePhase || raw.phase || 1;
 
   return {
     isSunday,
@@ -6796,6 +6800,10 @@ function normalizeCompData(raw) {
     activeQuestionIndex,
     isPaused,
     exitCount,
+    phasesStatus,
+    maxAttempts,
+    totalOnTimeBonus,
+    defaultAvailablePhase,
     visible: raw.visible ?? raw.timeState?.visible ?? true,
     isReady: raw.isReady ?? raw.timeState?.isReady ?? true
   };
@@ -6988,6 +6996,7 @@ function renderGatewayTab(raw) {
   const clockDigits = $("#gatewayClockDigits");
   const userAttempts = $("#userAttemptsCount");
   const bestScore = $("#userPhaseBestScore");
+  const userTotalOnTimeBonus = $("#userTotalOnTimeBonus");
   const attemptsPhaseLabel = $("#attemptsPhaseLabel");
   const startBtn = $("#gatewayStartQuizBtn");
   const startBtnText = $("#gatewayStartBtnText");
@@ -7028,8 +7037,75 @@ function renderGatewayTab(raw) {
   }
 
   const attempts = data.userAttempts || 0;
-  if (userAttempts) userAttempts.innerHTML = `${attempts} / 2 <span class="attempt-sub">lượt</span>`;
+  if (userAttempts) userAttempts.innerHTML = `${attempts} / 1 <span class="attempt-sub">lượt</span>`;
   if (bestScore) bestScore.innerHTML = `${data.userBestScore || 0} <span class="attempt-sub">⭐</span>`;
+  if (userTotalOnTimeBonus) userTotalOnTimeBonus.innerHTML = `${data.totalOnTimeBonus || 0} / 100 <span class="attempt-sub">⭐</span>`;
+
+  // Render 3-Phase Journey Grid (Làm bù & Đặc quyền đúng hạn)
+  const phasesGrid = $("#gatewayPhasesGrid");
+  if (phasesGrid) {
+    const phases = data.phasesStatus || [];
+    let gridHTML = "";
+    phases.forEach(p => {
+      const pDays = p.phase === 1 ? "Thứ Hai – Thứ Ba" : (p.phase === 2 ? "Thứ Tư – Thứ Năm" : "Thứ Sáu – Thứ Bảy");
+      let cardClass = "phase-journey-card";
+      let chipHTML = "";
+      let scoreInfoHTML = "";
+      let actionBtnHTML = "";
+
+      if (p.isCompleted) {
+        cardClass += " card-completed";
+        chipHTML = '<span class="pj-status-chip chip-completed">✅ ĐÃ XONG</span>';
+        const bonusStr = p.onTimeBonusEarned > 0 ? ` (+${p.onTimeBonusEarned}⭐ đúng hạn)` : "";
+        scoreInfoHTML = `<div class="pj-score-box"><span class="pj-score-label">Điểm chính thức:</span><span class="pj-score-val">⭐ ${p.bestScore}${bonusStr}</span></div>`;
+        actionBtnHTML = `<button type="button" class="pj-action-btn btn-done" disabled>✅ Đã hoàn thành (1/1 lượt)</button>`;
+      } else if (p.hasActiveSession) {
+        cardClass += " card-on-time";
+        chipHTML = '<span class="pj-status-chip chip-on-time">⏸️ ĐANG LÀM DỞ</span>';
+        scoreInfoHTML = `<div class="pj-score-box"><span class="pj-score-label">Còn lại:</span><span class="pj-score-val">${formatCompSeconds(p.activeRemaining || 600)}</span></div>`;
+        actionBtnHTML = `<button type="button" class="pj-action-btn btn-resume" onclick="startCompetitionQuiz(${p.phase})">▶️ Tiếp tục bài thi</button>`;
+      } else if (data.state === "open" && p.isAvailable) {
+        if (p.isOnTime) {
+          cardClass += " card-on-time";
+          chipHTML = '<span class="pj-status-chip chip-on-time">🟢 ĐÚNG HẠN (+50⭐)</span>';
+          scoreInfoHTML = `<div class="pj-score-box"><span class="pj-score-label">Đặc quyền:</span><span class="pj-score-val" style="color: #34d399;">+50 ⭐ đúng hạn</span></div>`;
+          actionBtnHTML = `<button type="button" class="pj-action-btn btn-play-ontime" onclick="openQuizStartConfirmModal(${p.phase})">🔥 Bắt đầu thi (+50 ⭐)</button>`;
+        } else if (p.isCatchUp) {
+          cardClass += " card-catch-up";
+          chipHTML = '<span class="pj-status-chip chip-catch-up">🔄 LÀM BÙ TUẦN</span>';
+          scoreInfoHTML = `<div class="pj-score-box"><span class="pj-score-label">Chế độ:</span><span class="pj-score-val" style="color: #fbbf24;">Làm bù (Không +50⭐)</span></div>`;
+          actionBtnHTML = `<button type="button" class="pj-action-btn btn-play-catchup" onclick="openQuizStartConfirmModal(${p.phase})">🔄 Làm bù GĐ ${p.phase}</button>`;
+        } else {
+          cardClass += " card-on-time";
+          chipHTML = '<span class="pj-status-chip chip-on-time">🟢 ĐANG MỞ</span>';
+          scoreInfoHTML = `<div class="pj-score-box"><span class="pj-score-label">Chặng cuối tuần:</span><span class="pj-score-val">Tối đa 1.100 ⭐</span></div>`;
+          actionBtnHTML = `<button type="button" class="pj-action-btn btn-play-ontime" onclick="openQuizStartConfirmModal(${p.phase})">🚀 Bắt đầu Giai đoạn 3</button>`;
+        }
+      } else {
+        cardClass += " card-locked";
+        const lockLabel = (data.state === "countdown") ? "SẮP MỞ CỔNG" : (p.phase > data.phase ? "CHƯA TỚI NGÀY" : "ĐÃ ĐÓNG CỔNG");
+        chipHTML = `<span class="pj-status-chip chip-locked">🔒 ${lockLabel}</span>`;
+        scoreInfoHTML = `<div class="pj-score-box"><span class="pj-score-label">Trạng thái:</span><span class="pj-score-val" style="color: #94a3b8;">${lockLabel}</span></div>`;
+        actionBtnHTML = `<button type="button" class="pj-action-btn btn-disabled" disabled>🔒 ${lockLabel}</button>`;
+      }
+
+      gridHTML += `
+        <div class="${cardClass}">
+          <div class="pj-card-top">
+            <div>
+              <div class="pj-phase-num">Giai đoạn ${p.phase}</div>
+              <div class="pj-phase-days">${pDays}</div>
+            </div>
+            ${chipHTML}
+          </div>
+          <div class="pj-topic" title="${escapeHTML(p.topic || "")}">${escapeHTML(p.topic || "Nội dung câu hỏi chuyên đề")}</div>
+          ${scoreInfoHTML}
+          ${actionBtnHTML}
+        </div>
+      `;
+    });
+    phasesGrid.innerHTML = gridHTML;
+  }
 
   if (blockedMsg) blockedMsg.style.display = "none";
   if (startBtn) {
@@ -7040,6 +7116,7 @@ function renderGatewayTab(raw) {
         startBtn.style.cursor = "pointer";
         const remTime = formatCompSeconds(data.activeRemaining || 600);
         if (startBtnText) startBtnText.textContent = `▶️ Tiếp tục bài thi (còn ${remTime})`;
+        startBtn.onclick = () => startCompetitionQuiz();
         if (blockedMsg) {
           blockedMsg.style.display = "block";
           blockedMsg.style.color = "#38bdf8";
@@ -7050,16 +7127,25 @@ function renderGatewayTab(raw) {
           const exitCount = data.exitCount || 0;
           blockedMsg.innerHTML = `⏸️ <strong>Bài thi đang tạm dừng (Câu ${data.activeQuestionIndex || 1}/10, còn ${remTime}):</strong> Đã sử dụng <strong>${exitCount}/2 lần thoát</strong> (còn ${Math.max(0, 2 - exitCount)} lần). Bấm nút trên để tiếp tục làm bài!`;
         }
-      } else if (attempts < 2) {
+      } else if (data.defaultAvailablePhase) {
         startBtn.disabled = false;
         startBtn.style.opacity = "1";
         startBtn.style.cursor = "pointer";
-        if (startBtnText) startBtnText.textContent = `Bắt đầu lượt thi #${attempts + 1}`;
+        const targetP = data.defaultAvailablePhase;
+        const pObj = (data.phasesStatus || []).find(p => p.phase === targetP);
+        if (pObj && pObj.isCatchUp) {
+          if (startBtnText) startBtnText.textContent = `🔄 Làm bù Giai đoạn ${targetP}`;
+        } else if (targetP === 3) {
+          if (startBtnText) startBtnText.textContent = `🚀 Bắt đầu Giai đoạn 3 (Chặng cuối tuần)`;
+        } else {
+          if (startBtnText) startBtnText.textContent = `🔥 Bắt đầu Giai đoạn ${targetP} (+50 ⭐ đúng hạn)`;
+        }
+        startBtn.onclick = () => openQuizStartConfirmModal(targetP);
       } else {
         startBtn.disabled = true;
         startBtn.style.opacity = "0.6";
         startBtn.style.cursor = "not-allowed";
-        if (startBtnText) startBtnText.textContent = "Đã hết lượt giai đoạn này (2/2)";
+        if (startBtnText) startBtnText.textContent = "Đã hoàn thành các lượt thi khả dụng";
         if (blockedMsg) {
           blockedMsg.style.display = "block";
           blockedMsg.style.color = "";
@@ -7067,7 +7153,7 @@ function renderGatewayTab(raw) {
           blockedMsg.style.border = "";
           blockedMsg.style.borderRadius = "";
           blockedMsg.style.padding = "";
-          blockedMsg.textContent = "Bạn đã hoàn thành đủ 2 lượt của giai đoạn này. Kết quả cao nhất sẽ được dùng để xếp hạng.";
+          blockedMsg.textContent = "Bạn đã hoàn thành đủ lượt thi của tất cả các giai đoạn khả dụng tuần này. Cùng chờ kết quả tổng kết nhé!";
         }
       }
     } else {
@@ -7256,15 +7342,112 @@ function renderLeaderboardUI(data) {
   lbList.innerHTML = rowsHTML;
 }
 
-async function startCompetitionQuiz() {
+function openQuizStartConfirmModal(phase) {
+  if (!session) {
+    openAuth();
+    return;
+  }
+  const modal = $("#quizStartConfirmModal");
+  if (!modal) return;
+
+  const currentPhase = compState.overview?.phase || 1;
+  const isSunday = Boolean(compState.overview?.isSunday);
+  const targetPhase = Number(phase || currentPhase);
+  compState.pendingStartPhase = targetPhase;
+
+  const titleEl = $("#quizStartTitle");
+  const phaseTagEl = $("#quizStartPhaseTag");
+  const promptTextEl = $("#quizStartPromptText");
+  const bonusCardEl = $("#quizStartBonusCard");
+  const proceedBtnEl = $("#quizStartProceedBtn");
+
+  const daysText = targetPhase === 1 ? "Thứ Hai – Thứ Ba" : (targetPhase === 2 ? "Thứ Tư – Thứ Năm" : "Thứ Sáu – Thứ Bảy");
+  if (titleEl) titleEl.textContent = `Xác nhận lượt thi - Giai đoạn ${targetPhase}`;
+  if (phaseTagEl) phaseTagEl.textContent = `Giai đoạn ${targetPhase} (${daysText})`;
+
+  // Mandatory prompt required by user
+  if (promptTextEl) {
+    promptTextEl.textContent = "Bạn chỉ có 1 lượt thi duy nhất cho giai đoạn này, bắt đầu thi chứ?";
+  }
+
+  const isOnTime = (targetPhase === currentPhase && (targetPhase === 1 || targetPhase === 2) && !isSunday);
+  const isCatchUp = targetPhase < currentPhase;
+
+  if (bonusCardEl) {
+    if (isOnTime) {
+      bonusCardEl.className = "quiz-start-bonus-card on-time";
+      bonusCardEl.innerHTML = `
+        <span style="font-size: 22px;">🎁</span>
+        <div>
+          <strong>ĐẶC QUYỀN ĐÚNG HẠN: +50 ⭐ THƯỞNG THÊM!</strong><br>
+          Bạn đang tham gia đúng hạn Giai đoạn ${targetPhase}. Hệ thống sẽ cộng thêm <strong>+50 ⭐</strong> vào tổng điểm khi bạn hoàn thành bài thi! (Tối đa toàn bài: <strong>1.150 ⭐</strong>).
+        </div>
+      `;
+    } else if (isCatchUp) {
+      bonusCardEl.className = "quiz-start-bonus-card catch-up";
+      bonusCardEl.innerHTML = `
+        <span style="font-size: 22px;">🔄</span>
+        <div>
+          <strong>LƯỢT LÀM BÙ TRONG TUẦN</strong><br>
+          Bạn đang làm bù Giai đoạn ${targetPhase} đã qua. Bạn vẫn được tính điểm bài thi bình thường (tối đa <strong>1.100 ⭐</strong>), nhưng <em>không nhận điểm thưởng đúng hạn (+50 ⭐)</em>.
+        </div>
+      `;
+    } else {
+      bonusCardEl.className = "quiz-start-bonus-card final-phase";
+      bonusCardEl.innerHTML = `
+        <span style="font-size: 22px;">🏁</span>
+        <div>
+          <strong>GIAI ĐOẠN 3 - CHẶNG CUỐI TUẦN</strong><br>
+          Đây là giai đoạn cuối cùng trước khi tổng kết trao giải vào Chủ Nhật. Lỡ giai đoạn này sẽ <strong>không có cơ hội làm bù</strong>! Điểm tối đa: <strong>1.100 ⭐</strong>.
+        </div>
+      `;
+    }
+  }
+
+  if (proceedBtnEl) {
+    proceedBtnEl.innerHTML = isOnTime ? "🚀 Bắt đầu thi (+50 ⭐)" : (isCatchUp ? `🔄 Bắt đầu làm bù GĐ ${targetPhase}` : "🚀 Bắt đầu thi ngay");
+  }
+
+  modal.showModal();
+}
+
+function closeQuizStartConfirmModal() {
+  const modal = $("#quizStartConfirmModal");
+  if (modal) modal.close();
+  compState.pendingStartPhase = null;
+}
+
+async function proceedStartQuizSession() {
+  const targetPhase = compState.pendingStartPhase || compState.overview?.defaultAvailablePhase || compState.overview?.phase || 1;
+  closeQuizStartConfirmModal();
+  await executeStartQuizSession(targetPhase);
+}
+
+async function startCompetitionQuiz(targetPhase) {
   if (!session) {
     openAuth();
     return;
   }
 
+  // If user has an active paused session, resume directly without prompt
+  if (compState.overview?.hasActiveSession) {
+    await executeStartQuizSession(targetPhase);
+    return;
+  }
+
+  // Otherwise, must confirm before starting the 1 and only attempt
+  const phase = targetPhase || compState.overview?.defaultAvailablePhase || compState.overview?.phase || 1;
+  openQuizStartConfirmModal(phase);
+}
+
+async function executeStartQuizSession(targetPhase) {
   try {
+    const payload = {};
+    if (targetPhase) payload.phase = Number(targetPhase);
+
     const res = await requestAPI("/api/competition/session/start", {
-      method: "POST"
+      method: "POST",
+      body: JSON.stringify(payload)
     });
 
     compState.sessionToken = res.sessionToken;
@@ -7278,6 +7461,8 @@ async function startCompetitionQuiz() {
     compState.quizFirstTryBonusCount = res.firstTryCorrectCount || 0;
     compState.isSubmittingAnswer = false;
     compState.initialDisabledOptions = Array.isArray(res.disabledOptions) ? res.disabledOptions : [];
+    compState.currentSessionPhase = res.phase;
+    compState.potentialOnTimeBonus = res.potentialOnTimeBonus || 0;
 
     closeCompetitionModal();
     const quizModal = $("#competitionQuizModal");
@@ -7287,7 +7472,8 @@ async function startCompetitionQuiz() {
     $("#quizResultView").style.display = "none";
     if (res.phase) {
       const phaseBadge = $("#quizPhaseBadge");
-      if (phaseBadge) phaseBadge.textContent = `Giai đoạn ${res.phase}`;
+      const bonusTag = res.isOnTime ? " (+50⭐ đúng hạn)" : (res.isCatchUp ? " (Làm bù)" : "");
+      if (phaseBadge) phaseBadge.textContent = `Giai đoạn ${res.phase}${bonusTag}`;
     }
 
     quizModal.showModal();
@@ -7684,8 +7870,27 @@ function showQuizFinalResult(result) {
   if ($("#resultFirstTryPts")) $("#resultFirstTryPts").textContent = `+${firstTryPts} ⭐`;
   if ($("#resultRemainingTime")) $("#resultRemainingTime").textContent = `${remainingSec} giây`;
   if ($("#resultTimePts")) $("#resultTimePts").textContent = `+${timePts} ⭐`;
+
+  const onTimeBonus = result?.onTimeBonus ?? 0;
+  const bonusStatus = $("#resultOnTimeBonusStatus");
+  const bonusPts = $("#resultOnTimeBonusPts");
+  if (bonusStatus && bonusPts) {
+    if (onTimeBonus > 0) {
+      bonusStatus.textContent = "Đúng hạn GĐ";
+      bonusStatus.style.color = "#34d399";
+      bonusPts.textContent = `+${onTimeBonus} ⭐`;
+      bonusPts.style.color = "#34d399";
+    } else {
+      bonusStatus.textContent = "Làm bù / GĐ 3";
+      bonusStatus.style.color = "#94a3b8";
+      bonusPts.textContent = "+0 ⭐";
+      bonusPts.style.color = "#94a3b8";
+    }
+  }
+
   if ($("#resultPhaseRecordText")) {
-    $("#resultPhaseRecordText").textContent = `Kỷ lục giai đoạn của bạn: ${phaseBest} ⭐ (Lấy điểm cao nhất trong 2 lượt)`;
+    const bonusTag = onTimeBonus > 0 ? ` (Bao gồm +${onTimeBonus}⭐ thưởng đúng hạn)` : "";
+    $("#resultPhaseRecordText").textContent = `${totalScore} ⭐ (1 lượt thi duy nhất / giai đoạn)${bonusTag}`;
   }
 
   playCompSound("victory");
@@ -8192,6 +8397,9 @@ window.adminHandleExcelUpload = adminHandleExcelUpload;
 window.promptQuizExit = promptQuizExit;
 window.cancelQuizExit = cancelQuizExit;
 window.confirmQuizExit = confirmQuizExit;
+window.openQuizStartConfirmModal = openQuizStartConfirmModal;
+window.closeQuizStartConfirmModal = closeQuizStartConfirmModal;
+window.proceedStartQuizSession = proceedStartQuizSession;
 
 // Safe cancel listeners for Arena Quiz modals
 document.addEventListener("DOMContentLoaded", () => {
@@ -8206,6 +8414,12 @@ document.addEventListener("DOMContentLoaded", () => {
   if (exitModal) {
     exitModal.addEventListener("cancel", () => {
       cancelQuizExit();
+    });
+  }
+  const startModal = $("#quizStartConfirmModal");
+  if (startModal) {
+    startModal.addEventListener("cancel", () => {
+      closeQuizStartConfirmModal();
     });
   }
 });
