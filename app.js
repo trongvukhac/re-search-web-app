@@ -6781,7 +6781,7 @@ function normalizeCompData(raw) {
   const exitCount = raw.userStatus?.exitCount ?? (raw.exitCount || 0);
   const phasesStatus = Array.isArray(raw.phasesStatus) ? raw.phasesStatus : (Array.isArray(raw.userStatus?.phasesStatus) ? raw.userStatus.phasesStatus : []);
   const maxAttempts = raw.maxAttempts || raw.userStatus?.maxAttempts || 1;
-  const totalOnTimeBonus = raw.totalOnTimeBonus ?? raw.userStatus?.totalOnTimeBonus ?? 0;
+  const totalOnTimeBonus = raw.totalOnTimeBonus ?? raw.userStatus?.totalOnTimeBonus ?? raw.userSummary?.totalOnTimeBonus ?? 0;
   const defaultAvailablePhase = (raw.userStatus?.defaultAvailablePhase !== undefined)
     ? raw.userStatus.defaultAvailablePhase
     : (raw.defaultAvailablePhase !== undefined ? raw.defaultAvailablePhase : null);
@@ -7065,9 +7065,8 @@ function renderGatewayTab(raw) {
       if (p.isCompleted) {
         cardClass += " card-completed";
         chipHTML = '<span class="pj-status-chip chip-completed">✅ ĐÃ XONG</span>';
-        const bonusStr = p.onTimeBonusEarned > 0 ? ` (+${p.onTimeBonusEarned}⭐ đúng hạn)` : "";
         const phaseScore = (p.score !== undefined) ? p.score : (p.bestScore ?? 0);
-        scoreInfoHTML = `<div class="pj-score-box"><span class="pj-score-label">Điểm chính thức:</span><span class="pj-score-val">⭐ ${phaseScore}${bonusStr}</span></div>`;
+        scoreInfoHTML = `<div class="pj-score-box"><span class="pj-score-label">Điểm:</span><span class="pj-score-val">⭐ ${phaseScore}</span></div>`;
         actionBtnHTML = `<button type="button" class="pj-action-btn btn-view-result" onclick="openPhaseResultModal(${p.phase})">📜 Xem lịch sử hoàn thành</button>`;
       } else if (p.hasActiveSession) {
         cardClass += " card-on-time";
@@ -7093,7 +7092,7 @@ function renderGatewayTab(raw) {
         }
       } else {
         cardClass += " card-locked";
-        const lockLabel = (data.state === "countdown") ? "SẮP MỞ CỔNG" : (p.phase > data.phase ? "CHƯA TỚI NGÀY" : "ĐÃ ĐÓNG CỔNG");
+        const lockLabel = (data.state === "countdown") ? "SẮP MỞ CỔNG" : (p.phase > data.phase ? "CHƯA MỞ" : "ĐÃ ĐÓNG CỔNG");
         chipHTML = `<span class="pj-status-chip chip-locked">🔒 ${lockLabel}</span>`;
         scoreInfoHTML = `<div class="pj-score-box"><span class="pj-score-label">Trạng thái:</span><span class="pj-score-val" style="color: #94a3b8;">${lockLabel}</span></div>`;
         actionBtnHTML = `<button type="button" class="pj-action-btn btn-disabled" disabled>🔒 ${lockLabel}</button>`;
@@ -7245,10 +7244,11 @@ async function loadAndRenderLeaderboard(phase) {
     compState.cachedLeaderboard[phase] = data;
 
     if (noticeEl) {
-      if (data.isLocked) {
-        noticeEl.innerHTML = `🔒 <strong>Kết quả chính thức đã chốt</strong> (${data.phaseTitle})`;
+      if (String(phase) === "week" || data.phase === "week") {
+        const weekNum = String(data.weekNumber || 1).padStart(2, "0");
+        noticeEl.textContent = `Bảng xếp hạng tuần ${weekNum}`;
       } else {
-        noticeEl.innerHTML = `📊 <strong>Bảng xếp hạng tạm thời</strong> (${data.phaseTitle}) - Cập nhật trong khung giờ tổng kết`;
+        noticeEl.textContent = "Bảng xếp hạng giai đoạn";
       }
     }
 
@@ -7262,6 +7262,20 @@ function renderLeaderboardUI(data) {
   const podiumWrap = $("#compPodiumWrap");
   const lbList = $("#compLbList");
   if (!podiumWrap || !lbList) return;
+
+  if (data.canShow === false) {
+    podiumWrap.innerHTML = `
+      <div class="comp-lb-waiting-wrap" style="text-align: center; padding: 48px 20px; background: rgba(255,255,255,0.02); border: 1px dashed rgba(255,255,255,0.12); border-radius: 16px; margin: 24px 0;">
+        <div style="font-size: 40px; margin-bottom: 12px;">⏳</div>
+        <div style="font-size: 20px; font-weight: 700; color: var(--text); margin-bottom: 8px;">Chờ chút nhé</div>
+        <div style="font-size: 14px; color: var(--muted); max-width: 420px; margin: 0 auto; line-height: 1.6;">
+          Bảng xếp hạng chỉ xuất hiện thông tin khi tới giờ tổng kết sau khi đóng cổng thi.
+        </div>
+      </div>
+    `;
+    lbList.innerHTML = "";
+    return;
+  }
 
   const top10 = data.top10 || [];
   const currentUserEntry = data.currentUserEntry;

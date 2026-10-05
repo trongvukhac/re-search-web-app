@@ -3194,7 +3194,28 @@ async function api(request, response, url) {
       else if (phasesParticipated === 2) bonusPoints = 3;
       else if (phasesParticipated >= 3) bonusPoints = 5;
 
-      const totalOnTimeBonus = (p1Row?.on_time_bonus || 0) + (p2Row?.on_time_bonus || 0);
+      let p1Bonus = p1Row?.on_time_bonus || 0;
+      if (!p1Bonus) {
+        const s1 = db.prepare("SELECT on_time_bonus, is_on_time FROM competition_sessions WHERE user_id = ? AND competition_id = ? AND phase = 1 AND status IN ('completed', 'expired') ORDER BY id DESC LIMIT 1").get(user.id, comp.id);
+        if (s1 && (s1.on_time_bonus > 0 || s1.is_on_time === 1)) {
+          p1Bonus = s1.on_time_bonus || 50;
+          try {
+            db.prepare("UPDATE competition_phase_results SET on_time_bonus = ? WHERE user_id = ? AND competition_id = ? AND phase = 1").run(p1Bonus, user.id, comp.id);
+          } catch (e) {}
+        }
+      }
+      let p2Bonus = p2Row?.on_time_bonus || 0;
+      if (!p2Bonus) {
+        const s2 = db.prepare("SELECT on_time_bonus, is_on_time FROM competition_sessions WHERE user_id = ? AND competition_id = ? AND phase = 2 AND status IN ('completed', 'expired') ORDER BY id DESC LIMIT 1").get(user.id, comp.id);
+        if (s2 && (s2.on_time_bonus > 0 || s2.is_on_time === 1)) {
+          p2Bonus = s2.on_time_bonus || 50;
+          try {
+            db.prepare("UPDATE competition_phase_results SET on_time_bonus = ? WHERE user_id = ? AND competition_id = ? AND phase = 2").run(p2Bonus, user.id, comp.id);
+          } catch (e) {}
+        }
+      }
+
+      const totalOnTimeBonus = p1Bonus + p2Bonus;
       const weeklyTotal = p1 + p2 + p3;
 
       userSummary = {
@@ -3258,7 +3279,7 @@ async function api(request, response, url) {
           isCatchUp: !timeState.isSunday && curPhase > 1 && completedP1 < 1,
           isOnTime: curPhase === 1 && !timeState.isSunday,
           onTimeBonusEligible: (curPhase === 1 && !timeState.isSunday) ? 50 : 0,
-          onTimeBonusEarned: p1Row?.on_time_bonus || 0,
+          onTimeBonusEarned: p1Bonus,
           hasActive: hasActiveSession && activePhase === 1
         },
         {
@@ -3274,7 +3295,7 @@ async function api(request, response, url) {
           isCatchUp: !timeState.isSunday && curPhase > 2 && completedP2 < 1,
           isOnTime: curPhase === 2 && !timeState.isSunday,
           onTimeBonusEligible: (curPhase === 2 && !timeState.isSunday) ? 50 : 0,
-          onTimeBonusEarned: p2Row?.on_time_bonus || 0,
+          onTimeBonusEarned: p2Bonus,
           hasActive: hasActiveSession && activePhase === 2
         },
         {
@@ -3318,6 +3339,7 @@ async function api(request, response, url) {
         exitCount,
         defaultAvailablePhase,
         phasesStatus,
+        totalOnTimeBonus,
         bestScore: (curPhase === 1 ? p1 : (curPhase === 2 ? p2 : p3))
       };
     }
@@ -3328,6 +3350,7 @@ async function api(request, response, url) {
       timeState,
       userSummary,
       userStatus,
+      totalOnTimeBonus: userStatus?.totalOnTimeBonus ?? userSummary?.totalOnTimeBonus ?? 0,
       defaultAvailablePhase,
       phasesStatus
     });
@@ -3483,20 +3506,44 @@ async function api(request, response, url) {
       }
     }
 
-    let phaseTitle = "Toàn tuần: " + (comp.topic_name || "Nghiên cứu Khoa học");
-    if (phaseParam === "1") phaseTitle = "Giai đoạn 1 (Thứ 2 - Thứ 3): " + (comp.phase1_topic || "Phương pháp & Thiết kế");
-    if (phaseParam === "2") phaseTitle = "Giai đoạn 2 (Thứ 4 - Thứ 5): " + (comp.phase2_topic || "Thu thập & Phân tích");
-    if (phaseParam === "3") phaseTitle = "Giai đoạn 3 (Thứ 6 - Thứ 7): " + (comp.phase3_topic || "Báo cáo & Trích dẫn");
+    const isSunday = Boolean(timeState.isSunday || timeState.state === "sunday_summary");
+    const weekNumStr = String(comp.week_number || 1).padStart(2, "0");
+    const isWeekPhase = (phaseParam === "week");
+    let phaseTitle = isWeekPhase ? `Bảng xếp hạng tuần ${weekNumStr}` : "Bảng xếp hạng giai đoạn";
+
+    let canShow = false;
+    if (isWeekPhase) {
+      canShow = isSunday;
+    } else {
+      const pNum = Math.min(3, Math.max(1, Number(phaseParam) || 1));
+      if (isSunday) {
+        canShow = true;
+      } else if (pNum < timeState.phase) {
+        canShow = true;
+      } else if (pNum === timeState.phase) {
+        canShow = (timeState.state === "reviewing" || timeState.state === "summary");
+      } else {
+        canShow = false;
+      }
+    }
+
+    if (url.searchParams.get("admin_preview") === "true" && user?.role === "admin") {
+      canShow = true;
+    }
 
     return json(response, 200, {
       ok: true,
       phase: phaseParam,
       phaseTitle,
-      totalParticipants: formatted.length,
-      top10,
-      currentUserEntry,
-      currentUserRank: currentUserEntry,
-      isLocked: (phaseParam === "week") ? Boolean(timeState.isSunday) : (timeState.phase > Number(phaseParam) || Boolean(timeState.isSunday))
+      weekNumber: comp.week_number || 1,
+      weekNumberStr: weekNumStr,
+      canShow,
+      message: canShow ? null : "Chờ chút nhé",
+      totalParticipants: canShow ? formatted.length : 0,
+      top10: canShow ? top10 : [],
+      currentUserEntry: canShow ? currentUserEntry : null,
+      currentUserRank: canShow ? currentUserEntry : null,
+      isLocked: isWeekPhase ? isSunday : (timeState.phase > Number(phaseParam) || isSunday)
     });
   }
 
