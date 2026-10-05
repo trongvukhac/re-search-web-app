@@ -6298,27 +6298,45 @@ body.study-zen-fullscreen .study-main-col {
   font-weight: 800;
   letter-spacing: 0.5px;
   text-transform: uppercase;
+  transition: all 0.3s ease;
   background: rgba(16, 185, 129, 0.2);
   color: #34d399;
   border: 1px solid rgba(52, 211, 153, 0.3);
 }
 
-.comp-status-badge.upcoming {
-  background: rgba(245, 158, 11, 0.2);
-  color: #fbbf24;
-  border-color: rgba(251, 191, 36, 0.3);
+/* 1. ĐANG MỞ CỔNG: Xanh lá */
+.comp-status-badge.status-open,
+.comp-status-badge.open {
+  background: rgba(16, 185, 129, 0.2);
+  color: #34d399;
+  border: 1px solid rgba(52, 211, 153, 0.4);
 }
 
-.comp-status-badge.reviewing {
-  background: rgba(234, 179, 8, 0.2);
-  color: #facc15;
-  border-color: rgba(250, 204, 21, 0.35);
+/* 2. ĐANG TỔNG KẾT: Xanh lam */
+.comp-status-badge.status-summary,
+.comp-status-badge.reviewing,
+.comp-status-badge.summary {
+  background: rgba(14, 165, 233, 0.2);
+  color: #38bdf8;
+  border: 1px solid rgba(56, 189, 248, 0.4);
 }
 
+/* 3. SẮP MỞ CỔNG: Màu cam */
+.comp-status-badge.status-upcoming,
+.comp-status-badge.upcoming,
+.comp-status-badge.countdown {
+  background: rgba(249, 115, 22, 0.2);
+  color: #fb923c;
+  border: 1px solid rgba(251, 146, 60, 0.4);
+}
+
+/* 4. RIÊNG CHỦ NHẬT: Tím đỏ gradient */
+.comp-status-badge.status-sunday,
 .comp-status-badge.sunday {
-  background: rgba(168, 85, 247, 0.2);
-  color: #c084fc;
-  border-color: rgba(192, 132, 252, 0.35);
+  background: linear-gradient(135deg, rgba(168, 85, 247, 0.3) 0%, rgba(244, 63, 94, 0.3) 100%);
+  color: #f472b6;
+  border: 1px solid rgba(244, 114, 182, 0.5);
+  box-shadow: 0 2px 8px rgba(168, 85, 247, 0.25);
 }
 
 .pulse-dot {
@@ -6437,6 +6455,165 @@ body.study-zen-fullscreen .study-main-col {
 
 .comp-cta-button:hover .comp-cta-arrow {
   transform: translateX(3px);
+}
+
+/* CTA Button status variants */
+.comp-cta-button.cta-open {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: #ffffff;
+  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.35);
+}
+.comp-cta-button.cta-open:hover {
+  background: linear-gradient(135deg, #34d399 0%, #059669 100%);
+  box-shadow: 0 6px 18px rgba(16, 185, 129, 0.45);
+}
+
+.comp-cta-button.cta-summary {
+  background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
+  color: #ffffff;
+  box-shadow: 0 4px 14px rgba(14, 165, 233, 0.35);
+}
+.comp-cta-button.cta-summary:hover {
+  background: linear-gradient(135deg, #38bdf8 0%, #0284c7 100%);
+  box-shadow: 0 6px 18px rgba(14, 165, 233, 0.45);
+}
+
+.comp-cta-button.cta-countdown {
+  background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+  color: #ffffff;
+  box-shadow: 0 4px 14px rgba(249, 115, 22, 0.35);
+}
+.comp-cta-button.cta-countdown:hover {
+  background: linear-gradient(135deg, #fb923c 0%, #ea580c 100%);
+  box-shadow: 0 6px 18px rgba(249, 115, 22, 0.45);
+}
+
+.comp-cta-button.cta-sunday {
+  background: linear-gradient(135deg, #a855f7 0%, #e11d48 100%);
+  color: #ffffff;
+  box-shadow: 0 4px 14px rgba(168, 85, 247, 0.35);
+}
+.comp-cta-button.cta-sunday:hover {
+  background: linear-gradient(135deg, #c084fc 0%, #f43f5e 100%);
+  box-shadow: 0 6px 18px rgba(168, 85, 247, 0.45);
+}
+
+/* =========================================================================
+   COMPETITION THEMED CONTAINERS (Home Card & Arena Gateway Hero)
+   Synchronized by status: Open (Green), Summary (Blue), Upcoming (Orange), Sunday (Purple-Red Gradient)
+   ========================================================================= */
+
+.weekly-competition-card,
+.comp-gateway-hero {
+  transition: background 0.4s ease, border-color 0.4s ease, box-shadow 0.4s ease;
+}
+
+/* 1. ĐANG MỞ CỔNG: Xanh lá (Green Theme) */
+.weekly-competition-card.theme-state-open,
+.comp-gateway-hero.theme-state-open {
+  background: linear-gradient(135deg, #07281d 0%, #104835 52%, #082d20 100%) !important;
+  border-color: rgba(52, 211, 153, 0.3) !important;
+  box-shadow: 0 12px 32px rgba(7, 40, 29, 0.35) !important;
+}
+.weekly-competition-card.theme-state-open:hover {
+  border-color: rgba(52, 211, 153, 0.5) !important;
+  box-shadow: 0 16px 40px rgba(7, 40, 29, 0.45), 0 0 0 1px rgba(52, 211, 153, 0.3) !important;
+}
+.weekly-competition-card.theme-state-open .comp-card-glow {
+  background: radial-gradient(circle, rgba(16, 185, 129, 0.25) 0%, rgba(7, 40, 29, 0.05) 50%, transparent 70%) !important;
+}
+.weekly-competition-card.theme-state-open p,
+.comp-gateway-hero.theme-state-open p {
+  color: #a7f3d0 !important;
+}
+.comp-gateway-hero.theme-state-open .comp-phase-tag {
+  background: rgba(16, 185, 129, 0.2) !important;
+  border-color: rgba(52, 211, 153, 0.35) !important;
+  color: #d1fae5 !important;
+}
+.comp-gateway-hero.theme-state-open .gateway-clock-card {
+  border-color: rgba(52, 211, 153, 0.38) !important;
+}
+
+/* 2. ĐANG TỔNG KẾT: Xanh lam (Blue Theme) */
+.weekly-competition-card.theme-state-summary,
+.comp-gateway-hero.theme-state-summary {
+  background: linear-gradient(135deg, #091e36 0%, #11385f 52%, #081b2f 100%) !important;
+  border-color: rgba(56, 189, 248, 0.32) !important;
+  box-shadow: 0 12px 32px rgba(9, 30, 54, 0.38) !important;
+}
+.weekly-competition-card.theme-state-summary:hover {
+  border-color: rgba(56, 189, 248, 0.5) !important;
+  box-shadow: 0 16px 40px rgba(9, 30, 54, 0.48), 0 0 0 1px rgba(56, 189, 248, 0.3) !important;
+}
+.weekly-competition-card.theme-state-summary .comp-card-glow {
+  background: radial-gradient(circle, rgba(14, 165, 233, 0.25) 0%, rgba(9, 30, 54, 0.05) 50%, transparent 70%) !important;
+}
+.weekly-competition-card.theme-state-summary p,
+.comp-gateway-hero.theme-state-summary p {
+  color: #bae6fd !important;
+}
+.comp-gateway-hero.theme-state-summary .comp-phase-tag {
+  background: rgba(14, 165, 233, 0.2) !important;
+  border-color: rgba(56, 189, 248, 0.35) !important;
+  color: #e0f2fe !important;
+}
+.comp-gateway-hero.theme-state-summary .gateway-clock-card {
+  border-color: rgba(56, 189, 248, 0.4) !important;
+}
+
+/* 3. SẮP MỞ CỔNG: Màu cam (Orange Theme) */
+.weekly-competition-card.theme-state-upcoming,
+.comp-gateway-hero.theme-state-upcoming {
+  background: linear-gradient(135deg, #331705 0%, #582808 52%, #2d1404 100%) !important;
+  border-color: rgba(251, 146, 60, 0.35) !important;
+  box-shadow: 0 12px 32px rgba(51, 23, 5, 0.4) !important;
+}
+.weekly-competition-card.theme-state-upcoming:hover {
+  border-color: rgba(251, 146, 60, 0.55) !important;
+  box-shadow: 0 16px 40px rgba(51, 23, 5, 0.5), 0 0 0 1px rgba(251, 146, 60, 0.3) !important;
+}
+.weekly-competition-card.theme-state-upcoming .comp-card-glow {
+  background: radial-gradient(circle, rgba(249, 115, 22, 0.25) 0%, rgba(51, 23, 5, 0.05) 50%, transparent 70%) !important;
+}
+.weekly-competition-card.theme-state-upcoming p,
+.comp-gateway-hero.theme-state-upcoming p {
+  color: #fed7aa !important;
+}
+.comp-gateway-hero.theme-state-upcoming .comp-phase-tag {
+  background: rgba(249, 115, 22, 0.2) !important;
+  border-color: rgba(251, 146, 60, 0.35) !important;
+  color: #ffedd5 !important;
+}
+.comp-gateway-hero.theme-state-upcoming .gateway-clock-card {
+  border-color: rgba(251, 146, 60, 0.45) !important;
+}
+
+/* 4. RIÊNG CHỦ NHẬT: Tím đỏ gradient (Purple-Red Gradient Theme) */
+.weekly-competition-card.theme-state-sunday,
+.comp-gateway-hero.theme-state-sunday {
+  background: linear-gradient(135deg, #3b0764 0%, #581c87 35%, #831843 70%, #4c0519 100%) !important;
+  border-color: rgba(244, 114, 182, 0.4) !important;
+  box-shadow: 0 12px 32px rgba(88, 28, 135, 0.45) !important;
+}
+.weekly-competition-card.theme-state-sunday:hover {
+  border-color: rgba(244, 114, 182, 0.6) !important;
+  box-shadow: 0 16px 40px rgba(88, 28, 135, 0.55), 0 0 0 1px rgba(244, 114, 182, 0.35) !important;
+}
+.weekly-competition-card.theme-state-sunday .comp-card-glow {
+  background: radial-gradient(circle, rgba(236, 72, 153, 0.28) 0%, rgba(147, 51, 234, 0.15) 50%, transparent 70%) !important;
+}
+.weekly-competition-card.theme-state-sunday p,
+.comp-gateway-hero.theme-state-sunday p {
+  color: #fbcfe8 !important;
+}
+.comp-gateway-hero.theme-state-sunday .comp-phase-tag {
+  background: linear-gradient(135deg, rgba(168, 85, 247, 0.25) 0%, rgba(244, 63, 94, 0.25) 100%) !important;
+  border-color: rgba(244, 114, 182, 0.4) !important;
+  color: #fdf2f8 !important;
+}
+.comp-gateway-hero.theme-state-sunday .gateway-clock-card {
+  border-color: rgba(244, 114, 182, 0.48) !important;
 }
 
 /* ==========================================================================

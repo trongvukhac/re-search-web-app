@@ -6861,8 +6861,28 @@ function renderWeeklyCompetitionCard(raw) {
     }
   }
 
+  const cardEl = $("#weeklyCompetitionModule");
+  if (cardEl) {
+    cardEl.classList.remove("theme-state-open", "theme-state-summary", "theme-state-upcoming", "theme-state-sunday");
+    if (data.isSunday) {
+      cardEl.classList.add("theme-state-sunday");
+    } else if (data.state === "open") {
+      cardEl.classList.add("theme-state-open");
+    } else if (data.state === "countdown") {
+      cardEl.classList.add("theme-state-upcoming");
+    } else {
+      cardEl.classList.add("theme-state-summary");
+    }
+  }
+
   badgeEl.className = "comp-status-badge";
-  if (data.state === "open") {
+  if (data.isSunday) {
+    badgeEl.classList.add("status-sunday");
+    if (badgeTextEl) badgeTextEl.textContent = "TỔNG KẾT TUẦN";
+    if (timerLabel) timerLabel.textContent = "Kết thúc tuần sau:";
+    if (ctaText) ctaText.textContent = "Xem bảng xếp hạng";
+    if (ctaBtn) ctaBtn.className = "comp-cta-button cta-sunday";
+  } else if (data.state === "open") {
     badgeEl.classList.add("status-open");
     if (badgeTextEl) badgeTextEl.textContent = "ĐANG MỞ CỔNG (19h - 23h)";
     if (timerLabel) timerLabel.textContent = "Thời gian mở cổng còn lại:";
@@ -6874,16 +6894,10 @@ function renderWeeklyCompetitionCard(raw) {
     if (timerLabel) timerLabel.textContent = "Mở cổng sau:";
     if (ctaText) ctaText.textContent = "Xem thể lệ & thông tin";
     if (ctaBtn) ctaBtn.className = "comp-cta-button cta-countdown";
-  } else if (data.state === "summary" || data.state === "reviewing" || data.state === "sunday_summary") {
-    badgeEl.classList.add("status-summary");
-    if (badgeTextEl) badgeTextEl.textContent = data.isSunday ? "TỔNG KẾT TUẦN" : "ĐANG TỔNG KẾT";
-    if (timerLabel) timerLabel.textContent = data.isSunday ? "Kết thúc tuần sau:" : "Mở countdown sau:";
-    if (ctaText) ctaText.textContent = "Xem bảng xếp hạng";
-    if (ctaBtn) ctaBtn.className = "comp-cta-button cta-summary";
   } else {
-    badgeEl.classList.add("status-closed");
-    if (badgeTextEl) badgeTextEl.textContent = "CỔNG ĐÃ ĐÓNG";
-    if (timerLabel) timerLabel.textContent = "Thời gian còn lại:";
+    badgeEl.classList.add("status-summary");
+    if (badgeTextEl) badgeTextEl.textContent = data.state === "closed" ? "CỔNG ĐÃ ĐÓNG" : "ĐANG TỔNG KẾT";
+    if (timerLabel) timerLabel.textContent = data.state === "closed" ? "Thời gian còn lại:" : "Mở countdown sau:";
     if (ctaText) ctaText.textContent = "Xem bảng xếp hạng";
     if (ctaBtn) ctaBtn.className = "comp-cta-button cta-summary";
   }
@@ -7022,9 +7036,27 @@ function renderGatewayTab(raw) {
   const startBtnText = $("#gatewayStartBtnText");
   const blockedMsg = $("#gatewayBlockedMsg");
 
+  const gatewayHero = $("#compGatewayHero") || $(".comp-gateway-hero");
+  if (gatewayHero) {
+    gatewayHero.classList.remove("theme-state-open", "theme-state-summary", "theme-state-upcoming", "theme-state-sunday");
+    if (data.isSunday) {
+      gatewayHero.classList.add("theme-state-sunday");
+    } else if (data.state === "open") {
+      gatewayHero.classList.add("theme-state-open");
+    } else if (data.state === "countdown") {
+      gatewayHero.classList.add("theme-state-upcoming");
+    } else {
+      gatewayHero.classList.add("theme-state-summary");
+    }
+  }
+
   if (statusBadge) {
     statusBadge.className = "comp-status-badge";
-    if (data.state === "open") {
+    if (data.isSunday) {
+      statusBadge.classList.add("status-sunday");
+      if (statusText) statusText.textContent = "TỔNG KẾT TUẦN";
+      if (clockLabel) clockLabel.textContent = "Kết thúc tuần sau:";
+    } else if (data.state === "open") {
       statusBadge.classList.add("status-open");
       if (statusText) statusText.textContent = "ĐANG MỞ CỔNG (19h - 23h)";
       if (clockLabel) clockLabel.textContent = "Thời gian mở cổng còn lại:";
@@ -7032,14 +7064,10 @@ function renderGatewayTab(raw) {
       statusBadge.classList.add("status-upcoming");
       if (statusText) statusText.textContent = "SẮP MỞ CỔNG (16h - 19h)";
       if (clockLabel) clockLabel.textContent = "Mở cổng trả lời sau:";
-    } else if (data.state === "summary" || data.state === "reviewing" || data.state === "sunday_summary") {
-      statusBadge.classList.add("status-summary");
-      if (statusText) statusText.textContent = data.isSunday ? "TỔNG KẾT TUẦN" : "ĐANG TỔNG KẾT";
-      if (clockLabel) clockLabel.textContent = data.isSunday ? "Kết thúc tuần sau:" : "Mở countdown sau:";
     } else {
-      statusBadge.classList.add("status-closed");
-      if (statusText) statusText.textContent = "CỔNG ĐÃ ĐÓNG";
-      if (clockLabel) clockLabel.textContent = "Thời gian còn lại:";
+      statusBadge.classList.add("status-summary");
+      if (statusText) statusText.textContent = data.state === "closed" ? "CỔNG ĐÃ ĐÓNG" : "ĐANG TỔNG KẾT";
+      if (clockLabel) clockLabel.textContent = data.state === "closed" ? "Thời gian còn lại:" : "Mở countdown sau:";
     }
   }
 
@@ -8318,6 +8346,9 @@ async function adminSetSimTime(preset) {
     toast(`⏰ Đã đổi sang mốc giờ mô phỏng: ${preset.toUpperCase()} (${res.simulatedTimeStr || ""})`);
     await loadAdminCompetition();
     await loadWeeklyCompetitionStatus();
+    if (typeof loadWeeklyCompetitionOverview === "function") {
+      await loadWeeklyCompetitionOverview();
+    }
   } catch (e) {
     toast(e.message || "Lỗi khi đặt giờ mô phỏng.");
   }
