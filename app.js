@@ -7317,7 +7317,7 @@ function renderLeaderboardUI(data) {
         <span class="comp-lb-rank">#${u.rank}</span>
         <div class="comp-lb-user">
           <span class="avatar avatar-sm ${avatarClass}">${escapeHTML(u.avatar || u.initials || "U")}</span>
-          <span class="comp-lb-name ${nameClass}">${getFlameSVG(u.streakTier, 15)} <span>${escapeHTML(u.displayName)}</span> ${isCurrent ? '<span class="you-tag">(Bạn)</span>' : ""}</span>
+          <span class="comp-lb-name ${nameClass}">${getFlameSVG(u.streakTier, 15)} <span class="lb-name-text">${escapeHTML(u.displayName)}</span> ${isCurrent ? '<span class="you-tag">(Bạn)</span>' : ""}</span>
         </div>
         <span class="comp-lb-score">⭐ ${u.score}</span>
       </div>
@@ -7329,10 +7329,10 @@ function renderLeaderboardUI(data) {
     const myNameClass = getNameClass(currentUserEntry.streakTier);
     rowsHTML += `
       <div class="comp-lb-row is-current-user top-11-plus-row">
-        <span class="comp-lb-rank">Top 11+</span>
+        <span class="comp-lb-rank">#${currentUserEntry.rank}</span>
         <div class="comp-lb-user">
           <span class="avatar avatar-sm ${myAvatarClass}">${escapeHTML(currentUserEntry.avatar || currentUserEntry.initials || "U")}</span>
-          <span class="comp-lb-name ${myNameClass}">${getFlameSVG(currentUserEntry.streakTier, 15)} <span>${escapeHTML(currentUserEntry.displayName)}</span> <span class="you-tag">(Bạn - Hạng #${currentUserEntry.rank})</span></span>
+          <span class="comp-lb-name ${myNameClass}">${getFlameSVG(currentUserEntry.streakTier, 15)} <span class="lb-name-text">${escapeHTML(currentUserEntry.displayName)}</span> <span class="you-tag">(Bạn)</span></span>
         </div>
         <span class="comp-lb-score">⭐ ${currentUserEntry.score}</span>
       </div>
@@ -8406,6 +8406,11 @@ document.addEventListener("DOMContentLoaded", () => {
   const quizModal = $("#competitionQuizModal");
   if (quizModal) {
     quizModal.addEventListener("cancel", (e) => {
+      const resView = $("#quizResultView");
+      if (resView && resView.style.display !== "none") {
+        closeQuizAndGoHome();
+        return;
+      }
       e.preventDefault();
       promptQuizExit();
     });

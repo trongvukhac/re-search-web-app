@@ -16,7 +16,7 @@
     <script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-    <link rel="stylesheet" href="styles.css?v=38" />
+    <link rel="stylesheet" href="styles.css?v=39" />
   </head>
   <body>
     <dialog
@@ -962,7 +962,7 @@
               <!-- TOP 4 - 10 + TOP 11+ LIST -->
               <div class="comp-lb-list-container">
                 <div class="comp-lb-list-header">
-                  <span>Hạng</span>
+                  <span>#.</span>
                   <span>Thành viên</span>
                   <span style="text-align: right;">Tổng sao</span>
                 </div>
@@ -1935,25 +1935,34 @@
       <!-- QUIZ GAMEPLAY VIEW -->
       <div id="quizPlayView" class="quiz-play-container">
         <div class="quiz-header-bar">
-          <div class="quiz-info-left">
-            <span class="quiz-phase-badge" id="quizPhaseBadge">Giai đoạn 1</span>
-            <span class="quiz-q-counter" id="quizQuestionCounter">Câu 1 / 10</span>
-          </div>
-          <div class="quiz-timer-center">
-            <div class="quiz-timer-track">
-              <div class="quiz-timer-bar" id="quizTimerProgressBar" style="width: 100%;"></div>
+          <!-- DÒNG TRÊN: GIAI ĐOẠN, SỐ CÂU, NÚT THOÁT -->
+          <div class="quiz-header-top-row">
+            <div class="quiz-info-left">
+              <span class="quiz-phase-badge" id="quizPhaseBadge">Giai đoạn 1</span>
+              <span class="quiz-q-counter" id="quizQuestionCounter">Câu 1 / 10</span>
             </div>
-            <div class="quiz-timer-display" id="quizTimerDisplay">
-              <span class="timer-icon">⏱️</span>
-              <span id="quizTimerDigits">10:00</span>
+            <div class="quiz-exit-wrap">
+              <button type="button" class="quiz-exit-btn" id="quizExitBtn" onclick="promptQuizExit()" title="Tạm dừng & Thoát bài thi (Lưu tiến trình)">
+                <span class="exit-btn-icon">🚪</span>
+                <span class="exit-btn-text">Thoát</span>
+              </button>
             </div>
           </div>
-          <div class="quiz-score-right">
-            <span class="quiz-stars-badge" id="quizLiveStars">⭐ 0</span>
-            <button type="button" class="quiz-exit-btn" id="quizExitBtn" onclick="promptQuizExit()" title="Tạm dừng & Thoát bài thi (Lưu tiến trình)">
-              <span class="exit-btn-icon">🚪</span>
-              <span class="exit-btn-text">Thoát</span>
-            </button>
+
+          <!-- DÒNG DƯỚI: THỜI GIAN ĐẾM NGƯỢC (THANH + SỐ GIÂY) & SỐ ĐIỂM -->
+          <div class="quiz-header-bottom-row">
+            <div class="quiz-timer-center">
+              <div class="quiz-timer-track">
+                <div class="quiz-timer-bar" id="quizTimerProgressBar" style="width: 100%;"></div>
+              </div>
+              <div class="quiz-timer-display" id="quizTimerDisplay">
+                <span class="timer-icon">⏱️</span>
+                <span id="quizTimerDigits">10:00</span>
+              </div>
+            </div>
+            <div class="quiz-score-right">
+              <span class="quiz-stars-badge" id="quizLiveStars">⭐ 0</span>
+            </div>
           </div>
         </div>
 
@@ -1990,6 +1999,7 @@
 
       <!-- QUIZ RESULT VIEW (PERSONAL SCORE) -->
       <div id="quizResultView" class="quiz-result-container" style="display: none;">
+        <button type="button" class="quiz-result-close-btn" onclick="closeQuizAndGoHome()" title="Đóng màn hình kết quả" aria-label="Đóng">&times;</button>
         <canvas id="quizConfettiCanvas" class="quiz-confetti-canvas"></canvas>
         <div class="result-card-inner">
           <div class="result-badge-anim">🏆</div>
@@ -2157,6 +2167,6 @@
       </div>
     </dialog>
 
-    <script src="app.js?v=52" defer></script>
+    <script src="app.js?v=53" defer></script>
   </body>
 </html>
