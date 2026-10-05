@@ -3162,6 +3162,13 @@ async function api(request, response, url) {
 
     let userSummary = null;
     let userStatus = null;
+    let defaultAvailablePhase = null;
+    let phasesStatus = [];
+
+    if (!timeState.isSunday) {
+      defaultAvailablePhase = timeState.phase || 1;
+    }
+
     if (user) {
       const curPhase = timeState.phase || 1;
 
@@ -3219,8 +3226,10 @@ async function api(request, response, url) {
         const nowMs = getVietnamTimestampMs();
         let remaining = activeSession.remaining_seconds;
         if (!activeSession.is_paused) {
-          const elapsed = Math.floor((nowMs - activeSession.server_start_timestamp_ms) / 1000);
-          remaining = Math.max(0, activeSession.remaining_seconds - elapsed - (activeSession.accumulated_penalty_seconds || 0));
+          const elapsed = Math.max(0, Math.floor((nowMs - activeSession.server_start_timestamp_ms) / 1000));
+          remaining = Math.min(600, Math.max(0, activeSession.remaining_seconds - elapsed - (activeSession.accumulated_penalty_seconds || 0)));
+        } else {
+          remaining = Math.min(600, Math.max(0, activeSession.remaining_seconds));
         }
 
         if (remaining > 0) {
@@ -3235,7 +3244,7 @@ async function api(request, response, url) {
         }
       }
 
-      const phasesStatus = [
+      phasesStatus = [
         {
           phase: 1,
           name: "Giai đoạn 1",
@@ -3243,6 +3252,7 @@ async function api(request, response, url) {
           topic: comp.phase1_topic,
           isCompleted: completedP1 >= 1,
           score: p1,
+          bestScore: p1,
           isCurrent: curPhase === 1 && !timeState.isSunday,
           isAvailable: !timeState.isSunday && (curPhase >= 1) && (completedP1 < 1 || (hasActiveSession && activePhase === 1)),
           isCatchUp: !timeState.isSunday && curPhase > 1 && completedP1 < 1,
@@ -3258,6 +3268,7 @@ async function api(request, response, url) {
           topic: comp.phase2_topic,
           isCompleted: completedP2 >= 1,
           score: p2,
+          bestScore: p2,
           isCurrent: curPhase === 2 && !timeState.isSunday,
           isAvailable: !timeState.isSunday && (curPhase >= 2) && (completedP2 < 1 || (hasActiveSession && activePhase === 2)),
           isCatchUp: !timeState.isSunday && curPhase > 2 && completedP2 < 1,
@@ -3273,6 +3284,7 @@ async function api(request, response, url) {
           topic: comp.phase3_topic,
           isCompleted: completedP3 >= 1,
           score: p3,
+          bestScore: p3,
           isCurrent: curPhase === 3 && !timeState.isSunday,
           isAvailable: !timeState.isSunday && (curPhase >= 3) && (completedP3 < 1 || (hasActiveSession && activePhase === 3)),
           isCatchUp: false,
@@ -3283,14 +3295,14 @@ async function api(request, response, url) {
         }
       ];
 
-      let defaultAvailablePhase = curPhase;
-      if (!hasActiveSession) {
+      defaultAvailablePhase = null;
+      if (hasActiveSession) {
+        defaultAvailablePhase = activePhase;
+      } else {
         const firstUncompleted = phasesStatus.find(p => p.isAvailable && !p.isCompleted);
         if (firstUncompleted) {
           defaultAvailablePhase = firstUncompleted.phase;
         }
-      } else {
-        defaultAvailablePhase = activePhase;
       }
 
       const curCompleted = (curPhase === 1 ? completedP1 : curPhase === 2 ? completedP2 : completedP3);
@@ -3315,7 +3327,9 @@ async function api(request, response, url) {
       week: comp,
       timeState,
       userSummary,
-      userStatus
+      userStatus,
+      defaultAvailablePhase,
+      phasesStatus
     });
   }
 
@@ -3476,7 +3490,11 @@ async function api(request, response, url) {
         "SELECT count(*) as c FROM competition_sessions WHERE user_id = ? AND competition_id = ? AND phase = ? AND status IN ('completed', 'expired')"
       ).get(user.id, comp.id, sessionPhase)?.c || 0;
 
-      if (completedSessions >= 1 && !isSuperAdmin(user)) {
+      const hasPhaseResult = db.prepare(
+        "SELECT count(*) as c FROM competition_phase_results WHERE user_id = ? AND competition_id = ? AND phase = ? AND attempts_used >= 1"
+      ).get(user.id, comp.id, sessionPhase)?.c || 0;
+
+      if (completedSessions >= 1 || hasPhaseResult >= 1) {
         return error(response, 400, "Bạn chỉ có 1 lượt thi duy nhất cho giai đoạn này và đã hoàn thành.");
       }
     }
@@ -3494,13 +3512,15 @@ async function api(request, response, url) {
     if (activeSession) {
       let remaining = activeSession.remaining_seconds;
       if (!activeSession.is_paused) {
-        const elapsed = Math.floor((nowMs - activeSession.server_start_timestamp_ms) / 1000);
-        remaining = Math.max(0, activeSession.remaining_seconds - elapsed - (activeSession.accumulated_penalty_seconds || 0));
+        const elapsed = Math.max(0, Math.floor((nowMs - activeSession.server_start_timestamp_ms) / 1000));
+        remaining = Math.min(600, Math.max(0, activeSession.remaining_seconds - elapsed - (activeSession.accumulated_penalty_seconds || 0)));
+      } else {
+        remaining = Math.min(600, Math.max(0, activeSession.remaining_seconds));
       }
 
       if (remaining <= 0) {
         db.prepare("UPDATE competition_sessions SET status = 'expired', remaining_seconds = 0, is_paused = 0, finished_at = CURRENT_TIMESTAMP WHERE id = ?").run(activeSession.id);
-        activeSession = null;
+        return error(response, 400, "Phiên thi của bạn đã hết thời gian và đã kết thúc.");
       } else {
         db.prepare("UPDATE competition_sessions SET server_start_timestamp_ms = ?, remaining_seconds = ?, accumulated_penalty_seconds = 0, is_paused = 0 WHERE id = ?").run(nowMs, remaining, activeSession.id);
         activeSession.remaining_seconds = remaining;
@@ -3627,8 +3647,10 @@ async function api(request, response, url) {
     const nowMs = getVietnamTimestampMs();
     let effectiveRemaining = session.remaining_seconds;
     if (!session.is_paused) {
-      const elapsed = Math.floor((nowMs - session.server_start_timestamp_ms) / 1000);
-      effectiveRemaining = Math.max(0, session.remaining_seconds - elapsed - (session.accumulated_penalty_seconds || 0));
+      const elapsed = Math.max(0, Math.floor((nowMs - session.server_start_timestamp_ms) / 1000));
+      effectiveRemaining = Math.min(600, Math.max(0, session.remaining_seconds - elapsed - (session.accumulated_penalty_seconds || 0)));
+    } else {
+      effectiveRemaining = Math.min(600, Math.max(0, session.remaining_seconds));
     }
 
     if (effectiveRemaining <= 0 || selectedOption === "TIMEOUT") {
@@ -4004,8 +4026,10 @@ async function api(request, response, url) {
     const nowMs = getVietnamTimestampMs();
     let remaining = session.remaining_seconds;
     if (!session.is_paused) {
-      const elapsed = Math.floor((nowMs - session.server_start_timestamp_ms) / 1000);
-      remaining = Math.max(0, session.remaining_seconds - elapsed - (session.accumulated_penalty_seconds || 0));
+      const elapsed = Math.max(0, Math.floor((nowMs - session.server_start_timestamp_ms) / 1000));
+      remaining = Math.min(600, Math.max(0, session.remaining_seconds - elapsed - (session.accumulated_penalty_seconds || 0)));
+    } else {
+      remaining = Math.min(600, Math.max(0, session.remaining_seconds));
     }
     return json(response, 200, { ok: true, remainingSeconds: remaining, status: session.status, isPaused: Boolean(session.is_paused), exitCount: session.exit_count || 0 });
   }
@@ -4029,8 +4053,10 @@ async function api(request, response, url) {
     const nowMs = getVietnamTimestampMs();
     let serverRemaining = session.remaining_seconds;
     if (!session.is_paused) {
-      const elapsed = Math.floor((nowMs - session.server_start_timestamp_ms) / 1000);
-      serverRemaining = Math.max(0, session.remaining_seconds - elapsed - (session.accumulated_penalty_seconds || 0));
+      const elapsed = Math.max(0, Math.floor((nowMs - session.server_start_timestamp_ms) / 1000));
+      serverRemaining = Math.min(600, Math.max(0, session.remaining_seconds - elapsed - (session.accumulated_penalty_seconds || 0)));
+    } else {
+      serverRemaining = Math.min(600, Math.max(0, session.remaining_seconds));
     }
 
     const currentExits = session.exit_count || 0;

@@ -6782,7 +6782,9 @@ function normalizeCompData(raw) {
   const phasesStatus = Array.isArray(raw.phasesStatus) ? raw.phasesStatus : (Array.isArray(raw.userStatus?.phasesStatus) ? raw.userStatus.phasesStatus : []);
   const maxAttempts = raw.maxAttempts || raw.userStatus?.maxAttempts || 1;
   const totalOnTimeBonus = raw.totalOnTimeBonus ?? raw.userStatus?.totalOnTimeBonus ?? 0;
-  const defaultAvailablePhase = raw.defaultAvailablePhase || raw.phase || 1;
+  const defaultAvailablePhase = (raw.userStatus?.defaultAvailablePhase !== undefined)
+    ? raw.userStatus.defaultAvailablePhase
+    : (raw.defaultAvailablePhase !== undefined ? raw.defaultAvailablePhase : null);
   const weekNumber = raw.week?.week_number || raw.week?.weekNumber || raw.currentCompetition?.week_number || raw.weekNumber || 1;
 
   return {
@@ -7064,7 +7066,8 @@ function renderGatewayTab(raw) {
         cardClass += " card-completed";
         chipHTML = '<span class="pj-status-chip chip-completed">✅ ĐÃ XONG</span>';
         const bonusStr = p.onTimeBonusEarned > 0 ? ` (+${p.onTimeBonusEarned}⭐ đúng hạn)` : "";
-        scoreInfoHTML = `<div class="pj-score-box"><span class="pj-score-label">Điểm chính thức:</span><span class="pj-score-val">⭐ ${p.bestScore}${bonusStr}</span></div>`;
+        const phaseScore = (p.score !== undefined) ? p.score : (p.bestScore ?? 0);
+        scoreInfoHTML = `<div class="pj-score-box"><span class="pj-score-label">Điểm chính thức:</span><span class="pj-score-val">⭐ ${phaseScore}${bonusStr}</span></div>`;
         actionBtnHTML = `<button type="button" class="pj-action-btn btn-done" disabled>✅ Đã hoàn thành (1/1 lượt)</button>`;
       } else if (p.hasActiveSession) {
         cardClass += " card-on-time";
@@ -7152,7 +7155,8 @@ function renderGatewayTab(raw) {
         startBtn.disabled = true;
         startBtn.style.opacity = "0.6";
         startBtn.style.cursor = "not-allowed";
-        if (startBtnText) startBtnText.textContent = "Đã hoàn thành các lượt thi khả dụng";
+        startBtn.onclick = null;
+        if (startBtnText) startBtnText.textContent = "✅ Đã hoàn thành các lượt thi khả dụng";
         if (blockedMsg) {
           blockedMsg.style.display = "block";
           blockedMsg.style.color = "";
@@ -7360,6 +7364,13 @@ function openQuizStartConfirmModal(phase) {
   const currentPhase = compState.overview?.phase || 1;
   const isSunday = Boolean(compState.overview?.isSunday);
   const targetPhase = Number(phase || currentPhase);
+
+  const phaseObj = (compState.overview?.phasesStatus || []).find(p => p.phase === targetPhase);
+  if (phaseObj && phaseObj.isCompleted) {
+    toast(`Bạn đã hoàn thành bài thi Giai đoạn ${targetPhase} rồi (1/1 lượt).`);
+    return;
+  }
+
   compState.pendingStartPhase = targetPhase;
 
   const titleEl = $("#quizStartTitle");
@@ -7442,8 +7453,18 @@ async function startCompetitionQuiz(targetPhase) {
     return;
   }
 
-  // Otherwise, must confirm before starting the 1 and only attempt
-  const phase = targetPhase || compState.overview?.defaultAvailablePhase || compState.overview?.phase || 1;
+  const phase = targetPhase || compState.overview?.defaultAvailablePhase;
+  if (!phase) {
+    toast("Bạn đã hoàn thành các lượt thi khả dụng tuần này.");
+    return;
+  }
+
+  const phaseObj = (compState.overview?.phasesStatus || []).find(p => p.phase === Number(phase));
+  if (phaseObj && phaseObj.isCompleted) {
+    toast(`Bạn đã hoàn thành bài thi Giai đoạn ${phase} rồi (1/1 lượt).`);
+    return;
+  }
+
   openQuizStartConfirmModal(phase);
 }
 
@@ -7461,7 +7482,8 @@ async function executeStartQuizSession(targetPhase) {
     compState.activeQuestions = res.questions || [];
     compState.currentQIndex = res.currentQuestionIndex ? Math.max(0, res.currentQuestionIndex - 1) : 0;
     compState.questionTries = res.currentTriesCount || 0;
-    compState.quizRemainingSeconds = typeof res.remainingSeconds === "number" ? res.remainingSeconds : (res.durationSeconds || 600);
+    const rawRemSec = typeof res.remainingSeconds === "number" ? res.remainingSeconds : (res.durationSeconds || 600);
+    compState.quizRemainingSeconds = Math.min(600, Math.max(0, rawRemSec));
     compState.exitCount = res.exitCount || 0;
     compState.quizLiveStars = (res.correctPoints || 0) + (res.firstTryBonus || 0);
     compState.quizTotalCorrect = res.correctCount || 0;
@@ -7651,7 +7673,8 @@ function updateQuizTimerUI() {
   const bar = $("#quizTimerProgressBar");
   const displayWrap = $("#quizTimerDisplay");
 
-  const sec = compState.quizRemainingSeconds;
+  const sec = Math.min(600, Math.max(0, Number(compState.quizRemainingSeconds) || 0));
+  compState.quizRemainingSeconds = sec;
   const timeFormatted = formatCompSeconds(sec);
   if (digits) digits.textContent = timeFormatted;
 
@@ -7768,6 +7791,11 @@ async function submitQuizAnswer(selectedOption) {
       compState.quizLiveStars += res.pointsEarned;
       compState.quizTotalCorrect++;
       if (res.isFirstTryBonus) compState.quizFirstTryBonusCount++;
+      if (typeof res.remainingTime === "number") {
+        compState.quizRemainingSeconds = Math.min(600, Math.max(0, res.remainingTime));
+      } else if (typeof res.remainingSeconds === "number") {
+        compState.quizRemainingSeconds = Math.min(600, Math.max(0, res.remainingSeconds));
+      }
       updateQuizTimerUI();
 
       setTimeout(() => {
@@ -7795,9 +7823,11 @@ async function submitQuizAnswer(selectedOption) {
       }
 
       if (typeof res.remainingTime === "number") {
-        compState.quizRemainingSeconds = Math.max(0, res.remainingTime);
+        compState.quizRemainingSeconds = Math.min(600, Math.max(0, res.remainingTime));
+      } else if (typeof res.remainingSeconds === "number") {
+        compState.quizRemainingSeconds = Math.min(600, Math.max(0, res.remainingSeconds));
       } else {
-        compState.quizRemainingSeconds = Math.max(0, compState.quizRemainingSeconds - 30);
+        compState.quizRemainingSeconds = Math.min(600, Math.max(0, compState.quizRemainingSeconds - 30));
       }
       updateQuizTimerUI();
 
@@ -7903,6 +7933,9 @@ function showQuizFinalResult(result) {
   playCompSound("victory");
   launchQuizConfetti();
   loadWeeklyCompetitionStatus();
+  if (typeof loadWeeklyCompetitionOverview === "function") {
+    loadWeeklyCompetitionOverview();
+  }
 }
 
 function closeQuizAndGoHome() {
@@ -7910,12 +7943,18 @@ function closeQuizAndGoHome() {
   if (modal) modal.close();
   if (compState.confettiAnimationId) cancelAnimationFrame(compState.confettiAnimationId);
   loadWeeklyCompetitionStatus();
+  if (typeof loadWeeklyCompetitionOverview === "function") {
+    loadWeeklyCompetitionOverview();
+  }
 }
 
 function closeQuizAndOpenLeaderboard() {
   const modal = $("#competitionQuizModal");
   if (modal) modal.close();
   if (compState.confettiAnimationId) cancelAnimationFrame(compState.confettiAnimationId);
+  if (typeof loadWeeklyCompetitionOverview === "function") {
+    loadWeeklyCompetitionOverview();
+  }
   openCompetitionModal("leaderboard");
 }
 
