@@ -22,7 +22,7 @@ function canAccessStudyLounge(user = (session || (typeof window !== "undefined" 
 window.canAccessStudyLounge = canAccessStudyLounge;
 
 function canAccessArena(user = (session || (typeof window !== "undefined" && window.session))) {
-  return Boolean(user && user.role === "admin");
+  return true;
 }
 window.canAccessArena = canAccessArena;
 
@@ -555,7 +555,7 @@ function applySession(user) {
     if (arenaNotice) arenaNotice.style.display = "none";
     if (arenaMain) arenaMain.style.display = "block";
     const adminBar = $("#arenaAdminBar");
-    if (adminBar) adminBar.style.display = "flex";
+    if (adminBar) adminBar.style.display = (user && user.role === "admin") ? "flex" : "none";
   } else {
     if (arenaNotice) arenaNotice.style.display = "block";
     if (arenaMain) arenaMain.style.display = "none";
@@ -6904,11 +6904,12 @@ function renderWeeklyCompetitionCard(raw) {
 }
 
 async function onEnterArena() {
-  const isAdmin = canAccessArena();
+  const user = session || (typeof window !== "undefined" && window.session);
+  const isAdmin = Boolean(user && user.role === "admin");
   const lockedNotice = $("#arenaLockedNotice");
   const mainContent = $("#arenaMainContent");
 
-  if (!isAdmin) {
+  if (!canAccessArena(user)) {
     if (lockedNotice) lockedNotice.style.display = "block";
     if (mainContent) mainContent.style.display = "none";
     return;
@@ -6917,7 +6918,7 @@ async function onEnterArena() {
   if (lockedNotice) lockedNotice.style.display = "none";
   if (mainContent) mainContent.style.display = "block";
   const adminBar = $("#arenaAdminBar");
-  if (adminBar) adminBar.style.display = "flex";
+  if (adminBar) adminBar.style.display = isAdmin ? "flex" : "none";
 
   try {
     const overview = await requestAPI("/api/competition/overview");
