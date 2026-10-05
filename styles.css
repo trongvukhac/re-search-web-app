@@ -9409,6 +9409,23 @@ body.dark-theme .pj-status-chip.chip-catch-up {
   transform: translateY(-1px);
 }
 
+.pj-action-btn.btn-view-result {
+  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+  color: #ffffff;
+  border: 1px solid rgba(124, 58, 237, 0.4);
+  box-shadow: 0 3px 12px rgba(99, 102, 241, 0.35);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.pj-action-btn.btn-view-result:hover {
+  background: linear-gradient(135deg, #4338ca 0%, #6d28d9 100%);
+  color: #ffffff;
+  border-color: rgba(167, 139, 250, 0.8);
+  transform: translateY(-1px);
+  box-shadow: 0 5px 16px rgba(139, 92, 246, 0.5);
+}
+
 .pj-action-btn.btn-done {
   background: rgba(255, 255, 255, 0.06);
   color: #94a3b8;

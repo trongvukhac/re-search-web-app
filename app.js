@@ -7068,7 +7068,7 @@ function renderGatewayTab(raw) {
         const bonusStr = p.onTimeBonusEarned > 0 ? ` (+${p.onTimeBonusEarned}⭐ đúng hạn)` : "";
         const phaseScore = (p.score !== undefined) ? p.score : (p.bestScore ?? 0);
         scoreInfoHTML = `<div class="pj-score-box"><span class="pj-score-label">Điểm chính thức:</span><span class="pj-score-val">⭐ ${phaseScore}${bonusStr}</span></div>`;
-        actionBtnHTML = `<button type="button" class="pj-action-btn btn-done" disabled>✅ Đã hoàn thành (1/1 lượt)</button>`;
+        actionBtnHTML = `<button type="button" class="pj-action-btn btn-view-result" onclick="openPhaseResultModal(${p.phase})">📜 Xem lịch sử hoàn thành</button>`;
       } else if (p.hasActiveSession) {
         cardClass += " card-on-time";
         chipHTML = '<span class="pj-status-chip chip-on-time">⏸️ ĐANG LÀM DỞ</span>';
@@ -7152,11 +7152,32 @@ function renderGatewayTab(raw) {
         }
         startBtn.onclick = () => openQuizStartConfirmModal(targetP);
       } else {
-        startBtn.disabled = true;
-        startBtn.style.opacity = "0.6";
-        startBtn.style.cursor = "not-allowed";
-        startBtn.onclick = null;
-        if (startBtnText) startBtnText.textContent = "✅ Đã hoàn thành các lượt thi khả dụng";
+        const completedPhases = (data.phasesStatus || []).filter(p => p.isCompleted);
+        const targetReviewPhase = (data.phasesStatus || []).find(p => p.phase === data.phase && p.isCompleted)?.phase || completedPhases[completedPhases.length - 1]?.phase || 1;
+        startBtn.disabled = false;
+        startBtn.style.opacity = "1";
+        startBtn.style.cursor = "pointer";
+        if (startBtnText) startBtnText.textContent = `📜 Xem lịch sử hoàn thành (GĐ ${targetReviewPhase})`;
+        startBtn.onclick = () => openPhaseResultModal(targetReviewPhase);
+        if (blockedMsg) {
+          blockedMsg.style.display = "block";
+          blockedMsg.style.color = "#38bdf8";
+          blockedMsg.style.background = "rgba(14, 165, 233, 0.12)";
+          blockedMsg.style.border = "1px solid rgba(14, 165, 233, 0.35)";
+          blockedMsg.style.borderRadius = "8px";
+          blockedMsg.style.padding = "8px 12px";
+          blockedMsg.innerHTML = `✅ <strong>Bạn đã hoàn thành lượt thi Giai đoạn ${targetReviewPhase}!</strong> Bấm nút trên hoặc từng thẻ giai đoạn bên dưới để xem lại kết quả bài làm.`;
+        }
+      }
+    } else {
+      const completedPhases = (data.phasesStatus || []).filter(p => p.isCompleted);
+      if (completedPhases.length > 0 && data.state !== "countdown") {
+        const targetReviewPhase = (data.phasesStatus || []).find(p => p.phase === data.phase && p.isCompleted)?.phase || completedPhases[completedPhases.length - 1]?.phase || 1;
+        startBtn.disabled = false;
+        startBtn.style.opacity = "1";
+        startBtn.style.cursor = "pointer";
+        if (startBtnText) startBtnText.textContent = `📜 Xem lịch sử hoàn thành (GĐ ${targetReviewPhase})`;
+        startBtn.onclick = () => openPhaseResultModal(targetReviewPhase);
         if (blockedMsg) {
           blockedMsg.style.display = "block";
           blockedMsg.style.color = "";
@@ -7164,24 +7185,25 @@ function renderGatewayTab(raw) {
           blockedMsg.style.border = "";
           blockedMsg.style.borderRadius = "";
           blockedMsg.style.padding = "";
-          blockedMsg.textContent = "Bạn đã hoàn thành đủ lượt thi của tất cả các giai đoạn khả dụng tuần này. Cùng chờ kết quả tổng kết nhé!";
-        }
-      }
-    } else {
-      startBtn.disabled = true;
-      startBtn.style.opacity = "0.6";
-      startBtn.style.cursor = "not-allowed";
-      if (data.state === "countdown") {
-        if (startBtnText) startBtnText.textContent = "Cổng chưa mở (Mở lúc 19:00)";
-        if (blockedMsg) {
-          blockedMsg.style.display = "block";
-          blockedMsg.textContent = "Cổng trả lời sẽ mở từ 19h00 đến 23h00. Vui lòng quay lại đúng giờ!";
+          blockedMsg.textContent = "Hệ thống đang trong khung giờ tổng kết. Bạn có thể xem lại kết quả bài làm hoặc xem bảng xếp hạng.";
         }
       } else {
-        if (startBtnText) startBtnText.textContent = "Cổng thi đấu đang đóng";
-        if (blockedMsg) {
-          blockedMsg.style.display = "block";
-          blockedMsg.textContent = "Hệ thống đang trong khung giờ tổng kết. Bạn có thể xem bảng xếp hạng tạm thời.";
+        startBtn.disabled = true;
+        startBtn.style.opacity = "0.6";
+        startBtn.style.cursor = "not-allowed";
+        startBtn.onclick = null;
+        if (data.state === "countdown") {
+          if (startBtnText) startBtnText.textContent = "Cổng chưa mở (Mở lúc 19:00)";
+          if (blockedMsg) {
+            blockedMsg.style.display = "block";
+            blockedMsg.textContent = "Cổng trả lời sẽ mở từ 19h00 đến 23h00. Vui lòng quay lại đúng giờ!";
+          }
+        } else {
+          if (startBtnText) startBtnText.textContent = "Cổng thi đấu đang đóng";
+          if (blockedMsg) {
+            blockedMsg.style.display = "block";
+            blockedMsg.textContent = "Hệ thống đang trong khung giờ tổng kết. Bạn có thể xem bảng xếp hạng tạm thời.";
+          }
         }
       }
     }
@@ -7885,11 +7907,34 @@ async function finishQuizSessionTimeExpired() {
   }
 }
 
-function showQuizFinalResult(result) {
+function showQuizFinalResult(result, options = {}) {
   if (compState.quizTimerInterval) clearInterval(compState.quizTimerInterval);
 
   $("#quizPlayView").style.display = "none";
   $("#quizResultView").style.display = "block";
+
+  const isHistorical = Boolean(options.isHistorical || result?.isHistorical);
+  const titleEl = $("#quizResultTitle");
+  const subtitleEl = $("#resultSubtitle");
+
+  if (titleEl) {
+    if (isHistorical) {
+      const phaseNum = options.phase || result?.phase;
+      titleEl.textContent = phaseNum ? `KẾT QUẢ GIAI ĐOẠN ${phaseNum}` : "LỊCH SỬ KẾT QUẢ BÀI THI";
+    } else {
+      titleEl.textContent = "KẾT THÚC LƯỢT THI";
+    }
+  }
+
+  if (subtitleEl) {
+    if (isHistorical) {
+      const phaseNum = options.phase || result?.phase;
+      const daysText = phaseNum === 1 ? "Thứ Hai – Thứ Ba" : (phaseNum === 2 ? "Thứ Tư – Thứ Năm" : "Thứ Sáu – Thứ Bảy");
+      subtitleEl.textContent = `Kết quả chính thức bài thi Giai đoạn ${phaseNum || ""}${phaseNum ? ` (${daysText})` : ""}`;
+    } else {
+      subtitleEl.textContent = "Chúc mừng bạn đã hoàn thành bài thi!";
+    }
+  }
 
   const totalScore = result?.totalScore ?? compState.quizLiveStars;
   const correctCount = result?.correctAnswersCount ?? compState.quizTotalCorrect;
@@ -7930,11 +7975,36 @@ function showQuizFinalResult(result) {
     $("#resultPhaseRecordText").textContent = `${totalScore} ⭐ (1 lượt thi duy nhất / giai đoạn)${bonusTag}`;
   }
 
-  playCompSound("victory");
-  launchQuizConfetti();
+  if (!isHistorical) {
+    playCompSound("victory");
+    launchQuizConfetti();
+  }
   loadWeeklyCompetitionStatus();
   if (typeof loadWeeklyCompetitionOverview === "function") {
     loadWeeklyCompetitionOverview();
+  }
+}
+
+async function openPhaseResultModal(phase) {
+  if (!session) {
+    openAuth();
+    return;
+  }
+  try {
+    const res = await requestAPI(`/api/competition/phase/result?phase=${phase}`);
+    if (!res || !res.result) {
+      toast(`Không tìm thấy kết quả bài thi của Giai đoạn ${phase}.`);
+      return;
+    }
+    const quizModal = $("#competitionQuizModal");
+    if (!quizModal) return;
+
+    showQuizFinalResult(res.result, { isHistorical: true, phase });
+    if (!quizModal.open) {
+      quizModal.showModal();
+    }
+  } catch (e) {
+    toast(e.message || `Không thể tải kết quả bài thi Giai đoạn ${phase}.`);
   }
 }
 
@@ -8482,6 +8552,7 @@ window.confirmQuizExit = confirmQuizExit;
 window.openQuizStartConfirmModal = openQuizStartConfirmModal;
 window.closeQuizStartConfirmModal = closeQuizStartConfirmModal;
 window.proceedStartQuizSession = proceedStartQuizSession;
+window.openPhaseResultModal = openPhaseResultModal;
 
 // Safe cancel listeners for Arena Quiz modals
 document.addEventListener("DOMContentLoaded", () => {

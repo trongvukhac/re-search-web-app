@@ -3333,6 +3333,64 @@ async function api(request, response, url) {
     });
   }
 
+  if (method === "GET" && pathName === "/api/competition/phase/result") {
+    const user = requireUser(request, response);
+    if (!user) return;
+
+    const vnNow = getVietnamNow();
+    const comp = getOrCreateCurrentCompetition(vnNow);
+    const phase = Math.min(3, Math.max(1, Number(url.searchParams.get("phase")) || 1));
+
+    const phaseRes = db.prepare(
+      "SELECT * FROM competition_phase_results WHERE user_id = ? AND competition_id = ? AND phase = ?"
+    ).get(user.id, comp.id, phase);
+
+    let session = null;
+    if (phaseRes && phaseRes.best_session_id) {
+      session = db.prepare("SELECT * FROM competition_sessions WHERE id = ?").get(phaseRes.best_session_id);
+    }
+    if (!session) {
+      session = db.prepare(
+        "SELECT * FROM competition_sessions WHERE user_id = ? AND competition_id = ? AND phase = ? AND status IN ('completed', 'expired') ORDER BY id DESC LIMIT 1"
+      ).get(user.id, comp.id, phase);
+    }
+
+    if (!phaseRes && !session) {
+      return error(response, 404, `Bạn chưa có kết quả bài thi cho Giai đoạn ${phase}.`);
+    }
+
+    const totalScore = session?.total_score ?? phaseRes?.best_score ?? 0;
+    const correctCount = session?.correct_count ?? 0;
+    const correctPoints = session?.correct_points ?? (correctCount * 40);
+    const firstTryCount = session?.first_try_correct_count ?? 0;
+    const firstTryBonus = session?.first_try_bonus ?? (firstTryCount * 10);
+    const remainingSeconds = session?.remaining_seconds ?? 0;
+    const timePoints = session?.time_points ?? remainingSeconds;
+    const onTimeBonus = phaseRes?.on_time_bonus || session?.on_time_bonus || 0;
+
+    const result = {
+      phase,
+      totalScore,
+      correctCount,
+      correctAnswersCount: correctCount,
+      correctPoints,
+      firstTryCount,
+      firstTryBonusPoints: firstTryBonus,
+      remainingSeconds,
+      timePoints,
+      onTimeBonus,
+      phaseBestScore: phaseRes?.best_score ?? totalScore,
+      finishedAt: session?.finished_at || phaseRes?.updated_at || "",
+      isHistorical: true
+    };
+
+    return json(response, 200, {
+      ok: true,
+      phase,
+      result
+    });
+  }
+
   if (method === "GET" && pathName === "/api/competition/leaderboard") {
     const vnNow = getVietnamNow();
     const comp = getOrCreateCurrentCompetition(vnNow);
