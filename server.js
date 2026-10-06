@@ -3978,6 +3978,7 @@ async function api(request, response, url) {
 
     if (session.status !== "in_progress") {
       const resData = {
+        phase: session.phase,
         totalScore: session.total_score,
         correctPoints: session.correct_points,
         firstTryBonus: session.first_try_bonus,
@@ -4020,6 +4021,7 @@ async function api(request, response, url) {
       const bestScore = updateUserPhaseBestScore(user.id, session.competition_id, session.phase, finalScore, session.id, onTimeBonus);
 
       const resData = {
+        phase: session.phase,
         totalScore: finalScore,
         correctPoints: session.correct_points,
         firstTryBonus: session.first_try_bonus,
@@ -4120,6 +4122,7 @@ async function api(request, response, url) {
         const bestScore = updateUserPhaseBestScore(user.id, session.competition_id, session.phase, totalScore, session.id, onTimeBonus);
 
         const resData = {
+          phase: session.phase,
           totalScore,
           correctPoints: newCorrectPoints,
           firstTryBonus: newFirstTryBonus,
@@ -4220,6 +4223,7 @@ async function api(request, response, url) {
         const bestScore = updateUserPhaseBestScore(user.id, session.competition_id, session.phase, finalScore, session.id);
 
         const resData = {
+          phase: session.phase,
           totalScore: finalScore,
           correctPoints: session.correct_points,
           firstTryBonus: session.first_try_bonus,
@@ -4303,6 +4307,7 @@ async function api(request, response, url) {
           const bestScore = updateUserPhaseBestScore(user.id, session.competition_id, session.phase, totalScore, session.id, onTimeBonus);
 
           const resData = {
+            phase: session.phase,
             totalScore,
             correctPoints: session.correct_points,
             firstTryBonus: session.first_try_bonus,
@@ -4436,6 +4441,7 @@ async function api(request, response, url) {
       const bestScore = updateUserPhaseBestScore(user.id, session.competition_id, session.phase, totalScore, session.id, onTimeBonus);
 
       const resData = {
+        phase: session.phase,
         totalScore,
         correctPoints: session.correct_points,
         firstTryBonus: session.first_try_bonus,

@@ -7130,7 +7130,10 @@ function normalizeCompData(raw) {
   if (!raw) return {};
   const isSunday = Boolean(raw.isSunday || raw.timeState?.isSunday);
   const phase = raw.phase || raw.timeState?.phase || 1;
-  const state = raw.state || raw.timeState?.state || "closed";
+  let state = raw.state || raw.timeState?.state || "closed";
+  if (state === "upcoming") {
+    state = "countdown";
+  }
   const stateLabel = raw.stateLabel || raw.timeState?.stateLabel || "Cổng thi đấu";
   const weekTopic = raw.weekTopic || raw.week?.topic_name || raw.week?.topicName || "Phương pháp Nghiên cứu & Xử lý Dữ liệu Khoa học";
   const phaseTopic = raw.phaseTopic || raw.timeState?.phaseTopic || raw.week?.[`phase${phase}_topic`] || raw.week?.[`phase${phase}Topic`] || "";
@@ -7222,7 +7225,7 @@ function renderWeeklyCompetitionCard(raw) {
       cardEl.classList.add("theme-state-sunday");
     } else if (data.state === "open") {
       cardEl.classList.add("theme-state-open");
-    } else if (data.state === "countdown") {
+    } else if (data.state === "countdown" || data.state === "upcoming") {
       cardEl.classList.add("theme-state-upcoming");
     } else {
       cardEl.classList.add("theme-state-summary");
@@ -7242,7 +7245,7 @@ function renderWeeklyCompetitionCard(raw) {
     if (timerLabel) timerLabel.textContent = "Thời gian mở cổng còn lại:";
     if (ctaText) ctaText.textContent = "Tham gia ngay";
     if (ctaBtn) ctaBtn.className = "comp-cta-button cta-open";
-  } else if (data.state === "countdown") {
+  } else if (data.state === "countdown" || data.state === "upcoming") {
     badgeEl.classList.add("status-upcoming");
     if (badgeTextEl) badgeTextEl.textContent = "SẮP MỞ CỔNG (16h - 19h)";
     if (timerLabel) timerLabel.textContent = "Mở cổng sau:";
@@ -7397,7 +7400,7 @@ function renderGatewayTab(raw) {
       gatewayHero.classList.add("theme-state-sunday");
     } else if (data.state === "open") {
       gatewayHero.classList.add("theme-state-open");
-    } else if (data.state === "countdown") {
+    } else if (data.state === "countdown" || data.state === "upcoming") {
       gatewayHero.classList.add("theme-state-upcoming");
     } else {
       gatewayHero.classList.add("theme-state-summary");
@@ -7414,7 +7417,7 @@ function renderGatewayTab(raw) {
       statusBadge.classList.add("status-open");
       if (statusText) statusText.textContent = "ĐANG MỞ CỔNG (19h - 23h)";
       if (clockLabel) clockLabel.textContent = "Thời gian mở cổng còn lại:";
-    } else if (data.state === "countdown") {
+    } else if (data.state === "countdown" || data.state === "upcoming") {
       statusBadge.classList.add("status-upcoming");
       if (statusText) statusText.textContent = "SẮP MỞ CỔNG (16h - 19h)";
       if (clockLabel) clockLabel.textContent = "Mở cổng trả lời sau:";
@@ -7485,7 +7488,7 @@ function renderGatewayTab(raw) {
         }
       } else {
         cardClass += " card-locked";
-        const lockLabel = (data.state === "countdown") ? "SẮP MỞ CỔNG" : (p.phase > data.phase ? "CHƯA MỞ" : "ĐÃ ĐÓNG CỔNG");
+        const lockLabel = (data.state === "countdown" || data.state === "upcoming") ? "SẮP MỞ CỔNG" : (p.phase > data.phase ? "CHƯA MỞ" : "ĐÃ ĐÓNG CỔNG");
         chipHTML = `<span class="pj-status-chip chip-locked">🔒 ${lockLabel}</span>`;
         scoreInfoHTML = `<div class="pj-score-box"><span class="pj-score-label">Trạng thái:</span><span class="pj-score-val" style="color: #94a3b8;">${lockLabel}</span></div>`;
         actionBtnHTML = `<button type="button" class="pj-action-btn btn-disabled" disabled>${lockLabel}</button>`;
@@ -7562,8 +7565,11 @@ function renderGatewayTab(raw) {
         }
       }
     } else {
+      const isCountdown = (data.state === "countdown" || data.state === "upcoming");
+      const currentPhaseStatus = (data.phasesStatus || []).find(p => p.phase === data.phase);
+      const hasCompletedCurrent = currentPhaseStatus?.isCompleted || data.userAttempts >= 1;
       const completedPhases = (data.phasesStatus || []).filter(p => p.isCompleted);
-      if (completedPhases.length > 0 && data.state !== "countdown") {
+      if (hasCompletedCurrent || (completedPhases.length > 0 && !isCountdown)) {
         const targetReviewPhase = (data.phasesStatus || []).find(p => p.phase === data.phase && p.isCompleted)?.phase || completedPhases[completedPhases.length - 1]?.phase || 1;
         startBtn.disabled = false;
         startBtn.style.opacity = "1";
@@ -7572,28 +7578,38 @@ function renderGatewayTab(raw) {
         startBtn.onclick = () => openPhaseResultModal(targetReviewPhase);
         if (blockedMsg) {
           blockedMsg.style.display = "block";
-          blockedMsg.style.color = "";
-          blockedMsg.style.background = "";
-          blockedMsg.style.border = "";
-          blockedMsg.style.borderRadius = "";
-          blockedMsg.style.padding = "";
-          blockedMsg.textContent = "Hệ thống đang trong khung giờ tổng kết. Bạn có thể xem lại kết quả bài làm hoặc xem bảng xếp hạng.";
+          blockedMsg.style.color = "#38bdf8";
+          blockedMsg.style.background = "rgba(14, 165, 233, 0.12)";
+          blockedMsg.style.border = "1px solid rgba(14, 165, 233, 0.35)";
+          blockedMsg.style.borderRadius = "8px";
+          blockedMsg.style.padding = "8px 12px";
+          blockedMsg.innerHTML = `✅ <strong>Bạn đã hoàn thành lượt thi Giai đoạn ${targetReviewPhase}!</strong> Bấm nút trên hoặc từng thẻ giai đoạn bên dưới để xem lại kết quả bài làm.`;
         }
       } else {
         startBtn.disabled = true;
         startBtn.style.opacity = "0.6";
         startBtn.style.cursor = "not-allowed";
         startBtn.onclick = null;
-        if (data.state === "countdown") {
+        if (isCountdown) {
           if (startBtnText) startBtnText.textContent = "Cổng chưa mở (Mở lúc 19:00)";
           if (blockedMsg) {
             blockedMsg.style.display = "block";
+            blockedMsg.style.color = "";
+            blockedMsg.style.background = "";
+            blockedMsg.style.border = "";
+            blockedMsg.style.borderRadius = "";
+            blockedMsg.style.padding = "";
             blockedMsg.textContent = "Cổng trả lời sẽ mở từ 19h00 đến 23h00. Vui lòng quay lại đúng giờ!";
           }
         } else {
           if (startBtnText) startBtnText.textContent = "Cổng thi đấu đang đóng";
           if (blockedMsg) {
             blockedMsg.style.display = "block";
+            blockedMsg.style.color = "";
+            blockedMsg.style.background = "";
+            blockedMsg.style.border = "";
+            blockedMsg.style.borderRadius = "";
+            blockedMsg.style.padding = "";
             blockedMsg.textContent = "Hệ thống đang trong khung giờ tổng kết. Bạn có thể xem bảng xếp hạng tạm thời.";
           }
         }
@@ -8350,7 +8366,9 @@ function showQuizFinalResult(result, options = {}) {
   const firstTryPts = result?.firstTryBonusPoints ?? (firstTryCount * 10);
   const remainingSec = result?.remainingSeconds ?? compState.quizRemainingSeconds;
   const timePts = result?.timePoints ?? remainingSec;
-  const phaseBest = result?.phaseBestScore ?? totalScore;
+  const curPhase = Number(options.phase || result?.phase || compState.currentQuizSession?.phase || 1);
+  const maxScore = (curPhase === 3) ? 1100 : 1150;
+  if ($("#resultMaxScoreLabel")) $("#resultMaxScoreLabel").textContent = `/ ${maxScore}`;
 
   if ($("#resultTotalScore")) $("#resultTotalScore").textContent = totalScore;
   if ($("#resultCorrectCount")) $("#resultCorrectCount").textContent = `${correctCount} / 10`;
@@ -8378,8 +8396,8 @@ function showQuizFinalResult(result, options = {}) {
   }
 
   if ($("#resultPhaseRecordText")) {
-    const bonusTag = onTimeBonus > 0 ? ` (Bao gồm +${onTimeBonus}⭐ thưởng đúng hạn)` : "";
-    $("#resultPhaseRecordText").textContent = `${totalScore} ⭐ (1 lượt thi duy nhất / giai đoạn)${bonusTag}`;
+    const bonusTag = onTimeBonus > 0 ? " (Đã gồm thưởng đúng hạn)" : "";
+    $("#resultPhaseRecordText").textContent = `${totalScore} ⭐${bonusTag}`;
   }
 
   if (!isHistorical) {
