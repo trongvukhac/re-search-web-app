@@ -712,16 +712,26 @@ function recordContribution(
     "INSERT INTO contribution_events(user_id,event_type,points,reference_type,reference_id,reason) VALUES (?,?,?,?,?,?)",
   ).run(userId, type, points, referenceType, referenceId, reason);
 }
-function createSession(response, userId) {
+function isSecureRequest(request) {
+  if (process.env.FLY_APP_NAME) return true;
+  if (!request) return false;
+  return (
+    request.headers["x-forwarded-proto"] === "https" ||
+    Boolean(request.socket && request.socket.encrypted)
+  );
+}
+
+function createSession(response, userId, request = null) {
   const token = randomToken(),
     csrf = randomToken(),
     expiresAt = new Date(Date.now() + SESSION_AGE_SECONDS * 1000).toISOString();
   db.prepare(
     "INSERT INTO sessions(token_hash,user_id,csrf_token,expires_at) VALUES (?,?,?,?)",
   ).run(sha(token), userId, csrf, expiresAt);
+  const secureAttr = isSecureRequest(request) ? "; Secure" : "";
   response.setHeader(
     "Set-Cookie",
-    `research_session=${encodeURIComponent(token)}; HttpOnly; SameSite=Lax; Path=/; Max-Age=${SESSION_AGE_SECONDS}`,
+    `research_session=${encodeURIComponent(token)}; HttpOnly; SameSite=Lax; Path=/; Max-Age=${SESSION_AGE_SECONDS}${secureAttr}`,
   );
   return csrf;
 }
@@ -729,9 +739,10 @@ function clearSession(request, response) {
   const token = parseCookies(request).research_session;
   if (token)
     db.prepare("DELETE FROM sessions WHERE token_hash=?").run(sha(token));
+  const secureAttr = isSecureRequest(request) ? "; Secure" : "";
   response.setHeader(
     "Set-Cookie",
-    "research_session=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0",
+    `research_session=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0${secureAttr}`,
   );
 }
 
@@ -1626,7 +1637,7 @@ async function api(request, response, url) {
       const user = db
         .prepare("SELECT * FROM users WHERE id=?")
         .get(result.lastInsertRowid);
-      const csrfToken = createSession(response, user.id);
+      const csrfToken = createSession(response, user.id, request);
       return json(response, 201, { user: publicUser(user), csrfToken });
     } catch (e) {
       return error(
@@ -1647,7 +1658,7 @@ async function api(request, response, url) {
       .get((email || "").trim().toLowerCase());
     if (!user || !verifyPassword(password || "", user.password_hash))
       return error(response, 401, "Email hoặc mật khẩu chưa đúng.");
-    const csrfToken = createSession(response, user.id);
+    const csrfToken = createSession(response, user.id, request);
     return json(response, 200, { user: publicUser(user), csrfToken });
   }
   if (method === "POST" && pathName === "/api/auth/logout") {

@@ -39,7 +39,6 @@ html.modal-scroll-locked,
 body.modal-scroll-locked {
   overflow: hidden !important;
   overscroll-behavior: none !important;
-  touch-action: none !important;
   -webkit-overflow-scrolling: auto !important;
 }
 
@@ -47,7 +46,6 @@ html:has(dialog[open]),
 body:has(dialog[open]) {
   overflow: hidden !important;
   overscroll-behavior: none !important;
-  touch-action: none !important;
   -webkit-overflow-scrolling: auto !important;
 }
 
@@ -59,7 +57,6 @@ dialog[open] {
 
 dialog::backdrop {
   overscroll-behavior: none !important;
-  touch-action: none !important;
   pointer-events: auto !important;
 }
 .noise {
@@ -1990,7 +1987,11 @@ div.user-name-tier-5,
 dialog:not([open]) {
   display: none !important;
 }
-.modal {
+.modal,
+dialog.modal {
+  position: fixed;
+  inset: 0;
+  margin: auto;
   border: 0;
   border-radius: 11px;
   padding: 0;
@@ -2002,6 +2003,11 @@ dialog:not([open]) {
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
+}
+dialog[open].quiz-arena-modal,
+dialog[open].quiz-start-confirm-modal,
+dialog[open].quiz-exit-confirm-modal {
+  display: flex !important;
 }
 .modal::backdrop,
 dialog::backdrop {
@@ -8483,6 +8489,9 @@ body.dark-theme .comp-tab-btn.active {
    ========================================================================= */
 
 .quiz-arena-modal {
+  position: fixed;
+  inset: 0;
+  margin: auto;
   background: #0d281f;
   color: #fff;
   border-radius: 18px;
@@ -9262,6 +9271,9 @@ body.dark-theme .comp-tab-btn.active {
 
 /* QUIZ EXIT CONFIRMATION MODAL */
 .quiz-exit-confirm-modal {
+  position: fixed;
+  inset: 0;
+  margin: auto;
   border: 1px solid rgba(255, 255, 255, 0.15);
   border-radius: 18px;
   background: #0f172a;
@@ -9797,6 +9809,9 @@ body.dark-theme .pj-status-chip.chip-catch-up {
    MODAL XÁC NHẬN BẮT ĐẦU LƯỢT THI DUY NHẤT
 ======================================================== */
 .quiz-start-confirm-modal {
+  position: fixed;
+  inset: 0;
+  margin: auto;
   border: 1px solid rgba(255, 255, 255, 0.16);
   border-radius: 20px;
   background: #0f172a;

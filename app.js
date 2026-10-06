@@ -179,14 +179,15 @@ function initEditor(containerId, placeholder = "") {
   });
 }
 async function requestAPI(url, options = {}) {
+  const headers = {
+    "Content-Type": "application/json",
+    ...(csrfToken ? { "X-CSRF-Token": csrfToken } : {}),
+    ...(options.headers || {}),
+  };
   const response = await fetch(url, {
     credentials: "same-origin",
-    headers: {
-      "Content-Type": "application/json",
-      ...(csrfToken ? { "X-CSRF-Token": csrfToken } : {}),
-      ...(options.headers || {}),
-    },
     ...options,
+    headers,
   });
   const data = await response.json();
   if (!response.ok)
@@ -1391,20 +1392,9 @@ function lockBodyScroll() {
     window.pageYOffset ||
     document.documentElement.scrollTop ||
     0;
-  const scrollbarWidth =
-    window.innerWidth - document.documentElement.clientWidth;
 
   document.documentElement.classList.add("modal-scroll-locked");
   document.body.classList.add("modal-scroll-locked");
-
-  document.body.style.position = "fixed";
-  document.body.style.top = `-${savedBodyScrollY}px`;
-  document.body.style.left = "0";
-  document.body.style.right = "0";
-  document.body.style.width = "100%";
-  if (scrollbarWidth > 0) {
-    document.body.style.paddingRight = `${scrollbarWidth}px`;
-  }
   isBodyScrollLocked = true;
 }
 
@@ -1412,17 +1402,7 @@ function unlockBodyScroll() {
   if (!isBodyScrollLocked) return;
   document.documentElement.classList.remove("modal-scroll-locked");
   document.body.classList.remove("modal-scroll-locked");
-
-  const restoreY = savedBodyScrollY;
-  document.body.style.position = "";
-  document.body.style.top = "";
-  document.body.style.left = "";
-  document.body.style.right = "";
-  document.body.style.width = "";
-  document.body.style.paddingRight = "";
-
   isBodyScrollLocked = false;
-  window.scrollTo(0, restoreY);
 }
 
 function syncModalScrollLock() {
@@ -1438,27 +1418,42 @@ window.lockBodyScroll = lockBodyScroll;
 window.unlockBodyScroll = unlockBodyScroll;
 window.syncModalScrollLock = syncModalScrollLock;
 
-// Intercept prototype methods of HTMLDialogElement for automatic sync
+// Intercept prototype methods of HTMLDialogElement for automatic sync safely
 if (typeof HTMLDialogElement !== "undefined" && HTMLDialogElement.prototype) {
   const originalShowModal = HTMLDialogElement.prototype.showModal;
   HTMLDialogElement.prototype.showModal = function (...args) {
-    const res = originalShowModal.apply(this, args);
-    syncModalScrollLock();
-    return res;
+    if (this.open) return; // Prevent InvalidStateError in Safari
+    try {
+      const res = originalShowModal.apply(this, args);
+      syncModalScrollLock();
+      return res;
+    } catch (err) {
+      console.warn("showModal error:", err);
+    }
   };
 
   const originalShow = HTMLDialogElement.prototype.show;
   HTMLDialogElement.prototype.show = function (...args) {
-    const res = originalShow.apply(this, args);
-    syncModalScrollLock();
-    return res;
+    if (this.open) return;
+    try {
+      const res = originalShow.apply(this, args);
+      syncModalScrollLock();
+      return res;
+    } catch (err) {
+      console.warn("show error:", err);
+    }
   };
 
   const originalClose = HTMLDialogElement.prototype.close;
   HTMLDialogElement.prototype.close = function (...args) {
-    const res = originalClose.apply(this, args);
-    requestAnimationFrame(() => syncModalScrollLock());
-    return res;
+    if (!this.open) return; // Prevent InvalidStateError in Safari
+    try {
+      const res = originalClose.apply(this, args);
+      requestAnimationFrame(() => syncModalScrollLock());
+      return res;
+    } catch (err) {
+      console.warn("close error:", err);
+    }
   };
 }
 
@@ -1480,7 +1475,7 @@ try {
   console.warn("Dialog MutationObserver error:", e);
 }
 
-// Block touchmove & wheel outside active modal content
+// Block touchmove & wheel outside active modal content safely without breaking iOS Safari touches
 function handleModalOutsideScroll(e) {
   const openDialogs = document.querySelectorAll("dialog[open]");
   if (!openDialogs || openDialogs.length === 0) return;
@@ -1491,14 +1486,20 @@ function handleModalOutsideScroll(e) {
     return;
   }
 
-  // If target is the dialog itself (clicking or dragging on backdrop area outside inner box)
+  // Get coordinates for mouse or touch events
+  const touch = (e.touches && e.touches[0]) || (e.changedTouches && e.changedTouches[0]);
+  const clientX = e.clientX !== undefined ? e.clientX : (touch ? touch.clientX : null);
+  const clientY = e.clientY !== undefined ? e.clientY : (touch ? touch.clientY : null);
+  if (clientX === null || clientY === null) return;
+
+  // If target is the dialog backdrop itself (outside inner content box)
   if (e.target === closestDialog) {
     const rect = closestDialog.getBoundingClientRect();
     const isInsideDialogBox =
-      e.clientX >= rect.left &&
-      e.clientX <= rect.right &&
-      e.clientY >= rect.top &&
-      e.clientY <= rect.bottom;
+      clientX >= rect.left &&
+      clientX <= rect.right &&
+      clientY >= rect.top &&
+      clientY <= rect.bottom;
     if (!isInsideDialogBox && e.cancelable) {
       e.preventDefault();
     }
@@ -1522,16 +1523,30 @@ document.addEventListener("focusout", (e) => {
 });
 
 window.addEventListener("click", (e) => {
-  if (e.target.tagName === "DIALOG") {
+  if (e.target && e.target.tagName === "DIALOG") {
     const noBackdropCloseIds = [
       "detailModal",
       "questionModal",
       "documentViewerModal",
       "documentModal",
-      "editModal"
+      "editModal",
+      "competitionQuizModal",
+      "quizStartConfirmModal",
+      "quizExitConfirmModal"
     ];
     if (noBackdropCloseIds.includes(e.target.id)) return;
-    e.target.close();
+    
+    // Only close if click is actually outside dialog box boundaries
+    const rect = e.target.getBoundingClientRect();
+    const isOutside = (
+      e.clientX < rect.left ||
+      e.clientX > rect.right ||
+      e.clientY < rect.top ||
+      e.clientY > rect.bottom
+    );
+    if (isOutside) {
+      e.target.close();
+    }
   }
 });
 $("#filterButton").onclick = () => {
@@ -7926,7 +7941,13 @@ function openQuizStartConfirmModal(phase) {
     proceedBtnEl.innerHTML = isOnTime ? "Bắt đầu thi (+50 ⭐)" : (isCatchUp ? `Bắt đầu làm bù GĐ ${targetPhase}` : "Bắt đầu thi ngay");
   }
 
-  modal.showModal();
+  try {
+    if (!modal.open) {
+      modal.showModal();
+    }
+  } catch (err) {
+    console.warn("Could not open quizStartConfirmModal:", err);
+  }
 }
 
 function closeQuizStartConfirmModal() {
@@ -8005,7 +8026,13 @@ async function executeStartQuizSession(targetPhase) {
       if (phaseBadge) phaseBadge.textContent = `Giai đoạn ${res.phase}${bonusTag}`;
     }
 
-    quizModal.showModal();
+    try {
+      if (!quizModal.open) {
+        quizModal.showModal();
+      }
+    } catch (err) {
+      console.warn("Could not open competitionQuizModal:", err);
+    }
     renderQuizQuestion();
     startQuizTimer();
   } catch (e) {
@@ -8480,9 +8507,12 @@ async function openPhaseResultModal(phase) {
     const quizModal = $("#competitionQuizModal");
     if (!quizModal) return;
 
-    showQuizFinalResult(res.result, { isHistorical: true, phase });
-    if (!quizModal.open) {
-      quizModal.showModal();
+    try {
+      if (!quizModal.open) {
+        quizModal.showModal();
+      }
+    } catch (err) {
+      console.warn("Could not open competitionQuizModal:", err);
     }
   } catch (e) {
     toast(e.message || `Không thể tải kết quả bài thi Giai đoạn ${phase}.`);
