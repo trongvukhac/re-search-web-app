@@ -33,6 +33,7 @@ const compState = {
   activeTab: "gateway",
   activeLbPhase: "1",
   cachedLeaderboard: {},
+  lastResultsVersion: null,
   
   // Tickers
   homeTimerInterval: null,
@@ -641,10 +642,13 @@ async function hydrateServer() {
       }
     }
 
+    const isHome = !currentActiveRoute || currentActiveRoute === "home";
+    const shouldFetchForumLb = isHome && (!cachedLeaderboardData?.leaderboard?.length);
+
     const [postsData, docsData, leaderboardData, topicsData] = await Promise.all([
       requestAPI("/api/posts").catch(() => ({ posts: [] })),
       requestAPI("/api/documents").catch(() => ({ documents: [] })),
-      requestAPI("/api/leaderboard").catch(() => ({ leaderboard: [] })),
+      shouldFetchForumLb ? requestAPI("/api/leaderboard").catch(() => null) : Promise.resolve(null),
       requestAPI("/api/topics").catch(() => ({ topics: [] })),
     ]);
 
@@ -7110,6 +7114,18 @@ async function loadWeeklyCompetitionStatus() {
     const data = await requestAPI("/api/competition/status");
     compState.status = data;
 
+    // Detect if any student submitted a new score (làm bù or on-time)
+    if (data.resultsVersion) {
+      if (compState.lastResultsVersion && compState.lastResultsVersion !== data.resultsVersion) {
+        // Results changed! Invalidate cached leaderboard
+        compState.cachedLeaderboard = {};
+        if (compState.activeTab === "leaderboard") {
+          loadAndRenderLeaderboard(compState.activeLbPhase || 1, true);
+        }
+      }
+      compState.lastResultsVersion = data.resultsVersion;
+    }
+
     const moduleEl = $("#weeklyCompetitionModule");
     if (!moduleEl) return;
 
@@ -7294,6 +7310,12 @@ async function onEnterArena() {
   try {
     const overview = await requestAPI("/api/competition/overview");
     compState.overview = overview;
+    if (overview.resultsVersion) {
+      if (compState.lastResultsVersion && compState.lastResultsVersion !== overview.resultsVersion) {
+        compState.cachedLeaderboard = {};
+      }
+      compState.lastResultsVersion = overview.resultsVersion;
+    }
     renderCompetitionOverview(overview);
 
     const norm = normalizeCompData(overview);
@@ -7640,10 +7662,26 @@ async function switchLbPhase(phase) {
   await loadAndRenderLeaderboard(phase);
 }
 
-async function loadAndRenderLeaderboard(phase) {
+async function loadAndRenderLeaderboard(phase, forceRefresh = false) {
   const podiumWrap = $("#compPodiumWrap");
   const lbList = $("#compLbList");
   const noticeEl = $("#lbSummaryNotice");
+
+  // In reviewing / summary time (or if data already cached and not forceRefresh):
+  // Return cached leaderboard immediately to avoid reloading every 30s!
+  if (!forceRefresh && compState.cachedLeaderboard && compState.cachedLeaderboard[phase]) {
+    const cachedData = compState.cachedLeaderboard[phase];
+    if (noticeEl) {
+      if (String(phase) === "week" || cachedData.phase === "week") {
+        const weekNum = String(cachedData.weekNumber || 1).padStart(2, "0");
+        noticeEl.textContent = `Bảng xếp hạng tuần ${weekNum}`;
+      } else {
+        noticeEl.textContent = "Bảng xếp hạng giai đoạn";
+      }
+    }
+    renderLeaderboardUI(cachedData);
+    return;
+  }
 
   if (podiumWrap) podiumWrap.innerHTML = `<div style="text-align:center; padding: 24px; color: var(--muted);">Đang tải bảng xếp hạng...</div>`;
   if (lbList) lbList.innerHTML = "";
@@ -7651,6 +7689,9 @@ async function loadAndRenderLeaderboard(phase) {
   try {
     const data = await requestAPI(`/api/competition/leaderboard?phase=${phase}`);
     compState.cachedLeaderboard[phase] = data;
+    if (data.resultsVersion) {
+      compState.lastResultsVersion = data.resultsVersion;
+    }
 
     if (noticeEl) {
       if (String(phase) === "week" || data.phase === "week") {
@@ -7666,6 +7707,20 @@ async function loadAndRenderLeaderboard(phase) {
     if (podiumWrap) podiumWrap.innerHTML = `<div style="text-align:center; padding: 20px; color: var(--muted);">${e.message || "Không thể tải bảng xếp hạng"}</div>`;
   }
 }
+
+window.refreshArenaLeaderboard = async function() {
+  const btn = $("#lbRefreshBtn");
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = "Đang tải...";
+  }
+  compState.cachedLeaderboard = {};
+  await loadAndRenderLeaderboard(compState.activeLbPhase || 1, true);
+  if (btn) {
+    btn.disabled = false;
+    btn.textContent = "🔄 Làm mới";
+  }
+};
 
 function renderLeaderboardUI(data) {
   const podiumWrap = $("#compPodiumWrap");
@@ -8404,6 +8459,7 @@ function showQuizFinalResult(result, options = {}) {
     playCompSound("victory");
     launchQuizConfetti();
   }
+  compState.cachedLeaderboard = {};
   loadWeeklyCompetitionStatus();
   if (typeof loadWeeklyCompetitionOverview === "function") {
     loadWeeklyCompetitionOverview();

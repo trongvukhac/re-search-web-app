@@ -3312,10 +3312,18 @@ async function api(request, response, url) {
   }
 
   // --- WEEKLY COMPETITION APIS ---
+  let competitionResultsVersion = Date.now();
+
+  function notifyCompetitionResultsChanged() {
+    competitionResultsVersion = Date.now();
+  }
+
   function updateUserPhaseBestScore(userId, competitionId, phase, score, sessionId, onTimeBonus = 0) {
     const existing = db.prepare(
       "SELECT * FROM competition_phase_results WHERE user_id = ? AND competition_id = ? AND phase = ?"
     ).get(userId, competitionId, phase);
+
+    notifyCompetitionResultsChanged();
 
     if (existing) {
       const newBest = Math.max(existing.best_score, score);
@@ -3380,6 +3388,7 @@ async function api(request, response, url) {
 
     return json(response, 200, {
       ok: true,
+      resultsVersion: competitionResultsVersion,
       serverTime: vnNow.toISOString(),
       serverTimestampMs: getVietnamTimestampMs(),
       isSimulated: simulatedTimeOffsetMs !== 0,
@@ -3595,6 +3604,7 @@ async function api(request, response, url) {
 
     return json(response, 200, {
       ok: true,
+      resultsVersion: competitionResultsVersion,
       week: comp,
       timeState,
       userSummary,
@@ -3782,6 +3792,7 @@ async function api(request, response, url) {
 
     return json(response, 200, {
       ok: true,
+      resultsVersion: competitionResultsVersion,
       phase: phaseParam,
       phaseTitle,
       weekNumber: comp.week_number || 1,
@@ -4711,6 +4722,8 @@ async function api(request, response, url) {
       const target = new Date(customIso);
       simulatedTimeOffsetMs = target.getTime() - realVnNow.getTime();
     }
+
+    notifyCompetitionResultsChanged();
 
     const currentSimVnNow = getVietnamNow();
     return json(response, 200, {

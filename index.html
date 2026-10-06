@@ -16,7 +16,7 @@
     <script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-    <link rel="stylesheet" href="styles.css?v=46" />
+    <link rel="stylesheet" href="styles.css?v=47" />
   </head>
   <body>
     <dialog
@@ -980,6 +980,7 @@
                   <button type="button" class="lb-phase-btn" data-lb-phase="2" onclick="switchLbPhase(2)">GĐ 2 (T4-T5)</button>
                   <button type="button" class="lb-phase-btn" data-lb-phase="3" onclick="switchLbPhase(3)">GĐ 3 (T6-T7)</button>
                   <button type="button" class="lb-phase-btn week-lb-btn" data-lb-phase="week" onclick="switchLbPhase('week')">👑 Toàn tuần</button>
+                  <button type="button" class="lb-refresh-btn" id="lbRefreshBtn" onclick="refreshArenaLeaderboard()" title="Làm mới bảng xếp hạng">🔄 Làm mới</button>
                 </div>
                 <div class="lb-summary-notice" id="lbSummaryNotice">
                   Bảng xếp hạng giai đoạn
@@ -2531,6 +2532,6 @@
       </div>
     </dialog>
 
-    <script src="app.js?v=55" defer></script>
+    <script src="app.js?v=56" defer></script>
   </body>
 </html>
