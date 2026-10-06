@@ -1700,7 +1700,7 @@ async function api(request, response, url) {
     return json(response, 200, {
       ok: true,
       message:
-        "Yêu cầu đã được tạo thành công! Mã xác thực 6 chữ số đã được gửi tới Admin/Giảng viên. Vui lòng liên hệ Admin để nhận mã này.",
+        "Yêu cầu đã được tạo thành công! Mã xác thực 6 chữ số đã được gửi tới TA/Admin. Vui lòng liên hệ TA/Admin để nhận mã này.",
       email: user.email,
     });
   }

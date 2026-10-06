@@ -534,6 +534,9 @@ function applySession(user) {
   if ($("#openChangePasswordBtn")) {
     $("#openChangePasswordBtn").style.display = user ? "" : "none";
   }
+  if ($("#accountSecurityCard")) {
+    $("#accountSecurityCard").style.display = user ? "block" : "none";
+  }
 
   const badgeDesk = $("#studyNavBadgeDesktop");
   const badgeMob = $("#studyNavBadgeMobile");
@@ -695,6 +698,7 @@ async function hydrateServer() {
       if ($("#accountGrid")) $("#accountGrid").style.display = "";
       if ($("#editProfile")) $("#editProfile").style.display = "";
       if ($("#openChangePasswordBtn")) $("#openChangePasswordBtn").style.display = "";
+      if ($("#accountSecurityCard")) $("#accountSecurityCard").style.display = "block";
       if ($("#logoutButton")) $("#logoutButton").style.display = "";
 
       try {
@@ -868,6 +872,7 @@ async function hydrateServer() {
       if ($("#accountGrid")) $("#accountGrid").style.display = "none";
       if ($("#editProfile")) $("#editProfile").style.display = "none";
       if ($("#openChangePasswordBtn")) $("#openChangePasswordBtn").style.display = "none";
+      if ($("#accountSecurityCard")) $("#accountSecurityCard").style.display = "none";
       if ($("#logoutButton")) $("#logoutButton").style.display = "none";
       if ($("#adminPanel")) $("#adminPanel").style.display = "none";
     }
@@ -2279,7 +2284,7 @@ if ($("#forgotRequestSubmitBtn")) {
         method: "POST",
         body: JSON.stringify({ email }),
       });
-      toast(data.message || "Đã gửi yêu cầu tới Admin!");
+      toast(data.message || "Đã gửi yêu cầu tới TA/Admin!");
       if ($("#forgotStep2Email")) {
         $("#forgotStep2Email").value = data.email || email;
       }
@@ -3188,18 +3193,23 @@ $("#editProfile").onclick = () => {
   $("#editProfileModal").showModal();
 };
 
+function openChangePasswordDialog() {
+  if (!session) return;
+  switchProfileTab("password");
+  if ($("#currentPasswordInput")) $("#currentPasswordInput").value = "";
+  if ($("#newPasswordInput")) $("#newPasswordInput").value = "";
+  if ($("#confirmPasswordInput")) $("#confirmPasswordInput").value = "";
+  $("#editProfileModal").showModal();
+  setTimeout(() => {
+    if ($("#currentPasswordInput")) $("#currentPasswordInput").focus();
+  }, 100);
+}
+
 if ($("#openChangePasswordBtn")) {
-  $("#openChangePasswordBtn").onclick = () => {
-    if (!session) return;
-    switchProfileTab("password");
-    if ($("#currentPasswordInput")) $("#currentPasswordInput").value = "";
-    if ($("#newPasswordInput")) $("#newPasswordInput").value = "";
-    if ($("#confirmPasswordInput")) $("#confirmPasswordInput").value = "";
-    $("#editProfileModal").showModal();
-    setTimeout(() => {
-      if ($("#currentPasswordInput")) $("#currentPasswordInput").focus();
-    }, 100);
-  };
+  $("#openChangePasswordBtn").onclick = openChangePasswordDialog;
+}
+if ($("#cardChangePasswordBtn")) {
+  $("#cardChangePasswordBtn").onclick = openChangePasswordDialog;
 }
 
 function switchProfileTab(tabName) {

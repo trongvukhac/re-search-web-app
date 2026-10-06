@@ -1268,6 +1268,20 @@
             ><small>bài đăng và phản hồi</small>
           </div>
         </div>
+
+        <!-- THẺ BẢO MẬT & ĐỔI MẬT KHẨU -->
+        <div class="account-card" id="accountSecurityCard" style="display: none; margin-bottom: 24px; padding: 18px 22px; background: #fff; border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+            <div>
+              <strong style="font-size: 14px; color: var(--ink); display: block; margin-bottom: 4px;">Bảo mật & Đổi mật khẩu</strong>
+              <span style="font-size: 12.5px; color: var(--muted);">Đổi mật khẩu định kỳ để bảo vệ tài khoản học tập RE:SEARCH của bạn.</span>
+            </div>
+            <button type="button" class="button button-outline button-small" id="cardChangePasswordBtn" style="white-space: nowrap; font-weight: 600;">
+              🔑 Đổi mật khẩu ngay
+            </button>
+          </div>
+        </div>
+
         <div class="account-grid" id="accountGrid" style="display: none">
           <section class="account-activity">
             <div class="section-heading" style="display: block; margin-bottom: 24px;">
@@ -1591,63 +1605,63 @@
 
         <!-- BƯỚC 1: Gửi yêu cầu -->
         <div id="forgotStep1">
-          <p style="font-size: 13px; color: var(--muted); line-height: 1.5; margin-bottom: 16px;">
-            Nhập email tài khoản của bạn để gửi yêu cầu đặt lại mật khẩu. Hệ thống sẽ cấp mã xác thực 6 chữ số tới Admin/Giảng viên để đảm bảo an toàn.
+          <p style="font-size: 13.5px; color: var(--muted); line-height: 1.6; margin-bottom: 20px;">
+            Nhập email tài khoản của bạn để gửi yêu cầu đặt lại mật khẩu. Hệ thống sẽ cấp mã xác thực gồm 6 chữ số tới <strong>TA/Admin</strong> để đảm bảo an toàn.
           </p>
-          <div style="margin-bottom: 16px;">
-            <label for="forgotEmail" style="display: block; font-weight: 600; margin-bottom: 6px; font-size: 13px; color: var(--ink);">Địa chỉ Email của bạn:</label>
-            <input id="forgotEmail" type="email" required autocomplete="email" placeholder="Nhập email sinh viên của bạn" style="display: block; width: 100%; box-sizing: border-box; padding: 10px 12px; font-size: 14px; border: 1px solid var(--line); border-radius: 8px;" />
+          <div style="margin-bottom: 18px;">
+            <label for="forgotEmail" style="display: block; font-weight: 700; margin-bottom: 8px; font-size: 12px; color: #2f4d3e; text-transform: uppercase; letter-spacing: 0.5px;">Địa chỉ Email của bạn:</label>
+            <input id="forgotEmail" type="email" required autocomplete="email" placeholder="Nhập email sinh viên của bạn" style="display: block; width: 100%; box-sizing: border-box; padding: 11px 13px; font-size: 14px; border: 1px solid #c9d6cb; border-radius: 8px; background: #fff;" />
           </div>
-          <div class="modal-actions" style="margin-top: 20px;">
-            <button type="button" class="button button-outline" id="forgotCancelBtn">
+          <div class="modal-actions" style="margin-top: 24px; gap: 10px;">
+            <button type="button" class="button button-outline" id="forgotCancelBtn" style="padding: 10px 18px;">
               ← Đăng nhập
             </button>
-            <button type="button" class="button button-primary" id="forgotRequestSubmitBtn">
-              Gửi yêu cầu tới Admin <span>→</span>
+            <button type="button" class="button button-primary" id="forgotRequestSubmitBtn" style="padding: 10px 20px;">
+              Gửi yêu cầu tới TA/Admin <span>→</span>
             </button>
           </div>
-          <p style="text-align: center; margin-top: 14px; font-size: 12px;">
-            <a href="javascript:void(0)" id="alreadyHaveCodeLink" style="color: var(--accent, #347553); text-decoration: underline;">
-              Đã nhận được mã 6 số từ Admin? Bấm vào đây
+          <p style="text-align: center; margin-top: 18px; font-size: 12.5px;">
+            <a href="javascript:void(0)" id="alreadyHaveCodeLink" style="color: var(--accent, #347553); text-decoration: underline; font-weight: 600;">
+              Đã nhận được mã 6 số từ TA/Admin? Bấm vào đây
             </a>
           </p>
         </div>
 
         <!-- BƯỚC 2: Nhập OTP 6 số và Mật khẩu mới -->
         <div id="forgotStep2" style="display: none;">
-          <div style="background: rgba(52, 117, 83, 0.08); border-left: 3px solid #347553; padding: 10px 12px; border-radius: 6px; margin-bottom: 16px;">
-            <p style="font-size: 12px; color: var(--ink); margin: 0; line-height: 1.5;">
-              ℹ️ <strong>Yêu cầu đã được ghi nhận!</strong> Vui lòng liên hệ Admin/Giảng viên phụ trách để nhận <strong>Mã xác thực 6 chữ số</strong>, sau đó điền thông tin bên dưới:
+          <div style="background: #eaf4ee; border: 1px solid #cce5d6; padding: 12px 14px; border-radius: 8px; margin-bottom: 18px;">
+            <p style="font-size: 12.5px; color: #1e4d34; margin: 0; line-height: 1.6;">
+              ℹ️ <strong>Yêu cầu đã được ghi nhận!</strong> Vui lòng liên hệ <strong>TA/Admin</strong> phụ trách để nhận <strong>Mã xác thực 6 chữ số</strong>, sau đó điền thông tin bên dưới:
             </p>
           </div>
-          <div style="margin-bottom: 14px;">
-            <label for="forgotStep2Email" style="display: block; font-weight: 600; margin-bottom: 6px; font-size: 13px; color: var(--ink);">Email xác nhận:</label>
-            <input id="forgotStep2Email" type="email" required placeholder="Nhập lại email của bạn" style="display: block; width: 100%; box-sizing: border-box; padding: 10px 12px; font-size: 14px; border: 1px solid var(--line); border-radius: 8px;" />
+          <div style="margin-bottom: 16px;">
+            <label for="forgotStep2Email" style="display: block; font-weight: 700; margin-bottom: 6px; font-size: 12px; color: #2f4d3e; text-transform: uppercase; letter-spacing: 0.5px;">Email xác nhận:</label>
+            <input id="forgotStep2Email" type="email" required placeholder="Nhập lại email của bạn" style="display: block; width: 100%; box-sizing: border-box; padding: 11px 13px; font-size: 14px; border: 1px solid #c9d6cb; border-radius: 8px; background: #fff;" />
           </div>
-          <div style="margin-bottom: 14px;">
-            <label for="forgotCode" style="display: block; font-weight: 600; margin-bottom: 6px; font-size: 13px; color: var(--ink);">Mã xác thực từ Admin (6 số):</label>
-            <input id="forgotCode" type="text" maxlength="6" pattern="[0-9]{6}" required placeholder="Ví dụ: 839201" style="display: block; width: 100%; box-sizing: border-box; padding: 10px 12px; font-family: monospace; font-size: 18px; letter-spacing: 4px; font-weight: bold; text-align: center; border: 1px solid var(--line); border-radius: 8px;" />
+          <div style="margin-bottom: 16px;">
+            <label for="forgotCode" style="display: block; font-weight: 700; margin-bottom: 6px; font-size: 12px; color: #2f4d3e; text-transform: uppercase; letter-spacing: 0.5px;">Mã xác thực từ TA/Admin (6 số):</label>
+            <input id="forgotCode" type="text" maxlength="6" pattern="[0-9]{6}" required placeholder="Ví dụ: 839201" style="display: block; width: 100%; box-sizing: border-box; padding: 11px 13px; font-family: monospace; font-size: 20px; letter-spacing: 6px; font-weight: 800; text-align: center; border: 1.5px solid #a3c4b0; border-radius: 8px; background: #f0f7f3; color: #153b27;" />
           </div>
-          <div style="margin-bottom: 14px;">
-            <label for="forgotNewPassword" style="display: block; font-weight: 600; margin-bottom: 6px; font-size: 13px; color: var(--ink);">Mật khẩu mới (tối thiểu 12 ký tự):</label>
-            <input id="forgotNewPassword" type="password" required minlength="12" autocomplete="new-password" placeholder="Tối thiểu 12 ký tự" style="display: block; width: 100%; box-sizing: border-box; padding: 10px 12px; font-size: 14px; border: 1px solid var(--line); border-radius: 8px;" />
+          <div style="margin-bottom: 16px;">
+            <label for="forgotNewPassword" style="display: block; font-weight: 700; margin-bottom: 6px; font-size: 12px; color: #2f4d3e; text-transform: uppercase; letter-spacing: 0.5px;">Mật khẩu mới (tối thiểu 12 ký tự):</label>
+            <input id="forgotNewPassword" type="password" required minlength="12" autocomplete="new-password" placeholder="Tối thiểu 12 ký tự" style="display: block; width: 100%; box-sizing: border-box; padding: 11px 13px; font-size: 14px; border: 1px solid #c9d6cb; border-radius: 8px; background: #fff;" />
           </div>
-          <div style="margin-bottom: 14px;">
-            <label for="forgotConfirmPassword" style="display: block; font-weight: 600; margin-bottom: 6px; font-size: 13px; color: var(--ink);">Xác nhận mật khẩu mới:</label>
-            <input id="forgotConfirmPassword" type="password" required minlength="12" autocomplete="new-password" placeholder="Nhập lại mật khẩu mới" style="display: block; width: 100%; box-sizing: border-box; padding: 10px 12px; font-size: 14px; border: 1px solid var(--line); border-radius: 8px;" />
+          <div style="margin-bottom: 16px;">
+            <label for="forgotConfirmPassword" style="display: block; font-weight: 700; margin-bottom: 6px; font-size: 12px; color: #2f4d3e; text-transform: uppercase; letter-spacing: 0.5px;">Xác nhận mật khẩu mới:</label>
+            <input id="forgotConfirmPassword" type="password" required minlength="12" autocomplete="new-password" placeholder="Nhập lại mật khẩu mới" style="display: block; width: 100%; box-sizing: border-box; padding: 11px 13px; font-size: 14px; border: 1px solid #c9d6cb; border-radius: 8px; background: #fff;" />
           </div>
-          <div class="modal-actions" style="margin-top: 20px;">
-            <button type="button" class="button button-outline" id="forgotBackToStep1Btn">
+          <div class="modal-actions" style="margin-top: 24px; gap: 10px;">
+            <button type="button" class="button button-outline" id="forgotBackToStep1Btn" style="padding: 10px 18px;">
               ← Quay lại
             </button>
-            <button type="button" class="button button-primary" id="forgotResetSubmitBtn">
+            <button type="button" class="button button-primary" id="forgotResetSubmitBtn" style="padding: 10px 20px;">
               Đổi mật khẩu mới <span>✓</span>
             </button>
           </div>
         </div>
       </div>
     </dialog>
-    <dialog class="modal" id="editProfileModal">
+    <dialog class="modal profile-settings-modal" id="editProfileModal">
       <div class="modal-head">
         <div>
           <p class="eyebrow">TÀI KHOẢN RE:SEARCH</p>
@@ -2069,21 +2083,81 @@
       .auth-modal.registering #authForm > label:first-of-type {
         display: block;
       }
-      #forgotForm label {
-        display: block !important;
-        margin-top: 10px;
-        font-size: 13px;
-        font-weight: 600;
-        color: var(--ink);
+
+      /* === MODAL THIẾT LẬP TÀI KHOẢN & ĐỔI MẬT KHẨU (THOÁNG ĐÃNG, RỘNG RÃI) === */
+      .profile-settings-modal {
+        width: min(520px, calc(100vw - 32px)) !important;
+        max-width: 520px !important;
+        border-radius: 16px !important;
+        background: #fdfdfc !important;
+        padding: 28px 32px 32px !important;
+        box-sizing: border-box !important;
+        box-shadow: 0 25px 60px rgba(8, 39, 25, 0.28) !important;
       }
-      #forgotForm input {
+      .profile-settings-modal .modal-head {
+        margin-bottom: 18px !important;
+      }
+      .profile-settings-modal form {
+        padding: 0 !important;
+        margin: 0 !important;
+      }
+      .profile-settings-modal label {
+        display: block !important;
+        margin: 16px 0 6px !important;
+        color: #2f4d3e !important;
+        font-size: 12px !important;
+        font-weight: 700 !important;
+      }
+      .profile-settings-modal input {
         display: block !important;
         width: 100% !important;
-        margin-top: 5px;
+        margin-top: 6px !important;
+        padding: 11px 13px !important;
+        font-size: 14px !important;
+        border-radius: 8px !important;
+        border: 1px solid #c9d6cb !important;
+        background: #fff !important;
         box-sizing: border-box !important;
       }
+      .profile-settings-modal input:focus,
+      #forgotForm input:focus,
+      #authForm input:focus {
+        border-color: #347553 !important;
+        outline: 2px solid rgba(52, 117, 83, 0.2) !important;
+      }
+
+      /* === MODAL ĐĂNG NHẬP / QUÊN MẬT KHẨU (THOÁNG ĐÃNG, KHÔNG DÍNH MÉP) === */
+      .auth-modal {
+        width: min(480px, calc(100vw - 32px)) !important;
+        max-width: 480px !important;
+        border-radius: 16px !important;
+        background: #fdfdfc !important;
+        padding: 0 !important;
+        box-shadow: 0 25px 60px rgba(8, 39, 25, 0.28) !important;
+        overflow: hidden !important;
+      }
+      #authForm {
+        padding: 28px 32px 32px !important;
+        box-sizing: border-box !important;
+      }
+      #forgotForm {
+        padding: 28px 32px 32px !important;
+        box-sizing: border-box !important;
+      }
+      #forgotForm .modal-head {
+        margin-bottom: 18px !important;
+      }
+
+      @media (max-width: 600px) {
+        #authForm,
+        #forgotForm,
+        .profile-settings-modal {
+          padding: 22px 18px 24px !important;
+        }
+      }
+
       .auth-note {
-        font-size: 10px;
+        font-size: 11px;
         line-height: 1.5;
         color: #718077;
         margin: 14px 0 0;
