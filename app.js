@@ -531,6 +531,10 @@ function applySession(user) {
     }
   }
 
+  if ($("#openChangePasswordBtn")) {
+    $("#openChangePasswordBtn").style.display = user ? "" : "none";
+  }
+
   const badgeDesk = $("#studyNavBadgeDesktop");
   const badgeMob = $("#studyNavBadgeMobile");
   if (badgeDesk) {
@@ -690,6 +694,7 @@ async function hydrateServer() {
     if (current.authenticated) {
       if ($("#accountGrid")) $("#accountGrid").style.display = "";
       if ($("#editProfile")) $("#editProfile").style.display = "";
+      if ($("#openChangePasswordBtn")) $("#openChangePasswordBtn").style.display = "";
       if ($("#logoutButton")) $("#logoutButton").style.display = "";
 
       try {
@@ -862,6 +867,7 @@ async function hydrateServer() {
     } else {
       if ($("#accountGrid")) $("#accountGrid").style.display = "none";
       if ($("#editProfile")) $("#editProfile").style.display = "none";
+      if ($("#openChangePasswordBtn")) $("#openChangePasswordBtn").style.display = "none";
       if ($("#logoutButton")) $("#logoutButton").style.display = "none";
       if ($("#adminPanel")) $("#adminPanel").style.display = "none";
     }
@@ -2960,8 +2966,6 @@ if ($("#viewAllContributionsBtn")) {
 if ($("#closeHistory")) {
   $("#closeHistory").onclick = () => $("#historyModal").close();
 }
-$("#editProfile").onclick = () =>
-  toast("Chỉnh sửa hồ sơ sẽ được lưu vào tài khoản của bạn.");
 $("#openGuide").onclick = () =>
   document.getElementById("guideModal").showModal();
 window.addEventListener("keydown", (e) => {
@@ -3183,6 +3187,20 @@ $("#editProfile").onclick = () => {
 
   $("#editProfileModal").showModal();
 };
+
+if ($("#openChangePasswordBtn")) {
+  $("#openChangePasswordBtn").onclick = () => {
+    if (!session) return;
+    switchProfileTab("password");
+    if ($("#currentPasswordInput")) $("#currentPasswordInput").value = "";
+    if ($("#newPasswordInput")) $("#newPasswordInput").value = "";
+    if ($("#confirmPasswordInput")) $("#confirmPasswordInput").value = "";
+    $("#editProfileModal").showModal();
+    setTimeout(() => {
+      if ($("#currentPasswordInput")) $("#currentPasswordInput").focus();
+    }, 100);
+  };
+}
 
 function switchProfileTab(tabName) {
   const isInfo = tabName === "info";

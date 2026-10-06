@@ -1223,13 +1223,20 @@
               <p class="role-label">Chưa đăng nhập</p>
             </div>
           </div>
-          <div style="display: flex; gap: 8px">
+          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
             <button
               class="button button-outline"
               id="editProfile"
               style="display: none"
             >
               Chỉnh sửa hồ sơ
+            </button>
+            <button
+              class="button button-primary"
+              id="openChangePasswordBtn"
+              style="display: none"
+            >
+              🔑 Đổi mật khẩu
             </button>
             <button
               class="button button-outline"
@@ -1587,9 +1594,10 @@
           <p style="font-size: 13px; color: var(--muted); line-height: 1.5; margin-bottom: 16px;">
             Nhập email tài khoản của bạn để gửi yêu cầu đặt lại mật khẩu. Hệ thống sẽ cấp mã xác thực 6 chữ số tới Admin/Giảng viên để đảm bảo an toàn.
           </p>
-          <label>Email của bạn
-            <input id="forgotEmail" type="email" required autocomplete="email" placeholder="Nhập email của bạn" />
-          </label>
+          <div style="margin-bottom: 16px;">
+            <label for="forgotEmail" style="display: block; font-weight: 600; margin-bottom: 6px; font-size: 13px; color: var(--ink);">Địa chỉ Email của bạn:</label>
+            <input id="forgotEmail" type="email" required autocomplete="email" placeholder="Nhập email sinh viên của bạn" style="display: block; width: 100%; box-sizing: border-box; padding: 10px 12px; font-size: 14px; border: 1px solid var(--line); border-radius: 8px;" />
+          </div>
           <div class="modal-actions" style="margin-top: 20px;">
             <button type="button" class="button button-outline" id="forgotCancelBtn">
               ← Đăng nhập
@@ -1612,18 +1620,22 @@
               ℹ️ <strong>Yêu cầu đã được ghi nhận!</strong> Vui lòng liên hệ Admin/Giảng viên phụ trách để nhận <strong>Mã xác thực 6 chữ số</strong>, sau đó điền thông tin bên dưới:
             </p>
           </div>
-          <label>Email xác nhận
-            <input id="forgotStep2Email" type="email" required placeholder="Nhập lại email của bạn" />
-          </label>
-          <label>Mã xác thực từ Admin (6 số)
-            <input id="forgotCode" type="text" maxlength="6" pattern="[0-9]{6}" required placeholder="Ví dụ: 839201" style="font-family: monospace; font-size: 16px; letter-spacing: 2px; font-weight: bold;" />
-          </label>
-          <label>Mật khẩu mới
-            <input id="forgotNewPassword" type="password" required minlength="12" autocomplete="new-password" placeholder="Tối thiểu 12 ký tự" />
-          </label>
-          <label>Xác nhận mật khẩu mới
-            <input id="forgotConfirmPassword" type="password" required minlength="12" autocomplete="new-password" placeholder="Nhập lại mật khẩu mới" />
-          </label>
+          <div style="margin-bottom: 14px;">
+            <label for="forgotStep2Email" style="display: block; font-weight: 600; margin-bottom: 6px; font-size: 13px; color: var(--ink);">Email xác nhận:</label>
+            <input id="forgotStep2Email" type="email" required placeholder="Nhập lại email của bạn" style="display: block; width: 100%; box-sizing: border-box; padding: 10px 12px; font-size: 14px; border: 1px solid var(--line); border-radius: 8px;" />
+          </div>
+          <div style="margin-bottom: 14px;">
+            <label for="forgotCode" style="display: block; font-weight: 600; margin-bottom: 6px; font-size: 13px; color: var(--ink);">Mã xác thực từ Admin (6 số):</label>
+            <input id="forgotCode" type="text" maxlength="6" pattern="[0-9]{6}" required placeholder="Ví dụ: 839201" style="display: block; width: 100%; box-sizing: border-box; padding: 10px 12px; font-family: monospace; font-size: 18px; letter-spacing: 4px; font-weight: bold; text-align: center; border: 1px solid var(--line); border-radius: 8px;" />
+          </div>
+          <div style="margin-bottom: 14px;">
+            <label for="forgotNewPassword" style="display: block; font-weight: 600; margin-bottom: 6px; font-size: 13px; color: var(--ink);">Mật khẩu mới (tối thiểu 12 ký tự):</label>
+            <input id="forgotNewPassword" type="password" required minlength="12" autocomplete="new-password" placeholder="Tối thiểu 12 ký tự" style="display: block; width: 100%; box-sizing: border-box; padding: 10px 12px; font-size: 14px; border: 1px solid var(--line); border-radius: 8px;" />
+          </div>
+          <div style="margin-bottom: 14px;">
+            <label for="forgotConfirmPassword" style="display: block; font-weight: 600; margin-bottom: 6px; font-size: 13px; color: var(--ink);">Xác nhận mật khẩu mới:</label>
+            <input id="forgotConfirmPassword" type="password" required minlength="12" autocomplete="new-password" placeholder="Nhập lại mật khẩu mới" style="display: block; width: 100%; box-sizing: border-box; padding: 10px 12px; font-size: 14px; border: 1px solid var(--line); border-radius: 8px;" />
+          </div>
           <div class="modal-actions" style="margin-top: 20px;">
             <button type="button" class="button button-outline" id="forgotBackToStep1Btn">
               ← Quay lại
@@ -2051,11 +2063,24 @@
         height: 2px;
         background: #347553;
       }
-      .auth-modal label:first-of-type {
+      #authForm > label:first-of-type {
         display: none;
       }
-      .auth-modal.registering label:first-of-type {
+      .auth-modal.registering #authForm > label:first-of-type {
         display: block;
+      }
+      #forgotForm label {
+        display: block !important;
+        margin-top: 10px;
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--ink);
+      }
+      #forgotForm input {
+        display: block !important;
+        width: 100% !important;
+        margin-top: 5px;
+        box-sizing: border-box !important;
       }
       .auth-note {
         font-size: 10px;
