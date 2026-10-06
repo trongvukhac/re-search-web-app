@@ -1549,6 +1549,11 @@
             autocomplete="current-password"
             placeholder="Ít nhất 12 ký tự"
         /></label>
+        <div style="display: flex; justify-content: flex-end; margin-top: 4px; margin-bottom: 8px;" id="authForgotWrapper">
+          <button type="button" id="authForgotPasswordBtn" style="background: none; border: none; padding: 0; font-size: 12px; color: var(--accent, #347553); text-decoration: underline; cursor: pointer;">
+            Quên mật khẩu?
+          </button>
+        </div>
         <p class="auth-note" id="authNote">
           Chỉ TA/Admin do quản trị viên cấp quyền. Tài khoản mới mặc định là
           Sinh viên.
@@ -1559,13 +1564,13 @@
           </button>
         </div>
       </form>
-    </dialog>
-    <dialog class="modal" id="editProfileModal">
-      <form id="editProfileForm" method="dialog">
+
+      <!-- GIAO DIỆN KHÔI PHỤC MẬT KHẨU (GỬI MÃ TỚI ADMIN) -->
+      <div id="forgotForm" style="display: none;">
         <div class="modal-head">
           <div>
             <p class="eyebrow">TÀI KHOẢN RE:SEARCH</p>
-            <h2>Chỉnh sửa hồ sơ</h2>
+            <h2>Khôi phục mật khẩu</h2>
           </div>
           <button
             class="close-modal"
@@ -1576,6 +1581,97 @@
             ×
           </button>
         </div>
+
+        <!-- BƯỚC 1: Gửi yêu cầu -->
+        <div id="forgotStep1">
+          <p style="font-size: 13px; color: var(--muted); line-height: 1.5; margin-bottom: 16px;">
+            Nhập email tài khoản của bạn để gửi yêu cầu đặt lại mật khẩu. Hệ thống sẽ cấp mã xác thực 6 chữ số tới Admin/Giảng viên để đảm bảo an toàn.
+          </p>
+          <label>Email của bạn
+            <input id="forgotEmail" type="email" required autocomplete="email" placeholder="Nhập email của bạn" />
+          </label>
+          <div class="modal-actions" style="margin-top: 20px;">
+            <button type="button" class="button button-outline" id="forgotCancelBtn">
+              ← Đăng nhập
+            </button>
+            <button type="button" class="button button-primary" id="forgotRequestSubmitBtn">
+              Gửi yêu cầu tới Admin <span>→</span>
+            </button>
+          </div>
+          <p style="text-align: center; margin-top: 14px; font-size: 12px;">
+            <a href="javascript:void(0)" id="alreadyHaveCodeLink" style="color: var(--accent, #347553); text-decoration: underline;">
+              Đã nhận được mã 6 số từ Admin? Bấm vào đây
+            </a>
+          </p>
+        </div>
+
+        <!-- BƯỚC 2: Nhập OTP 6 số và Mật khẩu mới -->
+        <div id="forgotStep2" style="display: none;">
+          <div style="background: rgba(52, 117, 83, 0.08); border-left: 3px solid #347553; padding: 10px 12px; border-radius: 6px; margin-bottom: 16px;">
+            <p style="font-size: 12px; color: var(--ink); margin: 0; line-height: 1.5;">
+              ℹ️ <strong>Yêu cầu đã được ghi nhận!</strong> Vui lòng liên hệ Admin/Giảng viên phụ trách để nhận <strong>Mã xác thực 6 chữ số</strong>, sau đó điền thông tin bên dưới:
+            </p>
+          </div>
+          <label>Email xác nhận
+            <input id="forgotStep2Email" type="email" required placeholder="Nhập lại email của bạn" />
+          </label>
+          <label>Mã xác thực từ Admin (6 số)
+            <input id="forgotCode" type="text" maxlength="6" pattern="[0-9]{6}" required placeholder="Ví dụ: 839201" style="font-family: monospace; font-size: 16px; letter-spacing: 2px; font-weight: bold;" />
+          </label>
+          <label>Mật khẩu mới
+            <input id="forgotNewPassword" type="password" required minlength="12" autocomplete="new-password" placeholder="Tối thiểu 12 ký tự" />
+          </label>
+          <label>Xác nhận mật khẩu mới
+            <input id="forgotConfirmPassword" type="password" required minlength="12" autocomplete="new-password" placeholder="Nhập lại mật khẩu mới" />
+          </label>
+          <div class="modal-actions" style="margin-top: 20px;">
+            <button type="button" class="button button-outline" id="forgotBackToStep1Btn">
+              ← Quay lại
+            </button>
+            <button type="button" class="button button-primary" id="forgotResetSubmitBtn">
+              Đổi mật khẩu mới <span>✓</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </dialog>
+    <dialog class="modal" id="editProfileModal">
+      <div class="modal-head">
+        <div>
+          <p class="eyebrow">TÀI KHOẢN RE:SEARCH</p>
+          <h2 id="editProfileModalTitle">Thiết lập tài khoản</h2>
+        </div>
+        <button
+          class="close-modal"
+          type="button"
+          onclick="this.closest('dialog').close()"
+          aria-label="Đóng"
+        >
+          ×
+        </button>
+      </div>
+
+      <div class="auth-tabs" style="margin-bottom: 20px">
+        <button
+          type="button"
+          class="auth-tab profile-tab active"
+          id="profileTabInfoBtn"
+          data-profile-tab="info"
+        >
+          Thông tin cá nhân
+        </button>
+        <button
+          type="button"
+          class="auth-tab profile-tab"
+          id="profileTabPasswordBtn"
+          data-profile-tab="password"
+        >
+          Đổi mật khẩu
+        </button>
+      </div>
+
+      <!-- Tab 1: Thông tin cá nhân -->
+      <form id="editProfileForm" method="dialog" class="profile-tab-content">
         <label
           >Tên hiển thị (Công khai)<input
             id="profileDisplayName"
@@ -1601,6 +1697,44 @@
         <div class="modal-actions" style="margin-top: 24px">
           <button class="button button-primary" type="submit">
             Lưu thay đổi <span>→</span>
+          </button>
+        </div>
+      </form>
+
+      <!-- Tab 2: Đổi mật khẩu -->
+      <form id="changePasswordForm" class="profile-tab-content" style="display: none;">
+        <label
+          >Mật khẩu hiện tại<input
+            id="currentPasswordInput"
+            type="password"
+            required
+            autocomplete="current-password"
+            placeholder="Nhập mật khẩu đang dùng"
+        /></label>
+        <label
+          >Mật khẩu mới<input
+            id="newPasswordInput"
+            type="password"
+            required
+            minlength="12"
+            autocomplete="new-password"
+            placeholder="Tối thiểu 12 ký tự"
+        /></label>
+        <label
+          >Xác nhận mật khẩu mới<input
+            id="confirmPasswordInput"
+            type="password"
+            required
+            minlength="12"
+            autocomplete="new-password"
+            placeholder="Nhập lại mật khẩu mới"
+        /></label>
+        <p class="auth-note" style="margin-top: 10px;">
+          Lưu ý: Mật khẩu an toàn phải có từ 12 ký tự trở lên và khác mật khẩu cũ.
+        </p>
+        <div class="modal-actions" style="margin-top: 24px">
+          <button class="button button-primary" type="submit" id="changePasswordSubmitBtn">
+            Cập nhật mật khẩu <span>→</span>
           </button>
         </div>
       </form>
@@ -1685,6 +1819,14 @@
         >
           Thi đua tuần
         </button>
+        <button
+          type="button"
+          class="auth-tab admin-tab"
+          data-admin-tab="password-resets"
+          id="adminTabPasswordResetsBtn"
+        >
+          Khôi phục MK <span id="adminPendingResetBadge" style="display:none; background:#d9534f; color:#fff; font-size:10px; border-radius:10px; padding:1px 6px; margin-left:4px; font-weight:bold;">0</span>
+        </button>
       </div>
 
       <div id="adminTabOverview" class="admin-tab-content">
@@ -1696,6 +1838,7 @@
           </div>
           <div><strong id="adminDocs">0</strong><span>Tài liệu chờ</span></div>
           <div><strong id="adminTopics">0</strong><span>Chủ đề chờ</span></div>
+          <div><strong id="adminPendingResetsCount">0</strong><span>Yêu cầu đổi MK</span></div>
         </div>
       </div>
 
@@ -1850,6 +1993,33 @@
             <span style="font-size: 12px; color: var(--muted);">Tự động chạy vào Chủ Nhật hoặc bấm để chốt điểm và trao thưởng (+điểm hoạt động & khiên) ngay.</span>
           </div>
           <button type="button" class="button button-primary button-sm" onclick="adminConcludeWeekNow()">🏆 Tổng kết & Trao thưởng</button>
+        </div>
+      </div>
+
+      <!-- TAB KHÔI PHỤC MẬT KHẨU (ADMIN) -->
+      <div id="adminTabPasswordResets" class="admin-tab-content" style="display: none">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:8px;">
+          <p style="font-size:13px; color:var(--muted); margin:0;">
+            Danh sách yêu cầu cấp lại mật khẩu. Cung cấp <strong>Mã 6 chữ số</strong> cho sinh viên tương ứng để họ tự đặt lại mật khẩu mới.
+          </p>
+          <button type="button" class="button button-subtle button-small" id="refreshAdminResetsBtn">Làm mới ⟳</button>
+        </div>
+        <div style="max-height: 420px; overflow-y: auto">
+          <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 13px;">
+            <thead>
+              <tr style="border-bottom: 1px solid var(--sage-2); color: var(--muted);">
+                <th style="padding: 10px 8px">Thời gian</th>
+                <th style="padding: 10px 8px">Sinh viên</th>
+                <th style="padding: 10px 8px">Mã OTP (6 số)</th>
+                <th style="padding: 10px 8px">Hạn dùng</th>
+                <th style="padding: 10px 8px">Trạng thái</th>
+                <th style="padding: 10px 8px; text-align:right">Thao tác</th>
+              </tr>
+            </thead>
+            <tbody id="adminPasswordResetsBody">
+              <tr><td colspan="6" style="padding: 24px; text-align: center; color: var(--muted)">Đang tải...</td></tr>
+            </tbody>
+          </table>
         </div>
       </div>
     </dialog>

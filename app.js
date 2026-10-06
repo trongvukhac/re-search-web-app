@@ -2184,11 +2184,11 @@ $$(".identity-choice").forEach((btn) =>
     );
   }),
 );
-$$(".auth-tab").forEach((tab) =>
+$$("#authModal .auth-tab[data-auth-mode]").forEach((tab) =>
   tab.addEventListener("click", () => {
     const registering = tab.dataset.authMode === "register";
     $("#authModal").classList.toggle("registering", registering);
-    $$(".auth-tab").forEach((t) => t.classList.toggle("active", t === tab));
+    $$("#authModal .auth-tab[data-auth-mode]").forEach((t) => t.classList.toggle("active", t === tab));
     $("#authTitle").textContent = registering
       ? "Tạo tài khoản mới"
       : "Đăng nhập để tiếp tục";
@@ -2199,8 +2199,151 @@ $$(".auth-tab").forEach((tab) =>
     $("#authPassword").autocomplete = registering
       ? "new-password"
       : "current-password";
+    if ($("#authForgotWrapper")) {
+      $("#authForgotWrapper").style.display = registering ? "none" : "flex";
+    }
   }),
 );
+
+// --- FORGOT PASSWORD FLOW ---
+function openForgotPasswordView() {
+  if ($("#authForm")) $("#authForm").style.display = "none";
+  if ($("#forgotForm")) $("#forgotForm").style.display = "block";
+  if ($("#forgotStep1")) $("#forgotStep1").style.display = "block";
+  if ($("#forgotStep2")) $("#forgotStep2").style.display = "none";
+  if ($("#authEmail") && $("#forgotEmail") && $("#authEmail").value) {
+    $("#forgotEmail").value = $("#authEmail").value.trim();
+  }
+  if ($("#forgotEmail")) $("#forgotEmail").focus();
+}
+
+function closeForgotPasswordView() {
+  if ($("#forgotForm")) $("#forgotForm").style.display = "none";
+  if ($("#authForm")) $("#authForm").style.display = "block";
+}
+
+if ($("#authForgotPasswordBtn")) {
+  $("#authForgotPasswordBtn").addEventListener("click", (e) => {
+    e.preventDefault();
+    openForgotPasswordView();
+  });
+}
+
+if ($("#forgotCancelBtn")) {
+  $("#forgotCancelBtn").addEventListener("click", (e) => {
+    e.preventDefault();
+    closeForgotPasswordView();
+  });
+}
+
+if ($("#alreadyHaveCodeLink")) {
+  $("#alreadyHaveCodeLink").addEventListener("click", (e) => {
+    e.preventDefault();
+    if ($("#forgotEmail") && $("#forgotStep2Email") && $("#forgotEmail").value) {
+      $("#forgotStep2Email").value = $("#forgotEmail").value.trim();
+    }
+    $("#forgotStep1").style.display = "none";
+    $("#forgotStep2").style.display = "block";
+    if ($("#forgotCode")) $("#forgotCode").focus();
+  });
+}
+
+if ($("#forgotBackToStep1Btn")) {
+  $("#forgotBackToStep1Btn").addEventListener("click", (e) => {
+    e.preventDefault();
+    $("#forgotStep2").style.display = "none";
+    $("#forgotStep1").style.display = "block";
+  });
+}
+
+if ($("#forgotRequestSubmitBtn")) {
+  $("#forgotRequestSubmitBtn").addEventListener("click", async (e) => {
+    e.preventDefault();
+    const email = ($("#forgotEmail")?.value || "").trim();
+    if (!email || !email.includes("@")) {
+      toast("Vui lòng nhập địa chỉ email hợp lệ.");
+      return;
+    }
+    const btn = $("#forgotRequestSubmitBtn");
+    const originalText = btn.innerHTML;
+    btn.disabled = true;
+    btn.textContent = "Đang gửi yêu cầu...";
+    try {
+      const data = await requestAPI("/api/auth/forgot-password-request", {
+        method: "POST",
+        body: JSON.stringify({ email }),
+      });
+      toast(data.message || "Đã gửi yêu cầu tới Admin!");
+      if ($("#forgotStep2Email")) {
+        $("#forgotStep2Email").value = data.email || email;
+      }
+      $("#forgotStep1").style.display = "none";
+      $("#forgotStep2").style.display = "block";
+      if ($("#forgotCode")) $("#forgotCode").focus();
+    } catch (err) {
+      toast(err.message);
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = originalText;
+    }
+  });
+}
+
+if ($("#forgotResetSubmitBtn")) {
+  $("#forgotResetSubmitBtn").addEventListener("click", async (e) => {
+    e.preventDefault();
+    const email = ($("#forgotStep2Email")?.value || "").trim();
+    const code = ($("#forgotCode")?.value || "").trim();
+    const newPassword = $("#forgotNewPassword")?.value || "";
+    const confirmPassword = $("#forgotConfirmPassword")?.value || "";
+
+    if (!email || !code || !newPassword) {
+      toast("Vui lòng điền đầy đủ Email, Mã xác thực và Mật khẩu mới.");
+      return;
+    }
+    if (code.length !== 6 || !/^\d{6}$/.test(code)) {
+      toast("Mã xác thực gồm đúng 6 chữ số.");
+      return;
+    }
+    if (newPassword.length < 12) {
+      toast("Mật khẩu mới phải có tối thiểu 12 ký tự.");
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      toast("Mật khẩu xác nhận không khớp với mật khẩu mới.");
+      return;
+    }
+
+    const btn = $("#forgotResetSubmitBtn");
+    const originalText = btn.innerHTML;
+    btn.disabled = true;
+    btn.textContent = "Đang xử lý...";
+    try {
+      const data = await requestAPI("/api/auth/reset-password", {
+        method: "POST",
+        body: JSON.stringify({ email, code, newPassword }),
+      });
+      toast(data.message || "Đặt lại mật khẩu thành công!");
+      // Reset form
+      if ($("#forgotCode")) $("#forgotCode").value = "";
+      if ($("#forgotNewPassword")) $("#forgotNewPassword").value = "";
+      if ($("#forgotConfirmPassword")) $("#forgotConfirmPassword").value = "";
+      // Chuyển về login
+      closeForgotPasswordView();
+      if ($("#authEmail")) $("#authEmail").value = email;
+      if ($("#authPassword")) {
+        $("#authPassword").value = "";
+        $("#authPassword").focus();
+      }
+    } catch (err) {
+      toast(err.message);
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = originalText;
+    }
+  });
+}
+
 $("#authForm").addEventListener("submit", async (e) => {
   e.preventDefault();
   setSubmitLoading(e, true);
@@ -2506,6 +2649,120 @@ async function loadAdminOverview() {
   $("#adminUnanswered").textContent = data.unanswered;
   $("#adminDocs").textContent = data.pendingDocuments;
   $("#adminTopics").textContent = data.pendingTopics;
+  if ($("#adminPendingResetsCount")) {
+    $("#adminPendingResetsCount").textContent = data.pendingPasswordResets || 0;
+  }
+  if ($("#adminPendingResetBadge")) {
+    const count = data.pendingPasswordResets || 0;
+    if (count > 0) {
+      $("#adminPendingResetBadge").textContent = count;
+      $("#adminPendingResetBadge").style.display = "inline-block";
+    } else {
+      $("#adminPendingResetBadge").style.display = "none";
+    }
+  }
+}
+
+async function loadAdminPasswordResets() {
+  const tbody = $("#adminPasswordResetsBody");
+  if (!tbody) return;
+  tbody.innerHTML = `<tr><td colspan="6" style="padding: 24px; text-align: center; color: var(--muted)">Đang tải danh sách...</td></tr>`;
+  try {
+    const data = await requestAPI("/api/admin/password-resets");
+    if ($("#adminPendingResetBadge")) {
+      const count = data.pendingCount || 0;
+      if (count > 0) {
+        $("#adminPendingResetBadge").textContent = count;
+        $("#adminPendingResetBadge").style.display = "inline-block";
+      } else {
+        $("#adminPendingResetBadge").style.display = "none";
+      }
+    }
+    if ($("#adminPendingResetsCount")) {
+      $("#adminPendingResetsCount").textContent = data.pendingCount || 0;
+    }
+    if (!data.requests || data.requests.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="6" style="padding: 24px; text-align: center; color: var(--muted)">Chưa có yêu cầu khôi phục mật khẩu nào.</td></tr>`;
+      return;
+    }
+    tbody.innerHTML = data.requests
+      .map((r) => {
+        const isPending = r.status === "pending";
+        const statusBadge = isPending
+          ? `<span style="background: rgba(245, 158, 11, 0.15); color: #b45309; padding: 2px 8px; border-radius: 12px; font-weight: 600; font-size: 11px;">Chờ cấp</span>`
+          : r.status === "used"
+          ? `<span style="background: rgba(16, 185, 129, 0.15); color: #047857; padding: 2px 8px; border-radius: 12px; font-weight: 600; font-size: 11px;">Đã dùng</span>`
+          : r.status === "expired"
+          ? `<span style="background: rgba(107, 114, 128, 0.15); color: #4b5563; padding: 2px 8px; border-radius: 12px; font-weight: 600; font-size: 11px;">Hết hạn</span>`
+          : `<span style="background: rgba(239, 68, 68, 0.15); color: #b91c1c; padding: 2px 8px; border-radius: 12px; font-weight: 600; font-size: 11px;">Đã hủy</span>`;
+
+        const studentInfo =
+          `<strong>${escapeHTML(r.display_name || "Chưa đặt tên")}</strong>` +
+          (r.student_id ? `<br><small style="color:var(--muted)">MSSV: ${escapeHTML(r.student_id)}</small>` : "") +
+          (r.class_name ? ` • <small style="color:var(--muted)">Lớp: ${escapeHTML(r.class_name)}</small>` : "") +
+          `<br><small style="color:var(--muted)">${escapeHTML(r.email)}</small>`;
+
+        const codeBox = `<div style="display:flex; align-items:center; gap:6px;">
+          <span style="font-family: monospace; font-size: 15px; font-weight: 800; letter-spacing: 1.5px; background: var(--sage-2); padding: 3px 8px; border-radius: 4px; color: ${isPending ? "var(--ink)" : "var(--muted)"};">${r.code}</span>
+          <button type="button" class="button button-subtle button-small" style="padding: 2px 6px; font-size: 11px;" title="Sao chép mã" onclick="copyResetCode('${r.code}')">📋 Copy</button>
+        </div>`;
+
+        const timeCreated = new Date(r.created_at).toLocaleString("vi-VN", {
+          hour: "2-digit",
+          minute: "2-digit",
+          day: "2-digit",
+          month: "2-digit",
+        });
+        const timeExpiry = new Date(r.expires_at).toLocaleString("vi-VN", {
+          hour: "2-digit",
+          minute: "2-digit",
+          day: "2-digit",
+          month: "2-digit",
+        });
+
+        const actions = isPending
+          ? `<button type="button" class="button button-outline button-small" style="padding: 3px 8px; font-size: 11px; color: #dc2626; border-color: #fca5a5;" onclick="revokeResetRequest(${r.id})">Hủy mã</button>`
+          : `<span style="color:var(--muted); font-size:12px;">—</span>`;
+
+        return `<tr style="border-bottom: 1px solid var(--sage-2);">
+          <td style="padding: 10px 8px; white-space: nowrap; color: var(--muted);">${timeCreated}</td>
+          <td style="padding: 10px 8px;">${studentInfo}</td>
+          <td style="padding: 10px 8px;">${codeBox}</td>
+          <td style="padding: 10px 8px; white-space: nowrap; font-size: 12px; color: var(--muted);">${timeExpiry}</td>
+          <td style="padding: 10px 8px;">${statusBadge}</td>
+          <td style="padding: 10px 8px; text-align: right;">${actions}</td>
+        </tr>`;
+      })
+      .join("");
+  } catch (err) {
+    tbody.innerHTML = `<tr><td colspan="6" style="padding: 24px; text-align: center; color: #dc2626">Lỗi tải dữ liệu: ${escapeHTML(err.message)}</td></tr>`;
+  }
+}
+
+window.copyResetCode = function(code) {
+  navigator.clipboard.writeText(code).then(() => {
+    toast(`Đã sao chép mã xác thực: ${code}`);
+  }).catch(() => {
+    prompt("Mã xác thực của sinh viên:", code);
+  });
+};
+
+window.revokeResetRequest = async function(id) {
+  if (!confirm("Bạn có chắc chắn muốn hủy mã xác thực này không?")) return;
+  try {
+    await requestAPI("/api/admin/password-resets/revoke", {
+      method: "POST",
+      body: JSON.stringify({ id }),
+    });
+    toast("Đã hủy mã xác thực.");
+    loadAdminPasswordResets();
+  } catch (err) {
+    toast(err.message);
+  }
+};
+
+if ($("#refreshAdminResetsBtn")) {
+  $("#refreshAdminResetsBtn").onclick = () => loadAdminPasswordResets();
 }
 
 async function loadAdminMembers() {
@@ -2660,6 +2917,10 @@ $$(".admin-tab").forEach((tab) => {
     if (target === "competition") {
       $("#adminTabCompetition").style.display = "block";
       loadAdminCompetition();
+    }
+    if (target === "password-resets") {
+      $("#adminTabPasswordResets").style.display = "block";
+      loadAdminPasswordResets();
     }
   });
 });
@@ -2913,8 +3174,33 @@ $("#editProfile").onclick = () => {
   $("#profileStudentId").value = session.studentId || "";
   $("#profileRealName").value = session.realName || "";
   $("#profileClassName").value = session.className || "";
+
+  // Reset tab về Thông tin cá nhân
+  switchProfileTab("info");
+  if ($("#currentPasswordInput")) $("#currentPasswordInput").value = "";
+  if ($("#newPasswordInput")) $("#newPasswordInput").value = "";
+  if ($("#confirmPasswordInput")) $("#confirmPasswordInput").value = "";
+
   $("#editProfileModal").showModal();
 };
+
+function switchProfileTab(tabName) {
+  const isInfo = tabName === "info";
+  if ($("#profileTabInfoBtn")) $("#profileTabInfoBtn").classList.toggle("active", isInfo);
+  if ($("#profileTabPasswordBtn")) $("#profileTabPasswordBtn").classList.toggle("active", !isInfo);
+  if ($("#editProfileForm")) $("#editProfileForm").style.display = isInfo ? "block" : "none";
+  if ($("#changePasswordForm")) $("#changePasswordForm").style.display = isInfo ? "none" : "block";
+  if ($("#editProfileModalTitle")) {
+    $("#editProfileModalTitle").textContent = isInfo ? "Thiết lập tài khoản" : "Đổi mật khẩu";
+  }
+}
+
+if ($("#profileTabInfoBtn")) {
+  $("#profileTabInfoBtn").onclick = () => switchProfileTab("info");
+}
+if ($("#profileTabPasswordBtn")) {
+  $("#profileTabPasswordBtn").onclick = () => switchProfileTab("password");
+}
 
 $("#editProfileForm").onsubmit = async (e) => {
   e.preventDefault();
@@ -2938,6 +3224,46 @@ $("#editProfileForm").onsubmit = async (e) => {
     setSubmitLoading(e, false);
   }
 };
+
+if ($("#changePasswordForm")) {
+  $("#changePasswordForm").onsubmit = async (e) => {
+    e.preventDefault();
+    const currentPassword = $("#currentPasswordInput")?.value || "";
+    const newPassword = $("#newPasswordInput")?.value || "";
+    const confirmPassword = $("#confirmPasswordInput")?.value || "";
+
+    if (!currentPassword) {
+      toast("Vui lòng nhập mật khẩu hiện tại.");
+      return;
+    }
+    if (newPassword.length < 12) {
+      toast("Mật khẩu mới phải có tối thiểu 12 ký tự.");
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      toast("Mật khẩu xác nhận không khớp.");
+      return;
+    }
+
+    setSubmitLoading(e, true);
+    try {
+      const res = await requestAPI("/api/me/change-password", {
+        method: "POST",
+        body: JSON.stringify({ currentPassword, newPassword }),
+      });
+      toast(res.message || "Đổi mật khẩu thành công!");
+      if ($("#currentPasswordInput")) $("#currentPasswordInput").value = "";
+      if ($("#newPasswordInput")) $("#newPasswordInput").value = "";
+      if ($("#confirmPasswordInput")) $("#confirmPasswordInput").value = "";
+      switchProfileTab("info");
+      $("#editProfileModal").close();
+    } catch (err) {
+      toast(err.message);
+    } finally {
+      setSubmitLoading(e, false);
+    }
+  };
+}
 
 window.promptChangeAvatar = async function() {
   const newAvatar = prompt("Bạn chỉ được đổi Avatar 1 lần duy nhất!\n\nHãy nhập 1 biểu tượng (Emoji) hoặc ký tự bạn muốn dùng làm Avatar:");

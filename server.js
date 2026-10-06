@@ -9,8 +9,8 @@ const { DatabaseSync } = require("node:sqlite");
 
 const ROOT = __dirname;
 const PORT = Number(process.env.PORT || 3000);
-const DATABASE_DIR = path.join(ROOT, "data");
-const DATABASE_PATH = path.join(DATABASE_DIR, "research.db");
+const DATABASE_DIR = process.env.RESEARCH_DB_DIR || path.join(ROOT, "data");
+const DATABASE_PATH = process.env.RESEARCH_DB_PATH || path.join(DATABASE_DIR, "research.db");
 const SESSION_AGE_SECONDS = 60 * 60 * 24 * 14;
 
 // ============================================================
@@ -221,6 +221,23 @@ try {
     INSERT INTO user_streak_shields (user_id, shields, last_milestone_rewarded, updated_at)
     SELECT id, 1, 0, CURRENT_TIMESTAMP FROM users
     ON CONFLICT(user_id) DO UPDATE SET shields = CASE WHEN shields = 0 THEN 1 ELSE shields END;
+  `);
+} catch (e) {}
+
+try {
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS password_resets (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      email TEXT NOT NULL COLLATE NOCASE,
+      code TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending','used','expired','revoked')),
+      expires_at TEXT NOT NULL,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      used_at TEXT
+    );
+    CREATE INDEX IF NOT EXISTS idx_password_resets_email_status ON password_resets(email, status);
+    CREATE INDEX IF NOT EXISTS idx_password_resets_code ON password_resets(code);
   `);
 } catch (e) {}
 
@@ -1639,6 +1656,125 @@ async function api(request, response, url) {
     clearSession(request, response);
     return json(response, 200, { ok: true });
   }
+  if (method === "POST" && pathName === "/api/auth/forgot-password-request") {
+    const ip = request.socket.remoteAddress || "local";
+    if (!rateLimit(`forgot-pw:${ip}`, 5, 15 * 60 * 1000))
+      return error(
+        response,
+        429,
+        "Bạn đã gửi yêu cầu quá nhiều lần. Vui lòng thử lại sau 15 phút.",
+      );
+    const { email } = await readJSON(request);
+    const cleanEmail = (email || "").trim().toLowerCase();
+    if (!cleanEmail || !cleanEmail.includes("@")) {
+      return error(response, 400, "Vui lòng nhập địa chỉ email hợp lệ.");
+    }
+    const user = db
+      .prepare("SELECT id, email, display_name, role FROM users WHERE email=?")
+      .get(cleanEmail);
+    if (!user) {
+      return error(
+        response,
+        404,
+        "Không tìm thấy tài khoản với email này. Vui lòng kiểm tra lại chính xác email sinh viên của bạn.",
+      );
+    }
+    // Hủy các yêu cầu pending trước đó của user này
+    db.prepare(
+      "UPDATE password_resets SET status='revoked' WHERE user_id=? AND status='pending'",
+    ).run(user.id);
+
+    // Sinh mã OTP 6 chữ số an toàn
+    const code = crypto.randomInt(100000, 1000000).toString();
+    // Hết hạn sau 24 giờ
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+
+    db.prepare(
+      "INSERT INTO password_resets (user_id, email, code, status, expires_at) VALUES (?, ?, ?, 'pending', ?)",
+    ).run(user.id, user.email, code, expiresAt);
+
+    console.log(
+      `[PASSWORD_RESET_REQUEST] User: ${user.display_name} (${user.email}) -> Code: ${code} (Expires: ${expiresAt})`,
+    );
+
+    return json(response, 200, {
+      ok: true,
+      message:
+        "Yêu cầu đã được tạo thành công! Mã xác thực 6 chữ số đã được gửi tới Admin/Giảng viên. Vui lòng liên hệ Admin để nhận mã này.",
+      email: user.email,
+    });
+  }
+  if (method === "POST" && pathName === "/api/auth/reset-password") {
+    const ip = request.socket.remoteAddress || "local";
+    if (!rateLimit(`reset-pw:${ip}`, 10, 15 * 60 * 1000))
+      return error(
+        response,
+        429,
+        "Bạn đã thử quá nhiều lần. Vui lòng thử lại sau ít phút.",
+      );
+    const { email, code, newPassword } = await readJSON(request);
+    const cleanEmail = (email || "").trim().toLowerCase();
+    const cleanCode = (code || "").toString().trim();
+
+    if (!cleanEmail || !cleanCode || !newPassword) {
+      return error(
+        response,
+        400,
+        "Vui lòng điền đầy đủ Email, mã xác thực 6 chữ số và mật khẩu mới.",
+      );
+    }
+    if (typeof newPassword !== "string" || newPassword.length < 12) {
+      return error(
+        response,
+        400,
+        "Mật khẩu mới phải có độ dài tối thiểu 12 ký tự.",
+      );
+    }
+
+    const resetReq = db
+      .prepare(
+        "SELECT * FROM password_resets WHERE email=? AND code=? AND status='pending' ORDER BY id DESC LIMIT 1",
+      )
+      .get(cleanEmail, cleanCode);
+
+    if (!resetReq) {
+      return error(
+        response,
+        400,
+        "Mã xác thực 6 chữ số không chính xác hoặc yêu cầu đã được sử dụng/hủy bỏ.",
+      );
+    }
+
+    if (new Date(resetReq.expires_at).getTime() < Date.now()) {
+      db.prepare("UPDATE password_resets SET status='expired' WHERE id=?").run(
+        resetReq.id,
+      );
+      return error(
+        response,
+        400,
+        "Mã xác thực này đã hết hạn. Vui lòng tạo yêu cầu khôi phục mới.",
+      );
+    }
+
+    // Cập nhật mật khẩu mới cho user
+    db.prepare(
+      "UPDATE users SET password_hash=?, updated_at=CURRENT_TIMESTAMP WHERE id=?",
+    ).run(hashPassword(newPassword), resetReq.user_id);
+
+    // Đánh dấu mã đã sử dụng
+    db.prepare(
+      "UPDATE password_resets SET status='used', used_at=CURRENT_TIMESTAMP WHERE id=?",
+    ).run(resetReq.id);
+
+    // Xóa tất cả các phiên đăng nhập cũ để đảm bảo an toàn tuyệt đối
+    db.prepare("DELETE FROM sessions WHERE user_id=?").run(resetReq.user_id);
+
+    return json(response, 200, {
+      ok: true,
+      message:
+        "Đặt lại mật khẩu thành công! Bạn có thể đăng nhập ngay bằng mật khẩu mới.",
+    });
+  }
   if (method === "GET" && pathName === "/api/posts") {
     const viewer = sessionFrom(request) || { role: "student" };
     return json(response, 200, {
@@ -2115,6 +2251,47 @@ async function api(request, response, url) {
     );
     return json(response, 200, { ok: true });
   }
+
+  if (method === "POST" && pathName === "/api/me/change-password") {
+    const user = requireUser(request, response);
+    if (!user || !requireCsrf(request, response, user)) return;
+    const { currentPassword, newPassword } = await readJSON(request);
+
+    if (typeof currentPassword !== "string" || !currentPassword) {
+      return error(response, 400, "Vui lòng nhập mật khẩu hiện tại.");
+    }
+    if (typeof newPassword !== "string" || newPassword.length < 12) {
+      return error(
+        response,
+        400,
+        "Mật khẩu mới phải có độ dài tối thiểu 12 ký tự.",
+      );
+    }
+
+    const fullUser = db
+      .prepare("SELECT * FROM users WHERE id=?")
+      .get(user.id);
+    if (!fullUser || !verifyPassword(currentPassword, fullUser.password_hash)) {
+      return error(response, 400, "Mật khẩu hiện tại không chính xác.");
+    }
+    if (verifyPassword(newPassword, fullUser.password_hash)) {
+      return error(
+        response,
+        400,
+        "Mật khẩu mới không được trùng với mật khẩu hiện tại.",
+      );
+    }
+
+    db.prepare(
+      "UPDATE users SET password_hash=?, updated_at=CURRENT_TIMESTAMP WHERE id=?",
+    ).run(hashPassword(newPassword), user.id);
+
+    return json(response, 200, {
+      ok: true,
+      message: "Đổi mật khẩu thành công!",
+    });
+  }
+
   if (method === "GET" && pathName === "/api/topics") {
     const viewer = sessionFrom(request);
     const rows = db
@@ -2758,6 +2935,9 @@ async function api(request, response, url) {
       pendingTopics: count(
         "SELECT count(*) count FROM topics WHERE status='pending'",
       ),
+      pendingPasswordResets: count(
+        "SELECT count(*) count FROM password_resets WHERE status='pending' AND datetime(expires_at) >= datetime('now')",
+      ),
     });
   }
   if (method === "GET" && pathName === "/api/admin/users") {
@@ -3061,6 +3241,74 @@ async function api(request, response, url) {
       reason.trim().slice(0, 500),
     );
     return json(response, 200, { ok: true });
+  }
+
+  if (method === "GET" && pathName === "/api/admin/password-resets") {
+    const user = requireUser(request, response);
+    if (!user || !isSuperAdmin(user))
+      return user
+        ? error(response, 403, "Chỉ TA/Admin mới có quyền này.")
+        : undefined;
+
+    // Tự động chuyển các mã pending đã quá hạn sang 'expired'
+    db.prepare(
+      "UPDATE password_resets SET status='expired' WHERE status='pending' AND datetime(expires_at) < datetime('now')",
+    ).run();
+
+    const rows = db
+      .prepare(
+        `SELECT 
+          pr.id,
+          pr.user_id,
+          pr.email,
+          pr.code,
+          pr.status,
+          pr.expires_at,
+          pr.created_at,
+          pr.used_at,
+          u.display_name,
+          u.student_id,
+          u.real_name,
+          u.class_name,
+          u.role
+        FROM password_resets pr
+        JOIN users u ON u.id = pr.user_id
+        ORDER BY 
+          CASE pr.status WHEN 'pending' THEN 0 ELSE 1 END,
+          pr.id DESC
+        LIMIT 100`,
+      )
+      .all();
+
+    const pendingCount = db
+      .prepare(
+        "SELECT count(*) as count FROM password_resets WHERE status='pending' AND datetime(expires_at) >= datetime('now')",
+      )
+      .get().count;
+
+    return json(response, 200, {
+      requests: rows,
+      pendingCount: Number(pendingCount),
+    });
+  }
+
+  if (method === "POST" && pathName === "/api/admin/password-resets/revoke") {
+    const user = requireUser(request, response);
+    if (!user || !isSuperAdmin(user))
+      return user
+        ? error(response, 403, "Chỉ TA/Admin mới có quyền này.")
+        : undefined;
+    if (!requireCsrf(request, response, user)) return;
+
+    const { id } = await readJSON(request);
+    db.prepare(
+      "UPDATE password_resets SET status='revoked' WHERE id=? AND status='pending'",
+    ).run(id);
+
+    return json(response, 200, {
+      ok: true,
+      message: "Đã hủy mã xác thực này thành công.",
+    });
   }
 
   // --- WEEKLY COMPETITION APIS ---
