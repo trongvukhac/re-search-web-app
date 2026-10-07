@@ -179,6 +179,16 @@ function initEditor(containerId, placeholder = "") {
   });
 }
 async function requestAPI(url, options = {}) {
+  const method = (options.method || "GET").toUpperCase();
+  if (!csrfToken && method !== "GET" && url !== "/api/session" && url !== "/api/auth/login" && url !== "/api/auth/register") {
+    try {
+      const sRes = await fetch("/api/session", { credentials: "same-origin" });
+      const sData = await sRes.json();
+      if (sData && sData.csrfToken) {
+        csrfToken = sData.csrfToken;
+      }
+    } catch (e) {}
+  }
   const headers = {
     "Content-Type": "application/json",
     ...(csrfToken ? { "X-CSRF-Token": csrfToken } : {}),
@@ -1418,44 +1428,7 @@ window.lockBodyScroll = lockBodyScroll;
 window.unlockBodyScroll = unlockBodyScroll;
 window.syncModalScrollLock = syncModalScrollLock;
 
-// Intercept prototype methods of HTMLDialogElement for automatic sync safely
-if (typeof HTMLDialogElement !== "undefined" && HTMLDialogElement.prototype) {
-  const originalShowModal = HTMLDialogElement.prototype.showModal;
-  HTMLDialogElement.prototype.showModal = function (...args) {
-    if (this.open) return; // Prevent InvalidStateError in Safari
-    try {
-      const res = originalShowModal.apply(this, args);
-      syncModalScrollLock();
-      return res;
-    } catch (err) {
-      console.warn("showModal error:", err);
-    }
-  };
-
-  const originalShow = HTMLDialogElement.prototype.show;
-  HTMLDialogElement.prototype.show = function (...args) {
-    if (this.open) return;
-    try {
-      const res = originalShow.apply(this, args);
-      syncModalScrollLock();
-      return res;
-    } catch (err) {
-      console.warn("show error:", err);
-    }
-  };
-
-  const originalClose = HTMLDialogElement.prototype.close;
-  HTMLDialogElement.prototype.close = function (...args) {
-    if (!this.open) return; // Prevent InvalidStateError in Safari
-    try {
-      const res = originalClose.apply(this, args);
-      requestAnimationFrame(() => syncModalScrollLock());
-      return res;
-    } catch (err) {
-      console.warn("close error:", err);
-    }
-  };
-}
+// Dialog scroll locking is handled reactively by MutationObserver and close/cancel events below
 
 // Intercept close/cancel events on all dialogs
 window.addEventListener("close", () => requestAnimationFrame(syncModalScrollLock), true);
@@ -7324,7 +7297,8 @@ async function onEnterArena() {
 
   try {
     const overview = await requestAPI("/api/competition/overview");
-    compState.overview = overview;
+    const norm = normalizeCompData(overview);
+    compState.overview = { ...overview, ...norm };
     if (overview.resultsVersion) {
       if (compState.lastResultsVersion && compState.lastResultsVersion !== overview.resultsVersion) {
         compState.cachedLeaderboard = {};
@@ -7333,7 +7307,6 @@ async function onEnterArena() {
     }
     renderCompetitionOverview(overview);
 
-    const norm = normalizeCompData(overview);
     if (!compState.activeTab) {
       if (norm.state === "open" || norm.state === "countdown") {
         switchCompTab("gateway");
@@ -7876,9 +7849,9 @@ function openQuizStartConfirmModal(phase) {
   const modal = $("#quizStartConfirmModal");
   if (!modal) return;
 
-  const currentPhase = compState.overview?.phase || 1;
-  const isSunday = Boolean(compState.overview?.isSunday);
-  const targetPhase = Number(phase || currentPhase);
+  const currentPhase = Number(compState.overview?.timeState?.phase || compState.overview?.phase || 1);
+  const isSunday = Boolean(compState.overview?.timeState?.isSunday || compState.overview?.isSunday);
+  const targetPhase = Number(phase || compState.overview?.defaultAvailablePhase || currentPhase);
 
   const phaseObj = (compState.overview?.phasesStatus || []).find(p => p.phase === targetPhase);
   if (phaseObj && phaseObj.isCompleted) {
@@ -7942,9 +7915,10 @@ function openQuizStartConfirmModal(phase) {
   }
 
   try {
-    if (!modal.open) {
-      modal.showModal();
+    if (modal.open) {
+      modal.close();
     }
+    modal.showModal();
   } catch (err) {
     console.warn("Could not open quizStartConfirmModal:", err);
   }
@@ -7952,7 +7926,11 @@ function openQuizStartConfirmModal(phase) {
 
 function closeQuizStartConfirmModal() {
   const modal = $("#quizStartConfirmModal");
-  if (modal) modal.close();
+  if (modal && modal.open) {
+    try {
+      modal.close();
+    } catch (e) {}
+  }
   compState.pendingStartPhase = null;
 }
 
@@ -8027,9 +8005,10 @@ async function executeStartQuizSession(targetPhase) {
     }
 
     try {
-      if (!quizModal.open) {
-        quizModal.showModal();
+      if (quizModal.open) {
+        quizModal.close();
       }
+      quizModal.showModal();
     } catch (err) {
       console.warn("Could not open competitionQuizModal:", err);
     }
@@ -8114,9 +8093,10 @@ function promptQuizExit() {
   }
 
   try {
-    if (!exitModal.open) {
-      exitModal.showModal();
+    if (exitModal.open) {
+      exitModal.close();
     }
+    exitModal.showModal();
   } catch (err) {
     console.warn("Could not open quizExitConfirmModal:", err);
   }
@@ -8125,7 +8105,15 @@ function promptQuizExit() {
 function cancelQuizExit() {
   const exitModal = $("#quizExitConfirmModal");
   if (exitModal && exitModal.open) {
-    exitModal.close();
+    try {
+      exitModal.close();
+    } catch (e) {}
+  }
+  const quizModal = $("#competitionQuizModal");
+  if (quizModal && !quizModal.open) {
+    try {
+      quizModal.showModal();
+    } catch (e) {}
   }
 }
 
@@ -8515,9 +8503,10 @@ async function openPhaseResultModal(phase) {
 
     showQuizFinalResult(res.result, { isHistorical: true, phase });
     try {
-      if (!quizModal.open) {
-        quizModal.showModal();
+      if (quizModal.open) {
+        quizModal.close();
       }
+      quizModal.showModal();
     } catch (err) {
       console.warn("Could not open competitionQuizModal:", err);
     }

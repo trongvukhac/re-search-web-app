@@ -666,15 +666,23 @@ function requireUser(request, response) {
   return session;
 }
 function requireCsrf(request, response, session) {
-  if (request.headers["x-csrf-token"] !== session.csrf_token) {
-    error(
-      response,
-      403,
-      "Phiên làm việc không hợp lệ. Vui lòng tải lại trang.",
-    );
-    return false;
+  const headerToken = request.headers["x-csrf-token"];
+  if (headerToken && headerToken === session.csrf_token) {
+    return true;
   }
-  return true;
+  const isSameOrigin = (
+    request.headers["sec-fetch-site"] === "same-origin" ||
+    request.headers["sec-fetch-site"] === "none"
+  );
+  if (isSameOrigin && session.csrf_token) {
+    return true;
+  }
+  error(
+    response,
+    403,
+    "Phiên làm việc không hợp lệ. Vui lòng tải lại trang.",
+  );
+  return false;
 }
 function isAdmin(user) {
   return Boolean(user && (user.role === "admin" || user.role === "ta" || user.role === "lecturer"));
@@ -3617,6 +3625,8 @@ async function api(request, response, url) {
       ok: true,
       resultsVersion: competitionResultsVersion,
       week: comp,
+      phase: timeState.phase,
+      isSunday: Boolean(timeState.isSunday),
       timeState,
       userSummary,
       userStatus,
