@@ -1402,6 +1402,89 @@ function initMobileNavScrollHandler() {
   }
 }
 
+let lastPostDetailScrollY = 0;
+let postDetailUpAccumulator = 0;
+let postDetailDownAccumulator = 0;
+let postDetailScrollTimeout = null;
+
+function showPostDetailTopNav() {
+  const topNav = document.getElementById("postDetailTopNav") || document.querySelector(".post-detail-top-nav");
+  if (topNav) topNav.classList.remove("top-nav-hidden");
+}
+
+function hidePostDetailTopNav() {
+  const topNav = document.getElementById("postDetailTopNav") || document.querySelector(".post-detail-top-nav");
+  if (topNav) topNav.classList.add("top-nav-hidden");
+}
+
+function initPostDetailNavScrollHandler() {
+  lastPostDetailScrollY = Math.max(
+    0,
+    (typeof window !== "undefined" &&
+      (window.scrollY ||
+        window.pageYOffset ||
+        document.documentElement.scrollTop)) ||
+      0
+  );
+
+  const onScroll = () => {
+    const postDetailPage = document.getElementById("postDetail");
+    if (!postDetailPage || !postDetailPage.classList.contains("active-page")) return;
+    if (document.querySelector("dialog[open]")) return;
+
+    const currentY = Math.max(
+      0,
+      window.scrollY ||
+        window.pageYOffset ||
+        document.documentElement.scrollTop ||
+        0
+    );
+    const delta = currentY - lastPostDetailScrollY;
+
+    // Luôn hiện khi ở gần đầu trang
+    if (currentY <= 45) {
+      showPostDetailTopNav();
+      postDetailUpAccumulator = 0;
+      postDetailDownAccumulator = 0;
+      lastPostDetailScrollY = currentY;
+      return;
+    }
+
+    if (delta > 0) {
+      // Cuộn xuống -> trượt lên ẩn trọn dưới thanh logo
+      postDetailDownAccumulator += delta;
+      postDetailUpAccumulator = 0;
+      if (postDetailDownAccumulator >= 15 && currentY > 60) {
+        hidePostDetailTopNav();
+      }
+    } else if (delta < 0) {
+      // Cuộn ngược lên -> rơi lại về vị trí cố định dưới thanh logo
+      const upDelta = Math.abs(delta);
+      postDetailUpAccumulator += upDelta;
+      postDetailDownAccumulator = 0;
+
+      if (postDetailScrollTimeout) {
+        clearTimeout(postDetailScrollTimeout);
+      }
+
+      if (postDetailUpAccumulator >= 15) {
+        showPostDetailTopNav();
+      } else {
+        postDetailScrollTimeout = setTimeout(() => {
+          if (postDetailUpAccumulator >= 10 || currentY <= 50) {
+            showPostDetailTopNav();
+          }
+          postDetailUpAccumulator = 0;
+        }, 120);
+      }
+    }
+
+    lastPostDetailScrollY = currentY;
+  };
+
+  window.addEventListener("scroll", onScroll, { passive: true });
+}
+
 /* ==========================================================================
    UNIVERSAL MODAL SCROLL LOCK & BACKGROUND INTERACTION BLOCKER
    ========================================================================== */
@@ -1866,6 +1949,10 @@ async function openDetail(id, updateHash = true) {
   );
   window.scrollTo({ top: 0, behavior: "smooth" });
   if (typeof hideMobileNav === "function") hideMobileNav();
+  showPostDetailTopNav();
+  lastPostDetailScrollY = 0;
+  postDetailUpAccumulator = 0;
+  postDetailDownAccumulator = 0;
 
   $("#detailContent").innerHTML = `
     <div style="padding: 48px 24px; text-align: center; color: var(--muted);">
@@ -7013,6 +7100,7 @@ document.addEventListener("click", () => {
 
 initStudyLoungeEvents();
 initMobileNavScrollHandler();
+initPostDetailNavScrollHandler();
 
 renderHome();
 renderPosts();
