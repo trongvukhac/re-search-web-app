@@ -2007,8 +2007,7 @@ dialog.modal:not(.quiz-arena-modal):not(.quiz-start-confirm-modal):not(.quiz-exi
 dialog[open].quiz-arena-modal,
 dialog[open].quiz-start-confirm-modal,
 dialog[open].quiz-exit-confirm-modal {
-  display: flex !important;
-  flex-direction: column !important;
+  display: block;
 }
 .modal::backdrop,
 dialog::backdrop {
@@ -8499,20 +8498,23 @@ dialog.quiz-arena-modal,
   border-radius: 18px;
   border: 1px solid rgba(255, 255, 255, 0.15);
   box-shadow: 0 30px 80px rgba(0, 0, 0, 0.5);
-  max-height: 92dvh;
-  max-height: 92vh;
-  display: flex;
-  flex-direction: column;
+  width: min(900px, calc(100vw - 24px));
+  max-width: 900px;
+  height: min(92vh, 92dvh, 860px);
+  max-height: min(92vh, 92dvh);
+  min-height: min(520px, 85vh);
+  display: block;
+  padding: 0;
   overflow: hidden;
   overscroll-behavior: contain;
+  box-sizing: border-box;
 }
 
 .quiz-play-container {
   display: flex;
   flex-direction: column;
   height: 100%;
-  max-height: 92dvh;
-  max-height: 92vh;
+  max-height: 100%;
   overflow: hidden;
 }
 
@@ -9282,12 +9284,15 @@ dialog.quiz-exit-confirm-modal,
   background: #0f172a !important;
   color: #f1f5f9 !important;
   box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.05);
-  max-height: 90dvh;
-  max-height: 90vh;
-  display: flex;
-  flex-direction: column;
+  width: min(500px, calc(100vw - 28px));
+  max-width: 500px;
+  height: fit-content;
+  max-height: min(90vh, 90dvh);
+  display: block;
+  padding: 0;
   overflow: hidden;
   overscroll-behavior: contain;
+  box-sizing: border-box;
 }
 
 .quiz-exit-confirm-modal::backdrop {
@@ -9298,9 +9303,8 @@ dialog.quiz-exit-confirm-modal,
 .quiz-exit-modal-card {
   display: flex;
   flex-direction: column;
-  max-height: 90dvh;
-  max-height: 90vh;
-  height: 100%;
+  max-height: min(90vh, 90dvh);
+  width: 100%;
   overflow: hidden;
 }
 
@@ -9821,12 +9825,15 @@ dialog.quiz-start-confirm-modal,
   background: #0f172a !important;
   color: #f1f5f9 !important;
   box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.85), 0 0 0 1px rgba(255, 255, 255, 0.06);
-  max-height: 90dvh;
-  max-height: 90vh;
-  display: flex;
-  flex-direction: column;
+  width: min(520px, calc(100vw - 28px));
+  max-width: 520px;
+  height: fit-content;
+  max-height: min(90vh, 90dvh);
+  display: block;
+  padding: 0;
   overflow: hidden;
   overscroll-behavior: contain;
+  box-sizing: border-box;
 }
 
 .quiz-start-confirm-modal::backdrop {
@@ -9837,9 +9844,8 @@ dialog.quiz-start-confirm-modal,
 .quiz-start-modal-card {
   display: flex;
   flex-direction: column;
-  max-height: 90dvh;
-  max-height: 90vh;
-  height: 100%;
+  max-height: min(90vh, 90dvh);
+  width: 100%;
   overflow: hidden;
 }
 
