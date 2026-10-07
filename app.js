@@ -8018,7 +8018,7 @@ async function executeStartQuizSession(targetPhase) {
     const quizModal = $("#competitionQuizModal");
     if (!quizModal) return;
 
-    $("#quizPlayView").style.display = "block";
+    $("#quizPlayView").style.display = "flex";
     $("#quizResultView").style.display = "none";
     if (res.phase) {
       const phaseBadge = $("#quizPhaseBadge");
@@ -8113,7 +8113,13 @@ function promptQuizExit() {
     }
   }
 
-  exitModal.showModal();
+  try {
+    if (!exitModal.open) {
+      exitModal.showModal();
+    }
+  } catch (err) {
+    console.warn("Could not open quizExitConfirmModal:", err);
+  }
 }
 
 function cancelQuizExit() {
@@ -8164,8 +8170,8 @@ async function confirmQuizExit() {
   if (res && res.completed && res.forcedSubmit) {
     toast(res.message || "⚠️ Đã dừng và tính điểm bài thi do thoát lần thứ 3!");
     if (res.result) {
-      renderQuizFinalResult(res.result);
-      if (quizModal) quizModal.showModal();
+      showQuizFinalResult(res.result);
+      if (quizModal && !quizModal.open) quizModal.showModal();
     }
   } else {
     compState.exitCount = res?.exitCount ?? ((compState.exitCount || 0) + 1);
@@ -8416,7 +8422,7 @@ function showQuizFinalResult(result, options = {}) {
   if (compState.quizTimerInterval) clearInterval(compState.quizTimerInterval);
 
   $("#quizPlayView").style.display = "none";
-  $("#quizResultView").style.display = "block";
+  $("#quizResultView").style.display = "flex";
 
   const isHistorical = Boolean(options.isHistorical || result?.isHistorical);
   const titleEl = $("#quizResultTitle");
@@ -8507,6 +8513,7 @@ async function openPhaseResultModal(phase) {
     const quizModal = $("#competitionQuizModal");
     if (!quizModal) return;
 
+    showQuizFinalResult(res.result, { isHistorical: true, phase });
     try {
       if (!quizModal.open) {
         quizModal.showModal();
@@ -9158,6 +9165,7 @@ window.openQuizStartConfirmModal = openQuizStartConfirmModal;
 window.closeQuizStartConfirmModal = closeQuizStartConfirmModal;
 window.proceedStartQuizSession = proceedStartQuizSession;
 window.openPhaseResultModal = openPhaseResultModal;
+window.applySession = applySession;
 
 // Safe cancel listeners for Arena Quiz modals
 document.addEventListener("DOMContentLoaded", () => {
