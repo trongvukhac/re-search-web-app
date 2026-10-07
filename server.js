@@ -355,6 +355,16 @@ for (const t of defaultTopics) {
 }
 
 const attempts = new Map();
+function getClientIp(request) {
+  const flyIp = request.headers["fly-client-ip"];
+  if (flyIp && typeof flyIp === "string") return flyIp.trim();
+  const forwarded = request.headers["x-forwarded-for"];
+  if (forwarded && typeof forwarded === "string") {
+    const first = forwarded.split(",")[0].trim();
+    if (first) return first;
+  }
+  return request.socket?.remoteAddress || "local";
+}
 function rateLimit(key, max, windowMs) {
   const now = Date.now();
   const v = attempts.get(key) || [];
@@ -573,15 +583,10 @@ function calculateUserStreak(userId, todayDate, formatYMD) {
   while (true) {
     const dateStr = formatYMD(checkDate);
     if (activityMap.has(dateStr)) {
-      const prevDateStr = formatYMD(new Date(checkDate.getTime() - 86400000));
+      currentStreak++;
       streakStartDate = dateStr;
       streakStartCreatedAt = activityMap.get(dateStr) || dateStr;
-      if (restoreMap.has(prevDateStr) && !activityMap.has(prevDateStr)) {
-        checkDate.setDate(checkDate.getDate() - 1);
-      } else {
-        currentStreak++;
-        checkDate.setDate(checkDate.getDate() - 1);
-      }
+      checkDate.setDate(checkDate.getDate() - 1);
     } else if (restoreMap.has(dateStr)) {
       streakStartDate = dateStr;
       streakStartCreatedAt = restoreMap.get(dateStr) || dateStr;
@@ -659,9 +664,12 @@ function requireUser(request, response) {
     error(response, 401, "Bạn cần đăng nhập để thực hiện thao tác này.");
     return null;
   }
-  if (session.locked_until && Date.parse(session.locked_until) > Date.now()) {
-    error(response, 403, "Tài khoản của bạn đã bị khóa 12 tiếng do hành vi tiêu cực.");
-    return null;
+  if (session.locked_until) {
+    const lockStr = session.locked_until.endsWith("Z") ? session.locked_until : session.locked_until.replace(" ", "T") + "Z";
+    if (Date.parse(lockStr) > Date.now()) {
+      error(response, 403, "Tài khoản của bạn đã bị khóa 12 tiếng do hành vi tiêu cực.");
+      return null;
+    }
   }
   return session;
 }
@@ -1602,7 +1610,13 @@ async function api(request, response, url) {
 
   if (method === "POST" && pathName === "/api/auth/restore-streak") {
     const user = requireUser(request, response);
-    if (!user) return;
+    if (!user || !requireCsrf(request, response, user)) return;
+
+    const freshUser = db.prepare("SELECT * FROM users WHERE id=?").get(user.id);
+    if (!freshUser || (freshUser.shields || 0) < 1) {
+      return error(response, 400, "Bạn không có đủ khiên bảo vệ để khôi phục chuỗi.");
+    }
+
     const todayDate = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Ho_Chi_Minh" }));
     const yesterdayDate = new Date(todayDate); yesterdayDate.setDate(yesterdayDate.getDate() - 1);
     const y = yesterdayDate.getFullYear();
@@ -1610,12 +1624,19 @@ async function api(request, response, url) {
     const day = String(yesterdayDate.getDate()).padStart(2, '0');
     const yesterday = `${y}-${m}-${day}`;
     
-    db.prepare("INSERT OR IGNORE INTO streak_restores(user_id,restored_date) VALUES (?,?)").run(user.id, yesterday);
+    const already = db.prepare("SELECT 1 FROM streak_restores WHERE user_id=? AND restored_date=?").get(user.id, yesterday);
+    if (already) {
+      return error(response, 400, "Chuỗi của ngày hôm qua đã được khôi phục trước đó.");
+    }
+
+    db.prepare("INSERT INTO streak_restores(user_id,restored_date) VALUES (?,?)").run(user.id, yesterday);
+    db.prepare("UPDATE users SET shields = MAX(0, shields - 1) WHERE id=?").run(user.id);
     return json(response, 200, { success: true });
   }
   if (method === "POST" && pathName === "/api/auth/register") {
+    const clientIp = getClientIp(request);
     if (
-      !rateLimit(`register:${request.socket.remoteAddress}`, 5, 60 * 60 * 1000)
+      !rateLimit(`register:${clientIp}`, 5, 60 * 60 * 1000)
     )
       return error(response, 429, "Bạn đã thử đăng ký quá nhiều lần.");
     const { email, password, displayName } = await readJSON(request);
@@ -1658,7 +1679,8 @@ async function api(request, response, url) {
     }
   }
   if (method === "POST" && pathName === "/api/auth/login") {
-    if (!rateLimit(`login:${request.socket.remoteAddress}`, 10, 15 * 60 * 1000))
+    const clientIp = getClientIp(request);
+    if (!rateLimit(`login:${clientIp}`, 10, 15 * 60 * 1000))
       return error(response, 429, "Bạn đã thử đăng nhập quá nhiều lần.");
     const { email, password } = await readJSON(request);
     const user = db
@@ -1676,7 +1698,7 @@ async function api(request, response, url) {
     return json(response, 200, { ok: true });
   }
   if (method === "POST" && pathName === "/api/auth/forgot-password-request") {
-    const ip = request.socket.remoteAddress || "local";
+    const ip = getClientIp(request);
     if (!rateLimit(`forgot-pw:${ip}`, 5, 15 * 60 * 1000))
       return error(
         response,
@@ -1724,7 +1746,7 @@ async function api(request, response, url) {
     });
   }
   if (method === "POST" && pathName === "/api/auth/reset-password") {
-    const ip = request.socket.remoteAddress || "local";
+    const ip = getClientIp(request);
     if (!rateLimit(`reset-pw:${ip}`, 10, 15 * 60 * 1000))
       return error(
         response,
@@ -1888,7 +1910,7 @@ async function api(request, response, url) {
     const post = db.prepare("SELECT id, read_count FROM posts WHERE id=? AND status='visible'").get(postId);
     if (!post) return error(response, 404, "Không tìm thấy bài đăng.");
     const viewer = sessionFrom(request);
-    const identifier = viewer ? `u:${viewer.id}` : `ip:${request.socket.remoteAddress || "unknown"}`;
+    const identifier = viewer ? `u:${viewer.id}` : `ip:${getClientIp(request)}`;
     if (viewer) {
       const todayVN = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Ho_Chi_Minh" }).format(new Date());
       // Luôn ghi nhận ngày hoạt động để duy trì chuỗi
@@ -2034,7 +2056,7 @@ async function api(request, response, url) {
 
     if (value === -1) {
       if (recordDownvoteAndCheckSpam(user.id)) {
-        const lockedUntil = new Date(Date.now() + 12 * 60 * 60 * 1000).toISOString().replace('T', ' ').replace('Z', '');
+        const lockedUntil = new Date(Date.now() + 12 * 60 * 60 * 1000).toISOString();
         db.prepare("UPDATE users SET locked_until=? WHERE id=?").run(lockedUntil, user.id);
         recordContribution(user.id, "penalty", -50, null, null, "Hệ thống nhận diện hành vi tiêu cực với cộng đồng");
         downvoteAttempts.delete(user.id);
@@ -2051,20 +2073,32 @@ async function api(request, response, url) {
     if (!target) return error(response, 404, "Không tìm thấy nội dung.");
     if (target.author_id === user.id)
       return error(response, 400, "Bạn không thể tự vote nội dung của mình.");
+
+    const existingVote = db.prepare(
+      "SELECT vote_value FROM votes WHERE user_id=? AND target_type=? AND target_id=?"
+    ).get(user.id, targetType, Number(idText));
+    const oldValue = existingVote ? existingVote.vote_value : 0;
+    if (oldValue === value) {
+      return json(response, 200, { ok: true, unchanged: true });
+    }
+
     try {
       db.prepare(
         "INSERT INTO votes(user_id,target_type,target_id,vote_value) VALUES (?,?,?,?) ON CONFLICT(user_id,target_type,target_id) DO UPDATE SET vote_value=?",
       ).run(user.id, targetType, Number(idText), value, value);
-      recordContribution(
-        target.author_id,
-        "helpful_received",
-        value > 0 ? 1 : -1,
-        targetType,
-        Number(idText),
-      );
+      const delta = value - oldValue;
+      if (delta !== 0) {
+        recordContribution(
+          target.author_id,
+          "helpful_received",
+          delta,
+          targetType,
+          Number(idText),
+        );
+      }
       return json(response, 201, { ok: true });
     } catch {
-      return error(response, 409, "Bạn đã đánh dấu nội dung này là Hữu ích.");
+      return error(response, 409, "Không thể cập nhật đánh giá.");
     }
   }
   if (method === "GET" && pathName === "/api/leaderboard") {
@@ -2242,7 +2276,7 @@ async function api(request, response, url) {
   }
   if (method === "PATCH" && pathName === "/api/me/avatar") {
     const user = requireUser(request, response);
-    if (!user) return;
+    if (!user || !requireCsrf(request, response, user)) return;
     if (user.avatar_changed) {
       return error(response, 400, "Bạn đã đổi avatar 1 lần rồi, không thể đổi thêm.");
     }
@@ -2609,10 +2643,11 @@ async function api(request, response, url) {
     const comment = db.prepare("SELECT * FROM document_comments WHERE id=?").get(commentId);
     if (!comment) return error(response, 404, "Không tìm thấy thảo luận.");
 
-    // Chỉ Admin hoặc Giảng viên (và TA) mới có quyền xoá thảo luận tài liệu
+    // Chỉ tác giả bình luận, Admin hoặc Giảng viên (và TA) mới có quyền xoá
+    const isOwner = comment.user_id === user.id;
     const isPrivileged = user.role === "admin" || user.role === "lecturer" || user.role === "ta";
-    if (!isPrivileged) {
-      return error(response, 403, "Chỉ Admin hoặc Giảng viên mới có quyền xoá thảo luận tài liệu.");
+    if (!isOwner && !isPrivileged) {
+      return error(response, 403, "Bạn không có quyền xoá thảo luận này.");
     }
 
     const doc = db.prepare("SELECT title FROM documents WHERE id=?").get(comment.document_id);
@@ -2716,7 +2751,7 @@ async function api(request, response, url) {
 
   if (method === "POST" && pathName === "/api/study/sync") {
     const user = requireUser(request, response);
-    if (!user) return;
+    if (!user || !requireCsrf(request, response, user)) return;
     try {
       const body = await readJSON(request);
       const validModes = ['focus', 'pomodoro', 'deep', 'shortbreak', 'longbreak'];
@@ -2830,7 +2865,7 @@ async function api(request, response, url) {
 
   if (method === "POST" && pathName === "/api/study/complete") {
     const user = requireUser(request, response);
-    if (!user) return;
+    if (!user || !requireCsrf(request, response, user)) return;
     try {
       const body = await readJSON(request);
       const minutes = Number(body.durationMinutes) || 0;
@@ -2895,7 +2930,7 @@ async function api(request, response, url) {
 
   if (method === "POST" && pathName === "/api/study/cheer") {
     const user = requireUser(request, response);
-    if (!user) return;
+    if (!user || !requireCsrf(request, response, user)) return;
     try {
       const senderStreak = calculateUserStreak(user.id);
       if ((senderStreak.streak || 0) < 3 && !isAdmin(user)) {
@@ -4000,13 +4035,11 @@ async function api(request, response, url) {
     const session = db.prepare("SELECT * FROM competition_sessions WHERE session_token = ? AND user_id = ?").get(sessionToken, user.id);
     if (!session) return error(response, 404, "Không tìm thấy phiên thi đấu.");
 
-    if (!questionIndex && body.questionId) {
-      const qRow = db.prepare("SELECT question_index FROM competition_questions WHERE id = ?").get(body.questionId);
-      if (qRow) questionIndex = qRow.question_index;
+    const currentExpectedIndex = session.current_question_index || 1;
+    if (questionIndex !== undefined && questionIndex !== null && Number(questionIndex) !== currentExpectedIndex) {
+      return error(response, 400, `Thứ tự câu hỏi không khớp. Phiên thi đang ở câu ${currentExpectedIndex}.`);
     }
-    if (!questionIndex) {
-      questionIndex = session.current_question_index || 1;
-    }
+    questionIndex = currentExpectedIndex;
 
     if (session.status !== "in_progress") {
       const resData = {
@@ -4085,6 +4118,9 @@ async function api(request, response, url) {
     ).get(session.competition_id, session.phase, questionIndex);
 
     if (!question) return error(response, 404, "Không tìm thấy câu hỏi.");
+    if (body.questionId && Number(body.questionId) !== question.id) {
+      return error(response, 400, "Mã câu hỏi không khớp với câu hỏi hiện tại.");
+    }
 
     let answerRow = db.prepare(
       "SELECT * FROM competition_answers WHERE session_id = ? AND question_index = ?"
@@ -4428,7 +4464,7 @@ async function api(request, response, url) {
   if (method === "POST" && pathName === "/api/competition/session/pause") {
     const user = requireUser(request, response);
     if (!user) return;
-    if (request.headers["x-csrf-token"] && !requireCsrf(request, response, user)) return;
+    if (!requireCsrf(request, response, user)) return;
 
     const body = await readJSON(request);
     const { sessionToken } = body;

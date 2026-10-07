@@ -2027,8 +2027,6 @@ async function openDetail(id) {
     `;
 
     $("#closeDetail").onclick = () => modal.close();
-
-    $("#closeDetail").onclick = () => modal.close();
     
     const replyEditor = initEditor("replyContentContainer", "Chia sẻ góc nhìn hoặc gợi ý tài liệu...");
 
@@ -2108,12 +2106,12 @@ function renderTopicsDropdown() {
   const qTopic = $("#questionTopic");
   if (filter) {
     const val = filter.value;
-    filter.innerHTML = `<option value="all">Tất cả chủ đề</option>` + topics.map(t => `<option value="${t}">${t}</option>`).join('');
+    filter.innerHTML = `<option value="all">Tất cả chủ đề</option>` + topics.map(t => `<option value="${escapeHTML(t)}">${escapeHTML(t)}</option>`).join('');
     filter.value = topics.includes(val) ? val : "all";
   }
   if (qTopic) {
     const val = qTopic.value;
-    qTopic.innerHTML = topics.map(t => `<option value="${t}">${t}</option>`).join('');
+    qTopic.innerHTML = topics.map(t => `<option value="${escapeHTML(t)}">${escapeHTML(t)}</option>`).join('');
     if (topics.includes(val)) qTopic.value = val;
   }
 }
@@ -2346,6 +2344,22 @@ if ($("#forgotResetSubmitBtn")) {
     }
   });
 }
+
+$("#forgotEmail")?.addEventListener("keydown", (e) => {
+  if (e.key === "Enter") {
+    e.preventDefault();
+    $("#forgotRequestSubmitBtn")?.click();
+  }
+});
+
+[$("#forgotCode"), $("#forgotNewPassword"), $("#forgotConfirmPassword")].forEach(inp => {
+  inp?.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      $("#forgotResetSubmitBtn")?.click();
+    }
+  });
+});
 
 $("#authForm").addEventListener("submit", async (e) => {
   e.preventDefault();
@@ -2836,12 +2850,12 @@ async function loadAdminDocuments() {
         .map(
           (d) => `
     <div style="padding: 16px; border: 1px solid var(--sage-2); border-radius: 8px;">
-      <h3 style="margin: 0 0 8px 0;">${d.title} <span style="font-size: 12px; font-weight: normal; color: var(--sage-4);">(${d.format})</span></h3>
-      <p style="margin: 0 0 12px 0;">Đề xuất bởi: ${d.submittedBy}</p>
+      <h3 style="margin: 0 0 8px 0;">${escapeHTML(d.title)} <span style="font-size: 12px; font-weight: normal; color: var(--sage-4);">(${escapeHTML(d.format)})</span></h3>
+      <p style="margin: 0 0 12px 0;">Đề xuất bởi: ${escapeHTML(d.submittedBy)}</p>
       <div style="display: flex; gap: 8px;">
         <button class="button button-primary" style="padding: 6px 12px; font-size: 14px;" onclick="reviewDoc(${d.id}, 'approved')">Duyệt</button>
         <button class="button button-outline" style="padding: 6px 12px; font-size: 14px; color: var(--error); border-color: var(--error);" onclick="reviewDoc(${d.id}, 'rejected')">Từ chối</button>
-        <a href="${d.sourceUrl}" target="_blank" class="button button-outline" style="padding: 6px 12px; font-size: 14px;">Xem file</a>
+        <a href="${escapeHTML(d.sourceUrl)}" target="_blank" rel="noopener noreferrer" class="button button-outline" style="padding: 6px 12px; font-size: 14px;">Xem file</a>
       </div>
     </div>
   `,
@@ -2854,8 +2868,8 @@ async function loadAdminDocuments() {
         .map(
           (t) => `
     <div style="padding: 16px; border: 1px solid var(--sage-2); border-radius: 8px;">
-      <h3 style="margin: 0 0 8px 0;">${t.name}</h3>
-      <p style="margin: 0 0 12px 0;">Đề xuất bởi: ${t.createdBy}</p>
+      <h3 style="margin: 0 0 8px 0;">${escapeHTML(t.name)}</h3>
+      <p style="margin: 0 0 12px 0;">Đề xuất bởi: ${escapeHTML(t.createdBy)}</p>
       <div style="display: flex; gap: 8px;">
         <button class="button button-primary" style="padding: 6px 12px; font-size: 14px;" onclick="reviewTopic(${t.id}, 'approve')">Duyệt</button>
         <button class="button button-outline" style="padding: 6px 12px; font-size: 14px; color: var(--error); border-color: var(--error);" onclick="reviewTopic(${t.id}, 'reject')">Từ chối</button>
@@ -3045,6 +3059,7 @@ window.showReplyForm = (containerId, postId, actualParentId) => {
 };
 
 window.submitInlineReply = async (containerId, postId, actualParentId) => {
+  if (serverMode && !session) return openAuth();
   if (!window.inlineReplyEditor) return;
   const rawText = window.inlineReplyEditor.getText().trim();
   const isAnonymous = document.getElementById(`inlineReplyAnonymous-${containerId}`).checked;
@@ -8586,13 +8601,15 @@ function collectCurrentAdminQuestionsFromDOM() {
     const optB = card.querySelector(".admin-q-b")?.value?.trim() || "";
     const optC = card.querySelector(".admin-q-c")?.value?.trim() || "";
     const correct = card.querySelector(".admin-q-correct")?.value || "A";
+    const explanation = card.querySelector(".admin-q-explanation")?.value?.trim() || "";
     list.push({
       questionNumber: idx + 1,
       questionText: text,
       optionA: optA,
       optionB: optB,
       optionC: optC,
-      correctOption: correct
+      correctOption: correct,
+      explanation: explanation
     });
   });
   return list;
@@ -8677,6 +8694,7 @@ function renderAdminQuestionsList() {
     const optB = q.optionB || q.option_b || "";
     const optC = q.optionC || q.option_c || "";
     const correct = (q.correctOption || q.correct_option || "A").toUpperCase();
+    const explanation = q.explanation || "";
     return `
       <div class="admin-q-card" data-idx="${idx}" style="background:var(--sage-2); border:1px solid var(--line); border-radius:6px; padding:10px;">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
@@ -8684,7 +8702,7 @@ function renderAdminQuestionsList() {
           <button type="button" class="button button-sm button-outline" style="color:#ef4444; padding:2px 6px; font-size:11px;" onclick="adminRemoveQuestion(${idx})">Xóa</button>
         </div>
         <input type="text" class="input-field admin-q-text" style="width:100%; margin-bottom:6px; font-size:12px;" placeholder="Nội dung câu hỏi..." value="${escapeHTML(qText)}" />
-        <div style="display:grid; grid-template-columns: 1fr 1fr 1fr 110px; gap:6px; align-items:center;">
+        <div style="display:grid; grid-template-columns: 1fr 1fr 1fr 110px; gap:6px; align-items:center; margin-bottom:6px;">
           <input type="text" class="input-field admin-q-a" style="font-size:11px;" placeholder="Đáp án A" value="${escapeHTML(optA)}" />
           <input type="text" class="input-field admin-q-b" style="font-size:11px;" placeholder="Đáp án B" value="${escapeHTML(optB)}" />
           <input type="text" class="input-field admin-q-c" style="font-size:11px;" placeholder="Đáp án C" value="${escapeHTML(optC)}" />
@@ -8694,6 +8712,7 @@ function renderAdminQuestionsList() {
             <option value="C" ${correct === "C" ? "selected" : ""}>Đúng: C</option>
           </select>
         </div>
+        <input type="text" class="input-field admin-q-explanation" style="width:100%; font-size:11px;" placeholder="Lời giải thích đáp án (tùy chọn)..." value="${escapeHTML(explanation)}" />
       </div>
     `;
   }).join("");
@@ -8709,7 +8728,8 @@ function adminAddEmptyQuestion() {
     optionA: "",
     optionB: "",
     optionC: "",
-    correctOption: "A"
+    correctOption: "A",
+    explanation: ""
   });
   renderAdminQuestionsList();
   const badge = $("#adminPhaseStatusBadge");
@@ -8738,6 +8758,7 @@ async function adminSaveQuestions() {
     const optB = card.querySelector(".admin-q-b")?.value?.trim();
     const optC = card.querySelector(".admin-q-c")?.value?.trim();
     const correct = card.querySelector(".admin-q-correct")?.value || "A";
+    const explanation = card.querySelector(".admin-q-explanation")?.value?.trim() || "";
     if (text && optA && optB && optC) {
       questions.push({
         questionNumber: idx + 1,
@@ -8745,7 +8766,8 @@ async function adminSaveQuestions() {
         optionA: optA,
         optionB: optB,
         optionC: optC,
-        correctOption: correct
+        correctOption: correct,
+        explanation: explanation
       });
     }
   });
@@ -8988,6 +9010,8 @@ async function adminHandleExcelUpload(event) {
             if (m) phaseVal = parseInt(m[0], 10);
           }
 
+          const explanation = getCellVal(row, ["lời giải thích", "loi giai thich", "giải thích", "giai thich", "explanation", "chú thích", "chu thich"]);
+
           if (qText && optA && optB && optC) {
             const exists = phaseMap[phaseVal].some(q => q.questionText === qText);
             if (!exists) {
@@ -8997,7 +9021,8 @@ async function adminHandleExcelUpload(event) {
                 optionA: optA,
                 optionB: optB,
                 optionC: optC,
-                correctOption: correct
+                correctOption: correct,
+                explanation: explanation || ""
               });
             }
           }
@@ -9031,6 +9056,8 @@ async function adminHandleExcelUpload(event) {
           if (m) phaseVal = parseInt(m[0], 10);
         }
 
+        const explanation = getCellVal(row, ["lời giải thích", "loi giai thich", "giải thích", "giai thich", "explanation", "chú thích", "chu thich"]);
+
         if (qText && optA && optB && optC) {
           phaseMap[phaseVal].push({
             questionNumber: phaseMap[phaseVal].length + 1,
@@ -9038,7 +9065,8 @@ async function adminHandleExcelUpload(event) {
             optionA: optA,
             optionB: optB,
             optionC: optC,
-            correctOption: correct
+            correctOption: correct,
+            explanation: explanation || ""
           });
         }
       }
