@@ -1243,8 +1243,9 @@ function go(route, scrollToTop = true) {
     }
   }
 
-  if (route !== "post-detail") {
+  if (route !== "post-detail" && !route.startsWith("post-") && !route.startsWith("post/")) {
     stopPostReadTracking();
+    if (typeof showMobileNav === "function") showMobileNav();
   }
 
   const isSameRoute = (currentActiveRoute === route);
@@ -1864,6 +1865,7 @@ async function openDetail(id, updateHash = true) {
     a.classList.toggle("active", a.dataset.route === "forum"),
   );
   window.scrollTo({ top: 0, behavior: "smooth" });
+  if (typeof hideMobileNav === "function") hideMobileNav();
 
   $("#detailContent").innerHTML = `
     <div style="padding: 48px 24px; text-align: center; color: var(--muted);">
@@ -1878,6 +1880,7 @@ async function openDetail(id, updateHash = true) {
   if (backBtn) {
     backBtn.onclick = () => {
       stopPostReadTracking();
+      if (typeof showMobileNav === "function") showMobileNav();
       go("forum");
     };
   }

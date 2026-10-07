@@ -10075,24 +10075,23 @@ dialog.quiz-start-confirm-modal,
   }
 }
 
-/* ==========================================================================
-   DEDICATED POST DETAIL PAGE
-   ========================================================================== */
 .post-detail-page {
-  padding-bottom: 90px;
+  padding-top: 14px !important;
+  padding-bottom: 140px;
 }
 .post-detail-container {
   max-width: 860px;
   margin: 0 auto;
-  padding: 20px 20px 48px;
+  padding: 0 16px 40px;
 }
 .post-detail-top-nav {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  margin-bottom: 20px;
-  padding-bottom: 14px;
+  margin-top: 0;
+  margin-bottom: 14px;
+  padding-bottom: 12px;
   border-bottom: 1px solid var(--line);
 }
 .back-to-forum-btn {
@@ -10178,24 +10177,39 @@ dialog.quiz-start-confirm-modal,
   gap: 8px;
 }
 .post-detail-pinned-reply {
-  position: sticky;
-  bottom: 16px;
-  z-index: 40;
-  margin-top: 24px;
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(860px, calc(100% - 32px));
+  z-index: 99;
   border: 1px solid var(--line);
-  border-radius: 12px;
-  box-shadow: 0 10px 30px rgba(8, 39, 25, 0.1);
-  background: #ffffff;
-  padding: 14px 20px;
+  border-radius: 14px;
+  box-shadow: 0 12px 36px rgba(8, 39, 25, 0.16);
+  background: var(--paper);
+  padding: 12px 18px;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  transition: all 0.25s ease;
+}
+
+body:has(#postDetail.active-page) .mobile-nav,
+body:has(#postDetail.active-page) .mobile-fab {
+  display: none !important;
 }
 
 @media (max-width: 768px) {
+  .post-detail-page {
+    padding-top: 10px !important;
+    padding-bottom: 130px;
+  }
   .post-detail-container {
-    padding: 12px 10px 40px;
+    padding: 0 10px 32px;
   }
   .post-detail-top-nav {
-    margin-bottom: 14px;
-    padding-bottom: 10px;
+    margin-top: 0;
+    margin-bottom: 10px;
+    padding-bottom: 8px;
   }
   .back-to-forum-btn {
     padding: 7px 14px;
@@ -10223,10 +10237,13 @@ dialog.quiz-start-confirm-modal,
     display: none;
   }
   .post-detail-pinned-reply {
-    margin-top: 16px;
-    padding: 10px 14px;
-    border-radius: 10px;
+    bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+    width: calc(100% - 20px);
+    padding: 10px 12px;
+    border-radius: 12px;
+    box-shadow: 0 8px 28px rgba(8, 39, 25, 0.18);
   }
+}
 
   /* --- CẢI TIẾN TRANG CÁ NHÂN MOBILE: 3 NÚT NẰM 1 HÀNG DƯỚI THÔNG TIN VÀ TRÊN THỐNG KÊ --- */
   .account-header {
