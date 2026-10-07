@@ -2010,9 +2010,9 @@ async function openDetail(id, updateHash = true) {
         try {
           const res = await requestAPI(`/api/posts/${id}/read`, { method: "POST" });
           if (res && typeof res.readCount === "number") {
-            const countEl = $("#detailPostReadCount");
+            const countEl = $("#detailPostReadCountText");
             if (countEl && postReadActivePostId === id) {
-              countEl.textContent = `${res.readCount} lượt đọc`;
+              countEl.textContent = `${res.readCount} lượt xem`;
             }
             if (Array.isArray(window.posts)) {
               const p = window.posts.find(x => x.id === id);
@@ -2106,6 +2106,13 @@ async function openDetail(id, updateHash = true) {
       $("#postDetailBreadcrumbTopic").textContent = post.topic;
     }
 
+    const saveBtn = $("#postDetailSaveBtn");
+    if (saveBtn) {
+      saveBtn.className = `button button-outline button-sm post-detail-save-btn ${post.isSaved ? "is-saved" : ""}`;
+      saveBtn.innerHTML = post.isSaved ? `★ Đã lưu` : `☆ Lưu`;
+      saveBtn.onclick = () => toggleSavePost(post.id);
+    }
+
     $("#detailContent").innerHTML = `
       <div class="modal-head" style="position: relative; margin-bottom: 16px;">
         <div style="flex: 1;">
@@ -2118,13 +2125,8 @@ async function openDetail(id, updateHash = true) {
       <div style="display: flex; gap: 12px; margin-top: 0; margin-bottom: 16px; align-items: center;">
         <span class="avatar avatar-sm ${getAvatarClass(post.author?.streakTier || post.streakTier, post.anonymous, post.author?.role)}">${post.author.initials || post.initials || "?"}</span>
         <div class="detail-meta" style="flex: 1; margin: 0;">
-          <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 8px; line-height: 1.2;">
-            <div>
-              <b class="${getNameClass(post.author?.streakTier || post.streakTier)}">${post.author.displayName || post.author}</b>${post.author?.role === "lecturer" ? ' <span style="color: var(--primary); font-weight: 700; margin-left: 4px; font-size: 11px;">[Giảng viên]</span>' : ""} <span style="font-size: 11px; color: #888; margin-left: 6px;">${formatTime(post.createdAt)}</span>${getEditedIndicator(post.editedAt)}
-            </div>
-            <div class="post-read-count" id="detailPostReadCount" style="font-size: 12px; color: var(--muted); white-space: nowrap; flex-shrink: 0;">
-              ${post.readCount || 0} lượt đọc
-            </div>
+          <div style="line-height: 1.3;">
+            <b class="${getNameClass(post.author?.streakTier || post.streakTier)}">${post.author.displayName || post.author}</b>${post.author?.role === "lecturer" ? ' <span style="color: var(--primary); font-weight: 700; margin-left: 4px; font-size: 11px;">[Giảng viên]</span>' : ""} <span style="font-size: 11px; color: #888; margin-left: 6px;">${formatTime(post.createdAt)}</span>${getEditedIndicator(post.editedAt)}
           </div>
           ${post.lecturerRecommended ? '<div style="font-size: 11px; color: var(--primary); font-weight: 600; margin-top: 4px; display: flex; align-items: center; gap: 4px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path></svg> Giảng viên đề xuất</div>' : ''}
         </div>
@@ -2134,10 +2136,14 @@ async function openDetail(id, updateHash = true) {
         <button class="button button-outline button-sm" onclick="votePost(${post.id}, 1)">▲ <span>Hữu ích</span></button>
         <span style="font-weight:600; color:var(--primary); min-width: 16px; text-align: center;">${post.helpfulCount || post.upvotes || 0}</span>
         <button class="button button-outline button-sm" onclick="votePost(${post.id}, -1)">▼ <span>Không hữu ích</span></button>
-        <span style="margin: 0 0 0 12px; font-weight:600; color:var(--sage-5); font-size: 12px; display: inline-flex; align-items: center; gap: 4px;"><svg class="icon-chat-svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>${post.responseCount} phản hồi</span>
-        <button class="button button-outline button-sm" style="margin-left: 12px; border: none; padding: 0 8px; color: ${post.isSaved ? 'var(--primary)' : 'var(--sage-5)'}; font-weight: 600;" onclick="toggleSavePost(${post.id})">
-          ${post.isSaved ? '★ Đã lưu' : '☆ Lưu'}
-        </button>
+        <span class="detail-action-frame" id="detailResponseCountBadge">
+          <svg class="icon-chat-svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          <span>${post.responseCount || 0} phản hồi</span>
+        </span>
+        <span class="detail-action-frame" id="detailPostReadCount">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+          <span id="detailPostReadCountText">${post.readCount || 0} lượt xem</span>
+        </span>
         <div style="flex:1"></div>
         ${adminBtns}
       </div>

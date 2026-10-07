@@ -16,7 +16,7 @@
     <script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-    <link rel="stylesheet" href="styles.css?v=55" />
+    <link rel="stylesheet" href="styles.css?v=56" />
   </head>
   <body>
     <dialog
@@ -1340,9 +1340,14 @@
             <div class="post-detail-breadcrumb" id="postDetailBreadcrumb">
               <span>Diễn đàn</span> <span class="bc-sep">/</span> <span id="postDetailBreadcrumbTopic">Thảo luận</span>
             </div>
-            <button type="button" class="button button-outline button-sm post-detail-share-btn" id="postDetailShareBtn" title="Sao chép liên kết bài viết">
-              🔗 Sao chép link
-            </button>
+            <div class="post-detail-top-actions">
+              <button type="button" class="button button-outline button-sm post-detail-share-btn" id="postDetailShareBtn" title="Sao chép liên kết bài viết">
+                🔗 Sao chép link
+              </button>
+              <button type="button" class="button button-outline button-sm post-detail-save-btn" id="postDetailSaveBtn" title="Lưu bài viết">
+                ☆ Lưu
+              </button>
+            </div>
           </div>
           <div class="post-detail-card" id="detailContent">
             <!-- Nội dung bài viết và phản hồi do app.js render -->
@@ -2557,6 +2562,6 @@
       </div>
     </dialog>
 
-    <script src="app.js?v=64" defer></script>
+    <script src="app.js?v=65" defer></script>
   </body>
 </html>
