@@ -1235,6 +1235,18 @@ function go(route, scrollToTop = true) {
     return;
   }
 
+  if (route.startsWith("post-") || route.startsWith("post/")) {
+    const pId = Number(route.replace(/^post[-/]/, ""));
+    if (pId) {
+      openDetail(pId, false);
+      return;
+    }
+  }
+
+  if (route !== "post-detail") {
+    stopPostReadTracking();
+  }
+
   const isSameRoute = (currentActiveRoute === route);
   currentActiveRoute = route;
 
@@ -1838,13 +1850,50 @@ if (docViewerModalEl) {
   });
 }
 
-async function openDetail(id) {
+async function openDetail(id, updateHash = true) {
   window.currentDetailPostId = id;
-  const modal = $("#detailModal");
-  modal.showModal();
-  $("#detailContent").innerHTML =
-    `<div class="modal-head"><h2>Đang tải...</h2></div>`;
+  if (updateHash && location.hash !== `#post-${id}`) {
+    history.pushState(null, "", `#post-${id}`);
+  }
+
+  // Chuyển sang hiển thị Dedicated Page
+  $$(".page").forEach((p) =>
+    p.classList.toggle("active-page", p.dataset.page === "post-detail"),
+  );
+  $$("[data-route]").forEach((a) =>
+    a.classList.toggle("active", a.dataset.route === "forum"),
+  );
+  window.scrollTo({ top: 0, behavior: "smooth" });
+
+  $("#detailContent").innerHTML = `
+    <div style="padding: 48px 24px; text-align: center; color: var(--muted);">
+      <div style="font-size: 28px; margin-bottom: 10px;">⏳</div>
+      <p style="font-size: 15px;">Đang tải bài viết...</p>
+    </div>
+  `;
   $("#detailContent").setAttribute("data-current-post", id);
+
+  // Gán sự kiện nút Quay lại ở góc trái trên cùng
+  const backBtn = $("#postDetailBackBtn");
+  if (backBtn) {
+    backBtn.onclick = () => {
+      stopPostReadTracking();
+      go("forum");
+    };
+  }
+
+  // Gán sự kiện nút Sao chép link bài viết
+  const shareBtn = $("#postDetailShareBtn");
+  if (shareBtn) {
+    shareBtn.onclick = () => {
+      const url = `${window.location.origin}/#post-${id}`;
+      navigator.clipboard.writeText(url).then(() => {
+        toast("📋 Đã sao chép liên kết bài viết!");
+      }).catch(() => {
+        prompt("Sao chép liên kết bài viết:", url);
+      });
+    };
+  }
 
   if (postReadActivePostId !== id) {
     stopPostReadTracking();
@@ -1854,8 +1903,9 @@ async function openDetail(id) {
     postReadLastActiveTime = document.visibilityState === "visible" ? Date.now() : null;
 
     postReadTimer = setInterval(async () => {
-      const modal = $("#detailModal");
-      if (!modal || !modal.open || postReadActivePostId !== id) {
+      const pageEl = $("#postDetail");
+      const isViewing = pageEl && pageEl.classList.contains("active-page");
+      if (!isViewing || postReadActivePostId !== id) {
         stopPostReadTracking();
         return;
       }
@@ -1962,44 +2012,46 @@ async function openDetail(id) {
     }
     const editBtn = post.isAuthor ? renderEditBtn(post.id, post.createdAt, 'posts') : "";
 
+    if ($("#postDetailBreadcrumbTopic")) {
+      $("#postDetailBreadcrumbTopic").textContent = post.topic;
+    }
+
     $("#detailContent").innerHTML = `
-      <div class="modal-head" style="position: relative;">
-        <div>
-          <p class="eyebrow">${post.topic.toUpperCase()}</p>
-          <h2 class="detail-title">${post.isPinned ? "📌 " : ""}${escapeHTML(post.title)}</h2>
+      <div class="modal-head" style="position: relative; margin-bottom: 16px;">
+        <div style="flex: 1;">
+          <p class="eyebrow">${escapeHTML(post.topic.toUpperCase())}</p>
+          <h2 class="detail-title" style="margin-top: 6px;">${post.isPinned ? "📌 " : ""}${escapeHTML(post.title)}</h2>
         </div>
-        <div style="display: flex; gap: 8px;">
-          ${editBtn ? `<div style="position:relative; width:24px; height:24px; margin-top: -2px;">${editBtn}</div>` : ""}
-          <button class="close-modal" id="closeDetail" aria-label="Đóng" style="margin-left: 0;">×</button>
-        </div>
+        ${editBtn ? `<div style="position:relative; width:24px; height:24px; margin-top: 4px;">${editBtn}</div>` : ""}
+        <button id="closeDetail" style="display:none;" aria-hidden="true"></button>
       </div>
-      <div style="display: flex; gap: 12px; margin-top: -8px; margin-bottom: 0;">
-        <span class="avatar avatar-xs ${getAvatarClass(post.author?.streakTier || post.streakTier, post.anonymous, post.author?.role)}">${post.author.initials || post.initials || "?"}</span>
-        <div class="detail-meta" style="flex: 1; margin: 0; ${post.lecturerRecommended ? 'margin-top: -2px;' : 'margin-top: 6px;'}">
+      <div style="display: flex; gap: 12px; margin-top: 0; margin-bottom: 16px; align-items: center;">
+        <span class="avatar avatar-sm ${getAvatarClass(post.author?.streakTier || post.streakTier, post.anonymous, post.author?.role)}">${post.author.initials || post.initials || "?"}</span>
+        <div class="detail-meta" style="flex: 1; margin: 0;">
           <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 8px; line-height: 1.2;">
             <div>
-              <b class="${getNameClass(post.author?.streakTier || post.streakTier)}">${post.author.displayName || post.author}</b>${post.author?.role === "lecturer" ? ' <span style="color: var(--primary); font-weight: 700; margin-left: 4px; font-size: 11px;">[Giảng viên]</span>' : ""} <span style="font-size: 10px; color: #888; margin-left: 6px;">${formatTime(post.createdAt)}</span>${getEditedIndicator(post.editedAt)}
+              <b class="${getNameClass(post.author?.streakTier || post.streakTier)}">${post.author.displayName || post.author}</b>${post.author?.role === "lecturer" ? ' <span style="color: var(--primary); font-weight: 700; margin-left: 4px; font-size: 11px;">[Giảng viên]</span>' : ""} <span style="font-size: 11px; color: #888; margin-left: 6px;">${formatTime(post.createdAt)}</span>${getEditedIndicator(post.editedAt)}
             </div>
-            <div class="post-read-count" id="detailPostReadCount" style="font-size: 11px; color: var(--muted); white-space: nowrap; flex-shrink: 0;">
+            <div class="post-read-count" id="detailPostReadCount" style="font-size: 12px; color: var(--muted); white-space: nowrap; flex-shrink: 0;">
               ${post.readCount || 0} lượt đọc
             </div>
           </div>
-          ${post.lecturerRecommended ? '<div style="font-size: 11px; color: var(--primary); font-weight: 600; margin-top: 3px; display: flex; align-items: center; gap: 4px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path></svg> Giảng viên đề xuất</div>' : ''}
+          ${post.lecturerRecommended ? '<div style="font-size: 11px; color: var(--primary); font-weight: 600; margin-top: 4px; display: flex; align-items: center; gap: 4px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path></svg> Giảng viên đề xuất</div>' : ''}
         </div>
       </div>
       <div class="detail-copy ql-editor">${DOMPurify.sanitize(post.content || post.excerpt)}</div>
       <div class="detail-actions">
         <button class="button button-outline button-sm" onclick="votePost(${post.id}, 1)">▲ <span>Hữu ích</span></button>
-        <span style="font-weight:600; color:var(--primary)">${post.helpfulCount || post.upvotes || 0}</span>
+        <span style="font-weight:600; color:var(--primary); min-width: 16px; text-align: center;">${post.helpfulCount || post.upvotes || 0}</span>
         <button class="button button-outline button-sm" onclick="votePost(${post.id}, -1)">▼ <span>Không hữu ích</span></button>
-        <span style="margin: 0 0 0 12px; font-weight:600; color:var(--sage-5); font-size: 11px; display: inline-flex; align-items: center; gap: 4px;"><svg class="icon-chat-svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>${post.responseCount} phản hồi</span>
-        <button class="button button-outline button-sm" style="margin-left: 12px; border: none; padding: 0 8px; color: ${post.isSaved ? 'var(--primary)' : 'var(--sage-5)'};" onclick="toggleSavePost(${post.id})">
+        <span style="margin: 0 0 0 12px; font-weight:600; color:var(--sage-5); font-size: 12px; display: inline-flex; align-items: center; gap: 4px;"><svg class="icon-chat-svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>${post.responseCount} phản hồi</span>
+        <button class="button button-outline button-sm" style="margin-left: 12px; border: none; padding: 0 8px; color: ${post.isSaved ? 'var(--primary)' : 'var(--sage-5)'}; font-weight: 600;" onclick="toggleSavePost(${post.id})">
           ${post.isSaved ? '★ Đã lưu' : '☆ Lưu'}
         </button>
         <div style="flex:1"></div>
         ${adminBtns}
       </div>
-      <h3 class="detail-response-title">Phản hồi</h3>
+      <h3 class="detail-response-title">Phản hồi (${post.responseCount || 0})</h3>
       <div id="responsesContainer">${responsesHTML}</div>
     `;
 
@@ -2026,7 +2078,13 @@ async function openDetail(id) {
       </form>
     `;
 
-    $("#closeDetail").onclick = () => modal.close();
+    const closeBtn = $("#closeDetail");
+    if (closeBtn) {
+      closeBtn.onclick = () => {
+        stopPostReadTracking();
+        go("forum");
+      };
+    }
     
     const replyEditor = initEditor("replyContentContainer", "Chia sẻ góc nhìn hoặc gợi ý tài liệu...");
 
@@ -2066,7 +2124,7 @@ async function openDetail(id) {
     };
 
     setTimeout(() => {
-      document.querySelectorAll('#detailModal .response-copy .collapsible-content').forEach(el => {
+      document.querySelectorAll('#detailContent .response-copy .collapsible-content').forEach(el => {
         if (el.scrollHeight > el.clientHeight) {
           el.classList.add('has-overflow');
           el.nextElementSibling.style.display = 'inline-block';
@@ -2075,7 +2133,7 @@ async function openDetail(id) {
     }, 10);
   } catch (err) {
     $("#detailContent").innerHTML =
-      `<div class="modal-head"><div><h2 class="detail-title">Lỗi khi tải</h2></div><button class="close-modal" onclick="this.closest('dialog').close()">×</button></div><p class="detail-copy">${err.message}</p>`;
+      `<div class="modal-head"><div><h2 class="detail-title">Lỗi khi tải</h2></div></div><p class="detail-copy">${err.message}</p>`;
   }
 }
 function toast(message) {
@@ -2518,8 +2576,8 @@ $("#editForm").addEventListener("submit", async (e) => {
     // Refresh content based on type
     if (type === "posts") {
       hydrateServer();
-      if ($("#detailModal").open) {
-        openDetail(id);
+      if ($("#postDetail")?.classList.contains("active-page")) {
+        openDetail(id, false);
       }
     } else if (type === "document_comments") {
       if (currentViewingDocId) {
@@ -2997,11 +3055,10 @@ window.deleteResponse = async (id) => {
       body: JSON.stringify({ status: "deleted" }),
     });
     toast("Đã xoá bình luận.");
-    const postId = $("#detailModal")
-      .querySelector(".detail-actions button")
-      .getAttribute("onclick")
-      .match(/\d+/)[0];
-    openDetail(postId);
+    const postId = window.currentDetailPostId || $("#detailContent")?.getAttribute("data-current-post");
+    if (postId) {
+      openDetail(postId, false);
+    }
     hydrateServer();
   } catch (err) {
     toast(err.message);
@@ -3141,8 +3198,8 @@ window.votePost = async (id, value) => {
     });
     toast("Đã ghi nhận lượt Vote.");
     hydrateServer();
-    if ($("#detailModal").open) {
-      setTimeout(() => openDetail(id), 100);
+    if ($("#postDetail")?.classList.contains("active-page")) {
+      setTimeout(() => openDetail(id, false), 100);
     }
   } catch (e) {
     toast(e.message);
@@ -3158,11 +3215,10 @@ window.voteResponse = async (id, value) => {
     });
     toast("Đã ghi nhận lượt Vote.");
     hydrateServer();
-    const postId = $("#detailModal")
-      .querySelector(".detail-actions button")
-      .getAttribute("onclick")
-      .match(/\d+/)[0];
-    setTimeout(() => openDetail(postId), 100);
+    const postId = window.currentDetailPostId || $("#detailContent")?.getAttribute("data-current-post");
+    if (postId) {
+      setTimeout(() => openDetail(postId, false), 100);
+    }
   } catch (e) {
     toast(e.message);
   }
@@ -3176,8 +3232,8 @@ window.pinPost = async (id, isPinned) => {
     });
     toast("Đã " + (isPinned ? "ghim" : "bỏ ghim") + " bài đăng.");
     hydrateServer();
-    if ($("#detailModal").open) {
-      setTimeout(() => openDetail(id), 100);
+    if ($("#postDetail")?.classList.contains("active-page")) {
+      setTimeout(() => openDetail(id, false), 100);
     }
   } catch (e) {
     toast(e.message);

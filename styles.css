@@ -10075,6 +10075,199 @@ dialog.quiz-start-confirm-modal,
   }
 }
 
+/* ==========================================================================
+   DEDICATED POST DETAIL PAGE
+   ========================================================================== */
+.post-detail-page {
+  padding-bottom: 90px;
+}
+.post-detail-container {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 20px 20px 48px;
+}
+.post-detail-top-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 20px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--line);
+}
+.back-to-forum-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  font-size: 14px;
+  padding: 8px 18px;
+  border-radius: 8px;
+  background: var(--paper);
+  color: var(--ink);
+  border: 1px solid var(--line);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.back-to-forum-btn:hover {
+  background: var(--sage-2);
+  border-color: var(--sage-3);
+  transform: translateX(-3px);
+}
+.post-detail-breadcrumb {
+  font-size: 13px;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 500;
+}
+.post-detail-breadcrumb .bc-sep {
+  opacity: 0.4;
+}
+.post-detail-share-btn {
+  cursor: pointer;
+  font-size: 12.5px;
+  font-weight: 500;
+  padding: 6px 14px;
+  border-radius: 7px;
+  transition: all 0.2s ease;
+}
+.post-detail-share-btn:hover {
+  background: var(--sage-2);
+}
+.post-detail-card {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 32px 36px;
+  box-shadow: 0 4px 24px rgba(10, 35, 23, 0.05);
+}
+.post-detail-card .detail-title {
+  font-size: 26px;
+  font-weight: 700;
+  line-height: 1.35;
+  margin: 10px 0 16px;
+  color: var(--ink);
+  letter-spacing: -0.3px;
+}
+.post-detail-card .detail-copy {
+  font-size: 15.5px;
+  line-height: 1.78;
+  color: #24352b;
+  margin: 22px 0;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 26px;
+}
+.post-detail-card .detail-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 28px;
+  padding-bottom: 22px;
+  border-bottom: 1px solid var(--line);
+}
+.post-detail-card .detail-response-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--ink);
+  margin: 24px 0 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.post-detail-pinned-reply {
+  position: sticky;
+  bottom: 16px;
+  z-index: 40;
+  margin-top: 24px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(8, 39, 25, 0.1);
+  background: #ffffff;
+  padding: 14px 20px;
+}
 
+@media (max-width: 768px) {
+  .post-detail-container {
+    padding: 12px 10px 40px;
+  }
+  .post-detail-top-nav {
+    margin-bottom: 14px;
+    padding-bottom: 10px;
+  }
+  .back-to-forum-btn {
+    padding: 7px 14px;
+    font-size: 13px;
+  }
+  .post-detail-card {
+    padding: 20px 14px;
+    border-radius: 10px;
+  }
+  .post-detail-card .detail-title {
+    font-size: 19px;
+    margin: 8px 0 12px;
+  }
+  .post-detail-card .detail-copy {
+    font-size: 14.5px;
+    line-height: 1.65;
+    margin: 16px 0;
+    padding-bottom: 20px;
+  }
+  .post-detail-card .detail-actions {
+    margin-bottom: 20px;
+    padding-bottom: 16px;
+  }
+  .post-detail-breadcrumb {
+    display: none;
+  }
+  .post-detail-pinned-reply {
+    margin-top: 16px;
+    padding: 10px 14px;
+    border-radius: 10px;
+  }
 
-
+  /* --- CẢI TIẾN TRANG CÁ NHÂN MOBILE: 3 NÚT NẰM 1 HÀNG DƯỚI THÔNG TIN VÀ TRÊN THỐNG KÊ --- */
+  .account-header {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 16px !important;
+    padding-bottom: 20px !important;
+  }
+  .account-header .profile-large {
+    width: 100% !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 14px !important;
+  }
+  .account-header h1 {
+    font-size: 24px !important;
+    word-break: break-word !important;
+    white-space: normal !important;
+    line-height: 1.25 !important;
+    margin: 4px 0 2px !important;
+  }
+  .account-actions {
+    display: grid !important;
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 8px !important;
+    width: 100% !important;
+    margin-top: 2px !important;
+  }
+  .account-actions .button {
+    width: 100% !important;
+    min-width: 0 !important;
+    padding: 8px 4px !important;
+    font-size: 12px !important;
+    text-align: center !important;
+    justify-content: center !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    border-radius: 8px !important;
+    min-height: 38px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+  }
+}
