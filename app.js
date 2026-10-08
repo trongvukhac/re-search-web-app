@@ -713,6 +713,7 @@ async function hydrateServer() {
     if (current.authenticated) {
       if ($("#accountGrid")) $("#accountGrid").style.display = "";
       if ($("#viewMyNamecardBtn")) $("#viewMyNamecardBtn").style.display = "";
+      if ($("#editNamecardBtn")) $("#editNamecardBtn").style.display = "";
       if ($("#editProfile")) $("#editProfile").style.display = "";
       if ($("#openChangePasswordBtn")) $("#openChangePasswordBtn").style.display = "";
       if ($("#accountSecurityCard")) $("#accountSecurityCard").style.display = "block";
@@ -889,6 +890,7 @@ async function hydrateServer() {
     } else {
       if ($("#accountGrid")) $("#accountGrid").style.display = "none";
       if ($("#viewMyNamecardBtn")) $("#viewMyNamecardBtn").style.display = "none";
+      if ($("#editNamecardBtn")) $("#editNamecardBtn").style.display = "none";
       if ($("#editProfile")) $("#editProfile").style.display = "none";
       if ($("#openChangePasswordBtn")) $("#openChangePasswordBtn").style.display = "none";
       if ($("#accountSecurityCard")) $("#accountSecurityCard").style.display = "none";
@@ -1096,14 +1098,20 @@ function renderPosts() {
     : `<div class="empty-state"><h3>Chưa tìm thấy nội dung phù hợp</h3><p>Thử dùng từ khóa khác hoặc đặt câu hỏi mới.</p></div>`;
   $("#forumFeed").innerHTML = html;
   $$(".forum-feed .post-card").forEach((el) =>
-    el.addEventListener("click", () => openDetail(Number(el.dataset.postId))),
+    el.addEventListener("click", (e) => {
+      if (e.target.closest("[data-namecard-user-id]")) return;
+      openDetail(Number(el.dataset.postId));
+    }),
   );
 }
 function renderHome() {
   const newest = posts.slice(0, 3);
   $("#homePostList").innerHTML = newest.map(postCard).join("");
   $$("#homePostList .post-card").forEach((el) =>
-    el.addEventListener("click", () => openDetail(Number(el.dataset.postId))),
+    el.addEventListener("click", (e) => {
+      if (e.target.closest("[data-namecard-user-id]")) return;
+      openDetail(Number(el.dataset.postId));
+    }),
   );
   const topicsHtml = topics
     .map((t) => `<button class="topic" data-topic="${t}">${t}</button>`)
@@ -1144,15 +1152,19 @@ function renderHome() {
   if (globalRecent) {
     globalRecent.innerHTML = newest
       .map(
-        (p) => `
+        (p) => {
+          const authorUserId = (!p.anonymous && p.authorId) ? p.authorId : "";
+          const ncAttr = authorUserId ? `data-namecard-user-id="${authorUserId}" style="cursor: pointer;" title="Xem thẻ tên"` : "";
+          return `
       <li>
-        <span class="avatar avatar-xs ${getAvatarClass(p.streakTier, p.anonymous, p.authorRole)}">${p.initials}</span>
+        <span class="avatar avatar-xs ${getAvatarClass(p.streakTier, p.anonymous, p.authorRole)}" ${ncAttr}>${p.initials}</span>
         <p>
-          <strong class="${getNameClass(p.streakTier)}">${escapeHTML(p.author)}</strong> vừa đặt câu hỏi<br />
+          <strong class="${getNameClass(p.streakTier)}" ${ncAttr}>${escapeHTML(p.author)}</strong> vừa đặt câu hỏi<br />
           <small>${p.time}</small>
         </p>
       </li>
-    `,
+    `;
+        }
       )
       .join("");
   }
@@ -3483,8 +3495,11 @@ window.openNamecard = async function(userId) {
       }
     }
 
-    // Edit Cover button for self
-    $("#namecardEditCoverBtn").style.display = data.user.isSelf ? "inline-flex" : "none";
+    // Edit buttons for self
+    const isSelf = Boolean(data.user.isSelf);
+    if ($("#namecardEditCoverBtn")) $("#namecardEditCoverBtn").style.display = isSelf ? "inline-flex" : "none";
+    if ($("#namecardEditAvatarBtn")) $("#namecardEditAvatarBtn").style.display = isSelf ? "inline-flex" : "none";
+    if ($("#namecardEditNameBtn")) $("#namecardEditNameBtn").style.display = isSelf ? "inline-flex" : "none";
 
     // Frame Decoration
     $("#namecardCard").setAttribute("data-frame", data.user.namecardFrame || "default");
@@ -3542,6 +3557,8 @@ window.openNamecard = async function(userId) {
 window.openMyNamecard = function() {
   if (session && session.id) {
     openNamecard(session.id);
+  } else {
+    toast("Vui lòng đăng nhập để xem thẻ tên của bạn.");
   }
 };
 
@@ -3553,12 +3570,6 @@ window.copyNamecardId = function() {
   }).catch(() => {
     toast(`ID người dùng: ${text}`);
   });
-};
-
-window.openEditProfileFromNamecard = function() {
-  const modal = $("#namecardModal");
-  if (modal && typeof modal.close === "function") modal.close();
-  openEditProfileModal("namecard");
 };
 
 window.goToStudyFromCard = function() {
@@ -3584,59 +3595,31 @@ window.filterForumByUser = function() {
   }
 };
 
-function switchProfileTab(tabName) {
-  const isNamecard = tabName === "namecard";
-  const isInfo = tabName === "info";
-  const isPassword = tabName === "password";
-
-  if ($("#profileTabNamecardBtn")) $("#profileTabNamecardBtn").classList.toggle("active", isNamecard);
-  if ($("#profileTabInfoBtn")) $("#profileTabInfoBtn").classList.toggle("active", isInfo);
-  if ($("#profileTabPasswordBtn")) $("#profileTabPasswordBtn").classList.toggle("active", isPassword);
-
-  if ($("#editNamecardForm")) $("#editNamecardForm").style.display = isNamecard ? "block" : "none";
-  if ($("#editProfileForm")) $("#editProfileForm").style.display = isInfo ? "block" : "none";
-  if ($("#changePasswordForm")) $("#changePasswordForm").style.display = isPassword ? "block" : "none";
-
-  if ($("#editProfileModalTitle")) {
-    if (isNamecard) $("#editProfileModalTitle").textContent = "Thiết lập thẻ tên & Trang trí";
-    else if (isInfo) $("#editProfileModalTitle").textContent = "Thông tin tài khoản (Bảo mật)";
-    else $("#editProfileModalTitle").textContent = "Đổi mật khẩu";
+// ==========================================
+// MODAL 1: CHỈNH SỬA THẺ TÊN & TRANG TRÍ
+// ==========================================
+window.openEditNamecardModal = function(section = "all") {
+  if (!session) {
+    toast("Vui lòng đăng nhập để chỉnh sửa thẻ tên.");
+    return;
   }
-}
 
-if ($("#profileTabNamecardBtn")) {
-  $("#profileTabNamecardBtn").onclick = () => switchProfileTab("namecard");
-}
-if ($("#profileTabInfoBtn")) {
-  $("#profileTabInfoBtn").onclick = () => switchProfileTab("info");
-}
-if ($("#profileTabPasswordBtn")) {
-  $("#profileTabPasswordBtn").onclick = () => switchProfileTab("password");
-}
+  // Close namecard viewer if open
+  const ncModal = $("#namecardModal");
+  if (ncModal && typeof ncModal.close === "function" && ncModal.open) {
+    ncModal.close();
+  }
 
-window.openEditProfileModal = openEditProfileModal;
-function openEditProfileModal(initialTab = "namecard") {
-  if (!session) return;
-
-  // Tab 1 values
-  $("#profileDisplayName").value = session.displayName || "";
-  $("#profileBio").value = session.bio || "";
+  // Populate Namecard values
+  if ($("#namecardDisplayNameInput")) $("#namecardDisplayNameInput").value = session.displayName || "";
+  if ($("#namecardBioInput")) $("#namecardBioInput").value = session.bio || "";
   currentSelectedAvatar = session.initials || session.avatar || "🌱";
   currentSelectedFrame = session.namecardFrame || "default";
   currentSelectedCover = session.coverImage || "default";
 
-  // Tab 2 values
-  $("#profileStudentId").value = session.studentId || "";
-  $("#profileRealName").value = session.realName || "";
-  $("#profileClassName").value = session.className || "";
-
-  // Render Avatar choices
+  // Render Pickers
   renderAvatarPicker();
-
-  // Render Frame choices
   renderFramePicker();
-
-  // Render Cover choices
   renderCoverPicker();
 
   // Custom cover button status
@@ -3658,15 +3641,24 @@ function openEditProfileModal(initialTab = "namecard") {
   const previewBox = $("#coverUploadPreview");
   const previewImg = $("#coverUploadImg");
   if (currentSelectedCover.startsWith("data:image/") || currentSelectedCover.startsWith("http")) {
-    previewBox.style.display = "block";
-    previewImg.src = currentSelectedCover;
+    if (previewBox) previewBox.style.display = "block";
+    if (previewImg) previewImg.src = currentSelectedCover;
   } else {
-    previewBox.style.display = "none";
+    if (previewBox) previewBox.style.display = "none";
   }
 
-  switchProfileTab(initialTab);
-  $("#editProfileModal").showModal();
-}
+  const modal = $("#editNamecardModal");
+  if (modal) {
+    modal.showModal();
+    if (section === "name" && $("#namecardDisplayNameInput")) {
+      setTimeout(() => $("#namecardDisplayNameInput").focus(), 100);
+    } else if (section === "avatar" && $("#profileAvatarPicker")) {
+      setTimeout(() => $("#profileAvatarPicker").scrollIntoView({ behavior: "smooth", block: "center" }), 100);
+    } else if (section === "cover" && $("#profileCoverPicker")) {
+      setTimeout(() => $("#profileCoverPicker").scrollIntoView({ behavior: "smooth", block: "center" }), 100);
+    }
+  }
+};
 
 function renderAvatarPicker() {
   const container = $("#profileAvatarPicker");
@@ -3813,7 +3805,7 @@ if ($("#btnRemoveCustomCover")) {
   };
 }
 
-// Submit Tab 1: Thẻ tên & Trang trí
+// Submit Modal 1: Thẻ tên & Trang trí
 if ($("#editNamecardForm")) {
   $("#editNamecardForm").onsubmit = async (e) => {
     e.preventDefault();
@@ -3822,8 +3814,8 @@ if ($("#editNamecardForm")) {
       const res = await requestAPI("/api/me/profile", {
         method: "PATCH",
         body: JSON.stringify({
-          displayName: $("#profileDisplayName").value.trim(),
-          bio: $("#profileBio").value.trim(),
+          displayName: $("#namecardDisplayNameInput").value.trim(),
+          bio: $("#namecardBioInput").value.trim(),
           avatar: currentSelectedAvatar,
           namecardFrame: currentSelectedFrame,
           coverImage: currentSelectedCover,
@@ -3834,7 +3826,7 @@ if ($("#editNamecardForm")) {
         session = { ...session, ...res.user };
       }
       toast("Đã lưu thẻ tên & trang trí!");
-      $("#editProfileModal").close();
+      $("#editNamecardModal").close();
       hydrateServer();
       if (currentViewingNamecardUserId && session && currentViewingNamecardUserId === session.id) {
         openNamecard(session.id);
@@ -3847,51 +3839,63 @@ if ($("#editNamecardForm")) {
   };
 }
 
-// Submit Tab 2: Thông tin tài khoản (Bảo mật)
-$("#editProfileForm").onsubmit = async (e) => {
-  e.preventDefault();
-  setSubmitLoading(e, true);
-  try {
-    const res = await requestAPI("/api/me/profile", {
-      method: "PATCH",
-      body: JSON.stringify({
-        studentId: $("#profileStudentId").value.trim(),
-        realName: $("#profileRealName").value.trim(),
-        className: $("#profileClassName").value.trim(),
-      }),
-    });
-    if (res.user) {
-      session = { ...session, ...res.user };
-    }
-    toast("Đã lưu thông tin tài khoản bảo mật!");
-    $("#editProfileModal").close();
-    hydrateServer();
-  } catch (err) {
-    toast(err.message);
-  } finally {
-    setSubmitLoading(e, false);
+// ==========================================
+// MODAL 2: CHỈNH SỬA HỒ SƠ (3 THÔNG TIN NỘI BỘ)
+// ==========================================
+window.openEditProfileModal = function() {
+  if (!session) {
+    toast("Vui lòng đăng nhập để chỉnh sửa hồ sơ.");
+    return;
   }
+  $("#profileStudentId").value = session.studentId || "";
+  $("#profileRealName").value = session.realName || "";
+  $("#profileClassName").value = session.className || "";
+  $("#editProfileModal").showModal();
 };
 
-// Hook nút "Chỉnh sửa hồ sơ" ở trang cá nhân
-if ($("#editProfile")) {
-  $("#editProfile").onclick = () => openEditProfileModal("namecard");
+if ($("#editProfileForm")) {
+  $("#editProfileForm").onsubmit = async (e) => {
+    e.preventDefault();
+    setSubmitLoading(e, true);
+    try {
+      const res = await requestAPI("/api/me/profile", {
+        method: "PATCH",
+        body: JSON.stringify({
+          studentId: $("#profileStudentId").value.trim(),
+          realName: $("#profileRealName").value.trim(),
+          className: $("#profileClassName").value.trim(),
+        }),
+      });
+      if (res.user) {
+        session = { ...session, ...res.user };
+      }
+      toast("Đã lưu hồ sơ cá nhân!");
+      $("#editProfileModal").close();
+      hydrateServer();
+    } catch (err) {
+      toast(err.message);
+    } finally {
+      setSubmitLoading(e, false);
+    }
+  };
 }
 
-function openChangePasswordDialog() {
-  if (!session) return;
-  openEditProfileModal("password");
+// ==========================================
+// MODAL 3: ĐỔI MẬT KHẨU
+// ==========================================
+window.openChangePasswordModal = function() {
+  if (!session) {
+    toast("Vui lòng đăng nhập để đổi mật khẩu.");
+    return;
+  }
+  if ($("#currentPasswordInput")) $("#currentPasswordInput").value = "";
+  if ($("#newPasswordInput")) $("#newPasswordInput").value = "";
+  if ($("#confirmPasswordInput")) $("#confirmPasswordInput").value = "";
+  $("#changePasswordModal").showModal();
   setTimeout(() => {
     if ($("#currentPasswordInput")) $("#currentPasswordInput").focus();
   }, 100);
-}
-
-if ($("#openChangePasswordBtn")) {
-  $("#openChangePasswordBtn").onclick = openChangePasswordDialog;
-}
-if ($("#cardChangePasswordBtn")) {
-  $("#cardChangePasswordBtn").onclick = openChangePasswordDialog;
-}
+};
 
 if ($("#changePasswordForm")) {
   $("#changePasswordForm").onsubmit = async (e) => {
@@ -3923,8 +3927,7 @@ if ($("#changePasswordForm")) {
       if ($("#currentPasswordInput")) $("#currentPasswordInput").value = "";
       if ($("#newPasswordInput")) $("#newPasswordInput").value = "";
       if ($("#confirmPasswordInput")) $("#confirmPasswordInput").value = "";
-      switchProfileTab("namecard");
-      $("#editProfileModal").close();
+      $("#changePasswordModal").close();
     } catch (err) {
       toast(err.message);
     } finally {
@@ -3933,7 +3936,7 @@ if ($("#changePasswordForm")) {
   };
 }
 
-// Global click event to open Namecard on any avatar or user trigger
+// Global click event to open Namecard on any avatar or user trigger with capture phase
 document.addEventListener("click", (e) => {
   const trigger = e.target.closest("[data-namecard-user-id]");
   if (trigger) {
@@ -3944,7 +3947,7 @@ document.addEventListener("click", (e) => {
       openNamecard(uid);
     }
   }
-});
+}, true);
 
 window.promptChangeAvatar = async function() {
   const newAvatar = prompt("Bạn chỉ được đổi Avatar 1 lần duy nhất!\n\nHãy nhập 1 biểu tượng (Emoji) hoặc ký tự bạn muốn dùng làm Avatar:");

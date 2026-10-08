@@ -1223,11 +1223,11 @@
       <section id="account" class="page" data-page="account">
         <div class="account-header">
           <div class="profile-large">
-            <div style="position: relative; display: inline-block;">
+            <div style="position: relative; display: inline-block; cursor: pointer;" onclick="openMyNamecard()" title="Bấm để xem thẻ tên của bạn">
               <span class="avatar avatar-lg" id="headerAvatar">🦊</span>
-              <button class="button button-sm" id="changeAvatarBtn" style="position: absolute; bottom: -5px; left: 50%; transform: translateX(-50%); font-size: 9px; padding: 2px 6px; display: none;" onclick="promptChangeAvatar()">Đổi</button>
+              <button class="button button-sm" id="changeAvatarBtn" style="position: absolute; bottom: -5px; left: 50%; transform: translateX(-50%); font-size: 9px; padding: 2px 6px; display: none;" onclick="event.stopPropagation(); openEditNamecardModal('avatar')">Đổi</button>
             </div>
-            <div>
+            <div style="cursor: pointer;" onclick="openMyNamecard()" title="Bấm để xem thẻ tên của bạn">
               <p class="eyebrow">TÀI KHOẢN CỦA BẠN</p>
               <h1>Khách</h1>
               <p class="role-label">Chưa đăng nhập</p>
@@ -1243,16 +1243,26 @@
               📇 Xem thẻ tên
             </button>
             <button
+              class="button button-primary"
+              id="editNamecardBtn"
+              style="display: none"
+              onclick="openEditNamecardModal()"
+            >
+              🎨 Chỉnh sửa thẻ tên
+            </button>
+            <button
               class="button button-outline"
               id="editProfile"
               style="display: none"
+              onclick="openEditProfileModal()"
             >
-              Chỉnh sửa thẻ tên & hồ sơ
+              📝 Chỉnh sửa hồ sơ
             </button>
             <button
-              class="button button-primary"
+              class="button button-outline"
               id="openChangePasswordBtn"
               style="display: none"
+              onclick="openChangePasswordModal()"
             >
               🔑 Đổi mật khẩu
             </button>
@@ -1724,8 +1734,8 @@
         
         <!-- Ảnh bìa -->
         <div class="namecard-cover" id="namecardCover">
-          <button type="button" class="namecard-edit-cover-btn" id="namecardEditCoverBtn" onclick="openEditProfileFromNamecard()" style="display: none;">
-            <span>🖼️</span> Sửa ảnh bìa
+          <button type="button" class="namecard-edit-cover-btn" id="namecardEditCoverBtn" onclick="openEditNamecardModal('cover')" style="display: none;" title="Chỉnh sửa ảnh bìa">
+            <span>✏️</span> Sửa ảnh bìa
           </button>
         </div>
 
@@ -1736,10 +1746,14 @@
               <div class="namecard-avatar-circle" id="namecardAvatarCircle">
                 <span id="namecardAvatar">🌱</span>
               </div>
+              <button type="button" class="namecard-edit-avatar-btn" id="namecardEditAvatarBtn" onclick="openEditNamecardModal('avatar')" style="display: none;" title="Đổi biểu tượng Avatar & Khung viền">✏️</button>
               <span class="namecard-online-dot" title="Đang hoạt động"></span>
             </div>
             <div class="namecard-identity">
-              <h2 class="namecard-display-name" id="namecardDisplayName">Tên người dùng</h2>
+              <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 6px;">
+                <h2 class="namecard-display-name" id="namecardDisplayName" style="margin: 0;">Tên người dùng</h2>
+                <button type="button" class="namecard-edit-name-btn" id="namecardEditNameBtn" onclick="openEditNamecardModal('name')" style="display: none;" title="Chỉnh sửa tên & tiểu sử">✏️ Sửa</button>
+              </div>
               <div class="namecard-badges">
                 <span class="namecard-role-badge" id="namecardRoleBadge">
                   <span id="namecardRoleIcon">🎓</span> <span id="namecardRoleText">Sinh viên</span>
@@ -1888,12 +1902,12 @@
       </div>
     </dialog>
 
-    <!-- MODAL THIẾT LẬP HỒ SƠ / NAMECARD -->
-    <dialog class="modal profile-settings-modal" id="editProfileModal">
+    <!-- MODAL 1: CHỈNH SỬA THẺ TÊN & TRANG TRÍ -->
+    <dialog class="modal profile-settings-modal" id="editNamecardModal">
       <div class="modal-head">
         <div>
-          <p class="eyebrow">TÀI KHOẢN RE:SEARCH</p>
-          <h2 id="editProfileModalTitle">Thiết lập thẻ tên & Hồ sơ</h2>
+          <p class="eyebrow">NAMECARD RE:SEARCH</p>
+          <h2>Chỉnh sửa thẻ tên & Trang trí</h2>
         </div>
         <button
           class="close-modal"
@@ -1905,39 +1919,11 @@
         </button>
       </div>
 
-      <div class="auth-tabs" style="margin-bottom: 20px">
-        <button
-          type="button"
-          class="auth-tab profile-tab active"
-          id="profileTabNamecardBtn"
-          data-profile-tab="namecard"
-        >
-          Thẻ tên & Trang trí
-        </button>
-        <button
-          type="button"
-          class="auth-tab profile-tab"
-          id="profileTabInfoBtn"
-          data-profile-tab="info"
-        >
-          Thông tin tài khoản
-        </button>
-        <button
-          type="button"
-          class="auth-tab profile-tab"
-          id="profileTabPasswordBtn"
-          data-profile-tab="password"
-        >
-          Đổi mật khẩu
-        </button>
-      </div>
-
-      <!-- Tab 1: Thẻ tên & Trang trí -->
-      <form id="editNamecardForm" class="profile-tab-content">
+      <form id="editNamecardForm">
         <label>
           Tên hiển thị (Công khai)
           <input
-            id="profileDisplayName"
+            id="namecardDisplayNameInput"
             required
             minlength="2"
             maxlength="80"
@@ -1948,7 +1934,7 @@
         <label style="margin-top: 12px;">
           Tiểu sử (Bio ngắn gọn)
           <textarea
-            id="profileBio"
+            id="namecardBioInput"
             rows="2"
             maxlength="150"
             placeholder="Hỏi, trao đổi, cùng tiến bộ 🌱..."
@@ -2004,9 +1990,26 @@
           </button>
         </div>
       </form>
+    </dialog>
 
-      <!-- Tab 2: Thông tin tài khoản (Bảo mật) -->
-      <form id="editProfileForm" method="dialog" class="profile-tab-content" style="display: none;">
+    <!-- MODAL 2: CHỈNH SỬA HỒ SƠ (THÔNG TIN NỘI BỘ BẢO MẬT) -->
+    <dialog class="modal" id="editProfileModal">
+      <div class="modal-head">
+        <div>
+          <p class="eyebrow">THÔNG TIN ĐỊNH DANH (NỘI BỘ)</p>
+          <h2>Chỉnh sửa hồ sơ</h2>
+        </div>
+        <button
+          class="close-modal"
+          type="button"
+          onclick="this.closest('dialog').close()"
+          aria-label="Đóng"
+        >
+          ×
+        </button>
+      </div>
+
+      <form id="editProfileForm" method="dialog">
         <div class="account-security-banner">
           🔒 <b>Thông tin định danh nội bộ:</b> Mã sinh viên, tên thật và lớp học được lưu trữ bảo mật nhằm phục vụ điểm danh, đối soát với Giảng viên và Nhà trường. Hệ thống cam kết <b>KHÔNG</b> hiển thị công khai các thông tin này trên Thẻ tên (Namecard).
         </div>
@@ -2033,13 +2036,30 @@
         </label>
         <div class="modal-actions" style="margin-top: 24px">
           <button class="button button-primary" type="submit" id="saveAccountInfoBtn">
-            Lưu thông tin bảo mật <span>→</span>
+            Lưu hồ sơ <span>→</span>
           </button>
         </div>
       </form>
+    </dialog>
 
-      <!-- Tab 3: Đổi mật khẩu -->
-      <form id="changePasswordForm" class="profile-tab-content" style="display: none;">
+    <!-- MODAL 3: ĐỔI MẬT KHẨU -->
+    <dialog class="modal" id="changePasswordModal">
+      <div class="modal-head">
+        <div>
+          <p class="eyebrow">BẢO MẬT TÀI KHOẢN</p>
+          <h2>Đổi mật khẩu</h2>
+        </div>
+        <button
+          class="close-modal"
+          type="button"
+          onclick="this.closest('dialog').close()"
+          aria-label="Đóng"
+        >
+          ×
+        </button>
+      </div>
+
+      <form id="changePasswordForm">
         <label
           >Mật khẩu hiện tại<input
             id="currentPasswordInput"
