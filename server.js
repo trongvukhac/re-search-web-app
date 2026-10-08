@@ -735,9 +735,10 @@ function publicUser(user, streakInfo = null) {
     className: user.class_name || "",
     bio: user.bio || "",
     coverImage: user.cover_image || "default",
-    namecardFrame: user.role === "admin" ? (user.namecard_frame || "default") : "default",
+    namecardFrame: user.namecard_frame || "default",
     namecardTheme: user.namecard_theme || "default",
     streak: info.streak || 0,
+    maxStreak: user.id ? getUserMaxStreak(user.id) : 0,
     streakTier: info.streakTier || 0,
     shields: info.shields || 0,
   };
@@ -2503,7 +2504,7 @@ async function api(request, response, url) {
         role: targetUser.role,
         bio: targetUser.bio || "Hỏi, trao đổi, cùng tiến bộ 🌱\nTìm hiểu sâu hơn, mỗi ngày một chút.",
         coverImage: targetUser.cover_image || "default",
-        namecardFrame: targetUser.role === "admin" ? (targetUser.namecard_frame || "default") : "default",
+        namecardFrame: targetUser.namecard_frame || "default",
         namecardTheme: targetUser.namecard_theme || "default",
         isSelf,
         canUploadCustomCover
@@ -2585,10 +2586,16 @@ async function api(request, response, url) {
 
     const newDisplayName = (typeof displayName === "string" && displayName.trim()) ? displayName.trim().slice(0, 80) : currentUser.display_name;
     const newBio = typeof bio === "string" ? bio.trim().slice(0, 200) : currentUser.bio;
-    const isAdmin = currentUser.role === "admin";
-    const newFrame = isAdmin
-      ? (typeof namecardFrame === "string" ? namecardFrame.trim() : (currentUser.namecard_frame || "default"))
-      : "default";
+    const allowedFrames = new Map([
+      ["default", 0], ["leaves", 7], ["stars", 14], ["sakura", 21], ["ice", 30], ["gold", 50],
+    ]);
+    const requestedFrame = typeof namecardFrame === "string" ? namecardFrame.trim() : (currentUser.namecard_frame || "default");
+    const frameRequirement = allowedFrames.get(requestedFrame);
+    if (frameRequirement === undefined) return error(response, 400, "Khung Namecard không hợp lệ.");
+    const unlockedStreak = Math.max(calculateUserStreak(user.id).streak || 0, getUserMaxStreak(user.id));
+    const canUseRequestedFrame = currentUser.role === "admin" || currentUser.role === "ta" || unlockedStreak >= frameRequirement;
+    if (!canUseRequestedFrame) return error(response, 403, `Khung này yêu cầu chuỗi hoạt động ${frameRequirement}+ ngày.`);
+    const newFrame = requestedFrame;
     const newTheme = typeof namecardTheme === "string" ? namecardTheme.trim() : (currentUser.namecard_theme || "default");
     const newStudentId = typeof studentId === "string" ? studentId.trim().slice(0, 30) : currentUser.student_id;
     const newRealName = typeof realName === "string" ? realName.trim().slice(0, 80) : currentUser.real_name;

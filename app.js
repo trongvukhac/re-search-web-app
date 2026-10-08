@@ -3492,12 +3492,12 @@ const AVATAR_OPTIONS = [
 ];
 
 const FRAME_OPTIONS = [
-  { id: "default", name: "Mặc định", icon: "🌱", minDays: 0 },
-  { id: "leaves", name: "Lá xanh", icon: "🌿", minDays: 7 },
-  { id: "stars", name: "Sao trời", icon: "✨", minDays: 14 },
-  { id: "sakura", name: "Hoa đào", icon: "🌸", minDays: 21 },
-  { id: "ice", name: "Băng tuyết", icon: "❄️", minDays: 30 },
-  { id: "gold", name: "Hoàng kim", icon: "👑", minDays: 50 },
+  { id: "default", name: "Mặc định", minDays: 0 },
+  { id: "leaves", name: "Rừng tri thức", minDays: 7 },
+  { id: "stars", name: "Sao trời", minDays: 14 },
+  { id: "sakura", name: "Hoa đào", minDays: 21 },
+  { id: "ice", name: "Băng tuyết", minDays: 30 },
+  { id: "gold", name: "Hoàng kim", minDays: 50 },
 ];
 
 const COVER_PRESETS = [
@@ -3596,9 +3596,12 @@ window.openNamecard = async function(userId) {
     if ($("#namecardEditCoverBtn")) $("#namecardEditCoverBtn").style.display = isSelf ? "inline-flex" : "none";
     if ($("#namecardEditNameBtn")) $("#namecardEditNameBtn").style.display = isSelf ? "inline-flex" : "none";
 
-    // Frame Decoration (Tạm khóa đối với mọi user trừ admin)
-    const activeFrame = (data.user.role === "admin") ? (data.user.namecardFrame || "default") : "default";
+    // Frame is a visual overlay; it must never affect the card's measured layout.
+    const activeFrame = FRAME_OPTIONS.some(frame => frame.id === data.user.namecardFrame)
+      ? data.user.namecardFrame
+      : "default";
     $("#namecardCard").setAttribute("data-frame", activeFrame);
+    $("#namecardFrameLayer")?.setAttribute("data-frame", activeFrame);
 
     // 1. Diễn đàn
     $("#ncStatContrib").textContent = data.forum.contributionPoints;
@@ -3725,8 +3728,9 @@ window.openEditNamecardModal = function(section = "all") {
 
   // Populate Namecard values
   if ($("#namecardDisplayNameInput")) $("#namecardDisplayNameInput").value = session.displayName || "";
-  const isAdmin = session.role === "admin";
-  currentSelectedFrame = isAdmin ? (session.namecardFrame || "default") : "default";
+  currentSelectedFrame = FRAME_OPTIONS.some(frame => frame.id === session.namecardFrame)
+    ? session.namecardFrame
+    : "default";
   currentSelectedCover = session.coverImage || "default";
 
   // Render Pickers
@@ -3792,43 +3796,42 @@ function renderAvatarPicker() {
 function renderFramePicker() {
   const container = $("#profileFramePicker");
   if (!container) return;
-  const isAdmin = session?.role === "admin";
+  const longestStreak = Number(session?.maxStreak || session?.streak || 0);
+  const isPrivileged = session?.role === "admin" || session?.role === "ta";
   const frameNotice = $("#namecardFrameNotice");
   if (frameNotice) {
-    if (isAdmin) {
-      frameNotice.textContent = "Chế độ thử nghiệm Quản trị viên";
-      frameNotice.style.color = "var(--muted)";
-    } else {
-      frameNotice.textContent = "Tạm khóa tính năng để bảo trì & nâng cấp";
-      frameNotice.style.color = "#dc2626";
-      frameNotice.style.fontWeight = "600";
-    }
+    const nextFrame = FRAME_OPTIONS.find(frame => frame.minDays > longestStreak);
+    frameNotice.textContent = nextFrame && !isPrivileged
+      ? `Mở khóa khung ${nextFrame.name}: chuỗi ${nextFrame.minDays}+ ngày`
+      : "Tất cả khung hiện có đã mở khóa";
+    frameNotice.style.color = "var(--muted)";
+    frameNotice.style.fontWeight = "500";
   }
 
   container.innerHTML = FRAME_OPTIONS.map(f => {
-    const isUnlocked = isAdmin;
-    const isActive = isAdmin ? (f.id === currentSelectedFrame) : (f.id === "default");
-    const lockTooltip = isAdmin ? f.name : "Tính năng tạm thời khóa để nâng cấp";
+    const isUnlocked = isPrivileged || longestStreak >= f.minDays;
+    const isActive = f.id === currentSelectedFrame;
+    const lockTooltip = isUnlocked ? f.name : `Cần chuỗi ${f.minDays}+ ngày`;
     return `
       <div class="frame-choice-item ${isActive ? 'active' : ''} ${isUnlocked ? '' : 'locked'}" data-frame-id="${f.id}" title="${lockTooltip}">
-        <span class="choice-icon">${f.icon}</span>
+        <div class="frame-choice-preview" data-frame-preview="${f.id}"></div>
         <span class="choice-label">${f.name}</span>
-        ${isUnlocked ? '' : `<span class="choice-lock-badge" title="Tạm khóa">🔒</span>`}
+        ${isUnlocked ? `<span class="choice-unlock-badge">${f.minDays ? `${f.minDays} ngày` : "Có sẵn"}</span>` : `<span class="choice-lock-badge" title="Cần chuỗi ${f.minDays}+ ngày">🔒 ${f.minDays}</span>`}
       </div>
     `;
   }).join("");
 
-  if (isAdmin) {
-    container.querySelectorAll(".frame-choice-item").forEach(item => {
-      item.onclick = () => {
+  container.querySelectorAll(".frame-choice-item").forEach(item => {
+    item.onclick = () => {
+      if (item.classList.contains("locked")) {
+        toast(`Khung này mở khóa khi bạn đạt chuỗi ${FRAME_OPTIONS.find(frame => frame.id === item.dataset.frameId)?.minDays}+ ngày.`);
+        return;
+      }
         container.querySelectorAll(".frame-choice-item").forEach(i => i.classList.remove("active"));
         item.classList.add("active");
         currentSelectedFrame = item.dataset.frameId;
-      };
-    });
-  } else {
-    currentSelectedFrame = "default";
-  }
+    };
+  });
 }
 
 function renderCoverPicker() {
@@ -3942,7 +3945,7 @@ if ($("#editNamecardForm")) {
         body: JSON.stringify({
           displayName: $("#namecardDisplayNameInput").value.trim(),
           bio: $("#namecardBioInput").value.trim(),
-          namecardFrame: (session.role === "admin") ? currentSelectedFrame : "default",
+          namecardFrame: currentSelectedFrame,
           coverImage: currentSelectedCover,
         }),
       });
@@ -10033,7 +10036,5 @@ window.addEventListener("beforeunload", () => {
     }
   }
 });
-
-
 
 

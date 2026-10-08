@@ -10691,6 +10691,59 @@ dialog.modal.namecard-modal {
   overscroll-behavior-y: contain;
 }
 
+/* Decorative frame lives above the card as an inert, absolute layer.
+   It deliberately has no box-model impact on the existing 680px / mobile card. */
+.namecard-frame-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  pointer-events: none;
+  background: center / 100% 100% no-repeat;
+  filter: drop-shadow(0 7px 11px rgba(15, 23, 42, 0.18));
+  opacity: 0;
+  transition: opacity 180ms ease;
+}
+
+.namecard-frame-layer[data-frame] { opacity: 1; }
+.namecard-frame-layer[data-frame="default"] { background-image: url("frames/v2/default.png"); opacity: .68; }
+.namecard-frame-layer[data-frame="leaves"] { background-image: url("frames/v2/leaves.png"); }
+.namecard-frame-layer[data-frame="stars"] { background-image: url("frames/v2/stars.png"); }
+.namecard-frame-layer[data-frame="sakura"] { background-image: url("frames/v2/sakura.png"); }
+.namecard-frame-layer[data-frame="ice"] { background-image: url("frames/v2/ice.png"); }
+.namecard-frame-layer[data-frame="gold"] { background-image: url("frames/v2/gold.png"); }
+
+.frame-choice-preview {
+  width: 100%;
+  height: 44px;
+  margin-bottom: 5px;
+  border-radius: 7px;
+  background: linear-gradient(135deg, #bdd6ff 0%, #fff 48%, #d9e8ff 100%) center / 100% 100% no-repeat;
+}
+.frame-choice-preview[data-frame-preview="default"] { background-image: url("frames/v2/default.png"); }
+.frame-choice-preview[data-frame-preview="leaves"] { background-image: url("frames/v2/leaves.png"); }
+.frame-choice-preview[data-frame-preview="stars"] { background-image: url("frames/v2/stars.png"); }
+.frame-choice-preview[data-frame-preview="sakura"] { background-image: url("frames/v2/sakura.png"); }
+.frame-choice-preview[data-frame-preview="ice"] { background-image: url("frames/v2/ice.png"); }
+.frame-choice-preview[data-frame-preview="gold"] { background-image: url("frames/v2/gold.png"); }
+.choice-unlock-badge {
+  margin-top: 3px;
+  color: #39714a;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+/* Earlier experimental rules used a CSS border as a stand-in frame.  Keep the
+   content canvas completely unchanged; the asset layer above is now the frame. */
+.namecard-card[data-frame="leaves"],
+.namecard-card[data-frame="stars"],
+.namecard-card[data-frame="sakura"],
+.namecard-card[data-frame="ice"],
+.namecard-card[data-frame="gold"] {
+  border: 0;
+  box-shadow: none;
+}
+
+
 /* Spacer allowing fixed cover behind to be visible at top */
 .namecard-cover-spacer {
   height: clamp(170px, 22vw, 230px);
@@ -11495,3 +11548,13 @@ dialog.modal.namecard-modal {
   }
 }
 
+/* Must follow the retired prototype frame rules above: frames never consume
+   content space or alter card geometry. */
+.namecard-card[data-frame="leaves"],
+.namecard-card[data-frame="stars"],
+.namecard-card[data-frame="sakura"],
+.namecard-card[data-frame="ice"],
+.namecard-card[data-frame="gold"] {
+  border: 0;
+  box-shadow: none;
+}
