@@ -10422,7 +10422,8 @@ body:has(#postDetail.active-page) .mobile-fab {
   }
 }
 
-  /* --- CẢI TIẾN TRANG CÁ NHÂN MOBILE: 3 NÚT NẰM 1 HÀNG DƯỚI THÔNG TIN VÀ TRÊN THỐNG KÊ --- */
+/* --- CẢI TIẾN TRANG CÁ NHÂN MOBILE: 3 NÚT NẰM 1 HÀNG DƯỚI THÔNG TIN VÀ TRÊN THỐNG KÊ --- */
+@media (max-width: 600px) {
   .account-header {
     flex-direction: column !important;
     align-items: stretch !important;
