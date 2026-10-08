@@ -5127,14 +5127,62 @@ function serveStatic(request, response, url) {
     url.pathname === "/" ? "/index.html" : decodeURIComponent(url.pathname);
   if (relative.includes("\0"))
     return error(response, 400, "Đường dẫn không hợp lệ.");
+
+  const lowerRel = relative.toLowerCase();
+
+  // CHẶN BẢO MẬT TUYỆT ĐỐI: Cấm tải trực tiếp database, source code backend hoặc file cấu hình hệ thống
+  if (
+    lowerRel.startsWith("/data") ||
+    lowerRel.includes("/data/") ||
+    lowerRel.startsWith("/.") ||
+    lowerRel.includes("/.") ||
+    lowerRel === "/server.js" ||
+    lowerRel.startsWith("/server.js") ||
+    lowerRel.startsWith("/package") ||
+    lowerRel.startsWith("/fly.toml") ||
+    lowerRel.startsWith("/dockerfile") ||
+    lowerRel.endsWith(".db") ||
+    lowerRel.endsWith(".sqlite") ||
+    lowerRel.endsWith(".db-wal") ||
+    lowerRel.endsWith(".db-shm") ||
+    lowerRel.endsWith(".sql") ||
+    lowerRel.endsWith(".env") ||
+    lowerRel.endsWith(".toml") ||
+    lowerRel.endsWith(".json") ||
+    lowerRel.endsWith(".log") ||
+    lowerRel.endsWith(".sh") ||
+    lowerRel.endsWith(".md")
+  ) {
+    return error(response, 404, "Không tìm thấy trang.");
+  }
+
   const file = path.resolve(ROOT, `.${relative}`);
   if (
     !file.startsWith(ROOT + path.sep) ||
+    file.startsWith(DATABASE_DIR + path.sep) ||
+    file === DATABASE_PATH ||
+    file === path.resolve(ROOT, "server.js") ||
     !fs.existsSync(file) ||
     fs.statSync(file).isDirectory()
   )
     return error(response, 404, "Không tìm thấy trang.");
-  const extension = path.extname(file);
+
+  const extension = path.extname(file).toLowerCase();
+  const allowedExtensions = [
+    ".html", ".css", ".js", ".png", ".jpg", ".jpeg", ".webp",
+    ".gif", ".svg", ".ico", ".mp3", ".m4a", ".wav", ".ogg",
+    ".webm", ".woff2", ".ttf"
+  ];
+
+  if (!allowedExtensions.includes(extension)) {
+    return error(response, 404, "Không tìm thấy trang.");
+  }
+
+  // Đối với file .js, chỉ cho phép app.js hoặc script trong public/
+  if (extension === ".js" && relative !== "/app.js" && !relative.startsWith("/public/")) {
+    return error(response, 404, "Không tìm thấy trang.");
+  }
+
   const headers = {
     "Content-Type": MIME[extension] || "application/octet-stream",
     "X-Content-Type-Options": "nosniff",
