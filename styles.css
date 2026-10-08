@@ -10447,16 +10447,17 @@ body:has(#postDetail.active-page) .mobile-fab {
   }
   .account-actions {
     display: grid !important;
-    grid-template-columns: repeat(3, 1fr) !important;
+    grid-template-columns: repeat(2, 1fr) !important;
     gap: 8px !important;
     width: 100% !important;
-    margin-top: 2px !important;
+    margin-top: 4px !important;
   }
   .account-actions .button {
     width: 100% !important;
     min-width: 0 !important;
-    padding: 8px 4px !important;
-    font-size: 12px !important;
+    padding: 8px 6px !important;
+    font-size: 12.5px !important;
+    font-weight: 600 !important;
     text-align: center !important;
     justify-content: center !important;
     white-space: nowrap !important;
@@ -10464,15 +10465,22 @@ body:has(#postDetail.active-page) .mobile-fab {
     text-overflow: ellipsis !important;
     border-radius: 8px !important;
     min-height: 38px !important;
-    display: inline-flex !important;
+    display: inline-flex;
     align-items: center !important;
   }
-  .account-actions:has(#accountLoginBtn:not([style*="display: none"])) {
-    display: flex !important;
-    width: 100% !important;
+  .account-actions .button[style*="display: none"],
+  .account-actions .button[hidden],
+  .account-actions .button.is-hidden {
+    display: none !important;
   }
-  .account-actions:has(#accountLoginBtn:not([style*="display: none"])) #accountLoginBtn {
+  .account-actions #logoutButton {
+    grid-column: span 2 !important;
+  }
+  .account-actions #accountLoginBtn {
+    grid-column: 1 / -1 !important;
     width: 100% !important;
+    font-size: 14px !important;
+    padding: 10px 16px !important;
   }
 }
 
@@ -10481,10 +10489,12 @@ body:has(#postDetail.active-page) .mobile-fab {
   align-items: center;
   gap: 8px;
 }
-.account-actions:has(#accountLoginBtn:not([style*="display: none"])) {
-  display: flex !important;
+.account-actions .button[style*="display: none"],
+.account-actions .button[hidden],
+.account-actions .button.is-hidden {
+  display: none !important;
 }
-.account-actions:has(#accountLoginBtn:not([style*="display: none"])) #accountLoginBtn {
+.account-actions #accountLoginBtn {
   min-width: 130px !important;
   padding: 9px 20px !important;
   font-size: 13px !important;

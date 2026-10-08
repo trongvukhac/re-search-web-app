@@ -545,14 +545,27 @@ function applySession(user) {
   }
 
   const isAuth = Boolean(user);
-  if ($("#viewMyNamecardBtn")) $("#viewMyNamecardBtn").style.display = isAuth ? "" : "none";
-  if ($("#editNamecardBtn")) $("#editNamecardBtn").style.display = isAuth ? "" : "none";
-  if ($("#editProfile")) $("#editProfile").style.display = isAuth ? "" : "none";
-  if ($("#openChangePasswordBtn")) $("#openChangePasswordBtn").style.display = isAuth ? "" : "none";
-  if ($("#logoutButton")) $("#logoutButton").style.display = isAuth ? "" : "none";
-  if ($("#accountLoginBtn")) $("#accountLoginBtn").style.display = isAuth ? "none" : "";
-  if ($("#accountGrid")) $("#accountGrid").style.display = isAuth ? "" : "none";
-  if ($("#accountSecurityCard")) $("#accountSecurityCard").style.display = isAuth ? "block" : "none";
+  const setAuthBtn = (id, show, displayStyle = "") => {
+    const el = $(id);
+    if (!el) return;
+    el.style.display = show ? displayStyle : "none";
+    if (show) {
+      el.removeAttribute("hidden");
+      el.classList.remove("is-hidden");
+    } else {
+      el.setAttribute("hidden", "true");
+      el.classList.add("is-hidden");
+    }
+  };
+
+  setAuthBtn("#viewMyNamecardBtn", isAuth);
+  setAuthBtn("#editNamecardBtn", isAuth);
+  setAuthBtn("#editProfile", isAuth);
+  setAuthBtn("#openChangePasswordBtn", isAuth);
+  setAuthBtn("#logoutButton", isAuth);
+  setAuthBtn("#accountLoginBtn", !isAuth);
+  setAuthBtn("#accountGrid", isAuth);
+  setAuthBtn("#accountSecurityCard", isAuth, "block");
   if ($("#adminPanel")) $("#adminPanel").style.display = (isAuth && (user.role === "admin" || user.role === "ta")) ? "" : "none";
 
   const badgeDesk = $("#studyNavBadgeDesktop");
@@ -715,14 +728,26 @@ async function hydrateServer() {
     }
 
     if (current.authenticated) {
-      if ($("#accountGrid")) $("#accountGrid").style.display = "";
-      if ($("#viewMyNamecardBtn")) $("#viewMyNamecardBtn").style.display = "";
-      if ($("#editNamecardBtn")) $("#editNamecardBtn").style.display = "";
-      if ($("#editProfile")) $("#editProfile").style.display = "";
-      if ($("#openChangePasswordBtn")) $("#openChangePasswordBtn").style.display = "";
-      if ($("#accountSecurityCard")) $("#accountSecurityCard").style.display = "block";
-      if ($("#logoutButton")) $("#logoutButton").style.display = "";
-      if ($("#accountLoginBtn")) $("#accountLoginBtn").style.display = "none";
+      const setAuthBtn = (id, show, displayStyle = "") => {
+        const el = $(id);
+        if (!el) return;
+        el.style.display = show ? displayStyle : "none";
+        if (show) {
+          el.removeAttribute("hidden");
+          el.classList.remove("is-hidden");
+        } else {
+          el.setAttribute("hidden", "true");
+          el.classList.add("is-hidden");
+        }
+      };
+      setAuthBtn("#accountGrid", true);
+      setAuthBtn("#viewMyNamecardBtn", true);
+      setAuthBtn("#editNamecardBtn", true);
+      setAuthBtn("#editProfile", true);
+      setAuthBtn("#openChangePasswordBtn", true);
+      setAuthBtn("#accountSecurityCard", true, "block");
+      setAuthBtn("#logoutButton", true);
+      setAuthBtn("#accountLoginBtn", false);
 
       try {
         const profileData = await requestAPI("/api/me/contributions");
@@ -892,14 +917,26 @@ async function hydrateServer() {
         if ($("#adminPanel")) $("#adminPanel").style.display = "none";
       }
     } else {
-      if ($("#accountGrid")) $("#accountGrid").style.display = "none";
-      if ($("#viewMyNamecardBtn")) $("#viewMyNamecardBtn").style.display = "none";
-      if ($("#editNamecardBtn")) $("#editNamecardBtn").style.display = "none";
-      if ($("#editProfile")) $("#editProfile").style.display = "none";
-      if ($("#openChangePasswordBtn")) $("#openChangePasswordBtn").style.display = "none";
-      if ($("#accountSecurityCard")) $("#accountSecurityCard").style.display = "none";
-      if ($("#logoutButton")) $("#logoutButton").style.display = "none";
-      if ($("#accountLoginBtn")) $("#accountLoginBtn").style.display = "";
+      const setAuthBtn = (id, show, displayStyle = "") => {
+        const el = $(id);
+        if (!el) return;
+        el.style.display = show ? displayStyle : "none";
+        if (show) {
+          el.removeAttribute("hidden");
+          el.classList.remove("is-hidden");
+        } else {
+          el.setAttribute("hidden", "true");
+          el.classList.add("is-hidden");
+        }
+      };
+      setAuthBtn("#accountGrid", false);
+      setAuthBtn("#viewMyNamecardBtn", false);
+      setAuthBtn("#editNamecardBtn", false);
+      setAuthBtn("#editProfile", false);
+      setAuthBtn("#openChangePasswordBtn", false);
+      setAuthBtn("#accountSecurityCard", false);
+      setAuthBtn("#logoutButton", false);
+      setAuthBtn("#accountLoginBtn", true);
       if ($("#adminPanel")) $("#adminPanel").style.display = "none";
     }
 
