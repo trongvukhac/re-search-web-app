@@ -1751,29 +1751,28 @@
         <div class="namecard-content-wrap">
           <!-- Khung Header (Avatar, Tên, ID, Bio) -->
           <div class="namecard-header">
-            <div class="namecard-profile-col">
+            <div class="namecard-profile-row">
               <div class="namecard-avatar-wrap">
                 <div class="namecard-avatar-circle" id="namecardAvatarCircle">
                   <span id="namecardAvatar">🌱</span>
                 </div>
               </div>
               <div class="namecard-identity">
-                <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 8px;">
+                <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 6px;">
                   <h2 class="namecard-display-name" id="namecardDisplayName" style="margin: 0;">Tên người dùng</h2>
                   <button type="button" class="namecard-edit-name-btn" id="namecardEditNameBtn" onclick="openEditNamecardModal('name')" style="display: none;" title="Chỉnh sửa tên & tiểu sử">✏️ Sửa</button>
                 </div>
                 <div class="namecard-badges">
                   <span class="namecard-role-badge" id="namecardRoleBadge">
-                    <span id="namecardRoleIcon">🎓</span> <span id="namecardRoleText">Sinh viên</span>
+                    <span id="namecardRoleText">Sinh viên</span>
                   </span>
                   <button type="button" class="namecard-id-badge" id="namecardIdBadge" onclick="copyNamecardId()" title="Bấm để sao chép ID">
                     <span id="namecardIdText">ID 00000</span>
-                    <span class="copy-svg">📋</span>
                   </button>
                 </div>
-                <p class="namecard-bio" id="namecardBio">Hỏi, trao đổi, cùng tiến bộ 🌱<br>Tìm hiểu sâu hơn, mỗi ngày một chút.</p>
               </div>
             </div>
+            <p class="namecard-bio" id="namecardBio">Hỏi, trao đổi, cùng tiến bộ 🌱<br>Tìm hiểu sâu hơn, mỗi ngày một chút.</p>
           </div>
 
         <!-- Các khung thành tích -->

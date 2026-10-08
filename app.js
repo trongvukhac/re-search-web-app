@@ -3467,27 +3467,29 @@ window.openNamecard = async function(userId) {
     }
     
     // Role Badge
-    const roleIcon = $("#namecardRoleIcon");
     const roleText = $("#namecardRoleText");
     const roleBadge = $("#namecardRoleBadge");
     if (data.user.role === "admin" || data.user.role === "ta") {
-      roleIcon.textContent = "👑";
-      roleText.textContent = "Quản trị viên";
-      roleBadge.style.background = "#fef3c7";
-      roleBadge.style.color = "#92400e";
-      roleBadge.style.borderColor = "#fde68a";
+      if (roleText) roleText.textContent = "Quản trị viên";
+      if (roleBadge) {
+        roleBadge.style.background = "#fef3c7";
+        roleBadge.style.color = "#92400e";
+        roleBadge.style.borderColor = "#fde68a";
+      }
     } else if (data.user.role === "lecturer") {
-      roleIcon.textContent = "👨‍🏫";
-      roleText.textContent = "Giảng viên";
-      roleBadge.style.background = "#e0f2fe";
-      roleBadge.style.color = "#0369a1";
-      roleBadge.style.borderColor = "#bae6fd";
+      if (roleText) roleText.textContent = "Giảng viên";
+      if (roleBadge) {
+        roleBadge.style.background = "#e0f2fe";
+        roleBadge.style.color = "#0369a1";
+        roleBadge.style.borderColor = "#bae6fd";
+      }
     } else {
-      roleIcon.textContent = "🎓";
-      roleText.textContent = "Sinh viên";
-      roleBadge.style.background = "#e8f5e9";
-      roleBadge.style.color = "#1b5e20";
-      roleBadge.style.borderColor = "#c8e6c9";
+      if (roleText) roleText.textContent = "Sinh viên";
+      if (roleBadge) {
+        roleBadge.style.background = "#e8f5e9";
+        roleBadge.style.color = "#1b5e20";
+        roleBadge.style.borderColor = "#c8e6c9";
+      }
     }
 
     // User ID

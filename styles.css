@@ -10670,13 +10670,21 @@ body:has(#postDetail.active-page) .mobile-fab {
   font-family: var(--sans);
 }
 
-.namecard-profile-col {
+/* Header */
+.namecard-header {
+  padding: 0 28px 18px;
   display: flex;
-  gap: 22px;
+  flex-direction: column;
+  position: relative;
+  font-family: var(--sans);
+}
+
+.namecard-profile-row {
+  display: flex;
+  gap: 20px;
   align-items: flex-start;
   margin-top: -52px;
-  flex: 1;
-  min-width: 0;
+  width: 100%;
 }
 
 .namecard-avatar-wrap {
@@ -10696,7 +10704,7 @@ body:has(#postDetail.active-page) .mobile-fab {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 44px;
+  font-size: 48px;
   position: relative;
   overflow: hidden;
   user-select: none;
@@ -10735,15 +10743,15 @@ body:has(#postDetail.active-page) .mobile-fab {
 }
 
 .namecard-identity {
-  padding-top: 48px;
+  padding-top: 54px;
   flex: 1;
   min-width: 0;
 }
 
 .namecard-display-name {
-  margin: 0 0 6px 0;
+  margin: 0;
   font-family: var(--serif);
-  font-size: 1.55rem;
+  font-size: 1.6rem;
   font-weight: 700;
   color: var(--ink-deep, #0a2a20);
   line-height: 1.25;
@@ -10781,16 +10789,17 @@ body:has(#postDetail.active-page) .mobile-fab {
 
 .namecard-badges {
   display: flex;
+  flex-direction: row;
   align-items: center;
   gap: 8px;
-  flex-wrap: wrap;
-  margin-bottom: 8px;
+  flex-wrap: nowrap;
+  margin-top: 6px;
 }
 
 .namecard-role-badge {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  justify-content: center;
   background: #e8f5e9;
   color: #1b5e20;
   padding: 3px 10px;
@@ -10800,12 +10809,13 @@ body:has(#postDetail.active-page) .mobile-fab {
   font-family: var(--unbounded);
   letter-spacing: -0.2px;
   border: 1px solid #c8e6c9;
+  white-space: nowrap;
 }
 
 .namecard-id-badge {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  justify-content: center;
   background: #f1f5f9;
   color: #475569;
   padding: 3px 10px;
@@ -10816,6 +10826,7 @@ body:has(#postDetail.active-page) .mobile-fab {
   letter-spacing: -0.2px;
   border: 1px solid #e2e8f0;
   cursor: pointer;
+  white-space: nowrap;
   transition: all 0.15s ease;
 }
 
@@ -10825,102 +10836,34 @@ body:has(#postDetail.active-page) .mobile-fab {
 }
 
 .namecard-bio {
-  margin: 0;
+  width: 100%;
+  margin: 14px 0 0 0;
   font-family: var(--sans);
-  font-size: 0.88rem;
+  font-size: 0.92rem;
   color: var(--muted, #66746d);
-  line-height: 1.45;
+  line-height: 1.5;
   white-space: pre-line;
-}
-
-/* Streak Card in Namecard (Exact duplicate of Home Contribution Card) */
-.namecard-streak-card {
-  width: 320px;
-  flex-shrink: 0;
-  margin-top: -24px;
-  position: relative;
-  z-index: 5;
-}
-
-.namecard-streak-card .card-topline {
-  font: 9px "Unbounded", sans-serif;
-  letter-spacing: 0.8px;
-}
-
-.namecard-streak-card .streak-number {
-  font: 36px/1 var(--serif);
-  margin: 0;
-  display: flex;
-  align-items: baseline;
-  gap: 6px;
-}
-
-.namecard-streak-card .streak-number span {
-  font: 14px var(--sans);
-  font-weight: 600;
-  opacity: 0.85;
-}
-
-.namecard-streak-card .streak-tier-label {
-  font-size: 11px;
-  font-weight: 700;
-  opacity: 0.92;
-  white-space: nowrap;
-  letter-spacing: 0.2px;
-  line-height: 1.2;
-}
-
-.namecard-streak-card .week-strip {
-  display: flex;
-  justify-content: space-between;
-  margin-top: 6px;
-}
-
-.namecard-streak-card .day {
-  display: grid;
-  place-items: center;
-  gap: 3px;
-  color: rgba(255, 255, 255, 0.7);
-  font-size: 9px;
-  font-weight: 600;
-  font-family: var(--unbounded);
-}
-
-.namecard-streak-card .day i {
-  font-style: normal;
-  display: grid;
-  place-items: center;
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  background: rgba(255, 255, 255, 0.06);
-  font-size: 10px;
-  transition: all 0.2s ease;
-}
-
-.namecard-streak-card .day.done i {
-  background: rgba(255, 255, 255, 0.22);
-  border-color: rgba(255, 255, 255, 0.5);
-}
-
-.namecard-streak-card .day.today i {
-  border-color: rgba(255, 255, 255, 0.7);
-  box-shadow: 0 0 8px rgba(255, 255, 255, 0.4);
+  word-break: break-word;
 }
 
 @media (max-width: 820px) {
   .namecard-header {
-    flex-direction: column;
     padding: 0 20px 14px;
-    gap: 16px;
-  }
-  .namecard-streak-card {
-    width: 100%;
-    margin-top: 0;
   }
   .namecard-body {
     padding: 0 20px 20px;
+  }
+}
+
+@media (max-width: 600px) {
+  .namecard-profile-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .namecard-identity {
+    padding-top: 0;
+    width: 100%;
   }
 }
 
@@ -10967,7 +10910,7 @@ body:has(#postDetail.active-page) .mobile-fab {
   color: var(--ink-deep, #0a2a20);
 }
 
-/* Horizontal Scrolling Tiles Row - chống rối, chống rớt chữ */
+/* Horizontal Scrolling Tiles Row - chống rối, chống rớt chữ, tự động kéo dài theo nội dung */
 .namecard-tiles {
   display: flex;
   gap: 10px;
@@ -10999,16 +10942,14 @@ body:has(#postDetail.active-page) .mobile-fab {
 .namecard-tiles-5,
 .namecard-tiles-6 {
   display: flex;
+  gap: 10px;
 }
 
-.namecard-tiles-5 .namecard-tile {
-  flex: 1 1 0;
-  min-width: 125px;
-}
-
+.namecard-tiles-5 .namecard-tile,
 .namecard-tiles-6 .namecard-tile {
-  flex: 1 1 0;
-  min-width: 115px;
+  flex: 0 0 auto;
+  min-width: max-content;
+  padding: 12px 16px;
 }
 
 .namecard-tiles-2 {
@@ -11029,7 +10970,7 @@ body:has(#postDetail.active-page) .mobile-fab {
   background: #ffffff;
   border: 1px solid #e2e8f0;
   border-radius: 14px;
-  padding: 12px 8px;
+  padding: 12px 16px;
   text-align: center;
   display: flex;
   flex-direction: column;
@@ -11065,25 +11006,19 @@ body:has(#postDetail.active-page) .mobile-fab {
   font-size: 0.95rem;
   font-weight: 700;
   color: var(--ink-deep, #0a2a20);
-  line-height: 1.2;
-  margin-bottom: 2px;
+  line-height: 1.25;
+  margin-bottom: 4px;
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 100%;
   letter-spacing: -0.3px;
 }
 
 .nc-tile-lbl {
   font-family: var(--sans);
-  font-size: 0.68rem;
+  font-size: 0.74rem;
   color: var(--muted, #66746d);
   font-weight: 600;
-  line-height: 1.2;
+  line-height: 1.25;
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 100%;
 }
 
 /* Horizontal tile (Tự học) */
