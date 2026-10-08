@@ -10496,7 +10496,7 @@ body:has(#postDetail.active-page) .mobile-fab {
    ============================================================ */
 
 .namecard-modal {
-  max-width: 960px;
+  max-width: 680px;
   width: 92%;
   border-radius: 24px;
   padding: 0;
@@ -10558,7 +10558,7 @@ body:has(#postDetail.active-page) .mobile-fab {
   top: 0;
   left: 0;
   right: 0;
-  height: 190px;
+  height: clamp(230px, 30vw, 310px);
   background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 50%, #93c5fd 100%);
   background-size: cover;
   background-position: center;
@@ -10566,31 +10566,40 @@ body:has(#postDetail.active-page) .mobile-fab {
   pointer-events: auto;
 }
 
-.namecard-edit-cover-btn {
+.namecard-cover-actions {
   position: absolute;
-  top: 12px;
+  top: 14px;
   right: 58px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  z-index: 10;
+}
+
+.namecard-view-cover-btn,
+.namecard-edit-cover-btn {
   background: rgba(15, 23, 42, 0.65);
   backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   color: #ffffff;
-  border: 1px solid rgba(255, 255, 255, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.35);
   border-radius: 999px;
-  padding: 5px 12px;
-  font-size: 0.72rem;
+  padding: 6px 13px;
+  font-size: 0.74rem;
   font-weight: 600;
   font-family: var(--unbounded);
   letter-spacing: -0.2px;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
   transition: all 0.2s ease;
-  z-index: 10;
 }
 
+.namecard-view-cover-btn:hover,
 .namecard-edit-cover-btn:hover {
-  background: rgba(15, 23, 42, 0.85);
-  border-color: rgba(255, 255, 255, 0.6);
+  background: rgba(15, 23, 42, 0.9);
+  border-color: rgba(255, 255, 255, 0.7);
   transform: translateY(-1px);
 }
 
@@ -10609,7 +10618,7 @@ body:has(#postDetail.active-page) .mobile-fab {
 
 /* Spacer allowing fixed cover behind to be visible at top */
 .namecard-cover-spacer {
-  height: 125px;
+  height: clamp(170px, 22vw, 230px);
   flex-shrink: 0;
   pointer-events: none;
 }
@@ -10625,31 +10634,6 @@ body:has(#postDetail.active-page) .mobile-fab {
   display: flex;
   flex-direction: column;
   min-height: 500px;
-}
-
-.namecard-edit-avatar-btn {
-  position: absolute;
-  bottom: 0;
-  right: 0;
-  width: 26px;
-  height: 26px;
-  background: var(--primary);
-  color: #ffffff;
-  border: 2px solid #ffffff;
-  border-radius: 50%;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 11px;
-  cursor: pointer;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-  transition: transform 0.15s ease, background-color 0.15s ease;
-  z-index: 10;
-}
-
-.namecard-edit-avatar-btn:hover {
-  transform: scale(1.15);
-  background: var(--primary-hover, #047857);
 }
 
 .namecard-edit-name-btn {
@@ -10679,34 +10663,32 @@ body:has(#postDetail.active-page) .mobile-fab {
 
 /* Header */
 .namecard-header {
-  padding: 0 28px 16px;
+  padding: 0 32px 20px;
   display: flex;
-  justify-content: space-between;
   align-items: flex-start;
-  gap: 28px;
   position: relative;
   font-family: var(--sans);
 }
 
 .namecard-profile-col {
   display: flex;
-  gap: 18px;
+  gap: 22px;
   align-items: flex-start;
-  margin-top: -46px;
+  margin-top: -52px;
   flex: 1;
   min-width: 0;
 }
 
 .namecard-avatar-wrap {
   position: relative;
-  width: 92px;
-  height: 92px;
+  width: 104px;
+  height: 104px;
   flex-shrink: 0;
 }
 
 .namecard-avatar-circle {
-  width: 92px;
-  height: 92px;
+  width: 104px;
+  height: 104px;
   border-radius: 50%;
   background: #ffffff;
   border: 4px solid #ffffff;
@@ -11214,6 +11196,45 @@ body:has(#postDetail.active-page) .mobile-fab {
   left: 10px;
   font-size: 26px;
   filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+}
+
+/* ==========================================
+   FULL COVER VIEWER MODAL (LIGHTBOX)
+   ========================================== */
+
+.full-cover-viewer-modal {
+  max-width: 92vw;
+  width: 960px;
+  padding: 0;
+  border-radius: 20px;
+  overflow: hidden;
+  background: #090d16;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.full-cover-viewer-modal .namecard-close-btn {
+  top: 14px;
+  right: 14px;
+}
+
+.full-cover-viewer-body {
+  width: 100%;
+  max-height: 82vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #090d16;
+  padding: 0;
+  overflow: hidden;
+}
+
+.full-cover-viewer-body img {
+  width: 100%;
+  height: auto;
+  max-height: 82vh;
+  object-fit: contain;
+  display: block;
 }
 
 /* ==========================================

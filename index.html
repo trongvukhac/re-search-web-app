@@ -1733,9 +1733,14 @@
       
       <!-- Ảnh bìa cố định nằm dưới nội dung -->
       <div class="namecard-cover" id="namecardCover">
-        <button type="button" class="namecard-edit-cover-btn" id="namecardEditCoverBtn" onclick="openEditNamecardModal('cover')" style="display: none;" title="Chỉnh sửa ảnh bìa">
-          <span>✏️</span> Sửa ảnh bìa
-        </button>
+        <div class="namecard-cover-actions">
+          <button type="button" class="namecard-view-cover-btn" id="namecardViewCoverBtn" onclick="openFullCoverViewer()" title="Xem toàn bộ ảnh bìa đầy đủ kích cỡ">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg> <span>Xem ảnh bìa</span>
+          </button>
+          <button type="button" class="namecard-edit-cover-btn" id="namecardEditCoverBtn" onclick="openEditNamecardModal('cover')" style="display: none;" title="Chỉnh sửa ảnh bìa">
+            <span>✏️</span> <span>Sửa ảnh bìa</span>
+          </button>
+        </div>
       </div>
 
       <div class="namecard-card" id="namecardCard" data-frame="default">
@@ -1744,7 +1749,7 @@
 
         <!-- Khung nội dung chính cuộn đè lên ảnh bìa -->
         <div class="namecard-content-wrap">
-          <!-- Khung Header (Avatar, Tên, ID, Bio & Thẻ thành tích năng động chuẩn) -->
+          <!-- Khung Header (Avatar, Tên, ID, Bio) -->
           <div class="namecard-header">
             <div class="namecard-profile-col">
               <div class="namecard-avatar-wrap">
@@ -1769,41 +1774,6 @@
                 <p class="namecard-bio" id="namecardBio">Hỏi, trao đổi, cùng tiến bộ 🌱<br>Tìm hiểu sâu hơn, mỗi ngày một chút.</p>
               </div>
             </div>
-
-            <!-- Thẻ thành tích năng động BÊ NGUYÊN TỪ TRANG CHỦ -->
-            <aside class="contribution-card namecard-streak-card" id="namecardContributionCard" data-streak-tier="0">
-              <div class="card-topline">
-                <div class="topline-left">
-                  <span>THÀNH TÍCH NĂNG ĐỘNG</span>
-                </div>
-                <div class="topline-actions">
-                  <button type="button" class="streak-journey-btn" onclick="openStreakJourneyModal()" title="Xem hành trình giữ chuỗi">
-                    <span>🗺️</span> Hành trình
-                  </button>
-                </div>
-              </div>
-              
-              <div class="streak-hero">
-                <div class="streak-flame-wrap" id="namecardStreakFlame"></div>
-                <div class="streak-val-wrap">
-                  <div class="streak-number" id="namecardStreakDays">
-                    0 <span>ngày</span>
-                  </div>
-                  <div class="streak-tier-label" id="namecardStreakTitle">Tân binh</div>
-                </div>
-                <div class="streak-shield-wrap">
-                  <span class="streak-shield-badge" id="namecardStreakShieldsBadge" title="Khiên bảo vệ chuỗi"><span class="shield-icon">🛡️</span> <b id="namecardStreakShieldsCount">0</b> khiên</span>
-                </div>
-              </div>
-
-              <div id="namecardStreakShieldNotice" class="streak-shield-notice" style="display: none;">
-                🛡️ Khiên đã tự động giữ chuỗi cho bạn hôm qua!
-              </div>
-
-              <div class="week-strip" id="namecardStreakWeek" aria-label="Hoạt động trong tuần">
-                <!-- Render 7 ngày chuẩn T2 - CN -->
-              </div>
-            </aside>
           </div>
 
         <!-- Các khung thành tích -->
@@ -2079,6 +2049,15 @@
           </button>
         </div>
       </form>
+    </dialog>
+
+    <!-- MODAL XEM ĐẦY ĐỦ ẢNH BÌA -->
+    <dialog class="modal full-cover-viewer-modal" id="fullCoverViewerModal">
+      <button type="button" class="namecard-close-btn" onclick="document.getElementById('fullCoverViewerModal').close()" aria-label="Đóng">✕</button>
+      <div class="full-cover-viewer-body">
+        <img id="fullCoverViewerImg" src="" alt="Ảnh bìa đầy đủ" style="display: none;" />
+        <div id="fullCoverViewerBanner" style="display: none; width: 100%; height: 380px; border-radius: 16px;"></div>
+      </div>
     </dialog>
 
     <!-- MODAL 3: ĐỔI MẬT KHẨU -->

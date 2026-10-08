@@ -3497,6 +3497,7 @@ window.openNamecard = async function(userId) {
     // Cover Image
     const coverEl = $("#namecardCover");
     const coverVal = data.user.coverImage || "default";
+    currentViewingCoverVal = coverVal;
     if (coverVal.startsWith("data:image/") || coverVal.startsWith("http")) {
       coverEl.style.background = `url("${coverVal}") center / cover no-repeat`;
     } else if (coverVal.startsWith("color:")) {
@@ -3517,31 +3518,6 @@ window.openNamecard = async function(userId) {
 
     // Frame Decoration
     $("#namecardCard").setAttribute("data-frame", data.user.namecardFrame || "default");
-
-    // Full Streak Contribution Card (identical to Home page)
-    const ncContribCard = $("#namecardContributionCard");
-    if (ncContribCard) {
-      ncContribCard.setAttribute("data-streak-tier", streakTier);
-    }
-    $("#namecardStreakFlame").innerHTML = getFlameSVG(streakTier, 46);
-    $("#namecardStreakDays").innerHTML = `${data.streakCard.streak} <span>ngày</span>`;
-    $("#namecardStreakTitle").textContent = data.streakCard.streakTitle;
-
-    if ($("#namecardStreakShieldsCount")) {
-      $("#namecardStreakShieldsCount").textContent = data.streakCard.shields || 0;
-    }
-    if ($("#namecardStreakShieldNotice")) {
-      $("#namecardStreakShieldNotice").style.display = data.streakCard.autoShieldUsed ? "block" : "none";
-    }
-
-    const streakWeekEl = $("#namecardStreakWeek");
-    if (streakWeekEl && data.streakCard.weekDays) {
-      streakWeekEl.innerHTML = data.streakCard.weekDays.map(d => {
-        let cls = d.isActive ? "done" : (d.isToday ? "today" : "");
-        let mark = d.isActive ? getFlameSVG(data.streakCard.streakTier, 14) : (d.isToday ? `<span style="opacity: 0.5;">${getFlameSVG(0, 13)}</span>` : "○");
-        return `<div class="day ${cls}"><small>${d.label}</small><i>${mark}</i></div>`;
-      }).join("");
-    }
 
     // 1. Diễn đàn
     $("#ncStatContrib").textContent = data.forum.contributionPoints;
@@ -3585,6 +3561,37 @@ window.openMyNamecard = function() {
   } else {
     toast("Vui lòng đăng nhập để xem thẻ tên của bạn.");
   }
+};
+
+let currentViewingCoverVal = "default";
+
+window.openFullCoverViewer = function() {
+  const coverVal = currentViewingCoverVal;
+  if (!coverVal) return;
+  const modal = $("#fullCoverViewerModal");
+  const imgEl = $("#fullCoverViewerImg");
+  const bannerEl = $("#fullCoverViewerBanner");
+  if (!modal) return;
+
+  if (coverVal.startsWith("data:image/") || coverVal.startsWith("http")) {
+    if (imgEl) {
+      imgEl.src = coverVal;
+      imgEl.style.display = "block";
+    }
+    if (bannerEl) bannerEl.style.display = "none";
+  } else {
+    if (imgEl) imgEl.style.display = "none";
+    if (bannerEl) {
+      bannerEl.style.display = "block";
+      if (coverVal.startsWith("color:")) {
+        bannerEl.style.background = coverVal.replace("color:", "");
+      } else {
+        const foundPreset = COVER_PRESETS.find(p => p.id === coverVal);
+        bannerEl.style.background = foundPreset ? foundPreset.value : "linear-gradient(135deg, #1e3a8a 0%, #3b82f6 50%, #93c5fd 100%)";
+      }
+    }
+  }
+  modal.showModal();
 };
 
 window.copyNamecardId = function() {
