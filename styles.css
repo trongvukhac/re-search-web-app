@@ -10703,8 +10703,8 @@ body:has(#postDetail.active-page) .mobile-fab {
 
 .namecard-profile-row {
   display: flex;
-  gap: 20px;
-  align-items: flex-start;
+  gap: 16px;
+  align-items: flex-end;
   margin-top: -52px;
   width: 100%;
 }
@@ -10796,7 +10796,8 @@ body:has(#postDetail.active-page) .mobile-fab {
 }
 
 .namecard-identity {
-  padding-top: 54px;
+  padding-top: 0;
+  padding-bottom: 2px;
   flex: 1;
   min-width: 0;
 }
@@ -10931,23 +10932,24 @@ body:has(#postDetail.active-page) .mobile-fab {
   .namecard-profile-row {
     flex-direction: row;
     align-items: center;
-    gap: 14px;
-    margin-top: -42px;
+    gap: 12px;
+    margin-top: -30px;
     width: 100%;
   }
   .namecard-avatar-wrap {
-    width: 82px;
-    height: 82px;
+    width: 80px;
+    height: 80px;
     flex-shrink: 0;
   }
   .namecard-avatar-circle {
-    width: 82px;
-    height: 82px;
+    width: 80px;
+    height: 80px;
     font-size: 38px;
     border-width: 3px;
   }
   .namecard-identity {
-    padding-top: 36px;
+    padding-top: 0;
+    padding-bottom: 2px;
     flex: 1;
     min-width: 0;
   }
@@ -10957,6 +10959,7 @@ body:has(#postDetail.active-page) .mobile-fab {
   }
   .namecard-badges {
     margin-top: 4px;
+    gap: 6px;
   }
   .namecard-bio {
     margin: 12px 0 0 0;
