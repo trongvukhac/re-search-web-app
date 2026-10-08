@@ -10713,8 +10713,8 @@ dialog.modal.namecard-modal {
 
 .namecard-profile-row {
   display: flex;
-  gap: 16px;
-  align-items: flex-end;
+  gap: 18px;
+  align-items: flex-start;
   margin-top: -52px;
   width: 100%;
 }
@@ -10806,8 +10806,7 @@ dialog.modal.namecard-modal {
 }
 
 .namecard-identity {
-  padding-top: 0;
-  padding-bottom: 2px;
+  padding-top: 56px;
   flex: 1;
   min-width: 0;
 }
@@ -10841,7 +10840,6 @@ dialog.modal.namecard-modal {
     #7048e8 100%
   ) !important;
   background-size: 200% 100% !important;
-  background-position: 0% 50% !important;
   background-repeat: repeat-x !important;
   -webkit-background-clip: text !important;
   background-clip: text !important;
@@ -10941,9 +10939,9 @@ dialog.modal.namecard-modal {
   }
   .namecard-profile-row {
     flex-direction: row;
-    align-items: center;
+    align-items: flex-start;
     gap: 12px;
-    margin-top: -30px;
+    margin-top: -40px;
     width: 100%;
   }
   .namecard-avatar-wrap {
@@ -10958,8 +10956,8 @@ dialog.modal.namecard-modal {
     border-width: 3px;
   }
   .namecard-identity {
-    padding-top: 0;
-    padding-bottom: 2px;
+    padding-top: 42px;
+    padding-bottom: 0;
     flex: 1;
     min-width: 0;
   }
