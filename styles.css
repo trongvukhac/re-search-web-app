@@ -10465,4 +10465,26 @@ body:has(#postDetail.active-page) .mobile-fab {
     display: inline-flex !important;
     align-items: center !important;
   }
+  .account-actions:has(#accountLoginBtn:not([style*="display: none"])) {
+    display: flex !important;
+    width: 100% !important;
+  }
+  .account-actions:has(#accountLoginBtn:not([style*="display: none"])) #accountLoginBtn {
+    width: 100% !important;
+  }
+}
+
+.account-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.account-actions:has(#accountLoginBtn:not([style*="display: none"])) {
+  display: flex !important;
+}
+.account-actions:has(#accountLoginBtn:not([style*="display: none"])) #accountLoginBtn {
+  min-width: 130px !important;
+  padding: 9px 20px !important;
+  font-size: 13px !important;
+  font-weight: 700 !important;
 }

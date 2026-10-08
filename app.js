@@ -715,6 +715,7 @@ async function hydrateServer() {
       if ($("#openChangePasswordBtn")) $("#openChangePasswordBtn").style.display = "";
       if ($("#accountSecurityCard")) $("#accountSecurityCard").style.display = "block";
       if ($("#logoutButton")) $("#logoutButton").style.display = "";
+      if ($("#accountLoginBtn")) $("#accountLoginBtn").style.display = "none";
 
       try {
         const profileData = await requestAPI("/api/me/contributions");
@@ -889,6 +890,7 @@ async function hydrateServer() {
       if ($("#openChangePasswordBtn")) $("#openChangePasswordBtn").style.display = "none";
       if ($("#accountSecurityCard")) $("#accountSecurityCard").style.display = "none";
       if ($("#logoutButton")) $("#logoutButton").style.display = "none";
+      if ($("#accountLoginBtn")) $("#accountLoginBtn").style.display = "";
       if ($("#adminPanel")) $("#adminPanel").style.display = "none";
     }
 
@@ -2802,7 +2804,29 @@ $("#documentForm").addEventListener("submit", async (e) => {
     setSubmitLoading(e, false);
   }
 });
-$("#logoutButton").onclick = async () => {
+window.openLogoutConfirmModal = function() {
+  const modal = $("#logoutConfirmModal");
+  if (modal && typeof modal.showModal === "function") {
+    modal.showModal();
+  } else {
+    if (confirm("Bạn có chắc chắn muốn đăng xuất không?")) {
+      executeLogout();
+    }
+  }
+};
+
+window.closeLogoutConfirmModal = function() {
+  const modal = $("#logoutConfirmModal");
+  if (modal && typeof modal.close === "function") {
+    modal.close();
+  }
+};
+
+window.executeLogout = async function() {
+  const modal = $("#logoutConfirmModal");
+  if (modal && typeof modal.close === "function") {
+    modal.close();
+  }
   if (serverMode) {
     try {
       await requestAPI("/api/auth/logout", { method: "POST" });
@@ -2813,6 +2837,26 @@ $("#logoutButton").onclick = async () => {
     }
   }
 };
+
+const logoutConfirmModalEl = $("#logoutConfirmModal");
+if (logoutConfirmModalEl) {
+  logoutConfirmModalEl.addEventListener("click", (e) => {
+    const rect = logoutConfirmModalEl.getBoundingClientRect();
+    const isInDialog = (
+      rect.top <= e.clientY && e.clientY <= rect.top + rect.height &&
+      rect.left <= e.clientX && e.clientX <= rect.left + rect.width
+    );
+    if (!isInDialog) {
+      logoutConfirmModalEl.close();
+    }
+  });
+}
+
+if ($("#logoutButton")) {
+  $("#logoutButton").onclick = () => {
+    openLogoutConfirmModal();
+  };
+}
 async function loadAdminOverview() {
   const data = await requestAPI("/api/admin/overview");
   $("#adminMembers").textContent = data.members;
