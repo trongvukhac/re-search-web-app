@@ -3452,9 +3452,19 @@ window.openNamecard = async function(userId) {
     const closeBtnEl = $("#namecardCloseBtn");
     if (closeBtnEl) closeBtnEl.classList.remove("nc-hidden");
 
+    const streakTier = Number(data.streakCard?.streakTier || 0);
+
     // Header Identity
     $("#namecardAvatar").textContent = data.user.avatar || "🌱";
-    $("#namecardDisplayName").textContent = data.user.displayName || "Người dùng";
+    const avatarCircle = $("#namecardAvatarCircle");
+    if (avatarCircle) {
+      avatarCircle.className = "namecard-avatar-circle avatar " + getAvatarClass(streakTier, false, data.user.role);
+    }
+    const nameEl = $("#namecardDisplayName");
+    if (nameEl) {
+      nameEl.textContent = data.user.displayName || "Người dùng";
+      nameEl.className = "namecard-display-name " + getNameClass(streakTier);
+    }
     
     // Role Badge
     const roleIcon = $("#namecardRoleIcon");
@@ -3503,7 +3513,6 @@ window.openNamecard = async function(userId) {
     // Edit buttons for self
     const isSelf = Boolean(data.user.isSelf);
     if ($("#namecardEditCoverBtn")) $("#namecardEditCoverBtn").style.display = isSelf ? "inline-flex" : "none";
-    if ($("#namecardEditAvatarBtn")) $("#namecardEditAvatarBtn").style.display = isSelf ? "inline-flex" : "none";
     if ($("#namecardEditNameBtn")) $("#namecardEditNameBtn").style.display = isSelf ? "inline-flex" : "none";
 
     // Frame Decoration
@@ -3512,9 +3521,9 @@ window.openNamecard = async function(userId) {
     // Full Streak Contribution Card (identical to Home page)
     const ncContribCard = $("#namecardContributionCard");
     if (ncContribCard) {
-      ncContribCard.setAttribute("data-streak-tier", data.streakCard.streakTier);
+      ncContribCard.setAttribute("data-streak-tier", streakTier);
     }
-    $("#namecardStreakFlame").innerHTML = getFlameSVG(data.streakCard.streakTier, 46);
+    $("#namecardStreakFlame").innerHTML = getFlameSVG(streakTier, 46);
     $("#namecardStreakDays").innerHTML = `${data.streakCard.streak} <span>ngày</span>`;
     $("#namecardStreakTitle").textContent = data.streakCard.streakTitle;
 
@@ -3629,12 +3638,10 @@ window.openEditNamecardModal = function(section = "all") {
   // Populate Namecard values
   if ($("#namecardDisplayNameInput")) $("#namecardDisplayNameInput").value = session.displayName || "";
   if ($("#namecardBioInput")) $("#namecardBioInput").value = session.bio || "";
-  currentSelectedAvatar = session.initials || session.avatar || "🌱";
   currentSelectedFrame = session.namecardFrame || "default";
   currentSelectedCover = session.coverImage || "default";
 
   // Render Pickers
-  renderAvatarPicker();
   renderFramePicker();
   renderCoverPicker();
 
@@ -3832,7 +3839,6 @@ if ($("#editNamecardForm")) {
         body: JSON.stringify({
           displayName: $("#namecardDisplayNameInput").value.trim(),
           bio: $("#namecardBioInput").value.trim(),
-          avatar: currentSelectedAvatar,
           namecardFrame: currentSelectedFrame,
           coverImage: currentSelectedCover,
         }),
