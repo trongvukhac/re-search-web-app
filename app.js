@@ -8470,6 +8470,8 @@ async function loadAndRenderLeaderboard(phase, forceRefresh = false) {
 
   if (podiumWrap) podiumWrap.innerHTML = `<div style="text-align:center; padding: 24px; color: var(--muted);">Đang tải bảng xếp hạng...</div>`;
   if (lbList) lbList.innerHTML = "";
+  const initialFooterNote = $("#compLbFooterNote");
+  if (initialFooterNote) initialFooterNote.style.display = "none";
 
   try {
     const data = await requestAPI(`/api/competition/leaderboard?phase=${phase}`);
@@ -8490,6 +8492,7 @@ async function loadAndRenderLeaderboard(phase, forceRefresh = false) {
     renderLeaderboardUI(data);
   } catch (e) {
     if (podiumWrap) podiumWrap.innerHTML = `<div style="text-align:center; padding: 20px; color: var(--muted);">${e.message || "Không thể tải bảng xếp hạng"}</div>`;
+    if (initialFooterNote) initialFooterNote.style.display = "none";
   }
 }
 
@@ -8510,9 +8513,11 @@ window.refreshArenaLeaderboard = async function() {
 function renderLeaderboardUI(data) {
   const podiumWrap = $("#compPodiumWrap");
   const lbList = $("#compLbList");
+  const footerNote = $("#compLbFooterNote");
   if (!podiumWrap || !lbList) return;
 
   if (data.canShow === false) {
+    if (footerNote) footerNote.style.display = "none";
     podiumWrap.innerHTML = `
       <div class="comp-lb-waiting-wrap" style="text-align: center; padding: 48px 20px; background: rgba(255,255,255,0.02); border: 1px dashed rgba(255,255,255,0.12); border-radius: 16px; margin: 24px 0;">
         <div style="font-size: 40px; margin-bottom: 12px;">⏳</div>
@@ -8530,6 +8535,7 @@ function renderLeaderboardUI(data) {
   const currentUserEntry = data.currentUserEntry;
 
   if (top10.length === 0) {
+    if (footerNote) footerNote.style.display = "none";
     podiumWrap.innerHTML = `<div class="comp-lb-empty">Chưa có thành viên nào hoàn thành lượt thi trong giai đoạn này.</div>`;
     lbList.innerHTML = "";
     return;
@@ -8612,7 +8618,9 @@ function renderLeaderboardUI(data) {
       <div class="comp-lb-row ${isCurrent ? "is-current-user" : ""}" data-namecard-user-id="${u.userId}" style="cursor: pointer;" title="Xem thẻ tên">
         <span class="comp-lb-rank">#${u.rank}</span>
         <div class="comp-lb-user">
-          <span class="avatar avatar-sm ${avatarClass}">${escapeHTML(u.avatar || u.initials || "U")}</span>
+          <div class="comp-lb-avatar-wrap">
+            <span class="avatar avatar-sm ${avatarClass}">${escapeHTML(u.avatar || u.initials || "U")}</span>
+          </div>
           <span class="comp-lb-name ${nameClass}">${getFlameSVG(u.streakTier, 15)} <span class="lb-name-text">${escapeHTML(u.displayName)}</span> ${isCurrent ? '<span class="you-tag">(Bạn)</span>' : ""}</span>
         </div>
         <span class="comp-lb-score">⭐ ${u.score}</span>
@@ -8627,7 +8635,9 @@ function renderLeaderboardUI(data) {
       <div class="comp-lb-row is-current-user top-11-plus-row">
         <span class="comp-lb-rank">#${currentUserEntry.rank}</span>
         <div class="comp-lb-user">
-          <span class="avatar avatar-sm ${myAvatarClass}">${escapeHTML(currentUserEntry.avatar || currentUserEntry.initials || "U")}</span>
+          <div class="comp-lb-avatar-wrap">
+            <span class="avatar avatar-sm ${myAvatarClass}">${escapeHTML(currentUserEntry.avatar || currentUserEntry.initials || "U")}</span>
+          </div>
           <span class="comp-lb-name ${myNameClass}">${getFlameSVG(currentUserEntry.streakTier, 15)} <span class="lb-name-text">${escapeHTML(currentUserEntry.displayName)}</span> <span class="you-tag">(Bạn)</span></span>
         </div>
         <span class="comp-lb-score">⭐ ${currentUserEntry.score}</span>
@@ -8636,6 +8646,9 @@ function renderLeaderboardUI(data) {
   }
 
   lbList.innerHTML = rowsHTML;
+  if (footerNote) {
+    footerNote.style.display = "";
+  }
 }
 
 function openQuizStartConfirmModal(phase) {
