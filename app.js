@@ -629,6 +629,15 @@ function renderLeaderboard() {
     : (cachedLeaderboardData.streakLeaderboard || []);
 
   if (!list || list.length === 0) {
+    if (!cachedLeaderboardData.leaderboard?.length) {
+      requestAPI("/api/leaderboard").then(data => {
+        if (data && (data.leaderboard || data.streakLeaderboard)) {
+          cachedLeaderboardData = data;
+          renderLeaderboard();
+          updateResponsiveAsidePlacement();
+        }
+      }).catch(() => {});
+    }
     lbEl.innerHTML = `<p style="color: var(--muted); font-size: 13px; text-align: center; padding: 12px 0;">${isContrib ? "Chưa có dữ liệu đóng góp." : "Chưa có dữ liệu chuỗi."}</p>`;
     return;
   }
@@ -672,7 +681,7 @@ async function hydrateServer() {
     }
 
     const isHome = !currentActiveRoute || currentActiveRoute === "home";
-    const shouldFetchForumLb = isHome && (!cachedLeaderboardData?.leaderboard?.length);
+    const shouldFetchForumLb = isHome;
 
     const [postsData, docsData, leaderboardData, topicsData] = await Promise.all([
       requestAPI("/api/posts").catch(() => ({ posts: [] })),
@@ -1334,7 +1343,17 @@ function go(route, scrollToTop = true) {
 
   if (route === "home") {
     renderHome();
-    renderLeaderboard();
+    if (!cachedLeaderboardData?.leaderboard?.length) {
+      requestAPI("/api/leaderboard").then(data => {
+        if (data && (data.leaderboard || data.streakLeaderboard)) {
+          cachedLeaderboardData = data;
+          renderLeaderboard();
+          updateResponsiveAsidePlacement();
+        }
+      }).catch(() => {});
+    } else {
+      renderLeaderboard();
+    }
   }
   if (route === "forum") renderPosts();
   if (route === "documents") renderDocuments();

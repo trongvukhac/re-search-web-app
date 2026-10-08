@@ -217,6 +217,29 @@ try {
     );
     CREATE INDEX IF NOT EXISTS idx_study_logs_user_id ON study_logs(user_id);
   `);
+
+  // Tự động khôi phục / backfill study_logs từ các ca tự học đã hoàn thành trong contribution_events
+  const pastStudyEvents = db.prepare(`
+    SELECT user_id, reason, created_at 
+    FROM contribution_events 
+    WHERE event_type = 'study_session'
+  `).all();
+  for (const ev of pastStudyEvents) {
+    const match = ev.reason ? ev.reason.match(/(\d+)\s*phút/i) : null;
+    const minutes = match ? parseInt(match[1], 10) : 25;
+    if (minutes > 0) {
+      const existing = db.prepare(`
+        SELECT id FROM study_logs 
+        WHERE user_id = ? AND duration_minutes = ? AND completed_at = ?
+      `).get(ev.user_id, minutes, ev.created_at);
+      if (!existing) {
+        db.prepare(`
+          INSERT INTO study_logs (user_id, duration_minutes, completed_at)
+          VALUES (?, ?, ?)
+        `).run(ev.user_id, minutes, ev.created_at);
+      }
+    }
+  }
 } catch (e) {}
 try {
   db.exec(`
@@ -2188,7 +2211,7 @@ async function api(request, response, url) {
     };
 
     const students = db
-      .prepare("SELECT id, display_name as displayName, avatar, role FROM users WHERE role = 'student'")
+      .prepare("SELECT id, display_name as displayName, avatar, role FROM users WHERE role NOT IN ('admin', 'lecturer')")
       .all();
 
     const streakList = students.map(s => {
@@ -2398,12 +2421,19 @@ async function api(request, response, url) {
 
     // Khung Thành tích tự học
     const studyDaysRow = db.prepare("SELECT count(DISTINCT date(datetime(completed_at, '+7 hours'))) as days, coalesce(sum(duration_minutes), 0) as totalMinutes FROM study_logs WHERE user_id = ?").get(targetUser.id);
-    const studyContribCount = db.prepare("SELECT count(*) as c FROM contribution_events WHERE user_id = ? AND event_type = 'study_session'").get(targetUser.id).c;
-    const studyDays = Math.max(studyDaysRow?.days || 0, studyContribCount);
-    const totalStudyMinutes = (studyDaysRow?.totalMinutes || 0) + (studyDaysRow?.totalMinutes === 0 && studyContribCount > 0 ? studyContribCount * 45 : 0);
+    const studyContribCount = db.prepare("SELECT count(DISTINCT date(datetime(created_at, '+7 hours'))) as days, count(*) as c, coalesce(sum(CASE WHEN points > 0 THEN 45 ELSE 25 END), 0) as approxMinutes FROM contribution_events WHERE user_id = ? AND event_type = 'study_session'").get(targetUser.id);
+    const studyDays = Math.max(studyDaysRow?.days || 0, studyContribCount?.days || 0, studyContribCount?.c || 0);
+    const totalStudyMinutes = Math.max(studyDaysRow?.totalMinutes || 0, studyContribCount?.approxMinutes || 0);
 
     // Khung Thành tích thi đua
-    const weeksParticipated = db.prepare("SELECT count(DISTINCT competition_id) as c FROM competition_sessions WHERE user_id = ? AND status = 'completed'").get(targetUser.id).c;
+    const weeksParticipatedRow = db.prepare(`
+      SELECT count(DISTINCT competition_id) as c FROM (
+        SELECT competition_id FROM competition_sessions WHERE user_id = ? AND status = 'completed'
+        UNION
+        SELECT competition_id FROM competition_phase_results WHERE user_id = ?
+      )
+    `).get(targetUser.id, targetUser.id);
+    const weeksParticipated = weeksParticipatedRow?.c || 0;
     
     const bestWeekRow = db.prepare(`
       SELECT coalesce(max(week_total), 0) as bestWeekScore FROM (
@@ -2426,11 +2456,20 @@ async function api(request, response, url) {
       }
     }
 
-    // Xếp hạng cao nhất
+    // Xếp hạng cao nhất (ưu tiên giải thưởng tuần, nếu chưa có thì lấy hạng tốt nhất từ các giai đoạn)
     let bestRank = null;
     const bestRankRow = db.prepare("SELECT min(rank) as r FROM competition_weekly_rewards WHERE user_id = ? AND rank > 0").get(targetUser.id);
     if (bestRankRow && bestRankRow.r) {
       bestRank = bestRankRow.r;
+    }
+    const phaseRankRow = db.prepare(`
+      SELECT min(phase_rank) as bestRank FROM (
+        SELECT user_id, RANK() OVER (PARTITION BY competition_id, phase ORDER BY best_score DESC, updated_at ASC) as phase_rank
+        FROM competition_phase_results
+      ) WHERE user_id = ?
+    `).get(targetUser.id);
+    if (phaseRankRow && phaseRankRow.bestRank) {
+      bestRank = bestRank ? Math.min(bestRank, phaseRankRow.bestRank) : phaseRankRow.bestRank;
     }
 
     // Trả lời hoàn hảo
@@ -2438,12 +2477,20 @@ async function api(request, response, url) {
     const perfectCount = perfectRow?.c || 0;
 
     // Kỷ lục hoàn thành
-    const fastestRow = db.prepare(`
+    const fastest10Row = db.prepare(`
       SELECT min(initial_seconds - remaining_seconds) as min_time 
       FROM competition_sessions 
       WHERE user_id = ? AND status = 'completed' AND correct_count = 10 AND (initial_seconds - remaining_seconds) > 0
     `).get(targetUser.id);
-    const fastestSeconds = fastestRow?.min_time || null;
+    let fastestSeconds = fastest10Row?.min_time || null;
+    if (!fastestSeconds) {
+      const fastestAnyRow = db.prepare(`
+        SELECT min(initial_seconds - remaining_seconds) as min_time 
+        FROM competition_sessions 
+        WHERE user_id = ? AND status = 'completed' AND (initial_seconds - remaining_seconds) > 0
+      `).get(targetUser.id);
+      fastestSeconds = fastestAnyRow?.min_time || null;
+    }
 
     const canUploadCustomCover = Boolean(currentStreak >= 30 || maxStreak >= 30 || targetUser.role === "admin" || targetUser.role === "ta");
 
@@ -2946,9 +2993,9 @@ async function api(request, response, url) {
              u.display_name, u.role, u.avatar
       FROM study_sessions s
       JOIN users u ON s.user_id = u.id
-      WHERE (s.is_running = 1 AND (? - s.last_ping_ms) < 300000)
-         OR (s.last_ping_ms > 0 AND (? - s.last_ping_ms) < 180000)
-         OR (s.last_ping IS NOT NULL AND (unixepoch('now') - unixepoch(s.last_ping)) < 180)
+      WHERE (s.is_running = 1 AND (s.last_ping_ms > (? - 300000) OR (s.last_ping IS NOT NULL AND (strftime('%s', 'now') - strftime('%s', s.last_ping)) < 300)))
+         OR (s.last_ping_ms > (? - 180000))
+         OR (s.last_ping IS NOT NULL AND (strftime('%s', 'now') - strftime('%s', s.last_ping)) < 180)
       ORDER BY s.is_running DESC, s.last_ping_ms DESC
     `).all(nowMs, nowMs);
 
@@ -4095,8 +4142,12 @@ async function api(request, response, url) {
     let phaseTitle = isWeekPhase ? `Bảng xếp hạng tuần ${weekNumStr}` : "Bảng xếp hạng giai đoạn";
 
     let canShow = false;
-    if (isWeekPhase) {
-      canShow = isSunday;
+    const isPrivileged = Boolean(user && (user.role === "admin" || user.role === "ta" || user.role === "lecturer"));
+    if (isPrivileged || url.searchParams.get("admin_preview") === "true") {
+      canShow = true;
+    } else if (isWeekPhase) {
+      // Cho phép xem bảng xếp hạng tuần (BXH tích lũy)
+      canShow = true;
     } else {
       const pNum = Math.min(3, Math.max(1, Number(phaseParam) || 1));
       if (isSunday) {
@@ -4104,14 +4155,12 @@ async function api(request, response, url) {
       } else if (pNum < timeState.phase) {
         canShow = true;
       } else if (pNum === timeState.phase) {
-        canShow = (timeState.state === "reviewing" || timeState.state === "summary");
+        // Nếu là giai đoạn hiện tại: người đã thi xong hoặc hệ thống đang tổng kết đều xem được BXH
+        const hasFinishedPhase = user ? Boolean(db.prepare("SELECT 1 FROM competition_phase_results WHERE user_id = ? AND competition_id = ? AND phase = ?").get(user.id, comp.id, pNum)) : false;
+        canShow = (timeState.state === "reviewing" || timeState.state === "summary") || hasFinishedPhase;
       } else {
         canShow = false;
       }
-    }
-
-    if (url.searchParams.get("admin_preview") === "true" && user?.role === "admin") {
-      canShow = true;
     }
 
     return json(response, 200, {
