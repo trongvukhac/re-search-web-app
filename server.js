@@ -712,7 +712,7 @@ function publicUser(user, streakInfo = null) {
     className: user.class_name || "",
     bio: user.bio || "",
     coverImage: user.cover_image || "default",
-    namecardFrame: user.namecard_frame || "default",
+    namecardFrame: user.role === "admin" ? (user.namecard_frame || "default") : "default",
     namecardTheme: user.namecard_theme || "default",
     streak: info.streak || 0,
     streakTier: info.streakTier || 0,
@@ -2456,7 +2456,7 @@ async function api(request, response, url) {
         role: targetUser.role,
         bio: targetUser.bio || "Hỏi, trao đổi, cùng tiến bộ 🌱\nTìm hiểu sâu hơn, mỗi ngày một chút.",
         coverImage: targetUser.cover_image || "default",
-        namecardFrame: targetUser.namecard_frame || "default",
+        namecardFrame: targetUser.role === "admin" ? (targetUser.namecard_frame || "default") : "default",
         namecardTheme: targetUser.namecard_theme || "default",
         isSelf,
         canUploadCustomCover
@@ -2538,7 +2538,10 @@ async function api(request, response, url) {
 
     const newDisplayName = (typeof displayName === "string" && displayName.trim()) ? displayName.trim().slice(0, 80) : currentUser.display_name;
     const newBio = typeof bio === "string" ? bio.trim().slice(0, 200) : currentUser.bio;
-    const newFrame = typeof namecardFrame === "string" ? namecardFrame.trim() : (currentUser.namecard_frame || "default");
+    const isAdmin = currentUser.role === "admin";
+    const newFrame = isAdmin
+      ? (typeof namecardFrame === "string" ? namecardFrame.trim() : (currentUser.namecard_frame || "default"))
+      : "default";
     const newTheme = typeof namecardTheme === "string" ? namecardTheme.trim() : (currentUser.namecard_theme || "default");
     const newStudentId = typeof studentId === "string" ? studentId.trim().slice(0, 30) : currentUser.student_id;
     const newRealName = typeof realName === "string" ? realName.trim().slice(0, 80) : currentUser.real_name;
@@ -5075,10 +5078,7 @@ function serveStatic(request, response, url) {
     url.pathname === "/" ? "/index.html" : decodeURIComponent(url.pathname);
   if (relative.includes("\0"))
     return error(response, 400, "Đường dẫn không hợp lệ.");
-  let file = path.resolve(ROOT, `.${relative}`);
-  if (!fs.existsSync(file) && relative.startsWith("/assets/")) {
-    file = path.resolve(ROOT, `./public${relative}`);
-  }
+  const file = path.resolve(ROOT, `.${relative}`);
   if (
     !file.startsWith(ROOT + path.sep) ||
     !fs.existsSync(file) ||
