@@ -544,12 +544,16 @@ function applySession(user) {
     }
   }
 
-  if ($("#openChangePasswordBtn")) {
-    $("#openChangePasswordBtn").style.display = user ? "" : "none";
-  }
-  if ($("#accountSecurityCard")) {
-    $("#accountSecurityCard").style.display = user ? "block" : "none";
-  }
+  const isAuth = Boolean(user);
+  if ($("#viewMyNamecardBtn")) $("#viewMyNamecardBtn").style.display = isAuth ? "" : "none";
+  if ($("#editNamecardBtn")) $("#editNamecardBtn").style.display = isAuth ? "" : "none";
+  if ($("#editProfile")) $("#editProfile").style.display = isAuth ? "" : "none";
+  if ($("#openChangePasswordBtn")) $("#openChangePasswordBtn").style.display = isAuth ? "" : "none";
+  if ($("#logoutButton")) $("#logoutButton").style.display = isAuth ? "" : "none";
+  if ($("#accountLoginBtn")) $("#accountLoginBtn").style.display = isAuth ? "none" : "";
+  if ($("#accountGrid")) $("#accountGrid").style.display = isAuth ? "" : "none";
+  if ($("#accountSecurityCard")) $("#accountSecurityCard").style.display = isAuth ? "block" : "none";
+  if ($("#adminPanel")) $("#adminPanel").style.display = (isAuth && (user.role === "admin" || user.role === "ta")) ? "" : "none";
 
   const badgeDesk = $("#studyNavBadgeDesktop");
   const badgeMob = $("#studyNavBadgeMobile");

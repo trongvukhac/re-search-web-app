@@ -10711,6 +10711,37 @@ body:has(#postDetail.active-page) .mobile-fab {
   transition: all 0.3s ease;
 }
 
+/* Keyframe animations for Namecard Avatar Tiers */
+@keyframes pulseTier3Namecard {
+  0%, 100% {
+    box-shadow: 0 0 0 3px #ffffff, 0 0 0 6px #845ef7, 0 0 16px rgba(132, 94, 247, 0.55);
+  }
+  50% {
+    box-shadow: 0 0 0 3px #ffffff, 0 0 0 7.5px #b197fc, 0 0 26px rgba(132, 94, 247, 0.9);
+  }
+}
+
+@keyframes pulseTier4Namecard {
+  0%, 100% {
+    box-shadow: 0 0 0 3px #ffffff, 0 0 0 6px #e03131, 0 0 18px rgba(224, 49, 49, 0.65);
+  }
+  50% {
+    box-shadow: 0 0 0 3px #ffffff, 0 0 0 7.5px #ff6b6b, 0 0 30px rgba(224, 49, 49, 0.95);
+  }
+}
+
+@keyframes mythicAuraNamecard {
+  0% {
+    box-shadow: 0 0 0 3px #ffffff, 0 0 0 6px #7048e8, 0 0 24px rgba(112, 72, 232, 0.85), 0 0 34px rgba(247, 131, 172, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 0 3px #ffffff, 0 0 0 7.5px #f783ac, 0 0 32px rgba(247, 131, 172, 0.95), 0 0 44px rgba(255, 107, 107, 0.75);
+  }
+  100% {
+    box-shadow: 0 0 0 3px #ffffff, 0 0 0 6px #7048e8, 0 0 24px rgba(112, 72, 232, 0.85), 0 0 34px rgba(247, 131, 172, 0.5);
+  }
+}
+
 /* Streak Tier Avatar Frames & Glow for Namecard */
 .namecard-avatar-circle.avatar-tier-2 {
   border: 4px solid #ffffff;
@@ -10721,16 +10752,16 @@ body:has(#postDetail.active-page) .mobile-fab {
   background: linear-gradient(135deg, #5f3dc4 0%, #7048e8 50%, #845ef7 100%) !important;
   color: #ffffff !important;
   border: 4px solid #ffffff;
-  box-shadow: 0 0 0 3px #ffffff, 0 0 0 6.5px #845ef7, 0 0 24px rgba(132, 94, 247, 0.7), 0 8px 24px rgba(0, 0, 0, 0.15) !important;
-  animation: pulseTier3 3s ease-in-out infinite;
+  animation: pulseTier3Namecard 3s ease-in-out infinite;
+  -webkit-animation: pulseTier3Namecard 3s ease-in-out infinite;
 }
 
 .namecard-avatar-circle.avatar-tier-4 {
   background: linear-gradient(135deg, #c92a2a 0%, #e03131 50%, #ff6b6b 100%) !important;
   color: #ffffff !important;
   border: 4px solid #ffffff;
-  box-shadow: 0 0 0 3px #ffffff, 0 0 0 6.5px #e03131, 0 0 28px rgba(224, 49, 49, 0.8), 0 8px 24px rgba(0, 0, 0, 0.15) !important;
-  animation: pulseTier4 2.5s ease-in-out infinite;
+  animation: pulseTier4Namecard 2.5s ease-in-out infinite;
+  -webkit-animation: pulseTier4Namecard 2.5s ease-in-out infinite;
 }
 
 .namecard-avatar-circle.avatar-tier-5 {
@@ -10738,8 +10769,8 @@ body:has(#postDetail.active-page) .mobile-fab {
   background-size: 200% 200% !important;
   color: #ffffff !important;
   border: 4px solid #ffffff;
-  box-shadow: 0 0 0 3px #ffffff, 0 0 0 7px #f783ac, 0 0 32px rgba(112, 72, 232, 0.85), 0 0 40px rgba(255, 107, 107, 0.7), 0 8px 24px rgba(0, 0, 0, 0.15) !important;
-  animation: mythicAura 3.5s linear infinite, mythicBgShift 6s ease infinite;
+  animation: mythicAuraNamecard 3.5s linear infinite, mythicBgShift 6s ease infinite;
+  -webkit-animation: mythicAuraNamecard 3.5s linear infinite, mythicBgShift 6s ease infinite;
 }
 
 .namecard-identity {
@@ -10783,8 +10814,14 @@ body:has(#postDetail.active-page) .mobile-fab {
   background-clip: text !important;
   -webkit-text-fill-color: transparent !important;
   color: transparent !important;
+  font-weight: 800;
+  display: inline-block !important;
+  vertical-align: middle;
   animation: shimmerName 3.5s linear infinite !important;
   -webkit-animation: shimmerName 3.5s linear infinite !important;
+  will-change: background-position;
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
 }
 
 .namecard-badges {
