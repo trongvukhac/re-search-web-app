@@ -1731,17 +1731,17 @@
     <dialog class="modal namecard-modal" id="namecardModal" aria-labelledby="namecardDisplayName">
       <button type="button" class="namecard-close-btn" id="namecardCloseBtn" onclick="document.getElementById('namecardModal').close()" aria-label="Đóng thẻ tên">✕</button>
       
-      <!-- Ảnh bìa cố định nằm dưới nội dung -->
-      <div class="namecard-cover" id="namecardCover">
-        <div class="namecard-cover-actions">
-          <button type="button" class="namecard-view-cover-btn" id="namecardViewCoverBtn" onclick="openFullCoverViewer()" title="Xem toàn bộ ảnh bìa đầy đủ kích cỡ">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg> <span>Xem ảnh bìa</span>
-          </button>
-          <button type="button" class="namecard-edit-cover-btn" id="namecardEditCoverBtn" onclick="openEditNamecardModal('cover')" style="display: none;" title="Chỉnh sửa ảnh bìa">
-            <span>✏️</span> <span>Sửa ảnh bìa</span>
-          </button>
-        </div>
+      <div class="namecard-cover-actions">
+        <button type="button" class="namecard-view-cover-btn" id="namecardViewCoverBtn" onclick="openFullCoverViewer()" title="Xem toàn bộ ảnh bìa đầy đủ kích cỡ">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg> <span>Xem ảnh bìa</span>
+        </button>
+        <button type="button" class="namecard-edit-cover-btn" id="namecardEditCoverBtn" onclick="openEditNamecardModal('cover')" style="display: none;" title="Chỉnh sửa ảnh bìa">
+          <span>✏️</span> <span>Sửa ảnh bìa</span>
+        </button>
       </div>
+
+      <!-- Ảnh bìa cố định nằm dưới nội dung -->
+      <div class="namecard-cover" id="namecardCover"></div>
 
       <div class="namecard-card" id="namecardCard" data-frame="default">
         <!-- Khoảng đệm để lộ ảnh bìa phía sau -->
@@ -1920,22 +1920,21 @@
 
     <!-- MODAL 1: CHỈNH SỬA THẺ TÊN & TRANG TRÍ -->
     <dialog class="modal profile-settings-modal" id="editNamecardModal">
-      <div class="modal-head">
-        <div>
-          <p class="eyebrow">NAMECARD RE:SEARCH</p>
-          <h2>Chỉnh sửa thẻ tên & Trang trí</h2>
-        </div>
-        <button
-          class="close-modal"
-          type="button"
-          onclick="this.closest('dialog').close()"
-          aria-label="Đóng"
-        >
-          ×
-        </button>
-      </div>
-
       <form id="editNamecardForm">
+        <div class="modal-head">
+          <div>
+            <p class="eyebrow">NAMECARD RE:SEARCH</p>
+            <h2>Chỉnh sửa thẻ tên & Trang trí</h2>
+          </div>
+          <button
+            class="close-modal"
+            type="button"
+            onclick="this.closest('dialog').close()"
+            aria-label="Đóng"
+          >
+            ×
+          </button>
+        </div>
         <label>
           Tên hiển thị (Công khai)
           <input
@@ -2002,40 +2001,40 @@
 
     <!-- MODAL 2: CHỈNH SỬA HỒ SƠ (THÔNG TIN NỘI BỘ BẢO MẬT) -->
     <dialog class="modal" id="editProfileModal">
-      <div class="modal-head">
-        <div>
-          <p class="eyebrow">THÔNG TIN ĐỊNH DANH (NỘI BỘ)</p>
-          <h2>Chỉnh sửa hồ sơ</h2>
-        </div>
-        <button
-          class="close-modal"
-          type="button"
-          onclick="this.closest('dialog').close()"
-          aria-label="Đóng"
-        >
-          ×
-        </button>
-      </div>
-
       <form id="editProfileForm" method="dialog">
+        <div class="modal-head">
+          <div>
+            <p class="eyebrow">THÔNG TIN ĐỊNH DANH (NỘI BỘ)</p>
+            <h2>Chỉnh sửa hồ sơ</h2>
+          </div>
+          <button
+            class="close-modal"
+            type="button"
+            onclick="this.closest('dialog').close()"
+            aria-label="Đóng"
+          >
+            ×
+          </button>
+        </div>
+
         <div class="account-security-banner">
           🔒 <b>Thông tin định danh nội bộ:</b> Mã sinh viên, tên thật và lớp học được lưu trữ bảo mật nhằm phục vụ điểm danh, đối soát với Giảng viên và Nhà trường. Hệ thống cam kết <b>KHÔNG</b> hiển thị công khai các thông tin này trên Thẻ tên (Namecard).
         </div>
-        <label style="margin-top: 12px;">
+        <label style="margin-top: 14px;">
           Mã số sinh viên (Chỉ bạn & Admin thấy)
           <input
             id="profileStudentId"
             placeholder="Ví dụ: 20110001"
           />
         </label>
-        <label style="margin-top: 12px;">
+        <label style="margin-top: 14px;">
           Họ và tên thật (Chỉ bạn & Admin thấy)
           <input
             id="profileRealName"
             placeholder="Nguyễn Văn A"
           />
         </label>
-        <label style="margin-top: 12px;">
+        <label style="margin-top: 14px;">
           Lớp đang học (Chỉ bạn & Admin thấy)
           <input
             id="profileClassName"
@@ -2061,22 +2060,22 @@
 
     <!-- MODAL 3: ĐỔI MẬT KHẨU -->
     <dialog class="modal" id="changePasswordModal">
-      <div class="modal-head">
-        <div>
-          <p class="eyebrow">BẢO MẬT TÀI KHOẢN</p>
-          <h2>Đổi mật khẩu</h2>
-        </div>
-        <button
-          class="close-modal"
-          type="button"
-          onclick="this.closest('dialog').close()"
-          aria-label="Đóng"
-        >
-          ×
-        </button>
-      </div>
-
       <form id="changePasswordForm">
+        <div class="modal-head">
+          <div>
+            <p class="eyebrow">BẢO MẬT TÀI KHOẢN</p>
+            <h2>Đổi mật khẩu</h2>
+          </div>
+          <button
+            class="close-modal"
+            type="button"
+            onclick="this.closest('dialog').close()"
+            aria-label="Đóng"
+          >
+            ×
+          </button>
+        </div>
+
         <label
           >Mật khẩu hiện tại<input
             id="currentPasswordInput"
@@ -2085,7 +2084,7 @@
             autocomplete="current-password"
             placeholder="Nhập mật khẩu đang dùng"
         /></label>
-        <label
+        <label style="margin-top: 14px;"
           >Mật khẩu mới<input
             id="newPasswordInput"
             type="password"
@@ -2094,7 +2093,7 @@
             autocomplete="new-password"
             placeholder="Tối thiểu 12 ký tự"
         /></label>
-        <label
+        <label style="margin-top: 14px;"
           >Xác nhận mật khẩu mới<input
             id="confirmPasswordInput"
             type="password"
@@ -2103,12 +2102,16 @@
             autocomplete="new-password"
             placeholder="Nhập lại mật khẩu mới"
         /></label>
-        <p class="auth-note" style="margin-top: 10px;">
+        <p class="auth-note" style="margin-top: 12px;">
           Lưu ý: Mật khẩu an toàn phải có từ 12 ký tự trở lên và khác mật khẩu cũ.
         </p>
         <div class="modal-actions" style="margin-top: 24px">
-          <button class="button button-primary" type="submit" id="changePasswordSubmitBtn">
-            Cập nhật mật khẩu <span>→</span>
+          <button
+            class="button button-primary"
+            type="submit"
+            id="savePasswordBtn"
+          >
+            Đổi mật khẩu <span>→</span>
           </button>
         </div>
       </form>

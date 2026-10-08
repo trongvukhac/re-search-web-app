@@ -2125,25 +2125,36 @@ dialog::backdrop {
 }
 .modal label {
   display: block;
-  margin: 13px 0;
-  color: #2f4d3e;
-  font-size: 11px;
-  font-weight: 800;
+  margin: 14px 0 6px;
+  color: #123d30;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: var(--sans);
 }
 .modal input,
 .modal textarea,
 .modal select {
   display: block;
   width: 100%;
-  border: 1px solid #d5ded4;
-  background: #fff;
-  border-radius: 6px;
+  border: 1.5px solid #d5ded4;
+  background: #ffffff;
+  border-radius: 8px;
   color: var(--ink);
-  padding: 10px 11px;
+  padding: 10px 14px;
   margin-top: 6px;
   resize: vertical;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 500;
+  font-family: var(--sans);
+  box-sizing: border-box;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.modal input:focus,
+.modal textarea:focus,
+.modal select:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(18, 61, 48, 0.12);
 }
 .modal textarea {
   line-height: 1.5;
@@ -10573,7 +10584,6 @@ body:has(#postDetail.active-page) .mobile-fab {
   background-size: cover;
   background-position: center;
   z-index: 1;
-  pointer-events: auto;
 }
 
 .namecard-cover-actions {
@@ -10583,7 +10593,8 @@ body:has(#postDetail.active-page) .mobile-fab {
   display: flex;
   align-items: center;
   gap: 8px;
-  z-index: 10;
+  z-index: 20;
+  pointer-events: auto;
 }
 
 .namecard-view-cover-btn,
@@ -10604,6 +10615,7 @@ body:has(#postDetail.active-page) .mobile-fab {
   align-items: center;
   gap: 5px;
   transition: all 0.2s ease;
+  pointer-events: auto;
 }
 
 .namecard-view-cover-btn:hover,
@@ -10903,14 +10915,56 @@ body:has(#postDetail.active-page) .mobile-fab {
 }
 
 @media (max-width: 600px) {
+  .namecard-cover-actions {
+    top: 12px;
+    right: 50px;
+    gap: 6px;
+  }
+  .namecard-view-cover-btn,
+  .namecard-edit-cover-btn {
+    padding: 5px 10px;
+    font-size: 0.7rem;
+  }
+  .namecard-header {
+    padding: 0 18px 14px;
+  }
   .namecard-profile-row {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 12px;
+    flex-direction: row;
+    align-items: center;
+    gap: 14px;
+    margin-top: -42px;
+    width: 100%;
+  }
+  .namecard-avatar-wrap {
+    width: 82px;
+    height: 82px;
+    flex-shrink: 0;
+  }
+  .namecard-avatar-circle {
+    width: 82px;
+    height: 82px;
+    font-size: 38px;
+    border-width: 3px;
   }
   .namecard-identity {
-    padding-top: 0;
-    width: 100%;
+    padding-top: 36px;
+    flex: 1;
+    min-width: 0;
+  }
+  .namecard-display-name {
+    font-size: 1.35rem;
+    line-height: 1.25;
+  }
+  .namecard-badges {
+    margin-top: 4px;
+  }
+  .namecard-bio {
+    margin: 12px 0 0 0;
+    font-size: 0.88rem;
+    line-height: 1.45;
+  }
+  .namecard-body {
+    padding: 0 18px 20px;
   }
 }
 
