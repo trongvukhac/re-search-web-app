@@ -10506,6 +10506,7 @@ body:has(#postDetail.active-page) .mobile-fab {
   inset: 0;
   margin: auto;
   max-height: 92vh;
+  font-family: var(--sans);
 }
 
 .namecard-modal::backdrop {
@@ -10520,34 +10521,43 @@ body:has(#postDetail.active-page) .mobile-fab {
   overflow-y: auto;
   max-height: 92vh;
   background: #ffffff;
+  font-family: var(--sans);
 }
 
-/* Close button */
+/* Close button - Fixed relative to modal */
 .namecard-close-btn {
   position: absolute;
   top: 14px;
   right: 14px;
-  width: 34px;
-  height: 34px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.85);
+  background: rgba(255, 255, 255, 0.9);
   backdrop-filter: blur(8px);
-  border: 1px solid rgba(255, 255, 255, 0.5);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.6);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   color: #1e293b;
-  font-size: 22px;
+  font-size: 16px;
+  font-weight: 700;
   line-height: 1;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  z-index: 15;
-  transition: all 0.2s ease;
+  z-index: 30;
+  transition: opacity 0.25s cubic-bezier(0.4, 0, 0.2, 1), transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.15s ease;
 }
 
 .namecard-close-btn:hover {
   background: #ffffff;
   transform: scale(1.08);
+}
+
+.namecard-close-btn.nc-hidden {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-8px) scale(0.9);
 }
 
 /* Cover Image */
@@ -10573,6 +10583,7 @@ body:has(#postDetail.active-page) .mobile-fab {
   padding: 5px 12px;
   font-size: 0.8rem;
   font-weight: 600;
+  font-family: var(--sans);
   cursor: pointer;
   display: inline-flex;
   align-items: center;
@@ -10620,6 +10631,7 @@ body:has(#postDetail.active-page) .mobile-fab {
   padding: 1px 8px;
   font-size: 11px;
   font-weight: 500;
+  font-family: var(--sans);
   cursor: pointer;
   display: inline-flex;
   align-items: center;
@@ -10643,6 +10655,7 @@ body:has(#postDetail.active-page) .mobile-fab {
   align-items: flex-start;
   gap: 14px;
   position: relative;
+  font-family: var(--sans);
 }
 
 .namecard-profile-col {
@@ -10693,13 +10706,15 @@ body:has(#postDetail.active-page) .mobile-fab {
   padding-top: 38px;
   flex: 1;
   min-width: 0;
+  font-family: var(--sans);
 }
 
 .namecard-display-name {
   margin: 0 0 4px 0;
+  font-family: var(--sans);
   font-size: 1.35rem;
   font-weight: 800;
-  color: #0f172a;
+  color: var(--ink-deep, #0a2a20);
   line-height: 1.25;
   white-space: nowrap;
   overflow: hidden;
@@ -10712,6 +10727,7 @@ body:has(#postDetail.active-page) .mobile-fab {
   gap: 8px;
   flex-wrap: wrap;
   margin-bottom: 8px;
+  font-family: var(--sans);
 }
 
 .namecard-role-badge {
@@ -10724,6 +10740,7 @@ body:has(#postDetail.active-page) .mobile-fab {
   border-radius: 999px;
   font-size: 0.78rem;
   font-weight: 700;
+  font-family: var(--sans);
   border: 1px solid #c8e6c9;
 }
 
@@ -10737,6 +10754,7 @@ body:has(#postDetail.active-page) .mobile-fab {
   border-radius: 999px;
   font-size: 0.78rem;
   font-weight: 600;
+  font-family: var(--sans);
   border: 1px solid #e2e8f0;
   cursor: pointer;
   transition: all 0.15s ease;
@@ -10749,8 +10767,9 @@ body:has(#postDetail.active-page) .mobile-fab {
 
 .namecard-bio {
   margin: 0;
+  font-family: var(--sans);
   font-size: 0.88rem;
-  color: #475569;
+  color: var(--muted, #66746d);
   line-height: 1.45;
   white-space: pre-line;
 }
@@ -10767,9 +10786,11 @@ body:has(#postDetail.active-page) .mobile-fab {
   box-shadow: 0 10px 25px rgba(60, 10, 35, 0.3);
   position: relative;
   z-index: 5;
+  font-family: var(--sans);
 }
 
 .nc-streak-head {
+  font-family: var(--sans);
   font-size: 0.75rem;
   font-weight: 700;
   text-transform: uppercase;
@@ -10792,6 +10813,7 @@ body:has(#postDetail.active-page) .mobile-fab {
 }
 
 .nc-streak-num {
+  font-family: var(--sans);
   font-size: 1.65rem;
   font-weight: 800;
   line-height: 1.1;
@@ -10804,6 +10826,7 @@ body:has(#postDetail.active-page) .mobile-fab {
 }
 
 .nc-streak-title {
+  font-family: var(--sans);
   font-size: 0.8rem;
   font-weight: 600;
   opacity: 0.85;
@@ -10823,6 +10846,7 @@ body:has(#postDetail.active-page) .mobile-fab {
   flex-direction: column;
   align-items: center;
   gap: 3px;
+  font-family: var(--sans);
   font-size: 0.65rem;
   font-weight: 600;
   opacity: 0.85;
@@ -10855,6 +10879,7 @@ body:has(#postDetail.active-page) .mobile-fab {
   display: flex;
   flex-direction: column;
   gap: 16px;
+  font-family: var(--sans);
 }
 
 .namecard-block {
@@ -10878,129 +10903,175 @@ body:has(#postDetail.active-page) .mobile-fab {
 }
 
 .namecard-block-title .nc-icon {
-  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .namecard-block-title h3 {
   margin: 0;
-  font-size: 0.98rem;
-  font-weight: 800;
-  color: #1e293b;
+  font-family: var(--sans);
+  font-size: 0.96rem;
+  font-weight: 700;
+  color: var(--ink-deep, #0a2a20);
 }
 
-.namecard-block-link {
-  background: none;
-  border: none;
-  color: #475569;
-  font-size: 0.82rem;
-  font-weight: 600;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 2px 6px;
-  border-radius: 6px;
-  transition: all 0.15s ease;
-}
-
-.namecard-block-link:hover {
-  color: var(--primary, #0f172a);
-  background: rgba(0, 0, 0, 0.04);
-}
-
-/* Tiles Grids */
+/* Horizontal Scrolling Tiles Row - chống rối, chống rớt chữ */
 .namecard-tiles {
-  display: grid;
+  display: flex;
   gap: 8px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 2px 2px 8px;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.16) transparent;
 }
 
-.namecard-tiles-5 {
-  grid-template-columns: repeat(5, 1fr);
+.namecard-tiles::-webkit-scrollbar {
+  height: 4px;
+}
+
+.namecard-tiles::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.namecard-tiles::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.16);
+  border-radius: 999px;
+}
+
+.namecard-tiles::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.namecard-tiles-5,
+.namecard-tiles-6 {
+  display: flex;
+}
+
+.namecard-tiles-5 .namecard-tile {
+  flex: 0 0 calc(20% - 6.5px);
+  min-width: 124px;
+}
+
+.namecard-tiles-6 .namecard-tile {
+  flex: 0 0 124px;
+  min-width: 124px;
 }
 
 .namecard-tiles-2 {
-  grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  overflow-x: visible;
+  padding-bottom: 2px;
 }
 
-.namecard-tiles-6 {
-  grid-template-columns: repeat(6, 1fr);
+@media (max-width: 600px) {
+  .namecard-tiles-2 {
+    grid-template-columns: 1fr;
+  }
 }
 
 .namecard-tile {
   background: #ffffff;
   border: 1px solid #e2e8f0;
-  border-radius: 14px;
-  padding: 12px 6px;
+  border-radius: 12px;
+  padding: 10px 6px;
   text-align: center;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  box-sizing: border-box;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
 }
 
 .namecard-tile:hover {
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  border-color: #cbd5e1;
 }
 
 .nc-tile-icon {
-  width: 30px;
-  height: 30px;
+  width: 28px;
+  height: 28px;
   border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 14px;
-  margin-bottom: 6px;
+  margin-bottom: 5px;
+  flex-shrink: 0;
+}
+
+.nc-tile-icon svg {
+  display: block;
 }
 
 .nc-tile-val {
-  font-size: 1.15rem;
-  font-weight: 800;
-  color: #0f172a;
+  font-family: var(--sans);
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--ink-deep, #0a2a20);
   line-height: 1.2;
-  margin-bottom: 3px;
+  margin-bottom: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
 }
 
 .nc-tile-lbl {
-  font-size: 0.72rem;
-  color: #64748b;
+  font-family: var(--sans);
+  font-size: 0.68rem;
+  color: var(--muted, #66746d);
   font-weight: 600;
-  line-height: 1.25;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
 }
 
 /* Horizontal tile (Tự học) */
 .namecard-tile.horizontal {
   flex-direction: row;
   text-align: left;
-  padding: 14px 16px;
-  gap: 14px;
+  padding: 10px 14px;
+  gap: 12px;
   justify-content: flex-start;
+  min-width: 0;
 }
 
 .namecard-tile.horizontal .nc-tile-icon {
-  width: 38px;
-  height: 38px;
-  font-size: 18px;
-  border-radius: 10px;
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
   margin-bottom: 0;
-  flex-shrink: 0;
 }
 
 .namecard-tile.horizontal .nc-tile-info {
   display: flex;
   flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
+  flex: 1;
 }
 
 .namecard-tile.horizontal .nc-tile-val {
-  font-size: 1.25rem;
-  margin-bottom: 2px;
+  font-size: 1.15rem;
+  margin-bottom: 1px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .namecard-tile.horizontal .nc-tile-lbl {
-  font-size: 0.78rem;
+  font-size: 0.72rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* ==========================================
@@ -11169,6 +11240,7 @@ body:has(#postDetail.active-page) .mobile-fab {
   margin-bottom: 4px;
   background-size: cover;
   background-position: center;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.1);
 }
 
 .choice-label {

@@ -1620,7 +1620,10 @@ window.addEventListener("click", (e) => {
       "editModal",
       "competitionQuizModal",
       "quizStartConfirmModal",
-      "quizExitConfirmModal"
+      "quizExitConfirmModal",
+      "namecardModal",
+      "editNamecardModal",
+      "editProfileModal"
     ];
     if (noBackdropCloseIds.includes(e.target.id)) return;
     
@@ -3423,14 +3426,16 @@ const FRAME_OPTIONS = [
 
 const COVER_PRESETS = [
   { id: "default", name: "Xanh đại dương", type: "gradient", value: "linear-gradient(135deg, #1e3a8a 0%, #3b82f6 50%, #93c5fd 100%)" },
-  { id: "preset_library", name: "Thư viện anime", type: "image", value: "demo_assets/wallpaper_pc_library.png" },
-  { id: "preset_zen", name: "Bình minh Zen", type: "image", value: "demo_assets/wallpaper_pc_zen.png" },
-  { id: "preset_space", name: "Dải ngân hà", type: "image", value: "demo_assets/wallpaper_pc_space.png" },
-  { id: "preset_lofi", name: "Góc Lofi", type: "image", value: "demo_assets/wallpaper_pc_lofi.png" },
+  { id: "emerald_gradient", name: "Ngọc lục bảo", type: "gradient", value: "linear-gradient(135deg, #064e3b 0%, #059669 50%, #6ee7b7 100%)" },
+  { id: "sunset_gradient", name: "Hoàng hôn tím", type: "gradient", value: "linear-gradient(135deg, #4c0519 0%, #db2777 50%, #fcd34d 100%)" },
+  { id: "aurora_gradient", name: "Cực quang", type: "gradient", value: "linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #4338ca 100%)" },
+  { id: "royal_gradient", name: "Hoàng gia", type: "gradient", value: "linear-gradient(135deg, #3b0764 0%, #7c3aed 50%, #c084fc 100%)" },
+  { id: "sakura_gradient", name: "Hoa anh đào", type: "gradient", value: "linear-gradient(135deg, #831843 0%, #f43f5e 50%, #fbcfe8 100%)" },
   { id: "color:#0f172a", name: "Đêm huyền bí", type: "color", value: "#0f172a" },
-  { id: "color:#064e3b", name: "Rừng ngọc", type: "color", value: "#064e3b" },
+  { id: "color:#334155", name: "Xám đá Slate", type: "color", value: "#334155" },
+  { id: "color:#064e3b", name: "Xanh rừng sâu", type: "color", value: "#064e3b" },
   { id: "color:#4c0519", name: "Đỏ Ruby", type: "color", value: "#4c0519" },
-  { id: "color:#3b0764", name: "Tím hoàng hôn", type: "color", value: "#3b0764" },
+  { id: "color:#3b0764", name: "Tím thạch anh", type: "color", value: "#3b0764" },
   { id: "color:#18181b", name: "Đen tuyền", type: "color", value: "#18181b" },
 ];
 
@@ -3440,6 +3445,12 @@ window.openNamecard = async function(userId) {
     const data = await requestAPI(`/api/users/${userId}/namecard`);
     if (!data || !data.user) return;
     currentViewingNamecardUserId = userId;
+
+    // Reset scroll & close button visibility
+    const cardEl = $("#namecardCard");
+    if (cardEl) cardEl.scrollTop = 0;
+    const closeBtnEl = $("#namecardCloseBtn");
+    if (closeBtnEl) closeBtnEl.classList.remove("nc-hidden");
 
     // Header Identity
     $("#namecardAvatar").textContent = data.user.avatar || "🌱";
@@ -3476,20 +3487,14 @@ window.openNamecard = async function(userId) {
     // Cover Image
     const coverEl = $("#namecardCover");
     const coverVal = data.user.coverImage || "default";
-    if (coverVal.startsWith("data:image/") || coverVal.startsWith("http") || coverVal.includes("demo_assets")) {
+    if (coverVal.startsWith("data:image/") || coverVal.startsWith("http")) {
       coverEl.style.background = `url("${coverVal}") center / cover no-repeat`;
     } else if (coverVal.startsWith("color:")) {
       coverEl.style.background = coverVal.replace("color:", "");
     } else {
       const foundPreset = COVER_PRESETS.find(p => p.id === coverVal);
       if (foundPreset) {
-        if (foundPreset.type === "image") {
-          coverEl.style.background = `url("${foundPreset.value}") center / cover no-repeat`;
-        } else if (foundPreset.type === "gradient") {
-          coverEl.style.background = foundPreset.value;
-        } else {
-          coverEl.style.background = foundPreset.value;
-        }
+        coverEl.style.background = foundPreset.value;
       } else {
         coverEl.style.background = "linear-gradient(135deg, #1e3a8a 0%, #3b82f6 50%, #93c5fd 100%)";
       }
@@ -3878,6 +3883,22 @@ if ($("#editProfileForm")) {
       setSubmitLoading(e, false);
     }
   };
+}
+
+// Scroll listener for Namecard modal close button auto-hide / show
+const ncCardElement = document.getElementById("namecardCard");
+const ncCloseBtnElement = document.getElementById("namecardCloseBtn");
+if (ncCardElement && ncCloseBtnElement) {
+  let ncLastScrollTop = 0;
+  ncCardElement.addEventListener("scroll", () => {
+    const st = ncCardElement.scrollTop;
+    if (st > ncLastScrollTop && st > 30) {
+      ncCloseBtnElement.classList.add("nc-hidden");
+    } else if (st < ncLastScrollTop || st <= 10) {
+      ncCloseBtnElement.classList.remove("nc-hidden");
+    }
+    ncLastScrollTop = Math.max(0, st);
+  }, { passive: true });
 }
 
 // ==========================================
