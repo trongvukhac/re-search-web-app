@@ -11177,119 +11177,72 @@ dialog.modal.namecard-modal {
   text-overflow: ellipsis;
 }
 
-/* ============================================================
-   NAMECARD DECORATIVE FRAMES & OVERLAY SYSTEM
-   ============================================================ */
+/* ==========================================
+   NAMECARD FRAMES & DECORATIONS (Image 2)
+   ========================================== */
 
-.namecard-frame-overlay {
+.namecard-card[data-frame="leaves"] {
+  border: 2px solid #86efac;
+}
+.namecard-card[data-frame="leaves"] .namecard-cover::after {
+  content: "🌿";
   position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
-  z-index: 35;
-  border-radius: 24px;
-  overflow: hidden;
-  background-position: center;
-  background-repeat: no-repeat;
-  background-size: 100% 100%;
-  transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  top: 10px;
+  left: 10px;
+  font-size: 26px;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
 }
 
-/* Ambient Shadow Glow on Modal Container per Frame Tier */
-.namecard-modal[data-frame="sprout"],
-dialog.modal.namecard-modal[data-frame="sprout"] {
-  box-shadow: 0 30px 70px -15px rgba(15, 23, 42, 0.4),
-              0 0 35px rgba(16, 185, 129, 0.3) !important;
+.namecard-card[data-frame="stars"] {
+  border: 2px solid #93c5fd;
+  box-shadow: 0 0 25px rgba(59, 130, 246, 0.2);
+}
+.namecard-card[data-frame="stars"] .namecard-cover::after {
+  content: "✨";
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  font-size: 26px;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
 }
 
-.namecard-modal[data-frame="leaves"],
-dialog.modal.namecard-modal[data-frame="leaves"] {
-  box-shadow: 0 30px 70px -15px rgba(15, 23, 42, 0.4),
-              0 0 40px rgba(5, 150, 105, 0.4) !important;
+.namecard-card[data-frame="gold"] {
+  border: 3px solid #facc15;
+  box-shadow: 0 0 30px rgba(234, 179, 8, 0.25);
+}
+.namecard-card[data-frame="gold"] .namecard-cover::after {
+  content: "👑";
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  font-size: 26px;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
 }
 
-.namecard-modal[data-frame="stars"],
-dialog.modal.namecard-modal[data-frame="stars"] {
-  box-shadow: 0 30px 70px -15px rgba(15, 23, 42, 0.4),
-              0 0 45px rgba(124, 58, 237, 0.4),
-              0 0 70px rgba(56, 189, 248, 0.25) !important;
+.namecard-card[data-frame="sakura"] {
+  border: 2px solid #f9a8d4;
+  box-shadow: 0 0 25px rgba(244, 114, 182, 0.2);
+}
+.namecard-card[data-frame="sakura"] .namecard-cover::after {
+  content: "🌸";
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  font-size: 26px;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
 }
 
-.namecard-modal[data-frame="sakura"],
-dialog.modal.namecard-modal[data-frame="sakura"] {
-  box-shadow: 0 30px 70px -15px rgba(15, 23, 42, 0.4),
-              0 0 40px rgba(244, 63, 94, 0.35) !important;
+.namecard-card[data-frame="ice"] {
+  border: 2px solid #a5f3fc;
+  box-shadow: 0 0 25px rgba(6, 182, 212, 0.2);
 }
-
-.namecard-modal[data-frame="ice"],
-dialog.modal.namecard-modal[data-frame="ice"] {
-  box-shadow: 0 30px 70px -15px rgba(15, 23, 42, 0.4),
-              0 0 45px rgba(14, 165, 233, 0.4) !important;
-}
-
-.namecard-modal[data-frame="gold"],
-dialog.modal.namecard-modal[data-frame="gold"],
-.namecard-modal[data-frame="mythic_gold"],
-dialog.modal.namecard-modal[data-frame="mythic_gold"] {
-  box-shadow: 0 30px 70px -15px rgba(15, 23, 42, 0.4),
-              0 0 55px rgba(245, 158, 11, 0.5),
-              0 0 85px rgba(217, 119, 6, 0.3) !important;
-}
-
-/* Subtle Shimmer Animation for Mythic Gold Frame */
-@keyframes mythicFrameShimmer {
-  0%, 100% {
-    filter: drop-shadow(0 0 3px rgba(254, 240, 138, 0.5));
-  }
-  50% {
-    filter: drop-shadow(0 0 8px rgba(245, 158, 11, 0.9));
-  }
-}
-
-.namecard-modal[data-frame="gold"] .namecard-frame-overlay,
-dialog.modal.namecard-modal[data-frame="gold"] .namecard-frame-overlay,
-.namecard-modal[data-frame="mythic_gold"] .namecard-frame-overlay,
-dialog.modal.namecard-modal[data-frame="mythic_gold"] .namecard-frame-overlay {
-  animation: mythicFrameShimmer 4s ease-in-out infinite;
-}
-
-/* Matching Avatar Ring Glows per Frame Tier */
-.namecard-modal[data-frame="sprout"] .namecard-avatar-circle,
-dialog.modal.namecard-modal[data-frame="sprout"] .namecard-avatar-circle {
-  box-shadow: 0 0 0 3px #10b981, 0 0 15px rgba(16, 185, 129, 0.45);
-}
-
-.namecard-modal[data-frame="leaves"] .namecard-avatar-circle,
-dialog.modal.namecard-modal[data-frame="leaves"] .namecard-avatar-circle {
-  box-shadow: 0 0 0 3px #059669, 0 0 18px rgba(5, 150, 105, 0.5);
-}
-
-.namecard-modal[data-frame="stars"] .namecard-avatar-circle,
-dialog.modal.namecard-modal[data-frame="stars"] .namecard-avatar-circle {
-  box-shadow: 0 0 0 3px #818cf8, 0 0 20px rgba(129, 140, 248, 0.55);
-}
-
-.namecard-modal[data-frame="sakura"] .namecard-avatar-circle,
-dialog.modal.namecard-modal[data-frame="sakura"] .namecard-avatar-circle {
-  box-shadow: 0 0 0 3px #f43f5e, 0 0 18px rgba(244, 63, 94, 0.5);
-}
-
-.namecard-modal[data-frame="ice"] .namecard-avatar-circle,
-dialog.modal.namecard-modal[data-frame="ice"] .namecard-avatar-circle {
-  box-shadow: 0 0 0 3px #0ea5e9, 0 0 20px rgba(14, 165, 233, 0.55);
-}
-
-.namecard-modal[data-frame="gold"] .namecard-avatar-circle,
-dialog.modal.namecard-modal[data-frame="gold"] .namecard-avatar-circle,
-.namecard-modal[data-frame="mythic_gold"] .namecard-avatar-circle,
-dialog.modal.namecard-modal[data-frame="mythic_gold"] .namecard-avatar-circle {
-  box-shadow: 0 0 0 3.5px #f59e0b, 0 0 22px rgba(245, 158, 11, 0.65);
-}
-
-.namecard-modal[data-frame="default"] .namecard-avatar-circle,
-dialog.modal.namecard-modal[data-frame="default"] .namecard-avatar-circle {
-  box-shadow: 0 0 0 2.5px #c084fc, 0 0 14px rgba(192, 132, 252, 0.4);
+.namecard-card[data-frame="ice"] .namecard-cover::after {
+  content: "❄️";
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  font-size: 26px;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
 }
 
 /* ==========================================
