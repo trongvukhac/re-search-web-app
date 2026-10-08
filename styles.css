@@ -1995,8 +1995,8 @@ div.user-name-tier-5,
 dialog:not([open]) {
   display: none !important;
 }
-.modal:not(.quiz-arena-modal):not(.quiz-start-confirm-modal):not(.quiz-exit-confirm-modal),
-dialog.modal:not(.quiz-arena-modal):not(.quiz-start-confirm-modal):not(.quiz-exit-confirm-modal) {
+.modal:not(.quiz-arena-modal):not(.quiz-start-confirm-modal):not(.quiz-exit-confirm-modal):not(.namecard-modal),
+dialog.modal:not(.quiz-arena-modal):not(.quiz-start-confirm-modal):not(.quiz-exit-confirm-modal):not(.namecard-modal) {
   position: fixed;
   inset: 0;
   margin: auto;
@@ -10516,20 +10516,25 @@ body:has(#postDetail.active-page) .mobile-fab {
    NAMECARD (THẺ TÊN CÁ NHÂN) & TRANG TRÍ STYLES
    ============================================================ */
 
-.namecard-modal {
-  max-width: 680px;
-  width: 92%;
-  border-radius: 24px;
-  padding: 0;
-  border: none;
-  background: #ffffff;
-  box-shadow: 0 30px 70px -15px rgba(15, 23, 42, 0.4);
-  overflow: hidden;
-  position: fixed;
-  inset: 0;
-  margin: auto;
-  max-height: 92vh;
-  font-family: var(--sans);
+.namecard-modal,
+dialog.modal.namecard-modal {
+  max-width: 680px !important;
+  width: 92% !important;
+  border-radius: 24px !important;
+  padding: 0 !important;
+  border: none !important;
+  background: #ffffff !important;
+  box-shadow: 0 30px 70px -15px rgba(15, 23, 42, 0.4) !important;
+  overflow: hidden !important;
+  overflow-x: hidden !important;
+  overflow-y: hidden !important;
+  overscroll-behavior: none !important;
+  position: fixed !important;
+  inset: 0 !important;
+  margin: auto !important;
+  height: min(92vh, 760px) !important;
+  max-height: min(92vh, 760px) !important;
+  font-family: var(--sans) !important;
 }
 
 .namecard-modal::backdrop {
@@ -10567,10 +10572,23 @@ body:has(#postDetail.active-page) .mobile-fab {
   transform: scale(1.08);
 }
 
-.namecard-close-btn.nc-hidden {
-  opacity: 0;
-  pointer-events: none;
-  transform: translateY(-8px) scale(0.9);
+.namecard-cover-actions {
+  position: absolute;
+  top: 14px;
+  right: 58px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  z-index: 30;
+  pointer-events: auto;
+  transition: opacity 0.25s cubic-bezier(0.4, 0, 0.2, 1), transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.namecard-close-btn.nc-hidden,
+.namecard-cover-actions.nc-hidden {
+  opacity: 0 !important;
+  pointer-events: none !important;
+  transform: translateY(-8px) scale(0.9) !important;
 }
 
 /* Stationary Cover Image - Fixed inside modal behind content */
@@ -10584,17 +10602,7 @@ body:has(#postDetail.active-page) .mobile-fab {
   background-size: cover;
   background-position: center;
   z-index: 1;
-}
-
-.namecard-cover-actions {
-  position: absolute;
-  top: 14px;
-  right: 58px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  z-index: 20;
-  pointer-events: auto;
+  pointer-events: none;
 }
 
 .namecard-view-cover-btn,
@@ -10631,11 +10639,13 @@ body:has(#postDetail.active-page) .mobile-fab {
   z-index: 2;
   display: flex;
   flex-direction: column;
-  overflow-y: auto;
-  overflow-x: hidden;
-  max-height: 92vh;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  height: 100% !important;
+  max-height: 100% !important;
   font-family: var(--sans);
   -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
 }
 
 /* Spacer allowing fixed cover behind to be visible at top */

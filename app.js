@@ -3487,11 +3487,13 @@ window.openNamecard = async function(userId) {
     if (!data || !data.user) return;
     currentViewingNamecardUserId = userId;
 
-    // Reset scroll & close button visibility
+    // Reset scroll & action buttons visibility
     const cardEl = $("#namecardCard");
     if (cardEl) cardEl.scrollTop = 0;
     const closeBtnEl = $("#namecardCloseBtn");
     if (closeBtnEl) closeBtnEl.classList.remove("nc-hidden");
+    const coverActionsEl = $(".namecard-cover-actions");
+    if (coverActionsEl) coverActionsEl.classList.remove("nc-hidden");
 
     const streakTier = Number(data.streakCard?.streakTier || 0);
 
@@ -3952,17 +3954,20 @@ if ($("#editProfileForm")) {
   };
 }
 
-// Scroll listener for Namecard modal close button auto-hide / show
+// Scroll listener for Namecard modal action buttons (Close, View Cover, Edit Cover) auto-hide / show
 const ncCardElement = document.getElementById("namecardCard");
 const ncCloseBtnElement = document.getElementById("namecardCloseBtn");
-if (ncCardElement && ncCloseBtnElement) {
+const ncCoverActionsElement = document.querySelector(".namecard-cover-actions");
+if (ncCardElement) {
   let ncLastScrollTop = 0;
   ncCardElement.addEventListener("scroll", () => {
     const st = ncCardElement.scrollTop;
-    if (st > ncLastScrollTop && st > 30) {
-      ncCloseBtnElement.classList.add("nc-hidden");
+    if (st > ncLastScrollTop && st > 20) {
+      if (ncCloseBtnElement) ncCloseBtnElement.classList.add("nc-hidden");
+      if (ncCoverActionsElement) ncCoverActionsElement.classList.add("nc-hidden");
     } else if (st < ncLastScrollTop || st <= 10) {
-      ncCloseBtnElement.classList.remove("nc-hidden");
+      if (ncCloseBtnElement) ncCloseBtnElement.classList.remove("nc-hidden");
+      if (ncCoverActionsElement) ncCoverActionsElement.classList.remove("nc-hidden");
     }
     ncLastScrollTop = Math.max(0, st);
   }, { passive: true });
