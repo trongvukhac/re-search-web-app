@@ -2624,6 +2624,7 @@ $("#authForm").addEventListener("submit", async (e) => {
         ? "Tài khoản đã được tạo. Chào mừng bạn đến RE:SEARCH!"
         : "Đăng nhập thành công.",
     );
+    checkAndShowBanner();
   } catch (err) {
     toast(err.message);
   } finally {
@@ -2666,23 +2667,34 @@ document.addEventListener("DOMContentLoaded", () => {
 window.closeBanner = function(hours) {
   const banner = document.getElementById("assignmentBanner");
   if (banner) banner.close();
-  const nextTime = new Date().getTime() + hours * 60 * 60 * 1000;
-  localStorage.setItem("bannerNextShow_newupdate", nextTime.toString());
+  const nextTime = new Date().getTime() + (hours || 2) * 60 * 60 * 1000;
+  localStorage.setItem("bannerNextShow_namecard", nextTime.toString());
 };
 
 function checkAndShowBanner() {
   const now = new Date();
-  // Hiện banner "New update" đến hết ngày 05/10/2026 giờ Việt Nam
-  const cutoff = new Date("2026-10-05T23:59:59+07:00");
+  // Hiện banner tính năng mới Namecard đến hết ngày 15/10/2026 giờ Việt Nam
+  const cutoff = new Date("2026-10-15T23:59:59+07:00");
   if (now > cutoff) return;
 
-  const nextShow = localStorage.getItem("bannerNextShow_newupdate");
+  const nextShow = localStorage.getItem("bannerNextShow_namecard");
   if (nextShow && now.getTime() < parseInt(nextShow, 10)) {
     return;
   }
 
   const banner = document.getElementById("assignmentBanner");
   if (banner && typeof banner.showModal === "function") {
+    if (!banner.dataset.listenerAttached) {
+      banner.dataset.listenerAttached = "true";
+      banner.addEventListener("click", (e) => {
+        const rect = banner.getBoundingClientRect();
+        const isInDialog = (rect.top <= e.clientY && e.clientY <= rect.top + rect.height
+          && rect.left <= e.clientX && e.clientX <= rect.left + rect.width);
+        if (!isInDialog) {
+          window.closeBanner(2);
+        }
+      });
+    }
     banner.showModal();
   }
 }
