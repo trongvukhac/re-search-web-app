@@ -3509,17 +3509,28 @@ window.openNamecard = async function(userId) {
     // Frame Decoration
     $("#namecardCard").setAttribute("data-frame", data.user.namecardFrame || "default");
 
-    // Dynamic Streak Card (Compact)
-    $("#namecardStreakFlame").innerHTML = getFlameSVG(data.streakCard.streakTier, 32);
+    // Full Streak Contribution Card (identical to Home page)
+    const ncContribCard = $("#namecardContributionCard");
+    if (ncContribCard) {
+      ncContribCard.setAttribute("data-streak-tier", data.streakCard.streakTier);
+    }
+    $("#namecardStreakFlame").innerHTML = getFlameSVG(data.streakCard.streakTier, 46);
     $("#namecardStreakDays").innerHTML = `${data.streakCard.streak} <span>ngày</span>`;
     $("#namecardStreakTitle").textContent = data.streakCard.streakTitle;
+
+    if ($("#namecardStreakShieldsCount")) {
+      $("#namecardStreakShieldsCount").textContent = data.streakCard.shields || 0;
+    }
+    if ($("#namecardStreakShieldNotice")) {
+      $("#namecardStreakShieldNotice").style.display = data.streakCard.autoShieldUsed ? "block" : "none";
+    }
 
     const streakWeekEl = $("#namecardStreakWeek");
     if (streakWeekEl && data.streakCard.weekDays) {
       streakWeekEl.innerHTML = data.streakCard.weekDays.map(d => {
-        let dotClass = d.isActive ? "active" : (d.isToday ? "today" : "");
-        let mark = d.isActive ? getFlameSVG(data.streakCard.streakTier, 13) : (d.isToday ? `<span style="opacity: 0.5;">${getFlameSVG(0, 11)}</span>` : "○");
-        return `<div class="nc-day-item"><span class="nc-day-dot ${dotClass}">${mark}</span><span>${d.label}</span></div>`;
+        let cls = d.isActive ? "done" : (d.isToday ? "today" : "");
+        let mark = d.isActive ? getFlameSVG(data.streakCard.streakTier, 14) : (d.isToday ? `<span style="opacity: 0.5;">${getFlameSVG(0, 13)}</span>` : "○");
+        return `<div class="day ${cls}"><small>${d.label}</small><i>${mark}</i></div>`;
       }).join("");
     }
 

@@ -1730,57 +1730,83 @@
     <!-- MODAL NAMECARD (THẺ TÊN CÁ NHÂN) -->
     <dialog class="modal namecard-modal" id="namecardModal" aria-labelledby="namecardDisplayName">
       <button type="button" class="namecard-close-btn" id="namecardCloseBtn" onclick="document.getElementById('namecardModal').close()" aria-label="Đóng thẻ tên">✕</button>
+      
+      <!-- Ảnh bìa cố định nằm dưới nội dung -->
+      <div class="namecard-cover" id="namecardCover">
+        <button type="button" class="namecard-edit-cover-btn" id="namecardEditCoverBtn" onclick="openEditNamecardModal('cover')" style="display: none;" title="Chỉnh sửa ảnh bìa">
+          <span>✏️</span> Sửa ảnh bìa
+        </button>
+      </div>
+
       <div class="namecard-card" id="namecardCard" data-frame="default">
-        <!-- Ảnh bìa -->
-        <div class="namecard-cover" id="namecardCover">
-          <button type="button" class="namecard-edit-cover-btn" id="namecardEditCoverBtn" onclick="openEditNamecardModal('cover')" style="display: none;" title="Chỉnh sửa ảnh bìa">
-            <span>✏️</span> Sửa ảnh bìa
-          </button>
-        </div>
+        <!-- Khoảng đệm để lộ ảnh bìa phía sau -->
+        <div class="namecard-cover-spacer"></div>
 
-        <!-- Khung Header (Avatar, Tên, ID, Bio & Streak Card) -->
-        <div class="namecard-header">
-          <div class="namecard-profile-col">
-            <div class="namecard-avatar-wrap">
-              <div class="namecard-avatar-circle" id="namecardAvatarCircle">
-                <span id="namecardAvatar">🌱</span>
+        <!-- Khung nội dung chính cuộn đè lên ảnh bìa -->
+        <div class="namecard-content-wrap">
+          <!-- Khung Header (Avatar, Tên, ID, Bio & Thẻ thành tích năng động chuẩn) -->
+          <div class="namecard-header">
+            <div class="namecard-profile-col">
+              <div class="namecard-avatar-wrap">
+                <div class="namecard-avatar-circle" id="namecardAvatarCircle">
+                  <span id="namecardAvatar">🌱</span>
+                </div>
+                <button type="button" class="namecard-edit-avatar-btn" id="namecardEditAvatarBtn" onclick="openEditNamecardModal('avatar')" style="display: none;" title="Đổi biểu tượng Avatar & Khung viền">✏️</button>
+                <span class="namecard-online-dot" title="Đang hoạt động"></span>
               </div>
-              <button type="button" class="namecard-edit-avatar-btn" id="namecardEditAvatarBtn" onclick="openEditNamecardModal('avatar')" style="display: none;" title="Đổi biểu tượng Avatar & Khung viền">✏️</button>
-              <span class="namecard-online-dot" title="Đang hoạt động"></span>
+              <div class="namecard-identity">
+                <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 8px;">
+                  <h2 class="namecard-display-name" id="namecardDisplayName" style="margin: 0;">Tên người dùng</h2>
+                  <button type="button" class="namecard-edit-name-btn" id="namecardEditNameBtn" onclick="openEditNamecardModal('name')" style="display: none;" title="Chỉnh sửa tên & tiểu sử">✏️ Sửa</button>
+                </div>
+                <div class="namecard-badges">
+                  <span class="namecard-role-badge" id="namecardRoleBadge">
+                    <span id="namecardRoleIcon">🎓</span> <span id="namecardRoleText">Sinh viên</span>
+                  </span>
+                  <button type="button" class="namecard-id-badge" id="namecardIdBadge" onclick="copyNamecardId()" title="Bấm để sao chép ID">
+                    <span id="namecardIdText">ID 00000</span>
+                    <span class="copy-svg">📋</span>
+                  </button>
+                </div>
+                <p class="namecard-bio" id="namecardBio">Hỏi, trao đổi, cùng tiến bộ 🌱<br>Tìm hiểu sâu hơn, mỗi ngày một chút.</p>
+              </div>
             </div>
-            <div class="namecard-identity">
-              <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 6px;">
-                <h2 class="namecard-display-name" id="namecardDisplayName" style="margin: 0;">Tên người dùng</h2>
-                <button type="button" class="namecard-edit-name-btn" id="namecardEditNameBtn" onclick="openEditNamecardModal('name')" style="display: none;" title="Chỉnh sửa tên & tiểu sử">✏️ Sửa</button>
-              </div>
-              <div class="namecard-badges">
-                <span class="namecard-role-badge" id="namecardRoleBadge">
-                  <span id="namecardRoleIcon">🎓</span> <span id="namecardRoleText">Sinh viên</span>
-                </span>
-                <button type="button" class="namecard-id-badge" id="namecardIdBadge" onclick="copyNamecardId()" title="Bấm để sao chép ID">
-                  <span id="namecardIdText">ID 00000</span>
-                  <span class="copy-svg">📋</span>
-                </button>
-              </div>
-              <p class="namecard-bio" id="namecardBio">Hỏi, trao đổi, cùng tiến bộ 🌱<br>Tìm hiểu sâu hơn, mỗi ngày một chút.</p>
-            </div>
-          </div>
 
-          <!-- Thẻ thành tích năng động (Tối giản hoá) -->
-          <div class="namecard-streak-widget" id="namecardStreakWidget">
-            <div class="nc-streak-head">Thành tích năng động</div>
-            <div class="nc-streak-main">
-              <div class="nc-streak-flame" id="namecardStreakFlame"></div>
-              <div class="nc-streak-info">
-                <div class="nc-streak-num" id="namecardStreakDays">0 <span>ngày</span></div>
-                <div class="nc-streak-title" id="namecardStreakTitle">Tân binh</div>
+            <!-- Thẻ thành tích năng động BÊ NGUYÊN TỪ TRANG CHỦ -->
+            <aside class="contribution-card namecard-streak-card" id="namecardContributionCard" data-streak-tier="0">
+              <div class="card-topline">
+                <div class="topline-left">
+                  <span>THÀNH TÍCH NĂNG ĐỘNG</span>
+                </div>
+                <div class="topline-actions">
+                  <button type="button" class="streak-journey-btn" onclick="openStreakJourneyModal()" title="Xem hành trình giữ chuỗi">
+                    <span>🗺️</span> Hành trình
+                  </button>
+                </div>
               </div>
-            </div>
-            <div class="nc-streak-days" id="namecardStreakWeek">
-              <!-- Render T2 - CN -->
-            </div>
+              
+              <div class="streak-hero">
+                <div class="streak-flame-wrap" id="namecardStreakFlame"></div>
+                <div class="streak-val-wrap">
+                  <div class="streak-number" id="namecardStreakDays">
+                    0 <span>ngày</span>
+                  </div>
+                  <div class="streak-tier-label" id="namecardStreakTitle">Tân binh</div>
+                </div>
+                <div class="streak-shield-wrap">
+                  <span class="streak-shield-badge" id="namecardStreakShieldsBadge" title="Khiên bảo vệ chuỗi"><span class="shield-icon">🛡️</span> <b id="namecardStreakShieldsCount">0</b> khiên</span>
+                </div>
+              </div>
+
+              <div id="namecardStreakShieldNotice" class="streak-shield-notice" style="display: none;">
+                🛡️ Khiên đã tự động giữ chuỗi cho bạn hôm qua!
+              </div>
+
+              <div class="week-strip" id="namecardStreakWeek" aria-label="Hoạt động trong tuần">
+                <!-- Render 7 ngày chuẩn T2 - CN -->
+              </div>
+            </aside>
           </div>
-        </div>
 
         <!-- Các khung thành tích -->
         <div class="namecard-body">
@@ -1922,6 +1948,7 @@
           </div>
         </div>
       </div>
+    </div>
     </dialog>
 
     <!-- MODAL 1: CHỈNH SỬA THẺ TÊN & TRANG TRÍ -->

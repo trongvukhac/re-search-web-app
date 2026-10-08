@@ -2465,6 +2465,8 @@ async function api(request, response, url) {
         streak: currentStreak,
         streakTier,
         streakTitle,
+        shields: streakInfo.shields || 0,
+        autoShieldUsed: Boolean(streakInfo.autoShieldUsed),
         weekDays
       },
       forum: {
