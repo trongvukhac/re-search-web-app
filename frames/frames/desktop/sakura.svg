@@ -1,0 +1,74 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 680 760" fill="none" width="100%" height="100%">
+  <defs>
+    <linearGradient id="sakuraRoseGold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#E11D48" />
+      <stop offset="35%" stop-color="#FB7185" />
+      <stop offset="65%" stop-color="#FDA4AF" />
+      <stop offset="100%" stop-color="#BE185D" />
+    </linearGradient>
+    <radialGradient id="sakuraPetal" cx="50%" cy="30%" r="70%">
+      <stop offset="0%" stop-color="#FFFFFF" />
+      <stop offset="50%" stop-color="#FECDD3" />
+      <stop offset="100%" stop-color="#F43F5E" />
+    </radialGradient>
+    <filter id="sakuraGlow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="2" stdDeviation="2.5" flood-color="#E11D48" flood-opacity="0.3" />
+    </filter>
+  </defs>
+
+  <!-- Viền vàng hồng lãng mạn -->
+  <rect x="2.5" y="2.5" width="675" height="755" rx="22" ry="22" stroke="url(#sakuraRoseGold)" stroke-width="2.2" fill="none" />
+  <rect x="7" y="7" width="666" height="746" rx="18" ry="18" stroke="#FDA4AF" stroke-width="1" stroke-dasharray="10 5" fill="none" opacity="0.8" />
+
+  <!-- Góc Trên Trái: Cành hoa anh đào bừng nở với 5 cánh hoa và nhụy vàng -->
+  <g transform="translate(6, 6)" filter="url(#sakuraGlow)">
+    <!-- Cành hoa nâu ánh hồng uốn lượn -->
+    <path d="M 0,48 C 6,32 18,16 46,2 C 34,10 24,24 20,40" stroke="#831843" stroke-width="2" stroke-linecap="round" fill="none" />
+    <!-- Đóa hoa anh đào 5 cánh nở rộ tại (24, 24) -->
+    <g transform="translate(24, 24)">
+      <!-- 5 cánh hoa -->
+      <path d="M 0,-14 C -5,-14 -6,-8 0,0 C 6,-8 5,-14 0,-14 Z" fill="url(#sakuraPetal)" stroke="#E11D48" stroke-width="0.6" />
+      <path d="M 13,-4 C 15,-9 10,-12 0,0 C 10,2 15,1 13,-4 Z" fill="url(#sakuraPetal)" stroke="#E11D48" stroke-width="0.6" />
+      <path d="M 8,11 C 12,14 14,9 0,0 C 4,10 6,13 8,11 Z" fill="url(#sakuraPetal)" stroke="#E11D48" stroke-width="0.6" />
+      <path d="M -8,11 C -12,14 -14,9 0,0 C -4,10 -6,13 -8,11 Z" fill="url(#sakuraPetal)" stroke="#E11D48" stroke-width="0.6" />
+      <path d="M -13,-4 C -15,-9 -10,-12 0,0 C -10,2 -15,1 -13,-4 Z" fill="url(#sakuraPetal)" stroke="#E11D48" stroke-width="0.6" />
+      <!-- Nhụy vàng lấp lánh -->
+      <circle cx="0" cy="0" r="3.5" fill="#FEF08A" stroke="#CA8A04" stroke-width="0.8" />
+    </g>
+    <!-- Cánh hoa rơi rụng lững lờ -->
+    <path d="M 44,14 C 40,10 44,4 48,8 C 50,12 46,16 44,14 Z" fill="url(#sakuraPetal)" />
+    <path d="M 10,40 C 6,36 10,30 14,34 C 16,38 12,42 10,40 Z" fill="url(#sakuraPetal)" />
+  </g>
+
+  <!-- Góc Trên Phải: Nhành hoa tao nhã né nút đóng -->
+  <g transform="translate(674, 6) scale(-1, 1)" filter="url(#sakuraGlow)">
+    <path d="M 0,36 C 4,22 14,10 36,2" stroke="#831843" stroke-width="1.8" stroke-linecap="round" fill="none" />
+    <!-- Búp hoa đào -->
+    <circle cx="16" cy="14" r="5" fill="url(#sakuraPetal)" stroke="#E11D48" stroke-width="0.8" />
+    <circle cx="16" cy="14" r="2" fill="#FEF08A" />
+    <path d="M 30,8 C 28,4 32,2 34,4 C 36,6 34,10 30,8 Z" fill="url(#sakuraPetal)" />
+  </g>
+
+  <!-- Góc Dưới Trái & Phải: Cụm hoa đào và cánh hoa rơi theo gió -->
+  <g transform="translate(6, 754) scale(1, -1)" filter="url(#sakuraGlow)">
+    <path d="M 0,48 C 6,32 18,16 46,2" stroke="#831843" stroke-width="2" stroke-linecap="round" fill="none" />
+    <g transform="translate(24, 24)">
+      <path d="M 0,-12 C -4,-12 -5,-7 0,0 C 5,-7 4,-12 0,-12 Z" fill="url(#sakuraPetal)" stroke="#E11D48" stroke-width="0.6" />
+      <path d="M 11,-4 C 13,-8 9,-10 0,0 C 9,2 13,1 11,-4 Z" fill="url(#sakuraPetal)" stroke="#E11D48" stroke-width="0.6" />
+      <path d="M 7,10 C 10,12 12,8 0,0 C 4,8 6,11 7,10 Z" fill="url(#sakuraPetal)" stroke="#E11D48" stroke-width="0.6" />
+      <path d="M -7,10 C -10,12 -12,8 0,0 C -4,8 -6,11 -7,10 Z" fill="url(#sakuraPetal)" stroke="#E11D48" stroke-width="0.6" />
+      <path d="M -11,-4 C -13,-8 -9,-10 0,0 C -9,2 -13,1 -11,-4 Z" fill="url(#sakuraPetal)" stroke="#E11D48" stroke-width="0.6" />
+      <circle cx="0" cy="0" r="3" fill="#FEF08A" stroke="#CA8A04" stroke-width="0.8" />
+    </g>
+    <path d="M 42,10 C 38,6 42,2 45,5 C 47,8 44,12 42,10 Z" fill="url(#sakuraPetal)" />
+  </g>
+
+  <g transform="translate(674, 754) scale(-1, -1)" filter="url(#sakuraGlow)">
+    <path d="M 0,48 C 6,32 18,16 46,2" stroke="#831843" stroke-width="2" stroke-linecap="round" fill="none" />
+    <g transform="translate(24, 24)">
+      <circle cx="0" cy="0" r="6" fill="url(#sakuraPetal)" stroke="#E11D48" stroke-width="0.8" />
+      <circle cx="0" cy="0" r="2.5" fill="#FEF08A" />
+    </g>
+    <path d="M 42,10 C 38,6 42,2 45,5 C 47,8 44,12 42,10 Z" fill="url(#sakuraPetal)" />
+  </g>
+</svg>

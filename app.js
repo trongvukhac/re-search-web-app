@@ -671,25 +671,22 @@ async function hydrateServer() {
       }
     }
 
-    const isHome = !currentActiveRoute || currentActiveRoute === "home";
-    const shouldFetchForumLb = isHome && (!cachedLeaderboardData?.leaderboard?.length);
-
     const [postsData, docsData, leaderboardData, topicsData] = await Promise.all([
-      requestAPI("/api/posts").catch(() => ({ posts: [] })),
-      requestAPI("/api/documents").catch(() => ({ documents: [] })),
-      shouldFetchForumLb ? requestAPI("/api/leaderboard").catch(() => null) : Promise.resolve(null),
-      requestAPI("/api/topics").catch(() => ({ topics: [] })),
+      requestAPI("/api/posts").catch(() => null),
+      requestAPI("/api/documents").catch(() => null),
+      requestAPI("/api/leaderboard").catch(() => null),
+      requestAPI("/api/topics").catch(() => null),
     ]);
 
-    if (topicsData.topics) {
+    if (topicsData && Array.isArray(topicsData.topics)) {
       allTopics = topicsData.topics;
       topics = allTopics.filter(t => t.status === "approved").map(t => t.name);
       renderTopicsDropdown();
     }
 
-    if (postsData.posts) {
+    if (postsData && Array.isArray(postsData.posts)) {
       posts = postsData.posts.map(normalizePost);
-      // Only re-render home/forum if relevant to avoid scroll/DOM disruptions
+      // Re-render home if active or on initial load
       if (!currentActiveRoute || currentActiveRoute === "home") renderHome();
       if (currentActiveRoute === "forum") renderPosts();
 
@@ -704,7 +701,7 @@ async function hydrateServer() {
       if (elRatio) elRatio.textContent = ratio + "%";
     }
 
-    if (leaderboardData) {
+    if (leaderboardData && (Array.isArray(leaderboardData.leaderboard) || Array.isArray(leaderboardData.streakLeaderboard))) {
       cachedLeaderboardData = leaderboardData;
       renderLeaderboard();
       updateResponsiveAsidePlacement();
@@ -1147,13 +1144,27 @@ function renderPosts() {
 }
 function renderHome() {
   const newest = posts.slice(0, 3);
-  $("#homePostList").innerHTML = newest.map(postCard).join("");
-  $$("#homePostList .post-card").forEach((el) =>
-    el.addEventListener("click", (e) => {
-      if (e.target.closest("[data-namecard-user-id]")) return;
-      openDetail(Number(el.dataset.postId));
-    }),
-  );
+  const homePostList = $("#homePostList");
+  if (homePostList) {
+    if (newest.length > 0) {
+      homePostList.innerHTML = newest.map(postCard).join("");
+      $$("#homePostList .post-card").forEach((el) =>
+        el.addEventListener("click", (e) => {
+          if (e.target.closest("[data-namecard-user-id]")) return;
+          openDetail(Number(el.dataset.postId));
+        }),
+      );
+    } else {
+      homePostList.innerHTML = `
+        <div style="text-align: center; padding: 28px 16px; color: var(--muted); background: var(--surface); border: 1px dashed var(--border); border-radius: 12px;">
+          <p style="margin: 0; font-weight: 500;">Chưa có bài thảo luận nào gần đây.</p>
+          <button class="button button-outline" onclick="go('forum')" style="margin-top: 10px; font-size: 0.85rem; padding: 6px 14px;">
+            Đến Diễn đàn để đặt câu hỏi 💬
+          </button>
+        </div>
+      `;
+    }
+  }
   const topicsHtml = topics
     .map((t) => `<button class="topic" data-topic="${t}">${t}</button>`)
     .join("");
@@ -1332,6 +1343,10 @@ function go(route, scrollToTop = true) {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
+  if (route === "home") {
+    renderHome();
+    renderLeaderboard();
+  }
   if (route === "forum") renderPosts();
   if (route === "documents") renderDocuments();
   if (route === "study") onEnterStudyLounge();
@@ -3457,13 +3472,47 @@ const AVATAR_OPTIONS = [
 ];
 
 const FRAME_OPTIONS = [
-  { id: "default", name: "Mặc định", icon: "🌱", minDays: 0 },
-  { id: "leaves", name: "Lá xanh", icon: "🌿", minDays: 7 },
-  { id: "stars", name: "Sao trời", icon: "✨", minDays: 14 },
-  { id: "sakura", name: "Hoa đào", icon: "🌸", minDays: 21 },
-  { id: "ice", name: "Băng tuyết", icon: "❄️", minDays: 30 },
-  { id: "gold", name: "Hoàng kim", icon: "👑", minDays: 50 },
+  { id: "default", name: "Học Giả Tinh Khôi", icon: "🎓", minDays: 0, desc: "Mặc định" },
+  { id: "sprout", name: "Mầm Sống Tri Thức", icon: "🌱", minDays: 3, desc: "Chuỗi 3 ngày" },
+  { id: "leaves", name: "Rừng Tri Thức", icon: "🌿", minDays: 7, desc: "Chuỗi 7 ngày" },
+  { id: "stars", name: "Tinh Vân Sao Trời", icon: "✨", minDays: 14, desc: "Chuỗi 14 ngày" },
+  { id: "sakura", name: "Hoa Đào Tiên Cảnh", icon: "🌸", minDays: 21, desc: "Chuỗi 21 ngày" },
+  { id: "ice", name: "Băng Tuyết Vĩnh Cửu", icon: "❄️", minDays: 30, desc: "Chuỗi 30 ngày" },
+  { id: "gold", name: "Hoàng Kim Thần Thoại", icon: "👑", minDays: 50, desc: "Chuỗi 50+ ngày" },
 ];
+
+window.updateNamecardFrameOverlay = function(modalEl, frameId) {
+  if (!modalEl) modalEl = $("#namecardModal");
+  if (!modalEl) return;
+  let overlay = modalEl.querySelector(".namecard-frame-overlay");
+  if (!overlay) {
+    overlay = document.createElement("div");
+    overlay.className = "namecard-frame-overlay";
+    overlay.id = "namecardFrameOverlay";
+    overlay.setAttribute("aria-hidden", "true");
+    modalEl.appendChild(overlay);
+  }
+
+  const fId = frameId || modalEl.getAttribute("data-frame") || "default";
+  modalEl.setAttribute("data-frame", fId);
+
+  // Kích thước thật của modal container để chọn variant phù hợp
+  const rect = modalEl.getBoundingClientRect();
+  const width = rect.width || window.innerWidth;
+  const variant = width < 600 ? "mobile" : "desktop";
+
+  const baseUrl = (window.location.protocol === "file:") ? "public/assets/frames" : "/public/assets/frames";
+  overlay.style.backgroundImage = `url('${baseUrl}/${variant}/${fId}.svg')`;
+};
+
+if (typeof window !== "undefined") {
+  window.addEventListener("resize", () => {
+    const modalEl = document.getElementById("namecardModal");
+    if (modalEl && modalEl.open) {
+      window.updateNamecardFrameOverlay(modalEl);
+    }
+  });
+}
 
 const COVER_PRESETS = [
   { id: "default", name: "Xanh đại dương", type: "gradient", value: "linear-gradient(135deg, #1e3a8a 0%, #3b82f6 50%, #93c5fd 100%)" },
@@ -3561,8 +3610,16 @@ window.openNamecard = async function(userId) {
     if ($("#namecardEditCoverBtn")) $("#namecardEditCoverBtn").style.display = isSelf ? "inline-flex" : "none";
     if ($("#namecardEditNameBtn")) $("#namecardEditNameBtn").style.display = isSelf ? "inline-flex" : "none";
 
-    // Frame Decoration
-    $("#namecardCard").setAttribute("data-frame", data.user.namecardFrame || "default");
+    // Frame Decoration & Overlay System
+    const userFrameId = data.user.namecardFrame || "default";
+    const modalEl = $("#namecardModal");
+    if (modalEl) {
+      modalEl.setAttribute("data-frame", userFrameId);
+    }
+    if (cardEl) {
+      cardEl.setAttribute("data-frame", userFrameId);
+    }
+    updateNamecardFrameOverlay(modalEl, userFrameId);
 
     // 1. Diễn đàn
     $("#ncStatContrib").textContent = data.forum.contributionPoints;
@@ -3715,11 +3772,19 @@ window.openEditNamecardModal = function(section = "all") {
   // Cover preview if custom
   const previewBox = $("#coverUploadPreview");
   const previewImg = $("#coverUploadImg");
-  if (currentSelectedCover.startsWith("data:image/") || currentSelectedCover.startsWith("http")) {
+  const isCustomCover = currentSelectedCover && (
+    currentSelectedCover.startsWith("data:image/") ||
+    currentSelectedCover.startsWith("http://") ||
+    currentSelectedCover.startsWith("https://") ||
+    currentSelectedCover.startsWith("/uploads/") ||
+    currentSelectedCover.startsWith("./uploads/")
+  );
+  if (isCustomCover) {
     if (previewBox) previewBox.style.display = "block";
     if (previewImg) previewImg.src = currentSelectedCover;
   } else {
     if (previewBox) previewBox.style.display = "none";
+    if (previewImg) previewImg.src = "";
   }
 
   const modal = $("#editNamecardModal");
@@ -3763,10 +3828,10 @@ function renderFramePicker() {
     const isUnlocked = isAdmin || userStreak >= f.minDays;
     const isActive = f.id === currentSelectedFrame;
     return `
-      <div class="frame-choice-item ${isActive ? 'active' : ''} ${isUnlocked ? '' : 'locked'}" data-frame-id="${f.id}">
+      <div class="frame-choice-item ${isActive ? 'active' : ''} ${isUnlocked ? '' : 'locked'}" data-frame-id="${f.id}" title="${f.name} - ${f.desc}">
         <span class="choice-icon">${f.icon}</span>
         <span class="choice-label">${f.name}</span>
-        ${isUnlocked ? '' : `<span class="choice-lock-badge" title="Cần chuỗi ${f.minDays} ngày">🔒</span>`}
+        ${isUnlocked ? `<span style="font-size: 0.65rem; color: #16a34a; font-weight: 600; margin-top: 2px;">${f.desc}</span>` : `<span class="choice-lock-badge" title="Cần chuỗi ${f.minDays} ngày">🔒 ${f.minDays}d</span>`}
       </div>
     `;
   }).join("");
@@ -3876,6 +3941,10 @@ if ($("#btnRemoveCustomCover")) {
     currentSelectedCover = "default";
     const previewBox = $("#coverUploadPreview");
     if (previewBox) previewBox.style.display = "none";
+    const previewImg = $("#coverUploadImg");
+    if (previewImg) previewImg.src = "";
+    const fileInput = $("#coverFileInput");
+    if (fileInput) fileInput.value = "";
     renderCoverPicker();
   };
 }

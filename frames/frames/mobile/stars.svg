@@ -1,0 +1,69 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 760" fill="none" width="100%" height="100%">
+  <defs>
+    <linearGradient id="cosmicGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#4F46E5" />
+      <stop offset="35%" stop-color="#9333EA" />
+      <stop offset="70%" stop-color="#38BDF8" />
+      <stop offset="100%" stop-color="#C084FC" />
+    </linearGradient>
+    <radialGradient id="starCore" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#FFFFFF" />
+      <stop offset="40%" stop-color="#E0E7FF" />
+      <stop offset="75%" stop-color="#818CF8" />
+      <stop offset="100%" stop-color="#4F46E5" />
+    </radialGradient>
+    <filter id="starGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="2.5" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+
+  <!-- Viền tinh vân đa tầng -->
+  <rect x="2.5" y="2.5" width="355" height="755" rx="22" ry="22" stroke="url(#cosmicGrad)" stroke-width="2.2" fill="none" />
+  <rect x="7" y="7" width="346" height="746" rx="18" ry="18" stroke="#818CF8" stroke-width="1" stroke-dasharray="8 6" fill="none" opacity="0.8" />
+  <rect x="12" y="12" width="336" height="736" rx="14" ry="14" stroke="#C084FC" stroke-width="0.6" stroke-dasharray="2 8" fill="none" opacity="0.6" />
+
+  <!-- Góc Trên Trái: Ngôi sao 8 cánh Octagram rực sáng & đường chòm sao -->
+  <g transform="translate(18, 18)" filter="url(#starGlow)">
+    <!-- Vòng quỹ đạo chiêm tinh -->
+    <circle cx="0" cy="0" r="14" stroke="#A855F7" stroke-width="1" stroke-dasharray="3 3" fill="none" />
+    <!-- Ngôi sao 8 cánh -->
+    <path d="M 0,-16 L 3.5,-4.5 L 16,0 L 3.5,4.5 L 0,16 L -3.5,4.5 L -16,0 L -3.5,-4.5 Z" fill="url(#starCore)" />
+    <path d="M 0,-11 L 2.5,-3 L 11,0 L 2.5,3 L 0,11 L -2.5,3 L -11,0 L -2.5,-3 Z" fill="#FFFFFF" />
+    <!-- Đường liên kết chòm sao -->
+    <line x1="0" y1="0" x2="26" y2="-4" stroke="#C084FC" stroke-width="1.2" />
+    <circle cx="26" cy="-4" r="2.5" fill="#FFFFFF" />
+    <line x1="0" y1="0" x2="-4" y2="26" stroke="#C084FC" stroke-width="1.2" />
+    <circle cx="-4" cy="26" r="2.5" fill="#FFFFFF" />
+  </g>
+
+  <!-- Góc Trên Phải: Cụm sao lấp lánh ôm góc né nút đóng -->
+  <g transform="translate(342, 18)" filter="url(#starGlow)">
+    <path d="M 0,-10 L 2,-3 L 10,0 L 2,3 L 0,10 L -2,3 L -10,0 L -2,-3 Z" fill="url(#starCore)" />
+    <circle cx="-16" cy="-2" r="2" fill="#FFFFFF" />
+    <circle cx="-2" cy="16" r="2" fill="#38BDF8" />
+  </g>
+
+  <!-- Góc Dưới Trái & Phải: Vòng cung thiên hà & Ngôi sao lấp lánh -->
+  <g transform="translate(20, 740)" filter="url(#starGlow)">
+    <path d="M 0,-15 L 3.5,-4 L 15,0 L 3.5,4 L 0,15 L -3.5,4 L -15,0 L -3.5,-4 Z" fill="url(#starCore)" />
+    <path d="M -10,-10 Q 0,0 16,-6" stroke="#C084FC" stroke-width="1.2" stroke-dasharray="2 3" fill="none" />
+    <circle cx="16" cy="-6" r="2" fill="#FFFFFF" />
+  </g>
+
+  <g transform="translate(340, 740)" filter="url(#starGlow)">
+    <path d="M 0,-15 L 3.5,-4 L 15,0 L 3.5,4 L 0,15 L -3.5,4 L -15,0 L -3.5,-4 Z" fill="url(#starCore)" />
+    <path d="M 10,-10 Q 0,0 -16,-6" stroke="#C084FC" stroke-width="1.2" stroke-dasharray="2 3" fill="none" />
+    <circle cx="-16" cy="-6" r="2" fill="#FFFFFF" />
+  </g>
+
+  <!-- Các điểm sáng tinh tú nhỏ lấp lánh dọc viền ngoài -->
+  <g transform="translate(180, 6)">
+    <polygon points="0,-4 2,0 0,4 -2,0" fill="#FFFFFF" />
+    <circle cx="0" cy="0" r="1" fill="#38BDF8" />
+  </g>
+  <g transform="translate(180, 754)">
+    <polygon points="0,-4 2,0 0,4 -2,0" fill="#FFFFFF" />
+    <circle cx="0" cy="0" r="1" fill="#38BDF8" />
+  </g>
+</svg>

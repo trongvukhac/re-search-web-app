@@ -477,7 +477,7 @@ function sessionFrom(request) {
   if (!token) return null;
   const row = db
     .prepare(
-      `SELECT s.csrf_token, s.expires_at, u.id, u.email, u.display_name, u.role, u.student_id, u.real_name, u.class_name, u.avatar, u.avatar_changed, u.locked_until FROM sessions s JOIN users u ON u.id=s.user_id WHERE s.token_hash=?`,
+      `SELECT s.csrf_token, s.expires_at, u.id, u.email, u.display_name, u.role, u.student_id, u.real_name, u.class_name, u.bio, u.avatar, u.avatar_changed, u.cover_image, u.namecard_frame, u.namecard_theme, u.locked_until FROM sessions s JOIN users u ON u.id=s.user_id WHERE s.token_hash=?`,
     )
     .get(sha(token));
   if (!row || Date.parse(row.expires_at) < Date.now()) return null;
@@ -5075,7 +5075,10 @@ function serveStatic(request, response, url) {
     url.pathname === "/" ? "/index.html" : decodeURIComponent(url.pathname);
   if (relative.includes("\0"))
     return error(response, 400, "Đường dẫn không hợp lệ.");
-  const file = path.resolve(ROOT, `.${relative}`);
+  let file = path.resolve(ROOT, `.${relative}`);
+  if (!fs.existsSync(file) && relative.startsWith("/assets/")) {
+    file = path.resolve(ROOT, `./public${relative}`);
+  }
   if (
     !file.startsWith(ROOT + path.sep) ||
     !fs.existsSync(file) ||

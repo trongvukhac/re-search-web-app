@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 680 760" width="100%" height="100%">
+  <defs>
+    
+    <filter id="royalShadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#000000" flood-opacity="0.45"/>
+    </filter>
+    <filter id="auraGlow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="5" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+  
+    <linearGradient id="defBorder" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="50%" stop-color="#81c784"/>
+      <stop offset="100%" stop-color="#ffd54f"/>
+    </linearGradient>
+  </defs>
+
+  <rect x="2" y="2" width="676" height="756" rx="24" fill="none" stroke="url(#defBorder)" stroke-width="2.8" filter="url(#royalShadow)"/>
+  <rect x="5.5" y="5.5" width="669" height="749" rx="21" fill="none" stroke="rgba(255, 255, 255, 0.4)" stroke-width="1.5"/>
+  <rect x="8.5" y="8.5" width="663" height="743" rx="18" fill="none" stroke="#81c784" stroke-width="1" stroke-opacity="0.65"/>
+
+  <!-- Top-left simple scholar star -->
+  <g transform="translate(18, 18)" filter="url(#royalShadow)">
+    <circle cx="10" cy="10" r="8" fill="rgba(255,255,255,0.85)"/>
+    <path d="M10,2 L12,8 L18,10 L12,12 L10,18 L8,12 L2,10 L8,8 Z" fill="#ffd54f"/>
+  </g>
+
+  <!-- Top-right slender corner -->
+  <g transform="translate(666, 14)">
+    <path d="M-20,0 C-8,2 -2,8 0,20" fill="none" stroke="#81c784" stroke-width="1.8" stroke-linecap="round"/>
+  </g>
+
+  <!-- Avatar Halo -->
+  <g transform="translate(77, 200)" filter="url(#royalShadow)">
+    <circle cx="0" cy="0" r="49" fill="none" stroke="url(#defBorder)" stroke-width="2.2"/>
+    <circle cx="0" cy="0" r="53" fill="none" stroke="rgba(255, 255, 255, 0.35)" stroke-width="1" stroke-dasharray="2 2"/>
+  </g>
+
+  <!-- Bottom Corners -->
+  <g transform="translate(14, 746)" filter="url(#royalShadow)">
+    <path d="M0,-25 C10,-18 22,-8 45,-4 C25,-2 12,-1 0,0 Z" fill="rgba(255,255,255,0.7)" stroke="#81c784" stroke-width="1"/>
+    <circle cx="14" cy="-12" r="3" fill="#ffd54f"/>
+  </g>
+
+  <g transform="translate(666, 746)" filter="url(#royalShadow)">
+    <path d="M0,-25 C-10,-18 -22,-8 -45,-4 C-25,-2 -12,-1 0,0 Z" fill="rgba(255,255,255,0.7)" stroke="#81c784" stroke-width="1"/>
+    <circle cx="-14" cy="-12" r="3" fill="#ffd54f"/>
+  </g>
+
+  <g transform="translate(340, 752)" filter="url(#royalShadow)">
+    <path d="M-30,0 L30,0" fill="none" stroke="#81c784" stroke-width="1.5"/>
+    <circle cx="0" cy="0" r="2.5" fill="#ffffff"/>
+  </g>
+</svg>

@@ -1,0 +1,109 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 680 760" fill="none" width="100%" height="100%">
+  <defs>
+    <!-- Vàng ròng kim loại đa tầng lấp lánh -->
+    <linearGradient id="mythicGoldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFF9C4" />
+      <stop offset="20%" stop-color="#F59E0B" />
+      <stop offset="45%" stop-color="#D97706" />
+      <stop offset="70%" stop-color="#FEF08A" />
+      <stop offset="85%" stop-color="#B45309" />
+      <stop offset="100%" stop-color="#FDE047" />
+    </linearGradient>
+
+    <!-- Hào quang hoàng gia -->
+    <filter id="mythicRoyalGlow" x="-10%" y="-10%" width="120%" height="120%">
+      <feGaussianBlur stdDeviation="3" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+
+    <!-- Ngọc Ruby đỏ thắm quyền lực -->
+    <radialGradient id="rubyCrown" cx="35%" cy="30%" r="70%">
+      <stop offset="0%" stop-color="#FFA4B6" />
+      <stop offset="45%" stop-color="#E11D48" />
+      <stop offset="85%" stop-color="#9F1239" />
+      <stop offset="100%" stop-color="#4C0519" />
+    </radialGradient>
+
+    <!-- Ngọc Sapphire xanh lam vương giả -->
+    <radialGradient id="sapphireGem" cx="35%" cy="30%" r="70%">
+      <stop offset="0%" stop-color="#BAE6FD" />
+      <stop offset="45%" stop-color="#0284C7" />
+      <stop offset="85%" stop-color="#0369A1" />
+      <stop offset="100%" stop-color="#082F49" />
+    </radialGradient>
+  </defs>
+
+  <!-- 1. VIỀN KÉP HOÀNG GIA NHIỀU LỚP DÁT VÀNG (R=24) -->
+  <!-- Viền ngoài dày beveled -->
+  <rect x="2.5" y="2.5" width="675" height="755" rx="22" ry="22" 
+        stroke="url(#mythicGoldGrad)" stroke-width="3" fill="none" filter="url(#mythicRoyalGlow)" />
+  
+  <!-- Chuỗi hạt vàng Baroque tinh xảo -->
+  <rect x="8" y="8" width="664" height="744" rx="17" ry="17" 
+        stroke="url(#mythicGoldGrad)" stroke-width="1.4" stroke-dasharray="10 4 3 4" fill="none" opacity="0.9" />
+
+  <!-- Dải chỉ vàng hairline bên trong -->
+  <rect x="13" y="13" width="654" height="734" rx="13" ry="13" 
+        stroke="#FEF08A" stroke-width="0.9" fill="none" opacity="0.65" />
+
+  <!-- 2. GÓC TRÊN-TRÁI: HOA VĂN BAROQUE FILIGREE & VIÊN NGỌC RUBY ĐÍNH GÓC -->
+  <g transform="translate(10, 10)" filter="url(#mythicRoyalGlow)">
+    <path d="M 0,52 C 6,26 26,6 52,0 C 40,14 34,32 36,46 C 24,38 14,42 0,52 Z" fill="url(#mythicGoldGrad)" />
+    <path d="M 14,14 C 22,6 36,4 44,8 C 34,14 28,24 24,34 C 18,26 16,18 14,14 Z" fill="#FFF9C4" />
+    <!-- Viên ngọc Ruby oval lớn khảm vàng -->
+    <ellipse cx="24" cy="24" rx="6" ry="6" fill="url(#rubyCrown)" stroke="#FFF9C4" stroke-width="1.2" />
+    <circle cx="22" cy="22" r="1.8" fill="#FFFFFF" opacity="0.9" />
+  </g>
+
+  <!-- 3. GÓC TRÊN-PHẢI: FILIGREE HOÀNG GIA ÔM CẠNH NÉ NÚT ĐÓNG (Nút ✕) -->
+  <g transform="translate(670, 10) scale(-1, 1)" filter="url(#mythicRoyalGlow)">
+    <!-- Vuốt mềm phía trên nút đóng, không che lấp nút -->
+    <path d="M 0,42 C 4,22 22,4 42,0 C 32,8 28,20 30,30 C 18,24 10,28 0,42 Z" fill="url(#mythicGoldGrad)" />
+    <ellipse cx="18" cy="18" rx="4.5" ry="4.5" fill="url(#rubyCrown)" stroke="#FFF9C4" stroke-width="1" />
+  </g>
+
+  <!-- 4. GÓC DƯỚI-TRÁI & PHẢI: VÒNG NGUYỆT QUẾ HOÀNG ĐẾ (IMPERIAL LAUREL) -->
+  <g transform="translate(10, 750) scale(1, -1)" filter="url(#mythicRoyalGlow)">
+    <path d="M 0,64 C 8,34 34,8 64,0 C 50,18 44,40 46,56 C 30,46 16,52 0,64 Z" fill="url(#mythicGoldGrad)" />
+    <!-- Lá nguyệt quế vàng ròng rực rỡ -->
+    <path d="M 12,28 Q 22,20 34,26 Q 26,36 12,28 Z" fill="#FFF9C4" />
+    <path d="M 28,12 Q 38,4 48,14 Q 38,24 28,12 Z" fill="#FFF9C4" />
+    <!-- Viên Sapphire hoàng gia ở chân nguyệt quế -->
+    <circle cx="28" cy="28" r="6" fill="url(#sapphireGem)" stroke="#FFF9C4" stroke-width="1.2" />
+    <circle cx="26" cy="26" r="1.8" fill="#FFFFFF" />
+  </g>
+
+  <g transform="translate(670, 750) scale(-1, -1)" filter="url(#mythicRoyalGlow)">
+    <path d="M 0,64 C 8,34 34,8 64,0 C 50,18 44,40 46,56 C 30,46 16,52 0,64 Z" fill="url(#mythicGoldGrad)" />
+    <path d="M 12,28 Q 22,20 34,26 Q 26,36 12,28 Z" fill="#FFF9C4" />
+    <path d="M 28,12 Q 38,4 48,14 Q 38,24 28,12 Z" fill="#FFF9C4" />
+    <circle cx="28" cy="28" r="6" fill="url(#sapphireGem)" stroke="#FFF9C4" stroke-width="1.2" />
+    <circle cx="26" cy="26" r="1.8" fill="#FFFFFF" />
+  </g>
+
+  <!-- 5. ĐỈNH CARD: VƯƠNG MIỆN THẦN THOẠI (GRAND CROWN) CHẠM KHẮC ĐỈNH CAO -->
+  
+  <g transform="translate(340, 10)" filter="url(#mythicRoyalGlow)">
+    <!-- Vương miện 3 chóp vương giả -->
+    <path d="M -26,0 L -18,-9 L 0,4 L 18,-9 L 26,0 L 18,10 L -18,10 Z" fill="url(#mythicGoldGrad)" stroke="#FEF08A" stroke-width="0.8" />
+    <!-- Ngôi sao kim cương trên chóp giữa vương miện -->
+    <polygon points="0,-16 -3,-8 0,-10 3,-8" fill="#FFF9C4" />
+    <circle cx="0" cy="-16" r="1.5" fill="#FFFFFF" />
+    <!-- Viên hồng ngọc tâm điểm vương miện -->
+    <circle cx="0" cy="5" r="3.5" fill="url(#rubyCrown)" stroke="#FFF9C4" stroke-width="0.8" />
+    <!-- Hai viên sapphire hai bên chóp -->
+    <circle cx="-16" cy="-2" r="2" fill="url(#sapphireGem)" />
+    <circle cx="16" cy="-2" r="2" fill="url(#sapphireGem)" />
+  </g>
+  
+
+  <!-- 6. ĐÁY CARD: HUY HIỆU HOÀNG GIA CHÂU BÁU (BOTTOM SOVEREIGN CREST) -->
+  <g transform="translate(340, 750)" filter="url(#mythicRoyalGlow)">
+    <polygon points="0,-8 14,0 0,8 -14,0" fill="url(#mythicGoldGrad)" stroke="#FFF9C4" stroke-width="0.8" />
+    <circle cx="0" cy="0" r="3" fill="url(#rubyCrown)" />
+    <circle cx="-38" cy="0" r="2" fill="#FFF9C4" />
+    <circle cx="38" cy="0" r="2" fill="#FFF9C4" />
+    <line x1="-50" y1="0" x2="-20" y2="0" stroke="url(#mythicGoldGrad)" stroke-width="1" />
+    <line x1="20" y1="0" x2="50" y2="0" stroke="url(#mythicGoldGrad)" stroke-width="1" />
+  </g>
+</svg>

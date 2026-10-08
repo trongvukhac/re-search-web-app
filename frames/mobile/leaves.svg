@@ -1,0 +1,86 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 760" width="100%" height="100%">
+  <defs>
+    
+    <filter id="royalShadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#000000" flood-opacity="0.45"/>
+    </filter>
+    <filter id="auraGlow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="5" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+  
+    <linearGradient id="vineBorder" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#dcedc8"/>
+      <stop offset="35%" stop-color="#8bc34a"/>
+      <stop offset="70%" stop-color="#33691e"/>
+      <stop offset="100%" stop-color="#fbc02d"/>
+    </linearGradient>
+    <linearGradient id="leafGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#c8e6c9"/>
+      <stop offset="50%" stop-color="#4caf50"/>
+      <stop offset="100%" stop-color="#1b5e20"/>
+    </linearGradient>
+  </defs>
+
+  <rect x="2" y="2" width="356" height="756" rx="24" fill="none" stroke="url(#vineBorder)" stroke-width="3.5" filter="url(#royalShadow)"/>
+  <rect x="5.5" y="5.5" width="349" height="749" rx="21" fill="none" stroke="rgba(200, 230, 201, 0.5)" stroke-width="2"/>
+  <rect x="8.5" y="8.5" width="343" height="743" rx="18" fill="none" stroke="url(#vineBorder)" stroke-width="1.2" stroke-opacity="0.8"/>
+
+  <!-- Top-Left Ivy Vines -->
+  <g transform="translate(18, 18)" filter="url(#royalShadow)">
+    <path d="M0,50 Q18,20 45,10 Q70,4 95,8" fill="none" stroke="url(#vineBorder)" stroke-width="2.8" stroke-linecap="round"/>
+    <path d="M15,35 Q10,25 22,25 Q25,35 15,35 Z" fill="url(#leafGrad)"/>
+    <path d="M35,20 Q32,10 44,12 Q42,22 35,20 Z" fill="url(#leafGrad)"/>
+    <path d="M60,10 Q62,0 72,4 Q68,14 60,10 Z" fill="url(#leafGrad)"/>
+    <path d="M85,8 Q90,0 98,5 Q92,13 85,8 Z" fill="url(#leafGrad)"/>
+    <g transform="translate(48, 12)">
+      <circle cx="-4" cy="0" r="3" fill="#ffffff"/>
+      <circle cx="4" cy="0" r="3" fill="#ffffff"/>
+      <circle cx="0" cy="-4" r="3" fill="#ffffff"/>
+      <circle cx="0" cy="4" r="3" fill="#ffffff"/>
+      <circle cx="0" cy="0" r="2" fill="#fbc02d"/>
+    </g>
+  </g>
+
+  <!-- Top-Right Slender Bracket -->
+  <g transform="translate(346, 14)">
+    <path d="M-25,0 C-10,3 -3,10 0,25" fill="none" stroke="url(#vineBorder)" stroke-width="2" stroke-linecap="round"/>
+    <circle cx="-8" cy="8" r="2" fill="#8bc34a"/>
+  </g>
+
+  <!-- Avatar Halo -->
+  <g transform="translate(64, 195)" filter="url(#royalShadow)">
+    <circle cx="0" cy="0" r="44" fill="none" stroke="url(#vineBorder)" stroke-width="2.6"/>
+    <circle cx="0" cy="0" r="48" fill="none" stroke="rgba(139, 195, 74, 0.5)" stroke-width="1.2" stroke-dasharray="3 3"/>
+    <path d="M42,-6 Q50,-4 46,4 Q40,2 42,-6 Z" fill="url(#leafGrad)"/>
+    <path d="M-42,-6 Q-50,-4 -46,4 Q-40,2 -42,-6 Z" fill="url(#leafGrad)"/>
+  </g>
+
+  <!-- Bottom Corners -->
+  <g transform="translate(14, 746)" filter="url(#royalShadow)">
+    <path d="M0,-35 C15,-25 35,-12 65,-6 C40,-3 18,-2 0,0 Z" fill="#2e7d32" stroke="url(#vineBorder)" stroke-width="1.2"/>
+    <g transform="translate(24, -18)">
+      <path d="M-14,4 Q-7,-2 0,2 Q7,-2 14,4 L12,12 Q6,6 0,9 Q-6,6 -12,12 Z" fill="#fffde7" stroke="#33691e" stroke-width="0.8"/>
+      <line x1="0" y1="2" x2="0" y2="9" stroke="#fbc02d" stroke-width="1"/>
+      <circle cx="0" cy="0" r="1.5" fill="#fbc02d"/>
+    </g>
+  </g>
+
+  <g transform="translate(346, 746)" filter="url(#royalShadow)">
+    <path d="M0,-35 C-15,-25 -35,-12 -65,-6 C-40,-3 -18,-2 0,0 Z" fill="#2e7d32" stroke="url(#vineBorder)" stroke-width="1.2"/>
+    <g transform="translate(-20, -16)">
+      <circle cx="-3" cy="0" r="2.5" fill="#ffffff"/>
+      <circle cx="3" cy="0" r="2.5" fill="#ffffff"/>
+      <circle cx="0" cy="-3" r="2.5" fill="#ffffff"/>
+      <circle cx="0" cy="3" r="2.5" fill="#ffffff"/>
+      <circle cx="0" cy="0" r="1.8" fill="#fbc02d"/>
+    </g>
+  </g>
+
+  <g transform="translate(180, 752)" filter="url(#royalShadow)">
+    <path d="M-50,0 Q0,4 50,0" fill="none" stroke="url(#vineBorder)" stroke-width="1.8"/>
+    <circle cx="0" cy="2" r="3" fill="#8bc34a" filter="url(#auraGlow)"/>
+    <circle cx="-25" cy="1" r="1.8" fill="#fbc02d"/>
+    <circle cx="25" cy="1" r="1.8" fill="#fbc02d"/>
+  </g>
+</svg>

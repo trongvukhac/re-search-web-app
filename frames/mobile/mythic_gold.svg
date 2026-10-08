@@ -1,0 +1,128 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 760" width="100%" height="100%">
+  <defs>
+    
+    <filter id="royalShadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#000000" flood-opacity="0.45"/>
+    </filter>
+    <filter id="auraGlow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="5" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+  
+    <linearGradient id="goldShine" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fff9e6"/>
+      <stop offset="20%" stop-color="#f5d47a"/>
+      <stop offset="45%" stop-color="#c9952a"/>
+      <stop offset="70%" stop-color="#ffd97d"/>
+      <stop offset="90%" stop-color="#8a5f0f"/>
+      <stop offset="100%" stop-color="#ffe8a3"/>
+    </linearGradient>
+    <linearGradient id="royalRibbon" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#2a459e"/>
+      <stop offset="50%" stop-color="#14235e"/>
+      <stop offset="100%" stop-color="#080e26"/>
+    </linearGradient>
+    <radialGradient id="sapphireGem" cx="35%" cy="35%" r="65%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="30%" stop-color="#82b1ff"/>
+      <stop offset="75%" stop-color="#1976d2"/>
+      <stop offset="100%" stop-color="#0d47a1"/>
+    </radialGradient>
+    <radialGradient id="starShine" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="35%" stop-color="#ffe082" stop-opacity="0.95"/>
+      <stop offset="70%" stop-color="#cf9e38" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="#cf9e38" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <!-- ================= BORDER FRAME (Matches exact card rx="24") ================= -->
+  <rect x="2" y="2" width="356" height="756" rx="24" fill="none" stroke="url(#goldShine)" stroke-width="4" filter="url(#royalShadow)"/>
+  <rect x="5.5" y="5.5" width="349" height="749" rx="21" fill="none" stroke="url(#royalRibbon)" stroke-width="2"/>
+  <rect x="8.5" y="8.5" width="343" height="743" rx="18" fill="none" stroke="url(#goldShine)" stroke-width="1.2" stroke-opacity="0.85"/>
+
+  <!-- Corner Rivets -->
+  <circle cx="26" cy="26" r="2.2" fill="url(#goldShine)"/>
+  <circle cx="334" cy="26" r="2.2" fill="url(#goldShine)"/>
+  <circle cx="26" cy="734" r="2.2" fill="url(#goldShine)"/>
+  <circle cx="334" cy="734" r="2.2" fill="url(#goldShine)"/>
+
+  <!-- ================= TOP IMPERIAL CREST ================= -->
+  <g transform="translate(110, 12) scale(0.75)" filter="url(#royalShadow)">
+    <path d="M-80,12 C-50,-2 -20,-6 0,-6 C20,-6 50,-2 80,12 C60,16 30,12 0,13 C-30,12 -60,16 -80,12 Z" fill="url(#royalRibbon)" stroke="url(#goldShine)" stroke-width="1.2"/>
+    <path d="M-28,12 L-34,-3 L-20,6 L-11,-10 L0,3 L11,-10 L20,6 L34,-3 L28,12 Z" fill="url(#goldShine)" stroke="#8a5f0f" stroke-width="0.8"/>
+    <circle cx="0" cy="-10" r="3.2" fill="#ffffff" filter="url(#auraGlow)"/>
+    <circle cx="-11" cy="-10" r="2" fill="#ffe082"/>
+    <circle cx="11" cy="-10" r="2" fill="#ffe082"/>
+    <rect x="-24" y="9" width="48" height="4" rx="2" fill="url(#goldShine)"/>
+    <circle cx="-12" cy="11" r="1.5" fill="#fff"/>
+    <circle cx="0" cy="11" r="2" fill="url(#sapphireGem)"/>
+    <circle cx="12" cy="11" r="1.5" fill="#fff"/>
+
+    <!-- Flanking Laurel Sprigs -->
+    <path d="M-34,8 C-55,5 -75,2 -95,10" fill="none" stroke="url(#goldShine)" stroke-width="2" stroke-linecap="round"/>
+    <path d="M-46,6 Q-52,1 -58,3 Q-55,8 -46,6 Z" fill="url(#goldShine)"/>
+    <path d="M-66,5 Q-72,0 -78,2 Q-75,7 -66,5 Z" fill="url(#goldShine)"/>
+    <path d="M-84,6 Q-90,1 -96,3 Q-93,8 -84,6 Z" fill="url(#goldShine)"/>
+
+    <path d="M34,8 C55,5 75,2 95,10" fill="none" stroke="url(#goldShine)" stroke-width="2" stroke-linecap="round"/>
+    <path d="M46,6 Q52,1 58,3 Q55,8 46,6 Z" fill="url(#goldShine)"/>
+    <path d="M66,5 Q72,0 78,2 Q75,7 66,5 Z" fill="url(#goldShine)"/>
+    <path d="M84,6 Q90,1 96,3 Q93,8 84,6 Z" fill="url(#goldShine)"/>
+  </g>
+
+  <!-- ================= TOP-LEFT CORNER STAR ================= -->
+  <g transform="translate(14, 14)" filter="url(#royalShadow)">
+    <path d="M0,40 C7,20 20,7 40,0 C26,10 10,26 0,40 Z" fill="url(#goldShine)"/>
+    <g transform="translate(16, 16)">
+      <circle cx="0" cy="0" r="13" fill="url(#starShine)"/>
+      <path d="M0,-15 L2.8,-3.8 L15,0 L2.8,3.8 L0,15 L-2.8,3.8 L-15,0 L-2.8,-3.8 Z" fill="#ffffff"/>
+      <path d="M0,-11 L2,-2.6 L11,0 L2,2.6 L0,11 L-2,2.6 L-11,0 L-2,-2.6 Z" fill="url(#goldShine)"/>
+    </g>
+  </g>
+
+  <!-- ================= TOP-RIGHT SLENDER CORNER (Zero overlap with Close/Cover buttons) ================= -->
+  <g transform="translate(346, 14)">
+    <path d="M-28,0 C-12,4 -4,12 0,28 C-2,18 -8,10 -18,4 Z" fill="url(#goldShine)" filter="url(#auraGlow)"/>
+    <circle cx="-10" cy="10" r="1.8" fill="#ffe082"/>
+  </g>
+
+  <!-- ================= AVATAR GOLD HALO ================= -->
+  <g transform="translate(64, 195)" filter="url(#royalShadow)">
+    <circle cx="0" cy="0" r="44" fill="none" stroke="url(#goldShine)" stroke-width="2.8"/>
+    <circle cx="0" cy="0" r="49" fill="none" stroke="rgba(255, 224, 130, 0.5)" stroke-width="1.2" stroke-dasharray="3 3"/>
+    <path d="M-46,-7 C-51,-3 -51,3 -46,7" fill="none" stroke="url(#goldShine)" stroke-width="2.2" stroke-linecap="round"/>
+    <circle cx="-49" cy="0" r="2" fill="#ffe082"/>
+    <path d="M46,-7 C51,-3 51,3 46,7" fill="none" stroke="url(#goldShine)" stroke-width="2.2" stroke-linecap="round"/>
+    <circle cx="49" cy="0" r="2" fill="#ffe082"/>
+  </g>
+
+  <!-- ================= BOTTOM CORNERS & FOOTER CRADLE (Safely <= y=715) ================= -->
+  <g transform="translate(12, 748)" filter="url(#royalShadow)">
+    <path d="M0,-34 C15,-24 34,-13 64,-6 C40,-3 18,-2 0,0 Z" fill="url(#royalRibbon)" stroke="url(#goldShine)" stroke-width="1.2"/>
+    <g transform="translate(20, -20)">
+      <circle cx="0" cy="0" r="18" fill="url(#starShine)"/>
+      <path d="M0,-20 L3.8,-5 L20,0 L3.8,5 L0,20 L-3.8,5 L-20,0 L-3.8,-5 Z" fill="url(#goldShine)"/>
+      <path d="M-12,-12 L0,-3.5 L12,-12 L3.5,0 L12,12 L0,3.5 L-12,12 L-3.5,0 Z" fill="url(#goldShine)" opacity="0.85"/>
+      <circle cx="0" cy="0" r="7.5" fill="url(#sapphireGem)" stroke="url(#goldShine)" stroke-width="1.2"/>
+      <circle cx="-1.5" cy="-1.5" r="1.8" fill="#ffffff"/>
+    </g>
+  </g>
+
+  <g transform="translate(348, 748)" filter="url(#royalShadow)">
+    <path d="M0,-34 C-15,-24 -34,-13 -64,-6 C-40,-3 -18,-2 0,0 Z" fill="url(#royalRibbon)" stroke="url(#goldShine)" stroke-width="1.2"/>
+    <path d="M0,-38 C-8,-20 -20,-8 -46,0 C-28,-2 -14,-10 0,-24 Z" fill="url(#goldShine)"/>
+    <g transform="translate(-18, -16)">
+      <polygon points="0,-10 7,0 0,10 -7,0" fill="url(#sapphireGem)" stroke="url(#goldShine)" stroke-width="1.2"/>
+      <circle cx="0" cy="0" r="1.6" fill="#ffffff"/>
+    </g>
+  </g>
+
+  <!-- Bottom-Center Golden Arch Filigree -->
+  <g transform="translate(180, 753)" filter="url(#royalShadow)">
+    <path d="M-60,-2 C-30,3 30,3 60,-2 C35,3 -35,3 -60,-2 Z" fill="url(#goldShine)"/>
+    <circle cx="0" cy="0" r="3.5" fill="#ffffff" filter="url(#auraGlow)"/>
+    <circle cx="-25" cy="0" r="2" fill="#ffe082"/>
+    <circle cx="25" cy="0" r="2" fill="#ffe082"/>
+  </g>
+</svg>

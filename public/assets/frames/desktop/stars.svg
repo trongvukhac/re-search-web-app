@@ -1,0 +1,98 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 680 760" width="100%" height="100%">
+  <defs>
+    
+    <filter id="royalShadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#000000" flood-opacity="0.45"/>
+    </filter>
+    <filter id="auraGlow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="5" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+  
+    <linearGradient id="cosmicBorder" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#e0c8ff"/>
+      <stop offset="30%" stop-color="#805ad5"/>
+      <stop offset="70%" stop-color="#3182ce"/>
+      <stop offset="100%" stop-color="#ffd56b"/>
+    </linearGradient>
+    <linearGradient id="cosmicRibbon" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1a1c4b"/>
+      <stop offset="50%" stop-color="#0f1130"/>
+      <stop offset="100%" stop-color="#070817"/>
+    </linearGradient>
+    <radialGradient id="moonGlow" cx="40%" cy="40%" r="60%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="35%" stop-color="#ffe699"/>
+      <stop offset="80%" stop-color="#ffb733"/>
+      <stop offset="100%" stop-color="#d48800"/>
+    </radialGradient>
+    <radialGradient id="planetGlow" cx="35%" cy="35%" r="65%">
+      <stop offset="0%" stop-color="#e0c3fc"/>
+      <stop offset="40%" stop-color="#8ec5fc"/>
+      <stop offset="80%" stop-color="#3f51b5"/>
+      <stop offset="100%" stop-color="#1a237e"/>
+    </radialGradient>
+    <radialGradient id="starlight" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="45%" stop-color="#a6c8ff" stop-opacity="0.9"/>
+      <stop offset="100%" stop-color="#3c50b8" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <!-- Outer Border -->
+  <rect x="2" y="2" width="676" height="756" rx="24" fill="none" stroke="url(#cosmicBorder)" stroke-width="3.5" filter="url(#royalShadow)"/>
+  <rect x="5.5" y="5.5" width="669" height="749" rx="21" fill="none" stroke="url(#cosmicRibbon)" stroke-width="2"/>
+  <rect x="8.5" y="8.5" width="663" height="743" rx="18" fill="none" stroke="rgba(255, 213, 107, 0.6)" stroke-width="1.2" stroke-dasharray="5 4"/>
+
+  <!-- Top-Left Crescent Moon & Celestial Stars -->
+  <g transform="translate(28, 24)" filter="url(#royalShadow)">
+    <path d="M0,-16 C12,-16 22,-6 22,6 C22,18 12,28 0,28 C8,22 12,14 12,6 C12,-2 8,-10 0,-16 Z" fill="url(#moonGlow)"/>
+    <g transform="translate(18, -6)">
+      <circle cx="0" cy="0" r="10" fill="url(#starlight)"/>
+      <path d="M0,-8 L1.5,-2 L7.5,0 L1.5,2 L0,8 L-1.5,2 L-7.5,0 L-1.5,-2 Z" fill="#ffffff"/>
+    </g>
+    <circle cx="28" cy="14" r="1.5" fill="#ffe699"/>
+    <circle cx="8" cy="34" r="1.2" fill="#ffffff"/>
+  </g>
+
+  <!-- Top Slender Star Bracket (Right side) -->
+  <g transform="translate(666, 14)">
+    <path d="M-25,0 C-10,3 -3,10 0,25" fill="none" stroke="url(#cosmicBorder)" stroke-width="2" stroke-linecap="round"/>
+    <circle cx="-8" cy="8" r="1.6" fill="#ffd56b"/>
+  </g>
+
+  <!-- Avatar Astral Orbit -->
+  <g transform="translate(77, 200)" filter="url(#royalShadow)">
+    <circle cx="0" cy="0" r="49" fill="none" stroke="url(#cosmicBorder)" stroke-width="2.6"/>
+    <ellipse cx="0" cy="0" rx="55" ry="43" fill="none" stroke="rgba(255, 213, 107, 0.65)" stroke-width="1.2" transform="rotate(-25)"/>
+    <circle cx="49.5" cy="-17.2" r="2.5" fill="#ffd56b" filter="url(#auraGlow)"/>
+    <circle cx="-49.5" cy="17.2" r="1.8" fill="#ffffff"/>
+  </g>
+
+  <!-- Bottom Corners -->
+  <g transform="translate(14, 746)" filter="url(#royalShadow)">
+    <path d="M0,-32 C12,-22 28,-10 55,-5 C35,-2 15,-1 0,0 Z" fill="url(#cosmicRibbon)" stroke="url(#cosmicBorder)" stroke-width="1.2"/>
+    <g transform="translate(18, -18)">
+      <circle cx="0" cy="0" r="16" fill="url(#starlight)"/>
+      <path d="M0,-16 L2.5,-3.5 L16,0 L2.5,3.5 L0,16 L-2.5,3.5 L-16,0 L-2.5,-3.5 Z" fill="#ffffff"/>
+      <circle cx="0" cy="0" r="3" fill="#ffd56b"/>
+    </g>
+  </g>
+
+  <g transform="translate(666, 746)" filter="url(#royalShadow)">
+    <path d="M0,-32 C-12,-22 -28,-10 -55,-5 C-35,-2 -15,-1 0,0 Z" fill="url(#cosmicRibbon)" stroke="url(#cosmicBorder)" stroke-width="1.2"/>
+    <g transform="translate(-20, -18)">
+      <circle cx="0" cy="0" r="10" fill="url(#planetGlow)"/>
+      <ellipse cx="0" cy="0" rx="16" ry="5" fill="none" stroke="#ffd56b" stroke-width="1.5" transform="rotate(-20)"/>
+      <circle cx="0" cy="0" r="2" fill="#ffffff" opacity="0.8"/>
+    </g>
+  </g>
+
+  <!-- Bottom Center -->
+  <g transform="translate(340, 752)" filter="url(#royalShadow)">
+    <path d="M-40,0 L40,0" fill="none" stroke="url(#cosmicBorder)" stroke-width="1.5"/>
+    <circle cx="0" cy="0" r="3" fill="#ffffff" filter="url(#auraGlow)"/>
+    <circle cx="-20" cy="0" r="1.6" fill="#ffd56b"/>
+    <circle cx="20" cy="0" r="1.6" fill="#ffd56b"/>
+  </g>
+</svg>
