@@ -1236,10 +1236,18 @@
           <div class="account-actions">
             <button
               class="button button-outline"
+              id="viewMyNamecardBtn"
+              style="display: none"
+              onclick="openMyNamecard()"
+            >
+              📇 Xem thẻ tên
+            </button>
+            <button
+              class="button button-outline"
               id="editProfile"
               style="display: none"
             >
-              Chỉnh sửa hồ sơ
+              Chỉnh sửa thẻ tên & hồ sơ
             </button>
             <button
               class="button button-primary"
@@ -1709,11 +1717,183 @@
         </div>
       </div>
     </dialog>
+    <!-- MODAL NAMECARD (THẺ TÊN CÁ NHÂN) -->
+    <dialog class="modal namecard-modal" id="namecardModal" aria-labelledby="namecardDisplayName">
+      <div class="namecard-card" id="namecardCard" data-frame="default">
+        <button type="button" class="namecard-close-btn" onclick="document.getElementById('namecardModal').close()" aria-label="Đóng thẻ tên">×</button>
+        
+        <!-- Ảnh bìa -->
+        <div class="namecard-cover" id="namecardCover">
+          <button type="button" class="namecard-edit-cover-btn" id="namecardEditCoverBtn" onclick="openEditProfileFromNamecard()" style="display: none;">
+            <span>🖼️</span> Sửa ảnh bìa
+          </button>
+        </div>
+
+        <!-- Khung Header (Avatar, Tên, ID, Bio & Streak Card) -->
+        <div class="namecard-header">
+          <div class="namecard-profile-col">
+            <div class="namecard-avatar-wrap">
+              <div class="namecard-avatar-circle" id="namecardAvatarCircle">
+                <span id="namecardAvatar">🌱</span>
+              </div>
+              <span class="namecard-online-dot" title="Đang hoạt động"></span>
+            </div>
+            <div class="namecard-identity">
+              <h2 class="namecard-display-name" id="namecardDisplayName">Tên người dùng</h2>
+              <div class="namecard-badges">
+                <span class="namecard-role-badge" id="namecardRoleBadge">
+                  <span id="namecardRoleIcon">🎓</span> <span id="namecardRoleText">Sinh viên</span>
+                </span>
+                <button type="button" class="namecard-id-badge" id="namecardIdBadge" onclick="copyNamecardId()" title="Bấm để sao chép ID">
+                  <span id="namecardIdText">ID 00000</span>
+                  <span class="copy-svg">📋</span>
+                </button>
+              </div>
+              <p class="namecard-bio" id="namecardBio">Hỏi, trao đổi, cùng tiến bộ 🌱<br>Tìm hiểu sâu hơn, mỗi ngày một chút.</p>
+            </div>
+          </div>
+
+          <!-- Thẻ thành tích năng động (Tối giản hoá) -->
+          <div class="namecard-streak-widget" id="namecardStreakWidget">
+            <div class="nc-streak-head">Thành tích năng động</div>
+            <div class="nc-streak-main">
+              <div class="nc-streak-flame" id="namecardStreakFlame"></div>
+              <div class="nc-streak-info">
+                <div class="nc-streak-num" id="namecardStreakDays">0 <span>ngày</span></div>
+                <div class="nc-streak-title" id="namecardStreakTitle">Tân binh</div>
+              </div>
+            </div>
+            <div class="nc-streak-days" id="namecardStreakWeek">
+              <!-- Render T2 - CN -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Các khung thành tích -->
+        <div class="namecard-body">
+          <!-- 1. Diễn đàn -->
+          <div class="namecard-block">
+            <div class="namecard-block-header">
+              <div class="namecard-block-title">
+                <span class="nc-icon">💬</span>
+                <h3>Diễn đàn</h3>
+              </div>
+              <button type="button" class="namecard-block-link" id="namecardForumLink" onclick="filterForumByUser()">
+                Xem hoạt động <span>→</span>
+              </button>
+            </div>
+            <div class="namecard-tiles namecard-tiles-5">
+              <div class="namecard-tile">
+                <div class="nc-tile-icon" style="color: #059669; background: #ecfdf5;">💬</div>
+                <div class="nc-tile-val" id="ncStatContrib">0</div>
+                <div class="nc-tile-lbl">Điểm đóng góp</div>
+              </div>
+              <div class="namecard-tile">
+                <div class="nc-tile-icon" style="color: #0284c7; background: #f0f9ff;">📑</div>
+                <div class="nc-tile-val" id="ncStatPosts">0</div>
+                <div class="nc-tile-lbl">Bài đăng & phản hồi</div>
+              </div>
+              <div class="namecard-tile">
+                <div class="nc-tile-icon" style="color: #d97706; background: #fffbeb;">👑</div>
+                <div class="nc-tile-val" id="ncStatMaxStreak">0 ngày</div>
+                <div class="nc-tile-lbl">Chuỗi cao nhất</div>
+              </div>
+              <div class="namecard-tile">
+                <div class="nc-tile-icon" style="color: #dc2626; background: #fef2f2;">🔥</div>
+                <div class="nc-tile-val" id="ncStatCurStreak">0 ngày</div>
+                <div class="nc-tile-lbl">Chuỗi hiện tại</div>
+              </div>
+              <div class="namecard-tile">
+                <div class="nc-tile-icon" style="color: #2563eb; background: #eff6ff;">📅</div>
+                <div class="nc-tile-val" id="ncStatActiveDays">0 ngày</div>
+                <div class="nc-tile-lbl">Ngày hoạt động</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 2. Thành tích tự học -->
+          <div class="namecard-block">
+            <div class="namecard-block-header">
+              <div class="namecard-block-title">
+                <span class="nc-icon">📖</span>
+                <h3>Thành tích tự học</h3>
+              </div>
+              <button type="button" class="namecard-block-link" onclick="goToStudyFromCard()">
+                Xem chi tiết <span>→</span>
+              </button>
+            </div>
+            <div class="namecard-tiles namecard-tiles-2">
+              <div class="namecard-tile horizontal">
+                <div class="nc-tile-icon" style="color: #d97706; background: #fef3c7;">⏰</div>
+                <div class="nc-tile-info">
+                  <div class="nc-tile-val" id="ncStatStudyDays">0 ngày</div>
+                  <div class="nc-tile-lbl">Số ngày tự học</div>
+                </div>
+              </div>
+              <div class="namecard-tile horizontal">
+                <div class="nc-tile-icon" style="color: #e11d48; background: #ffe4e6;">📊</div>
+                <div class="nc-tile-info">
+                  <div class="nc-tile-val" id="ncStatStudyTime">0 phút</div>
+                  <div class="nc-tile-lbl">Tổng thời gian tự học</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 3. Thành tích thi đua -->
+          <div class="namecard-block">
+            <div class="namecard-block-header">
+              <div class="namecard-block-title">
+                <span class="nc-icon">🏆</span>
+                <h3>Thành tích thi đua</h3>
+              </div>
+              <button type="button" class="namecard-block-link" onclick="goToArenaFromCard()">
+                Xem chi tiết <span>→</span>
+              </button>
+            </div>
+            <div class="namecard-tiles namecard-tiles-6">
+              <div class="namecard-tile">
+                <div class="nc-tile-icon" style="color: #f59e0b; background: #fffbeb;">⭐</div>
+                <div class="nc-tile-val" id="ncStatWeeks">0 tuần</div>
+                <div class="nc-tile-lbl">Số tuần tham gia</div>
+              </div>
+              <div class="namecard-tile">
+                <div class="nc-tile-icon" style="color: #ea580c; background: #fff7ed;">🏅</div>
+                <div class="nc-tile-val" id="ncStatBestWeekScore">0 điểm</div>
+                <div class="nc-tile-lbl">Điểm cao nhất tuần</div>
+              </div>
+              <div class="namecard-tile">
+                <div class="nc-tile-icon" style="color: #7c3aed; background: #f5f3ff;">📊</div>
+                <div class="nc-tile-val" id="ncStatLastWeekScore">0 điểm</div>
+                <div class="nc-tile-lbl">Điểm tuần trước</div>
+              </div>
+              <div class="namecard-tile">
+                <div class="nc-tile-icon" style="color: #e11d48; background: #fff1f2;">👑</div>
+                <div class="nc-tile-val" id="ncStatBestRank">Chưa có</div>
+                <div class="nc-tile-lbl">Xếp hạng cao nhất</div>
+              </div>
+              <div class="namecard-tile">
+                <div class="nc-tile-icon" style="color: #0284c7; background: #f0f9ff;">🎯</div>
+                <div class="nc-tile-val" id="ncStatPerfect">0</div>
+                <div class="nc-tile-lbl">Trả lời hoàn hảo</div>
+              </div>
+              <div class="namecard-tile">
+                <div class="nc-tile-icon" style="color: #f59e0b; background: #fefce8;">⚡</div>
+                <div class="nc-tile-val" id="ncStatFastest">Chưa có</div>
+                <div class="nc-tile-lbl">Kỷ lục hoàn thành</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </dialog>
+
+    <!-- MODAL THIẾT LẬP HỒ SƠ / NAMECARD -->
     <dialog class="modal profile-settings-modal" id="editProfileModal">
       <div class="modal-head">
         <div>
           <p class="eyebrow">TÀI KHOẢN RE:SEARCH</p>
-          <h2 id="editProfileModalTitle">Thiết lập tài khoản</h2>
+          <h2 id="editProfileModalTitle">Thiết lập thẻ tên & Hồ sơ</h2>
         </div>
         <button
           class="close-modal"
@@ -1729,10 +1909,18 @@
         <button
           type="button"
           class="auth-tab profile-tab active"
+          id="profileTabNamecardBtn"
+          data-profile-tab="namecard"
+        >
+          Thẻ tên & Trang trí
+        </button>
+        <button
+          type="button"
+          class="auth-tab profile-tab"
           id="profileTabInfoBtn"
           data-profile-tab="info"
         >
-          Thông tin cá nhân
+          Thông tin tài khoản
         </button>
         <button
           type="button"
@@ -1744,38 +1932,113 @@
         </button>
       </div>
 
-      <!-- Tab 1: Thông tin cá nhân -->
-      <form id="editProfileForm" method="dialog" class="profile-tab-content">
-        <label
-          >Tên hiển thị (Công khai)<input
+      <!-- Tab 1: Thẻ tên & Trang trí -->
+      <form id="editNamecardForm" class="profile-tab-content">
+        <label>
+          Tên hiển thị (Công khai)
+          <input
             id="profileDisplayName"
             required
             minlength="2"
             maxlength="80"
-        /></label>
-        <label
-          >Mã số sinh viên (Chỉ bạn nhìn thấy)<input
-            id="profileStudentId"
-            placeholder="Ví dụ: 20110001"
-        /></label>
-        <label
-          >Tên thật (Chỉ bạn nhìn thấy)<input
-            id="profileRealName"
-            placeholder="Nguyễn Văn A"
-        /></label>
-        <label
-          >Lớp đang học (Chỉ bạn nhìn thấy)<input
-            id="profileClassName"
-            placeholder="Ví dụ: KTPM2020"
-        /></label>
+            placeholder="Tên hiển thị của bạn"
+          />
+        </label>
+        
+        <label style="margin-top: 12px;">
+          Tiểu sử (Bio ngắn gọn)
+          <textarea
+            id="profileBio"
+            rows="2"
+            maxlength="150"
+            placeholder="Hỏi, trao đổi, cùng tiến bộ 🌱..."
+            style="width: 100%; border: 1px solid var(--border); border-radius: 8px; padding: 10px; font-family: inherit; font-size: 0.95rem; resize: vertical;"
+          ></textarea>
+        </label>
+
+        <!-- Chọn Avatar -->
+        <div style="margin-top: 16px;">
+          <label style="font-weight: 600; display: block; margin-bottom: 8px;">Biểu tượng Avatar</label>
+          <div class="avatar-selection-grid" id="profileAvatarPicker">
+            <!-- Render emojis -->
+          </div>
+        </div>
+
+        <!-- Khung viền Namecard -->
+        <div style="margin-top: 16px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <label style="font-weight: 600; margin: 0;">Khung viền Namecard</label>
+            <span style="font-size: 0.8rem; color: var(--muted);" id="namecardFrameNotice">Mở khóa theo chuỗi</span>
+          </div>
+          <div class="frame-selection-grid" id="profileFramePicker">
+            <!-- Render frames: default, leaves, stars, gold, sakura, ice -->
+          </div>
+        </div>
+
+        <!-- Chọn ảnh bìa -->
+        <div style="margin-top: 16px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <label style="font-weight: 600; margin: 0;">Ảnh bìa cá nhân</label>
+            <span style="font-size: 0.8rem; color: var(--muted);" id="namecardCoverNotice">Chuỗi 30+ để tải ảnh riêng</span>
+          </div>
+          <div class="cover-selection-grid" id="profileCoverPicker">
+            <!-- Render preset covers & colors -->
+          </div>
+
+          <!-- Nút tải ảnh máy (Client compress WebP < 150KB) -->
+          <div style="margin-top: 12px;">
+            <input type="file" id="coverFileInput" accept="image/*" style="display: none;" />
+            <button type="button" class="button button-outline" id="btnUploadCustomCover" style="width: 100%; justify-content: center; gap: 8px;">
+              <span>📷</span> Tải ảnh bìa từ thiết bị lên (Tối đa 150KB)
+            </button>
+            <div id="coverUploadPreview" style="display: none; margin-top: 10px; border-radius: 8px; overflow: hidden; height: 80px; position: relative;">
+              <img id="coverUploadImg" src="" style="width: 100%; height: 100%; object-fit: cover;" alt="Preview ảnh bìa" />
+              <button type="button" id="btnRemoveCustomCover" style="position: absolute; top: 6px; right: 6px; background: rgba(0,0,0,0.6); color: #fff; border: none; border-radius: 50%; width: 24px; height: 24px; cursor: pointer;">×</button>
+            </div>
+          </div>
+        </div>
+
         <div class="modal-actions" style="margin-top: 24px">
-          <button class="button button-primary" type="submit">
-            Lưu thay đổi <span>→</span>
+          <button class="button button-primary" type="submit" id="saveNamecardBtn">
+            Lưu thẻ tên & Trang trí <span>→</span>
           </button>
         </div>
       </form>
 
-      <!-- Tab 2: Đổi mật khẩu -->
+      <!-- Tab 2: Thông tin tài khoản (Bảo mật) -->
+      <form id="editProfileForm" method="dialog" class="profile-tab-content" style="display: none;">
+        <div class="account-security-banner">
+          🔒 <b>Thông tin định danh nội bộ:</b> Mã sinh viên, tên thật và lớp học được lưu trữ bảo mật nhằm phục vụ điểm danh, đối soát với Giảng viên và Nhà trường. Hệ thống cam kết <b>KHÔNG</b> hiển thị công khai các thông tin này trên Thẻ tên (Namecard).
+        </div>
+        <label style="margin-top: 12px;">
+          Mã số sinh viên (Chỉ bạn & Admin thấy)
+          <input
+            id="profileStudentId"
+            placeholder="Ví dụ: 20110001"
+          />
+        </label>
+        <label style="margin-top: 12px;">
+          Họ và tên thật (Chỉ bạn & Admin thấy)
+          <input
+            id="profileRealName"
+            placeholder="Nguyễn Văn A"
+          />
+        </label>
+        <label style="margin-top: 12px;">
+          Lớp đang học (Chỉ bạn & Admin thấy)
+          <input
+            id="profileClassName"
+            placeholder="Ví dụ: KTPM2020"
+          />
+        </label>
+        <div class="modal-actions" style="margin-top: 24px">
+          <button class="button button-primary" type="submit" id="saveAccountInfoBtn">
+            Lưu thông tin bảo mật <span>→</span>
+          </button>
+        </div>
+      </form>
+
+      <!-- Tab 3: Đổi mật khẩu -->
       <form id="changePasswordForm" class="profile-tab-content" style="display: none;">
         <label
           >Mật khẩu hiện tại<input

@@ -203,6 +203,21 @@ try { db.exec("ALTER TABLE study_sessions ADD COLUMN started_at_ms INTEGER NOT N
 try { db.exec("ALTER TABLE study_sessions ADD COLUMN cycle_index INTEGER NOT NULL DEFAULT 1;"); } catch (e) {}
 try { db.exec("ALTER TABLE study_sessions ADD COLUMN wallpaper TEXT DEFAULT 'default';"); } catch (e) {}
 try { db.exec("ALTER TABLE study_sessions ADD COLUMN aura TEXT DEFAULT 'emerald';"); } catch (e) {}
+try { db.exec("ALTER TABLE users ADD COLUMN bio TEXT;"); } catch (e) {}
+try { db.exec("ALTER TABLE users ADD COLUMN cover_image TEXT;"); } catch (e) {}
+try { db.exec("ALTER TABLE users ADD COLUMN namecard_frame TEXT DEFAULT 'default';"); } catch (e) {}
+try { db.exec("ALTER TABLE users ADD COLUMN namecard_theme TEXT DEFAULT 'default';"); } catch (e) {}
+try {
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS study_logs (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      duration_minutes INTEGER NOT NULL,
+      completed_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    );
+    CREATE INDEX IF NOT EXISTS idx_study_logs_user_id ON study_logs(user_id);
+  `);
+} catch (e) {}
 try {
   db.exec(`
     CREATE TABLE IF NOT EXISTS document_comments (
@@ -631,6 +646,48 @@ function calculateUserStreak(userId, todayDate, formatYMD) {
   };
 }
 
+function getUserMaxStreak(userId) {
+  if (!userId) return 0;
+  const uRow = db.prepare("SELECT role FROM users WHERE id = ?").get(userId);
+  if (uRow && (uRow.role === "admin" || uRow.role === "ta")) return 52;
+
+  const activities = db.prepare("SELECT activity_date FROM activity_days WHERE user_id=? ORDER BY activity_date ASC").all(userId);
+  const restores = db.prepare("SELECT restored_date FROM streak_restores WHERE user_id=? ORDER BY restored_date ASC").all(userId);
+
+  const allDates = Array.from(new Set([...activities.map(a => a.activity_date), ...restores.map(r => r.restored_date)])).sort();
+  if (allDates.length === 0) {
+    const cur = calculateUserStreak(userId).streak || 0;
+    return cur;
+  }
+
+  let maxStreak = 1;
+  let currentRun = 1;
+  for (let i = 1; i < allDates.length; i++) {
+    const prev = new Date(allDates[i - 1] + "T00:00:00Z");
+    const curr = new Date(allDates[i] + "T00:00:00Z");
+    const diffDays = Math.round((curr - prev) / (1000 * 60 * 60 * 24));
+    if (diffDays === 1) {
+      currentRun++;
+      if (currentRun > maxStreak) maxStreak = currentRun;
+    } else {
+      currentRun = 1;
+    }
+  }
+  const curStreak = calculateUserStreak(userId).streak || 0;
+  return Math.max(maxStreak, curStreak);
+}
+
+function getStreakTitle(streak = 0, tier = 0) {
+  const s = Number(streak) || 0;
+  const t = Number(tier !== undefined ? tier : getStreakTier(s));
+  if (s >= 50 || t >= 5) return "Độc nhất vô nhị";
+  if (s >= 30 || t >= 4) return "Bậc thầy học thuật";
+  if (s >= 14 || t >= 3) return "Nhà nghiên cứu tài năng";
+  if (s >= 7 || t >= 2) return "Học giả bền bỉ";
+  if (s >= 3 || t >= 1) return "Sinh viên năng động";
+  return "Tân binh";
+}
+
 function getAuthorStreakTier(userId) {
   if (!userId) return 0;
   try {
@@ -653,6 +710,10 @@ function publicUser(user, streakInfo = null) {
     studentId: user.student_id || "",
     realName: user.real_name || "",
     className: user.class_name || "",
+    bio: user.bio || "",
+    coverImage: user.cover_image || "default",
+    namecardFrame: user.namecard_frame || "default",
+    namecardTheme: user.namecard_theme || "default",
     streak: info.streak || 0,
     streakTier: info.streakTier || 0,
     shields: info.shields || 0,
@@ -1889,6 +1950,7 @@ async function api(request, response, url) {
               streakTier: 0,
             }
           : {
+              id: r.author_id,
               displayName: r.display_name,
               role: r.role,
               initials: r.avatar || getAvatarEmoji(r.display_name),
@@ -2282,21 +2344,224 @@ async function api(request, response, url) {
     return json(response, 200, { success: true });
   }
 
+  // --- NAMECARD ENDPOINT ---
+  const namecardMatch = pathName.match(/^\/api\/users\/(\d+)\/namecard$/);
+  if (method === "GET" && namecardMatch) {
+    const targetUserId = Number(namecardMatch[1]);
+    const targetUser = db.prepare("SELECT id, display_name, email, role, avatar, bio, cover_image, namecard_frame, namecard_theme, created_at FROM users WHERE id = ?").get(targetUserId);
+    if (!targetUser) return error(response, 404, "Không tìm thấy người dùng.");
+
+    const viewer = sessionFrom(request);
+    const isSelf = Boolean(viewer && viewer.id === targetUser.id);
+
+    // Chuỗi & Cấp bậc
+    const streakInfo = calculateUserStreak(targetUser.id);
+    const currentStreak = streakInfo.streak || 0;
+    const streakTier = streakInfo.streakTier || 0;
+    const maxStreak = getUserMaxStreak(targetUser.id);
+    const streakTitle = getStreakTitle(currentStreak, streakTier);
+
+    // Tính trạng thái 7 ngày trong tuần hiện tại (T2 - CN)
+    const todayVN = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Ho_Chi_Minh" }));
+    const todayDay = todayVN.getDay();
+    const vnDayIndex = todayDay === 0 ? 6 : todayDay - 1;
+    const monday = new Date(todayVN);
+    monday.setDate(todayVN.getDate() - vnDayIndex);
+
+    const weekDates = [];
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(monday);
+      d.setDate(monday.getDate() + i);
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, "0");
+      const day = String(d.getDate()).padStart(2, "0");
+      weekDates.push(`${y}-${m}-${day}`);
+    }
+
+    const activeDaysRows = db.prepare("SELECT activity_date FROM activity_days WHERE user_id = ?").all(targetUser.id);
+    const restoreDaysRows = db.prepare("SELECT restored_date FROM streak_restores WHERE user_id = ?").all(targetUser.id);
+    const activeSet = new Set([...activeDaysRows.map(r => r.activity_date), ...restoreDaysRows.map(r => r.restored_date)]);
+
+    const weekDays = weekDates.map((dateStr, idx) => ({
+      label: ["T2", "T3", "T4", "T5", "T6", "T7", "CN"][idx],
+      date: dateStr,
+      isActive: activeSet.has(dateStr),
+      isToday: idx === vnDayIndex,
+      isPast: idx < vnDayIndex
+    }));
+
+    // Khung Diễn đàn
+    const contribRow = db.prepare("SELECT coalesce(sum(points), 0) as total FROM contribution_events WHERE user_id = ?").get(targetUser.id);
+    const postsCount = db.prepare("SELECT count(*) as c FROM posts WHERE author_id = ? AND status != 'deleted'").get(targetUser.id).c;
+    const responsesCount = db.prepare("SELECT count(*) as c FROM responses WHERE author_id = ? AND status != 'deleted'").get(targetUser.id).c;
+    const activeDaysCount = activeDaysRows.length;
+
+    // Khung Thành tích tự học
+    const studyDaysRow = db.prepare("SELECT count(DISTINCT date(datetime(completed_at, '+7 hours'))) as days, coalesce(sum(duration_minutes), 0) as totalMinutes FROM study_logs WHERE user_id = ?").get(targetUser.id);
+    const studyContribCount = db.prepare("SELECT count(*) as c FROM contribution_events WHERE user_id = ? AND event_type = 'study_session'").get(targetUser.id).c;
+    const studyDays = Math.max(studyDaysRow?.days || 0, studyContribCount);
+    const totalStudyMinutes = (studyDaysRow?.totalMinutes || 0) + (studyDaysRow?.totalMinutes === 0 && studyContribCount > 0 ? studyContribCount * 45 : 0);
+
+    // Khung Thành tích thi đua
+    const weeksParticipated = db.prepare("SELECT count(DISTINCT competition_id) as c FROM competition_sessions WHERE user_id = ? AND status = 'completed'").get(targetUser.id).c;
+    
+    const bestWeekRow = db.prepare(`
+      SELECT coalesce(max(week_total), 0) as bestWeekScore FROM (
+        SELECT sum(best_score) as week_total
+        FROM competition_phase_results
+        WHERE user_id = ?
+        GROUP BY competition_id
+      )
+    `).get(targetUser.id);
+    const bestWeekScore = bestWeekRow?.bestWeekScore || 0;
+
+    // Điểm tuần trước
+    const latestComp = db.prepare("SELECT id FROM weekly_competitions ORDER BY id DESC LIMIT 1").get();
+    let lastWeekScore = 0;
+    if (latestComp) {
+      const prevComp = db.prepare("SELECT id FROM weekly_competitions WHERE id < ? ORDER BY id DESC LIMIT 1").get(latestComp.id);
+      if (prevComp) {
+        const prevRow = db.prepare("SELECT coalesce(sum(best_score), 0) as s FROM competition_phase_results WHERE user_id = ? AND competition_id = ?").get(targetUser.id, prevComp.id);
+        lastWeekScore = prevRow?.s || 0;
+      }
+    }
+
+    // Xếp hạng cao nhất
+    let bestRank = null;
+    const bestRankRow = db.prepare("SELECT min(rank) as r FROM competition_weekly_rewards WHERE user_id = ? AND rank > 0").get(targetUser.id);
+    if (bestRankRow && bestRankRow.r) {
+      bestRank = bestRankRow.r;
+    }
+
+    // Trả lời hoàn hảo
+    const perfectRow = db.prepare("SELECT coalesce(sum(first_try_correct_count), 0) as c FROM competition_sessions WHERE user_id = ? AND status = 'completed'").get(targetUser.id);
+    const perfectCount = perfectRow?.c || 0;
+
+    // Kỷ lục hoàn thành
+    const fastestRow = db.prepare(`
+      SELECT min(initial_seconds - remaining_seconds) as min_time 
+      FROM competition_sessions 
+      WHERE user_id = ? AND status = 'completed' AND correct_count = 10 AND (initial_seconds - remaining_seconds) > 0
+    `).get(targetUser.id);
+    const fastestSeconds = fastestRow?.min_time || null;
+
+    const canUploadCustomCover = Boolean(currentStreak >= 30 || maxStreak >= 30 || targetUser.role === "admin" || targetUser.role === "ta");
+
+    return json(response, 200, {
+      user: {
+        id: targetUser.id,
+        userCode: String(targetUser.id).padStart(5, '0'),
+        displayName: targetUser.display_name,
+        avatar: targetUser.avatar || getAvatarEmoji(targetUser.display_name),
+        role: targetUser.role,
+        bio: targetUser.bio || "Hỏi, trao đổi, cùng tiến bộ 🌱\nTìm hiểu sâu hơn, mỗi ngày một chút.",
+        coverImage: targetUser.cover_image || "default",
+        namecardFrame: targetUser.namecard_frame || "default",
+        namecardTheme: targetUser.namecard_theme || "default",
+        isSelf,
+        canUploadCustomCover
+      },
+      streakCard: {
+        streak: currentStreak,
+        streakTier,
+        streakTitle,
+        weekDays
+      },
+      forum: {
+        contributionPoints: contribRow?.total || 0,
+        postsAndResponsesCount: postsCount + responsesCount,
+        maxStreak,
+        currentStreak,
+        activeDaysCount
+      },
+      study: {
+        studyDaysCount: studyDays,
+        totalStudyMinutes
+      },
+      arena: {
+        weeksParticipated,
+        bestWeekScore,
+        lastWeekScore,
+        bestRank,
+        perfectCount,
+        fastestSeconds
+      }
+    });
+  }
+
   if (method === "PATCH" && pathName === "/api/me/profile") {
     const user = requireUser(request, response);
     if (!user || !requireCsrf(request, response, user)) return;
-    const { studentId, realName, className, displayName } =
-      await readJSON(request);
-    db.prepare(
-      "UPDATE users SET student_id=?, real_name=?, class_name=?, display_name=?, updated_at=CURRENT_TIMESTAMP WHERE id=?",
-    ).run(
-      studentId || null,
-      realName || null,
-      className || null,
-      displayName || user.displayName,
+    const body = await readJSON(request);
+    const {
+      studentId,
+      realName,
+      className,
+      displayName,
+      bio,
+      avatar,
+      coverImage,
+      namecardFrame,
+      namecardTheme,
+    } = body;
+
+    const currentUser = db.prepare("SELECT * FROM users WHERE id=?").get(user.id);
+    if (!currentUser) return error(response, 404, "Không tìm thấy người dùng.");
+
+    let newCoverImage = currentUser.cover_image || "default";
+    if (typeof coverImage === "string") {
+      const trimmedCover = coverImage.trim();
+      if (trimmedCover.startsWith("data:image/")) {
+        const streakInfo = calculateUserStreak(user.id);
+        const maxStreak = getUserMaxStreak(user.id);
+        const canUpload = streakInfo.streak >= 30 || maxStreak >= 30 || user.role === "admin" || user.role === "ta";
+        if (!canUpload) {
+          return error(response, 403, "Bạn cần đạt chuỗi hoạt động từ 30 ngày trở lên để tải ảnh bìa riêng từ thiết bị.");
+        }
+        if (trimmedCover.length > 250000) {
+          return error(response, 400, "Dung lượng ảnh bìa quá lớn (tối đa ~150KB). Vui lòng nén hoặc chọn ảnh nhỏ hơn.");
+        }
+        newCoverImage = trimmedCover;
+      } else {
+        newCoverImage = trimmedCover;
+      }
+    }
+
+    let newAvatar = currentUser.avatar;
+    let avatarChanged = currentUser.avatar_changed;
+    if (typeof avatar === "string" && avatar.trim()) {
+      newAvatar = avatar.trim();
+      avatarChanged = 1;
+    }
+
+    const newDisplayName = (typeof displayName === "string" && displayName.trim()) ? displayName.trim().slice(0, 80) : currentUser.display_name;
+    const newBio = typeof bio === "string" ? bio.trim().slice(0, 200) : currentUser.bio;
+    const newFrame = typeof namecardFrame === "string" ? namecardFrame.trim() : (currentUser.namecard_frame || "default");
+    const newTheme = typeof namecardTheme === "string" ? namecardTheme.trim() : (currentUser.namecard_theme || "default");
+    const newStudentId = typeof studentId === "string" ? studentId.trim().slice(0, 30) : currentUser.student_id;
+    const newRealName = typeof realName === "string" ? realName.trim().slice(0, 80) : currentUser.real_name;
+    const newClassName = typeof className === "string" ? className.trim().slice(0, 50) : currentUser.class_name;
+
+    db.prepare(`
+      UPDATE users 
+      SET student_id=?, real_name=?, class_name=?, display_name=?, bio=?, avatar=?, avatar_changed=?, cover_image=?, namecard_frame=?, namecard_theme=?, updated_at=CURRENT_TIMESTAMP 
+      WHERE id=?
+    `).run(
+      newStudentId || null,
+      newRealName || null,
+      newClassName || null,
+      newDisplayName,
+      newBio || null,
+      newAvatar,
+      avatarChanged,
+      newCoverImage,
+      newFrame,
+      newTheme,
       user.id,
     );
-    return json(response, 200, { ok: true });
+
+    const updatedUser = db.prepare("SELECT * FROM users WHERE id=?").get(user.id);
+    return json(response, 200, { ok: true, user: publicUser(updatedUser) });
   }
 
   if (method === "POST" && pathName === "/api/me/change-password") {
@@ -2512,6 +2777,7 @@ async function api(request, response, url) {
               streakTier: 0,
             }
           : {
+              id: c.user_id,
               displayName: c.display_name,
               role: c.role,
               initials: c.avatar || getAvatarEmoji(c.display_name),
@@ -2583,6 +2849,7 @@ async function api(request, response, url) {
               streakTier: 0,
             }
           : {
+              id: inserted.user_id,
               displayName: inserted.display_name,
               role: inserted.role,
               initials: inserted.avatar || getAvatarEmoji(inserted.display_name),
@@ -2906,6 +3173,11 @@ async function api(request, response, url) {
 
       if (minutes >= 20 || cycles >= 1) {
         recordContribution(user.id, "study_session", pointsAwarded, "study", null, reason);
+      }
+      if (minutes > 0) {
+        try {
+          db.prepare("INSERT INTO study_logs (user_id, duration_minutes) VALUES (?, ?)").run(user.id, minutes);
+        } catch (e) {}
       }
       db.prepare("DELETE FROM study_sessions WHERE user_id = ?").run(user.id);
 

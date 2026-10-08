@@ -465,6 +465,7 @@ function normalizePost(p) {
     content: p.content,
     excerpt: stripHTML(p.content),
     topic: p.topic,
+    authorId: authorObj.id || p.author_id || p.authorId,
     author: p.isAuthor ? ("Bạn" + (p.isAnonymous || p.anonymous ? " (Ẩn danh)" : "")) : (authorObj.displayName || p.author),
     authorRole: authorObj.role || p.authorRole,
     streakTier: Number(authorObj.streakTier || p.streakTier || 0),
@@ -618,7 +619,7 @@ function renderLeaderboard() {
   lbEl.innerHTML = list
     .map(
       (user, idx) => `
-    <div class="leaderboard-item">
+    <div class="leaderboard-item" data-namecard-user-id="${user.id}" style="cursor: pointer;">
       <div class="lb-avatar-wrap">
         <span class="avatar avatar-sm ${getAvatarClass(user.streakTier, false, user.role)}">${user.initials || '?'}</span>
         <span class="lb-rank-badge rank-${idx + 1}">${idx + 1}</span>
@@ -711,6 +712,7 @@ async function hydrateServer() {
 
     if (current.authenticated) {
       if ($("#accountGrid")) $("#accountGrid").style.display = "";
+      if ($("#viewMyNamecardBtn")) $("#viewMyNamecardBtn").style.display = "";
       if ($("#editProfile")) $("#editProfile").style.display = "";
       if ($("#openChangePasswordBtn")) $("#openChangePasswordBtn").style.display = "";
       if ($("#accountSecurityCard")) $("#accountSecurityCard").style.display = "block";
@@ -886,6 +888,7 @@ async function hydrateServer() {
       }
     } else {
       if ($("#accountGrid")) $("#accountGrid").style.display = "none";
+      if ($("#viewMyNamecardBtn")) $("#viewMyNamecardBtn").style.display = "none";
       if ($("#editProfile")) $("#editProfile").style.display = "none";
       if ($("#openChangePasswordBtn")) $("#openChangePasswordBtn").style.display = "none";
       if ($("#accountSecurityCard")) $("#accountSecurityCard").style.display = "none";
@@ -1038,12 +1041,14 @@ function postCard(post) {
   const pinnedIcon = post.isPinned
     ? `<span title="Đã ghim" style="color:var(--primary)">📌 </span>`
     : "";
+  const authorUserId = (!post.anonymous && post.authorId) ? post.authorId : "";
+  const ncAttr = authorUserId ? `data-namecard-user-id="${authorUserId}" style="cursor: pointer;" title="Xem thẻ tên"` : "";
   return `<article class="post-card ${post.authorRole === "admin" ? "admin-post" : ""}" data-post-id="${post.id}" style="position: relative;">
     ${adminBtn}${editBtn}
-    <span class="avatar avatar-xs ${getAvatarClass(post.streakTier, post.anonymous, post.authorRole)}">${post.initials}</span>
+    <span class="avatar avatar-xs ${getAvatarClass(post.streakTier, post.anonymous, post.authorRole)}" ${ncAttr}>${post.initials}</span>
     <div>
       <div class="post-meta" style="${post.lecturerRecommended ? 'margin: 0 0 2px 0;' : 'margin: 6px 0 2px 0;'}">
-        <div style="line-height: 1.2;">${pinnedIcon}<b class="${getNameClass(post.streakTier)}">${escapeHTML(post.author)}</b>${post.authorRole === "lecturer" ? ' <span style="color: var(--primary); font-weight: 700; margin-left: 4px; font-size: 11px;">[Giảng viên]</span>' : ""}${post.anonymous ? " · Ẩn danh" : ""} · ${post.time}${getEditedIndicator(post.editedAt)}</div>
+        <div style="line-height: 1.2;">${pinnedIcon}<b class="${getNameClass(post.streakTier)}" ${ncAttr}>${escapeHTML(post.author)}</b>${post.authorRole === "lecturer" ? ' <span style="color: var(--primary); font-weight: 700; margin-left: 4px; font-size: 11px;">[Giảng viên]</span>' : ""}${post.anonymous ? " · Ẩn danh" : ""} · ${post.time}${getEditedIndicator(post.editedAt)}</div>
         ${post.lecturerRecommended ? '<div style="font-size: 11px; color: var(--primary); font-weight: 600; margin-top: 3px; display: flex; align-items: center; gap: 4px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path></svg> Giảng viên đề xuất</div>' : ''}
       </div>
       <h3 style="margin-top: 0;">${escapeHTML(post.title)}</h3>
@@ -2067,11 +2072,11 @@ async function openDetail(id, updateHash = true) {
       return `
       <div class="response" style="position: relative;">
         ${editBtn}
-        <span class="avatar avatar-xs ${getAvatarClass(r.author?.streakTier, r.anonymous, r.author?.role)}">${r.author.initials}</span>
+        <span class="avatar avatar-xs ${getAvatarClass(r.author?.streakTier, r.anonymous, r.author?.role)}" ${!r.anonymous && r.author?.id ? `data-namecard-user-id="${r.author.id}" style="cursor: pointer;" title="Xem thẻ tên"` : ''}>${r.author.initials}</span>
         <div style="flex: 1;">
           <div class="response-meta" style="${r.lecturerRecommended ? 'margin: 0 0 4px 0;' : 'margin: 6px 0 2px 0;'}">
             <div style="line-height: 1.2;">
-              <b class="${getNameClass(r.author?.streakTier)}">${r.isAuthor ? "Bạn" : escapeHTML(r.author.displayName)}</b>${r.author.role === "lecturer" ? ' <span style="color: var(--primary); font-weight: 700; margin-left: 4px; font-size: 11px;">[Giảng viên]</span>' : ""}${r.anonymous ? " · Ẩn danh" : ""} <span style="font-size: 10px; color: #888; margin-left: 6px;">${formatTime(r.createdAt)}</span>
+              <b class="${getNameClass(r.author?.streakTier)}" ${!r.anonymous && r.author?.id ? `data-namecard-user-id="${r.author.id}" style="cursor: pointer;" title="Xem thẻ tên"` : ''}>${r.isAuthor ? "Bạn" : escapeHTML(r.author.displayName)}</b>${r.author.role === "lecturer" ? ' <span style="color: var(--primary); font-weight: 700; margin-left: 4px; font-size: 11px;">[Giảng viên]</span>' : ""}${r.anonymous ? " · Ẩn danh" : ""} <span style="font-size: 10px; color: #888; margin-left: 6px;">${formatTime(r.createdAt)}</span>
               ${getEditedIndicator(r.editedAt)}
               ${r.selected ? '<span class="chosen-label">✓ Câu trả lời được chọn</span>' : ""}
             </div>
@@ -2125,10 +2130,10 @@ async function openDetail(id, updateHash = true) {
         <button id="closeDetail" style="display:none;" aria-hidden="true"></button>
       </div>
       <div style="display: flex; gap: 12px; margin-top: 0; margin-bottom: 16px; align-items: center;">
-        <span class="avatar avatar-sm ${getAvatarClass(post.author?.streakTier || post.streakTier, post.anonymous, post.author?.role)}">${post.author.initials || post.initials || "?"}</span>
+        <span class="avatar avatar-sm ${getAvatarClass(post.author?.streakTier || post.streakTier, post.anonymous, post.author?.role)}" ${!post.anonymous && post.author?.id ? `data-namecard-user-id="${post.author.id}" style="cursor: pointer;" title="Xem thẻ tên"` : ''}>${post.author.initials || post.initials || "?"}</span>
         <div class="detail-meta" style="flex: 1; margin: 0;">
           <div style="line-height: 1.3;">
-            <b class="${getNameClass(post.author?.streakTier || post.streakTier)}">${post.author.displayName || post.author}</b>${post.author?.role === "lecturer" ? ' <span style="color: var(--primary); font-weight: 700; margin-left: 4px; font-size: 11px;">[Giảng viên]</span>' : ""} <span style="font-size: 11px; color: #888; margin-left: 6px;">${formatTime(post.createdAt)}</span>${getEditedIndicator(post.editedAt)}
+            <b class="${getNameClass(post.author?.streakTier || post.streakTier)}" ${!post.anonymous && post.author?.id ? `data-namecard-user-id="${post.author.id}" style="cursor: pointer;" title="Xem thẻ tên"` : ''}>${post.author.displayName || post.author}</b>${post.author?.role === "lecturer" ? ' <span style="color: var(--primary); font-weight: 700; margin-left: 4px; font-size: 11px;">[Giảng viên]</span>' : ""} <span style="font-size: 11px; color: #888; margin-left: 6px;">${formatTime(post.createdAt)}</span>${getEditedIndicator(post.editedAt)}
           </div>
           ${post.lecturerRecommended ? '<div style="font-size: 11px; color: var(--primary); font-weight: 600; margin-top: 4px; display: flex; align-items: center; gap: 4px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path></svg> Giảng viên đề xuất</div>' : ''}
         </div>
@@ -3380,29 +3385,502 @@ window.pinPost = async (id, isPinned) => {
   }
 };
 
-$("#editProfile").onclick = () => {
+// ============================================================
+// NAMECARD & PROFILE SETTINGS CONTROLLERS
+// ============================================================
+
+let currentSelectedAvatar = "🌱";
+let currentSelectedFrame = "default";
+let currentSelectedCover = "default";
+let currentViewingNamecardUserId = null;
+
+const AVATAR_OPTIONS = [
+  "🌱", "🎓", "🚀", "📚", "⭐", "💡", 
+  "🔥", "🏆", "✨", "🦊", "🐱", "🐼", 
+  "🎨", "🔬", "⚡", "🌟"
+];
+
+const FRAME_OPTIONS = [
+  { id: "default", name: "Mặc định", icon: "🌱", minDays: 0 },
+  { id: "leaves", name: "Lá xanh", icon: "🌿", minDays: 7 },
+  { id: "stars", name: "Sao trời", icon: "✨", minDays: 14 },
+  { id: "sakura", name: "Hoa đào", icon: "🌸", minDays: 21 },
+  { id: "ice", name: "Băng tuyết", icon: "❄️", minDays: 30 },
+  { id: "gold", name: "Hoàng kim", icon: "👑", minDays: 50 },
+];
+
+const COVER_PRESETS = [
+  { id: "default", name: "Xanh đại dương", type: "gradient", value: "linear-gradient(135deg, #1e3a8a 0%, #3b82f6 50%, #93c5fd 100%)" },
+  { id: "preset_library", name: "Thư viện anime", type: "image", value: "demo_assets/wallpaper_pc_library.png" },
+  { id: "preset_zen", name: "Bình minh Zen", type: "image", value: "demo_assets/wallpaper_pc_zen.png" },
+  { id: "preset_space", name: "Dải ngân hà", type: "image", value: "demo_assets/wallpaper_pc_space.png" },
+  { id: "preset_lofi", name: "Góc Lofi", type: "image", value: "demo_assets/wallpaper_pc_lofi.png" },
+  { id: "color:#0f172a", name: "Đêm huyền bí", type: "color", value: "#0f172a" },
+  { id: "color:#064e3b", name: "Rừng ngọc", type: "color", value: "#064e3b" },
+  { id: "color:#4c0519", name: "Đỏ Ruby", type: "color", value: "#4c0519" },
+  { id: "color:#3b0764", name: "Tím hoàng hôn", type: "color", value: "#3b0764" },
+  { id: "color:#18181b", name: "Đen tuyền", type: "color", value: "#18181b" },
+];
+
+window.openNamecard = async function(userId) {
+  if (!userId) return;
+  try {
+    const data = await requestAPI(`/api/users/${userId}/namecard`);
+    if (!data || !data.user) return;
+    currentViewingNamecardUserId = userId;
+
+    // Header Identity
+    $("#namecardAvatar").textContent = data.user.avatar || "🌱";
+    $("#namecardDisplayName").textContent = data.user.displayName || "Người dùng";
+    
+    // Role Badge
+    const roleIcon = $("#namecardRoleIcon");
+    const roleText = $("#namecardRoleText");
+    const roleBadge = $("#namecardRoleBadge");
+    if (data.user.role === "admin" || data.user.role === "ta") {
+      roleIcon.textContent = "👑";
+      roleText.textContent = "Quản trị viên";
+      roleBadge.style.background = "#fef3c7";
+      roleBadge.style.color = "#92400e";
+      roleBadge.style.borderColor = "#fde68a";
+    } else if (data.user.role === "lecturer") {
+      roleIcon.textContent = "👨‍🏫";
+      roleText.textContent = "Giảng viên";
+      roleBadge.style.background = "#e0f2fe";
+      roleBadge.style.color = "#0369a1";
+      roleBadge.style.borderColor = "#bae6fd";
+    } else {
+      roleIcon.textContent = "🎓";
+      roleText.textContent = "Sinh viên";
+      roleBadge.style.background = "#e8f5e9";
+      roleBadge.style.color = "#1b5e20";
+      roleBadge.style.borderColor = "#c8e6c9";
+    }
+
+    // User ID
+    $("#namecardIdText").textContent = `ID ${data.user.userCode || String(data.user.id).padStart(5, '0')}`;
+    $("#namecardBio").textContent = data.user.bio || "Hỏi, trao đổi, cùng tiến bộ 🌱\nTìm hiểu sâu hơn, mỗi ngày một chút.";
+
+    // Cover Image
+    const coverEl = $("#namecardCover");
+    const coverVal = data.user.coverImage || "default";
+    if (coverVal.startsWith("data:image/") || coverVal.startsWith("http") || coverVal.includes("demo_assets")) {
+      coverEl.style.background = `url("${coverVal}") center / cover no-repeat`;
+    } else if (coverVal.startsWith("color:")) {
+      coverEl.style.background = coverVal.replace("color:", "");
+    } else {
+      const foundPreset = COVER_PRESETS.find(p => p.id === coverVal);
+      if (foundPreset) {
+        if (foundPreset.type === "image") {
+          coverEl.style.background = `url("${foundPreset.value}") center / cover no-repeat`;
+        } else if (foundPreset.type === "gradient") {
+          coverEl.style.background = foundPreset.value;
+        } else {
+          coverEl.style.background = foundPreset.value;
+        }
+      } else {
+        coverEl.style.background = "linear-gradient(135deg, #1e3a8a 0%, #3b82f6 50%, #93c5fd 100%)";
+      }
+    }
+
+    // Edit Cover button for self
+    $("#namecardEditCoverBtn").style.display = data.user.isSelf ? "inline-flex" : "none";
+
+    // Frame Decoration
+    $("#namecardCard").setAttribute("data-frame", data.user.namecardFrame || "default");
+
+    // Dynamic Streak Card (Compact)
+    $("#namecardStreakFlame").innerHTML = getFlameSVG(data.streakCard.streakTier, 32);
+    $("#namecardStreakDays").innerHTML = `${data.streakCard.streak} <span>ngày</span>`;
+    $("#namecardStreakTitle").textContent = data.streakCard.streakTitle;
+
+    const streakWeekEl = $("#namecardStreakWeek");
+    if (streakWeekEl && data.streakCard.weekDays) {
+      streakWeekEl.innerHTML = data.streakCard.weekDays.map(d => {
+        let dotClass = d.isActive ? "active" : (d.isToday ? "today" : "");
+        let mark = d.isActive ? getFlameSVG(data.streakCard.streakTier, 13) : (d.isToday ? `<span style="opacity: 0.5;">${getFlameSVG(0, 11)}</span>` : "○");
+        return `<div class="nc-day-item"><span class="nc-day-dot ${dotClass}">${mark}</span><span>${d.label}</span></div>`;
+      }).join("");
+    }
+
+    // 1. Diễn đàn
+    $("#ncStatContrib").textContent = data.forum.contributionPoints;
+    $("#ncStatPosts").textContent = data.forum.postsAndResponsesCount;
+    $("#ncStatMaxStreak").textContent = `${data.forum.maxStreak} ngày`;
+    $("#ncStatCurStreak").textContent = `${data.forum.currentStreak} ngày`;
+    $("#ncStatActiveDays").textContent = `${data.forum.activeDaysCount} ngày`;
+
+    // 2. Thành tích tự học
+    $("#ncStatStudyDays").textContent = `${data.study.studyDaysCount} ngày`;
+    const mins = data.study.totalStudyMinutes || 0;
+    const h = Math.floor(mins / 60);
+    const m = mins % 60;
+    $("#ncStatStudyTime").textContent = h > 0 ? (m > 0 ? `${h} giờ ${m} phút` : `${h} giờ`) : `${m} phút`;
+
+    // 3. Thành tích thi đua
+    $("#ncStatWeeks").textContent = `${data.arena.weeksParticipated} tuần`;
+    $("#ncStatBestWeekScore").textContent = `${data.arena.bestWeekScore} điểm`;
+    $("#ncStatLastWeekScore").textContent = `${data.arena.lastWeekScore} điểm`;
+    const r = data.arena.bestRank;
+    $("#ncStatBestRank").textContent = r ? (r <= 3 ? `Top ${r}` : `Hạng ${r}`) : "Chưa có";
+    $("#ncStatPerfect").textContent = data.arena.perfectCount;
+    const sec = data.arena.fastestSeconds;
+    if (sec && sec > 0) {
+      const fm = Math.floor(sec / 60);
+      const fs = sec % 60;
+      $("#ncStatFastest").textContent = fm > 0 ? `${fm} phút ${fs} giây` : `${fs} giây`;
+    } else {
+      $("#ncStatFastest").textContent = "Chưa có";
+    }
+
+    $("#namecardModal").showModal();
+  } catch (err) {
+    toast(err.message || "Không thể tải thẻ tên.");
+  }
+};
+
+window.openMyNamecard = function() {
+  if (session && session.id) {
+    openNamecard(session.id);
+  }
+};
+
+window.copyNamecardId = function() {
+  const text = $("#namecardIdText")?.textContent?.replace("ID ", "").trim();
+  if (!text) return;
+  navigator.clipboard.writeText(text).then(() => {
+    toast(`Đã sao chép ID ${text}!`);
+  }).catch(() => {
+    toast(`ID người dùng: ${text}`);
+  });
+};
+
+window.openEditProfileFromNamecard = function() {
+  const modal = $("#namecardModal");
+  if (modal && typeof modal.close === "function") modal.close();
+  openEditProfileModal("namecard");
+};
+
+window.goToStudyFromCard = function() {
+  const modal = $("#namecardModal");
+  if (modal && typeof modal.close === "function") modal.close();
+  go("study");
+};
+
+window.goToArenaFromCard = function() {
+  const modal = $("#namecardModal");
+  if (modal && typeof modal.close === "function") modal.close();
+  go("arena");
+};
+
+window.filterForumByUser = function() {
+  const modal = $("#namecardModal");
+  if (modal && typeof modal.close === "function") modal.close();
+  const userName = $("#namecardDisplayName")?.textContent?.trim() || "";
+  go("forum");
+  if ($("#forumSearch") && userName) {
+    $("#forumSearch").value = userName;
+    renderPosts();
+  }
+};
+
+function switchProfileTab(tabName) {
+  const isNamecard = tabName === "namecard";
+  const isInfo = tabName === "info";
+  const isPassword = tabName === "password";
+
+  if ($("#profileTabNamecardBtn")) $("#profileTabNamecardBtn").classList.toggle("active", isNamecard);
+  if ($("#profileTabInfoBtn")) $("#profileTabInfoBtn").classList.toggle("active", isInfo);
+  if ($("#profileTabPasswordBtn")) $("#profileTabPasswordBtn").classList.toggle("active", isPassword);
+
+  if ($("#editNamecardForm")) $("#editNamecardForm").style.display = isNamecard ? "block" : "none";
+  if ($("#editProfileForm")) $("#editProfileForm").style.display = isInfo ? "block" : "none";
+  if ($("#changePasswordForm")) $("#changePasswordForm").style.display = isPassword ? "block" : "none";
+
+  if ($("#editProfileModalTitle")) {
+    if (isNamecard) $("#editProfileModalTitle").textContent = "Thiết lập thẻ tên & Trang trí";
+    else if (isInfo) $("#editProfileModalTitle").textContent = "Thông tin tài khoản (Bảo mật)";
+    else $("#editProfileModalTitle").textContent = "Đổi mật khẩu";
+  }
+}
+
+if ($("#profileTabNamecardBtn")) {
+  $("#profileTabNamecardBtn").onclick = () => switchProfileTab("namecard");
+}
+if ($("#profileTabInfoBtn")) {
+  $("#profileTabInfoBtn").onclick = () => switchProfileTab("info");
+}
+if ($("#profileTabPasswordBtn")) {
+  $("#profileTabPasswordBtn").onclick = () => switchProfileTab("password");
+}
+
+window.openEditProfileModal = openEditProfileModal;
+function openEditProfileModal(initialTab = "namecard") {
   if (!session) return;
+
+  // Tab 1 values
   $("#profileDisplayName").value = session.displayName || "";
+  $("#profileBio").value = session.bio || "";
+  currentSelectedAvatar = session.initials || session.avatar || "🌱";
+  currentSelectedFrame = session.namecardFrame || "default";
+  currentSelectedCover = session.coverImage || "default";
+
+  // Tab 2 values
   $("#profileStudentId").value = session.studentId || "";
   $("#profileRealName").value = session.realName || "";
   $("#profileClassName").value = session.className || "";
 
-  // Reset tab về Thông tin cá nhân
-  switchProfileTab("info");
-  if ($("#currentPasswordInput")) $("#currentPasswordInput").value = "";
-  if ($("#newPasswordInput")) $("#newPasswordInput").value = "";
-  if ($("#confirmPasswordInput")) $("#confirmPasswordInput").value = "";
+  // Render Avatar choices
+  renderAvatarPicker();
 
+  // Render Frame choices
+  renderFramePicker();
+
+  // Render Cover choices
+  renderCoverPicker();
+
+  // Custom cover button status
+  const userStreak = session.streak || 0;
+  const isEligibleCover = userStreak >= 30 || session.role === "admin" || session.role === "ta";
+  const uploadBtn = $("#btnUploadCustomCover");
+  if (uploadBtn) {
+    if (isEligibleCover) {
+      uploadBtn.disabled = false;
+      uploadBtn.innerHTML = `<span>📷</span> Tải ảnh bìa từ thiết bị lên (Tối đa 150KB)`;
+      uploadBtn.onclick = () => $("#coverFileInput")?.click();
+    } else {
+      uploadBtn.disabled = true;
+      uploadBtn.innerHTML = `<span>🔒</span> Tải ảnh riêng (Yêu cầu chuỗi 30+ ngày, hiện có: ${userStreak} ngày)`;
+    }
+  }
+
+  // Cover preview if custom
+  const previewBox = $("#coverUploadPreview");
+  const previewImg = $("#coverUploadImg");
+  if (currentSelectedCover.startsWith("data:image/") || currentSelectedCover.startsWith("http")) {
+    previewBox.style.display = "block";
+    previewImg.src = currentSelectedCover;
+  } else {
+    previewBox.style.display = "none";
+  }
+
+  switchProfileTab(initialTab);
   $("#editProfileModal").showModal();
+}
+
+function renderAvatarPicker() {
+  const container = $("#profileAvatarPicker");
+  if (!container) return;
+  container.innerHTML = AVATAR_OPTIONS.map(emoji => `
+    <button type="button" class="avatar-choice-btn ${emoji === currentSelectedAvatar ? 'active' : ''}" data-emoji="${emoji}">
+      ${emoji}
+    </button>
+  `).join("");
+
+  container.querySelectorAll(".avatar-choice-btn").forEach(btn => {
+    btn.onclick = () => {
+      container.querySelectorAll(".avatar-choice-btn").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      currentSelectedAvatar = btn.dataset.emoji;
+    };
+  });
+}
+
+function renderFramePicker() {
+  const container = $("#profileFramePicker");
+  if (!container) return;
+  const userStreak = session?.streak || 0;
+  const isAdmin = session?.role === "admin" || session?.role === "ta";
+
+  container.innerHTML = FRAME_OPTIONS.map(f => {
+    const isUnlocked = isAdmin || userStreak >= f.minDays;
+    const isActive = f.id === currentSelectedFrame;
+    return `
+      <div class="frame-choice-item ${isActive ? 'active' : ''} ${isUnlocked ? '' : 'locked'}" data-frame-id="${f.id}">
+        <span class="choice-icon">${f.icon}</span>
+        <span class="choice-label">${f.name}</span>
+        ${isUnlocked ? '' : `<span class="choice-lock-badge" title="Cần chuỗi ${f.minDays} ngày">🔒</span>`}
+      </div>
+    `;
+  }).join("");
+
+  container.querySelectorAll(".frame-choice-item:not(.locked)").forEach(item => {
+    item.onclick = () => {
+      container.querySelectorAll(".frame-choice-item").forEach(i => i.classList.remove("active"));
+      item.classList.add("active");
+      currentSelectedFrame = item.dataset.frameId;
+    };
+  });
+}
+
+function renderCoverPicker() {
+  const container = $("#profileCoverPicker");
+  if (!container) return;
+
+  container.innerHTML = COVER_PRESETS.map(p => {
+    const isActive = p.id === currentSelectedCover;
+    let previewStyle = "";
+    if (p.type === "image") previewStyle = `background: url('${p.value}') center / cover no-repeat;`;
+    else if (p.type === "gradient") previewStyle = `background: ${p.value};`;
+    else previewStyle = `background: ${p.value};`;
+
+    return `
+      <div class="cover-choice-item ${isActive ? 'active' : ''}" data-cover-id="${p.id}">
+        <div class="choice-preview-box" style="${previewStyle}"></div>
+        <span class="choice-label">${p.name}</span>
+      </div>
+    `;
+  }).join("");
+
+  container.querySelectorAll(".cover-choice-item").forEach(item => {
+    item.onclick = () => {
+      container.querySelectorAll(".cover-choice-item").forEach(i => i.classList.remove("active"));
+      item.classList.add("active");
+      currentSelectedCover = item.dataset.coverId;
+      // Hide custom image preview if preset picked
+      const previewBox = $("#coverUploadPreview");
+      if (previewBox) previewBox.style.display = "none";
+    };
+  });
+}
+
+// Client compression for custom cover
+if ($("#coverFileInput")) {
+  $("#coverFileInput").onchange = function(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      toast("Vui lòng chọn file hình ảnh hợp lệ.");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = function(evt) {
+      const img = new Image();
+      img.onload = function() {
+        const canvas = document.createElement("canvas");
+        const MAX_W = 1200;
+        const MAX_H = 420;
+        let w = img.width;
+        let h = img.height;
+
+        if (w > MAX_W) {
+          h = Math.round((h * MAX_W) / w);
+          w = MAX_W;
+        }
+        if (h > MAX_H) {
+          w = Math.round((w * MAX_H) / h);
+          h = MAX_H;
+        }
+
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, w, h);
+
+        let dataUrl = canvas.toDataURL("image/webp", 0.8);
+        if (dataUrl.length > 220000) {
+          dataUrl = canvas.toDataURL("image/webp", 0.65);
+        }
+
+        currentSelectedCover = dataUrl;
+
+        // Deselect presets
+        $$("#profileCoverPicker .cover-choice-item").forEach(i => i.classList.remove("active"));
+
+        // Show preview
+        const previewBox = $("#coverUploadPreview");
+        const previewImg = $("#coverUploadImg");
+        if (previewBox && previewImg) {
+          previewImg.src = dataUrl;
+          previewBox.style.display = "block";
+        }
+        toast("Đã tối ưu ảnh bìa (< 150KB) sẵn sàng lưu!");
+      };
+      img.src = evt.target.result;
+    };
+    reader.readAsDataURL(file);
+  };
+}
+
+if ($("#btnRemoveCustomCover")) {
+  $("#btnRemoveCustomCover").onclick = function() {
+    currentSelectedCover = "default";
+    const previewBox = $("#coverUploadPreview");
+    if (previewBox) previewBox.style.display = "none";
+    renderCoverPicker();
+  };
+}
+
+// Submit Tab 1: Thẻ tên & Trang trí
+if ($("#editNamecardForm")) {
+  $("#editNamecardForm").onsubmit = async (e) => {
+    e.preventDefault();
+    setSubmitLoading(e, true);
+    try {
+      const res = await requestAPI("/api/me/profile", {
+        method: "PATCH",
+        body: JSON.stringify({
+          displayName: $("#profileDisplayName").value.trim(),
+          bio: $("#profileBio").value.trim(),
+          avatar: currentSelectedAvatar,
+          namecardFrame: currentSelectedFrame,
+          coverImage: currentSelectedCover,
+        }),
+      });
+
+      if (res.user) {
+        session = { ...session, ...res.user };
+      }
+      toast("Đã lưu thẻ tên & trang trí!");
+      $("#editProfileModal").close();
+      hydrateServer();
+      if (currentViewingNamecardUserId && session && currentViewingNamecardUserId === session.id) {
+        openNamecard(session.id);
+      }
+    } catch (err) {
+      toast(err.message || "Không thể cập nhật thẻ tên.");
+    } finally {
+      setSubmitLoading(e, false);
+    }
+  };
+}
+
+// Submit Tab 2: Thông tin tài khoản (Bảo mật)
+$("#editProfileForm").onsubmit = async (e) => {
+  e.preventDefault();
+  setSubmitLoading(e, true);
+  try {
+    const res = await requestAPI("/api/me/profile", {
+      method: "PATCH",
+      body: JSON.stringify({
+        studentId: $("#profileStudentId").value.trim(),
+        realName: $("#profileRealName").value.trim(),
+        className: $("#profileClassName").value.trim(),
+      }),
+    });
+    if (res.user) {
+      session = { ...session, ...res.user };
+    }
+    toast("Đã lưu thông tin tài khoản bảo mật!");
+    $("#editProfileModal").close();
+    hydrateServer();
+  } catch (err) {
+    toast(err.message);
+  } finally {
+    setSubmitLoading(e, false);
+  }
 };
+
+// Hook nút "Chỉnh sửa hồ sơ" ở trang cá nhân
+if ($("#editProfile")) {
+  $("#editProfile").onclick = () => openEditProfileModal("namecard");
+}
 
 function openChangePasswordDialog() {
   if (!session) return;
-  switchProfileTab("password");
-  if ($("#currentPasswordInput")) $("#currentPasswordInput").value = "";
-  if ($("#newPasswordInput")) $("#newPasswordInput").value = "";
-  if ($("#confirmPasswordInput")) $("#confirmPasswordInput").value = "";
-  $("#editProfileModal").showModal();
+  openEditProfileModal("password");
   setTimeout(() => {
     if ($("#currentPasswordInput")) $("#currentPasswordInput").focus();
   }, 100);
@@ -3414,47 +3892,6 @@ if ($("#openChangePasswordBtn")) {
 if ($("#cardChangePasswordBtn")) {
   $("#cardChangePasswordBtn").onclick = openChangePasswordDialog;
 }
-
-function switchProfileTab(tabName) {
-  const isInfo = tabName === "info";
-  if ($("#profileTabInfoBtn")) $("#profileTabInfoBtn").classList.toggle("active", isInfo);
-  if ($("#profileTabPasswordBtn")) $("#profileTabPasswordBtn").classList.toggle("active", !isInfo);
-  if ($("#editProfileForm")) $("#editProfileForm").style.display = isInfo ? "block" : "none";
-  if ($("#changePasswordForm")) $("#changePasswordForm").style.display = isInfo ? "none" : "block";
-  if ($("#editProfileModalTitle")) {
-    $("#editProfileModalTitle").textContent = isInfo ? "Thiết lập tài khoản" : "Đổi mật khẩu";
-  }
-}
-
-if ($("#profileTabInfoBtn")) {
-  $("#profileTabInfoBtn").onclick = () => switchProfileTab("info");
-}
-if ($("#profileTabPasswordBtn")) {
-  $("#profileTabPasswordBtn").onclick = () => switchProfileTab("password");
-}
-
-$("#editProfileForm").onsubmit = async (e) => {
-  e.preventDefault();
-  setSubmitLoading(e, true);
-  try {
-    await requestAPI("/api/me/profile", {
-      method: "PATCH",
-      body: JSON.stringify({
-        displayName: $("#profileDisplayName").value.trim(),
-        studentId: $("#profileStudentId").value.trim(),
-        realName: $("#profileRealName").value.trim(),
-        className: $("#profileClassName").value.trim(),
-      }),
-    });
-    toast("Đã cập nhật hồ sơ!");
-    $("#editProfileModal").close();
-    hydrateServer();
-  } catch (err) {
-    toast(err.message);
-  } finally {
-    setSubmitLoading(e, false);
-  }
-};
 
 if ($("#changePasswordForm")) {
   $("#changePasswordForm").onsubmit = async (e) => {
@@ -3486,7 +3923,7 @@ if ($("#changePasswordForm")) {
       if ($("#currentPasswordInput")) $("#currentPasswordInput").value = "";
       if ($("#newPasswordInput")) $("#newPasswordInput").value = "";
       if ($("#confirmPasswordInput")) $("#confirmPasswordInput").value = "";
-      switchProfileTab("info");
+      switchProfileTab("namecard");
       $("#editProfileModal").close();
     } catch (err) {
       toast(err.message);
@@ -3495,6 +3932,19 @@ if ($("#changePasswordForm")) {
     }
   };
 }
+
+// Global click event to open Namecard on any avatar or user trigger
+document.addEventListener("click", (e) => {
+  const trigger = e.target.closest("[data-namecard-user-id]");
+  if (trigger) {
+    const uid = Number(trigger.getAttribute("data-namecard-user-id"));
+    if (uid && !isNaN(uid)) {
+      e.preventDefault();
+      e.stopPropagation();
+      openNamecard(uid);
+    }
+  }
+});
 
 window.promptChangeAvatar = async function() {
   const newAvatar = prompt("Bạn chỉ được đổi Avatar 1 lần duy nhất!\n\nHãy nhập 1 biểu tượng (Emoji) hoặc ký tự bạn muốn dùng làm Avatar:");
@@ -4814,10 +5264,10 @@ function renderCoStudyList(rawLearners = [], force = false) {
     return `
       <div class="co-study-item ${isSelfClass} ${cardThemeClass}" style="${cardInlineStyle}">
         <div class="co-study-header-row">
-          <span class="avatar avatar-sm ${avatarClass}">${escapeHTML(l.avatar || '🦊')}</span>
+          <span class="avatar avatar-sm ${avatarClass}" data-namecard-user-id="${l.userId}" style="cursor: pointer;" title="Xem thẻ tên">${escapeHTML(l.avatar || '🦊')}</span>
           <div class="co-study-info">
             <div class="co-study-name">
-              <span class="co-study-user-title ${nameClass}">${nameDisplay}</span> ${roleBadge}
+              <span class="co-study-user-title ${nameClass}" data-namecard-user-id="${l.userId}" style="cursor: pointer;" title="Xem thẻ tên">${nameDisplay}</span> ${roleBadge}
             </div>
             <div class="co-study-goal">🎯 ${escapeHTML(l.goal || 'Nghiên cứu khoa học')}</div>
           </div>
@@ -7960,7 +8410,7 @@ function renderLeaderboardUI(data) {
     const top2AvatarClass = getAvatarClass(top2.streakTier, false, top2.role);
     const top2NameClass = getNameClass(top2.streakTier);
     podiumHTML += `
-      <div class="podium-col rank-2">
+      <div class="podium-col rank-2" data-namecard-user-id="${top2.userId}" style="cursor: pointer;" title="Xem thẻ tên">
         <div class="podium-avatar-wrap">
           <span class="podium-crown silver">🥈</span>
           <div class="podium-avatar avatar ${top2AvatarClass}">${escapeHTML(top2.avatar || top2.initials || "U")}</div>
@@ -7980,7 +8430,7 @@ function renderLeaderboardUI(data) {
     const top1AvatarClass = getAvatarClass(top1.streakTier, false, top1.role);
     const top1NameClass = getNameClass(top1.streakTier);
     podiumHTML += `
-      <div class="podium-col rank-1">
+      <div class="podium-col rank-1" data-namecard-user-id="${top1.userId}" style="cursor: pointer;" title="Xem thẻ tên">
         <div class="podium-avatar-wrap">
           <span class="podium-crown gold">👑</span>
           <div class="podium-avatar rank-1-avatar avatar avatar-lg ${top1AvatarClass}">${escapeHTML(top1.avatar || top1.initials || "U")}</div>
@@ -7998,7 +8448,7 @@ function renderLeaderboardUI(data) {
     const top3AvatarClass = getAvatarClass(top3.streakTier, false, top3.role);
     const top3NameClass = getNameClass(top3.streakTier);
     podiumHTML += `
-      <div class="podium-col rank-3">
+      <div class="podium-col rank-3" data-namecard-user-id="${top3.userId}" style="cursor: pointer;" title="Xem thẻ tên">
         <div class="podium-avatar-wrap">
           <span class="podium-crown bronze">🥉</span>
           <div class="podium-avatar avatar ${top3AvatarClass}">${escapeHTML(top3.avatar || top3.initials || "U")}</div>
@@ -8024,7 +8474,7 @@ function renderLeaderboardUI(data) {
     const avatarClass = getAvatarClass(u.streakTier, false, u.role);
     const nameClass = getNameClass(u.streakTier);
     rowsHTML += `
-      <div class="comp-lb-row ${isCurrent ? "is-current-user" : ""}">
+      <div class="comp-lb-row ${isCurrent ? "is-current-user" : ""}" data-namecard-user-id="${u.userId}" style="cursor: pointer;" title="Xem thẻ tên">
         <span class="comp-lb-rank">#${u.rank}</span>
         <div class="comp-lb-user">
           <span class="avatar avatar-sm ${avatarClass}">${escapeHTML(u.avatar || u.initials || "U")}</span>
