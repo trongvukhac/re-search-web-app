@@ -1720,10 +1720,8 @@ async function api(request, response, url) {
         "Không tìm thấy tài khoản với email này. Vui lòng kiểm tra lại chính xác email sinh viên của bạn.",
       );
     }
-    // Hủy các yêu cầu pending trước đó của user này
-    db.prepare(
-      "UPDATE password_resets SET status='revoked' WHERE user_id=? AND status='pending'",
-    ).run(user.id);
+    // Hủy và xóa các yêu cầu trước đó của user này để không lưu mã rác
+    db.prepare("DELETE FROM password_resets WHERE user_id=?").run(user.id);
 
     // Sinh mã OTP 6 chữ số an toàn
     const code = crypto.randomInt(100000, 1000000).toString();
@@ -1741,7 +1739,7 @@ async function api(request, response, url) {
     return json(response, 200, {
       ok: true,
       message:
-        "Yêu cầu đã được tạo thành công! Mã xác thực 6 chữ số đã được gửi tới TA/Admin. Vui lòng liên hệ TA/Admin để nhận mã này.",
+        "Yêu cầu cấp mã thành công! Vui lòng liên hệ với TA/Admin để lấy mã xác thực 6 chữ số.",
       email: user.email,
     });
   }
@@ -1782,18 +1780,16 @@ async function api(request, response, url) {
       return error(
         response,
         400,
-        "Mã xác thực 6 chữ số không chính xác hoặc yêu cầu đã được sử dụng/hủy bỏ.",
+        "Mã xác thực không hợp lệ hoặc đã hết hạn/bị xóa. Vui lòng liên hệ với TA/Admin để lấy mã.",
       );
     }
 
     if (new Date(resetReq.expires_at).getTime() < Date.now()) {
-      db.prepare("UPDATE password_resets SET status='expired' WHERE id=?").run(
-        resetReq.id,
-      );
+      db.prepare("DELETE FROM password_resets WHERE id=?").run(resetReq.id);
       return error(
         response,
         400,
-        "Mã xác thực này đã hết hạn. Vui lòng tạo yêu cầu khôi phục mới.",
+        "Mã xác thực này đã hết hạn và đã bị xóa. Vui lòng liên hệ với TA/Admin để lấy mã mới.",
       );
     }
 
@@ -1802,10 +1798,8 @@ async function api(request, response, url) {
       "UPDATE users SET password_hash=?, updated_at=CURRENT_TIMESTAMP WHERE id=?",
     ).run(hashPassword(newPassword), resetReq.user_id);
 
-    // Đánh dấu mã đã sử dụng
-    db.prepare(
-      "UPDATE password_resets SET status='used', used_at=CURRENT_TIMESTAMP WHERE id=?",
-    ).run(resetReq.id);
+    // Lập tức xóa mã xác thực khỏi hệ thống ngay khi đã sử dụng thành công
+    db.prepare("DELETE FROM password_resets WHERE id=?").run(resetReq.id);
 
     // Xóa tất cả các phiên đăng nhập cũ để đảm bảo an toàn tuyệt đối
     db.prepare("DELETE FROM sessions WHERE user_id=?").run(resetReq.user_id);
@@ -3304,9 +3298,9 @@ async function api(request, response, url) {
         ? error(response, 403, "Chỉ TA/Admin mới có quyền này.")
         : undefined;
 
-    // Tự động chuyển các mã pending đã quá hạn sang 'expired'
+    // Tự động xóa các mã đã quá hạn hoặc không còn pending
     db.prepare(
-      "UPDATE password_resets SET status='expired' WHERE status='pending' AND datetime(expires_at) < datetime('now')",
+      "DELETE FROM password_resets WHERE datetime(expires_at) < datetime('now') OR status != 'pending'",
     ).run();
 
     const rows = db
@@ -3327,9 +3321,8 @@ async function api(request, response, url) {
           u.role
         FROM password_resets pr
         JOIN users u ON u.id = pr.user_id
-        ORDER BY 
-          CASE pr.status WHEN 'pending' THEN 0 ELSE 1 END,
-          pr.id DESC
+        WHERE pr.status = 'pending' AND datetime(pr.expires_at) >= datetime('now')
+        ORDER BY pr.id DESC
         LIMIT 100`,
       )
       .all();
@@ -3355,13 +3348,11 @@ async function api(request, response, url) {
     if (!requireCsrf(request, response, user)) return;
 
     const { id } = await readJSON(request);
-    db.prepare(
-      "UPDATE password_resets SET status='revoked' WHERE id=? AND status='pending'",
-    ).run(id);
+    db.prepare("DELETE FROM password_resets WHERE id=?").run(id);
 
     return json(response, 200, {
       ok: true,
-      message: "Đã hủy mã xác thực này thành công.",
+      message: "Đã hủy và xóa mã xác thực này thành công.",
     });
   }
 

@@ -2428,7 +2428,7 @@ if ($("#forgotRequestSubmitBtn")) {
         method: "POST",
         body: JSON.stringify({ email }),
       });
-      toast(data.message || "Đã gửi yêu cầu tới TA/Admin!");
+      toast(data.message || "Đã gửi yêu cầu! Vui lòng liên hệ với TA/Admin để lấy mã xác thực 6 chữ số.");
       if ($("#forgotStep2Email")) {
         $("#forgotStep2Email").value = data.email || email;
       }
@@ -2892,7 +2892,7 @@ async function loadAdminPasswordResets() {
         });
 
         const actions = isPending
-          ? `<button type="button" class="button button-outline button-small" style="padding: 3px 8px; font-size: 11px; color: #dc2626; border-color: #fca5a5;" onclick="revokeResetRequest(${r.id})">Hủy mã</button>`
+          ? `<button type="button" class="button button-outline button-small" style="padding: 3px 8px; font-size: 11px; color: #dc2626; border-color: #fca5a5;" onclick="revokeResetRequest(${r.id})">Hủy & Xóa mã</button>`
           : `<span style="color:var(--muted); font-size:12px;">—</span>`;
 
         return `<tr style="border-bottom: 1px solid var(--sage-2);">
@@ -2919,13 +2919,13 @@ window.copyResetCode = function(code) {
 };
 
 window.revokeResetRequest = async function(id) {
-  if (!confirm("Bạn có chắc chắn muốn hủy mã xác thực này không?")) return;
+  if (!confirm("Bạn có chắc chắn muốn hủy và xóa mã xác thực này không?")) return;
   try {
     await requestAPI("/api/admin/password-resets/revoke", {
       method: "POST",
       body: JSON.stringify({ id }),
     });
-    toast("Đã hủy mã xác thực.");
+    toast("Đã hủy và xóa mã xác thực.");
     loadAdminPasswordResets();
   } catch (err) {
     toast(err.message);

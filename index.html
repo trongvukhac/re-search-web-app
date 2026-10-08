@@ -16,7 +16,7 @@
     <script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-    <link rel="stylesheet" href="styles.css?v=56" />
+    <link rel="stylesheet" href="styles.css?v=57" />
   </head>
   <body>
     <dialog
@@ -1641,9 +1641,12 @@
 
         <!-- BƯỚC 1: Gửi yêu cầu -->
         <div id="forgotStep1">
-          <p style="font-size: 13.5px; color: var(--muted); line-height: 1.6; margin-bottom: 20px;">
-            Nhập email tài khoản của bạn để gửi yêu cầu đặt lại mật khẩu. Hệ thống sẽ cấp mã xác thực gồm 6 chữ số tới <strong>TA/Admin</strong> để đảm bảo an toàn.
+          <p style="font-size: 13.5px; color: var(--muted); line-height: 1.6; margin-bottom: 16px;">
+            Nhập email tài khoản của bạn để gửi yêu cầu đặt lại mật khẩu. Sau khi gửi, <strong>vui lòng liên hệ với TA/Admin để lấy mã xác thực 6 chữ số</strong>.
           </p>
+          <div style="background: #eaf4ee; border: 1px solid #cce5d6; padding: 11px 14px; border-radius: 8px; margin-bottom: 18px; font-size: 12.5px; color: #1e4d34; line-height: 1.5;">
+            📢 <strong>Lưu ý:</strong> Vui lòng liên hệ với <strong>TA hoặc Admin</strong> để lấy mã. Mã sẽ <strong>lập tức bị xóa</strong> ngay khi sử dụng xong, khi hủy mã hoặc khi hết hạn để đảm bảo an toàn tài khoản.
+          </div>
           <div style="margin-bottom: 18px;">
             <label for="forgotEmail" style="display: block; font-weight: 700; margin-bottom: 8px; font-size: 12px; color: #2f4d3e; text-transform: uppercase; letter-spacing: 0.5px;">Địa chỉ Email của bạn:</label>
             <input id="forgotEmail" type="email" required autocomplete="email" placeholder="Nhập email sinh viên của bạn" style="display: block; width: 100%; box-sizing: border-box; padding: 11px 13px; font-size: 14px; border: 1px solid #c9d6cb; border-radius: 8px; background: #fff;" />
@@ -1665,9 +1668,9 @@
 
         <!-- BƯỚC 2: Nhập OTP 6 số và Mật khẩu mới -->
         <div id="forgotStep2" style="display: none;">
-          <div style="background: #eaf4ee; border: 1px solid #cce5d6; padding: 12px 14px; border-radius: 8px; margin-bottom: 18px;">
-            <p style="font-size: 12.5px; color: #1e4d34; margin: 0; line-height: 1.6;">
-              ℹ️ <strong>Yêu cầu đã được ghi nhận!</strong> Vui lòng liên hệ <strong>TA/Admin</strong> phụ trách để nhận <strong>Mã xác thực 6 chữ số</strong>, sau đó điền thông tin bên dưới:
+          <div style="background: #eaf4ee; border: 1px solid #cce5d6; padding: 13px 15px; border-radius: 8px; margin-bottom: 18px;">
+            <p style="font-size: 13px; color: #1e4d34; margin: 0; line-height: 1.6;">
+              ℹ️ <strong>Yêu cầu đã được ghi nhận!</strong> Vui lòng <strong>liên hệ trực tiếp với TA hoặc Admin</strong> để nhận <strong>Mã xác thực 6 chữ số</strong>. Mã sẽ <strong>lập tức bị xóa</strong> ngay sau khi bạn đổi mật khẩu xong hoặc khi hết hạn.
             </p>
           </div>
           <div style="margin-bottom: 16px;">
@@ -2562,6 +2565,6 @@
       </div>
     </dialog>
 
-    <script src="app.js?v=65" defer></script>
+    <script src="app.js?v=66" defer></script>
   </body>
 </html>
