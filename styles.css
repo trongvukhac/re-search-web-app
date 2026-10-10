@@ -10700,10 +10700,11 @@ dialog.modal.namecard-modal {
   pointer-events: none;
   background: center / 100% 100% no-repeat;
   filter: drop-shadow(0 7px 11px rgba(15, 23, 42, 0.18));
-  opacity: 0;
+  opacity: 0; /* TẠMẨN: kích cỡ khung cần được căn chỉnh lại */
   transition: opacity 180ms ease;
 }
 
+/* === TẠMẨN: Toàn bộ khung namecard tạm thời bị ẩn để căn chỉnh kích cỡ ===
 .namecard-frame-layer[data-frame] { opacity: 1; }
 .namecard-frame-layer[data-frame="default"] { background-image: url("frames/v2/default.png"); opacity: .68; }
 .namecard-frame-layer[data-frame="leaves"] { background-image: url("frames/v2/leaves.png"); }
@@ -10711,6 +10712,8 @@ dialog.modal.namecard-modal {
 .namecard-frame-layer[data-frame="sakura"] { background-image: url("frames/v2/sakura.png"); }
 .namecard-frame-layer[data-frame="ice"] { background-image: url("frames/v2/ice.png"); }
 .namecard-frame-layer[data-frame="gold"] { background-image: url("frames/v2/gold.png"); }
+=== HẾT TẠMẨN === */
+
 
 .frame-choice-preview {
   width: 100%;
