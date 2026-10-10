@@ -3137,14 +3137,18 @@ if ($("#refreshAdminResetsBtn")) {
 
 async function loadAdminMembers() {
   const data = await requestAPI("/api/admin/users");
+  const NA = `<span style="color: var(--muted); font-style: italic; font-size: 12px;">Chưa cập nhật</span>`;
   $("#adminUserList").innerHTML = data.users
     .map(
       (u) => `
     <tr style="border-bottom: 1px solid var(--sage-2);">
-      <td style="padding: 12px 8px;"><strong class="${getNameClass(u.streakTier)}">${escapeHTML(u.displayName)}</strong><br><small>${escapeHTML(u.email)}</small></td>
+      <td style="padding: 12px 8px; min-width: 150px;"><strong class="${getNameClass(u.streakTier)}">${escapeHTML(u.displayName)}</strong><br><small style="color:var(--muted)">${escapeHTML(u.email)}</small></td>
+      <td style="padding: 12px 8px; font-family: monospace; font-size: 13px;">${u.studentId ? escapeHTML(u.studentId) : NA}</td>
+      <td style="padding: 12px 8px; font-size: 13px;">${u.realName ? escapeHTML(u.realName) : NA}</td>
+      <td style="padding: 12px 8px; font-size: 13px;">${u.className ? escapeHTML(u.className) : NA}</td>
       <td style="padding: 12px 8px;">${getRoleDisplay(u.role)}</td>
       <td style="padding: 12px 8px;"><strong style="color: var(--primary)">${u.totalPoints || 0}</strong></td>
-      <td style="padding: 12px 8px; display: flex; gap: 8px;">
+      <td style="padding: 12px 8px; display: flex; gap: 6px; flex-wrap: wrap;">
         <button class="button button-outline" style="padding: 4px 8px; font-size: 12px;" onclick="changeUserRole(${u.id}, '${u.role}')">Đổi quyền</button>
         <button class="button button-outline" style="padding: 4px 8px; font-size: 12px;" onclick="adjustUserPoints(${u.id})">Cộng/Trừ điểm</button>
       </td>

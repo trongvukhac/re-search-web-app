@@ -3327,7 +3327,7 @@ async function api(request, response, url) {
         : undefined;
     const users = db
       .prepare(
-        "SELECT u.id, u.email, u.display_name, u.role, u.created_at, coalesce(sum(c.points), 0) as totalPoints FROM users u LEFT JOIN contribution_events c ON u.id = c.user_id GROUP BY u.id ORDER BY u.created_at DESC",
+        "SELECT u.id, u.email, u.display_name, u.role, u.created_at, u.student_id, u.real_name, u.class_name, u.streak_tier, coalesce(sum(c.points), 0) as totalPoints FROM users u LEFT JOIN contribution_events c ON u.id = c.user_id GROUP BY u.id ORDER BY u.created_at DESC",
       )
       .all()
       .map((u) => ({
@@ -3337,6 +3337,10 @@ async function api(request, response, url) {
         role: u.role,
         createdAt: u.created_at.replace(' ', 'T') + 'Z',
         totalPoints: u.totalPoints,
+        studentId: u.student_id || null,
+        realName: u.real_name || null,
+        className: u.class_name || null,
+        streakTier: u.streak_tier || 0,
       }));
     return json(response, 200, { users });
   }
