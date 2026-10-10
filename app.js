@@ -21,8 +21,20 @@ function canAccessStudyLounge(user = (session || (typeof window !== "undefined" 
 }
 window.canAccessStudyLounge = canAccessStudyLounge;
 
+/**
+ * Kiểm tra xem email có phải định dạng VLU không.
+ * Admin/TA luôn được coi là VLU.
+ */
+function isVLUEmail(user = (session || (typeof window !== "undefined" && window.session))) {
+  if (!user) return false;
+  if (user.role === "admin" || user.role === "ta") return true;
+  const email = (user.email || "").toLowerCase();
+  return email.endsWith("@vanlanguni.vn") || email.endsWith("@vlu.edu.vn");
+}
+window.isVLUEmail = isVLUEmail;
+
 function canAccessArena(user = (session || (typeof window !== "undefined" && window.session))) {
-  return true;
+  return isVLUEmail(user);
 }
 window.canAccessArena = canAccessArena;
 
@@ -598,6 +610,25 @@ function applySession(user) {
     if (arenaMain) arenaMain.style.display = "none";
   }
 
+  // --- Giới hạn tính năng cho email không phải VLU ---
+  const isVLU = isVLUEmail(user);
+
+  // Tab "Top đóng góp": ẩn nếu không phải VLU; tự động chuyển về streak
+  const tabContrib = $("#tabTopContrib");
+  if (tabContrib) {
+    tabContrib.style.display = isVLU ? "" : "none";
+  }
+  if (!isVLU && currentLeaderboardTab === "contributions") {
+    currentLeaderboardTab = "streak";
+    $("#tabTopStreak")?.classList.add("active");
+  }
+
+  // Nút "Đề xuất tài liệu": ẩn nếu không phải VLU
+  const shareDocBtn = $("#shareDocument");
+  if (shareDocBtn) {
+    shareDocBtn.style.display = isVLU ? "" : "none";
+  }
+
   if (typeof updateStudyStreakPerks === "function") {
     updateStudyStreakPerks();
   }
@@ -613,6 +644,11 @@ let currentLeaderboardTab = "contributions";
 let cachedLeaderboardData = { leaderboard: [], streakLeaderboard: [] };
 
 window.switchLeaderboardTab = function(tab) {
+  // Chặn tab "Top đóng góp" với người dùng không phải VLU
+  if (tab === "contributions" && !isVLUEmail()) {
+    toast("⚠️ Tính năng này chỉ dành cho sinh viên Văn Lang (email @vanlanguni.vn hoặc @vlu.edu.vn).");
+    return;
+  }
   currentLeaderboardTab = tab;
   $("#tabTopContrib")?.classList.toggle("active", tab === "contributions");
   $("#tabTopStreak")?.classList.toggle("active", tab === "streak");
@@ -1285,6 +1321,7 @@ function updateResponsiveAsidePlacement() {
 window.addEventListener("resize", updateResponsiveAsidePlacement);
 
 let currentActiveRoute = null;
+let savedForumScrollY = 0; // Lưu vị trí cuộn của Diễn đàn khi xem bài viết
 
 function go(route, scrollToTop = true) {
   if (route === "study" && !canAccessStudyLounge()) {
@@ -1355,7 +1392,18 @@ function go(route, scrollToTop = true) {
       renderLeaderboard();
     }
   }
-  if (route === "forum") renderPosts();
+  if (route === "forum") {
+    renderPosts();
+    // Khôi phục vị trí cuộn khi quay về Diễn đàn từ bài viết
+    if (savedForumScrollY > 0) {
+      const scrollTarget = savedForumScrollY;
+      // Dùng setTimeout để chờ renderPosts() dựng xong DOM
+      setTimeout(() => {
+        window.scrollTo({ top: scrollTarget, behavior: "instant" });
+        savedForumScrollY = 0;
+      }, 50);
+    }
+  }
   if (route === "documents") renderDocuments();
   if (route === "study") onEnterStudyLounge();
   else onLeaveStudyLounge();
@@ -2022,6 +2070,12 @@ if (docViewerModalEl) {
 
 async function openDetail(id, updateHash = true) {
   window.currentDetailPostId = id;
+
+  // Lưu vị trí cuộn hiện tại của Diễn đàn trước khi mở bài viết
+  if (currentActiveRoute === "forum" || currentActiveRoute === null) {
+    savedForumScrollY = window.scrollY || 0;
+  }
+
   if (updateHash && location.hash !== `#post-${id}`) {
     history.pushState(null, "", `#post-${id}`);
   }
@@ -2054,7 +2108,7 @@ async function openDetail(id, updateHash = true) {
     backBtn.onclick = () => {
       stopPostReadTracking();
       if (typeof showMobileNav === "function") showMobileNav();
-      go("forum");
+      go("forum", false); // false = không cuộn về đầu trang
     };
   }
 
@@ -2854,6 +2908,11 @@ $$(".tab").forEach((tab) =>
 $("#shareDocument").onclick = () => {
   if (serverMode && !session) {
     openAuth();
+    return;
+  }
+  // Kiểm tra quyền VLU
+  if (!isVLUEmail()) {
+    toast("⚠️ Tính năng đề xuất tài liệu chỉ dành cho sinh viên Văn Lang (email @vanlanguni.vn hoặc @vlu.edu.vn).");
     return;
   }
   const modal = $("#documentModal");
