@@ -399,6 +399,159 @@ window.closeStreakJourneyModal = function() {
   if (modal) modal.close();
 };
 
+let currentShieldLogs = [];
+let shieldHistoryFilter = "all";
+
+window.openStreakShieldModal = async function() {
+  const modal = document.getElementById("streakShieldModal");
+  if (!modal) return;
+
+  if (!session) {
+    openAuth();
+    return;
+  }
+
+  modal.showModal();
+
+  // Reset filter to 'all'
+  shieldHistoryFilter = "all";
+  $$(".shield-tab-btn").forEach(btn => {
+    btn.classList.toggle("active", btn.dataset.shieldFilter === "all");
+  });
+
+  const listEl = document.getElementById("shieldHistoryList");
+  if (listEl) {
+    listEl.innerHTML = `<div class="shield-history-loading" style="text-align: center; padding: 20px; color: var(--muted); font-size: 13px;">Đang tải dữ liệu khiên...</div>`;
+  }
+
+  try {
+    const res = await requestAPI("/api/me/shields");
+    if (!res) throw new Error("Không thể tải thông tin khiên.");
+
+    const count = Number(res.shields) || 0;
+    const max = Number(res.maxShields) || 3;
+    currentShieldLogs = Array.isArray(res.logs) ? res.logs : [];
+
+    // Cập nhật số khiên trên modal
+    const countEl = document.getElementById("shieldModalCount");
+    if (countEl) countEl.textContent = count;
+
+    // Cập nhật số khiên trên badge trang chủ và hành trình
+    const b1 = document.getElementById("streakShieldsCount");
+    const b2 = document.getElementById("journeyShieldsCount");
+    if (b1) b1.textContent = count;
+    if (b2) b2.textContent = count;
+
+    // Render 3 slots khiên
+    const slotsEl = document.getElementById("shieldModalSlots");
+    if (slotsEl) {
+      let slotsHTML = "";
+      for (let i = 1; i <= max; i++) {
+        const isFilled = i <= count;
+        slotsHTML += `<div class="shield-slot ${isFilled ? 'filled' : 'empty'}" title="${isFilled ? `Khiên số ${i} (Đang kích hoạt)` : `Ô khiên ${i} (Trống)`}">${isFilled ? '🛡️' : '➕'}</div>`;
+      }
+      slotsEl.innerHTML = slotsHTML;
+    }
+
+    // Status pill
+    const statusDot = document.getElementById("shieldModalStatusDot");
+    const statusText = document.getElementById("shieldModalStatusText");
+    if (statusDot && statusText) {
+      if (count > 0) {
+        statusDot.textContent = "🟢";
+        statusText.textContent = `Đang sẵn sàng tự động giữ chuỗi: Bạn có ${count} khiên bảo vệ phòng khi bận rộn.`;
+      } else {
+        statusDot.textContent = "⚪";
+        statusText.textContent = "Đang cạn khiên: Hãy duy trì hoạt động hoặc tham gia Đấu trường Arena để nhận thêm!";
+      }
+    }
+
+    renderShieldHistoryUI(currentShieldLogs, shieldHistoryFilter);
+  } catch (err) {
+    if (listEl) {
+      listEl.innerHTML = `<div class="shield-history-empty" style="color: #ef4444;">Không thể tải lịch sử khiên. Vui lòng thử lại sau.</div>`;
+    }
+  }
+};
+
+window.closeStreakShieldModal = function() {
+  const modal = document.getElementById("streakShieldModal");
+  if (modal) modal.close();
+};
+
+window.filterShieldHistory = function(filterType) {
+  shieldHistoryFilter = filterType;
+  $$(".shield-tab-btn").forEach(btn => {
+    btn.classList.toggle("active", btn.dataset.shieldFilter === filterType);
+  });
+  renderShieldHistoryUI(currentShieldLogs, shieldHistoryFilter);
+};
+
+function renderShieldHistoryUI(logs = [], filterType = "all") {
+  const listEl = document.getElementById("shieldHistoryList");
+  if (!listEl) return;
+
+  let filtered = logs;
+  if (filterType === "add") {
+    filtered = logs.filter(l => l.changeType === "add");
+  } else if (filterType === "use") {
+    filtered = logs.filter(l => l.changeType === "use");
+  }
+
+  if (!filtered.length) {
+    const emptyMsg = filterType === "add" 
+      ? "Chưa có lịch sử được cộng khiên nào." 
+      : (filterType === "use" ? "Chưa có lịch sử tiêu hao khiên nào." : "Chưa có biến động khiên nào được ghi nhận.");
+    listEl.innerHTML = `<div class="shield-history-empty">${emptyMsg}</div>`;
+    return;
+  }
+
+  listEl.innerHTML = filtered.map(item => {
+    const isAdd = item.changeType === "add";
+    const deltaText = isAdd ? `+${item.amount}` : `-${item.amount}`;
+    const badgeClass = isAdd ? "add" : "use";
+    const itemClass = isAdd ? "is-add" : "is-use";
+    const badgeIcon = isAdd ? "🛡️+" : "🛡️-";
+
+    let timeStr = "";
+    if (item.createdAt) {
+      try {
+        const d = new Date(item.createdAt.includes("Z") || item.createdAt.includes("T") ? item.createdAt : item.createdAt.replace(" ", "T") + "Z");
+        if (!isNaN(d.getTime())) {
+          timeStr = d.toLocaleString("vi-VN", {
+            timeZone: "Asia/Ho_Chi_Minh",
+            hour: "2-digit",
+            minute: "2-digit",
+            day: "2-digit",
+            month: "2-digit",
+            year: "numeric"
+          });
+        } else {
+          timeStr = item.createdAt;
+        }
+      } catch (e) {
+        timeStr = item.createdAt;
+      }
+    }
+
+    return `
+      <div class="shield-log-item ${itemClass}">
+        <div class="shield-log-left">
+          <div class="shield-log-badge ${badgeClass}">${badgeIcon}</div>
+          <div class="shield-log-info">
+            <span class="shield-log-reason" title="${escapeHTML(item.reason)}">${escapeHTML(item.reason)}</span>
+            <span class="shield-log-time">🗓️ ${escapeHTML(timeStr)}</span>
+          </div>
+        </div>
+        <div class="shield-log-right">
+          <span class="shield-log-delta ${badgeClass}">${deltaText} khiên</span>
+          <span class="shield-log-balance">Số dư: ${item.balanceAfter}/3</span>
+        </div>
+      </div>
+    `;
+  }).join("");
+}
+
 function triggerMilestoneCelebration(streak, tier) {
   if (typeof currentRoute !== "undefined" && currentRoute !== "home") return;
   if (document.querySelector("dialog[open]")) return;
@@ -550,8 +703,17 @@ function applySession(user) {
 
   const changeBtn = $("#changeAvatarBtn");
   if (changeBtn) {
-    if (user && !user.avatarChanged) {
+    if (user) {
       changeBtn.style.display = "block";
+      if (user.canChangeAvatar === false) {
+        changeBtn.disabled = true;
+        changeBtn.textContent = `${user.avatarRemainingDays || 7}d`;
+        changeBtn.title = `Bạn chỉ có thể đổi lại avatar sau ${user.avatarRemainingDays || 7} ngày`;
+      } else {
+        changeBtn.disabled = false;
+        changeBtn.textContent = "Đổi";
+        changeBtn.title = "Đổi icon avatar (1 lần mỗi 7 ngày)";
+      }
     } else {
       changeBtn.style.display = "none";
     }
@@ -824,6 +986,10 @@ async function hydrateServer() {
           const shieldsCount = $("#streakShieldsCount");
           if (shieldsCount) {
             shieldsCount.textContent = profileData.shields || 0;
+          }
+          const journeyShieldsCount = $("#journeyShieldsCount");
+          if (journeyShieldsCount) {
+            journeyShieldsCount.textContent = profileData.shields || 0;
           }
 
           const shieldNotice = $("#streakShieldNotice");
@@ -3561,26 +3727,30 @@ const AVATAR_OPTIONS = [
 
 const FRAME_OPTIONS = [
   { id: "default", name: "Mặc định", minDays: 0 },
-  { id: "leaves", name: "Rừng tri thức", minDays: 7 },
-  { id: "stars", name: "Sao trời", minDays: 14 },
-  { id: "sakura", name: "Hoa đào", minDays: 21 },
-  { id: "ice", name: "Băng tuyết", minDays: 30 },
-  { id: "gold", name: "Hoàng kim", minDays: 50 },
+  { id: "leaves", name: "Khu rừng tri thức", minDays: 3 },
+  { id: "sakura", name: "Mùa anh đào nở", minDays: 7 },
+  { id: "ice", name: "Vương quốc mùa đông", minDays: 14 },
+  { id: "stars", name: "Tinh tú sao trời", minDays: 30 },
+  { id: "gold", name: "Kỷ nguyên hoàng kim", minDays: 50 },
 ];
 
 const COVER_PRESETS = [
-  { id: "default", name: "Xanh đại dương", type: "gradient", value: "linear-gradient(135deg, #1e3a8a 0%, #3b82f6 50%, #93c5fd 100%)" },
-  { id: "emerald_gradient", name: "Ngọc lục bảo", type: "gradient", value: "linear-gradient(135deg, #064e3b 0%, #059669 50%, #6ee7b7 100%)" },
-  { id: "sunset_gradient", name: "Hoàng hôn tím", type: "gradient", value: "linear-gradient(135deg, #4c0519 0%, #db2777 50%, #fcd34d 100%)" },
-  { id: "aurora_gradient", name: "Cực quang", type: "gradient", value: "linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #4338ca 100%)" },
-  { id: "royal_gradient", name: "Hoàng gia", type: "gradient", value: "linear-gradient(135deg, #3b0764 0%, #7c3aed 50%, #c084fc 100%)" },
-  { id: "sakura_gradient", name: "Hoa anh đào", type: "gradient", value: "linear-gradient(135deg, #831843 0%, #f43f5e 50%, #fbcfe8 100%)" },
-  { id: "color:#0f172a", name: "Đêm huyền bí", type: "color", value: "#0f172a" },
-  { id: "color:#334155", name: "Xám đá Slate", type: "color", value: "#334155" },
-  { id: "color:#064e3b", name: "Xanh rừng sâu", type: "color", value: "#064e3b" },
-  { id: "color:#4c0519", name: "Đỏ Ruby", type: "color", value: "#4c0519" },
-  { id: "color:#3b0764", name: "Tím thạch anh", type: "color", value: "#3b0764" },
-  { id: "color:#18181b", name: "Đen tuyền", type: "color", value: "#18181b" },
+  // 5 ảnh bìa Namecard độc quyền theo chuỗi
+  { id: "khu_rung_tri_thuc", name: "Khu rừng tri thức", type: "image", value: "covers/khu-rung-tri-thuc.png", minDays: 3 },
+  { id: "mua_anh_dao_no", name: "Mùa anh đào nở", type: "image", value: "covers/mua-anh-dao-no.png", minDays: 7 },
+  { id: "vuong_quoc_mua_dong", name: "Vương quốc mùa đông", type: "image", value: "covers/vuong-quoc-mua-dong.png", minDays: 14 },
+  { id: "tinh_tu_sao_troi", name: "Tinh tú sao trời", type: "image", value: "covers/tinh-tu-sao-troi.png", minDays: 30 },
+  { id: "ky_nguyen_hoang_kim", name: "Kỷ nguyên hoàng kim", type: "image", value: "covers/ky-nguyen-hoang-kim.png", minDays: 50 },
+  // Màu sắc và dải chuyển màu có sẵn
+  { id: "default", name: "Xanh đại dương", type: "gradient", value: "linear-gradient(135deg, #1e3a8a 0%, #3b82f6 50%, #93c5fd 100%)", minDays: 0 },
+  { id: "emerald_gradient", name: "Ngọc lục bảo", type: "gradient", value: "linear-gradient(135deg, #064e3b 0%, #059669 50%, #6ee7b7 100%)", minDays: 0 },
+  { id: "sunset_gradient", name: "Hoàng hôn tím", type: "gradient", value: "linear-gradient(135deg, #4c0519 0%, #db2777 50%, #fcd34d 100%)", minDays: 0 },
+  { id: "aurora_gradient", name: "Cực quang", type: "gradient", value: "linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #4338ca 100%)", minDays: 0 },
+  { id: "royal_gradient", name: "Hoàng gia", type: "gradient", value: "linear-gradient(135deg, #3b0764 0%, #7c3aed 50%, #c084fc 100%)", minDays: 0 },
+  { id: "color:#0f172a", name: "Đêm huyền bí", type: "color", value: "#0f172a", minDays: 0 },
+  { id: "color:#334155", name: "Xám đá Slate", type: "color", value: "#334155", minDays: 0 },
+  { id: "color:#064e3b", name: "Xanh rừng sâu", type: "color", value: "#064e3b", minDays: 0 },
+  { id: "color:#18181b", name: "Đen tuyền", type: "color", value: "#18181b", minDays: 0 },
 ];
 
 window.openNamecard = async function(userId) {
@@ -3653,7 +3823,11 @@ window.openNamecard = async function(userId) {
     } else {
       const foundPreset = COVER_PRESETS.find(p => p.id === coverVal);
       if (foundPreset) {
-        coverEl.style.background = foundPreset.value;
+        if (foundPreset.type === "image") {
+          coverEl.style.background = `url("${foundPreset.value}") center / cover no-repeat`;
+        } else {
+          coverEl.style.background = foundPreset.value;
+        }
       } else {
         coverEl.style.background = "linear-gradient(135deg, #1e3a8a 0%, #3b82f6 50%, #93c5fd 100%)";
       }
@@ -3726,9 +3900,11 @@ window.openFullCoverViewer = function() {
   const bannerEl = $("#fullCoverViewerBanner");
   if (!modal) return;
 
-  if (coverVal.startsWith("data:image/") || coverVal.startsWith("http")) {
+  const foundPreset = COVER_PRESETS.find(p => p.id === coverVal);
+
+  if (coverVal.startsWith("data:image/") || coverVal.startsWith("http") || (foundPreset && foundPreset.type === "image")) {
     if (imgEl) {
-      imgEl.src = coverVal;
+      imgEl.src = (foundPreset && foundPreset.type === "image") ? foundPreset.value : coverVal;
       imgEl.style.display = "block";
     }
     if (bannerEl) bannerEl.style.display = "none";
@@ -3739,7 +3915,6 @@ window.openFullCoverViewer = function() {
       if (coverVal.startsWith("color:")) {
         bannerEl.style.background = coverVal.replace("color:", "");
       } else {
-        const foundPreset = COVER_PRESETS.find(p => p.id === coverVal);
         bannerEl.style.background = foundPreset ? foundPreset.value : "linear-gradient(135deg, #1e3a8a 0%, #3b82f6 50%, #93c5fd 100%)";
       }
     }
@@ -3796,18 +3971,21 @@ window.openEditNamecardModal = function(section = "all") {
   }
 
   // Populate Namecard values
+  // Populate Namecard values
   if ($("#namecardDisplayNameInput")) $("#namecardDisplayNameInput").value = session.displayName || "";
+  currentSelectedAvatar = session.initials || session.avatar || "🌱";
   currentSelectedFrame = FRAME_OPTIONS.some(frame => frame.id === session.namecardFrame)
     ? session.namecardFrame
     : "default";
   currentSelectedCover = session.coverImage || "default";
 
   // Render Pickers
+  renderAvatarPicker();
   renderFramePicker();
   renderCoverPicker();
 
   // Custom cover button status
-  const userStreak = session.streak || 0;
+  const userStreak = Math.max(Number(session.streak || 0), Number(session.maxStreak || 0));
   const isEligibleCover = userStreak >= 30 || session.role === "admin" || session.role === "ta";
   const uploadBtn = $("#btnUploadCustomCover");
   if (uploadBtn) {
@@ -3847,6 +4025,20 @@ window.openEditNamecardModal = function(section = "all") {
 function renderAvatarPicker() {
   const container = $("#profileAvatarPicker");
   if (!container) return;
+  const avatarNotice = $("#namecardAvatarNotice");
+  const canChange = session?.canChangeAvatar !== false;
+  if (avatarNotice) {
+    if (canChange) {
+      avatarNotice.textContent = "Có thể đổi (1 lần mỗi 7 ngày)";
+      avatarNotice.style.color = "#15803d";
+      avatarNotice.style.fontWeight = "600";
+    } else {
+      avatarNotice.textContent = `Chờ ${session?.avatarRemainingDays || 7} ngày để đổi lại`;
+      avatarNotice.style.color = "#b91c1c";
+      avatarNotice.style.fontWeight = "600";
+    }
+  }
+
   container.innerHTML = AVATAR_OPTIONS.map(emoji => `
     <button type="button" class="avatar-choice-btn ${emoji === currentSelectedAvatar ? 'active' : ''}" data-emoji="${emoji}">
       ${emoji}
@@ -3858,14 +4050,30 @@ function renderAvatarPicker() {
       container.querySelectorAll(".avatar-choice-btn").forEach(b => b.classList.remove("active"));
       btn.classList.add("active");
       currentSelectedAvatar = btn.dataset.emoji;
+      if ($("#namecardCustomAvatarInput")) $("#namecardCustomAvatarInput").value = "";
     };
   });
+
+  const customBtn = $("#applyCustomAvatarBtn");
+  const customInput = $("#namecardCustomAvatarInput");
+  if (customBtn && customInput) {
+    customBtn.onclick = () => {
+      const val = customInput.value.trim();
+      if (!val) {
+        toast("Vui lòng nhập icon hoặc emoji.");
+        return;
+      }
+      currentSelectedAvatar = val;
+      container.querySelectorAll(".avatar-choice-btn").forEach(b => b.classList.remove("active"));
+      toast(`Đã chọn biểu tượng "${val}".`);
+    };
+  }
 }
 
 function renderFramePicker() {
   const container = $("#profileFramePicker");
   if (!container) return;
-  const longestStreak = Number(session?.maxStreak || session?.streak || 0);
+  const longestStreak = Math.max(Number(session?.maxStreak || 0), Number(session?.streak || 0));
   const isPrivileged = session?.role === "admin" || session?.role === "ta";
   const frameNotice = $("#namecardFrameNotice");
   if (frameNotice) {
@@ -3896,9 +4104,9 @@ function renderFramePicker() {
         toast(`Khung này mở khóa khi bạn đạt chuỗi ${FRAME_OPTIONS.find(frame => frame.id === item.dataset.frameId)?.minDays}+ ngày.`);
         return;
       }
-        container.querySelectorAll(".frame-choice-item").forEach(i => i.classList.remove("active"));
-        item.classList.add("active");
-        currentSelectedFrame = item.dataset.frameId;
+      container.querySelectorAll(".frame-choice-item").forEach(i => i.classList.remove("active"));
+      item.classList.add("active");
+      currentSelectedFrame = item.dataset.frameId;
     };
   });
 }
@@ -3906,24 +4114,35 @@ function renderFramePicker() {
 function renderCoverPicker() {
   const container = $("#profileCoverPicker");
   if (!container) return;
+  const longestStreak = Math.max(Number(session?.maxStreak || 0), Number(session?.streak || 0));
+  const isPrivileged = session?.role === "admin" || session?.role === "ta";
 
   container.innerHTML = COVER_PRESETS.map(p => {
+    const isUnlocked = isPrivileged || longestStreak >= (p.minDays || 0);
     const isActive = p.id === currentSelectedCover;
     let previewStyle = "";
     if (p.type === "image") previewStyle = `background: url('${p.value}') center / cover no-repeat;`;
     else if (p.type === "gradient") previewStyle = `background: ${p.value};`;
     else previewStyle = `background: ${p.value};`;
 
+    const lockTooltip = isUnlocked ? p.name : `Cần chuỗi ${p.minDays}+ ngày`;
+
     return `
-      <div class="cover-choice-item ${isActive ? 'active' : ''}" data-cover-id="${p.id}">
+      <div class="cover-choice-item ${isActive ? 'active' : ''} ${isUnlocked ? '' : 'locked'}" data-cover-id="${p.id}" title="${lockTooltip}">
         <div class="choice-preview-box" style="${previewStyle}"></div>
         <span class="choice-label">${p.name}</span>
+        ${isUnlocked ? (p.minDays ? `<span class="choice-unlock-badge">${p.minDays} ngày</span>` : '') : `<span class="choice-lock-badge" title="Cần chuỗi ${p.minDays}+ ngày">🔒 ${p.minDays}</span>`}
       </div>
     `;
   }).join("");
 
   container.querySelectorAll(".cover-choice-item").forEach(item => {
     item.onclick = () => {
+      if (item.classList.contains("locked")) {
+        const preset = COVER_PRESETS.find(p => p.id === item.dataset.coverId);
+        toast(`Ảnh bìa này mở khóa khi bạn đạt chuỗi ${preset?.minDays || 0}+ ngày.`);
+        return;
+      }
       container.querySelectorAll(".cover-choice-item").forEach(i => i.classList.remove("active"));
       item.classList.add("active");
       currentSelectedCover = item.dataset.coverId;
@@ -4009,14 +4228,22 @@ if ($("#editNamecardForm")) {
     e.preventDefault();
     setSubmitLoading(e, true);
     try {
+      const payload = {
+        displayName: $("#namecardDisplayNameInput").value.trim(),
+        bio: $("#namecardBioInput").value.trim(),
+        namecardFrame: currentSelectedFrame,
+        coverImage: currentSelectedCover,
+      };
+
+      // Nếu người dùng chọn avatar mới
+      const userCurrentAvatar = session?.initials || session?.avatar || "🌱";
+      if (currentSelectedAvatar && currentSelectedAvatar !== userCurrentAvatar) {
+        payload.avatar = currentSelectedAvatar;
+      }
+
       const res = await requestAPI("/api/me/profile", {
         method: "PATCH",
-        body: JSON.stringify({
-          displayName: $("#namecardDisplayNameInput").value.trim(),
-          bio: $("#namecardBioInput").value.trim(),
-          namecardFrame: currentSelectedFrame,
-          coverImage: currentSelectedCover,
-        }),
+        body: JSON.stringify(payload),
       });
 
       if (res.user) {
@@ -4186,14 +4413,14 @@ document.addEventListener("click", (e) => {
 }, true);
 
 window.promptChangeAvatar = async function() {
-  const newAvatar = prompt("Bạn chỉ được đổi Avatar 1 lần duy nhất!\n\nHãy nhập 1 biểu tượng (Emoji) hoặc ký tự bạn muốn dùng làm Avatar:");
+  const newAvatar = prompt("Đổi Avatar (1 lần mỗi 7 ngày):\n\nHãy nhập 1 biểu tượng (Emoji) hoặc ký tự bạn muốn dùng làm Avatar:");
   if (!newAvatar) return;
   const trimmed = newAvatar.trim();
   if (trimmed.length === 0 || trimmed.length > 8) {
     toast("Avatar không hợp lệ (hãy chọn 1 icon ngắn).");
     return;
   }
-  const confirmChange = confirm(`Bạn có chắc chắn muốn dùng "${trimmed}" làm Avatar vĩnh viễn không?`);
+  const confirmChange = confirm(`Bạn có chắc chắn muốn dùng "${trimmed}" làm Avatar không? (Sau khi đổi cần chờ 7 ngày để đổi lại)`);
   if (!confirmChange) return;
   
   try {

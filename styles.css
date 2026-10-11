@@ -999,21 +999,29 @@ div.user-name-tier-5,
 .streak-shield-badge {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  background: rgba(255, 255, 255, 0.14);
-  padding: 3px 8px;
+  gap: 5px;
+  background: rgba(255, 255, 255, 0.16);
+  padding: 4px 10px;
   border-radius: 12px;
   font-size: 11px;
   font-weight: 700;
   color: #fff;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.28);
   white-space: nowrap;
   backdrop-filter: blur(4px);
-  transition: all 0.2s ease;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+  user-select: none;
+  font-family: inherit;
 }
 .streak-shield-badge:hover {
-  background: rgba(255, 255, 255, 0.24);
-  transform: translateY(-1px);
+  background: rgba(255, 255, 255, 0.28);
+  border-color: rgba(255, 255, 255, 0.5);
+  transform: translateY(-1.5px) scale(1.02);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+.streak-shield-badge:active {
+  transform: translateY(0) scale(0.98);
 }
 .streak-shield-notice {
   background: rgba(255, 255, 255, 0.15);
@@ -1307,6 +1315,389 @@ div.user-name-tier-5,
     padding: 16px 18px;
   }
 }
+
+/* Journey Shield Pill in Modal Header */
+.journey-shield-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(255, 255, 255, 0.16);
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  padding: 5px 11px;
+  border-radius: 20px;
+  color: #fff;
+  font-size: 11.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  backdrop-filter: blur(4px);
+  font-family: inherit;
+}
+.journey-shield-btn:hover {
+  background: rgba(255, 255, 255, 0.28);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+}
+
+/* ==========================================
+   STREAK SHIELD MODAL STYLING
+   ========================================== */
+.streak-shield-modal {
+  border: none;
+  border-radius: 18px;
+  overflow: hidden;
+  max-width: 520px;
+  width: 92%;
+  padding: 0;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
+  background: var(--paper, #fff);
+  font-family: var(--sans);
+}
+
+.streak-shield-header {
+  background: linear-gradient(135deg, #092c3e 0%, #11536b 50%, #0d465c 100%);
+  color: white;
+  padding: 20px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: relative;
+}
+
+.streak-shield-header .eyebrow {
+  margin: 0;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: #7dd3fc;
+}
+
+.streak-shield-header h2 {
+  margin: 4px 0 0;
+  font-size: 19px;
+  color: #fff;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.streak-shield-body {
+  padding: 20px 22px 24px;
+  max-height: 72vh;
+  overflow-y: auto;
+}
+
+/* Overview card with slots */
+.shield-overview-card {
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  border-radius: 14px;
+  padding: 18px 20px;
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.shield-overview-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.shield-count-hero {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  margin-top: 2px;
+}
+
+.shield-count-num {
+  font-size: 32px;
+  font-weight: 900;
+  color: #38bdf8;
+  line-height: 1;
+}
+
+.shield-count-max {
+  font-size: 15px;
+  font-weight: 700;
+  color: #94a3b8;
+}
+
+.shield-slots-row {
+  display: flex;
+  gap: 8px;
+}
+
+.shield-slot {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  transition: all 0.2s ease;
+}
+
+.shield-slot.filled {
+  background: rgba(56, 189, 248, 0.2);
+  border: 1.5px solid #38bdf8;
+  box-shadow: 0 0 12px rgba(56, 189, 248, 0.35);
+}
+
+.shield-slot.empty {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1.5px dashed rgba(255, 255, 255, 0.2);
+  color: #64748b;
+  font-size: 13px;
+}
+
+.shield-status-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  padding: 7px 12px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.07);
+  color: #e2e8f0;
+  line-height: 1.4;
+}
+
+/* Feature info rules box */
+.shield-rules-box {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin-top: 14px;
+}
+
+.shield-rules-title {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #1e293b;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.shield-rules-list {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  font-size: 12px;
+  color: #475569;
+  line-height: 1.45;
+  margin: 0;
+  padding: 0;
+}
+
+.shield-rules-list li {
+  list-style: none;
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+/* History filter tabs & list */
+.shield-history-section {
+  margin-top: 18px;
+}
+
+.shield-history-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.shield-history-title {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #0f172a;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.shield-history-tabs {
+  display: flex;
+  gap: 4px;
+  background: #f1f5f9;
+  padding: 3px;
+  border-radius: 8px;
+}
+
+.shield-tab-btn {
+  border: none;
+  background: none;
+  padding: 4px 10px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #64748b;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  font-family: inherit;
+}
+
+.shield-tab-btn.active {
+  background: #fff;
+  color: #0284c7;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.shield-history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 240px;
+  overflow-y: auto;
+  padding-right: 2px;
+}
+
+.shield-log-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  gap: 10px;
+  transition: transform 0.15s ease;
+}
+
+.shield-log-item:hover {
+  transform: translateX(2px);
+}
+
+.shield-log-item.is-add {
+  border-left: 3.5px solid #10b981;
+}
+
+.shield-log-item.is-use {
+  border-left: 3.5px solid #ef4444;
+}
+
+.shield-log-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  flex: 1;
+}
+
+.shield-log-badge {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
+.shield-log-badge.add {
+  background: #ecfdf5;
+  color: #059669;
+}
+
+.shield-log-badge.use {
+  background: #fef2f2;
+  color: #dc2626;
+}
+
+.shield-log-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.shield-log-reason {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #1e293b;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.shield-log-time {
+  font-size: 11px;
+  color: #94a3b8;
+  margin-top: 1px;
+}
+
+.shield-log-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  flex-shrink: 0;
+}
+
+.shield-log-delta {
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.shield-log-delta.add {
+  color: #059669;
+}
+
+.shield-log-delta.use {
+  color: #dc2626;
+}
+
+.shield-log-balance {
+  font-size: 10.5px;
+  color: #64748b;
+}
+
+.shield-history-empty {
+  text-align: center;
+  padding: 24px 12px;
+  color: #94a3b8;
+  font-size: 12.5px;
+  background: #f8fafc;
+  border-radius: 10px;
+  border: 1px dashed #cbd5e1;
+}
+
+@media (max-width: 600px) {
+  .streak-shield-body {
+    padding: 16px 14px 20px;
+  }
+  .streak-shield-header {
+    padding: 16px 18px;
+  }
+  .shield-overview-card {
+    padding: 14px 16px;
+  }
+  .shield-count-num {
+    font-size: 28px;
+  }
+  .shield-slot {
+    width: 32px;
+    height: 32px;
+    font-size: 15px;
+  }
+  .shield-history-list {
+    max-height: 200px;
+  }
+}
+
 .search-panel {
   height: 66px;
   margin: 33px 0 45px;

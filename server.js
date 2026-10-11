@@ -187,6 +187,7 @@ try { db.exec("ALTER TABLE users ADD COLUMN real_name TEXT;"); } catch (e) {}
 try { db.exec("ALTER TABLE users ADD COLUMN class_name TEXT;"); } catch (e) {}
 try { db.exec("ALTER TABLE users ADD COLUMN avatar TEXT;"); } catch (e) {}
 try { db.exec("ALTER TABLE users ADD COLUMN avatar_changed INTEGER NOT NULL DEFAULT 0;"); } catch (e) {}
+try { db.exec("ALTER TABLE users ADD COLUMN avatar_last_changed INTEGER;"); } catch (e) {}
 try { db.exec("ALTER TABLE users ADD COLUMN locked_until TEXT;"); } catch (e) {}
 try { db.exec("ALTER TABLE posts ADD COLUMN is_pinned INTEGER NOT NULL DEFAULT 0 CHECK(is_pinned IN (0,1));"); } catch (e) {}
 try { db.exec("ALTER TABLE votes ADD COLUMN vote_value INTEGER NOT NULL DEFAULT 1;"); } catch (e) {}
@@ -261,6 +262,73 @@ try {
     ON CONFLICT(user_id) DO UPDATE SET shields = CASE WHEN shields = 0 THEN 1 ELSE shields END;
   `);
 } catch (e) {}
+
+try {
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS streak_shield_logs (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      change_type TEXT NOT NULL CHECK(change_type IN ('add', 'use')),
+      amount INTEGER NOT NULL DEFAULT 1,
+      balance_after INTEGER NOT NULL,
+      reason TEXT NOT NULL,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    );
+    CREATE INDEX IF NOT EXISTS idx_shield_logs_user ON streak_shield_logs(user_id, created_at DESC);
+  `);
+
+  // Khởi tạo nhật ký chào mừng cho người dùng hiện có chưa có log
+  const usersWithoutLogs = db.prepare(`
+    SELECT u.id, u.created_at, coalesce(s.shields, 1) as current_shields, coalesce(s.last_milestone_rewarded, 0) as last_milestone
+    FROM users u
+    LEFT JOIN user_streak_shields s ON s.user_id = u.id
+    WHERE NOT EXISTS (SELECT 1 FROM streak_shield_logs WHERE user_id = u.id)
+  `).all();
+
+  for (const u of usersWithoutLogs) {
+    db.prepare(`
+      INSERT INTO streak_shield_logs (user_id, change_type, amount, balance_after, reason, created_at)
+      VALUES (?, 'add', 1, 1, 'Tặng 1 khiên khởi đầu chào đón thành viên mới', ?)
+    `).run(u.id, u.created_at || new Date().toISOString());
+
+    const pastRestores = db.prepare(`
+      SELECT restored_date, created_at 
+      FROM streak_restores 
+      WHERE user_id = ? 
+      ORDER BY created_at ASC
+    `).all(u.id);
+
+    let curBal = 1;
+    for (const r of pastRestores) {
+      curBal = Math.max(0, curBal - 1);
+      const dmy = (r.restored_date && r.restored_date.includes('-')) 
+        ? r.restored_date.split('-').reverse().join('/') 
+        : r.restored_date;
+      db.prepare(`
+        INSERT INTO streak_shield_logs (user_id, change_type, amount, balance_after, reason, created_at)
+        VALUES (?, 'use', 1, ?, ?, ?)
+      `).run(u.id, curBal, `Tự động bảo vệ chuỗi ngày ${dmy}`, r.created_at || new Date().toISOString());
+    }
+
+    const milestones = [
+      { streak: 7, reward: 1 },
+      { streak: 14, reward: 1 },
+      { streak: 30, reward: 2 },
+      { streak: 50, reward: 2 },
+    ];
+    for (const m of milestones) {
+      if (u.last_milestone >= m.streak) {
+        curBal = Math.min(3, curBal + m.reward);
+        db.prepare(`
+          INSERT INTO streak_shield_logs (user_id, change_type, amount, balance_after, reason, created_at)
+          VALUES (?, 'add', ?, ?, ?, CURRENT_TIMESTAMP)
+        `).run(u.id, m.reward, curBal, `Thưởng đạt mốc chuỗi ${m.streak} ngày (+${m.reward} khiên)`);
+      }
+    }
+  }
+} catch (e) {
+  console.error("streak_shield_logs migration error:", e);
+}
 
 try {
   db.exec(`
@@ -500,7 +568,7 @@ function sessionFrom(request) {
   if (!token) return null;
   const row = db
     .prepare(
-      `SELECT s.csrf_token, s.expires_at, u.id, u.email, u.display_name, u.role, u.student_id, u.real_name, u.class_name, u.bio, u.avatar, u.avatar_changed, u.cover_image, u.namecard_frame, u.namecard_theme, u.locked_until FROM sessions s JOIN users u ON u.id=s.user_id WHERE s.token_hash=?`,
+      `SELECT s.csrf_token, s.expires_at, u.id, u.email, u.display_name, u.role, u.student_id, u.real_name, u.class_name, u.bio, u.avatar, u.avatar_changed, u.avatar_last_changed, u.cover_image, u.namecard_frame, u.namecard_theme, u.locked_until FROM sessions s JOIN users u ON u.id=s.user_id WHERE s.token_hash=?`,
     )
     .get(sha(token));
   if (!row || Date.parse(row.expires_at) < Date.now()) return null;
@@ -525,6 +593,24 @@ function getStreakTier(streak) {
   if (s >= 7) return 2;
   if (s >= 3) return 1;
   return 0;
+}
+
+function logShieldTransaction(userId, changeType, amount, balanceAfter, reason, customCreatedAt) {
+  try {
+    if (customCreatedAt) {
+      db.prepare(`
+        INSERT INTO streak_shield_logs (user_id, change_type, amount, balance_after, reason, created_at)
+        VALUES (?, ?, ?, ?, ?, ?)
+      `).run(userId, changeType, amount, balanceAfter, reason, customCreatedAt);
+    } else {
+      db.prepare(`
+        INSERT INTO streak_shield_logs (user_id, change_type, amount, balance_after, reason)
+        VALUES (?, ?, ?, ?, ?)
+      `).run(userId, changeType, amount, balanceAfter, reason);
+    }
+  } catch (err) {
+    console.error("logShieldTransaction error:", err);
+  }
 }
 
 function calculateUserStreak(userId, todayDate, formatYMD) {
@@ -575,6 +661,7 @@ function calculateUserStreak(userId, todayDate, formatYMD) {
   if (!shieldRow) {
     try {
       db.prepare("INSERT OR IGNORE INTO user_streak_shields (user_id, shields, last_milestone_rewarded) VALUES (?, 1, 0)").run(userId);
+      logShieldTransaction(userId, 'add', 1, 1, 'Tặng 1 khiên khởi đầu chào đón thành viên mới');
       shieldRow = db.prepare("SELECT * FROM user_streak_shields WHERE user_id = ?").get(userId) || { user_id: userId, shields: 1, last_milestone_rewarded: 0 };
     } catch (e) {
       shieldRow = { user_id: userId, shields: 1, last_milestone_rewarded: 0 };
@@ -606,6 +693,7 @@ function calculateUserStreak(userId, todayDate, formatYMD) {
       shieldRow.shields = Math.max(0, shieldRow.shields - 1);
       db.prepare("UPDATE user_streak_shields SET shields = ?, updated_at = CURRENT_TIMESTAMP WHERE user_id = ?").run(shieldRow.shields, userId);
       autoShieldUsed = true;
+      logShieldTransaction(userId, 'use', 1, shieldRow.shields, `Tự động kích hoạt bảo vệ chuỗi ngày ${formatDMY(yesterday)}`);
     }
   }
 
@@ -648,6 +736,8 @@ function calculateUserStreak(userId, todayDate, formatYMD) {
     if (currentStreak >= m.streak && highestPassed < m.streak) {
       newShields += m.reward;
       if (m.streak > highestPassed) highestPassed = m.streak;
+      const balanceAfter = Math.min(3, shieldRow.shields + newShields);
+      logShieldTransaction(userId, 'add', m.reward, balanceAfter, `Thưởng đạt mốc chuỗi ${m.streak} ngày (+${m.reward} khiên)`);
     }
   }
 
@@ -723,12 +813,22 @@ function getAuthorStreakTier(userId) {
 
 function publicUser(user, streakInfo = null) {
   const info = streakInfo || (user.id ? calculateUserStreak(user.id) : { streak: 0, streakTier: 0, shields: 0 });
+  const lastChange = user.avatar_last_changed ? Number(user.avatar_last_changed) : 0;
+  const now = Date.now();
+  const cooldownMs = 7 * 24 * 60 * 60 * 1000;
+  const canChangeAvatar = !lastChange || (now - lastChange >= cooldownMs);
+  const remainingCooldownMs = canChangeAvatar ? 0 : Math.max(0, cooldownMs - (now - lastChange));
+  const remainingDays = Math.ceil(remainingCooldownMs / (24 * 60 * 60 * 1000));
+
   return {
     id: user.id,
     email: user.email,
     displayName: user.display_name,
     initials: user.avatar || getAvatarEmoji(user.display_name),
     avatarChanged: Boolean(user.avatar_changed),
+    avatarLastChanged: lastChange || null,
+    canChangeAvatar,
+    avatarRemainingDays: remainingDays,
     role: user.role,
     studentId: user.student_id || "",
     realName: user.real_name || "",
@@ -1687,6 +1787,8 @@ function awardCompetitionSundayRewards(competitionId) {
         }
 
         // Add shields
+        const prevShields = db.prepare("SELECT shields FROM user_streak_shields WHERE user_id = ?").get(p.userId)?.shields || 0;
+        const balanceAfter = Math.min(3, prevShields + shields);
         db.prepare(`
           INSERT INTO user_streak_shields (user_id, shields, last_milestone_rewarded, updated_at)
           VALUES (?, ?, 0, CURRENT_TIMESTAMP)
@@ -1694,6 +1796,7 @@ function awardCompetitionSundayRewards(competitionId) {
             shields = MIN(3, shields + ?),
             updated_at = CURRENT_TIMESTAMP
         `).run(p.userId, shields, shields);
+        logShieldTransaction(p.userId, 'add', shields, balanceAfter, `Thưởng Top ${rank} Đấu trường Tuần (${comp.week_key})`);
 
         insertReward.run(
           competitionId,
@@ -1748,8 +1851,8 @@ async function api(request, response, url) {
     const user = requireUser(request, response);
     if (!user || !requireCsrf(request, response, user)) return;
 
-    const freshUser = db.prepare("SELECT * FROM users WHERE id=?").get(user.id);
-    if (!freshUser || (freshUser.shields || 0) < 1) {
+    let shieldRow = db.prepare("SELECT * FROM user_streak_shields WHERE user_id=?").get(user.id);
+    if (!shieldRow || shieldRow.shields < 1) {
       return error(response, 400, "Bạn không có đủ khiên bảo vệ để khôi phục chuỗi.");
     }
 
@@ -1766,8 +1869,10 @@ async function api(request, response, url) {
     }
 
     db.prepare("INSERT INTO streak_restores(user_id,restored_date) VALUES (?,?)").run(user.id, yesterday);
-    db.prepare("UPDATE users SET shields = MAX(0, shields - 1) WHERE id=?").run(user.id);
-    return json(response, 200, { success: true });
+    const newShieldCount = Math.max(0, shieldRow.shields - 1);
+    db.prepare("UPDATE user_streak_shields SET shields = ?, updated_at = CURRENT_TIMESTAMP WHERE user_id = ?").run(newShieldCount, user.id);
+    logShieldTransaction(user.id, 'use', 1, newShieldCount, `Khôi phục thủ công chuỗi ngày ${formatDMY(yesterday)}`);
+    return json(response, 200, { success: true, shields: newShieldCount });
   }
   if (method === "POST" && pathName === "/api/auth/register") {
     const clientIp = getClientIp(request);
@@ -1802,6 +1907,8 @@ async function api(request, response, url) {
       const user = db
         .prepare("SELECT * FROM users WHERE id=?")
         .get(result.lastInsertRowid);
+      db.prepare("INSERT OR IGNORE INTO user_streak_shields (user_id, shields, last_milestone_rewarded) VALUES (?, 1, 0)").run(user.id);
+      logShieldTransaction(user.id, 'add', 1, 1, 'Tặng 1 khiên khởi đầu chào đón thành viên mới');
       const csrfToken = createSession(response, user.id, request);
       return json(response, 201, { user: publicUser(user), csrfToken });
     } catch (e) {
@@ -2374,6 +2481,60 @@ async function api(request, response, url) {
       })),
     });
   }
+  if (method === "GET" && pathName === "/api/me/shields") {
+    const user = requireUser(request, response);
+    if (!user) return;
+
+    const todayDate = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Ho_Chi_Minh" }));
+    const streakInfo = calculateUserStreak(user.id, todayDate);
+
+    let logs = db.prepare(`
+      SELECT id, change_type, amount, balance_after, reason, created_at
+      FROM streak_shield_logs
+      WHERE user_id = ?
+      ORDER BY id DESC
+      LIMIT 100
+    `).all(user.id);
+
+    if (!logs.length) {
+      const uRow = db.prepare("SELECT role, created_at FROM users WHERE id = ?").get(user.id);
+      if (uRow && (uRow.role === "admin" || uRow.role === "ta")) {
+        logs = [{
+          id: 1,
+          change_type: 'add',
+          amount: 3,
+          balance_after: 3,
+          reason: 'Đặc quyền khiên tối đa cho Quản trị viên / TA',
+          created_at: uRow.created_at || new Date().toISOString()
+        }];
+      } else {
+        logShieldTransaction(user.id, 'add', 1, streakInfo.shields, 'Tặng 1 khiên khởi đầu chào đón thành viên mới');
+        logs = db.prepare(`
+          SELECT id, change_type, amount, balance_after, reason, created_at
+          FROM streak_shield_logs
+          WHERE user_id = ?
+          ORDER BY id DESC
+          LIMIT 100
+        `).all(user.id);
+      }
+    }
+
+    return json(response, 200, {
+      shields: streakInfo.shields,
+      maxShields: 3,
+      streak: streakInfo.streak,
+      streakTier: streakInfo.streakTier,
+      autoShieldUsed: Boolean(streakInfo.autoShieldUsed),
+      logs: logs.map(l => ({
+        id: l.id,
+        changeType: l.change_type,
+        amount: l.amount,
+        balanceAfter: l.balance_after,
+        reason: l.reason,
+        createdAt: l.created_at
+      }))
+    });
+  }
   if (method === "GET" && pathName === "/api/me/history") {
     const user = requireUser(request, response);
     if (!user) return;
@@ -2408,15 +2569,26 @@ async function api(request, response, url) {
   if (method === "PATCH" && pathName === "/api/me/avatar") {
     const user = requireUser(request, response);
     if (!user || !requireCsrf(request, response, user)) return;
-    if (user.avatar_changed) {
-      return error(response, 400, "Bạn đã đổi avatar 1 lần rồi, không thể đổi thêm.");
+
+    const currentUser = db.prepare("SELECT * FROM users WHERE id=?").get(user.id);
+    if (!currentUser) return error(response, 404, "Không tìm thấy người dùng.");
+
+    const lastChanged = currentUser.avatar_last_changed ? Number(currentUser.avatar_last_changed) : 0;
+    const now = Date.now();
+    const cooldownMs = 7 * 24 * 60 * 60 * 1000;
+    if (lastChanged && (now - lastChanged) < cooldownMs) {
+      const waitDays = Math.ceil((cooldownMs - (now - lastChanged)) / (24 * 60 * 60 * 1000));
+      return error(response, 400, `Bạn chỉ có thể đổi avatar 1 lần mỗi 7 ngày. Vui lòng thử lại sau ${waitDays} ngày.`);
     }
+
     const { avatar } = await readJSON(request);
     if (!avatar || typeof avatar !== "string" || avatar.trim().length === 0 || avatar.length > 8) {
       return error(response, 400, "Avatar không hợp lệ (hãy chọn 1 icon ngắn).");
     }
-    db.prepare("UPDATE users SET avatar=?, avatar_changed=1 WHERE id=?").run(avatar.trim(), user.id);
-    return json(response, 200, { success: true });
+
+    db.prepare("UPDATE users SET avatar=?, avatar_changed=1, avatar_last_changed=? WHERE id=?").run(avatar.trim(), now, user.id);
+    const updated = db.prepare("SELECT * FROM users WHERE id=?").get(user.id);
+    return json(response, 200, { success: true, user: publicUser(updated) });
   }
 
   // --- NAMECARD ENDPOINT ---
@@ -2609,13 +2781,25 @@ async function api(request, response, url) {
     const currentUser = db.prepare("SELECT * FROM users WHERE id=?").get(user.id);
     if (!currentUser) return error(response, 404, "Không tìm thấy người dùng.");
 
+    const streakInfo = calculateUserStreak(user.id);
+    const maxStreak = getUserMaxStreak(user.id);
+    const unlockedStreak = Math.max(streakInfo.streak || 0, maxStreak);
+    const isPrivileged = currentUser.role === "admin" || currentUser.role === "ta";
+
+    const COVER_DAYS_MAP = new Map([
+      ["default", 0],
+      ["khu_rung_tri_thuc", 3],
+      ["mua_anh_dao_no", 7],
+      ["vuong_quoc_mua_dong", 14],
+      ["tinh_tu_sao_troi", 30],
+      ["ky_nguyen_hoang_kim", 50],
+    ]);
+
     let newCoverImage = currentUser.cover_image || "default";
     if (typeof coverImage === "string") {
       const trimmedCover = coverImage.trim();
       if (trimmedCover.startsWith("data:image/")) {
-        const streakInfo = calculateUserStreak(user.id);
-        const maxStreak = getUserMaxStreak(user.id);
-        const canUpload = streakInfo.streak >= 30 || maxStreak >= 30 || user.role === "admin" || user.role === "ta";
+        const canUpload = streakInfo.streak >= 30 || maxStreak >= 30 || isPrivileged;
         if (!canUpload) {
           return error(response, 403, "Bạn cần đạt chuỗi hoạt động từ 30 ngày trở lên để tải ảnh bìa riêng từ thiết bị.");
         }
@@ -2624,27 +2808,41 @@ async function api(request, response, url) {
         }
         newCoverImage = trimmedCover;
       } else {
+        const reqDays = COVER_DAYS_MAP.get(trimmedCover);
+        if (reqDays !== undefined) {
+          if (!isPrivileged && unlockedStreak < reqDays) {
+            return error(response, 403, `Ảnh bìa này yêu cầu chuỗi hoạt động từ ${reqDays}+ ngày.`);
+          }
+        }
         newCoverImage = trimmedCover;
       }
     }
 
     let newAvatar = currentUser.avatar;
     let avatarChanged = currentUser.avatar_changed;
-    if (typeof avatar === "string" && avatar.trim()) {
-      newAvatar = avatar.trim();
+    let avatarLastChanged = currentUser.avatar_last_changed;
+    if (typeof avatar === "string" && avatar.trim() && avatar.trim() !== currentUser.avatar) {
+      const lastChangedTime = currentUser.avatar_last_changed ? Number(currentUser.avatar_last_changed) : 0;
+      const now = Date.now();
+      const cooldownMs = 7 * 24 * 60 * 60 * 1000;
+      if (lastChangedTime && (now - lastChangedTime) < cooldownMs) {
+        const waitDays = Math.ceil((cooldownMs - (now - lastChangedTime)) / (24 * 60 * 60 * 1000));
+        return error(response, 400, `Bạn chỉ có thể đổi avatar 1 lần mỗi 7 ngày. Vui lòng thử lại sau ${waitDays} ngày.`);
+      }
+      newAvatar = avatar.trim().slice(0, 8);
       avatarChanged = 1;
+      avatarLastChanged = now;
     }
 
     const newDisplayName = (typeof displayName === "string" && displayName.trim()) ? displayName.trim().slice(0, 80) : currentUser.display_name;
     const newBio = typeof bio === "string" ? bio.trim().slice(0, 200) : currentUser.bio;
     const allowedFrames = new Map([
-      ["default", 0], ["leaves", 7], ["stars", 14], ["sakura", 21], ["ice", 30], ["gold", 50],
+      ["default", 0], ["leaves", 3], ["sakura", 7], ["ice", 14], ["stars", 30], ["gold", 50],
     ]);
     const requestedFrame = typeof namecardFrame === "string" ? namecardFrame.trim() : (currentUser.namecard_frame || "default");
     const frameRequirement = allowedFrames.get(requestedFrame);
     if (frameRequirement === undefined) return error(response, 400, "Khung Namecard không hợp lệ.");
-    const unlockedStreak = Math.max(calculateUserStreak(user.id).streak || 0, getUserMaxStreak(user.id));
-    const canUseRequestedFrame = currentUser.role === "admin" || currentUser.role === "ta" || unlockedStreak >= frameRequirement;
+    const canUseRequestedFrame = isPrivileged || unlockedStreak >= frameRequirement;
     if (!canUseRequestedFrame) return error(response, 403, `Khung này yêu cầu chuỗi hoạt động ${frameRequirement}+ ngày.`);
     const newFrame = requestedFrame;
     const newTheme = typeof namecardTheme === "string" ? namecardTheme.trim() : (currentUser.namecard_theme || "default");
@@ -2654,7 +2852,7 @@ async function api(request, response, url) {
 
     db.prepare(`
       UPDATE users 
-      SET student_id=?, real_name=?, class_name=?, display_name=?, bio=?, avatar=?, avatar_changed=?, cover_image=?, namecard_frame=?, namecard_theme=?, updated_at=CURRENT_TIMESTAMP 
+      SET student_id=?, real_name=?, class_name=?, display_name=?, bio=?, avatar=?, avatar_changed=?, avatar_last_changed=?, cover_image=?, namecard_frame=?, namecard_theme=?, updated_at=CURRENT_TIMESTAMP 
       WHERE id=?
     `).run(
       newStudentId || null,
@@ -2664,6 +2862,7 @@ async function api(request, response, url) {
       newBio || null,
       newAvatar,
       avatarChanged,
+      avatarLastChanged,
       newCoverImage,
       newFrame,
       newTheme,

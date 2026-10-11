@@ -208,7 +208,7 @@
                 <div class="streak-tier-label" id="streakTierLabel">Tân binh</div>
               </div>
               <div class="streak-shield-wrap">
-                <span class="streak-shield-badge" id="streakShieldsBadge" title="Khiên bảo vệ chuỗi"><span class="shield-icon">🛡️</span> <b id="streakShieldsCount">0</b> khiên</span>
+                <button type="button" class="streak-shield-badge" id="streakShieldsBadge" onclick="openStreakShieldModal()" title="Bấm để xem chi tiết &amp; lịch sử khiên bảo vệ chuỗi"><span class="shield-icon">🛡️</span> <b id="streakShieldsCount">0</b> khiên</button>
               </div>
             </div>
 
@@ -1999,6 +1999,34 @@
           ></textarea>
         </label>
 
+        <!-- Biểu tượng Avatar cá nhân (Đổi 1 lần mỗi 7 ngày) -->
+        <div style="margin-top: 16px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <label style="font-weight: 600; margin: 0;">Biểu tượng Avatar</label>
+            <span style="font-size: 0.8rem; color: var(--muted);" id="namecardAvatarNotice">1 lần mỗi 7 ngày</span>
+          </div>
+          <div class="avatar-selection-grid" id="profileAvatarPicker">
+            <!-- Render avatar emojis -->
+          </div>
+          <div style="display: flex; gap: 8px; margin-top: 8px;">
+            <input
+              id="namecardCustomAvatarInput"
+              type="text"
+              maxlength="4"
+              placeholder="Hoặc nhập emoji tuỳ chọn..."
+              style="flex: 1; padding: 6px 10px; border: 1px solid var(--border); border-radius: 8px; font-size: 0.9rem;"
+            />
+            <button
+              type="button"
+              id="applyCustomAvatarBtn"
+              class="button button-outline"
+              style="padding: 6px 12px; font-size: 0.85rem;"
+            >
+              Áp dụng
+            </button>
+          </div>
+        </div>
+
         <!-- Khung viền Namecard -->
         <div style="margin-top: 16px;">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
@@ -2176,7 +2204,12 @@
           <p class="eyebrow" style="color: #c2d5c4;">HÀNH TRÌNH GIỮ CHUỖI</p>
           <h2>Cột mốc & đặc quyền</h2>
         </div>
-        <button class="close-modal" id="closeStreakJourney" onclick="closeStreakJourneyModal()" aria-label="Đóng">×</button>
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <button type="button" class="journey-shield-btn" onclick="openStreakShieldModal()" title="Bấm để xem chi tiết &amp; lịch sử khiên">
+            <span>🛡️</span> <b id="journeyShieldsCount">0</b> khiên
+          </button>
+          <button class="close-modal" id="closeStreakJourney" onclick="closeStreakJourneyModal()" aria-label="Đóng">×</button>
+        </div>
       </div>
       <div class="streak-journey-body">
         <div class="streak-journey-banner-container" id="streakJourneyBannerSlot">
@@ -2188,6 +2221,78 @@
         </div>
         <div class="journey-milestones-list" id="journeyMilestonesList">
           <!-- Filled by JS -->
+        </div>
+      </div>
+    </dialog>
+    <!-- MODAL CHI TIẾT & LỊCH SỬ KHIÊN BẢO VỆ CHUỖI -->
+    <dialog id="streakShieldModal" class="modal streak-shield-modal">
+      <div class="streak-shield-header">
+        <div>
+          <p class="eyebrow">BẢO VỆ CHUỖI NĂNG ĐỘNG</p>
+          <h2><span>🛡️</span> Khiên bảo vệ chuỗi</h2>
+        </div>
+        <button class="close-modal" id="closeStreakShield" onclick="closeStreakShieldModal()" aria-label="Đóng">×</button>
+      </div>
+      <div class="streak-shield-body">
+        <!-- KHỐI 1: TỔNG QUAN KHIÊN HIỆN CÓ & SLOTS -->
+        <div class="shield-overview-card">
+          <div class="shield-overview-top">
+            <div>
+              <span class="shield-overview-label" style="font-size: 11px; text-transform: uppercase; color: #94a3b8; font-weight: 700; letter-spacing: 0.5px;">SỐ KHIÊN HIỆN CÓ</span>
+              <div class="shield-count-hero">
+                <span class="shield-count-num" id="shieldModalCount">0</span>
+                <span class="shield-count-max">/ 3 khiên</span>
+              </div>
+            </div>
+            <div class="shield-slots-row" id="shieldModalSlots">
+              <div class="shield-slot empty">1</div>
+              <div class="shield-slot empty">2</div>
+              <div class="shield-slot empty">3</div>
+            </div>
+          </div>
+          <div class="shield-status-pill" id="shieldModalStatusPill">
+            <span id="shieldModalStatusDot">🟢</span> <span id="shieldModalStatusText">Đang sẵn sàng tự động bảo vệ chuỗi khi lỡ quên 1 ngày.</span>
+          </div>
+        </div>
+
+        <!-- KHỐI 2: CHỨC NĂNG CỦA KHIÊN -->
+        <div class="shield-rules-box">
+          <div class="shield-rules-title">
+            <span>💡</span> <b>Chức năng &amp; Cơ chế hoạt động của Khiên</b>
+          </div>
+          <ul class="shield-rules-list">
+            <li>
+              <span>🛡️</span>
+              <span><strong>Tự động giữ chuỗi:</strong> Nếu bạn lỡ quên hoặc không kịp vào web trong 1 ngày, hệ thống sẽ tự động dùng 1 khiên để giữ nguyên số ngày chuỗi (không bị reset về 0).</span>
+            </li>
+            <li>
+              <span>🔄</span>
+              <span><strong>Giới hạn lưu trữ:</strong> Mỗi tài khoản có thể tích lũy tối đa <strong>3 khiên</strong> cùng lúc. Không áp dụng giữ chuỗi quá 2 ngày bỏ lỡ liên tiếp.</span>
+            </li>
+            <li>
+              <span>🎁</span>
+              <span><strong>Cách nhận thêm khiên:</strong> Tặng 1 khiên chào mừng khi tạo tài khoản; Đạt mốc chuỗi 7, 14 ngày (+1 khiên), 30, 50 ngày (+2 khiên); Đạt Top 1-10 Đấu trường Arena tuần (+1 đến +2 khiên).</span>
+            </li>
+          </ul>
+        </div>
+
+        <!-- KHỐI 3: LỊCH SỬ BIẾN ĐỘNG (CỘNG & TRỪ KHIÊN) -->
+        <div class="shield-history-section">
+          <div class="shield-history-header">
+            <div class="shield-history-title">
+              <span>📜</span> Lịch sử biến động khiên
+            </div>
+            <div class="shield-history-tabs">
+              <button type="button" class="shield-tab-btn active" data-shield-filter="all" onclick="filterShieldHistory('all')">Tất cả</button>
+              <button type="button" class="shield-tab-btn" data-shield-filter="add" onclick="filterShieldHistory('add')">🟢 Lịch sử cộng</button>
+              <button type="button" class="shield-tab-btn" data-shield-filter="use" onclick="filterShieldHistory('use')">🔴 Lịch sử trừ</button>
+            </div>
+          </div>
+          <div class="shield-history-list" id="shieldHistoryList">
+            <div class="shield-history-loading" style="text-align: center; padding: 20px; color: var(--muted); font-size: 13px;">
+              Đang tải lịch sử khiên...
+            </div>
+          </div>
         </div>
       </div>
     </dialog>
