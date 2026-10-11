@@ -11561,3 +11561,272 @@ dialog.modal.namecard-modal {
   border: 0;
   box-shadow: none;
 }
+
+/* ========================================================
+   ARENA COMPETITION: QUIZ HINT & SUNDAY CEREMONY STYLES
+   ======================================================== */
+
+.quiz-question-top-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.quiz-hint-btn {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: 1.5px solid #f59e0b;
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  color: #92400e;
+  font-size: 19px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.25);
+  flex-shrink: 0;
+  padding: 0;
+}
+
+.quiz-hint-btn:hover {
+  transform: scale(1.1);
+  box-shadow: 0 0 14px rgba(245, 158, 11, 0.5);
+  background: #fef08a;
+}
+
+.quiz-hint-btn.active {
+  background: #f59e0b;
+  color: #fff;
+  border-color: #d97706;
+  box-shadow: 0 0 16px rgba(245, 158, 11, 0.65);
+}
+
+.quiz-hint-box {
+  margin-top: 14px;
+  background: #fffbeb;
+  border: 1.5px solid #fde68a;
+  border-left: 4px solid #f59e0b;
+  border-radius: 10px;
+  padding: 12px 14px;
+  animation: hintFadeDown 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  box-shadow: 0 4px 14px rgba(245, 158, 11, 0.12);
+}
+
+@keyframes hintFadeDown {
+  from { opacity: 0; transform: translateY(-6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.quiz-hint-box-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.quiz-hint-tag {
+  font-size: 12px;
+  font-weight: 700;
+  color: #b45309;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.quiz-hint-close-btn {
+  background: transparent;
+  border: none;
+  font-size: 18px;
+  line-height: 1;
+  color: #92400e;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.quiz-hint-close-btn:hover {
+  background: rgba(245, 158, 11, 0.18);
+}
+
+.quiz-hint-body {
+  font-size: 13.5px;
+  color: #78350f;
+  line-height: 1.55;
+  font-weight: 500;
+}
+
+/* SUNDAY GATEWAY NOTICE */
+.gateway-sunday-container {
+  margin: 16px 0;
+}
+
+.sunday-hero-banner {
+  background: linear-gradient(135deg, rgba(254, 240, 138, 0.2) 0%, rgba(245, 158, 11, 0.16) 50%, rgba(217, 119, 6, 0.2) 100%);
+  border: 1.5px solid rgba(245, 158, 11, 0.45);
+  border-radius: 14px;
+  padding: 30px 24px;
+  text-align: center;
+  box-shadow: 0 8px 24px rgba(245, 158, 11, 0.14);
+  position: relative;
+  overflow: hidden;
+}
+
+.sunday-cup-icon {
+  font-size: 48px;
+  margin-bottom: 12px;
+  animation: trophyFloat 2.4s ease-in-out infinite;
+}
+
+@keyframes trophyFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+.sunday-pill-tag {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  color: #b45309;
+  background: rgba(254, 240, 138, 0.7);
+  border: 1px solid rgba(245, 158, 11, 0.4);
+  padding: 4px 14px;
+  border-radius: 20px;
+  margin-bottom: 12px;
+}
+
+.sunday-hero-content h3 {
+  margin: 0 0 8px;
+  font-size: 21px;
+  font-weight: 800;
+  color: var(--ink);
+}
+
+.sunday-hero-content p {
+  margin: 0 auto 22px;
+  max-width: 580px;
+  font-size: 14px;
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+.sunday-goto-lb-btn {
+  background: linear-gradient(135deg, #d97706 0%, #f59e0b 50%, #eab308 100%) !important;
+  color: #fff !important;
+  font-weight: 700 !important;
+  border: 1px solid #b45309 !important;
+  box-shadow: 0 6px 20px rgba(245, 158, 11, 0.35) !important;
+  cursor: pointer;
+  transition: all 0.25s ease !important;
+  padding: 12px 28px !important;
+  font-size: 15px !important;
+  border-radius: 10px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+}
+
+.sunday-goto-lb-btn:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 10px 25px rgba(245, 158, 11, 0.5) !important;
+}
+
+/* SUNDAY LEADERBOARD CEREMONY BANNER */
+.sunday-ceremony-banner {
+  margin-bottom: 22px;
+  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+  border: 2px solid #eab308;
+  border-radius: 16px;
+  padding: 28px 22px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 10px 32px rgba(234, 179, 8, 0.3);
+  animation: ceremonyEntrance 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes ceremonyEntrance {
+  from { opacity: 0; transform: scale(0.96) translateY(-10px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.ceremony-glow-halo {
+  position: absolute;
+  top: -50px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 340px;
+  height: 150px;
+  background: radial-gradient(circle, rgba(234, 179, 8, 0.4) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.sunday-ceremony-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none !important;
+  z-index: 1;
+}
+
+.ceremony-content {
+  position: relative;
+  z-index: 2;
+}
+
+.ceremony-trophy-icon {
+  font-size: 50px;
+  margin-bottom: 8px;
+  display: inline-block;
+  animation: trophyPop 1s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes trophyPop {
+  0% { transform: scale(0); }
+  60% { transform: scale(1.25); }
+  100% { transform: scale(1); }
+}
+
+.ceremony-badge {
+  display: inline-block;
+  font-size: 11.5px;
+  font-weight: 800;
+  color: #fef08a;
+  background: rgba(234, 179, 8, 0.25);
+  border: 1px solid rgba(250, 204, 21, 0.45);
+  padding: 5px 16px;
+  border-radius: 20px;
+  letter-spacing: 1px;
+  margin-bottom: 8px;
+}
+
+.ceremony-heading {
+  margin: 6px 0 8px;
+  font-size: 23px;
+  font-weight: 900;
+  background: linear-gradient(135deg, #ffffff 0%, #fef08a 45%, #facc15 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  letter-spacing: 0.5px;
+}
+
+.ceremony-desc {
+  margin: 0;
+  font-size: 14px;
+  color: #cbd5e1;
+}
+
+.ceremony-decor-stars {
+  margin-top: 10px;
+  color: #facc15;
+  letter-spacing: 6px;
+  font-size: 14px;
+  opacity: 0.85;
+}

@@ -1020,7 +1020,9 @@ function renderActivityRow(r) {
     document_read: "📄",
     study_session: "🎧",
     document_discussion: "💬",
-    document_comment_deleted: "✕"
+    document_comment_deleted: "✕",
+    competition_reward: "👑",
+    competition_phase_bonus: "🌟"
   };
   
   const getSnippet = () => {
@@ -1047,6 +1049,8 @@ function renderActivityRow(r) {
       case "post_hidden": return `Bài đăng của bạn đã bị xoá`;
       case "response_hidden": return `Bài đăng gốc đã bị xoá. Phản hồi của bạn không được tính điểm.`;
       case "weekly_active_reward": return r.reason || `Điểm năng động tuần`;
+      case "competition_reward": return escapeHTML(r.reason || `Thưởng Bảng xếp hạng tuần Đấu trường Arena`);
+      case "competition_phase_bonus": return escapeHTML(r.reason || `Thưởng tham gia các giai đoạn Đấu trường Arena`);
       default: return r.action;
     }
   };
@@ -8290,7 +8294,9 @@ async function onEnterArena() {
     renderCompetitionOverview(overview);
 
     if (!compState.activeTab) {
-      if (norm.state === "open" || norm.state === "countdown") {
+      if (norm.isSunday) {
+        switchCompTab("leaderboard");
+      } else if (norm.state === "open" || norm.state === "countdown") {
         switchCompTab("gateway");
       } else {
         switchCompTab("leaderboard");
@@ -8325,7 +8331,9 @@ function closeCompetitionModal() {
 
 function handleCompetitionCtaClick() {
   const norm = normalizeCompData(compState.status);
-  if (norm.state === "open") {
+  if (norm.isSunday) {
+    openCompetitionModal("leaderboard");
+  } else if (norm.state === "open") {
     openCompetitionModal("gateway");
   } else if (norm.state === "summary" || norm.state === "reviewing" || norm.state === "sunday_summary") {
     openCompetitionModal("leaderboard");
@@ -8333,6 +8341,67 @@ function handleCompetitionCtaClick() {
     openCompetitionModal("gateway");
   }
 }
+
+function launchSundayCeremonyAnimation() {
+  const banner = $("#sundayCeremonyBanner");
+  if (banner) {
+    banner.style.display = "block";
+  }
+
+  const canvas = $("#sundayCeremonyCanvas");
+  if (canvas) {
+    canvas.style.display = "block";
+    const ctx = canvas.getContext("2d");
+    const parent = banner || document.body;
+    canvas.width = parent.clientWidth || 800;
+    canvas.height = parent.clientHeight || 200;
+
+    const particles = [];
+    const colors = ["#fef08a", "#facc15", "#eab308", "#f59e0b", "#fbbf24", "#ffffff", "#38bdf8", "#ec4899"];
+    for (let i = 0; i < 70; i++) {
+      particles.push({
+        x: canvas.width / 2 + (Math.random() - 0.5) * 220,
+        y: canvas.height * 0.45,
+        r: Math.random() * 4.5 + 3,
+        color: colors[Math.floor(Math.random() * colors.length)],
+        vx: (Math.random() - 0.5) * 11,
+        vy: (Math.random() - 0.8) * 9,
+        gravity: 0.15,
+        opacity: 1
+      });
+    }
+
+    let animId = null;
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      let alive = false;
+      particles.forEach(p => {
+        p.x += p.vx;
+        p.y += p.vy;
+        p.vy += p.gravity;
+        p.vx *= 0.98;
+        p.opacity -= 0.007;
+
+        if (p.opacity > 0) {
+          alive = true;
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+          ctx.fillStyle = p.color;
+          ctx.globalAlpha = Math.max(0, p.opacity);
+          ctx.fill();
+        }
+      });
+      ctx.globalAlpha = 1;
+      if (alive) {
+        animId = requestAnimationFrame(draw);
+      }
+    }
+    draw();
+  }
+
+  playCompSound("victory");
+}
+window.launchSundayCeremonyAnimation = launchSundayCeremonyAnimation;
 
 function switchCompTab(tabName) {
   compState.activeTab = tabName;
@@ -8351,8 +8420,30 @@ function switchCompTab(tabName) {
   } else if (tabName === "leaderboard") {
     const lEl = $("#compTabLeaderboard");
     if (lEl) lEl.style.display = "block";
-    loadAndRenderLeaderboard(compState.activeLbPhase || 1);
-    startArenaLeaderboardAutoRefresh();
+    const norm = normalizeCompData(compState.overview || compState.status);
+    if (norm.isSunday) {
+      // Ngày chủ nhật: chỉ hiện tab toàn tuần trong ngày chủ nhật (ẩn các tab GĐ 1, GĐ 2, GĐ 3)
+      $$(".lb-phase-btn").forEach(btn => {
+        if (btn.dataset.lbPhase !== "week") {
+          btn.style.display = "none";
+        } else {
+          btn.style.display = "inline-flex";
+          btn.classList.add("active");
+        }
+      });
+      compState.activeLbPhase = "week";
+      loadAndRenderLeaderboard("week");
+      stopArenaLeaderboardAutoRefresh();
+      launchSundayCeremonyAnimation();
+    } else {
+      $$(".lb-phase-btn").forEach(btn => {
+        btn.style.display = "inline-flex";
+      });
+      const banner = $("#sundayCeremonyBanner");
+      if (banner) banner.style.display = "none";
+      loadAndRenderLeaderboard(compState.activeLbPhase || 1);
+      startArenaLeaderboardAutoRefresh();
+    }
   } else if (tabName === "rules") {
     stopArenaLeaderboardAutoRefresh();
     const rEl = $("#compTabRules");
@@ -8438,6 +8529,24 @@ function renderGatewayTab(raw) {
   }
   if (attemptsPhaseLabel) {
     attemptsPhaseLabel.textContent = data.isSunday ? "Tổng kết toàn tuần" : `Giai đoạn ${data.phase}`;
+  }
+
+  const attemptsCard = $(".comp-user-attempts-card");
+  const phasesJourneyContainer = $(".comp-phases-journey-container");
+  const actionContainer = $("#gatewayActionContainer") || $(".gateway-action-container");
+  const sundayNoticeContainer = $("#gatewaySundayContainer");
+
+  if (data.isSunday) {
+    if (attemptsCard) attemptsCard.style.display = "none";
+    if (phasesJourneyContainer) phasesJourneyContainer.style.display = "none";
+    if (actionContainer) actionContainer.style.display = "none";
+    if (sundayNoticeContainer) sundayNoticeContainer.style.display = "block";
+    return;
+  } else {
+    if (attemptsCard) attemptsCard.style.display = "block";
+    if (phasesJourneyContainer) phasesJourneyContainer.style.display = "block";
+    if (actionContainer) actionContainer.style.display = "flex";
+    if (sundayNoticeContainer) sundayNoticeContainer.style.display = "none";
   }
 
   const attempts = data.userAttempts || 0;
@@ -9301,6 +9410,12 @@ function renderQuizQuestion() {
 
   updateTriesUI(compState.questionTries || 0);
 
+  // Reset hint box - chỉ khi người dùng chủ động bấm bóng đèn mới hiện Hint
+  const hintBox = $("#quizHintBox");
+  const hintBtn = $("#quizHintBtn");
+  if (hintBox) hintBox.style.display = "none";
+  if (hintBtn) hintBtn.classList.remove("active");
+
   const disabledOpts = compState.initialDisabledOptions || [];
   $$(".quiz-option-btn").forEach(btn => {
     const opt = btn.getAttribute("data-option");
@@ -9318,6 +9433,29 @@ function renderQuizQuestion() {
 
   compState.isSubmittingAnswer = false;
 }
+
+function toggleQuizHint(forceState) {
+  const hintBox = $("#quizHintBox");
+  const hintBtn = $("#quizHintBtn");
+  const hintContent = $("#quizHintContent");
+  if (!hintBox) return;
+
+  const q = compState.activeQuestions ? compState.activeQuestions[compState.currentQIndex] : null;
+  const isHidden = (hintBox.style.display === "none" || !hintBox.style.display);
+  const shouldOpen = (typeof forceState === "boolean") ? forceState : isHidden;
+
+  if (shouldOpen) {
+    const rawExplanation = (q && (q.explanation || q.hint)) ? String(q.explanation || q.hint).trim() : "";
+    const explanationText = rawExplanation || "Chưa có lời giải thích chi tiết cho câu hỏi này.";
+    if (hintContent) hintContent.textContent = explanationText;
+    hintBox.style.display = "block";
+    if (hintBtn) hintBtn.classList.add("active");
+  } else {
+    hintBox.style.display = "none";
+    if (hintBtn) hintBtn.classList.remove("active");
+  }
+}
+window.toggleQuizHint = toggleQuizHint;
 
 function updateTriesUI(triesUsed) {
   const triesDots = $$("#quizTriesPill .tries-dot");
@@ -9599,15 +9737,35 @@ function closeQuizAndOpenLeaderboard() {
   openCompetitionModal("leaderboard");
 }
 
-async function loadAdminCompetition() {
+async function loadAdminCompetition(targetCompetitionId) {
   try {
-    const data = await requestAPI("/api/admin/competition/overview");
-    const comp = data.currentCompetition || {};
-    if ($("#adminWeekNumber")) $("#adminWeekNumber").value = comp.week_number || data.week_number || 1;
-    if ($("#adminWeekTopicName")) $("#adminWeekTopicName").value = comp.topic_name || data.weekTopic || "";
-    if ($("#adminPhase1Topic")) $("#adminPhase1Topic").value = comp.phase1_topic || data.phase1Topic || "";
-    if ($("#adminPhase2Topic")) $("#adminPhase2Topic").value = comp.phase2_topic || data.phase2Topic || "";
-    if ($("#adminPhase3Topic")) $("#adminPhase3Topic").value = comp.phase3_topic || data.phase3Topic || "";
+    const targetId = targetCompetitionId || compState.adminSelectedCompetitionId;
+    const url = targetId 
+      ? `/api/admin/competition/overview?competitionId=${targetId}`
+      : "/api/admin/competition/overview";
+    const data = await requestAPI(url);
+    const selectedComp = data.selectedCompetition || data.currentCompetition || {};
+    compState.adminSelectedCompetitionId = selectedComp.id;
+
+    // Populate Week Selector
+    const weekSelect = $("#adminSelectCompetitionWeek");
+    if (weekSelect && Array.isArray(data.availableWeeks)) {
+      weekSelect.innerHTML = data.availableWeeks.map(w => {
+        const isSelected = (w.id === selectedComp.id);
+        return `<option value="${w.id}" ${isSelected ? "selected" : ""}>${escapeHTML(w.label)}</option>`;
+      }).join("");
+    }
+
+    const rangeBadge = $("#adminWeekDateRangeBadge");
+    if (rangeBadge) {
+      rangeBadge.textContent = `🗓️ Khoảng thời gian: ${selectedComp.dateRangeText || (selectedComp.startDateFormatted + " - " + selectedComp.endDateFormatted)}`;
+    }
+
+    if ($("#adminWeekNumber")) $("#adminWeekNumber").value = selectedComp.week_number || data.week_number || 1;
+    if ($("#adminWeekTopicName")) $("#adminWeekTopicName").value = selectedComp.topic_name || data.weekTopic || "";
+    if ($("#adminPhase1Topic")) $("#adminPhase1Topic").value = selectedComp.phase1_topic || data.phase1Topic || "";
+    if ($("#adminPhase2Topic")) $("#adminPhase2Topic").value = selectedComp.phase2_topic || data.phase2Topic || "";
+    if ($("#adminPhase3Topic")) $("#adminPhase3Topic").value = selectedComp.phase3_topic || data.phase3Topic || "";
 
     const simLabel = $("#adminSimCurrentTime");
     if (simLabel) {
@@ -9620,12 +9778,21 @@ async function loadAdminCompetition() {
   }
 }
 
+window.onAdminChangeCompetitionWeek = async function(compId) {
+  const newCompId = Number(compId);
+  if (!newCompId) return;
+  compState.adminSelectedCompetitionId = newCompId;
+  compState.adminPhaseDrafts = {}; // Clear drafts when switching weeks
+  await loadAdminCompetition(newCompId);
+};
+
 async function saveAdminCompetitionTopics() {
   try {
     const weekNum = parseInt($("#adminWeekNumber")?.value, 10);
     await requestAPI("/api/admin/competition/update-topics", {
       method: "POST",
       body: JSON.stringify({
+        competitionId: compState.adminSelectedCompetitionId,
         weekNumber: isNaN(weekNum) ? null : weekNum,
         weekTopic: $("#adminWeekTopicName")?.value || "",
         phase1Topic: $("#adminPhase1Topic")?.value || "",
@@ -9703,7 +9870,8 @@ async function loadAdminPhaseQuestions(phase) {
   container.innerHTML = `<div style="padding:12px; color:var(--muted); text-align:center;">Đang tải câu hỏi...</div>`;
 
   try {
-    const res = await requestAPI(`/api/admin/competition/questions?phase=${phase}`);
+    const compIdParam = compState.adminSelectedCompetitionId ? `&competitionId=${compState.adminSelectedCompetitionId}` : "";
+    const res = await requestAPI(`/api/admin/competition/questions?phase=${phase}${compIdParam}`);
     // Chuẩn hóa mọi biến thể thuộc tính từ server để hiển thị trọn vẹn lên giao diện
     compState.adminQuestions = (res.questions || []).map((q, idx) => ({
       id: q.id,
@@ -9832,6 +10000,7 @@ async function adminSaveQuestions() {
     await requestAPI("/api/admin/competition/questions", {
       method: "POST",
       body: JSON.stringify({
+        competitionId: compState.adminSelectedCompetitionId,
         phase: curPhase,
         questions: questions
       })
@@ -10156,12 +10325,13 @@ async function adminHandleExcelUpload(event) {
             option_b: q.optionB,
             option_c: q.optionC,
             correct_option: q.correctOption,
-            explanation: ""
+            explanation: q.explanation || ""
           }));
 
           await requestAPI("/api/admin/competition/questions", {
             method: "POST",
             body: JSON.stringify({
+              competitionId: compState.adminSelectedCompetitionId,
               phase: p,
               questions: qList
             })

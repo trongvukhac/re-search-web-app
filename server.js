@@ -1090,6 +1090,20 @@ function formatYMD(d) {
   return `${y}-${m}-${day}`;
 }
 
+function formatDMY(date) {
+  if (!date) return "";
+  if (typeof date === "string" && date.includes("-")) {
+    const parts = date.split("-");
+    if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`;
+  }
+  const d = new Date(date);
+  if (isNaN(d.getTime())) return String(date);
+  const day = String(d.getDate()).padStart(2, "0");
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const year = d.getFullYear();
+  return `${day}/${month}/${year}`;
+}
+
 function getWeekRange(date) {
   const d = new Date(date);
   const day = d.getDay(); // 0 = Sunday, 1 = Monday, ...
@@ -4019,6 +4033,15 @@ async function api(request, response, url) {
       };
     }
 
+    let userWeeklyReward = null;
+    if (user) {
+      try {
+        userWeeklyReward = db.prepare(
+          "SELECT * FROM competition_weekly_rewards WHERE competition_id = ? AND user_id = ?"
+        ).get(comp.id, user.id) || null;
+      } catch (e) {}
+    }
+
     return json(response, 200, {
       ok: true,
       resultsVersion: competitionResultsVersion,
@@ -4028,6 +4051,7 @@ async function api(request, response, url) {
       timeState,
       userSummary,
       userStatus,
+      userWeeklyReward,
       totalOnTimeBonus: userStatus?.totalOnTimeBonus ?? userSummary?.totalOnTimeBonus ?? 0,
       defaultAvailablePhase,
       phasesStatus
@@ -4287,7 +4311,7 @@ async function api(request, response, url) {
 
     const phase = sessionPhase;
     const questions = db.prepare(
-      "SELECT id, question_index, question_text, option_a, option_b, option_c FROM competition_questions WHERE competition_id = ? AND phase = ? ORDER BY question_index ASC"
+      "SELECT id, question_index, question_text, option_a, option_b, option_c, explanation FROM competition_questions WHERE competition_id = ? AND phase = ? ORDER BY question_index ASC"
     ).all(comp.id, phase);
 
     if (questions.length < 10) {
@@ -4340,7 +4364,8 @@ async function api(request, response, url) {
       questionText: q.question_text,
       optionA: q.option_a,
       optionB: q.option_b,
-      optionC: q.option_c
+      optionC: q.option_c,
+      explanation: q.explanation || ""
     }));
 
     const phaseTopic = phase === 1 ? comp.phase1_topic : (phase === 2 ? comp.phase2_topic : comp.phase3_topic);
@@ -4599,7 +4624,7 @@ async function api(request, response, url) {
         `).run(nextQIndex, newCorrectCount, newFirstTryCount, newCorrectPoints, newFirstTryBonus, effectiveRemaining, nowMs, session.id);
 
         const nextQ = db.prepare(
-          "SELECT id, question_index, question_text, option_a, option_b, option_c FROM competition_questions WHERE competition_id = ? AND phase = ? AND question_index = ?"
+          "SELECT id, question_index, question_text, option_a, option_b, option_c, explanation FROM competition_questions WHERE competition_id = ? AND phase = ? AND question_index = ?"
         ).get(session.competition_id, session.phase, nextQIndex);
 
         return json(response, 200, {
@@ -4624,7 +4649,8 @@ async function api(request, response, url) {
             text: nextQ.question_text,
             optionA: nextQ.option_a,
             optionB: nextQ.option_b,
-            optionC: nextQ.option_c
+            optionC: nextQ.option_c,
+            explanation: nextQ.explanation || ""
           } : null
         });
       }
@@ -4779,7 +4805,7 @@ async function api(request, response, url) {
           `).run(nextQIndex, effectiveRemaining, nowMs, session.id);
 
           const nextQ = db.prepare(
-            "SELECT id, question_index, question_text, option_a, option_b, option_c FROM competition_questions WHERE competition_id = ? AND phase = ? AND question_index = ?"
+            "SELECT id, question_index, question_text, option_a, option_b, option_c, explanation FROM competition_questions WHERE competition_id = ? AND phase = ? AND question_index = ?"
           ).get(session.competition_id, session.phase, nextQIndex);
 
           return json(response, 200, {
@@ -4800,7 +4826,8 @@ async function api(request, response, url) {
               text: nextQ.question_text,
               optionA: nextQ.option_a,
               optionB: nextQ.option_b,
-              optionC: nextQ.option_c
+              optionC: nextQ.option_c,
+              explanation: nextQ.explanation || ""
             } : null
           });
         }
@@ -4941,34 +4968,64 @@ async function api(request, response, url) {
 
     const vnNow = getVietnamNow();
     const comp = getOrCreateCurrentCompetition(vnNow);
+    // Pre-initialize next week so TA/Admin can setup questions for next week in advance
+    const nextWeekDate = new Date(vnNow.getTime() + 7 * 24 * 3600 * 1000);
+    const nextComp = getOrCreateCurrentCompetition(nextWeekDate);
+
+    const targetCompId = Number(url.searchParams.get("competitionId")) || comp.id;
+    const targetComp = db.prepare("SELECT * FROM weekly_competitions WHERE id = ?").get(targetCompId) || comp;
     const timeState = getCompetitionTimeState(vnNow, comp);
 
     const qCounts = {
-      phase1: db.prepare("SELECT count(*) as c FROM competition_questions WHERE competition_id = ? AND phase = 1").get(comp.id)?.c || 0,
-      phase2: db.prepare("SELECT count(*) as c FROM competition_questions WHERE competition_id = ? AND phase = 2").get(comp.id)?.c || 0,
-      phase3: db.prepare("SELECT count(*) as c FROM competition_questions WHERE competition_id = ? AND phase = 3").get(comp.id)?.c || 0
+      phase1: db.prepare("SELECT count(*) as c FROM competition_questions WHERE competition_id = ? AND phase = 1").get(targetComp.id)?.c || 0,
+      phase2: db.prepare("SELECT count(*) as c FROM competition_questions WHERE competition_id = ? AND phase = 2").get(targetComp.id)?.c || 0,
+      phase3: db.prepare("SELECT count(*) as c FROM competition_questions WHERE competition_id = ? AND phase = 3").get(targetComp.id)?.c || 0
     };
 
     const participantsCount = db.prepare(
       "SELECT count(DISTINCT user_id) as c FROM competition_phase_results WHERE competition_id = ?"
-    ).get(comp.id)?.c || 0;
+    ).get(targetComp.id)?.c || 0;
 
     const totalSessions = db.prepare(
       "SELECT count(*) as c FROM competition_sessions WHERE competition_id = ?"
-    ).get(comp.id)?.c || 0;
+    ).get(targetComp.id)?.c || 0;
 
-    const allWeeks = db.prepare("SELECT * FROM weekly_competitions ORDER BY id DESC LIMIT 10").all();
+    const allWeeksRaw = db.prepare("SELECT * FROM weekly_competitions ORDER BY start_date DESC LIMIT 15").all();
+    const availableWeeks = allWeeksRaw.map(w => {
+      const sFormatted = formatDMY(w.start_date);
+      const eFormatted = formatDMY(w.end_date);
+      const isCurrent = (w.id === comp.id);
+      const isNext = (w.id === nextComp.id);
+      return {
+        ...w,
+        startDateFormatted: sFormatted,
+        endDateFormatted: eFormatted,
+        dateRangeText: `từ ngày ${sFormatted} đến ngày ${eFormatted}`,
+        label: `Tuần ${w.week_number} (${sFormatted} - ${eFormatted})${isCurrent ? " - [Tuần hiện tại]" : (isNext ? " - [Tuần sau]" : "")}`,
+        isCurrent,
+        isNext
+      };
+    });
+
+    const selectedFormatted = {
+      ...targetComp,
+      startDateFormatted: formatDMY(targetComp.start_date),
+      endDateFormatted: formatDMY(targetComp.end_date),
+      dateRangeText: `từ ngày ${formatDMY(targetComp.start_date)} đến ngày ${formatDMY(targetComp.end_date)}`
+    };
 
     return json(response, 200, {
       ok: true,
       currentCompetition: comp,
+      selectedCompetition: selectedFormatted,
+      availableWeeks,
       timeState,
       qCounts,
       participantsCount,
       totalSessions,
       simulatedTimeOffsetMs,
       serverTime: vnNow.toISOString(),
-      allWeeks
+      allWeeks: availableWeeks
     });
   }
 
