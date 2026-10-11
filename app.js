@@ -8059,6 +8059,14 @@ function formatCompSeconds(sec) {
   return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
 }
 
+function formatCompSecondsHMS(sec) {
+  if (isNaN(sec) || sec < 0) sec = 0;
+  const h = Math.floor(sec / 3600);
+  const m = Math.floor((sec % 3600) / 60);
+  const s = Math.floor(sec % 60);
+  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+}
+
 async function loadWeeklyCompetitionStatus() {
   if (!serverMode) return;
   try {
@@ -8247,18 +8255,20 @@ function renderWeeklyCompetitionCard(raw) {
   }
 
   if (compState.homeTimerInterval) clearInterval(compState.homeTimerInterval);
-  let localRemainingSec = data.remainingSeconds || 0;
-  if (countdownTicker) countdownTicker.textContent = formatCompSeconds(localRemainingSec);
-
-  compState.homeTimerInterval = setInterval(() => {
-    localRemainingSec--;
-    if (localRemainingSec <= 0) {
-      clearInterval(compState.homeTimerInterval);
+  compState.homeTargetEndMs = Date.now() + Math.max(0, Number(data.remainingSeconds) || 0) * 1000;
+  const updateHomeCountdown = () => {
+    const remaining = Math.max(0, Math.round((compState.homeTargetEndMs - Date.now()) / 1000));
+    if (countdownTicker) countdownTicker.textContent = formatCompSeconds(remaining);
+    if (remaining <= 0) {
+      if (compState.homeTimerInterval) {
+        clearInterval(compState.homeTimerInterval);
+        compState.homeTimerInterval = null;
+      }
       loadWeeklyCompetitionStatus();
-    } else {
-      if (countdownTicker) countdownTicker.textContent = formatCompSeconds(localRemainingSec);
     }
-  }, 1000);
+  };
+  updateHomeCountdown();
+  compState.homeTimerInterval = setInterval(updateHomeCountdown, 1000);
 }
 
 async function onEnterArena() {
@@ -8282,6 +8292,10 @@ async function onEnterArena() {
     const overview = await requestAPI("/api/competition/overview");
     const norm = normalizeCompData(overview);
     compState.overview = { ...overview, ...norm };
+    if (typeof norm.remainingSeconds === "number" && !isNaN(norm.remainingSeconds)) {
+      compState.gatewayTargetEndMs = Date.now() + Math.max(0, norm.remainingSeconds) * 1000;
+      compState.lastOverviewRemainingSec = norm.remainingSeconds;
+    }
     const isOpen = (norm.state === "open" && !norm.isSunday);
     if (overview.resultsVersion) {
       if (compState.lastResultsVersion && compState.lastResultsVersion !== overview.resultsVersion) {
@@ -8500,7 +8514,7 @@ function renderGatewayTab(raw) {
     if (data.isSunday) {
       statusBadge.classList.add("status-sunday");
       if (statusText) statusText.textContent = "TỔNG KẾT TUẦN";
-      if (clockLabel) clockLabel.textContent = "Kết thúc tuần sau:";
+      if (clockLabel) clockLabel.textContent = "Tuần mới bắt đầu sau:";
     } else if (data.state === "open") {
       statusBadge.classList.add("status-open");
       const openStatusText = data.isSaturday ? "ĐANG MỞ CỔNG (09h - 23h59)" : "ĐANG MỞ CỔNG (19h - 23h)";
@@ -8530,6 +8544,36 @@ function renderGatewayTab(raw) {
   if (attemptsPhaseLabel) {
     attemptsPhaseLabel.textContent = data.isSunday ? "Tổng kết toàn tuần" : `Giai đoạn ${data.phase}`;
   }
+
+  // Khởi tạo & duy trì đồng hồ đếm ngược bằng timestamp chống lệch/nhảy giờ (hoạt động cho cả ngày thường và chủ nhật)
+  if (!compState.gatewayTargetEndMs && typeof data.remainingSeconds === "number" && !isNaN(data.remainingSeconds)) {
+    compState.gatewayTargetEndMs = Date.now() + Math.max(0, data.remainingSeconds) * 1000;
+  }
+
+  const updateGatewayClock = () => {
+    if (!clockDigits) return;
+    const now = Date.now();
+    const targetEnd = compState.gatewayTargetEndMs || (now + Math.max(0, Number(data.remainingSeconds) || 0) * 1000);
+    const remaining = Math.max(0, Math.round((targetEnd - now) / 1000));
+    clockDigits.textContent = formatCompSecondsHMS(remaining);
+
+    if (remaining <= 0) {
+      if (compState.gatewayTimerInterval) {
+        clearInterval(compState.gatewayTimerInterval);
+        compState.gatewayTimerInterval = null;
+      }
+      if (typeof onEnterArena === "function") {
+        onEnterArena();
+      }
+    }
+  };
+
+  if (compState.gatewayTimerInterval) {
+    clearInterval(compState.gatewayTimerInterval);
+    compState.gatewayTimerInterval = null;
+  }
+  updateGatewayClock();
+  compState.gatewayTimerInterval = setInterval(updateGatewayClock, 1000);
 
   const attemptsCard = $(".comp-user-attempts-card");
   const phasesJourneyContainer = $(".comp-phases-journey-container");
@@ -8727,20 +8771,6 @@ function renderGatewayTab(raw) {
       }
     }
   }
-
-  if (compState.gatewayTimerInterval) clearInterval(compState.gatewayTimerInterval);
-  let localSec = data.remainingSeconds || 0;
-  if (clockDigits) clockDigits.textContent = formatCompSeconds(localSec);
-
-  compState.gatewayTimerInterval = setInterval(() => {
-    localSec--;
-    if (localSec <= 0) {
-      clearInterval(compState.gatewayTimerInterval);
-      openCompetitionModal(compState.activeTab);
-    } else {
-      if (clockDigits) clockDigits.textContent = formatCompSeconds(localSec);
-    }
-  }, 1000);
 }
 
 function stopArenaLeaderboardAutoRefresh() {

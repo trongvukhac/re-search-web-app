@@ -8452,8 +8452,8 @@ body.dark-theme .comp-tab-btn.active {
   .comp-gateway-hero {
     flex-direction: column !important;
     align-items: stretch !important;
-    gap: 16px !important;
-    padding: 16px 16px !important;
+    gap: 14px !important;
+    padding: 16px 14px !important;
     border-radius: 14px !important;
   }
 
@@ -8467,6 +8467,7 @@ body.dark-theme .comp-tab-btn.active {
 
   .comp-gateway-hero p {
     margin-bottom: 0;
+    font-size: 13px;
   }
 
   .gateway-clock-card {
@@ -8476,11 +8477,11 @@ body.dark-theme .comp-tab-btn.active {
     justify-content: space-between !important;
     width: 100% !important;
     margin-left: 0 !important;
-    padding: 14px 18px !important;
+    padding: 12px 14px !important;
     box-sizing: border-box !important;
-    border-radius: 14px !important;
-    gap: 16px !important;
-    min-height: 84px !important;
+    border-radius: 12px !important;
+    gap: 12px !important;
+    min-height: auto !important;
   }
 
   .gateway-clock-card .gateway-clock-body {
@@ -8489,19 +8490,228 @@ body.dark-theme .comp-tab-btn.active {
     min-width: 0 !important;
   }
 
+  .gateway-clock-card .gateway-clock-label {
+    font-size: 11px !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.5px !important;
+    margin-bottom: 2px !important;
+  }
+
+  .gateway-clock-digits {
+    font-size: 22px !important;
+    letter-spacing: 0.5px !important;
+  }
+
   .gateway-clock-card .gateway-clock-icon {
     order: 2 !important;
     margin-left: auto !important;
-    font-size: 56px !important; /* phóng to gần bằng kích cỡ modal */
-    width: 56px !important;
-    height: 56px !important;
-    flex: 0 0 56px !important;
+    font-size: 44px !important;
+    width: 44px !important;
+    height: 44px !important;
+    flex: 0 0 44px !important;
     line-height: 1 !important;
     display: inline-flex !important;
     align-items: center !important;
     justify-content: center !important;
   }
 
+  /* User attempts card on mobile */
+  .comp-user-attempts-card {
+    padding: 14px !important;
+    border-radius: 14px !important;
+    margin-bottom: 14px !important;
+  }
+
+  .attempts-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 8px !important;
+  }
+
+  .attempt-stat-box {
+    padding: 10px 10px !important;
+    border-radius: 10px !important;
+  }
+
+  .attempt-stat-label {
+    font-size: 11px !important;
+  }
+
+  .attempt-stat-val {
+    font-size: 14.5px !important;
+  }
+
+  .attempts-note-banner {
+    padding: 10px 12px !important;
+    font-size: 12px !important;
+    line-height: 1.45 !important;
+    border-radius: 10px !important;
+    gap: 8px !important;
+  }
+
+  /* Journey container on mobile */
+  .comp-phases-journey-container {
+    padding: 14px !important;
+    border-radius: 14px !important;
+    margin: 14px 0 !important;
+  }
+
+  .comp-phases-journey-grid {
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+
+  .phase-journey-card {
+    padding: 12px 14px !important;
+    border-radius: 12px !important;
+  }
+
+  .pj-phase-num {
+    font-size: 13.5px !important;
+  }
+
+  .pj-topic {
+    font-size: 13px !important;
+    line-height: 1.4 !important;
+    margin: 6px 0 !important;
+  }
+
+  .pj-score-box {
+    padding: 6px 10px !important;
+    font-size: 12px !important;
+    border-radius: 8px !important;
+  }
+
+  .pj-action-btn {
+    min-height: 42px !important;
+    font-size: 13px !important;
+    font-weight: 700 !important;
+    width: 100% !important;
+    border-radius: 9px !important;
+  }
+
+  /* Gateway CTA button */
+  .gateway-action-container {
+    margin-top: 14px !important;
+  }
+
+  .gateway-play-btn {
+    width: 100% !important;
+    min-height: 48px !important;
+    font-size: 15px !important;
+    border-radius: 12px !important;
+    justify-content: center !important;
+  }
+
+  .gateway-blocked-msg {
+    font-size: 12px !important;
+    padding: 10px 12px !important;
+    line-height: 1.45 !important;
+  }
+
+  /* Sunday components on mobile */
+  .gateway-sunday-container {
+    margin: 14px 0 !important;
+  }
+
+  .sunday-hero-banner {
+    padding: 20px 14px !important;
+    border-radius: 12px !important;
+  }
+
+  .sunday-cup-icon {
+    font-size: 38px !important;
+    margin-bottom: 6px !important;
+  }
+
+  .sunday-hero-content h3 {
+    font-size: 18px !important;
+    margin: 0 0 6px !important;
+  }
+
+  .sunday-hero-content p {
+    font-size: 13px !important;
+    margin: 0 auto 16px !important;
+    line-height: 1.45 !important;
+  }
+
+  .sunday-goto-lb-btn {
+    width: 100% !important;
+    justify-content: center !important;
+    min-height: 46px !important;
+    font-size: 14px !important;
+    padding: 11px 16px !important;
+  }
+
+  .sunday-ceremony-banner {
+    padding: 20px 14px !important;
+    border-radius: 14px !important;
+    margin-bottom: 16px !important;
+  }
+
+  .ceremony-trophy-icon {
+    font-size: 38px !important;
+    margin-bottom: 6px !important;
+  }
+
+  .ceremony-badge {
+    font-size: 10px !important;
+    padding: 4px 10px !important;
+  }
+
+  .ceremony-heading {
+    font-size: 18px !important;
+    line-height: 1.3 !important;
+    margin: 4px 0 6px !important;
+  }
+
+  .ceremony-desc {
+    font-size: 12.5px !important;
+    line-height: 1.4 !important;
+  }
+
+  /* Leaderboard controls */
+  .lb-header-controls {
+    margin-bottom: 14px !important;
+  }
+
+  .lb-phase-selectors {
+    display: flex !important;
+    gap: 6px !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    scrollbar-width: none !important;
+    padding-bottom: 4px !important;
+    flex-wrap: nowrap !important;
+    width: 100% !important;
+  }
+
+  .lb-phase-selectors::-webkit-scrollbar {
+    display: none !important;
+  }
+
+  .lb-phase-btn {
+    padding: 7px 12px !important;
+    font-size: 11.5px !important;
+    flex-shrink: 0 !important;
+    white-space: nowrap !important;
+    min-height: 34px !important;
+  }
+
+  .lb-refresh-btn {
+    padding: 7px 10px !important;
+    font-size: 11.5px !important;
+    flex-shrink: 0 !important;
+    white-space: nowrap !important;
+    min-height: 34px !important;
+    margin-left: auto !important;
+  }
+
+  .lb-summary-notice {
+    font-size: 11.5px !important;
+    line-height: 1.4 !important;
+  }
+
+  /* Podium on mobile */
   .comp-podium-wrap {
     gap: 6px;
     padding: 16px 0 6px 0;
@@ -8561,10 +8771,10 @@ body.dark-theme .comp-tab-btn.active {
 
   .comp-lb-list-header,
   .comp-lb-row {
-    grid-template-columns: 28px 1fr 64px;
-    padding: 8px 10px;
-    font-size: 12px;
-    gap: 6px;
+    grid-template-columns: 26px 1fr auto !important;
+    padding: 8px 10px !important;
+    font-size: 12px !important;
+    gap: 8px !important;
     overflow: visible;
   }
 
@@ -8621,11 +8831,6 @@ body.dark-theme .comp-tab-btn.active {
     font-size: 12px;
     white-space: nowrap;
     text-align: right;
-  }
-
-  .attempts-grid {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 10px;
   }
 
   .rules-phase-cards {
@@ -10561,8 +10766,19 @@ body:has(#postDetail.active-page) .mobile-fab {
 
 .namecard-modal,
 dialog.modal.namecard-modal {
-  max-width: 680px !important;
-  width: 92% !important;
+  /* Khóa tỷ lệ mặc định theo đường chéo (aspect-ratio: 680 / 760).
+     Kích thước chuẩn trên PC là 680px x 760px.
+     Trên mọi thiết bị / màn hình, namecard giữ nguyên tỷ lệ, co giãn đồng nhất (scale theo đường chéo). */
+  --nc-base-w: 680px;
+  --nc-base-h: 760px;
+  --nc-ratio: 680 / 760;
+
+  width: min(var(--nc-base-w), 92vw, calc(92vh * (680 / 760))) !important;
+  max-width: var(--nc-base-w) !important;
+  height: calc(min(var(--nc-base-w), 92vw, calc(92vh * (680 / 760))) * (760 / 680)) !important;
+  max-height: min(var(--nc-base-h), 92vh) !important;
+  aspect-ratio: var(--nc-ratio) !important;
+
   border-radius: 24px !important;
   padding: 0 !important;
   border: none !important;
@@ -10575,8 +10791,6 @@ dialog.modal.namecard-modal {
   position: fixed !important;
   inset: 0 !important;
   margin: auto !important;
-  height: min(92vh, 760px) !important;
-  max-height: min(92vh, 760px) !important;
   font-family: var(--sans) !important;
 }
 
@@ -10634,7 +10848,17 @@ dialog.modal.namecard-modal {
   transform: translateY(-8px) scale(0.9) !important;
 }
 
-/* Stationary Cover Image - Fixed inside modal behind content */
+/* Khung sân khấu namecardStage: Chiếm trọn 100% modal theo tỷ lệ chuẩn 680x760 */
+.namecard-stage {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Stationary Cover Image - Fixed inside stage behind content */
 .namecard-cover {
   position: absolute;
   top: 0;
@@ -10692,7 +10916,7 @@ dialog.modal.namecard-modal {
 }
 
 /* Decorative frame lives above the card as an inert, absolute layer.
-   It deliberately has no box-model impact on the existing 680px / mobile card. */
+   Nằm trọn vẹn trong stage theo đúng kích thước và tỷ lệ khóa cố định. */
 .namecard-frame-layer {
   position: absolute;
   inset: 0;
@@ -11013,70 +11237,7 @@ dialog.modal.namecard-modal {
   word-break: break-word;
 }
 
-@media (max-width: 820px) {
-  .namecard-header {
-    padding: 0 20px 14px;
-  }
-  .namecard-body {
-    padding: 0 20px 20px;
-  }
-}
-
-@media (max-width: 600px) {
-  .namecard-cover-actions {
-    top: 12px;
-    right: 50px;
-    gap: 6px;
-  }
-  .namecard-view-cover-btn,
-  .namecard-edit-cover-btn {
-    padding: 5px 10px;
-    font-size: 0.7rem;
-  }
-  .namecard-header {
-    padding: 0 18px 14px;
-  }
-  .namecard-profile-row {
-    flex-direction: row;
-    align-items: flex-start;
-    gap: 12px;
-    margin-top: -40px;
-    width: 100%;
-  }
-  .namecard-avatar-wrap {
-    width: 80px;
-    height: 80px;
-    flex-shrink: 0;
-  }
-  .namecard-avatar-circle {
-    width: 80px;
-    height: 80px;
-    font-size: 38px;
-    border-width: 3px;
-  }
-  .namecard-identity {
-    padding-top: 42px;
-    padding-bottom: 0;
-    flex: 1;
-    min-width: 0;
-  }
-  .namecard-display-name {
-    font-size: 1.35rem;
-    line-height: 1.25;
-  }
-  .namecard-badges {
-    margin-top: 4px;
-    gap: 6px;
-  }
-  .namecard-bio {
-    margin: 12px 0 0 0;
-    font-size: 0.88rem;
-    line-height: 1.45;
-  }
-  .namecard-body {
-    padding: 0 18px 20px;
-  }
-}
+/* Bố cục Namecard được chuẩn hóa đồng nhất trên mọi kích cỡ */
 
 /* Sections Body */
 .namecard-body {
@@ -11169,12 +11330,6 @@ dialog.modal.namecard-modal {
   gap: 14px;
   overflow-x: visible;
   padding-bottom: 2px;
-}
-
-@media (max-width: 600px) {
-  .namecard-tiles-2 {
-    grid-template-columns: 1fr;
-  }
 }
 
 .namecard-tile {
@@ -11498,58 +11653,7 @@ dialog.modal.namecard-modal {
   font-size: 11px;
 }
 
-/* ==========================================
-   RESPONSIVE DESIGN FOR NAMECARD
-   ========================================== */
-
-@media (max-width: 768px) {
-  .namecard-header {
-    flex-direction: column;
-    padding: 0 16px 16px;
-  }
-  .namecard-profile-col {
-    width: 100%;
-    margin-top: -40px;
-  }
-  .namecard-streak-widget {
-    width: 100%;
-    margin-top: 10px;
-  }
-  .namecard-body {
-    padding: 0 16px 20px;
-  }
-  .namecard-tiles-5 {
-    grid-template-columns: repeat(3, 1fr);
-  }
-  .namecard-tiles-2 {
-    grid-template-columns: 1fr;
-  }
-  .namecard-tiles-6 {
-    grid-template-columns: repeat(3, 1fr);
-  }
-}
-
-@media (max-width: 480px) {
-  .namecard-tiles-5,
-  .namecard-tiles-6 {
-    grid-template-columns: repeat(2, 1fr);
-  }
-  .namecard-avatar-wrap {
-    width: 80px;
-    height: 80px;
-  }
-  .namecard-avatar-circle {
-    width: 80px;
-    height: 80px;
-    font-size: 36px;
-  }
-  .namecard-identity {
-    padding-top: 42px;
-  }
-  .namecard-display-name {
-    font-size: 1.25rem;
-  }
-}
+/* Namecard uses unified PC/mobile geometry locked to aspect-ratio 680/760 with diagonal scaling */
 
 /* Must follow the retired prototype frame rules above: frames never consume
    content space or alter card geometry. */
@@ -11830,3 +11934,159 @@ dialog.modal.namecard-modal {
   font-size: 14px;
   opacity: 0.85;
 }
+
+/* ========================================================
+   ARENA MOBILE OPTIMIZATIONS (<= 600px & <= 480px)
+   ======================================================== */
+
+@media (max-width: 600px) {
+  .quiz-question-top-bar {
+    gap: 8px !important;
+    margin-bottom: 10px !important;
+  }
+
+  .quiz-question-top-bar .q-tries-pill {
+    margin-bottom: 0 !important;
+    font-size: 10.5px !important;
+    padding: 3px 8px !important;
+  }
+
+  .quiz-hint-btn {
+    width: 34px !important;
+    height: 34px !important;
+    font-size: 16px !important;
+    box-shadow: 0 2px 6px rgba(245, 158, 11, 0.25) !important;
+  }
+
+  .quiz-hint-box {
+    margin-top: 10px !important;
+    padding: 10px 12px !important;
+    border-radius: 9px !important;
+  }
+
+  .quiz-hint-tag {
+    font-size: 11px !important;
+  }
+
+  .quiz-hint-close-btn {
+    font-size: 16px !important;
+  }
+
+  .quiz-hint-body {
+    font-size: 12.5px !important;
+    line-height: 1.45 !important;
+  }
+
+  .quiz-question-text {
+    font-size: 16px !important;
+    line-height: 1.45 !important;
+  }
+
+  .quiz-options-grid {
+    gap: 8px !important;
+  }
+
+  .quiz-option-btn {
+    min-height: 44px !important;
+    padding: 10px 12px !important;
+    font-size: 13.5px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .arena-tabs-container {
+    padding: 12px 8px !important;
+    border-radius: 14px !important;
+  }
+
+  .comp-nav-tabs.arena-nav-tabs {
+    gap: 3px !important;
+    padding: 3px !important;
+    border-radius: 10px !important;
+  }
+
+  .comp-tab-btn {
+    font-size: 10px !important;
+    padding: 7px 2px !important;
+    gap: 2px !important;
+    min-height: 38px !important;
+  }
+
+  .comp-tab-btn .tab-icon {
+    font-size: 12px !important;
+  }
+
+  .comp-gateway-hero h3 {
+    font-size: 16px !important;
+  }
+
+  .gateway-clock-digits {
+    font-size: 19px !important;
+    letter-spacing: 0.5px !important;
+  }
+
+  .gateway-clock-card .gateway-clock-icon {
+    width: 38px !important;
+    height: 38px !important;
+    flex: 0 0 38px !important;
+    font-size: 38px !important;
+  }
+
+  .comp-podium-wrap {
+    gap: 4px !important;
+    padding: 10px 0 4px 0 !important;
+    justify-content: center !important;
+  }
+
+  .podium-col {
+    width: 32% !important;
+    max-width: 95px !important;
+  }
+
+  .podium-avatar {
+    width: 38px !important;
+    height: 38px !important;
+    font-size: 15px !important;
+  }
+
+  .podium-col.rank-1 .podium-avatar {
+    width: 48px !important;
+    height: 48px !important;
+    font-size: 19px !important;
+  }
+
+  .podium-name {
+    font-size: 10px !important;
+    max-width: 78px !important;
+  }
+
+  .podium-score {
+    font-size: 9.5px !important;
+    padding: 2px 4px !important;
+  }
+
+  .podium-stand.stand-1 {
+    height: 72px !important;
+  }
+  .podium-stand.stand-2 {
+    height: 56px !important;
+  }
+  .podium-stand.stand-3 {
+    height: 42px !important;
+  }
+
+  .comp-lb-avatar-wrap .avatar {
+    width: 24px !important;
+    height: 24px !important;
+    font-size: 11px !important;
+  }
+
+  .comp-lb-name {
+    font-size: 12px !important;
+  }
+
+  .comp-lb-score {
+    font-size: 11.5px !important;
+  }
+}
+
