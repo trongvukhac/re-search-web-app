@@ -10768,7 +10768,8 @@ body:has(#postDetail.active-page) .mobile-fab {
 dialog.modal.namecard-modal {
   /* Khóa tỷ lệ mặc định theo đường chéo (aspect-ratio: 680 / 760).
      Kích thước chuẩn trên PC là 680px x 760px.
-     Trên mọi thiết bị / màn hình, namecard giữ nguyên tỷ lệ, co giãn đồng nhất (scale theo đường chéo). */
+     Trên mọi thiết bị / màn hình, cả khung lẫn TOÀN BỘ NỘI DUNG bên trong
+     đều scale theo đường chéo đồng nhất (diagonal proportional scaling). */
   --nc-base-w: 680px;
   --nc-base-h: 760px;
   --nc-ratio: 680 / 760;
@@ -10848,14 +10849,19 @@ dialog.modal.namecard-modal {
   transform: translateY(-8px) scale(0.9) !important;
 }
 
-/* Khung sân khấu namecardStage: Chiếm trọn 100% modal theo tỷ lệ chuẩn 680x760 */
+/* Sân khấu NamecardStage: Luôn giữ nguyên kích thước chuẩn PC (680px x 760px),
+   và scale toàn bộ nội dung (chữ, icon, avatar, nút, viền, ảnh bìa) theo đúng tỷ lệ thu nhỏ của modal */
 .namecard-stage {
-  position: relative;
-  width: 100%;
-  height: 100%;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 680px;
+  height: 760px;
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  transform-origin: top left;
+  transform: scale(var(--nc-scale, 1));
 }
 
 /* Stationary Cover Image - Fixed inside stage behind content */
@@ -10864,7 +10870,7 @@ dialog.modal.namecard-modal {
   top: 0;
   left: 0;
   right: 0;
-  height: clamp(230px, 30vw, 310px);
+  height: 250px;
   background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 50%, #93c5fd 100%);
   background-size: cover;
   background-position: center;
@@ -10908,6 +10914,7 @@ dialog.modal.namecard-modal {
   flex-direction: column;
   overflow-y: auto !important;
   overflow-x: hidden !important;
+  width: 100%;
   height: 100% !important;
   max-height: 100% !important;
   font-family: var(--sans);
@@ -10973,7 +10980,7 @@ dialog.modal.namecard-modal {
 
 /* Spacer allowing fixed cover behind to be visible at top */
 .namecard-cover-spacer {
-  height: clamp(170px, 22vw, 230px);
+  height: 200px;
   flex-shrink: 0;
   pointer-events: none;
 }

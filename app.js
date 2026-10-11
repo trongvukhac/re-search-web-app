@@ -3702,6 +3702,7 @@ window.openNamecard = async function(userId) {
     }
 
     $("#namecardModal").showModal();
+    syncNamecardModalScale();
   } catch (err) {
     toast(err.message || "Không thể tải thẻ tên.");
   }
@@ -4075,6 +4076,26 @@ if ($("#editProfileForm")) {
     }
   };
 }
+
+function syncNamecardModalScale() {
+  const modal = document.getElementById("namecardModal");
+  if (!modal) return;
+  const rect = modal.getBoundingClientRect();
+  const width = rect.width || modal.offsetWidth || 0;
+  if (width > 0) {
+    const scale = Math.min(1, width / 680);
+    modal.style.setProperty("--nc-scale", scale.toFixed(5));
+  } else {
+    modal.style.setProperty("--nc-scale", "1");
+  }
+}
+window.syncNamecardModalScale = syncNamecardModalScale;
+window.addEventListener("resize", () => {
+  const modal = document.getElementById("namecardModal");
+  if (modal && modal.open) {
+    syncNamecardModalScale();
+  }
+}, { passive: true });
 
 // Scroll listener for Namecard modal action buttons (Close, View Cover, Edit Cover) auto-hide / show
 const ncCardElement = document.getElementById("namecardCard");
