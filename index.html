@@ -16,7 +16,7 @@
     <script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-    <link rel="stylesheet" href="styles.css?v=63" />
+    <link rel="stylesheet" href="styles.css?v=64" />
   </head>
   <body>
     <dialog
@@ -2818,7 +2818,7 @@
     <!-- MODAL ĐẤU TRƯỜNG QUIZ 10 PHÚT -->
     <dialog id="competitionQuizModal" class="quiz-arena-modal" style="max-width: 900px; width: 95vw; height: min(92vh, 92dvh, 860px); padding: 0;">
       <!-- QUIZ GAMEPLAY VIEW -->
-      <div id="quizPlayView" class="quiz-play-container">
+      <div id="quizPlayView" class="quiz-play-container" oncontextmenu="return false;" oncopy="return false;" oncut="return false;" onselectstart="return false;" ondragstart="return false;">
         <div class="quiz-header-bar">
           <!-- DÒNG TRÊN: GIAI ĐOẠN, SỐ CÂU, NÚT THOÁT -->
           <div class="quiz-header-top-row">
@@ -3110,6 +3110,6 @@
       </div>
     </dialog>
 
-    <script src="app.js?v=73" defer></script>
+    <script src="app.js?v=74" defer></script>
   </body>
 </html>

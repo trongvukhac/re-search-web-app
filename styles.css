@@ -9314,12 +9314,29 @@ dialog.quiz-arena-modal,
   box-sizing: border-box;
 }
 
-.quiz-play-container {
+.quiz-play-container,
+#quizPlayView {
   display: flex;
   flex-direction: column;
   height: 100%;
   max-height: 100%;
   overflow: hidden;
+  -webkit-user-select: none !important;
+  -moz-user-select: none !important;
+  -ms-user-select: none !important;
+  user-select: none !important;
+  -webkit-touch-callout: none !important;
+}
+
+.quiz-play-container *,
+#quizPlayView * {
+  -webkit-user-select: none !important;
+  -moz-user-select: none !important;
+  -ms-user-select: none !important;
+  user-select: none !important;
+  -webkit-touch-callout: none !important;
+  -webkit-user-drag: none !important;
+  user-drag: none !important;
 }
 
 .quiz-body-content {

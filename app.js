@@ -10704,6 +10704,68 @@ document.addEventListener("DOMContentLoaded", () => {
       closeQuizStartConfirmModal();
     });
   }
+
+  // Ngăn copy, cut, chuột phải chỉ trong giao diện làm bài Arena
+  const playView = $("#quizPlayView");
+  if (playView) {
+    playView.addEventListener("contextmenu", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      return false;
+    }, { capture: true });
+
+    playView.addEventListener("copy", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      return false;
+    }, { capture: true });
+
+    playView.addEventListener("cut", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      return false;
+    }, { capture: true });
+
+    playView.addEventListener("selectstart", (e) => {
+      e.preventDefault();
+      return false;
+    }, { capture: true });
+
+    playView.addEventListener("dragstart", (e) => {
+      e.preventDefault();
+      return false;
+    }, { capture: true });
+  }
+
+  if (quizModal) {
+    quizModal.addEventListener("contextmenu", (e) => {
+      const pView = $("#quizPlayView");
+      if (pView && pView.style.display !== "none") {
+        e.preventDefault();
+        e.stopPropagation();
+        return false;
+      }
+    }, { capture: true });
+  }
+
+  // Chặn phím tắt copy/cut/chọn tất cả chỉ khi đang mở giao diện làm bài Arena
+  document.addEventListener("keydown", (e) => {
+    const qModal = $("#competitionQuizModal");
+    const pView = $("#quizPlayView");
+    if (!qModal || !qModal.open || !pView || pView.style.display === "none") {
+      return; // Các màn hình và chức năng khác hoạt động bình thường
+    }
+    if (e.target && !qModal.contains(e.target)) {
+      return;
+    }
+    const isCmdOrCtrl = e.ctrlKey || e.metaKey;
+    const key = (e.key || "").toLowerCase();
+    if (isCmdOrCtrl && ["c", "x", "a", "u", "s", "p"].includes(key)) {
+      e.preventDefault();
+      e.stopPropagation();
+      return false;
+    }
+  }, { capture: true });
 });
 
 // Auto-pause if user closes tab or navigates away
