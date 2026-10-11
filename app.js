@@ -5076,15 +5076,24 @@ function startLocalTimerTick() {
   studyState.isRunning = true;
   if (studyState.timerInterval) {
     clearInterval(studyState.timerInterval);
+    studyState.timerInterval = null;
+  }
+
+  const now = Date.now();
+  if (!studyState.startedAtMs) {
+    studyState.startedAtMs = now - (studyState.elapsedSessionSeconds || 0) * 1000;
   }
 
   studyState.timerInterval = setInterval(() => {
-    const now = Date.now();
+    const curNow = Date.now();
     if (studyState.targetEndMs > 0) {
-      const remaining = Math.max(0, Math.floor((studyState.targetEndMs - now) / 1000));
+      const remaining = Math.max(0, Math.ceil((studyState.targetEndMs - curNow) / 1000));
       studyState.remainingSeconds = remaining;
-      studyState.elapsedSessionSeconds++;
+      studyState.elapsedSessionSeconds = Math.max(0, Math.floor((curNow - studyState.startedAtMs) / 1000));
       updateTimerDisplay();
+      if (typeof updateAllCoStudyCards === 'function') {
+        updateAllCoStudyCards(lastFetchedLearners);
+      }
       if (remaining <= 0) {
         finishStudySession(true);
       }
@@ -5093,15 +5102,20 @@ function startLocalTimerTick() {
         studyState.remainingSeconds--;
         studyState.elapsedSessionSeconds++;
         updateTimerDisplay();
+        if (typeof updateAllCoStudyCards === 'function') {
+          updateAllCoStudyCards(lastFetchedLearners);
+        }
       } else {
         finishStudySession(true);
       }
     }
   }, 1000);
 
-  if (!studyState.syncHeartbeatInterval) {
-    studyState.syncHeartbeatInterval = setInterval(syncStudyToServer, 20000);
+  if (studyState.syncHeartbeatInterval) {
+    clearInterval(studyState.syncHeartbeatInterval);
+    studyState.syncHeartbeatInterval = null;
   }
+  studyState.syncHeartbeatInterval = setInterval(syncStudyToServer, 10000);
 }
 
 async function startStudyTimer() {
@@ -5110,7 +5124,9 @@ async function startStudyTimer() {
     studyState.cycleIndex = 1;
   }
   studyState.goal = ($("#studyGoalInput") ? $("#studyGoalInput").value : "").trim();
-  studyState.targetEndMs = Date.now() + studyState.remainingSeconds * 1000;
+  const now = Date.now();
+  studyState.startedAtMs = now - (studyState.elapsedSessionSeconds || 0) * 1000;
+  studyState.targetEndMs = now + studyState.remainingSeconds * 1000;
 
   if (studyState.audioCtx && studyState.audioCtx.state === 'suspended') {
     studyState.audioCtx.resume();
@@ -5128,11 +5144,18 @@ async function pauseStudyTimer(sync = true) {
     clearInterval(studyState.timerInterval);
     studyState.timerInterval = null;
   }
+  if (studyState.syncHeartbeatInterval) {
+    clearInterval(studyState.syncHeartbeatInterval);
+    studyState.syncHeartbeatInterval = null;
+  }
   if (studyState.targetEndMs > 0) {
-    studyState.remainingSeconds = Math.max(0, Math.floor((studyState.targetEndMs - Date.now()) / 1000));
+    studyState.remainingSeconds = Math.max(0, Math.ceil((studyState.targetEndMs - Date.now()) / 1000));
     studyState.targetEndMs = 0;
   }
   updateTimerDisplay();
+  if (typeof updateAllCoStudyCards === 'function') {
+    updateAllCoStudyCards(lastFetchedLearners);
+  }
   if (sync) {
     await syncStudyToServer();
     await fetchStudyLounge();
@@ -5145,6 +5168,7 @@ async function resetStudyTimer() {
   studyState.accumulatedFocusMinutes = 0;
   studyState.remainingSeconds = studyState.durationMinutes * 60;
   studyState.targetEndMs = 0;
+  studyState.startedAtMs = 0;
   studyState.elapsedSessionSeconds = 0;
   if (session) {
     try {
@@ -5152,6 +5176,9 @@ async function resetStudyTimer() {
     } catch (e) {}
   }
   updateTimerDisplay();
+  if (typeof updateAllCoStudyCards === 'function') {
+    updateAllCoStudyCards(lastFetchedLearners);
+  }
   await fetchStudyLounge();
   toast("Đã đặt lại đồng hồ.");
 }
@@ -5360,46 +5387,83 @@ function getSelfPresenceData() {
 
 let lastRenderedCoStudySig = "";
 
-function updateSelfCoStudyCard() {
-  const selfCard = document.querySelector("#coStudyList .co-study-item.is-self");
-  if (!selfCard) return;
+function updateAllCoStudyCards(rawLearners = []) {
+  const list = $("#coStudyList");
+  if (!list) return;
 
+  const learners = Array.isArray(rawLearners) ? [...rawLearners] : [];
   const selfData = getSelfPresenceData();
-  let statusText = '';
-  let statusIcon = '';
-  if (selfData.isRunning) {
-    const remainingMin = Math.max(1, Math.ceil((selfData.remainingSeconds || 0) / 60));
-    if (selfData.mode === 'shortbreak') {
-      statusIcon = '☕';
-      statusText = `${remainingMin}m`;
-    } else if (selfData.mode === 'longbreak') {
-      statusIcon = '🌿';
-      statusText = `${remainingMin}m`;
-    } else {
-      statusIcon = '🔥';
-      statusText = `${remainingMin}m`;
-    }
+  const curSession = session || (typeof window !== 'undefined' && window.session);
+
+  const selfIdx = learners.findIndex(l => l.isSelf || (curSession && l.userId === curSession.id));
+  if (selfIdx >= 0) {
+    learners[selfIdx] = selfData;
   } else {
-    if (selfData.remainingSeconds < (selfData.durationMinutes * 60) && selfData.remainingSeconds > 0) {
-      statusIcon = '⏸️';
-      statusText = 'Tạm dừng';
-    } else {
-      statusIcon = '✨';
-      statusText = 'Sẵn sàng';
-    }
+    learners.unshift(selfData);
   }
 
-  const badgeEl = selfCard.querySelector(".co-study-status-badge");
-  const timeEl = selfCard.querySelector(".co-study-time");
-  if (badgeEl) {
-    badgeEl.className = `co-study-status-badge ${selfData.isRunning ? 'running' : 'idle'}`;
-  }
-  if (timeEl) {
-    const newHtml = `${statusIcon} ${statusText}`;
-    if (timeEl.innerHTML !== newHtml) {
-      timeEl.innerHTML = newHtml;
+  learners.forEach(l => {
+    const card = list.querySelector(`.co-study-item[data-learner-user-id="${l.userId}"]`);
+    if (!card) return;
+
+    let statusText = '';
+    let statusIcon = '';
+    if (l.isRunning) {
+      const remainingMin = Math.max(1, Math.ceil((l.remainingSeconds || 0) / 60));
+      if (l.mode === 'shortbreak') {
+        statusIcon = '☕';
+        statusText = `${remainingMin}m`;
+      } else if (l.mode === 'longbreak') {
+        statusIcon = '🌿';
+        statusText = `${remainingMin}m`;
+      } else {
+        statusIcon = '🔥';
+        statusText = `${remainingMin}m`;
+      }
+    } else {
+      if (l.remainingSeconds < (l.durationMinutes * 60) && l.remainingSeconds > 0) {
+        statusIcon = '⏸️';
+        statusText = 'Tạm dừng';
+      } else {
+        statusIcon = '✨';
+        statusText = 'Sẵn sàng';
+      }
     }
-  }
+
+    const badgeEl = card.querySelector(".co-study-status-badge");
+    const timeEl = card.querySelector(".co-study-time");
+    const goalEl = card.querySelector(".co-study-goal");
+
+    if (badgeEl) {
+      const targetClass = `co-study-status-badge ${l.isRunning ? 'running' : 'idle'}`;
+      if (badgeEl.className !== targetClass) {
+        badgeEl.className = targetClass;
+      }
+    }
+    if (timeEl) {
+      const newHtml = `${statusIcon} ${statusText}`;
+      if (timeEl.innerHTML !== newHtml) {
+        timeEl.innerHTML = newHtml;
+      }
+    }
+    if (goalEl) {
+      const newGoal = `🎯 ${escapeHTML(l.goal || 'Nghiên cứu khoa học')}`;
+      if (goalEl.innerHTML !== newGoal) {
+        goalEl.innerHTML = newGoal;
+      }
+    }
+  });
+
+  const activeCount = learners.filter(l => Boolean(l.isRunning)).length;
+  const totalCount = learners.length;
+  const badge1 = $("#studyLiveCount");
+  const badge2 = $("#coStudyCountBadge");
+  if (badge1) badge1.textContent = activeCount;
+  if (badge2) badge2.textContent = `${totalCount} người trong phòng`;
+}
+
+function updateSelfCoStudyCard() {
+  updateAllCoStudyCards(lastFetchedLearners);
 }
 
 function renderCoStudyList(rawLearners = [], force = false) {
@@ -5428,10 +5492,10 @@ function renderCoStudyList(rawLearners = [], force = false) {
   if (!list) return;
 
   // Generate a signature of learners data to avoid resetting DOM & CSS animations if unchanged
-  const sig = learners.map(l => `${l.userId}_${l.name}_${l.streakTier}_${l.goal}_${l.isRunning}_${l.mode}_${l.wallpaper}_${l.aura}`).join("|");
+  const sig = learners.map(l => `${l.userId}_${l.name}_${l.streakTier}_${l.goal}_${l.isRunning}_${l.mode}_${l.wallpaper}_${l.aura}_${Math.ceil((l.remainingSeconds || 0) / 60)}`).join("|");
   if (!force && sig === lastRenderedCoStudySig && list.children.length === learners.length) {
-    // If only timer changed for self, do an in-place update without re-creating nodes
-    updateSelfCoStudyCard();
+    // If only timer or minor state changed for learners, do an in-place update without re-creating nodes
+    updateAllCoStudyCards(learners);
     return;
   }
   lastRenderedCoStudySig = sig;
@@ -5475,7 +5539,7 @@ function renderCoStudyList(rawLearners = [], force = false) {
     const nameClass = getNameClass(l.streakTier);
 
     return `
-      <div class="co-study-item ${isSelfClass} ${cardThemeClass}" style="${cardInlineStyle}">
+      <div class="co-study-item ${isSelfClass} ${cardThemeClass}" data-learner-user-id="${l.userId}" style="${cardInlineStyle}">
         <div class="co-study-header-row">
           <span class="avatar avatar-sm ${avatarClass}" data-namecard-user-id="${l.userId}" style="cursor: pointer;" title="Xem thẻ tên">${escapeHTML(l.avatar || '🦊')}</span>
           <div class="co-study-info">
@@ -5520,8 +5584,9 @@ async function fetchStudyLounge() {
       const s = res.mySession;
       const now = Date.now();
       if (s.isRunning) {
-        const serverRemaining = Math.max(0, Math.floor((s.targetEndMs - now) / 1000));
-        if (!studyState.isRunning || Math.abs(studyState.remainingSeconds - serverRemaining) > 2) {
+        const serverRemaining = Math.max(0, Math.ceil((s.targetEndMs - now) / 1000));
+        // Only overwrite local timer if this local tab is NOT running or session targetEndMs belongs to another device session
+        if (!studyState.isRunning || (studyState.targetEndMs > 0 && Math.abs(studyState.targetEndMs - s.targetEndMs) > 3000)) {
           studyState.mode = s.mode;
           studyState.durationMinutes = s.durationMinutes;
           studyState.remainingSeconds = serverRemaining;
@@ -5540,7 +5605,7 @@ async function fetchStudyLounge() {
           updateTimerDisplay();
         }
       } else {
-        if (studyState.isRunning && (now - studyState.lastSyncMs > 5000)) {
+        if (studyState.isRunning && (now - studyState.lastSyncMs > 8000) && (!s.targetEndMs || s.targetEndMs < now)) {
           pauseStudyTimer(false);
           studyState.remainingSeconds = s.remainingSeconds;
           updateTimerDisplay();
@@ -5555,7 +5620,6 @@ async function fetchStudyLounge() {
     }
   } catch (e) {
     console.error("fetchStudyLounge error:", e);
-    // Even if offline, still render local presence
     renderCoStudyList(lastFetchedLearners);
   }
 }
@@ -5618,6 +5682,7 @@ window.sendStudyCheer = async function(recipientId, cheerType) {
       if (!res.debounced) {
         toast(`Đã gửi ${cheerType} cổ vũ bạn cùng học!`);
       }
+      fetchStudyLounge();
     } else if (res && res.error) {
       toast(res.error);
     }
@@ -7642,7 +7707,7 @@ function onEnterStudyLounge() {
   applyColorAura(studySettings.activeAura || 'emerald');
 
   if (!studyState.pollingInterval) {
-    studyState.pollingInterval = setInterval(fetchStudyLounge, 15000);
+    studyState.pollingInterval = setInterval(fetchStudyLounge, 3500);
   }
 }
 
@@ -7651,9 +7716,27 @@ function onLeaveStudyLounge() {
     clearInterval(studyState.pollingInterval);
     studyState.pollingInterval = null;
   }
+  if (!studyState.isRunning && session) {
+    requestAPI("/api/study/leave", { method: "POST" }).catch(() => {});
+  }
 }
 
 function initStudyLoungeEvents() {
+  const goalInput = $("#studyGoalInput");
+  if (goalInput) {
+    let goalSyncTimeout = null;
+    goalInput.addEventListener("input", () => {
+      studyState.goal = goalInput.value.trim();
+      updateAllCoStudyCards(lastFetchedLearners);
+      clearTimeout(goalSyncTimeout);
+      goalSyncTimeout = setTimeout(() => {
+        if (session && canAccessStudyLounge()) {
+          syncStudyToServer();
+        }
+      }, 600);
+    });
+  }
+
   $$(".study-mode-btn").forEach(btn => {
     btn.onclick = () => {
       const mode = btn.dataset.studyMode;
@@ -10097,6 +10180,11 @@ window.addEventListener("beforeunload", () => {
       const blob = new Blob([payload], { type: "application/json" });
       navigator.sendBeacon("/api/competition/session/pause", blob);
     }
+  }
+
+  // Auto clean up presence in Study Lounge if user leaves tab and was not studying
+  if (session && !studyState.isRunning && navigator.sendBeacon) {
+    navigator.sendBeacon("/api/study/leave");
   }
 });
 

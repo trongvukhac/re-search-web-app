@@ -3011,7 +3011,7 @@ async function api(request, response, url) {
       const streakInfo = calculateUserStreak(r.user_id, todayDate);
       let remainingSecs = r.remaining_seconds;
       if (r.is_running && r.target_end_ms > 0) {
-        remainingSecs = Math.max(0, Math.floor((r.target_end_ms - nowMs) / 1000));
+        remainingSecs = Math.max(0, Math.ceil((r.target_end_ms - nowMs) / 1000));
       }
       return {
         userId: r.user_id,
@@ -3038,7 +3038,7 @@ async function api(request, response, url) {
       if (myRow) {
         let remainingSecs = myRow.remaining_seconds;
         if (myRow.is_running && myRow.target_end_ms > 0) {
-          remainingSecs = Math.max(0, Math.floor((myRow.target_end_ms - nowMs) / 1000));
+          remainingSecs = Math.max(0, Math.ceil((myRow.target_end_ms - nowMs) / 1000));
         }
         mySession = {
           mode: myRow.mode || 'focus',
@@ -3090,7 +3090,7 @@ async function api(request, response, url) {
         if (!targetEndMs || targetEndMs <= nowMs) {
           targetEndMs = nowMs + remainingSeconds * 1000;
         } else {
-          remainingSeconds = Math.max(0, Math.floor((targetEndMs - nowMs) / 1000));
+          remainingSeconds = Math.max(0, Math.ceil((targetEndMs - nowMs) / 1000));
         }
       } else {
         targetEndMs = 0;
