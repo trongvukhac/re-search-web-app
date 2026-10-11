@@ -9336,7 +9336,6 @@ dialog.quiz-arena-modal,
   user-select: none !important;
   -webkit-touch-callout: none !important;
   -webkit-user-drag: none !important;
-  user-drag: none !important;
 }
 
 .quiz-body-content {
