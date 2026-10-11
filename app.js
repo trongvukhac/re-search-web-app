@@ -8831,7 +8831,10 @@ function renderGatewayTab(raw) {
   } else {
     if (attemptsCard) attemptsCard.style.display = "block";
     if (phasesJourneyContainer) phasesJourneyContainer.style.display = "block";
-    if (actionContainer) actionContainer.style.display = "flex";
+    if (actionContainer) {
+      actionContainer.style.display = "flex";
+      actionContainer.style.flexDirection = "column";
+    }
     if (sundayNoticeContainer) sundayNoticeContainer.style.display = "none";
   }
 

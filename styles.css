@@ -7763,8 +7763,16 @@ body.study-zen-fullscreen .study-main-col {
 }
 
 .gateway-action-container {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 12px !important;
+  width: 100% !important;
+  margin-top: 18px !important;
   text-align: center;
-  padding: 12px 0 6px 0;
+  padding: 8px 0 4px 0;
+  box-sizing: border-box;
 }
 
 .gateway-play-btn {
@@ -7772,15 +7780,17 @@ body.study-zen-fullscreen .study-main-col {
   color: #ffffff !important;
   border: none !important;
   font-size: 15.5px !important;
-  font-weight: 900 !important;
-  padding: 14px 40px !important;
+  font-weight: 800 !important;
+  padding: 13px 36px !important;
   border-radius: 999px !important;
   box-shadow: 0 8px 24px rgba(16, 185, 129, 0.38) !important;
   transition: all 0.2s ease !important;
   display: inline-flex !important;
   align-items: center !important;
+  justify-content: center !important;
   gap: 8px !important;
   cursor: pointer;
+  max-width: 100%;
 }
 
 .gateway-play-btn:hover:not(:disabled) {
@@ -7795,15 +7805,19 @@ body.study-zen-fullscreen .study-main-col {
 }
 
 .gateway-blocked-msg {
-  margin-top: 12px;
+  margin-top: 0 !important;
   font-size: 13px;
   color: #dc2626;
   font-weight: 700;
   background: #fef2f2;
   border: 1px solid #fecaca;
-  padding: 7px 16px;
+  padding: 8px 18px;
   border-radius: 999px;
   display: inline-block;
+  max-width: 760px;
+  width: 100%;
+  box-sizing: border-box;
+  text-align: center;
 }
 
 /* 7. TAB 2: BẢNG XẾP HẠNG & 3D PODIUM (MATCHING DEMO BOX 6) */
@@ -8982,21 +8996,38 @@ body.dark-theme .comp-tab-btn.active {
 
   /* Gateway CTA button */
   .gateway-action-container {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 10px !important;
     margin-top: 14px !important;
+    width: 100% !important;
+    padding: 0 !important;
   }
 
   .gateway-play-btn {
     width: 100% !important;
+    max-width: 100% !important;
     min-height: 48px !important;
     font-size: 15px !important;
     border-radius: 12px !important;
     justify-content: center !important;
+    text-align: center !important;
+    white-space: normal !important;
+    word-break: break-word !important;
+    padding: 12px 16px !important;
   }
 
   .gateway-blocked-msg {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
     font-size: 12px !important;
-    padding: 10px 12px !important;
+    padding: 10px 14px !important;
     line-height: 1.45 !important;
+    text-align: center !important;
+    margin-top: 0 !important;
+    border-radius: 10px !important;
   }
 
   /* Sunday components on mobile */
