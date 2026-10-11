@@ -46,6 +46,7 @@ const compState = {
   activeLbPhase: "1",
   cachedLeaderboard: {},
   lastResultsVersion: null,
+  lbAutoRefreshInterval: null,
   
   // Tickers
   homeTimerInterval: null,
@@ -8060,16 +8061,29 @@ async function loadWeeklyCompetitionStatus() {
     const data = await requestAPI("/api/competition/status");
     compState.status = data;
 
+    const norm = normalizeCompData(data);
+    const isOpen = (norm.state === "open" && !norm.isSunday);
+
     // Detect if any student submitted a new score (làm bù or on-time)
     if (data.resultsVersion) {
       if (compState.lastResultsVersion && compState.lastResultsVersion !== data.resultsVersion) {
-        // Results changed! Invalidate cached leaderboard
-        compState.cachedLeaderboard = {};
-        if (compState.activeTab === "leaderboard") {
-          loadAndRenderLeaderboard(compState.activeLbPhase || 1, true);
+        // CHỈ tự động làm mới khi ở giai đoạn mở cổng!
+        // Trong khung giờ tổng kết và chủ nhật: không tự động làm mới dữ liệu.
+        if (isOpen) {
+          compState.cachedLeaderboard = {};
+          if (compState.activeTab === "leaderboard") {
+            loadAndRenderLeaderboard(compState.activeLbPhase || 1, true, true);
+          }
         }
       }
       compState.lastResultsVersion = data.resultsVersion;
+    }
+
+    // Nếu không còn ở giai đoạn mở cổng hoặc là chủ nhật: dừng ngay mọi interval tự động làm mới
+    if (!isOpen) {
+      stopArenaLeaderboardAutoRefresh();
+    } else if (compState.activeTab === "leaderboard" && typeof currentActiveRoute !== "undefined" && currentActiveRoute === "arena") {
+      startArenaLeaderboardAutoRefresh();
     }
 
     const moduleEl = $("#weeklyCompetitionModule");
@@ -8116,8 +8130,13 @@ function normalizeCompData(raw) {
     ? raw.userStatus.defaultAvailablePhase
     : (raw.defaultAvailablePhase !== undefined ? raw.defaultAvailablePhase : null);
 
+  const isSaturday = Boolean(raw.isSaturday || raw.timeState?.isSaturday || raw.dayOfWeek === 6 || raw.timeState?.dayOfWeek === 6);
+  const openScheduleText = raw.openScheduleText || raw.timeState?.openScheduleText || (isSaturday ? "09:00 – 23:59:59" : "19:00 – 23:00");
+
   return {
     isSunday,
+    isSaturday,
+    openScheduleText,
     phase,
     state,
     stateLabel,
@@ -8203,13 +8222,15 @@ function renderWeeklyCompetitionCard(raw) {
     if (ctaBtn) ctaBtn.className = "comp-cta-button cta-sunday";
   } else if (data.state === "open") {
     badgeEl.classList.add("status-open");
-    if (badgeTextEl) badgeTextEl.textContent = "ĐANG MỞ CỔNG (19h - 23h)";
+    const openBadgeText = data.isSaturday ? "ĐANG MỞ CỔNG (09h - 23h59)" : "ĐANG MỞ CỔNG (19h - 23h)";
+    if (badgeTextEl) badgeTextEl.textContent = openBadgeText;
     if (timerLabel) timerLabel.textContent = "Thời gian mở cổng còn lại:";
     if (ctaText) ctaText.textContent = "Tham gia ngay";
     if (ctaBtn) ctaBtn.className = "comp-cta-button cta-open";
   } else if (data.state === "countdown" || data.state === "upcoming") {
     badgeEl.classList.add("status-upcoming");
-    if (badgeTextEl) badgeTextEl.textContent = "SẮP MỞ CỔNG (16h - 19h)";
+    const upcomingBadgeText = data.isSaturday ? "SẮP MỞ CỔNG (06h - 09h)" : "SẮP MỞ CỔNG (16h - 19h)";
+    if (badgeTextEl) badgeTextEl.textContent = upcomingBadgeText;
     if (timerLabel) timerLabel.textContent = "Mở cổng sau:";
     if (ctaText) ctaText.textContent = "Xem thể lệ & thông tin";
     if (ctaBtn) ctaBtn.className = "comp-cta-button cta-countdown";
@@ -8257,9 +8278,12 @@ async function onEnterArena() {
     const overview = await requestAPI("/api/competition/overview");
     const norm = normalizeCompData(overview);
     compState.overview = { ...overview, ...norm };
+    const isOpen = (norm.state === "open" && !norm.isSunday);
     if (overview.resultsVersion) {
       if (compState.lastResultsVersion && compState.lastResultsVersion !== overview.resultsVersion) {
-        compState.cachedLeaderboard = {};
+        if (isOpen) {
+          compState.cachedLeaderboard = {};
+        }
       }
       compState.lastResultsVersion = overview.resultsVersion;
     }
@@ -8281,6 +8305,7 @@ async function onEnterArena() {
 
 function onLeaveArena() {
   if (compState.gatewayTimerInterval) clearInterval(compState.gatewayTimerInterval);
+  stopArenaLeaderboardAutoRefresh();
 }
 
 window.onEnterArena = onEnterArena;
@@ -8295,6 +8320,7 @@ async function openCompetitionModal(initialTab = null) {
 
 function closeCompetitionModal() {
   if (compState.gatewayTimerInterval) clearInterval(compState.gatewayTimerInterval);
+  stopArenaLeaderboardAutoRefresh();
 }
 
 function handleCompetitionCtaClick() {
@@ -8318,6 +8344,7 @@ function switchCompTab(tabName) {
   });
 
   if (tabName === "gateway") {
+    stopArenaLeaderboardAutoRefresh();
     const gEl = $("#compTabGateway");
     if (gEl) gEl.style.display = "block";
     if (compState.overview) renderGatewayTab(compState.overview);
@@ -8325,7 +8352,9 @@ function switchCompTab(tabName) {
     const lEl = $("#compTabLeaderboard");
     if (lEl) lEl.style.display = "block";
     loadAndRenderLeaderboard(compState.activeLbPhase || 1);
+    startArenaLeaderboardAutoRefresh();
   } else if (tabName === "rules") {
+    stopArenaLeaderboardAutoRefresh();
     const rEl = $("#compTabRules");
     if (rEl) rEl.style.display = "block";
   }
@@ -8383,11 +8412,13 @@ function renderGatewayTab(raw) {
       if (clockLabel) clockLabel.textContent = "Kết thúc tuần sau:";
     } else if (data.state === "open") {
       statusBadge.classList.add("status-open");
-      if (statusText) statusText.textContent = "ĐANG MỞ CỔNG (19h - 23h)";
+      const openStatusText = data.isSaturday ? "ĐANG MỞ CỔNG (09h - 23h59)" : "ĐANG MỞ CỔNG (19h - 23h)";
+      if (statusText) statusText.textContent = openStatusText;
       if (clockLabel) clockLabel.textContent = "Thời gian mở cổng còn lại:";
     } else if (data.state === "countdown" || data.state === "upcoming") {
       statusBadge.classList.add("status-upcoming");
-      if (statusText) statusText.textContent = "SẮP MỞ CỔNG (16h - 19h)";
+      const upcomingStatusText = data.isSaturday ? "SẮP MỞ CỔNG (06h - 09h)" : "SẮP MỞ CỔNG (16h - 19h)";
+      if (statusText) statusText.textContent = upcomingStatusText;
       if (clockLabel) clockLabel.textContent = "Mở cổng trả lời sau:";
     } else {
       statusBadge.classList.add("status-summary");
@@ -8559,7 +8590,8 @@ function renderGatewayTab(raw) {
         startBtn.style.cursor = "not-allowed";
         startBtn.onclick = null;
         if (isCountdown) {
-          if (startBtnText) startBtnText.textContent = "Cổng chưa mở (Mở lúc 19:00)";
+          const openHourText = data.isSaturday ? "09:00" : "19:00";
+          if (startBtnText) startBtnText.textContent = `Cổng chưa mở (Mở lúc ${openHourText})`;
           if (blockedMsg) {
             blockedMsg.style.display = "block";
             blockedMsg.style.color = "";
@@ -8567,7 +8599,9 @@ function renderGatewayTab(raw) {
             blockedMsg.style.border = "";
             blockedMsg.style.borderRadius = "";
             blockedMsg.style.padding = "";
-            blockedMsg.textContent = "Cổng trả lời sẽ mở từ 19h00 đến 23h00. Vui lòng quay lại đúng giờ!";
+            blockedMsg.textContent = data.isSaturday
+              ? "Cổng trả lời Thứ Bảy sẽ mở từ 09h00 đến 23h59:59. Vui lòng quay lại đúng giờ!"
+              : "Cổng trả lời sẽ mở từ 19h00 đến 23h00. Vui lòng quay lại đúng giờ!";
           }
         } else {
           if (startBtnText) startBtnText.textContent = "Cổng thi đấu đang đóng";
@@ -8600,39 +8634,104 @@ function renderGatewayTab(raw) {
   }, 1000);
 }
 
+function stopArenaLeaderboardAutoRefresh() {
+  if (compState.lbAutoRefreshInterval) {
+    clearInterval(compState.lbAutoRefreshInterval);
+    compState.lbAutoRefreshInterval = null;
+  }
+}
+
+function startArenaLeaderboardAutoRefresh() {
+  stopArenaLeaderboardAutoRefresh();
+
+  // Bảng xếp hạng: trong khung giờ tổng kết và chủ nhật, không tự động làm mới dữ liệu,
+  // chỉ tự động làm mới dữ liệu liên tục khi ở giai đoạn mở cổng.
+  if (typeof currentActiveRoute !== "undefined" && currentActiveRoute !== "arena") return;
+  if (compState.activeTab !== "leaderboard") return;
+
+  const norm = normalizeCompData(compState.overview || compState.status);
+  const isOpen = (norm.state === "open" && !norm.isSunday);
+
+  if (!isOpen) {
+    return;
+  }
+
+  // Tự động làm mới liên tục mỗi 15 giây khi đang ở giai đoạn mở cổng
+  compState.lbAutoRefreshInterval = setInterval(async () => {
+    if ((typeof currentActiveRoute !== "undefined" && currentActiveRoute !== "arena") || compState.activeTab !== "leaderboard") {
+      stopArenaLeaderboardAutoRefresh();
+      return;
+    }
+    const curNorm = normalizeCompData(compState.overview || compState.status);
+    if (curNorm.state !== "open" || curNorm.isSunday) {
+      stopArenaLeaderboardAutoRefresh();
+      return;
+    }
+
+    try {
+      const targetPhase = compState.activeLbPhase || 1;
+      const data = await requestAPI(`/api/competition/leaderboard?phase=${targetPhase}`);
+      if (data && data.ok) {
+        compState.cachedLeaderboard[targetPhase] = data;
+        if (data.resultsVersion) compState.lastResultsVersion = data.resultsVersion;
+        const noticeEl = $("#lbSummaryNotice");
+        renderLeaderboardNotice(noticeEl, targetPhase, data);
+        renderLeaderboardUI(data);
+      }
+    } catch (e) {
+      // Bỏ qua lỗi ngầm khi auto poll
+    }
+  }, 15000);
+}
+
+function renderLeaderboardNotice(noticeEl, phase, data) {
+  if (!noticeEl) return;
+  const norm = normalizeCompData(compState.overview || compState.status);
+  const isOpen = (norm.state === "open" && !norm.isSunday);
+  const isSunday = Boolean(norm.isSunday);
+
+  const isWeekPhase = (String(phase) === "week" || data?.phase === "week");
+  const weekNum = String(data?.weekNumber || 1).padStart(2, "0");
+  const baseTitle = isWeekPhase ? `Bảng xếp hạng tuần ${weekNum}` : `Bảng xếp hạng Giai đoạn ${phase}`;
+
+  if (isOpen) {
+    noticeEl.innerHTML = `<span>${baseTitle}</span> <span class="lb-status-badge live" style="margin-left: 8px; font-size: 11.5px; color: #22c55e; font-weight: 600;">🟢 Tự động cập nhật trực tiếp</span>`;
+  } else if (isSunday) {
+    noticeEl.innerHTML = `<span>${baseTitle}</span> <span class="lb-status-badge sunday" style="margin-left: 8px; font-size: 11.5px; color: #eab308; font-weight: 600;">👑 Tổng kết toàn tuần</span>`;
+  } else {
+    noticeEl.innerHTML = `<span>${baseTitle}</span> <span class="lb-status-badge closed" style="margin-left: 8px; font-size: 11.5px; color: #94a3b8; font-weight: 500;">🔒 Khung giờ tổng kết (Số liệu đã chốt)</span>`;
+  }
+}
+
 async function switchLbPhase(phase) {
   compState.activeLbPhase = String(phase);
   $$(".lb-phase-btn").forEach(btn => {
     btn.classList.toggle("active", btn.dataset.lbPhase === String(phase));
   });
   await loadAndRenderLeaderboard(phase);
+  startArenaLeaderboardAutoRefresh();
 }
 
-async function loadAndRenderLeaderboard(phase, forceRefresh = false) {
+async function loadAndRenderLeaderboard(phase, forceRefresh = false, isSilent = false) {
   const podiumWrap = $("#compPodiumWrap");
   const lbList = $("#compLbList");
   const noticeEl = $("#lbSummaryNotice");
 
   // In reviewing / summary time (or if data already cached and not forceRefresh):
-  // Return cached leaderboard immediately to avoid reloading every 30s!
+  // Return cached leaderboard immediately to avoid reloading!
   if (!forceRefresh && compState.cachedLeaderboard && compState.cachedLeaderboard[phase]) {
     const cachedData = compState.cachedLeaderboard[phase];
-    if (noticeEl) {
-      if (String(phase) === "week" || cachedData.phase === "week") {
-        const weekNum = String(cachedData.weekNumber || 1).padStart(2, "0");
-        noticeEl.textContent = `Bảng xếp hạng tuần ${weekNum}`;
-      } else {
-        noticeEl.textContent = "Bảng xếp hạng giai đoạn";
-      }
-    }
+    renderLeaderboardNotice(noticeEl, phase, cachedData);
     renderLeaderboardUI(cachedData);
     return;
   }
 
-  if (podiumWrap) podiumWrap.innerHTML = `<div style="text-align:center; padding: 24px; color: var(--muted);">Đang tải bảng xếp hạng...</div>`;
-  if (lbList) lbList.innerHTML = "";
-  const initialFooterNote = $("#compLbFooterNote");
-  if (initialFooterNote) initialFooterNote.style.display = "none";
+  if (!isSilent) {
+    if (podiumWrap) podiumWrap.innerHTML = `<div style="text-align:center; padding: 24px; color: var(--muted);">Đang tải bảng xếp hạng...</div>`;
+    if (lbList) lbList.innerHTML = "";
+    const initialFooterNote = $("#compLbFooterNote");
+    if (initialFooterNote) initialFooterNote.style.display = "none";
+  }
 
   try {
     const data = await requestAPI(`/api/competition/leaderboard?phase=${phase}`);
@@ -8641,19 +8740,13 @@ async function loadAndRenderLeaderboard(phase, forceRefresh = false) {
       compState.lastResultsVersion = data.resultsVersion;
     }
 
-    if (noticeEl) {
-      if (String(phase) === "week" || data.phase === "week") {
-        const weekNum = String(data.weekNumber || 1).padStart(2, "0");
-        noticeEl.textContent = `Bảng xếp hạng tuần ${weekNum}`;
-      } else {
-        noticeEl.textContent = "Bảng xếp hạng giai đoạn";
-      }
-    }
-
+    renderLeaderboardNotice(noticeEl, phase, data);
     renderLeaderboardUI(data);
   } catch (e) {
-    if (podiumWrap) podiumWrap.innerHTML = `<div style="text-align:center; padding: 20px; color: var(--muted);">${e.message || "Không thể tải bảng xếp hạng"}</div>`;
-    if (initialFooterNote) initialFooterNote.style.display = "none";
+    if (!isSilent) {
+      if (podiumWrap) podiumWrap.innerHTML = `<div style="text-align:center; padding: 20px; color: var(--muted);">${e.message || "Không thể tải bảng xếp hạng"}</div>`;
+      if (initialFooterNote) initialFooterNote.style.display = "none";
+    }
   }
 }
 
@@ -8664,7 +8757,7 @@ window.refreshArenaLeaderboard = async function() {
     btn.textContent = "Đang tải...";
   }
   compState.cachedLeaderboard = {};
-  await loadAndRenderLeaderboard(compState.activeLbPhase || 1, true);
+  await loadAndRenderLeaderboard(compState.activeLbPhase || 1, true, false);
   if (btn) {
     btn.disabled = false;
     btn.textContent = "🔄 Làm mới";
