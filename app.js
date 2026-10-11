@@ -6013,31 +6013,37 @@ function getAudioContext() {
   return studyState.audioCtx;
 }
 
+function createStudyAudioPlayer(src) {
+  const player = new Audio(src);
+  player.loop = true;
+  player.preload = "auto";
+  player.playsInline = true;
+  player.setAttribute("playsinline", "true");
+  player.setAttribute("webkit-playsinline", "true");
+  return player;
+}
+
 function fadeAudioIn(player, targetVol, durationMs = 250) {
   if (!player) return;
-  const target = Math.max(0, Math.min(1, targetVol));
-  player.volume = 0;
+  const target = Math.max(0.01, Math.min(1, targetVol));
+  // On mobile Safari/iOS, setting volume to 0 or muted before play can trigger muted-audio mode.
+  // Start with target volume so mobile plays audibly immediately.
+  player.volume = target;
+  
+  // Ensure AudioContext is active if available
+  try {
+    getAudioContext();
+  } catch (e) {}
+
   const playPromise = player.play();
   if (playPromise !== undefined) {
     playPromise.then(() => {
-      const steps = 10;
-      const stepTime = Math.max(10, Math.floor(durationMs / steps));
-      let currentStep = 0;
-      const interval = setInterval(() => {
-        currentStep++;
-        if (player.paused) {
-          clearInterval(interval);
-          return;
-        }
-        player.volume = Math.min(target, (currentStep / steps) * target);
-        if (currentStep >= steps) {
-          clearInterval(interval);
-          player.volume = target;
-        }
-      }, stepTime);
+      // Audio started successfully on user gesture.
+      player.volume = target;
     }).catch(e => {
       if (e.name === "AbortError") return;
       console.warn("Audio play warning:", e);
+      toast("Chạm vào màn hình để cho phép phát âm thanh.");
     });
   }
 }
@@ -6146,9 +6152,7 @@ function toggleEnvTrack(trackId) {
     let player = studyState.envAudioPlayers[trackId];
     if (!player || player.error) {
       if (player) { try { player.pause(); player.src = ""; } catch (e) {} }
-      player = new Audio(DEFAULT_ENV_AUDIO_SOURCES[trackId]);
-      player.loop = true;
-      player.preload = "auto";
+      player = createStudyAudioPlayer(DEFAULT_ENV_AUDIO_SOURCES[trackId]);
       studyState.envAudioPlayers[trackId] = player;
     }
     fadeAudioIn(player, userVol, 250);
@@ -6264,9 +6268,7 @@ function toggleMixTrack(trackId) {
       let player = studyState.mixAudioPlayers[trackId];
       if (!player || player.error) {
         if (player) { try { player.pause(); player.src = ""; } catch (e) {} }
-        player = new Audio(DEFAULT_MIX_AUDIO_SOURCES[trackId]);
-        player.loop = true;
-        player.preload = "auto";
+        player = createStudyAudioPlayer(DEFAULT_MIX_AUDIO_SOURCES[trackId]);
         studyState.mixAudioPlayers[trackId] = player;
       }
       fadeAudioIn(player, userVol, 250);
@@ -6365,9 +6367,7 @@ function toggleMusicTrack(trackId) {
     let player = studyState.musicAudioPlayers[trackId];
     if (!player || player.error) {
       if (player) { try { player.pause(); player.src = ""; } catch (e) {} }
-      player = new Audio(DEFAULT_MUSIC_AUDIO_SOURCES[trackId]);
-      player.loop = true;
-      player.preload = "auto";
+      player = createStudyAudioPlayer(DEFAULT_MUSIC_AUDIO_SOURCES[trackId]);
       studyState.musicAudioPlayers[trackId] = player;
     }
     fadeAudioIn(player, userVol, 250);
@@ -6755,9 +6755,7 @@ function toggleCustomEnvAudio(track) {
   let player = studyState.customEnvAudioPlayer;
   if (!player || player.src !== audioUrl || player.error) {
     if (player) { try { player.pause(); } catch(e){} }
-    player = new Audio(audioUrl);
-    player.loop = true;
-    player.preload = "auto";
+    player = createStudyAudioPlayer(audioUrl);
     studyState.customEnvAudioPlayer = player;
   }
 
@@ -6806,9 +6804,7 @@ function toggleCustomMusicAudio(track) {
   let player = studyState.customMusicAudioPlayer;
   if (!player || player.src !== audioUrl || player.error) {
     if (player) { try { player.pause(); } catch(e){} }
-    player = new Audio(audioUrl);
-    player.loop = true;
-    player.preload = "auto";
+    player = createStudyAudioPlayer(audioUrl);
     studyState.customMusicAudioPlayer = player;
   }
 
@@ -6862,9 +6858,7 @@ function toggleCustomMixAudio(track) {
   let player = studyState.customMixAudioPlayers[id];
   if (!player || player.src !== audioUrl || player.error) {
     if (player) { try { player.pause(); } catch(e){} }
-    player = new Audio(audioUrl);
-    player.loop = true;
-    player.preload = "auto";
+    player = createStudyAudioPlayer(audioUrl);
     studyState.customMixAudioPlayers[id] = player;
   }
 

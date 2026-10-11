@@ -1133,11 +1133,19 @@ async function streamAudioTrack(request, response, trackId) {
       return error(response, 404, "Không tìm thấy tệp âm thanh.");
     }
 
+    let redirectUrl = directUrl;
+    try {
+      const u = new URL(directUrl);
+      u.searchParams.set("response-content-disposition", "inline");
+      u.searchParams.set("response-content-type", "audio/mpeg");
+      redirectUrl = u.toString();
+    } catch (e) {}
+
     // Direct 302 redirect with CORS and edge cache headers:
     // Enables the browser to stream directly from Azure Blob CDN with multi-threaded byte-ranges,
     // achieving sub-50ms TTFB and instant playback with zero server latency!
     response.writeHead(302, {
-      "Location": directUrl,
+      "Location": redirectUrl,
       "Access-Control-Allow-Origin": "*",
       "Access-Control-Allow-Headers": "Range, Accept-Encoding",
       "Access-Control-Expose-Headers": "Location, Content-Range, Content-Length, Accept-Ranges",
