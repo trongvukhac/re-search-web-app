@@ -11418,7 +11418,7 @@ dialog.modal.namecard-modal {
 }
 .namecard-frame-layer[data-frame="gold"] {
   background-image: url("frames/v2/gold.png?v=5");
-  inset: -48px -30px -52px -44px;
+  inset: -60px -30px -68px -44px;
   background-size: 100% 100%;
 }
 
@@ -11434,6 +11434,7 @@ dialog.modal.namecard-modal {
   border: 4px solid transparent;
   background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 50%, #93c5fd 100%) border-box;
   -webkit-mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
+  mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
   -webkit-mask-composite: xor;
   mask-composite: exclude;
   box-shadow: 0 0 10px rgba(59, 130, 246, 0.25);
@@ -11442,6 +11443,7 @@ dialog.modal.namecard-modal {
   border: 4px solid transparent;
   background: linear-gradient(135deg, #064e3b 0%, #059669 50%, #6ee7b7 100%) border-box;
   -webkit-mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
+  mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
   -webkit-mask-composite: xor;
   mask-composite: exclude;
   box-shadow: 0 0 10px rgba(16, 185, 129, 0.25);
@@ -11450,6 +11452,7 @@ dialog.modal.namecard-modal {
   border: 4px solid transparent;
   background: linear-gradient(135deg, #4c0519 0%, #db2777 50%, #fcd34d 100%) border-box;
   -webkit-mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
+  mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
   -webkit-mask-composite: xor;
   mask-composite: exclude;
   box-shadow: 0 0 10px rgba(219, 39, 119, 0.25);
@@ -11458,6 +11461,7 @@ dialog.modal.namecard-modal {
   border: 4px solid transparent;
   background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #4338ca 100%) border-box;
   -webkit-mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
+  mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
   -webkit-mask-composite: xor;
   mask-composite: exclude;
   box-shadow: 0 0 10px rgba(67, 56, 202, 0.25);
@@ -11466,6 +11470,7 @@ dialog.modal.namecard-modal {
   border: 4px solid transparent;
   background: linear-gradient(135deg, #3b0764 0%, #7c3aed 50%, #c084fc 100%) border-box;
   -webkit-mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
+  mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
   -webkit-mask-composite: xor;
   mask-composite: exclude;
   box-shadow: 0 0 10px rgba(124, 58, 237, 0.25);
@@ -11524,6 +11529,7 @@ dialog.modal.namecard-modal {
   border: 3.5px solid transparent;
   background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 50%, #93c5fd 100%) border-box;
   -webkit-mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
+  mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
   -webkit-mask-composite: xor;
   mask-composite: exclude;
 }
@@ -11531,6 +11537,7 @@ dialog.modal.namecard-modal {
   border: 3.5px solid transparent;
   background: linear-gradient(135deg, #064e3b 0%, #059669 50%, #6ee7b7 100%) border-box;
   -webkit-mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
+  mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
   -webkit-mask-composite: xor;
   mask-composite: exclude;
 }
@@ -11538,6 +11545,7 @@ dialog.modal.namecard-modal {
   border: 3.5px solid transparent;
   background: linear-gradient(135deg, #4c0519 0%, #db2777 50%, #fcd34d 100%) border-box;
   -webkit-mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
+  mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
   -webkit-mask-composite: xor;
   mask-composite: exclude;
 }
@@ -11545,6 +11553,7 @@ dialog.modal.namecard-modal {
   border: 3.5px solid transparent;
   background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #4338ca 100%) border-box;
   -webkit-mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
+  mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
   -webkit-mask-composite: xor;
   mask-composite: exclude;
 }
@@ -11552,6 +11561,7 @@ dialog.modal.namecard-modal {
   border: 3.5px solid transparent;
   background: linear-gradient(135deg, #3b0764 0%, #7c3aed 50%, #c084fc 100%) border-box;
   -webkit-mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
+  mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
   -webkit-mask-composite: xor;
   mask-composite: exclude;
 }
