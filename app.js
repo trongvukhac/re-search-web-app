@@ -4311,7 +4311,7 @@ function syncNamecardModalScale() {
   const rect = modal.getBoundingClientRect();
   const width = rect.width || modal.offsetWidth || 0;
   if (width > 0) {
-    const scale = Math.min(1, width / 680);
+    const scale = Math.min(1, width / 780);
     modal.style.setProperty("--nc-scale", scale.toFixed(5));
   } else {
     modal.style.setProperty("--nc-scale", "1");

@@ -11204,21 +11204,20 @@ body:has(#postDetail.active-page) .mobile-fab {
 
 .namecard-modal,
 dialog.modal.namecard-modal {
-  /* Khóa tỷ lệ mặc định theo đường chéo (aspect-ratio: 680 / 760).
-     Kích thước chuẩn trên PC là 680px x 760px.
-     Trên mọi thiết bị / màn hình, cả khung lẫn TOÀN BỘ NỘI DUNG bên trong
-     đều scale theo đường chéo đồng nhất (diagonal proportional scaling). */
-  --nc-base-w: 680px;
-  --nc-base-h: 760px;
-  --nc-ratio: 680 / 760;
+  /* Modal đóng vai trò là Viewport bao trùm cả khung trang trí lẫn thẻ namecard.
+     Kích thước chuẩn trên PC: 780px x 890px (bao gồm 680px x 760px của thẻ + khoảng đệm khung hoa lá vươn ra ngoài).
+     Trên mọi thiết bị, modal và toàn bộ sân khấu co giãn đồng nhất theo tỷ lệ đường chéo mà không bị trình duyệt cắt xén. */
+  --nc-modal-w: 780px;
+  --nc-modal-h: 890px;
+  --nc-ratio: 780 / 890;
 
-  width: min(var(--nc-base-w), 92vw, calc(92vh * (680 / 760))) !important;
-  max-width: var(--nc-base-w) !important;
-  height: calc(min(var(--nc-base-w), 92vw, calc(92vh * (680 / 760))) * (760 / 680)) !important;
-  max-height: min(var(--nc-base-h), 92vh) !important;
+  width: min(var(--nc-modal-w), 96vw, calc(96vh * (780 / 890))) !important;
+  max-width: var(--nc-modal-w) !important;
+  height: calc(min(var(--nc-modal-w), 96vw, calc(96vh * (780 / 890))) * (890 / 780)) !important;
+  max-height: min(var(--nc-modal-h), 96vh) !important;
   aspect-ratio: var(--nc-ratio) !important;
 
-  border-radius: 24px !important;
+  border-radius: 0 !important;
   padding: 0 !important;
   border: none !important;
   background: transparent !important;
@@ -11236,7 +11235,6 @@ dialog.modal.namecard-modal {
   backdrop-filter: blur(8px);
 }
 
-/* Close button - Fixed relative to modal */
 .namecard-close-btn {
   position: absolute;
   top: 14px;
@@ -11286,11 +11284,11 @@ dialog.modal.namecard-modal {
 }
 
 /* Sân khấu NamecardStage: Luôn giữ nguyên kích thước chuẩn PC (680px x 760px),
-   và scale toàn bộ nội dung (thân thẻ, khung hoa lá, nút hành động) theo đúng tỷ lệ thu nhỏ của modal */
+   được đặt ở vị trí trung tâm modal để khung thoải mái vươn ra ngoài mà không bị dialog cắt cụt */
 .namecard-stage {
   position: absolute;
-  top: 0;
-  left: 0;
+  top: calc(65px * var(--nc-scale, 1));
+  left: calc(50px * var(--nc-scale, 1));
   width: 680px;
   height: 760px;
   overflow: visible;
