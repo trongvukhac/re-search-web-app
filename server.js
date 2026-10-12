@@ -5512,7 +5512,9 @@ function serveStatic(request, response, url) {
     "X-Content-Type-Options": "nosniff",
     "Referrer-Policy": "same-origin",
   };
-  if (relative.startsWith("/public/") || [".png", ".jpg", ".jpeg", ".webp", ".gif", ".svg", ".ico", ".mp3", ".wav", ".woff2", ".ttf"].includes(extension)) {
+  if (relative.startsWith("/frames/")) {
+    headers["Cache-Control"] = "no-cache, must-revalidate";
+  } else if (relative.startsWith("/public/") || [".png", ".jpg", ".jpeg", ".webp", ".gif", ".svg", ".ico", ".mp3", ".wav", ".woff2", ".ttf"].includes(extension)) {
     headers["Cache-Control"] = "public, max-age=86400, stale-while-revalidate=604800";
   } else if ([".css", ".js"].includes(extension)) {
     headers["Cache-Control"] = "public, max-age=3600";

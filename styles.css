@@ -11395,27 +11395,27 @@ dialog.modal.namecard-modal {
    Khi đưa vào stage 680x760, scale khung = (680/823)*915 = 756px, cao = (760/902)*1024 = 863px.
    Ranh giới 40-60 chạm chuẩn 100% mép viền ngoài namecard. */
 .namecard-frame-layer[data-frame="leaves"] {
-  background-image: url("frames/v2/leaves.png");
+  background-image: url("frames/v2/leaves.png?v=4");
   inset: -42px -38px -61px -38px;
   background-size: 100% 100%;
 }
 .namecard-frame-layer[data-frame="sakura"] {
-  background-image: url("frames/v2/sakura.png");
-  inset: -44px -42px -66px -42px;
+  background-image: url("frames/v2/sakura.png?v=4");
+  inset: -46px -42px -64px -42px;
   background-size: 100% 100%;
 }
 .namecard-frame-layer[data-frame="ice"] {
-  background-image: url("frames/v2/ice.png");
-  inset: -66px -66px -72px -66px;
+  background-image: url("frames/v2/ice.png?v=4");
+  inset: -54px -52px -58px -66px;
   background-size: 100% 100%;
 }
 .namecard-frame-layer[data-frame="stars"] {
-  background-image: url("frames/v2/stars.png");
-  inset: -74px -68px -72px -62px;
+  background-image: url("frames/v2/stars.png?v=4");
+  inset: -66px -62px -70px -66px;
   background-size: 100% 100%;
 }
 .namecard-frame-layer[data-frame="gold"] {
-  background-image: url("frames/v2/gold.png");
+  background-image: url("frames/v2/gold.png?v=4");
   inset: -45px -42px -65px -42px;
   background-size: 100% 100%;
 }
@@ -11428,12 +11428,12 @@ dialog.modal.namecard-modal {
   border-radius: 7px;
   background: linear-gradient(135deg, #bdd6ff 0%, #fff 48%, #d9e8ff 100%) center / 100% 100% no-repeat;
 }
-.frame-choice-preview[data-frame-preview="default"] { background-image: url("frames/v2/default.png"); }
-.frame-choice-preview[data-frame-preview="leaves"] { background-image: url("frames/v2/leaves.png"); }
-.frame-choice-preview[data-frame-preview="stars"] { background-image: url("frames/v2/stars.png"); }
-.frame-choice-preview[data-frame-preview="sakura"] { background-image: url("frames/v2/sakura.png"); }
-.frame-choice-preview[data-frame-preview="ice"] { background-image: url("frames/v2/ice.png"); }
-.frame-choice-preview[data-frame-preview="gold"] { background-image: url("frames/v2/gold.png"); }
+.frame-choice-preview[data-frame-preview="default"] { background-image: url("frames/v2/default.png?v=4"); }
+.frame-choice-preview[data-frame-preview="leaves"] { background-image: url("frames/v2/leaves.png?v=4"); }
+.frame-choice-preview[data-frame-preview="stars"] { background-image: url("frames/v2/stars.png?v=4"); }
+.frame-choice-preview[data-frame-preview="sakura"] { background-image: url("frames/v2/sakura.png?v=4"); }
+.frame-choice-preview[data-frame-preview="ice"] { background-image: url("frames/v2/ice.png?v=4"); }
+.frame-choice-preview[data-frame-preview="gold"] { background-image: url("frames/v2/gold.png?v=4"); }
 .choice-unlock-badge {
   margin-top: 3px;
   color: #39714a;
@@ -11913,73 +11913,6 @@ dialog.modal.namecard-modal {
   text-overflow: ellipsis;
 }
 
-/* ==========================================
-   NAMECARD FRAMES & DECORATIONS (Image 2)
-   ========================================== */
-
-.namecard-card[data-frame="leaves"] {
-  border: 2px solid #86efac;
-}
-.namecard-card[data-frame="leaves"] .namecard-cover::after {
-  content: "🌿";
-  position: absolute;
-  top: 10px;
-  left: 10px;
-  font-size: 26px;
-  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
-}
-
-.namecard-card[data-frame="stars"] {
-  border: 2px solid #93c5fd;
-  box-shadow: 0 0 25px rgba(59, 130, 246, 0.2);
-}
-.namecard-card[data-frame="stars"] .namecard-cover::after {
-  content: "✨";
-  position: absolute;
-  top: 10px;
-  left: 10px;
-  font-size: 26px;
-  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
-}
-
-.namecard-card[data-frame="gold"] {
-  border: 3px solid #facc15;
-  box-shadow: 0 0 30px rgba(234, 179, 8, 0.25);
-}
-.namecard-card[data-frame="gold"] .namecard-cover::after {
-  content: "👑";
-  position: absolute;
-  top: 10px;
-  left: 10px;
-  font-size: 26px;
-  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
-}
-
-.namecard-card[data-frame="sakura"] {
-  border: 2px solid #f9a8d4;
-  box-shadow: 0 0 25px rgba(244, 114, 182, 0.2);
-}
-.namecard-card[data-frame="sakura"] .namecard-cover::after {
-  content: "🌸";
-  position: absolute;
-  top: 10px;
-  left: 10px;
-  font-size: 26px;
-  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
-}
-
-.namecard-card[data-frame="ice"] {
-  border: 2px solid #a5f3fc;
-  box-shadow: 0 0 25px rgba(6, 182, 212, 0.2);
-}
-.namecard-card[data-frame="ice"] .namecard-cover::after {
-  content: "❄️";
-  position: absolute;
-  top: 10px;
-  left: 10px;
-  font-size: 26px;
-  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
-}
 
 /* ==========================================
    FULL COVER VIEWER MODAL (LIGHTBOX)
