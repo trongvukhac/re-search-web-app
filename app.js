@@ -3741,8 +3741,8 @@ const FRAME_OPTIONS = [
   { id: "basic_pure_black", name: "Đen tuyền", minDays: 0 },
 
   // 5 Khung nghệ thuật độc quyền theo chuỗi ngày (sử dụng 5 thumb mới)
-  { id: "leaves", name: "Vườn thanh xuân", minDays: 3 },
-  { id: "sakura", name: "Đại lộ hoa anh đào", minDays: 7 },
+  { id: "leaves", name: "Khu rừng tri thức", minDays: 3 },
+  { id: "sakura", name: "Mùa anh đào nở", minDays: 7 },
   { id: "ice", name: "Vương quốc băng giá", minDays: 14 },
   { id: "stars", name: "Tinh tú sao trời", minDays: 30 },
   { id: "gold", name: "Kỷ nguyên hoàng kim", minDays: 50 },
@@ -3752,7 +3752,7 @@ const COVER_PRESETS = [
   // 5 ảnh bìa Namecard độc quyền theo chuỗi
   { id: "khu_rung_tri_thuc", name: "Khu rừng tri thức", type: "image", value: "covers/khu-rung-tri-thuc.png", minDays: 3 },
   { id: "mua_anh_dao_no", name: "Mùa anh đào nở", type: "image", value: "covers/mua-anh-dao-no.png", minDays: 7 },
-  { id: "vuong_quoc_mua_dong", name: "Vương quốc mùa đông", type: "image", value: "covers/vuong-quoc-mua-dong.png", minDays: 14 },
+  { id: "vuong_quoc_mua_dong", name: "Vương quốc băng giá", type: "image", value: "covers/vuong-quoc-mua-dong.png", minDays: 14 },
   { id: "tinh_tu_sao_troi", name: "Tinh tú sao trời", type: "image", value: "covers/tinh-tu-sao-troi.png", minDays: 30 },
   { id: "ky_nguyen_hoang_kim", name: "Kỷ nguyên hoàng kim", type: "image", value: "covers/ky-nguyen-hoang-kim.png", minDays: 50 },
   // Màu sắc và dải chuyển màu có sẵn

@@ -11518,11 +11518,11 @@ dialog.modal.namecard-modal {
 }
 
 /* 5 ảnh thumb cao cấp chính thức */
-.frame-choice-preview[data-frame-preview="leaves"] { background-image: url("frames/v2/thumbs/leaves.png?v=5"); }
-.frame-choice-preview[data-frame-preview="stars"] { background-image: url("frames/v2/thumbs/stars.png?v=5"); }
-.frame-choice-preview[data-frame-preview="gold"] { background-image: url("frames/v2/thumbs/gold.png?v=5"); }
-.frame-choice-preview[data-frame-preview="sakura"] { background-image: url("frames/v2/thumbs/sakura.png?v=5"); }
-.frame-choice-preview[data-frame-preview="ice"] { background-image: url("frames/v2/thumbs/ice.png?v=5"); }
+.frame-choice-preview[data-frame-preview="leaves"] { background-image: url("frames/v2/thumbs/leaves.png?v=6"); background-size: 100% 100%; }
+.frame-choice-preview[data-frame-preview="stars"] { background-image: url("frames/v2/thumbs/stars.png?v=6"); background-size: 100% 100%; }
+.frame-choice-preview[data-frame-preview="gold"] { background-image: url("frames/v2/thumbs/gold.png?v=6"); background-size: 100% 100%; }
+.frame-choice-preview[data-frame-preview="sakura"] { background-image: url("frames/v2/thumbs/sakura.png?v=6"); background-size: 100% 100%; }
+.frame-choice-preview[data-frame-preview="ice"] { background-image: url("frames/v2/thumbs/ice.png?v=6"); background-size: 100% 100%; }
 
 /* Khung cơ bản miễn phí swatch */
 .frame-choice-preview[data-frame-preview="basic_ocean"] {
