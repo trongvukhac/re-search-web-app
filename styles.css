@@ -2386,8 +2386,8 @@ div.user-name-tier-5,
 dialog:not([open]) {
   display: none !important;
 }
-.modal:not(.quiz-arena-modal):not(.quiz-start-confirm-modal):not(.quiz-exit-confirm-modal):not(.namecard-modal),
-dialog.modal:not(.quiz-arena-modal):not(.quiz-start-confirm-modal):not(.quiz-exit-confirm-modal):not(.namecard-modal) {
+.modal:not(.quiz-arena-modal):not(.quiz-start-confirm-modal):not(.quiz-exit-confirm-modal):not(.namecard-modal):not(.full-cover-viewer-modal),
+dialog.modal:not(.quiz-arena-modal):not(.quiz-start-confirm-modal):not(.quiz-exit-confirm-modal):not(.namecard-modal):not(.full-cover-viewer-modal) {
   position: fixed;
   inset: 0;
   margin: auto;
@@ -11956,20 +11956,31 @@ dialog.modal.namecard-modal {
    FULL COVER VIEWER MODAL (LIGHTBOX)
    ========================================== */
 
-.full-cover-viewer-modal {
-  max-width: 92vw;
-  width: 960px;
-  padding: 0;
-  border-radius: 20px;
-  overflow: hidden;
-  background: #090d16;
-  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.5);
-  border: 1px solid rgba(255, 255, 255, 0.15);
+.full-cover-viewer-modal,
+dialog.modal.full-cover-viewer-modal {
+  max-width: 92vw !important;
+  width: 960px !important;
+  padding: 0 !important;
+  border-radius: 20px !important;
+  overflow: hidden !important;
+  background: #090d16 !important;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.7) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  z-index: 100 !important;
+  position: fixed !important;
+  inset: 0 !important;
+  margin: auto !important;
+}
+
+.full-cover-viewer-modal::backdrop {
+  background: rgba(10, 15, 25, 0.85) !important;
+  backdrop-filter: blur(8px) !important;
 }
 
 .full-cover-viewer-modal .namecard-close-btn {
   top: 14px;
   right: 14px;
+  z-index: 110;
 }
 
 .full-cover-viewer-body {

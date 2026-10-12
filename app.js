@@ -3816,6 +3816,7 @@ window.openNamecard = async function(userId) {
     const coverEl = $("#namecardCover");
     const coverVal = data.user.coverImage || "default";
     currentViewingCoverVal = coverVal;
+    if (coverEl) coverEl.dataset.coverVal = coverVal;
     if (coverVal.startsWith("data:image/") || coverVal.startsWith("http")) {
       coverEl.style.background = `url("${coverVal}") center / cover no-repeat`;
     } else if (coverVal.startsWith("color:")) {
@@ -3892,8 +3893,8 @@ window.openMyNamecard = function() {
 
 let currentViewingCoverVal = "default";
 
-window.openFullCoverViewer = function() {
-  const coverVal = currentViewingCoverVal;
+window.openFullCoverViewer = function(explicitCoverVal) {
+  const coverVal = explicitCoverVal || currentViewingCoverVal || $("#namecardCover")?.dataset?.coverVal || "default";
   if (!coverVal) return;
   const modal = $("#fullCoverViewerModal");
   const imgEl = $("#fullCoverViewerImg");
@@ -3915,7 +3916,7 @@ window.openFullCoverViewer = function() {
       if (coverVal.startsWith("color:")) {
         bannerEl.style.background = coverVal.replace("color:", "");
       } else {
-        bannerEl.style.background = foundPreset ? foundPreset.value : "linear-gradient(135deg, #1e3a8a 0%, #3b82f6 50%, #93c5fd 100%)";
+        bannerEl.style.background = (foundPreset && foundPreset.value) ? foundPreset.value : "linear-gradient(135deg, #1e3a8a 0%, #3b82f6 50%, #93c5fd 100%)";
       }
     }
   }
@@ -3971,8 +3972,8 @@ window.openEditNamecardModal = function(section = "all") {
   }
 
   // Populate Namecard values
-  // Populate Namecard values
   if ($("#namecardDisplayNameInput")) $("#namecardDisplayNameInput").value = session.displayName || "";
+  if ($("#namecardBioInput")) $("#namecardBioInput").value = session.bio || "";
   currentSelectedAvatar = session.initials || session.avatar || "🌱";
   currentSelectedFrame = FRAME_OPTIONS.some(frame => frame.id === session.namecardFrame)
     ? session.namecardFrame
