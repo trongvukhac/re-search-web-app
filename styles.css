@@ -11258,7 +11258,7 @@ dialog.modal.namecard-modal {
   justify-content: center;
   cursor: pointer;
   z-index: 40;
-  transition: opacity 0.25s cubic-bezier(0.4, 0, 0.2, 1), transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.15s ease;
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.15s ease;
 }
 
 .namecard-close-btn:hover {
@@ -11278,7 +11278,7 @@ dialog.modal.namecard-modal {
   transition: opacity 0.25s cubic-bezier(0.4, 0, 0.2, 1), transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.namecard-close-btn.nc-hidden,
+/* Nút xem/sửa ảnh bìa tự động ẩn khi cuộn xuống để không đè lên avatar & thông tin */
 .namecard-cover-actions.nc-hidden {
   opacity: 0 !important;
   pointer-events: none !important;
@@ -11286,7 +11286,7 @@ dialog.modal.namecard-modal {
 }
 
 /* Sân khấu NamecardStage: Luôn giữ nguyên kích thước chuẩn PC (680px x 760px),
-   và scale toàn bộ nội dung (chữ, icon, avatar, nút, viền, ảnh bìa) theo đúng tỷ lệ thu nhỏ của modal */
+   và scale toàn bộ nội dung (thân thẻ, khung hoa lá, nút hành động) theo đúng tỷ lệ thu nhỏ của modal */
 .namecard-stage {
   position: absolute;
   top: 0;
@@ -11300,18 +11300,30 @@ dialog.modal.namecard-modal {
   transform: scale(var(--nc-scale, 1));
 }
 
-/* Stationary Cover Image - Fixed inside stage behind content */
+/* 1. THÂN THẺ CANVAS: Chiếm trọn 100% stage, bo góc 24px, đổ bóng sang trọng
+   và OVERFLOW HIDDEN để CLIP hoàn hảo nội dung cuộn bên trong, không bao giờ bị trào ra ngoài đỉnh thẻ */
+.namecard-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 24px;
+  overflow: hidden;
+  background: #ffffff;
+  box-shadow: 0 30px 70px -15px rgba(15, 23, 42, 0.4);
+  z-index: 10;
+}
+
+/* Stationary Cover Image - Cố định ở đỉnh canvas, khớp khoảng đệm 200px của spacer */
 .namecard-cover {
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
-  height: 250px;
+  height: 215px;
   background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 50%, #93c5fd 100%);
   background-size: cover;
   background-position: center;
-  border-radius: 24px 24px 0 0;
-  overflow: hidden;
   z-index: 1;
   pointer-events: none;
 }
@@ -11344,9 +11356,10 @@ dialog.modal.namecard-modal {
   transform: translateY(-1px);
 }
 
-/* Scrollable Card Body - background must be transparent so stationary cover shows through spacer */
+/* Scrollable Card Body - Nằm trọn vẹn trong canvas, cuộn bên trong và được canvas clip tại mép */
 .namecard-card {
-  position: relative;
+  position: absolute;
+  inset: 0;
   z-index: 2;
   display: flex;
   flex-direction: column;
@@ -11355,9 +11368,9 @@ dialog.modal.namecard-modal {
   width: 100%;
   height: 100% !important;
   max-height: 100% !important;
-  border-radius: 24px;
   background: transparent !important;
-  box-shadow: 0 30px 70px -15px rgba(15, 23, 42, 0.4);
+  box-shadow: none !important;
+  border: none !important;
   font-family: var(--sans);
   -webkit-overflow-scrolling: touch;
   overscroll-behavior-y: contain;
@@ -11696,7 +11709,7 @@ dialog.modal.namecard-modal {
 
 /* Sections Body */
 .namecard-body {
-  padding: 0 28px 28px;
+  padding: 0 28px 90px;
   display: flex;
   flex-direction: column;
   gap: 18px;

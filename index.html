@@ -1767,32 +1767,23 @@
     </dialog>
     <!-- MODAL NAMECARD (THẺ TÊN CÁ NHÂN) -->
     <dialog class="modal namecard-modal" id="namecardModal" aria-labelledby="namecardDisplayName">
-      <button type="button" class="namecard-close-btn" id="namecardCloseBtn" onclick="document.getElementById('namecardModal').close()" aria-label="Đóng thẻ tên">✕</button>
-      
-      <div class="namecard-cover-actions">
-        <button type="button" class="namecard-view-cover-btn" id="namecardViewCoverBtn" onclick="openFullCoverViewer()" title="Xem toàn bộ ảnh bìa đầy đủ kích cỡ">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg> <span>Xem ảnh bìa</span>
-        </button>
-        <button type="button" class="namecard-edit-cover-btn" id="namecardEditCoverBtn" onclick="openEditNamecardModal('cover')" style="display: none;" title="Chỉnh sửa ảnh bìa">
-          <span>✏️</span> <span>Sửa ảnh bìa</span>
-        </button>
-      </div>
-
       <div class="namecard-stage" id="namecardStage">
-        <!-- Ảnh bìa cố định nằm dưới nội dung -->
-        <div class="namecard-cover" id="namecardCover"></div>
+        <!-- 1. THÂN THẺ CANVAS: Chứa ảnh bìa cố định & nội dung cuộn, clip hoàn hảo mọi thứ bên trong -->
+        <div class="namecard-canvas" id="namecardCanvas">
+          <!-- Ảnh bìa cố định nằm dưới nội dung -->
+          <div class="namecard-cover" id="namecardCover"></div>
 
-        <div class="namecard-card" id="namecardCard" data-frame="default">
-          <!-- Khoảng đệm để lộ ảnh bìa phía sau -->
-          <div class="namecard-cover-spacer"></div>
+          <div class="namecard-card" id="namecardCard" data-frame="default">
+            <!-- Khoảng đệm để lộ ảnh bìa phía sau -->
+            <div class="namecard-cover-spacer"></div>
 
-          <!-- Khung nội dung chính cuộn đè lên ảnh bìa -->
-          <div class="namecard-content-wrap">
-            <!-- Khung Header (Avatar, Tên, ID, Bio) -->
-            <div class="namecard-header">
-              <div class="namecard-profile-row">
-                <div class="namecard-avatar-wrap">
-                  <div class="namecard-avatar-circle" id="namecardAvatarCircle">
+            <!-- Khung nội dung chính cuộn đè lên ảnh bìa -->
+            <div class="namecard-content-wrap">
+              <!-- Khung Header (Avatar, Tên, ID, Bio) -->
+              <div class="namecard-header">
+                <div class="namecard-profile-row">
+                  <div class="namecard-avatar-wrap">
+                    <div class="namecard-avatar-circle" id="namecardAvatarCircle">
                     <span id="namecardAvatar">🌱</span>
                   </div>
                 </div>
@@ -1952,11 +1943,24 @@
                 </div>
               </div>
             </div>
+            </div>
           </div>
         </div>
-      </div>
-        <!-- Lớp khung độc lập: nằm cùng cấp trong namecard-stage để bọc chính xác 100% kích cỡ card -->
+
+        <!-- 2. LỚP KHUNG ĐỘC LẬP: Nằm ngoài canvas để hoa lá vươn ra ngoài tự nhiên mà không bị cắt -->
         <div class="namecard-frame-layer" id="namecardFrameLayer" aria-hidden="true"></div>
+
+        <!-- 3. CÁC NÚT ĐIỀU KHIỂN: Nằm trên cùng của stage (z-index: 40) đè lên cả khung hoa lá -->
+        <button type="button" class="namecard-close-btn" id="namecardCloseBtn" onclick="document.getElementById('namecardModal').close()" aria-label="Đóng thẻ tên">✕</button>
+
+        <div class="namecard-cover-actions">
+          <button type="button" class="namecard-view-cover-btn" id="namecardViewCoverBtn" onclick="openFullCoverViewer()" title="Xem toàn bộ ảnh bìa đầy đủ kích cỡ">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg> <span>Xem ảnh bìa</span>
+          </button>
+          <button type="button" class="namecard-edit-cover-btn" id="namecardEditCoverBtn" onclick="openEditNamecardModal('cover')" style="display: none;" title="Chỉnh sửa ảnh bìa">
+            <span>✏️</span> <span>Sửa ảnh bìa</span>
+          </button>
+        </div>
       </div>
     </dialog>
 

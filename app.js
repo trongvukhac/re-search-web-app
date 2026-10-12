@@ -4325,22 +4325,18 @@ window.addEventListener("resize", () => {
   }
 }, { passive: true });
 
-// Scroll listener for Namecard modal action buttons (Close, View Cover, Edit Cover) auto-hide / show
+// Namecard modal action buttons: Close button stays always visible; Cover actions auto-fade when scrolling down to avoid overlapping profile info
 const ncCardElement = document.getElementById("namecardCard");
 const ncCloseBtnElement = document.getElementById("namecardCloseBtn");
 const ncCoverActionsElement = document.querySelector(".namecard-cover-actions");
 if (ncCardElement) {
-  let ncLastScrollTop = 0;
   ncCardElement.addEventListener("scroll", () => {
     const st = ncCardElement.scrollTop;
-    if (st > ncLastScrollTop && st > 20) {
-      if (ncCloseBtnElement) ncCloseBtnElement.classList.add("nc-hidden");
+    if (st > 20) {
       if (ncCoverActionsElement) ncCoverActionsElement.classList.add("nc-hidden");
-    } else if (st < ncLastScrollTop || st <= 10) {
-      if (ncCloseBtnElement) ncCloseBtnElement.classList.remove("nc-hidden");
+    } else {
       if (ncCoverActionsElement) ncCoverActionsElement.classList.remove("nc-hidden");
     }
-    ncLastScrollTop = Math.max(0, st);
   }, { passive: true });
 }
 
