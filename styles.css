@@ -11221,11 +11221,9 @@ dialog.modal.namecard-modal {
   border-radius: 24px !important;
   padding: 0 !important;
   border: none !important;
-  background: #ffffff !important;
-  box-shadow: 0 30px 70px -15px rgba(15, 23, 42, 0.4) !important;
-  overflow: hidden !important;
-  overflow-x: hidden !important;
-  overflow-y: hidden !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  overflow: visible !important;
   overscroll-behavior: none !important;
   position: fixed !important;
   inset: 0 !important;
@@ -11259,7 +11257,7 @@ dialog.modal.namecard-modal {
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  z-index: 30;
+  z-index: 40;
   transition: opacity 0.25s cubic-bezier(0.4, 0, 0.2, 1), transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.15s ease;
 }
 
@@ -11275,7 +11273,7 @@ dialog.modal.namecard-modal {
   display: flex;
   align-items: center;
   gap: 8px;
-  z-index: 30;
+  z-index: 40;
   pointer-events: auto;
   transition: opacity 0.25s cubic-bezier(0.4, 0, 0.2, 1), transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -11295,7 +11293,7 @@ dialog.modal.namecard-modal {
   left: 0;
   width: 680px;
   height: 760px;
-  overflow: hidden;
+  overflow: visible;
   display: flex;
   flex-direction: column;
   transform-origin: top left;
@@ -11355,33 +11353,43 @@ dialog.modal.namecard-modal {
   width: 100%;
   height: 100% !important;
   max-height: 100% !important;
+  border-radius: 24px;
+  background: #ffffff;
+  box-shadow: 0 30px 70px -15px rgba(15, 23, 42, 0.4);
   font-family: var(--sans);
   -webkit-overflow-scrolling: touch;
   overscroll-behavior-y: contain;
 }
 
 /* Decorative frame lives above the card as an inert, absolute layer.
-   Nằm trọn vẹn trong stage theo đúng kích thước và tỷ lệ khóa cố định. */
+   Được scale theo chuẩn tỉ lệ của namecard stage. */
 .namecard-frame-layer {
   position: absolute;
   inset: 0;
   z-index: 20;
   pointer-events: none;
   background: center / 100% 100% no-repeat;
-  filter: drop-shadow(0 7px 11px rgba(15, 23, 42, 0.18));
-  opacity: 0; /* TẠMẨN: kích cỡ khung cần được căn chỉnh lại */
+  filter: drop-shadow(0 7px 14px rgba(15, 23, 42, 0.25));
+  opacity: 0;
   transition: opacity 180ms ease;
 }
 
-/* === TẠMẨN: Toàn bộ khung namecard tạm thời bị ẩn để căn chỉnh kích cỡ ===
 .namecard-frame-layer[data-frame] { opacity: 1; }
-.namecard-frame-layer[data-frame="default"] { background-image: url("frames/v2/default.png"); opacity: .68; }
-.namecard-frame-layer[data-frame="leaves"] { background-image: url("frames/v2/leaves.png"); }
+.namecard-frame-layer[data-frame="default"] { opacity: 0; }
+
+/* Khung Khu Rừng Tri Thức (Leaves):
+   Kích thước ảnh gốc 915x1024, ranh giới thanh vàng cốt lõi: 823px x 902px.
+   Khi đưa vào stage 680x760, scale khung = (680/823)*915 = 756px, cao = (760/902)*1024 = 863px.
+   Ranh giới 40-60 chạm chuẩn 100% mép viền ngoài namecard. */
+.namecard-frame-layer[data-frame="leaves"] {
+  background-image: url("frames/v2/leaves.png");
+  inset: -42px -38px -61px -38px;
+  background-size: 100% 100%;
+}
 .namecard-frame-layer[data-frame="stars"] { background-image: url("frames/v2/stars.png"); }
 .namecard-frame-layer[data-frame="sakura"] { background-image: url("frames/v2/sakura.png"); }
 .namecard-frame-layer[data-frame="ice"] { background-image: url("frames/v2/ice.png"); }
 .namecard-frame-layer[data-frame="gold"] { background-image: url("frames/v2/gold.png"); }
-=== HẾT TẠMẨN === */
 
 
 .frame-choice-preview {
