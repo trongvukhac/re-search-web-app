@@ -835,7 +835,7 @@ function publicUser(user, streakInfo = null) {
     className: user.class_name || "",
     bio: user.bio || "",
     coverImage: user.cover_image || "default",
-    namecardFrame: user.namecard_frame || "default",
+    namecardFrame: (user.namecard_frame && user.namecard_frame !== "default") ? user.namecard_frame : "none",
     namecardTheme: user.namecard_theme || "default",
     streak: info.streak || 0,
     maxStreak: user.id ? getUserMaxStreak(user.id) : 0,
@@ -2735,7 +2735,7 @@ async function api(request, response, url) {
         role: targetUser.role,
         bio: targetUser.bio || "Hỏi, trao đổi, cùng tiến bộ 🌱\nTìm hiểu sâu hơn, mỗi ngày một chút.",
         coverImage: targetUser.cover_image || "default",
-        namecardFrame: targetUser.namecard_frame || "default",
+        namecardFrame: (targetUser.namecard_frame && targetUser.namecard_frame !== "default") ? targetUser.namecard_frame : "none",
         namecardTheme: targetUser.namecard_theme || "default",
         isSelf,
         canUploadCustomCover
@@ -2845,9 +2845,13 @@ async function api(request, response, url) {
     const newDisplayName = (typeof displayName === "string" && displayName.trim()) ? displayName.trim().slice(0, 80) : currentUser.display_name;
     const newBio = typeof bio === "string" ? bio.trim().slice(0, 200) : currentUser.bio;
     const allowedFrames = new Map([
-      ["default", 0], ["leaves", 3], ["sakura", 7], ["ice", 14], ["stars", 30], ["gold", 50],
+      ["none", 0], ["default", 0],
+      ["basic_ocean", 0], ["basic_emerald", 0], ["basic_sunset", 0],
+      ["basic_aurora", 0], ["basic_royal", 0], ["basic_midnight", 0],
+      ["basic_slate", 0], ["basic_deep_green", 0], ["basic_pure_black", 0],
+      ["leaves", 3], ["sakura", 7], ["ice", 14], ["stars", 30], ["gold", 50],
     ]);
-    const requestedFrame = typeof namecardFrame === "string" ? namecardFrame.trim() : (currentUser.namecard_frame || "default");
+    const requestedFrame = typeof namecardFrame === "string" ? namecardFrame.trim() : (currentUser.namecard_frame || "none");
     const frameRequirement = allowedFrames.get(requestedFrame);
     if (frameRequirement === undefined) return error(response, 400, "Khung Namecard không hợp lệ.");
     const canUseRequestedFrame = isPrivileged || unlockedStreak >= frameRequirement;

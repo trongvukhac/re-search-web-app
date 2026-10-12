@@ -11388,52 +11388,190 @@ dialog.modal.namecard-modal {
 }
 
 .namecard-frame-layer[data-frame] { opacity: 1; }
-.namecard-frame-layer[data-frame="default"] { opacity: 0; }
+.namecard-frame-layer[data-frame="default"],
+.namecard-frame-layer[data-frame="none"],
+.namecard-frame-layer[data-frame=""] {
+  opacity: 0;
+  display: none;
+}
 
-/* Khung Khu Rừng Tri Thức (Leaves):
-   Kích thước ảnh gốc 915x1024, ranh giới thanh vàng cốt lõi: 823px x 902px.
-   Khi đưa vào stage 680x760, scale khung = (680/823)*915 = 756px, cao = (760/902)*1024 = 863px.
-   Ranh giới 40-60 chạm chuẩn 100% mép viền ngoài namecard. */
+/* 5 Khung nghệ thuật cao cấp */
 .namecard-frame-layer[data-frame="leaves"] {
-  background-image: url("frames/v2/leaves.png?v=4");
+  background-image: url("frames/v2/leaves.png?v=5");
   inset: -42px -38px -61px -38px;
   background-size: 100% 100%;
 }
 .namecard-frame-layer[data-frame="sakura"] {
-  background-image: url("frames/v2/sakura.png?v=4");
+  background-image: url("frames/v2/sakura.png?v=5");
   inset: -46px -42px -64px -42px;
   background-size: 100% 100%;
 }
 .namecard-frame-layer[data-frame="ice"] {
-  background-image: url("frames/v2/ice.png?v=4");
+  background-image: url("frames/v2/ice.png?v=5");
   inset: -54px -52px -58px -66px;
   background-size: 100% 100%;
 }
 .namecard-frame-layer[data-frame="stars"] {
-  background-image: url("frames/v2/stars.png?v=4");
-  inset: -66px -62px -70px -66px;
+  background-image: url("frames/v2/stars.png?v=5");
+  inset: -54px -50px -58px -66px;
   background-size: 100% 100%;
 }
 .namecard-frame-layer[data-frame="gold"] {
-  background-image: url("frames/v2/gold.png?v=4");
-  inset: -45px -42px -65px -42px;
+  background-image: url("frames/v2/gold.png?v=5");
+  inset: -48px -30px -52px -44px;
   background-size: 100% 100%;
 }
 
+/* Khung cơ bản miễn phí (độ dày 4px bo góc chuẩn theo namecard) */
+.namecard-frame-layer[data-frame^="basic_"] {
+  inset: 0px;
+  border-radius: 24px;
+  background: none;
+  pointer-events: none;
+  z-index: 10;
+}
+.namecard-frame-layer[data-frame="basic_ocean"] {
+  border: 4px solid transparent;
+  background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 50%, #93c5fd 100%) border-box;
+  -webkit-mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  box-shadow: 0 0 10px rgba(59, 130, 246, 0.25);
+}
+.namecard-frame-layer[data-frame="basic_emerald"] {
+  border: 4px solid transparent;
+  background: linear-gradient(135deg, #064e3b 0%, #059669 50%, #6ee7b7 100%) border-box;
+  -webkit-mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  box-shadow: 0 0 10px rgba(16, 185, 129, 0.25);
+}
+.namecard-frame-layer[data-frame="basic_sunset"] {
+  border: 4px solid transparent;
+  background: linear-gradient(135deg, #4c0519 0%, #db2777 50%, #fcd34d 100%) border-box;
+  -webkit-mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  box-shadow: 0 0 10px rgba(219, 39, 119, 0.25);
+}
+.namecard-frame-layer[data-frame="basic_aurora"] {
+  border: 4px solid transparent;
+  background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #4338ca 100%) border-box;
+  -webkit-mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  box-shadow: 0 0 10px rgba(67, 56, 202, 0.25);
+}
+.namecard-frame-layer[data-frame="basic_royal"] {
+  border: 4px solid transparent;
+  background: linear-gradient(135deg, #3b0764 0%, #7c3aed 50%, #c084fc 100%) border-box;
+  -webkit-mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  box-shadow: 0 0 10px rgba(124, 58, 237, 0.25);
+}
+.namecard-frame-layer[data-frame="basic_midnight"] {
+  border: 4px solid #0f172a;
+}
+.namecard-frame-layer[data-frame="basic_slate"] {
+  border: 4px solid #334155;
+}
+.namecard-frame-layer[data-frame="basic_deep_green"] {
+  border: 4px solid #064e3b;
+}
+.namecard-frame-layer[data-frame="basic_pure_black"] {
+  border: 4px solid #18181b;
+}
 
+
+/* Thumbnails xem trước trong bộ chọn frame */
 .frame-choice-preview {
   width: 100%;
-  height: 44px;
-  margin-bottom: 5px;
-  border-radius: 7px;
-  background: linear-gradient(135deg, #bdd6ff 0%, #fff 48%, #d9e8ff 100%) center / 100% 100% no-repeat;
+  height: 60px;
+  margin-bottom: 6px;
+  border-radius: 8px;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: contain;
+  background-color: transparent;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
-.frame-choice-preview[data-frame-preview="default"] { background-image: url("frames/v2/default.png?v=4"); }
-.frame-choice-preview[data-frame-preview="leaves"] { background-image: url("frames/v2/leaves.png?v=4"); }
-.frame-choice-preview[data-frame-preview="stars"] { background-image: url("frames/v2/stars.png?v=4"); }
-.frame-choice-preview[data-frame-preview="sakura"] { background-image: url("frames/v2/sakura.png?v=4"); }
-.frame-choice-preview[data-frame-preview="ice"] { background-image: url("frames/v2/ice.png?v=4"); }
-.frame-choice-preview[data-frame-preview="gold"] { background-image: url("frames/v2/gold.png?v=4"); }
+.frame-choice-preview[data-frame-preview="none"],
+.frame-choice-preview[data-frame-preview="default"] {
+  border: 1.5px dashed #cbd5e1;
+  background: #f8fafc;
+}
+.frame-choice-preview[data-frame-preview="none"]::after,
+.frame-choice-preview[data-frame-preview="default"]::after {
+  content: "✕ Không khung";
+  font-size: 10px;
+  font-weight: 600;
+  color: #94a3b8;
+}
+
+/* 5 ảnh thumb cao cấp chính thức */
+.frame-choice-preview[data-frame-preview="leaves"] { background-image: url("frames/v2/thumbs/leaves.png?v=5"); }
+.frame-choice-preview[data-frame-preview="stars"] { background-image: url("frames/v2/thumbs/stars.png?v=5"); }
+.frame-choice-preview[data-frame-preview="gold"] { background-image: url("frames/v2/thumbs/gold.png?v=5"); }
+.frame-choice-preview[data-frame-preview="sakura"] { background-image: url("frames/v2/thumbs/sakura.png?v=5"); }
+.frame-choice-preview[data-frame-preview="ice"] { background-image: url("frames/v2/thumbs/ice.png?v=5"); }
+
+/* Khung cơ bản miễn phí swatch */
+.frame-choice-preview[data-frame-preview="basic_ocean"] {
+  border: 3.5px solid transparent;
+  background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 50%, #93c5fd 100%) border-box;
+  -webkit-mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+}
+.frame-choice-preview[data-frame-preview="basic_emerald"] {
+  border: 3.5px solid transparent;
+  background: linear-gradient(135deg, #064e3b 0%, #059669 50%, #6ee7b7 100%) border-box;
+  -webkit-mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+}
+.frame-choice-preview[data-frame-preview="basic_sunset"] {
+  border: 3.5px solid transparent;
+  background: linear-gradient(135deg, #4c0519 0%, #db2777 50%, #fcd34d 100%) border-box;
+  -webkit-mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+}
+.frame-choice-preview[data-frame-preview="basic_aurora"] {
+  border: 3.5px solid transparent;
+  background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #4338ca 100%) border-box;
+  -webkit-mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+}
+.frame-choice-preview[data-frame-preview="basic_royal"] {
+  border: 3.5px solid transparent;
+  background: linear-gradient(135deg, #3b0764 0%, #7c3aed 50%, #c084fc 100%) border-box;
+  -webkit-mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+}
+.frame-choice-preview[data-frame-preview="basic_midnight"] {
+  border: 3.5px solid #0f172a;
+  background: #f8fafc;
+}
+.frame-choice-preview[data-frame-preview="basic_slate"] {
+  border: 3.5px solid #334155;
+  background: #f8fafc;
+}
+.frame-choice-preview[data-frame-preview="basic_deep_green"] {
+  border: 3.5px solid #064e3b;
+  background: #f8fafc;
+}
+.frame-choice-preview[data-frame-preview="basic_pure_black"] {
+  border: 3.5px solid #18181b;
+  background: #f8fafc;
+}
+
 .choice-unlock-badge {
   margin-top: 3px;
   color: #39714a;
@@ -11441,13 +11579,7 @@ dialog.modal.namecard-modal {
   font-weight: 700;
 }
 
-/* Earlier experimental rules used a CSS border as a stand-in frame.  Keep the
-   content canvas completely unchanged; the asset layer above is now the frame. */
-.namecard-card[data-frame="leaves"],
-.namecard-card[data-frame="stars"],
-.namecard-card[data-frame="sakura"],
-.namecard-card[data-frame="ice"],
-.namecard-card[data-frame="gold"] {
+.namecard-card[data-frame] {
   border: 0;
   box-shadow: none;
 }
@@ -12083,11 +12215,7 @@ dialog.modal.full-cover-viewer-modal {
 
 /* Must follow the retired prototype frame rules above: frames never consume
    content space or alter card geometry. */
-.namecard-card[data-frame="leaves"],
-.namecard-card[data-frame="stars"],
-.namecard-card[data-frame="sakura"],
-.namecard-card[data-frame="ice"],
-.namecard-card[data-frame="gold"] {
+.namecard-card[data-frame] {
   border: 0;
   box-shadow: none;
 }

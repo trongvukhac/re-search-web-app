@@ -3726,10 +3726,24 @@ const AVATAR_OPTIONS = [
 ];
 
 const FRAME_OPTIONS = [
-  { id: "default", name: "Mặc định", minDays: 0 },
-  { id: "leaves", name: "Khu rừng tri thức", minDays: 3 },
-  { id: "sakura", name: "Mùa anh đào nở", minDays: 7 },
-  { id: "ice", name: "Vương quốc mùa đông", minDays: 14 },
+  // Mặc định: không dùng khung (không có khung)
+  { id: "none", name: "Không khung", minDays: 0 },
+
+  // Khung cơ bản miễn phí (độ dày 4-5px) tương ứng danh sách ảnh bìa
+  { id: "basic_ocean", name: "Xanh đại dương", minDays: 0 },
+  { id: "basic_emerald", name: "Ngọc lục bảo", minDays: 0 },
+  { id: "basic_sunset", name: "Hoàng hôn tím", minDays: 0 },
+  { id: "basic_aurora", name: "Cực quang", minDays: 0 },
+  { id: "basic_royal", name: "Hoàng gia", minDays: 0 },
+  { id: "basic_midnight", name: "Đêm huyền bí", minDays: 0 },
+  { id: "basic_slate", name: "Xám đá Slate", minDays: 0 },
+  { id: "basic_deep_green", name: "Xanh rừng sâu", minDays: 0 },
+  { id: "basic_pure_black", name: "Đen tuyền", minDays: 0 },
+
+  // 5 Khung nghệ thuật độc quyền theo chuỗi ngày (sử dụng 5 thumb mới)
+  { id: "leaves", name: "Vườn thanh xuân", minDays: 3 },
+  { id: "sakura", name: "Đại lộ hoa anh đào", minDays: 7 },
+  { id: "ice", name: "Vương quốc băng giá", minDays: 14 },
   { id: "stars", name: "Tinh tú sao trời", minDays: 30 },
   { id: "gold", name: "Kỷ nguyên hoàng kim", minDays: 50 },
 ];
@@ -3840,9 +3854,9 @@ window.openNamecard = async function(userId) {
     if ($("#namecardEditNameBtn")) $("#namecardEditNameBtn").style.display = isSelf ? "inline-flex" : "none";
 
     // Frame is a visual overlay; it must never affect the card's measured layout.
-    const activeFrame = FRAME_OPTIONS.some(frame => frame.id === data.user.namecardFrame)
+    const activeFrame = FRAME_OPTIONS.some(frame => frame.id === data.user.namecardFrame && frame.id !== "default")
       ? data.user.namecardFrame
-      : "default";
+      : "none";
     $("#namecardCard").setAttribute("data-frame", activeFrame);
     $("#namecardFrameLayer")?.setAttribute("data-frame", activeFrame);
 
@@ -3975,9 +3989,9 @@ window.openEditNamecardModal = function(section = "all") {
   if ($("#namecardDisplayNameInput")) $("#namecardDisplayNameInput").value = session.displayName || "";
   if ($("#namecardBioInput")) $("#namecardBioInput").value = session.bio || "";
   currentSelectedAvatar = session.initials || session.avatar || "🌱";
-  currentSelectedFrame = FRAME_OPTIONS.some(frame => frame.id === session.namecardFrame)
+  currentSelectedFrame = FRAME_OPTIONS.some(frame => frame.id === session.namecardFrame && frame.id !== "default")
     ? session.namecardFrame
-    : "default";
+    : "none";
   currentSelectedCover = session.coverImage || "default";
 
   // Render Pickers
@@ -4078,7 +4092,7 @@ function renderFramePicker() {
   const isPrivileged = session?.role === "admin" || session?.role === "ta";
   const frameNotice = $("#namecardFrameNotice");
   if (frameNotice) {
-    const nextFrame = FRAME_OPTIONS.find(frame => frame.minDays > longestStreak);
+    const nextFrame = FRAME_OPTIONS.filter(frame => frame.minDays > 0).find(frame => frame.minDays > longestStreak);
     frameNotice.textContent = nextFrame && !isPrivileged
       ? `Mở khóa khung ${nextFrame.name}: chuỗi ${nextFrame.minDays}+ ngày`
       : "Tất cả khung hiện có đã mở khóa";
