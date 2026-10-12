@@ -11207,13 +11207,13 @@ dialog.modal.namecard-modal {
   /* Modal đóng vai trò là Viewport bao trùm cả khung trang trí lẫn thẻ namecard.
      Kích thước chuẩn trên PC: 780px x 890px (bao gồm 680px x 760px của thẻ + khoảng đệm khung hoa lá vươn ra ngoài).
      Trên mọi thiết bị, modal và toàn bộ sân khấu co giãn đồng nhất theo tỷ lệ đường chéo mà không bị trình duyệt cắt xén. */
-  --nc-modal-w: 780px;
-  --nc-modal-h: 890px;
-  --nc-ratio: 780 / 890;
+  --nc-modal-w: 830px;
+  --nc-modal-h: 930px;
+  --nc-ratio: 830 / 930;
 
-  width: min(var(--nc-modal-w), 96vw, calc(96vh * (780 / 890))) !important;
+  width: min(var(--nc-modal-w), 96vw, calc(96vh * (830 / 930))) !important;
   max-width: var(--nc-modal-w) !important;
-  height: calc(min(var(--nc-modal-w), 96vw, calc(96vh * (780 / 890))) * (890 / 780)) !important;
+  height: calc(min(var(--nc-modal-w), 96vw, calc(96vh * (830 / 930))) * (930 / 830)) !important;
   max-height: min(var(--nc-modal-h), 96vh) !important;
   aspect-ratio: var(--nc-ratio) !important;
 
@@ -11287,8 +11287,8 @@ dialog.modal.namecard-modal {
    được đặt ở vị trí trung tâm modal để khung thoải mái vươn ra ngoài mà không bị dialog cắt cụt */
 .namecard-stage {
   position: absolute;
-  top: calc(65px * var(--nc-scale, 1));
-  left: calc(50px * var(--nc-scale, 1));
+  top: calc(85px * var(--nc-scale, 1));
+  left: calc(75px * var(--nc-scale, 1));
   width: 680px;
   height: 760px;
   overflow: visible;
@@ -11399,10 +11399,26 @@ dialog.modal.namecard-modal {
   inset: -42px -38px -61px -38px;
   background-size: 100% 100%;
 }
-.namecard-frame-layer[data-frame="stars"] { background-image: url("frames/v2/stars.png"); }
-.namecard-frame-layer[data-frame="sakura"] { background-image: url("frames/v2/sakura.png"); }
-.namecard-frame-layer[data-frame="ice"] { background-image: url("frames/v2/ice.png"); }
-.namecard-frame-layer[data-frame="gold"] { background-image: url("frames/v2/gold.png"); }
+.namecard-frame-layer[data-frame="sakura"] {
+  background-image: url("frames/v2/sakura.png");
+  inset: -44px -42px -66px -42px;
+  background-size: 100% 100%;
+}
+.namecard-frame-layer[data-frame="ice"] {
+  background-image: url("frames/v2/ice.png");
+  inset: -66px -66px -72px -66px;
+  background-size: 100% 100%;
+}
+.namecard-frame-layer[data-frame="stars"] {
+  background-image: url("frames/v2/stars.png");
+  inset: -74px -68px -72px -62px;
+  background-size: 100% 100%;
+}
+.namecard-frame-layer[data-frame="gold"] {
+  background-image: url("frames/v2/gold.png");
+  inset: -45px -42px -65px -42px;
+  background-size: 100% 100%;
+}
 
 
 .frame-choice-preview {
