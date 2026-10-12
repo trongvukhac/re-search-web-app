@@ -11310,6 +11310,8 @@ dialog.modal.namecard-modal {
   background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 50%, #93c5fd 100%);
   background-size: cover;
   background-position: center;
+  border-radius: 24px 24px 0 0;
+  overflow: hidden;
   z-index: 1;
   pointer-events: none;
 }
@@ -11342,7 +11344,7 @@ dialog.modal.namecard-modal {
   transform: translateY(-1px);
 }
 
-/* Scrollable Card Body */
+/* Scrollable Card Body - background must be transparent so stationary cover shows through spacer */
 .namecard-card {
   position: relative;
   z-index: 2;
@@ -11354,7 +11356,7 @@ dialog.modal.namecard-modal {
   height: 100% !important;
   max-height: 100% !important;
   border-radius: 24px;
-  background: #ffffff;
+  background: transparent !important;
   box-shadow: 0 30px 70px -15px rgba(15, 23, 42, 0.4);
   font-family: var(--sans);
   -webkit-overflow-scrolling: touch;
@@ -11436,12 +11438,12 @@ dialog.modal.namecard-modal {
   position: relative;
   z-index: 3;
   background: #ffffff;
-  border-radius: 28px 28px 0 0;
+  border-radius: 28px 28px 24px 24px;
   box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.06);
   flex: 1;
   display: flex;
   flex-direction: column;
-  min-height: 500px;
+  min-height: 560px;
 }
 
 .namecard-edit-name-btn {
