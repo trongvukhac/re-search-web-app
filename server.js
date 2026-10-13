@@ -47,6 +47,7 @@ db.exec(`
     student_id TEXT,
     real_name TEXT,
     class_name TEXT,
+    email_changed INTEGER NOT NULL DEFAULT 0,
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
   );
@@ -188,6 +189,7 @@ try { db.exec("ALTER TABLE users ADD COLUMN class_name TEXT;"); } catch (e) {}
 try { db.exec("ALTER TABLE users ADD COLUMN avatar TEXT;"); } catch (e) {}
 try { db.exec("ALTER TABLE users ADD COLUMN avatar_changed INTEGER NOT NULL DEFAULT 0;"); } catch (e) {}
 try { db.exec("ALTER TABLE users ADD COLUMN avatar_last_changed INTEGER;"); } catch (e) {}
+try { db.exec("ALTER TABLE users ADD COLUMN email_changed INTEGER NOT NULL DEFAULT 0;"); } catch (e) {}
 try { db.exec("ALTER TABLE users ADD COLUMN locked_until TEXT;"); } catch (e) {}
 try { db.exec("ALTER TABLE posts ADD COLUMN is_pinned INTEGER NOT NULL DEFAULT 0 CHECK(is_pinned IN (0,1));"); } catch (e) {}
 try { db.exec("ALTER TABLE votes ADD COLUMN vote_value INTEGER NOT NULL DEFAULT 1;"); } catch (e) {}
@@ -830,6 +832,8 @@ function publicUser(user, streakInfo = null) {
     canChangeAvatar,
     avatarRemainingDays: remainingDays,
     role: user.role,
+    emailChanged: Boolean(user.email_changed),
+    canChangeEmail: !user.email_changed,
     studentId: user.student_id || "",
     realName: user.real_name || "",
     className: user.class_name || "",
@@ -2775,6 +2779,7 @@ async function api(request, response, url) {
     if (!user || !requireCsrf(request, response, user)) return;
     const body = await readJSON(request);
     const {
+      email,
       studentId,
       realName,
       className,
@@ -2788,6 +2793,24 @@ async function api(request, response, url) {
 
     const currentUser = db.prepare("SELECT * FROM users WHERE id=?").get(user.id);
     if (!currentUser) return error(response, 404, "Không tìm thấy người dùng.");
+
+    let newEmail = currentUser.email;
+    let emailChanged = currentUser.email_changed || 0;
+    if (typeof email === "string" && email.trim() && email.trim().toLowerCase() !== currentUser.email.toLowerCase()) {
+      if (currentUser.email_changed) {
+        return error(response, 400, "Bạn đã sử dụng lượt đổi email duy nhất của tài khoản.");
+      }
+      const normalizedEmail = email.trim().toLowerCase();
+      if (!/^\S+@\S+\.\S+$/.test(normalizedEmail)) {
+        return error(response, 400, "Định dạng email không hợp lệ.");
+      }
+      const existing = db.prepare("SELECT id FROM users WHERE email=? AND id!=?").get(normalizedEmail, user.id);
+      if (existing) {
+        return error(response, 409, "Email này đã được sử dụng bởi một tài khoản khác.");
+      }
+      newEmail = normalizedEmail;
+      emailChanged = 1;
+    }
 
     const streakInfo = calculateUserStreak(user.id);
     const maxStreak = getUserMaxStreak(user.id);
@@ -2864,9 +2887,11 @@ async function api(request, response, url) {
 
     db.prepare(`
       UPDATE users 
-      SET student_id=?, real_name=?, class_name=?, display_name=?, bio=?, avatar=?, avatar_changed=?, avatar_last_changed=?, cover_image=?, namecard_frame=?, namecard_theme=?, updated_at=CURRENT_TIMESTAMP 
+      SET email=?, email_changed=?, student_id=?, real_name=?, class_name=?, display_name=?, bio=?, avatar=?, avatar_changed=?, avatar_last_changed=?, cover_image=?, namecard_frame=?, namecard_theme=?, updated_at=CURRENT_TIMESTAMP 
       WHERE id=?
     `).run(
+      newEmail,
+      emailChanged,
       newStudentId || null,
       newRealName || null,
       newClassName || null,

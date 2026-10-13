@@ -4294,12 +4294,33 @@ if ($("#editNamecardForm")) {
 }
 
 // ==========================================
-// MODAL 2: CHỈNH SỬA HỒ SƠ (3 THÔNG TIN NỘI BỘ)
+// MODAL 2: CHỈNH SỬA HỒ SƠ (THÔNG TIN NỘI BỘ & EMAIL)
 // ==========================================
+let emailChangeConfirmedFor = "";
+
 window.openEditProfileModal = function() {
   if (!session) {
     toast("Vui lòng đăng nhập để chỉnh sửa hồ sơ.");
     return;
+  }
+  emailChangeConfirmedFor = "";
+  const emailInput = $("#profileEmail");
+  const emailHint = $("#profileEmailHint");
+  if (emailInput) {
+    emailInput.value = session.email || "";
+    if (session.emailChanged) {
+      emailInput.disabled = true;
+      if (emailHint) {
+        emailHint.textContent = "Bạn đã sử dụng lượt đổi email duy nhất.";
+        emailHint.style.color = "var(--error)";
+      }
+    } else {
+      emailInput.disabled = false;
+      if (emailHint) {
+        emailHint.textContent = "Mỗi người dùng có một lần đổi email duy nhất.";
+        emailHint.style.color = "var(--muted)";
+      }
+    }
   }
   $("#profileStudentId").value = session.studentId || "";
   $("#profileRealName").value = session.realName || "";
@@ -4307,18 +4328,58 @@ window.openEditProfileModal = function() {
   $("#editProfileModal").showModal();
 };
 
+const profileEmailEl = $("#profileEmail");
+if (profileEmailEl) {
+  profileEmailEl.addEventListener("change", () => {
+    const val = profileEmailEl.value.trim().toLowerCase();
+    const currentEmail = (session?.email || "").trim().toLowerCase();
+    if (val && val !== currentEmail && !session?.emailChanged) {
+      const confirmed = confirm("Bạn chỉ có một lần đổi email duy nhất. Bạn có chắc chắn chứ");
+      if (confirmed) {
+        emailChangeConfirmedFor = val;
+      } else {
+        profileEmailEl.value = session?.email || "";
+        emailChangeConfirmedFor = "";
+      }
+    }
+  });
+}
+
 if ($("#editProfileForm")) {
   $("#editProfileForm").onsubmit = async (e) => {
     e.preventDefault();
+    const emailInput = $("#profileEmail");
+    const newEmail = emailInput ? emailInput.value.trim().toLowerCase() : "";
+    const currentEmail = (session?.email || "").trim().toLowerCase();
+    const isChangingEmail = Boolean(newEmail && newEmail !== currentEmail);
+
+    if (isChangingEmail) {
+      if (session?.emailChanged) {
+        toast("Bạn đã sử dụng lượt đổi email duy nhất của tài khoản.");
+        return;
+      }
+      if (emailChangeConfirmedFor !== newEmail) {
+        const confirmed = confirm("Bạn chỉ có một lần đổi email duy nhất. Bạn có chắc chắn chứ");
+        if (!confirmed) {
+          return;
+        }
+        emailChangeConfirmedFor = newEmail;
+      }
+    }
+
     setSubmitLoading(e, true);
     try {
+      const payload = {
+        studentId: $("#profileStudentId").value.trim(),
+        realName: $("#profileRealName").value.trim(),
+        className: $("#profileClassName").value.trim(),
+      };
+      if (isChangingEmail) {
+        payload.email = newEmail;
+      }
       const res = await requestAPI("/api/me/profile", {
         method: "PATCH",
-        body: JSON.stringify({
-          studentId: $("#profileStudentId").value.trim(),
-          realName: $("#profileRealName").value.trim(),
-          className: $("#profileClassName").value.trim(),
-        }),
+        body: JSON.stringify(payload),
       });
       if (res.user) {
         session = { ...session, ...res.user };

@@ -12675,3 +12675,11 @@ dialog.modal.full-cover-viewer-modal {
     justify-content: center;
   }
 }
+
+input:disabled {
+  background-color: #f1f5f9 !important;
+  color: #64748b !important;
+  cursor: not-allowed !important;
+  border-color: #cbd5e1 !important;
+  opacity: 0.85;
+}
