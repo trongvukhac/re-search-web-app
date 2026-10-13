@@ -787,35 +787,105 @@ div.user-name-tier-5,
   display: inline-block;
   vertical-align: middle;
   filter: drop-shadow(0 2px 8px var(--flame-glow, rgba(47, 111, 78, 0.4)));
-  animation: flameFlicker 3s ease-in-out infinite;
-  transform-origin: bottom center;
+  animation: flamePulseDance 2.2s ease-in-out infinite;
+  transform-origin: 50% 92%;
+  cursor: pointer;
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
+.flame-svg:hover {
+  transform: scale(1.15);
+}
+
+.flame-outer {
+  transform-origin: 50% 92%;
+  animation: flameLickOuter 1.8s ease-in-out infinite alternate;
+}
+
+.flame-inner {
+  transform-origin: 50% 90%;
+  animation: flameDanceInner 1.25s cubic-bezier(0.4, 0, 0.2, 1) infinite alternate;
+}
+
+.flame-spark {
+  transform-origin: center;
+  animation: sparkRiseFloat 1.7s ease-in-out infinite;
+}
+
 .flame-svg.flame-tier-0 {
-  --flame-glow: rgba(47, 111, 78, 0.4);
+  --flame-glow: rgba(47, 111, 78, 0.5);
 }
 .flame-svg.flame-tier-1 {
-  --flame-glow: rgba(25, 113, 194, 0.65);
+  --flame-glow: rgba(25, 113, 194, 0.7);
 }
 .flame-svg.flame-tier-2 {
-  --flame-glow: rgba(245, 159, 0, 0.7);
+  --flame-glow: rgba(245, 159, 0, 0.75);
 }
 .flame-svg.flame-tier-3 {
-  --flame-glow: rgba(132, 94, 247, 0.8);
+  --flame-glow: rgba(132, 94, 247, 0.85);
 }
 .flame-svg.flame-tier-4 {
-  --flame-glow: rgba(224, 49, 49, 0.85);
+  --flame-glow: rgba(224, 49, 49, 0.9);
 }
 .flame-svg.flame-tier-5 {
   --flame-glow: rgba(247, 131, 172, 0.95);
-  animation: flameFlicker 2.5s ease-in-out infinite, mythicFlameShift 5s ease infinite alternate;
+  animation: flamePulseDance 2s ease-in-out infinite, mythicFlameShift 5s ease infinite alternate;
 }
 
-@keyframes flameFlicker {
-  0%, 100% { transform: scale(1) rotate(0deg); }
-  25% { transform: scale(1.04, 0.96) rotate(-1.5deg); }
-  50% { transform: scale(0.97, 1.03) rotate(1.2deg); }
-  75% { transform: scale(1.02, 0.98) rotate(-0.8deg); }
+@keyframes flamePulseDance {
+  0%, 100% {
+    transform: scale(1) rotate(0deg);
+    filter: drop-shadow(0 2px 7px var(--flame-glow));
+  }
+  20% {
+    transform: scale(1.06, 0.94) rotate(-2.5deg) skewX(-1.5deg);
+    filter: drop-shadow(0 3px 12px var(--flame-glow));
+  }
+  45% {
+    transform: scale(0.96, 1.05) rotate(1.8deg) skewX(1.2deg);
+    filter: drop-shadow(0 2px 6px var(--flame-glow));
+  }
+  70% {
+    transform: scale(1.03, 0.97) rotate(-1deg) skewX(-0.8deg);
+    filter: drop-shadow(0 3px 13px var(--flame-glow));
+  }
+  85% {
+    transform: scale(0.98, 1.02) rotate(1deg) skewX(0.5deg);
+    filter: drop-shadow(0 2px 8px var(--flame-glow));
+  }
 }
+
+@keyframes flameLickOuter {
+  0% { transform: scale(1) skewX(0deg); }
+  50% { transform: scale(1.02, 0.98) skewX(1.6deg); }
+  100% { transform: scale(0.98, 1.03) skewX(-1.4deg); }
+}
+
+@keyframes flameDanceInner {
+  0% {
+    transform: scale(0.92, 1.08) translateY(-0.6px);
+    opacity: 0.9;
+  }
+  50% {
+    transform: scale(1.08, 0.92) translateY(0.4px);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(0.95, 1.05) translateY(-1px);
+    opacity: 0.95;
+  }
+}
+
+@keyframes sparkRiseFloat {
+  0%, 100% {
+    transform: translateY(0) scale(0.8);
+    opacity: 0.6;
+  }
+  50% {
+    transform: translateY(-2.8px) translateX(0.6px) scale(1.2);
+    opacity: 1;
+  }
+}
+
 @keyframes mythicFlameShift {
   0% { filter: drop-shadow(0 2px 10px rgba(112, 72, 232, 0.85)); }
   100% { filter: drop-shadow(0 2px 14px rgba(255, 107, 107, 0.95)); }
