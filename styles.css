@@ -12655,3 +12655,23 @@ dialog.modal.full-cover-viewer-modal {
   }
 }
 
+/* === THẺ YÊU CẦU CẬP NHẬT THÔNG TIN SINH VIÊN (TRANG CÁ NHÂN) === */
+#accountStudentPromptCard {
+  transition: all 0.25s ease;
+}
+
+#accountStudentPromptCard:hover {
+  box-shadow: 0 3px 12px rgba(217, 119, 6, 0.12) !important;
+}
+
+@media (max-width: 640px) {
+  #accountStudentPromptCard > div {
+    flex-direction: column;
+    align-items: stretch !important;
+    gap: 14px !important;
+  }
+  #accountStudentPromptCard #promptUpdateProfileBtn {
+    width: 100%;
+    justify-content: center;
+  }
+}

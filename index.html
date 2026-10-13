@@ -1344,15 +1344,20 @@
           </div>
         </div>
 
-        <!-- THẺ BẢO MẬT & ĐỔI MẬT KHẨU -->
-        <div class="account-card" id="accountSecurityCard" style="display: none; margin-bottom: 24px; padding: 18px 22px; background: #fff; border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
-          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
-            <div>
-              <strong style="font-size: 14px; color: var(--ink); display: block; margin-bottom: 4px;">Bảo mật & Đổi mật khẩu</strong>
-              <span style="font-size: 12.5px; color: var(--muted);">Đổi mật khẩu định kỳ để bảo vệ tài khoản học tập RE:SEARCH của bạn.</span>
+        <!-- KHU VỰC YÊU CẦU CẬP NHẬT THÔNG TIN SINH VIÊN -->
+        <div class="account-card" id="accountStudentPromptCard" style="display: none; margin-bottom: 24px; padding: 18px 22px; background: #fff; border: 1px solid var(--line); border-left: 4px solid var(--primary); border-radius: 12px; box-shadow: 0 1px 4px rgba(0,0,0,0.04);">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px;">
+            <div style="display: flex; align-items: center; gap: 14px; max-width: 680px;">
+              <div style="width: 42px; height: 42px; border-radius: 10px; background: rgba(30, 93, 70, 0.08); color: var(--primary); display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0;">
+                🎓
+              </div>
+              <div>
+                <strong style="font-size: 14.5px; color: var(--ink); display: block; margin-bottom: 4px; font-weight: 700;">Yêu cầu cập nhật thông tin sinh viên</strong>
+                <span style="font-size: 12.5px; color: var(--muted); line-height: 1.45; display: block;">Vui lòng hoàn tất Mã số sinh viên, Họ tên thật và Lớp học để phục vụ điểm danh, đối soát với Giảng viên và Nhà trường.</span>
+              </div>
             </div>
-            <button type="button" class="button button-outline button-small" id="cardChangePasswordBtn" style="white-space: nowrap; font-weight: 600;">
-              🔑 Đổi mật khẩu ngay
+            <button type="button" class="button button-primary button-small" id="promptUpdateProfileBtn" onclick="openEditProfileModal()" style="white-space: nowrap; font-weight: 600; padding: 9px 18px; border-radius: 8px;">
+              Cập nhật ngay <span>→</span>
             </button>
           </div>
         </div>

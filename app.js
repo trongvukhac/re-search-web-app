@@ -733,6 +733,16 @@ function applySession(user) {
     }
   };
 
+  function isStudentProfileCompleted(u) {
+    if (!u) return false;
+    return Boolean(
+      (u.studentId || "").trim() &&
+      (u.realName || "").trim() &&
+      (u.className || "").trim()
+    );
+  }
+  window.isStudentProfileCompleted = isStudentProfileCompleted;
+
   setAuthBtn("#viewMyNamecardBtn", isAuth);
   setAuthBtn("#editNamecardBtn", isAuth);
   setAuthBtn("#editProfile", isAuth);
@@ -740,7 +750,8 @@ function applySession(user) {
   setAuthBtn("#logoutButton", isAuth);
   setAuthBtn("#accountLoginBtn", !isAuth);
   setAuthBtn("#accountGrid", isAuth);
-  setAuthBtn("#accountSecurityCard", isAuth, "block");
+  setAuthBtn("#accountStudentPromptCard", isAuth && !isStudentProfileCompleted(user), "block");
+  setAuthBtn("#accountSecurityCard", false);
   if ($("#adminPanel")) $("#adminPanel").style.display = (isAuth && (user.role === "admin" || user.role === "ta")) ? "" : "none";
 
   const badgeDesk = $("#studyNavBadgeDesktop");
@@ -953,7 +964,9 @@ async function hydrateServer() {
       setAuthBtn("#editNamecardBtn", true);
       setAuthBtn("#editProfile", true);
       setAuthBtn("#openChangePasswordBtn", true);
-      setAuthBtn("#accountSecurityCard", true, "block");
+      const isComplete = typeof isStudentProfileCompleted === "function" ? isStudentProfileCompleted(user) : Boolean((user.studentId || "").trim() && (user.realName || "").trim() && (user.className || "").trim());
+      setAuthBtn("#accountStudentPromptCard", !isComplete, "block");
+      setAuthBtn("#accountSecurityCard", false);
       setAuthBtn("#logoutButton", true);
       setAuthBtn("#accountLoginBtn", false);
 
@@ -1146,6 +1159,7 @@ async function hydrateServer() {
       setAuthBtn("#editNamecardBtn", false);
       setAuthBtn("#editProfile", false);
       setAuthBtn("#openChangePasswordBtn", false);
+      setAuthBtn("#accountStudentPromptCard", false);
       setAuthBtn("#accountSecurityCard", false);
       setAuthBtn("#logoutButton", false);
       setAuthBtn("#accountLoginBtn", true);
@@ -4310,6 +4324,7 @@ if ($("#editProfileForm")) {
       }
       toast("Đã lưu hồ sơ cá nhân!");
       $("#editProfileModal").close();
+      if (typeof syncAuth === "function") syncAuth(session);
       hydrateServer();
     } catch (err) {
       toast(err.message);
