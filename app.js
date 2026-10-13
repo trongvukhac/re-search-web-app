@@ -656,6 +656,16 @@ window.getRoleDisplay = function(role) {
   return "Sinh viên";
 };
 
+function isStudentProfileCompleted(u) {
+  if (!u) return false;
+  return Boolean(
+    (u.studentId || "").trim() &&
+    (u.realName || "").trim() &&
+    (u.className || "").trim()
+  );
+}
+window.isStudentProfileCompleted = isStudentProfileCompleted;
+
 function applySession(user) {
   session = user || null;
   const roleDisplay = getRoleDisplay(user?.role);
@@ -732,16 +742,6 @@ function applySession(user) {
       el.classList.add("is-hidden");
     }
   };
-
-  function isStudentProfileCompleted(u) {
-    if (!u) return false;
-    return Boolean(
-      (u.studentId || "").trim() &&
-      (u.realName || "").trim() &&
-      (u.className || "").trim()
-    );
-  }
-  window.isStudentProfileCompleted = isStudentProfileCompleted;
 
   setAuthBtn("#viewMyNamecardBtn", isAuth);
   setAuthBtn("#editNamecardBtn", isAuth);
@@ -947,6 +947,7 @@ async function hydrateServer() {
     }
 
     if (current.authenticated) {
+      const user = current.user;
       const setAuthBtn = (id, show, displayStyle = "") => {
         const el = $(id);
         if (!el) return;
@@ -964,7 +965,7 @@ async function hydrateServer() {
       setAuthBtn("#editNamecardBtn", true);
       setAuthBtn("#editProfile", true);
       setAuthBtn("#openChangePasswordBtn", true);
-      const isComplete = typeof isStudentProfileCompleted === "function" ? isStudentProfileCompleted(user) : Boolean((user.studentId || "").trim() && (user.realName || "").trim() && (user.className || "").trim());
+      const isComplete = isStudentProfileCompleted(user);
       setAuthBtn("#accountStudentPromptCard", !isComplete, "block");
       setAuthBtn("#accountSecurityCard", false);
       setAuthBtn("#logoutButton", true);
