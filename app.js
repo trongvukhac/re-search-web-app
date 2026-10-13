@@ -4296,26 +4296,30 @@ if ($("#editNamecardForm")) {
 // ==========================================
 // MODAL 2: CHỈNH SỬA HỒ SƠ (THÔNG TIN NỘI BỘ & EMAIL)
 // ==========================================
-let emailChangeConfirmedFor = "";
-
 window.openEditProfileModal = function() {
   if (!session) {
     toast("Vui lòng đăng nhập để chỉnh sửa hồ sơ.");
     return;
   }
-  emailChangeConfirmedFor = "";
   const emailInput = $("#profileEmail");
   const emailHint = $("#profileEmailHint");
+  const changeEmailBtn = $("#changeEmailActionBtn");
   if (emailInput) {
     emailInput.value = session.email || "";
     if (session.emailChanged) {
       emailInput.disabled = true;
+      if (changeEmailBtn) changeEmailBtn.style.display = "none";
       if (emailHint) {
-        emailHint.textContent = "Bạn đã sử dụng lượt đổi email duy nhất.";
+        emailHint.textContent = "Bạn đã sử dụng lượt đổi email duy nhất của tài khoản.";
         emailHint.style.color = "var(--error)";
       }
     } else {
       emailInput.disabled = false;
+      if (changeEmailBtn) {
+        changeEmailBtn.style.display = "inline-block";
+        changeEmailBtn.disabled = false;
+        changeEmailBtn.textContent = "Đổi email";
+      }
       if (emailHint) {
         emailHint.textContent = "Mỗi người dùng có một lần đổi email duy nhất.";
         emailHint.style.color = "var(--muted)";
@@ -4328,21 +4332,58 @@ window.openEditProfileModal = function() {
   $("#editProfileModal").showModal();
 };
 
-const profileEmailEl = $("#profileEmail");
-if (profileEmailEl) {
-  profileEmailEl.addEventListener("change", () => {
-    const val = profileEmailEl.value.trim().toLowerCase();
-    const currentEmail = (session?.email || "").trim().toLowerCase();
-    if (val && val !== currentEmail && !session?.emailChanged) {
-      const confirmed = confirm("Bạn chỉ có một lần đổi email duy nhất. Bạn có chắc chắn chứ");
-      if (confirmed) {
-        emailChangeConfirmedFor = val;
-      } else {
-        profileEmailEl.value = session?.email || "";
-        emailChangeConfirmedFor = "";
-      }
+const changeEmailBtn = $("#changeEmailActionBtn");
+if (changeEmailBtn) {
+  changeEmailBtn.onclick = async () => {
+    if (!session) return;
+    if (session.emailChanged) {
+      toast("Bạn đã sử dụng lượt đổi email duy nhất của tài khoản.");
+      return;
     }
-  });
+    const emailInput = $("#profileEmail");
+    const newEmail = emailInput ? emailInput.value.trim().toLowerCase() : "";
+    const currentEmail = (session.email || "").trim().toLowerCase();
+    if (!newEmail || newEmail === currentEmail) {
+      toast("Vui lòng nhập địa chỉ email mới khác email hiện tại.");
+      if (emailInput) emailInput.focus();
+      return;
+    }
+    if (!/^\S+@\S+\.\S+$/.test(newEmail)) {
+      toast("Định dạng email không hợp lệ.");
+      return;
+    }
+    const confirmed = confirm("Bạn chỉ có một lần đổi email duy nhất. Bạn có chắc chắn chứ");
+    if (!confirmed) return;
+
+    changeEmailBtn.disabled = true;
+    changeEmailBtn.textContent = "Đang đổi...";
+    try {
+      const res = await requestAPI("/api/me/profile", {
+        method: "PATCH",
+        body: JSON.stringify({ email: newEmail }),
+      });
+      if (res.user) {
+        session = { ...session, ...res.user };
+      }
+      toast("Đổi email thành công! Vui lòng dùng email mới để đăng nhập.");
+      if (emailInput) {
+        emailInput.value = session.email || newEmail;
+        emailInput.disabled = true;
+      }
+      changeEmailBtn.style.display = "none";
+      const hint = $("#profileEmailHint");
+      if (hint) {
+        hint.textContent = "Bạn đã sử dụng lượt đổi email duy nhất của tài khoản.";
+        hint.style.color = "var(--error)";
+      }
+      if (typeof syncAuth === "function") syncAuth(session);
+      hydrateServer();
+    } catch (err) {
+      toast(err.message || "Không thể đổi email.");
+      changeEmailBtn.disabled = false;
+      changeEmailBtn.textContent = "Đổi email";
+    }
+  };
 }
 
 if ($("#editProfileForm")) {
@@ -4358,12 +4399,9 @@ if ($("#editProfileForm")) {
         toast("Bạn đã sử dụng lượt đổi email duy nhất của tài khoản.");
         return;
       }
-      if (emailChangeConfirmedFor !== newEmail) {
-        const confirmed = confirm("Bạn chỉ có một lần đổi email duy nhất. Bạn có chắc chắn chứ");
-        if (!confirmed) {
-          return;
-        }
-        emailChangeConfirmedFor = newEmail;
+      const confirmed = confirm("Bạn chỉ có một lần đổi email duy nhất. Bạn có chắc chắn chứ");
+      if (!confirmed) {
+        return;
       }
     }
 

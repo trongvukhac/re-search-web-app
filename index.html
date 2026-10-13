@@ -2102,11 +2102,22 @@
         </div>
         <label style="margin-top: 14px;">
           Địa chỉ Email (Đổi duy nhất 1 lần)
-          <input
-            id="profileEmail"
-            type="email"
-            placeholder="email@example.com"
-          />
+          <div style="display: flex; gap: 8px; margin-top: 6px;">
+            <input
+              id="profileEmail"
+              type="email"
+              placeholder="email@example.com"
+              style="flex: 1;"
+            />
+            <button
+              type="button"
+              class="button button-outline button-small"
+              id="changeEmailActionBtn"
+              style="white-space: nowrap; font-weight: 600; padding: 0 16px;"
+            >
+              Đổi email
+            </button>
+          </div>
           <small id="profileEmailHint" style="font-size: 11.5px; color: var(--muted); display: block; margin-top: 4px;">
             Mỗi người dùng có một lần đổi email duy nhất.
           </small>
@@ -3131,6 +3142,6 @@
       </div>
     </dialog>
 
-    <script src="app.js?v=75" defer></script>
+    <script src="app.js?v=76" defer></script>
   </body>
 </html>
