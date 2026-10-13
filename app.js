@@ -274,6 +274,46 @@ function getFlameSVG(tier = 0, size = 20, extraClass = '') {
   const gradId = `flameGrad_${t}_${size}_${Math.floor(Math.random()*100000)}`;
   const innerGradId = `flameInner_${t}_${size}_${Math.floor(Math.random()*100000)}`;
 
+  const starSparkle = (cx, cy, s, extraCls = '') => 
+    `<path class="flame-star ${extraCls}" d="M${cx} ${cy - s} Q${cx} ${cy} ${cx + s} ${cy} Q${cx} ${cy} ${cx} ${cy + s} Q${cx} ${cy} ${cx - s} ${cy} Q${cx} ${cy} ${cx} ${cy - s}Z" fill="url(#${innerGradId})"/>`;
+
+  let extraEffects = '';
+  if (t === 1) {
+    extraEffects = `<circle class="flame-spark spark-1" cx="16.2" cy="4.2" r="0.75" fill="url(#${innerGradId})"/>`;
+  } else if (t === 2) {
+    extraEffects = `
+      <circle class="flame-spark spark-1" cx="16.5" cy="4" r="0.8" fill="url(#${innerGradId})"/>
+      <circle class="flame-spark spark-2" cx="7.8" cy="7" r="0.65" fill="url(#${innerGradId})"/>
+    `;
+  } else if (t === 3) {
+    extraEffects = `
+      <circle class="flame-spark spark-1" cx="16.8" cy="3.8" r="0.85" fill="url(#${innerGradId})"/>
+      <circle class="flame-spark spark-2" cx="7.2" cy="6.5" r="0.7" fill="url(#${innerGradId})"/>
+      <circle class="flame-spark spark-3" cx="14" cy="1.2" r="0.55" fill="url(#${innerGradId})"/>
+      ${starSparkle(18.5, 9.5, 1.6, 'star-1')}
+    `;
+  } else if (t === 4) {
+    extraEffects = `
+      <circle class="flame-spark spark-1" cx="17.2" cy="3.5" r="0.9" fill="url(#${innerGradId})"/>
+      <circle class="flame-spark spark-2" cx="6.5" cy="6" r="0.75" fill="url(#${innerGradId})"/>
+      <circle class="flame-spark spark-3" cx="14.5" cy="1" r="0.65" fill="url(#${innerGradId})"/>
+      <circle class="flame-spark spark-4" cx="8" cy="11.5" r="0.6" fill="url(#${innerGradId})"/>
+      ${starSparkle(19, 9, 1.8, 'star-1')}
+      ${starSparkle(5.5, 12, 1.4, 'star-2')}
+    `;
+  } else if (t === 5) {
+    extraEffects = `
+      <circle class="flame-spark spark-1" cx="17.5" cy="3" r="0.95" fill="url(#${innerGradId})"/>
+      <circle class="flame-spark spark-2" cx="6" cy="5.5" r="0.85" fill="url(#${innerGradId})"/>
+      <circle class="flame-spark spark-3" cx="14" cy="0.8" r="0.7" fill="url(#${innerGradId})"/>
+      <circle class="flame-spark spark-4" cx="7.5" cy="10.5" r="0.65" fill="url(#${innerGradId})"/>
+      <circle class="flame-spark spark-5" cx="18.5" cy="13.5" r="0.6" fill="url(#${innerGradId})"/>
+      ${starSparkle(19.2, 8.5, 2.1, 'star-1 star-mythic')}
+      ${starSparkle(5, 11, 1.7, 'star-2 star-mythic')}
+      ${starSparkle(12, 0.2, 1.5, 'star-3 star-mythic')}
+    `;
+  }
+
   return `<svg class="flame-svg flame-tier-${t} ${extraClass}" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
     <defs>
       <linearGradient id="${gradId}" x1="0%" y1="100%" x2="0%" y2="0%">
@@ -285,7 +325,7 @@ function getFlameSVG(tier = 0, size = 20, extraClass = '') {
     </defs>
     <path class="flame-outer" d="M12.2 1.2C12.2 1.2 13.5 3.8 13.2 6.5C12.8 9.2 10.5 10.5 10 13C9.5 11.5 10 9.8 9.2 8.5C7.8 10.8 6.2 13.2 6.2 16.2C6.2 19.8 8.8 22.5 12.5 22.5C16.5 22.5 19.2 19.5 19.2 15.5C19.2 12 17.5 9.5 16.5 7.2C16 8.8 15 10 14 10.8C14.6 8 14.8 4.5 12.2 1.2Z" fill="url(#${gradId})"/>
     <path class="flame-inner" d="M12.5 11.8C11.5 13.2 10.5 14.8 10.5 16.5C10.5 18.2 11.5 19.5 12.6 19.5C13.8 19.5 14.8 18.2 14.6 16.5C14.4 14.8 13.5 13.2 12.5 11.8Z" fill="url(#${innerGradId})"/>
-    <circle class="flame-spark" cx="16.2" cy="4" r="0.8" fill="url(#${innerGradId})"/>
+    ${extraEffects}
   </svg>`;
 }
 
