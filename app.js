@@ -853,6 +853,12 @@ function applySession(user) {
   if (currentActiveRoute === "arena") {
     onEnterArena();
   }
+
+  if (user) {
+    if (typeof initWebActivityTracker === "function") initWebActivityTracker();
+  } else {
+    if (typeof stopWebActivityTracker === "function") stopWebActivityTracker();
+  }
 }
 
 let currentLeaderboardTab = "contributions";
@@ -1244,7 +1250,8 @@ function renderActivityRow(r) {
     document_discussion: "💬",
     document_comment_deleted: "✕",
     competition_reward: "👑",
-    competition_phase_bonus: "🌟"
+    competition_phase_bonus: "🌟",
+    web_active: "🔥"
   };
   
   const getSnippet = () => {
@@ -1256,6 +1263,7 @@ function renderActivityRow(r) {
   
   const getActionText = () => {
     switch (r.action) {
+      case "web_active": return escapeHTML(r.reason || "Hoạt động sôi nổi trên web 5 phút để thắp sáng chuỗi");
       case "post_created": return `Bạn đã đăng câu hỏi${getSnippet()}`;
       case "response_created": return `Bạn đã trả lời${getSnippet()}`;
       case "helpful_received": return `Bài đăng${getSnippet()} nhận được lượt Vote`;
@@ -2012,6 +2020,84 @@ function openQuestion() {
   modal.showModal();
   $("#questionTitle").focus();
 }
+
+// --- WEB ACTIVITY TRACKER (HOẠT ĐỘNG 5 PHÚT GIỮ CHUỖI) ---
+let webActivityTrackerInterval = null;
+let lastUserInteractionTime = Date.now();
+let webActivityListenersAttached = false;
+
+function initWebActivityTracker() {
+  if (!session) {
+    stopWebActivityTracker();
+    return;
+  }
+
+  if (!webActivityListenersAttached) {
+    webActivityListenersAttached = true;
+    let throttleTimeout = null;
+    const onUserInteraction = () => {
+      if (!throttleTimeout) {
+        lastUserInteractionTime = Date.now();
+        throttleTimeout = setTimeout(() => { throttleTimeout = null; }, 1000);
+      }
+    };
+    ['mousemove', 'mousedown', 'keydown', 'touchstart', 'scroll'].forEach(evt => {
+      window.addEventListener(evt, onUserInteraction, { passive: true });
+    });
+  }
+
+  if (webActivityTrackerInterval) return;
+
+  webActivityTrackerInterval = setInterval(async () => {
+    if (!session) return;
+    if (document.visibilityState !== "visible") return;
+    // Nếu quá 90 giây không có bất kỳ tương tác nào -> coi như người dùng đang treo máy
+    if (Date.now() - lastUserInteractionTime > 90000) return;
+
+    try {
+      const todayVN = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Ho_Chi_Minh" }).format(new Date());
+      const storageKey = `re_search_active_sec_${session.id}_${todayVN}`;
+      const recordedKey = `re_search_streak_recorded_${session.id}_${todayVN}`;
+
+      let sec = parseInt(localStorage.getItem(storageKey) || "0", 10);
+      sec += 1;
+      localStorage.setItem(storageKey, String(sec));
+
+      if (sec >= 300) {
+        const recordedStatus = localStorage.getItem(recordedKey);
+        if (!recordedStatus || recordedStatus !== "done") {
+          localStorage.setItem(recordedKey, "done");
+          const res = await requestAPI("/api/auth/record-active-time", {
+            method: "POST",
+            body: JSON.stringify({ seconds: sec })
+          });
+          if (res && res.success) {
+            if (res.isNewToday) {
+              toast("🔥 Bạn đã hoạt động sôi nổi 5 phút hôm nay! Chuỗi ngày đã được thắp sáng!");
+              if (typeof loadContributions === "function") {
+                loadContributions();
+              }
+            }
+          } else {
+            localStorage.removeItem(recordedKey);
+          }
+        }
+      }
+    } catch (e) {
+      // Bỏ qua lỗi ngầm
+    }
+  }, 1000);
+}
+
+function stopWebActivityTracker() {
+  if (webActivityTrackerInterval) {
+    clearInterval(webActivityTrackerInterval);
+    webActivityTrackerInterval = null;
+  }
+}
+window.initWebActivityTracker = initWebActivityTracker;
+window.stopWebActivityTracker = stopWebActivityTracker;
+
 let postReadTimer = null;
 let postReadActivePostId = null;
 let postReadTracked = false;

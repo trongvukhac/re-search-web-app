@@ -902,6 +902,12 @@ function isAdmin(user) {
 function isSuperAdmin(user) {
   return Boolean(user && (user.role === "admin" || user.role === "ta"));
 }
+function isVLUEmail(user) {
+  if (!user) return false;
+  if (user.role === "admin" || user.role === "ta") return true;
+  const email = (user.email || "").toLowerCase();
+  return email.endsWith("@vanlanguni.vn") || email.endsWith("@vlu.edu.vn");
+}
 function recordContribution(
   userId,
   type,
@@ -1892,6 +1898,49 @@ async function api(request, response, url) {
     logShieldTransaction(user.id, 'use', 1, newShieldCount, `Khôi phục thủ công chuỗi ngày ${formatDMY(yesterday)}`);
     return json(response, 200, { success: true, shields: newShieldCount });
   }
+
+  if (method === "POST" && pathName === "/api/auth/record-active-time") {
+    const user = requireUser(request, response);
+    if (!user || !requireCsrf(request, response, user)) return;
+
+    const body = await readJSON(request);
+    const seconds = Number(body?.seconds || 0);
+    // Yêu cầu tối thiểu 5 phút (300 giây) hoạt động
+    if (seconds < 300) {
+      return json(response, 200, { success: true, eligible: false, message: "Chưa đủ 5 phút hoạt động." });
+    }
+
+    const todayVN = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Ho_Chi_Minh" }).format(new Date());
+
+    // Luôn ghi nhận ngày hoạt động để tính chuỗi
+    db.prepare("INSERT OR IGNORE INTO activity_days(user_id,activity_date) VALUES (?,?)").run(user.id, todayVN);
+
+    // Kiểm tra xem đã ghi nhận sự kiện hoạt động hôm nay chưa (tránh spam)
+    const alreadyLoggedToday = db.prepare(`
+      SELECT 1 FROM contribution_events 
+      WHERE user_id = ? AND event_type = 'web_active' 
+        AND date(datetime(created_at, '+7 hours')) = ?
+      LIMIT 1
+    `).get(user.id, todayVN);
+
+    let isNewToday = false;
+    if (!alreadyLoggedToday) {
+      db.prepare(
+        "INSERT INTO contribution_events(user_id,event_type,points,reference_type,reference_id,reason) VALUES (?,?,?,?,?,?)"
+      ).run(user.id, "web_active", 0, "web", 0, "Hoạt động sôi nổi trên web 5 phút để thắp sáng chuỗi");
+      isNewToday = true;
+    }
+
+    const streakInfo = calculateUserStreak(user.id);
+    return json(response, 200, {
+      success: true,
+      eligible: true,
+      isNewToday,
+      streak: streakInfo.streak,
+      activityDate: todayVN
+    });
+  }
+
   if (method === "POST" && pathName === "/api/auth/register") {
     const clientIp = getClientIp(request);
     if (
@@ -2819,6 +2868,9 @@ async function api(request, response, url) {
       const normalizedEmail = email.trim().toLowerCase();
       if (!/^\S+@\S+\.\S+$/.test(normalizedEmail)) {
         return error(response, 400, "Định dạng email không hợp lệ.");
+      }
+      if (currentUser.role === "student" && !isVLUEmail({ email: normalizedEmail, role: currentUser.role })) {
+        return error(response, 400, "Tài khoản sinh viên chỉ có thể đổi sang email Văn Lang (@vanlanguni.vn hoặc @vlu.edu.vn).");
       }
       const existing = db.prepare("SELECT id FROM users WHERE email=? AND id!=?").get(normalizedEmail, user.id);
       if (existing) {
@@ -4653,6 +4705,10 @@ async function api(request, response, url) {
 
     if (!ARENA_ENABLED && user.role !== "admin") {
       return error(response, 403, "Đấu trường Arena đang tạm khoá để thử nghiệm nội bộ.");
+    }
+
+    if (!isVLUEmail(user)) {
+      return error(response, 403, "Đấu trường Arena chỉ dành cho sinh viên Văn Lang (email @vanlanguni.vn hoặc @vlu.edu.vn).");
     }
 
     const vnNow = getVietnamNow();
