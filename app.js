@@ -8880,7 +8880,7 @@ function renderWeeklyCompetitionCard(raw) {
     if (ctaBtn) ctaBtn.className = "comp-cta-button cta-open";
   } else if (data.state === "countdown" || data.state === "upcoming") {
     badgeEl.classList.add("status-upcoming");
-    const upcomingBadgeText = "SẮP MỞ CỔNG (16h - 19h)";
+    const upcomingBadgeText = "CHUẨN BỊ ĐẾM NGƯỢC (15h - 19h)";
     if (badgeTextEl) badgeTextEl.textContent = upcomingBadgeText;
     if (timerLabel) timerLabel.textContent = "Mở cổng sau:";
     if (ctaText) ctaText.textContent = "Xem thể lệ & thông tin";
@@ -8888,7 +8888,7 @@ function renderWeeklyCompetitionCard(raw) {
   } else {
     badgeEl.classList.add("status-summary");
     if (badgeTextEl) badgeTextEl.textContent = data.state === "closed" ? "CỔNG ĐÃ ĐÓNG" : "ĐANG TỔNG KẾT";
-    if (timerLabel) timerLabel.textContent = data.state === "closed" ? "Thời gian còn lại:" : "Mở countdown sau:";
+    if (timerLabel) timerLabel.textContent = data.state === "closed" ? "Thời gian còn lại:" : "Mở đếm ngược sau:";
     if (ctaText) ctaText.textContent = "Xem bảng xếp hạng";
     if (ctaBtn) ctaBtn.className = "comp-cta-button cta-summary";
   }
@@ -9161,13 +9161,13 @@ function renderGatewayTab(raw) {
       if (clockLabel) clockLabel.textContent = "Thời gian mở cổng còn lại:";
     } else if (data.state === "countdown" || data.state === "upcoming") {
       statusBadge.classList.add("status-upcoming");
-      const upcomingStatusText = "SẮP MỞ CỔNG (16h - 19h)";
+      const upcomingStatusText = "CHUẨN BỊ ĐẾM NGƯỢC (15h - 19h)";
       if (statusText) statusText.textContent = upcomingStatusText;
       if (clockLabel) clockLabel.textContent = "Mở cổng trả lời sau:";
     } else {
       statusBadge.classList.add("status-summary");
       if (statusText) statusText.textContent = data.state === "closed" ? "CỔNG ĐÃ ĐÓNG" : "ĐANG TỔNG KẾT";
-      if (clockLabel) clockLabel.textContent = data.state === "closed" ? "Thời gian còn lại:" : "Mở countdown sau:";
+      if (clockLabel) clockLabel.textContent = data.state === "closed" ? "Thời gian còn lại:" : "Mở đếm ngược sau:";
     }
   }
 

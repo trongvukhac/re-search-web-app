@@ -1667,22 +1667,24 @@ function getCompetitionTimeState(vnDate, comp) {
       const secRemainingToday = ((23 - hours) * 3600) + ((59 - minutes) * 60) + (60 - seconds);
       secondsUntilNext = 86400 + secRemainingToday;
       nextStateLabel = `Đóng cổng GĐ ${phase} (${targetDayName} 23:59:59)`;
-    } else if (timeInMinutes >= 16 * 60) {
-      // 16:00 – 19:00: Sắp mở cổng thi đấu
+    } else if (timeInMinutes >= 15 * 60) {
+      // 15:00 – 19:00: Khung giờ chuẩn bị & sẵn sàng đếm ngược mở cổng
       state = "upcoming";
-      stateLabel = `Sắp mở cổng Giai đoạn ${phase}`;
+      stateLabel = `Sẵn sàng đếm ngược Giai đoạn ${phase} (15h – 19h)`;
       ctaText = "Xem thể lệ & Chuẩn bị";
       secondsUntilNext = ((19 * 60 - timeInMinutes - 1) * 60) + (60 - seconds);
       nextStateLabel = `Mở cổng GĐ ${phase} (19:00)`;
     } else {
-      // Trước 16:00: Đang tổng kết giai đoạn trước & chuẩn bị
+      // 00:00 – 15:00:
+      // - Thứ Hai: Khung giờ Khởi động tuần mới
+      // - Thứ Tư, Thứ Sáu: Khung giờ Tổng kết giai đoạn trước
       state = "reviewing";
       stateLabel = (dayOfWeek === 1) 
-        ? "Đang chuẩn bị tuần mới" 
-        : `Đang tổng kết GĐ ${phase - 1} & Chuẩn bị GĐ ${phase}`;
-      ctaText = "Xem bảng xếp hạng";
-      secondsUntilNext = ((19 * 60 - timeInMinutes - 1) * 60) + (60 - seconds);
-      nextStateLabel = `Mở cổng GĐ ${phase} (19:00)`;
+        ? "Khởi động tuần thi đấu mới (0h – 15h)" 
+        : `Tổng kết Giai đoạn ${phase - 1} (0h – 15h)`;
+      ctaText = (dayOfWeek === 1) ? "Xem thể lệ & Bảng vàng" : `Xem bảng xếp hạng GĐ ${phase - 1}`;
+      secondsUntilNext = ((15 * 60 - timeInMinutes - 1) * 60) + (60 - seconds);
+      nextStateLabel = `Khung giờ chuẩn bị (15:00)`;
     }
   } else if (isPhaseEndDay) {
     // Thứ Ba, Thứ Năm, Thứ Bảy: Mở liền mạch cả ngày đến 23:59:59
@@ -5627,10 +5629,10 @@ async function api(request, response, url) {
 
     if (preset === "real" || preset === "reset") {
       simulatedTimeOffsetMs = 0;
-    } else if (preset === "upcoming" || preset === "16:30") {
+    } else if (preset === "upcoming" || preset === "16:30" || preset === "15:30") {
       const target = new Date(realVnNow);
       if (target.getDay() === 0) target.setDate(target.getDate() + 1);
-      target.setHours(16, 30, 0, 0);
+      target.setHours(16, 0, 0, 0);
       simulatedTimeOffsetMs = target.getTime() - realVnNow.getTime();
     } else if (preset === "open" || preset === "19:30") {
       const target = new Date(realVnNow);
