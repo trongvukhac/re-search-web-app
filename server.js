@@ -2711,11 +2711,19 @@ async function api(request, response, url) {
     const responsesCount = db.prepare("SELECT count(*) as c FROM responses WHERE author_id = ? AND status = 'visible'").get(targetUser.id).c;
     const activeDaysCount = activeDaysRows.length;
 
-    // Khung Thành tích tự học
-    const studyDaysRow = db.prepare("SELECT count(DISTINCT date(datetime(completed_at, '+7 hours'))) as days, coalesce(sum(duration_minutes), 0) as totalMinutes FROM study_logs WHERE user_id = ?").get(targetUser.id);
-    const studyContribCount = db.prepare("SELECT count(DISTINCT date(datetime(created_at, '+7 hours'))) as days, count(*) as c, coalesce(sum(CASE WHEN points > 0 THEN 45 ELSE 25 END), 0) as approxMinutes FROM contribution_events WHERE user_id = ? AND event_type = 'study_session'").get(targetUser.id);
-    const studyDays = Math.max(studyDaysRow?.days || 0, studyContribCount?.days || 0, studyContribCount?.c || 0);
-    const totalStudyMinutes = Math.max(studyDaysRow?.totalMinutes || 0, studyContribCount?.approxMinutes || 0);
+    // Khung Thành tích tự học (Tính đúng số ngày tự học thực tế duy nhất, không bị nhân đôi theo số ca học)
+    const studyDaysRow = db.prepare(`
+      SELECT count(DISTINCT study_date) as days FROM (
+        SELECT date(datetime(completed_at, '+7 hours')) as study_date FROM study_logs WHERE user_id = ?
+        UNION
+        SELECT date(datetime(created_at, '+7 hours')) as study_date FROM contribution_events WHERE user_id = ? AND event_type = 'study_session'
+      )
+    `).get(targetUser.id, targetUser.id);
+    const studyDays = studyDaysRow?.days || 0;
+
+    const studyMinsRow = db.prepare("SELECT coalesce(sum(duration_minutes), 0) as totalMinutes FROM study_logs WHERE user_id = ?").get(targetUser.id);
+    const studyContribMins = db.prepare("SELECT coalesce(sum(CASE WHEN points > 0 THEN 45 ELSE 25 END), 0) as approxMinutes FROM contribution_events WHERE user_id = ? AND event_type = 'study_session'").get(targetUser.id);
+    const totalStudyMinutes = Math.max(studyMinsRow?.totalMinutes || 0, studyContribMins?.approxMinutes || 0);
 
     // Khung Thành tích thi đua
     const weeksParticipatedRow = db.prepare(`
