@@ -1387,6 +1387,22 @@ window.hidePost = async (id) => {
     }
   }
 };
+
+window.deletePost = async (id) => {
+  if (confirm("Chuyển bài đăng này vào Thùng rác (lưu trữ 7 ngày)?\nSau 7 ngày bài viết sẽ bị xóa vĩnh viễn.")) {
+    try {
+      await requestAPI(`/api/admin/posts/${id}/status`, {
+        method: "PATCH",
+        body: JSON.stringify({ status: "deleted" }),
+      });
+      toast("Đã chuyển bài đăng vào Thùng rác.");
+      go("forum");
+      hydrateServer();
+    } catch (e) {
+      toast(e.message);
+    }
+  }
+};
 function renderPosts() {
   const term = $("#forumSearch").value.trim().toLowerCase();
   let result = posts.filter((p) =>
@@ -2465,7 +2481,8 @@ async function openDetail(id, updateHash = true) {
     if (session?.role === "admin") {
       const pinText = post.isPinned ? "Bỏ ghim" : "Ghim bài";
       adminBtns = `<button class="button button-outline" style="color: var(--primary); border-color: var(--primary);" onclick="pinPost(${post.id}, ${!post.isPinned})">${pinText}</button>
-                   <button class="button button-outline" style="color: var(--error); border-color: var(--error);" onclick="hidePost(${post.id})">Ẩn bài đăng</button>`;
+                   <button class="button button-outline" style="color: #d97706; border-color: #d97706;" onclick="hidePost(${post.id})">Ẩn bài</button>
+                   <button class="button button-outline" style="color: var(--error); border-color: var(--error);" onclick="deletePost(${post.id})">🗑️ Xoá bài</button>`;
     }
     const editBtn = post.isAuthor ? renderEditBtn(post.id, post.createdAt, 'posts') : "";
 
@@ -3361,6 +3378,128 @@ window.revokeResetRequest = async function(id) {
 if ($("#refreshAdminResetsBtn")) {
   $("#refreshAdminResetsBtn").onclick = () => loadAdminPasswordResets();
 }
+
+let cachedTrashData = { posts: [], responses: [] };
+let currentTrashFilter = 'all';
+
+function formatRemainingTrashTime(deletedAt) {
+  if (!deletedAt) return "—";
+  const deletedTime = new Date(deletedAt.replace(' ', 'T') + (deletedAt.includes('Z') ? '' : 'Z')).getTime();
+  const expiresTime = deletedTime + 7 * 24 * 60 * 60 * 1000;
+  const diffMs = expiresTime - Date.now();
+  if (diffMs <= 0) return "<span style='color:#dc2626; font-weight:700;'>Sắp xóa vĩnh viễn</span>";
+  const days = Math.floor(diffMs / (24 * 60 * 60 * 1000));
+  const hours = Math.floor((diffMs % (24 * 60 * 60 * 1000)) / (60 * 60 * 1000));
+  if (days > 0) {
+    return `<span style="color:#b45309; font-weight:600;">Còn ${days} ngày ${hours} giờ</span>`;
+  }
+  const minutes = Math.floor((diffMs % (60 * 60 * 1000)) / (60 * 1000));
+  return `<span style="color:#dc2626; font-weight:700;">Còn ${hours} giờ ${minutes} phút</span>`;
+}
+
+async function loadAdminTrash() {
+  const tbody = $("#adminTrashBody");
+  if (!tbody) return;
+  tbody.innerHTML = `<tr><td colspan="6" style="padding: 24px; text-align: center; color: var(--muted)">Đang tải danh sách thùng rác...</td></tr>`;
+  try {
+    const data = await requestAPI("/api/admin/trash");
+    cachedTrashData = data;
+    const totalCount = (data.posts?.length || 0) + (data.responses?.length || 0);
+    if ($("#adminTrashBadge")) {
+      if (totalCount > 0) {
+        $("#adminTrashBadge").textContent = totalCount;
+        $("#adminTrashBadge").style.display = "inline-block";
+      } else {
+        $("#adminTrashBadge").style.display = "none";
+      }
+    }
+    renderAdminTrashTable();
+  } catch (err) {
+    tbody.innerHTML = `<tr><td colspan="6" style="padding: 24px; text-align: center; color: #dc2626">Lỗi tải thùng rác: ${escapeHTML(err.message)}</td></tr>`;
+  }
+}
+window.loadAdminTrash = loadAdminTrash;
+
+function filterAdminTrash(filter) {
+  currentTrashFilter = filter;
+  $$("#adminTabTrash .button-sm").forEach(b => b.classList.remove("active"));
+  if (filter === 'all') $("#adminTrashFilterAll")?.classList.add("active");
+  if (filter === 'post') $("#adminTrashFilterPosts")?.classList.add("active");
+  if (filter === 'response') $("#adminTrashFilterResponses")?.classList.add("active");
+  renderAdminTrashTable();
+}
+window.filterAdminTrash = filterAdminTrash;
+
+function renderAdminTrashTable() {
+  const tbody = $("#adminTrashBody");
+  if (!tbody) return;
+  
+  let items = [];
+  if (currentTrashFilter === 'all' || currentTrashFilter === 'post') {
+    items = items.concat(cachedTrashData.posts || []);
+  }
+  if (currentTrashFilter === 'all' || currentTrashFilter === 'response') {
+    items = items.concat(cachedTrashData.responses || []);
+  }
+
+  // Sắp xếp theo deletedAt mới nhất lên đầu
+  items.sort((a, b) => new Date(b.deletedAt || 0) - new Date(a.deletedAt || 0));
+
+  if (!items.length) {
+    tbody.innerHTML = `<tr><td colspan="6" style="padding: 24px; text-align: center; color: var(--muted)">Thùng rác hiện đang trống.</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = items.map(item => {
+    const isPost = item.type === 'post';
+    const typeBadge = isPost
+      ? `<span style="background: rgba(36,98,71,0.15); color: #166534; padding: 2px 8px; border-radius: 12px; font-weight: 700; font-size: 11px;">Bài đăng</span>`
+      : `<span style="background: rgba(59,130,246,0.15); color: #1d4ed8; padding: 2px 8px; border-radius: 12px; font-weight: 700; font-size: 11px;">Bình luận</span>`;
+
+    const contentHtml = isPost
+      ? `<strong style="color:var(--ink);">${escapeHTML(item.title)}</strong><br><small style="color:var(--muted)">Chủ đề: ${escapeHTML(item.topic)}</small>`
+      : `<span style="color:var(--ink); font-style: italic;">"${escapeHTML(item.excerpt)}"</span><br><small style="color:var(--muted)">Trong: ${escapeHTML(item.postTitle)}</small>`;
+
+    const authorHtml = `<strong>${escapeHTML(item.authorName || 'Vô danh')}</strong>` +
+      (item.studentId ? `<br><small style="color:var(--muted)">MSSV: ${escapeHTML(item.studentId)}</small>` : '');
+
+    const deletedTimeFormatted = new Date(item.deletedAt).toLocaleString("vi-VN", {
+      hour: "2-digit",
+      minute: "2-digit",
+      day: "2-digit",
+      month: "2-digit"
+    });
+
+    const remainingTime = formatRemainingTrashTime(item.deletedAt);
+
+    return `<tr style="border-bottom: 1px solid var(--sage-2);">
+      <td style="padding: 10px 8px; white-space: nowrap;">${typeBadge}</td>
+      <td style="padding: 10px 8px; max-width: 280px; word-break: break-word;">${contentHtml}</td>
+      <td style="padding: 10px 8px; white-space: nowrap;">${authorHtml}</td>
+      <td style="padding: 10px 8px; white-space: nowrap; color: var(--muted); font-size: 12px;">${deletedTimeFormatted}</td>
+      <td style="padding: 10px 8px; white-space: nowrap; font-size: 12px;">${remainingTime}</td>
+      <td style="padding: 10px 8px; text-align: right; white-space: nowrap;">
+        <button type="button" class="button button-primary button-small" style="padding: 3px 10px; font-size: 11px;" onclick="restoreTrashItem('${item.type}', ${item.id})">Khôi phục ↺</button>
+      </td>
+    </tr>`;
+  }).join("");
+}
+
+window.restoreTrashItem = async function(type, id) {
+  const typeText = type === 'post' ? 'bài đăng' : 'bình luận';
+  if (!confirm(`Bạn có chắc chắn muốn khôi phục ${typeText} này về diễn đàn?`)) return;
+  try {
+    await requestAPI("/api/admin/trash/restore", {
+      method: "POST",
+      body: JSON.stringify({ type, id }),
+    });
+    toast(`Đã khôi phục ${typeText} thành công!`);
+    loadAdminTrash();
+    hydrateServer();
+  } catch (err) {
+    toast(`Lỗi: ${err.message}`);
+  }
+};
 
 async function loadAdminMembers() {
   const data = await requestAPI("/api/admin/users");
