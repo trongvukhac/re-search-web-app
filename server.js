@@ -257,6 +257,20 @@ try {
     }
   }
 } catch (e) {}
+
+try {
+  // Dọn dẹp các bản ghi giữ chuỗi bị trùng lặp trong cùng một ngày (chỉ giữ lại 1 bản ghi duy nhất)
+  db.exec(`
+    DELETE FROM contribution_events 
+    WHERE event_type IN ('post_read', 'document_read', 'web_active')
+      AND id NOT IN (
+        SELECT min(id) FROM contribution_events 
+        WHERE event_type IN ('post_read', 'document_read', 'web_active')
+        GROUP BY user_id, date(datetime(created_at, '+7 hours'))
+      );
+  `);
+} catch (e) {}
+
 try {
   db.exec(`
     CREATE TABLE IF NOT EXISTS document_comments (
@@ -1928,10 +1942,10 @@ async function api(request, response, url) {
     // Luôn ghi nhận ngày hoạt động để tính chuỗi
     db.prepare("INSERT OR IGNORE INTO activity_days(user_id,activity_date) VALUES (?,?)").run(user.id, todayVN);
 
-    // Kiểm tra xem đã ghi nhận sự kiện hoạt động hôm nay chưa (tránh spam)
+    // Kiểm tra xem đã ghi nhận bất kỳ hoạt động giữ chuỗi nào hôm nay chưa (đọc bài hoặc hoạt động web)
     const alreadyLoggedToday = db.prepare(`
       SELECT 1 FROM contribution_events 
-      WHERE user_id = ? AND event_type = 'web_active' 
+      WHERE user_id = ? AND event_type IN ('post_read', 'document_read', 'web_active') 
         AND date(datetime(created_at, '+7 hours')) = ?
       LIMIT 1
     `).get(user.id, todayVN);
@@ -2234,10 +2248,10 @@ async function api(request, response, url) {
       // Luôn ghi nhận ngày hoạt động để duy trì chuỗi
       db.prepare("INSERT OR IGNORE INTO activity_days(user_id,activity_date) VALUES (?,?)").run(viewer.id, todayVN);
 
-      // Chỉ ghi lại bài đọc đầu tiên trong ngày vào lịch sử đóng góp (tránh spam thừa thông tin)
+      // Chỉ ghi lại nếu hôm nay chưa có bất kỳ hoạt động giữ chuỗi nào (tránh trùng lặp với đọc tài liệu hoặc hoạt động web 5 phút)
       const alreadyLoggedToday = db.prepare(`
         SELECT 1 FROM contribution_events 
-        WHERE user_id = ? AND event_type IN ('post_read', 'document_read') 
+        WHERE user_id = ? AND event_type IN ('post_read', 'document_read', 'web_active') 
           AND date(datetime(created_at, '+7 hours')) = ?
         LIMIT 1
       `).get(viewer.id, todayVN);
@@ -3164,10 +3178,10 @@ async function api(request, response, url) {
       // Luôn ghi nhận ngày hoạt động để duy trì chuỗi
       db.prepare("INSERT OR IGNORE INTO activity_days(user_id,activity_date) VALUES (?,?)").run(viewer.id, todayVN);
 
-      // Chỉ ghi lại tài liệu đầu tiên trong ngày vào lịch sử đóng góp (tránh spam thừa thông tin)
+      // Chỉ ghi lại nếu hôm nay chưa có bất kỳ hoạt động giữ chuỗi nào (tránh trùng lặp với đọc bài đăng hoặc hoạt động web 5 phút)
       const alreadyLoggedToday = db.prepare(`
         SELECT 1 FROM contribution_events 
-        WHERE user_id = ? AND event_type IN ('post_read', 'document_read') 
+        WHERE user_id = ? AND event_type IN ('post_read', 'document_read', 'web_active') 
           AND date(datetime(created_at, '+7 hours')) = ?
         LIMIT 1
       `).get(viewer.id, todayVN);

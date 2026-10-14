@@ -16,7 +16,7 @@
     <script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-    <link rel="stylesheet" href="styles.css?v=71" />
+    <link rel="stylesheet" href="styles.css?v=73" />
   </head>
   <body>
     <dialog
@@ -1263,7 +1263,10 @@
           <div class="profile-large">
             <div style="position: relative; display: inline-block; cursor: pointer;" onclick="openMyNamecard()" title="Bấm để xem thẻ tên của bạn">
               <span class="avatar avatar-lg" id="headerAvatar">🦊</span>
-              <button class="button button-sm" id="changeAvatarBtn" style="position: absolute; bottom: -5px; left: 50%; transform: translateX(-50%); font-size: 9px; padding: 2px 6px; display: none;" onclick="event.stopPropagation(); openEditNamecardModal('avatar')">Đổi</button>
+              <button class="change-avatar-btn" id="changeAvatarBtn" style="display: none;" onclick="event.stopPropagation(); openEditNamecardModal('avatar')" title="Đổi icon avatar (1 lần mỗi 7 ngày)">
+                <svg class="change-avatar-icon" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>
+                <span class="change-avatar-text">Đổi</span>
+              </button>
             </div>
             <div style="cursor: pointer;" onclick="openMyNamecard()" title="Bấm để xem thẻ tên của bạn">
               <p class="eyebrow">TÀI KHOẢN CỦA BẠN</p>
@@ -3184,6 +3187,6 @@
       </div>
     </dialog>
 
-    <script src="app.js?v=83" defer></script>
+    <script src="app.js?v=84" defer></script>
   </body>
 </html>

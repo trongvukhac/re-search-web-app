@@ -891,14 +891,14 @@ function applySession(user) {
   const changeBtn = $("#changeAvatarBtn");
   if (changeBtn) {
     if (user) {
-      changeBtn.style.display = "block";
+      changeBtn.style.display = "inline-flex";
       if (user.canChangeAvatar === false) {
         changeBtn.disabled = true;
-        changeBtn.textContent = `${user.avatarRemainingDays || 7}d`;
+        changeBtn.innerHTML = `${user.avatarRemainingDays || 7}d`;
         changeBtn.title = `Bạn chỉ có thể đổi lại avatar sau ${user.avatarRemainingDays || 7} ngày`;
       } else {
         changeBtn.disabled = false;
-        changeBtn.textContent = "Đổi";
+        changeBtn.innerHTML = `<svg class="change-avatar-icon" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg><span class="change-avatar-text">Đổi</span>`;
         changeBtn.title = "Đổi icon avatar (1 lần mỗi 7 ngày)";
       }
     } else {
@@ -2210,8 +2210,8 @@ function initWebActivityTracker() {
           if (res && res.success) {
             if (res.isNewToday) {
               toast("🔥 Bạn đã hoạt động sôi nổi 5 phút hôm nay! Chuỗi ngày đã được thắp sáng!");
-              if (typeof loadContributions === "function") {
-                loadContributions();
+              if (typeof hydrateServer === "function") {
+                hydrateServer();
               }
             }
           } else {
@@ -2311,8 +2311,10 @@ function startDocReadTracking(docId) {
         try {
           if (serverMode && session) {
             await requestAPI(`/api/documents/${docId}/read`, { method: "POST" });
-            if (typeof loadContributions === "function") {
-              loadContributions();
+            const todayVN = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Ho_Chi_Minh" }).format(new Date());
+            localStorage.setItem(`re_search_streak_recorded_${session.id}_${todayVN}`, "done");
+            if (typeof hydrateServer === "function") {
+              hydrateServer();
             }
           }
         } catch (err) {
@@ -2624,8 +2626,12 @@ async function openDetail(id, updateHash = true) {
               if (p) p.readCount = res.readCount;
             }
           }
-          if (serverMode && session && typeof loadContributions === "function") {
-            loadContributions();
+          if (serverMode && session) {
+            const todayVN = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Ho_Chi_Minh" }).format(new Date());
+            localStorage.setItem(`re_search_streak_recorded_${session.id}_${todayVN}`, "done");
+            if (typeof hydrateServer === "function") {
+              hydrateServer();
+            }
           }
         } catch (err) {
           console.error("Failed to update post read count:", err);
@@ -4972,7 +4978,7 @@ window.promptChangeAvatar = async function() {
     const btn = document.getElementById("changeAvatarBtn");
     if (btn) {
       btn.disabled = false;
-      btn.textContent = "Đổi";
+      btn.innerHTML = `<svg class="change-avatar-icon" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg><span class="change-avatar-text">Đổi</span>`;
     }
   }
 };
