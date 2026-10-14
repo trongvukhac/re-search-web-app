@@ -8755,6 +8755,7 @@ async function loadWeeklyCompetitionStatus() {
 function normalizeCompData(raw) {
   if (!raw) return {};
   const isSunday = Boolean(raw.isSunday || raw.timeState?.isSunday);
+  const isSaturday = Boolean(raw.isSaturday || raw.timeState?.isSaturday);
   const phase = raw.phase || raw.timeState?.phase || 1;
   let state = raw.state || raw.timeState?.state || "closed";
   if (state === "upcoming") {
@@ -9282,7 +9283,7 @@ function renderGatewayTab(raw) {
         }
       } else {
         cardClass += " card-locked";
-        const lockLabel = (data.state === "countdown" || data.state === "upcoming") ? "SẮP MỞ CỔNG" : (p.phase > data.phase ? "CHƯA MỞ" : "ĐÃ ĐÓNG CỔNG");
+        const lockLabel = (data.state === "countdown" || data.state === "upcoming") ? "ĐANG ĐẾM NGƯỢC" : (p.phase > data.phase ? "CHƯA MỞ" : "ĐÃ ĐÓNG CỔNG");
         chipHTML = `<span class="pj-status-chip chip-locked">🔒 ${lockLabel}</span>`;
         scoreInfoHTML = `<div class="pj-score-box"><span class="pj-score-label">Trạng thái:</span><span class="pj-score-val" style="color: #94a3b8;">${lockLabel}</span></div>`;
         actionBtnHTML = `<button type="button" class="pj-action-btn btn-disabled" disabled>${lockLabel}</button>`;
