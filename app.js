@@ -307,12 +307,18 @@ function triggerAppUpdate(newBuildId) {
     document.body.appendChild(banner);
   }
 
-  let countdown = 3;
+  let countdown = 300; // 5 phút
+  const formatCountdown = (s) => {
+    const m = Math.floor(s / 60);
+    const sec = s % 60;
+    return `${m}:${String(sec).padStart(2, "0")}`;
+  };
+
   banner.innerHTML = `
     <div style="font-size: 22px;">🚀</div>
     <div style="flex: 1;">
       <div style="font-weight: 700; color: #38bdf8; margin-bottom: 3px;">RE:SEARCH có phiên bản mới!</div>
-      <div style="font-size: 12px; color: #94a3b8; line-height: 1.4;">Tự động cập nhật sau <strong id="appUpdateSec" style="color: #fff; font-size: 13px;">${countdown}</strong>s để nạp tính năng mới nhất...</div>
+      <div style="font-size: 12px; color: #94a3b8; line-height: 1.4;">Tự động cập nhật sau <strong id="appUpdateSec" style="color: #fff; font-size: 13px;">${formatCountdown(countdown)}</strong> để nạp tính năng mới nhất...</div>
     </div>
     <button type="button" class="button button-small" style="background: #0284c7; color: #fff; border:none; padding: 7px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600; white-space: nowrap;" onclick="window.location.reload(true)">Làm mới ngay</button>
   `;
@@ -320,7 +326,7 @@ function triggerAppUpdate(newBuildId) {
   const timer = setInterval(() => {
     countdown -= 1;
     const secEl = document.getElementById("appUpdateSec");
-    if (secEl) secEl.textContent = String(countdown);
+    if (secEl) secEl.textContent = formatCountdown(countdown);
     if (countdown <= 0) {
       clearInterval(timer);
       window.location.reload(true);
