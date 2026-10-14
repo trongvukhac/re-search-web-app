@@ -3523,6 +3523,10 @@ $$(".admin-tab").forEach((tab) => {
       $("#adminTabPasswordResets").style.display = "block";
       loadAdminPasswordResets();
     }
+    if (target === "trash") {
+      $("#adminTabTrash").style.display = "block";
+      loadAdminTrash();
+    }
   });
 });
 

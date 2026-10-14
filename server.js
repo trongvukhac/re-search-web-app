@@ -3998,6 +3998,144 @@ async function api(request, response, url) {
     });
   }
 
+  // --- ADMIN TRASH APIS (Thùng rác lưu trữ 7 ngày) ---
+  if (method === "GET" && pathName === "/api/admin/trash") {
+    const user = requireUser(request, response);
+    if (!user || !isAdmin(user))
+      return user
+        ? error(response, 403, "Chỉ TA/Admin mới có quyền này.")
+        : undefined;
+
+    // Chạy dọn rác quá 7 ngày trước khi trả dữ liệu
+    cleanupExpiredTrash();
+
+    const deletedPosts = db.prepare(`
+      SELECT p.id, p.title, p.content, p.topic, p.author_id, p.deleted_at, p.created_at,
+             u.display_name as author_name, u.role as author_role, u.student_id
+      FROM posts p
+      JOIN users u ON u.id = p.author_id
+      WHERE p.status = 'deleted'
+      ORDER BY p.deleted_at DESC
+    `).all();
+
+    const deletedResponses = db.prepare(`
+      SELECT r.id, r.post_id, r.content, r.author_id, r.deleted_at, r.created_at,
+             u.display_name as author_name, u.role as author_role, u.student_id,
+             p.title as post_title
+      FROM responses r
+      JOIN users u ON u.id = r.author_id
+      LEFT JOIN posts p ON p.id = r.post_id
+      WHERE r.status = 'deleted'
+      ORDER BY r.deleted_at DESC
+    `).all();
+
+    return json(response, 200, {
+      posts: deletedPosts.map(p => ({
+        id: p.id,
+        type: 'post',
+        title: p.title,
+        excerpt: p.content.slice(0, 160),
+        topic: p.topic,
+        authorName: p.author_name,
+        authorRole: p.author_role,
+        studentId: p.student_id,
+        createdAt: p.created_at,
+        deletedAt: p.deleted_at || p.created_at
+      })),
+      responses: deletedResponses.map(r => ({
+        id: r.id,
+        type: 'response',
+        postId: r.post_id,
+        postTitle: r.post_title || `Bài viết #${r.post_id}`,
+        content: r.content,
+        excerpt: r.content.replace(/<[^>]*>/g, '').slice(0, 160),
+        authorName: r.author_name,
+        authorRole: r.author_role,
+        studentId: r.student_id,
+        createdAt: r.created_at,
+        deletedAt: r.deleted_at || r.created_at
+      }))
+    });
+  }
+
+  if (method === "POST" && pathName === "/api/admin/trash/restore") {
+    const user = requireUser(request, response);
+    if (!user || !isAdmin(user))
+      return user
+        ? error(response, 403, "Chỉ TA/Admin mới có quyền này.")
+        : undefined;
+    if (!requireCsrf(request, response, user)) return;
+
+    const { type, id } = await readJSON(request);
+    const targetId = Number(id);
+    if (!['post', 'response'].includes(type) || !targetId) {
+      return error(response, 400, "Dữ liệu yêu cầu không hợp lệ.");
+    }
+
+    if (type === 'post') {
+      const post = db.prepare("SELECT * FROM posts WHERE id = ?").get(targetId);
+      if (!post) return error(response, 404, "Không tìm thấy bài viết.");
+      db.prepare("UPDATE posts SET status = 'visible', deleted_at = NULL, updated_at = CURRENT_TIMESTAMP WHERE id = ?").run(targetId);
+      // Khôi phục điểm thưởng đóng góp cho tác giả (+2)
+      recordContribution(
+        post.author_id,
+        'post_restored',
+        2,
+        'post',
+        targetId,
+        'Admin khôi phục bài đăng từ thùng rác'
+      );
+      // Cũng khôi phục các bình luận thuộc bài viết này nếu trước đó bị xóa cùng bài
+      const relatedResponses = db.prepare("SELECT id, author_id FROM responses WHERE post_id = ? AND status = 'deleted'").all(targetId);
+      for (const r of relatedResponses) {
+        db.prepare("UPDATE responses SET status = 'visible', deleted_at = NULL, updated_at = CURRENT_TIMESTAMP WHERE id = ?").run(r.id);
+        recordContribution(
+          r.author_id,
+          'response_restored',
+          4,
+          'response',
+          r.id,
+          'Khôi phục bình luận do bài viết gốc được phục hồi'
+        );
+      }
+      db.prepare("INSERT INTO audit_logs(actor_id,action,subject_type,subject_id,reason) VALUES (?,?,?,?,?)").run(
+        user.id,
+        'post_restored',
+        'post',
+        targetId,
+        'Khôi phục bài đăng từ thùng rác'
+      );
+      return json(response, 200, { ok: true, message: "Đã khôi phục bài đăng thành công." });
+    } else {
+      const resp = db.prepare("SELECT * FROM responses WHERE id = ?").get(targetId);
+      if (!resp) return error(response, 404, "Không tìm thấy phản hồi.");
+      
+      // Kiểm tra xem bài đăng gốc có còn tồn tại không
+      const parentPost = db.prepare("SELECT status FROM posts WHERE id = ?").get(resp.post_id);
+      if (parentPost && parentPost.status === 'deleted') {
+        return error(response, 400, "Không thể khôi phục bình luận vì bài đăng gốc đang nằm trong thùng rác. Vui lòng khôi phục bài đăng trước.");
+      }
+
+      db.prepare("UPDATE responses SET status = 'visible', deleted_at = NULL, updated_at = CURRENT_TIMESTAMP WHERE id = ?").run(targetId);
+      recordContribution(
+        resp.author_id,
+        'response_restored',
+        4,
+        'response',
+        targetId,
+        'Admin khôi phục phản hồi từ thùng rác'
+      );
+      db.prepare("INSERT INTO audit_logs(actor_id,action,subject_type,subject_id,reason) VALUES (?,?,?,?,?)").run(
+        user.id,
+        'response_restored',
+        'response',
+        targetId,
+        'Khôi phục bình luận từ thùng rác'
+      );
+      return json(response, 200, { ok: true, message: "Đã khôi phục phản hồi thành công." });
+    }
+  }
+
   // --- WEEKLY COMPETITION APIS ---
   let competitionResultsVersion = Date.now();
 
@@ -5691,8 +5829,10 @@ function checkAndAwardSundayCompetitionRewards() {
 
 checkAndAwardWeeklyRewards();
 checkAndAwardSundayCompetitionRewards();
+cleanupExpiredTrash();
 setInterval(checkAndAwardWeeklyRewards, 60000);
 setInterval(checkAndAwardSundayCompetitionRewards, 60000);
+setInterval(cleanupExpiredTrash, 60 * 60 * 1000);
 
 server.listen(PORT, "::", () =>
   console.log(`RE:SEARCH đang chạy tại http://[::]:${PORT}`),

@@ -2380,6 +2380,14 @@
         >
           Khôi phục MK <span id="adminPendingResetBadge" style="display:none; background:#d9534f; color:#fff; font-size:10px; border-radius:10px; padding:1px 6px; margin-left:4px; font-weight:bold;">0</span>
         </button>
+        <button
+          type="button"
+          class="auth-tab admin-tab"
+          data-admin-tab="trash"
+          id="adminTabTrashBtn"
+        >
+          🗑️ Thùng rác (7 ngày) <span id="adminTrashBadge" style="display:none; background:#64748b; color:#fff; font-size:10px; border-radius:10px; padding:1px 6px; margin-left:4px; font-weight:bold;">0</span>
+        </button>
       </div>
 
       <div id="adminTabOverview" class="admin-tab-content">
@@ -2597,6 +2605,40 @@
               </tr>
             </thead>
             <tbody id="adminPasswordResetsBody">
+              <tr><td colspan="6" style="padding: 24px; text-align: center; color: var(--muted)">Đang tải...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- TAB THÙNG RÁC 7 NGÀY (ADMIN) -->
+      <div id="adminTabTrash" class="admin-tab-content" style="display: none">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:8px;">
+          <p style="font-size:13px; color:var(--muted); margin:0;">
+            Các bài đăng và phản hồi đã xóa sẽ được lưu trữ <strong>7 ngày</strong> trong thùng rác. Sau 7 ngày hệ thống tự động xóa vĩnh viễn. Chỉ Admin mới có quyền xem và khôi phục.
+          </p>
+          <button type="button" class="button button-subtle button-small" id="refreshAdminTrashBtn" onclick="loadAdminTrash()">Làm mới ⟳</button>
+        </div>
+        
+        <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+          <button type="button" class="button button-sm button-outline active" id="adminTrashFilterAll" onclick="filterAdminTrash('all')">Tất cả</button>
+          <button type="button" class="button button-sm button-outline" id="adminTrashFilterPosts" onclick="filterAdminTrash('post')">Bài viết đã xóa</button>
+          <button type="button" class="button button-sm button-outline" id="adminTrashFilterResponses" onclick="filterAdminTrash('response')">Bình luận đã xóa</button>
+        </div>
+
+        <div style="max-height: 420px; overflow-y: auto">
+          <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 13px;">
+            <thead>
+              <tr style="border-bottom: 1px solid var(--sage-2); color: var(--muted);">
+                <th style="padding: 10px 8px">Loại</th>
+                <th style="padding: 10px 8px">Nội dung</th>
+                <th style="padding: 10px 8px">Tác giả</th>
+                <th style="padding: 10px 8px">Thời gian xóa</th>
+                <th style="padding: 10px 8px">Tự động xóa sau</th>
+                <th style="padding: 10px 8px; text-align:right">Thao tác</th>
+              </tr>
+            </thead>
+            <tbody id="adminTrashBody">
               <tr><td colspan="6" style="padding: 24px; text-align: center; color: var(--muted)">Đang tải...</td></tr>
             </tbody>
           </table>
