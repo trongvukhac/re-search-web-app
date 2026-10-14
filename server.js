@@ -13,6 +13,19 @@ const DATABASE_DIR = process.env.RESEARCH_DB_DIR || path.join(ROOT, "data");
 const DATABASE_PATH = process.env.RESEARCH_DB_PATH || path.join(DATABASE_DIR, "research.db");
 const SESSION_AGE_SECONDS = 60 * 60 * 24 * 14;
 
+function computeAppBuildId() {
+  try {
+    const h = crypto.createHash("md5");
+    h.update(fs.readFileSync(path.join(ROOT, "index.html")));
+    h.update(fs.readFileSync(path.join(ROOT, "app.js")));
+    h.update(fs.readFileSync(path.join(ROOT, "styles.css")));
+    return h.digest("hex").slice(0, 10);
+  } catch (e) {
+    return Date.now().toString(36);
+  }
+}
+const APP_BUILD_ID = computeAppBuildId();
+
 // ============================================================
 // FEATURE FLAG: Kích hoạt tính năng RE:SEARCH ARENA
 // ============================================================
@@ -561,6 +574,7 @@ function json(response, status, body, headers = {}) {
   response.writeHead(status, {
     "Content-Type": "application/json; charset=utf-8",
     "Cache-Control": "no-store",
+    "X-App-Build": APP_BUILD_ID,
     ...headers,
   });
   response.end(JSON.stringify(body));
@@ -3992,6 +4006,15 @@ async function api(request, response, url) {
     return json(response, 200, { ok: true });
   }
 
+  // --- APP VERSION CHECK ---
+  if (method === "GET" && pathName === "/api/app-version") {
+    return json(response, 200, {
+      ok: true,
+      buildId: APP_BUILD_ID,
+      serverTime: new Date().toISOString()
+    });
+  }
+
   if (method === "GET" && pathName === "/api/admin/password-resets") {
     const user = requireUser(request, response);
     if (!user || !isSuperAdmin(user))
@@ -5761,8 +5784,13 @@ function serveStatic(request, response, url) {
     "Content-Type": MIME[extension] || "application/octet-stream",
     "X-Content-Type-Options": "nosniff",
     "Referrer-Policy": "same-origin",
+    "X-App-Build": APP_BUILD_ID,
   };
-  if (relative.startsWith("/frames/")) {
+  if (extension === ".html") {
+    headers["Cache-Control"] = "no-cache, no-store, must-revalidate";
+    headers["Pragma"] = "no-cache";
+    headers["Expires"] = "0";
+  } else if (relative.startsWith("/frames/")) {
     headers["Cache-Control"] = "no-cache, must-revalidate";
   } else if (relative.startsWith("/public/") || [".png", ".jpg", ".jpeg", ".webp", ".gif", ".svg", ".ico", ".mp3", ".wav", ".woff2", ".ttf"].includes(extension)) {
     headers["Cache-Control"] = "public, max-age=86400, stale-while-revalidate=604800";

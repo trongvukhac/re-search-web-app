@@ -212,11 +212,147 @@ async function requestAPI(url, options = {}) {
     ...options,
     headers,
   });
+  const serverBuild = response.headers.get("X-App-Build");
+  if (serverBuild && typeof handleAppBuildVersion === "function") {
+    handleAppBuildVersion(serverBuild);
+  }
   const data = await response.json();
   if (!response.ok)
     throw new Error(data.error || "Không thể kết nối với máy chủ.");
   return data;
 }
+
+// ============================================================
+// AUTO-UPDATE & REALTIME VERSION MANAGER
+// ============================================================
+let clientAppBuildId = null;
+let isUpdatePromptShowing = false;
+let lastVersionCheckTime = 0;
+
+function handleAppBuildVersion(serverBuildId) {
+  if (!serverBuildId) return;
+  if (!clientAppBuildId) {
+    clientAppBuildId = serverBuildId;
+    return;
+  }
+  if (clientAppBuildId !== serverBuildId) {
+    triggerAppUpdate(serverBuildId);
+  }
+}
+
+function isUserBusyWithCriticalTask() {
+  try {
+    // 1. Đang làm bài thi Đấu trường
+    if (typeof compState !== "undefined" && compState.activeSessionId) return true;
+    const quizModal = document.getElementById("compQuizModal");
+    if (quizModal && quizModal.open) return true;
+
+    // 2. Đang mở hộp thoại viết bài hỏi đáp / tài liệu
+    const newQuestionModal = document.getElementById("newQuestionModal");
+    if (newQuestionModal && newQuestionModal.open) return true;
+    const submitDocModal = document.getElementById("submitDocModal");
+    if (submitDocModal && submitDocModal.open) return true;
+
+    // 3. Đang soạn thảo văn bản
+    const activeEl = document.activeElement;
+    if (activeEl && (activeEl.tagName === "INPUT" || activeEl.tagName === "TEXTAREA" || activeEl.isContentEditable)) {
+      return true;
+    }
+  } catch (e) {}
+  return false;
+}
+
+function triggerAppUpdate(newBuildId) {
+  if (isUpdatePromptShowing) return;
+  
+  if (isUserBusyWithCriticalTask()) {
+    // Nếu người dùng đang làm bài hoặc viết bài: hoãn lại và kiểm tra lại sau 30 giây
+    setTimeout(() => {
+      if (clientAppBuildId !== newBuildId) triggerAppUpdate(newBuildId);
+    }, 30000);
+    return;
+  }
+
+  isUpdatePromptShowing = true;
+  
+  let banner = document.getElementById("appUpdateBanner");
+  if (!banner) {
+    banner = document.createElement("div");
+    banner.id = "appUpdateBanner";
+    banner.style.cssText = `
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      z-index: 999999;
+      background: #0f172a;
+      color: #fff;
+      border: 1px solid rgba(56, 189, 248, 0.4);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.55);
+      border-radius: 12px;
+      padding: 14px 18px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      font-size: 13.5px;
+      font-family: inherit;
+      max-width: 420px;
+      box-sizing: border-box;
+      transition: all 0.3s ease;
+    `;
+    if (window.innerWidth < 640) {
+      banner.style.left = "16px";
+      banner.style.right = "16px";
+      banner.style.bottom = "16px";
+    }
+    document.body.appendChild(banner);
+  }
+
+  let countdown = 3;
+  banner.innerHTML = `
+    <div style="font-size: 22px;">🚀</div>
+    <div style="flex: 1;">
+      <div style="font-weight: 700; color: #38bdf8; margin-bottom: 3px;">RE:SEARCH có phiên bản mới!</div>
+      <div style="font-size: 12px; color: #94a3b8; line-height: 1.4;">Tự động cập nhật sau <strong id="appUpdateSec" style="color: #fff; font-size: 13px;">${countdown}</strong>s để nạp tính năng mới nhất...</div>
+    </div>
+    <button type="button" class="button button-small" style="background: #0284c7; color: #fff; border:none; padding: 7px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600; white-space: nowrap;" onclick="window.location.reload(true)">Làm mới ngay</button>
+  `;
+
+  const timer = setInterval(() => {
+    countdown -= 1;
+    const secEl = document.getElementById("appUpdateSec");
+    if (secEl) secEl.textContent = String(countdown);
+    if (countdown <= 0) {
+      clearInterval(timer);
+      window.location.reload(true);
+    }
+  }, 1000);
+}
+
+async function checkAppVersionInBackground() {
+  const now = Date.now();
+  if (now - lastVersionCheckTime < 45000) return; // Không check dồn dập trong 45s
+  lastVersionCheckTime = now;
+  try {
+    const res = await fetch("/api/app-version", { cache: "no-store", credentials: "same-origin" });
+    const data = await res.json();
+    if (data && data.buildId) {
+      handleAppBuildVersion(data.buildId);
+    }
+  } catch (e) {}
+}
+
+// Bắt sự kiện khi người dùng chuyển lại tab sau thời gian dài không dùng
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible") {
+    checkAppVersionInBackground();
+  }
+});
+window.addEventListener("focus", () => {
+  checkAppVersionInBackground();
+});
+
+// Tự động kiểm tra phiên bản định kỳ mỗi 3 phút
+setInterval(checkAppVersionInBackground, 3 * 60 * 1000);
 function formatTime(isoStr) {
   if (!isoStr) return "Hôm nay";
   const date = new Date(isoStr);
