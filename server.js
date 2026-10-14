@@ -725,14 +725,12 @@ function calculateUserStreak(userId, todayDate, formatYMD) {
   const restoreMap = new Map();
   streakRestores.forEach(r => restoreMap.set(r.restored_date, r.created_at));
 
-  // Auto-shield logic: if missed yesterday, active on dayBefore or dayBefore was restored, and have shields > 0
+  // Auto-shield logic: CHỈ tự động kích hoạt 1 ngày hôm qua NẾU ngày trước đó (dayBefore) là ngày người dùng thực sự có hoạt động (không phải ngày đã được cứu bởi khiên)
   let autoShieldUsed = false;
   if (!activityMap.has(yesterday) && !restoreMap.has(yesterday) && shieldRow.shields > 0) {
-    const wasActiveBefore = activityMap.has(dayBefore) || restoreMap.has(dayBefore);
-    const dayBefore3 = formatYMD(new Date(todayDate.getTime() - 3 * 86400000));
-    const usedConsecutiveRestores = restoreMap.has(dayBefore) && restoreMap.has(dayBefore3);
+    const wasRealActivityBefore = activityMap.has(dayBefore) && !restoreMap.has(dayBefore);
 
-    if (wasActiveBefore && !usedConsecutiveRestores) {
+    if (wasRealActivityBefore) {
       db.prepare("INSERT OR IGNORE INTO streak_restores(user_id, restored_date) VALUES (?,?)").run(userId, yesterday);
       restoreMap.set(yesterday, new Date().toISOString());
       shieldRow.shields = Math.max(0, shieldRow.shields - 1);
@@ -1908,22 +1906,63 @@ async function api(request, response, url) {
     }
 
     const todayDate = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Ho_Chi_Minh" }));
-    const yesterdayDate = new Date(todayDate); yesterdayDate.setDate(yesterdayDate.getDate() - 1);
-    const y = yesterdayDate.getFullYear();
-    const m = String(yesterdayDate.getMonth()+1).padStart(2, '0');
-    const day = String(yesterdayDate.getDate()).padStart(2, '0');
-    const yesterday = `${y}-${m}-${day}`;
-    
-    const already = db.prepare("SELECT 1 FROM streak_restores WHERE user_id=? AND restored_date=?").get(user.id, yesterday);
-    if (already) {
-      return error(response, 400, "Chuỗi của ngày hôm qua đã được khôi phục trước đó.");
+    const formatYMD = (d) => {
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, "0");
+      const day = String(d.getDate()).padStart(2, "0");
+      return `${y}-${m}-${day}`;
+    };
+
+    const yesterdayDate = new Date(todayDate);
+    yesterdayDate.setDate(yesterdayDate.getDate() - 1);
+
+    const activities = db.prepare("SELECT activity_date FROM activity_days WHERE user_id=?").all(user.id).map(x => x.activity_date);
+    const restores = db.prepare("SELECT restored_date FROM streak_restores WHERE user_id=?").all(user.id).map(x => x.restored_date);
+    const actSet = new Set(activities);
+    const resSet = new Set(restores);
+
+    // Tìm các ngày bị nhỡ liên tiếp lùi từ hôm qua
+    const missingDays = [];
+    let cur = new Date(yesterdayDate);
+    for (let i = 0; i < 2; i++) {
+      const dStr = formatYMD(cur);
+      if (!actSet.has(dStr) && !resSet.has(dStr)) {
+        missingDays.push(dStr);
+        cur.setDate(cur.getDate() - 1);
+      } else {
+        break;
+      }
     }
 
-    db.prepare("INSERT INTO streak_restores(user_id,restored_date) VALUES (?,?)").run(user.id, yesterday);
-    const newShieldCount = Math.max(0, shieldRow.shields - 1);
+    if (missingDays.length === 0) {
+      return error(response, 400, "Chuỗi của bạn hiện đang liền mạch, không cần khôi phục.");
+    }
+
+    const beforeMissing = formatYMD(cur);
+    const hasPriorStreak = actSet.has(beforeMissing) || resSet.has(beforeMissing);
+    if (!hasPriorStreak) {
+      return error(response, 400, "Không tìm thấy chuỗi hoạt động trước đó để khôi phục.");
+    }
+
+    if (shieldRow.shields < missingDays.length) {
+      return error(response, 400, `Bạn cần ${missingDays.length} khiên để khôi phục chuỗi ngày bị nhỡ.`);
+    }
+
+    for (const d of missingDays) {
+      db.prepare("INSERT OR IGNORE INTO streak_restores(user_id, restored_date) VALUES (?,?)").run(user.id, d);
+    }
+
+    const newShieldCount = Math.max(0, shieldRow.shields - missingDays.length);
     db.prepare("UPDATE user_streak_shields SET shields = ?, updated_at = CURRENT_TIMESTAMP WHERE user_id = ?").run(newShieldCount, user.id);
-    logShieldTransaction(user.id, 'use', 1, newShieldCount, `Khôi phục thủ công chuỗi ngày ${formatDMY(yesterday)}`);
-    return json(response, 200, { success: true, shields: newShieldCount });
+    logShieldTransaction(user.id, 'use', missingDays.length, newShieldCount, `Khôi phục thủ công chuỗi ngày ${missingDays.map(formatDMY).join(', ')}`);
+
+    const streakInfo = calculateUserStreak(user.id, todayDate, formatYMD);
+    return json(response, 200, {
+      success: true,
+      shields: newShieldCount,
+      streak: streakInfo.streak,
+      restoredDates: missingDays
+    });
   }
 
   if (method === "POST" && pathName === "/api/auth/record-active-time") {
@@ -2527,18 +2566,36 @@ async function api(request, response, url) {
     const dayBeforeDate = new Date(todayDate); dayBeforeDate.setDate(dayBeforeDate.getDate() - 2);
     const dayBefore = formatYMD(dayBeforeDate);
 
-    const streakRestores = db
-      .prepare(
-        "SELECT restored_date FROM streak_restores WHERE user_id=?",
-      )
-      .all(user.id)
-      .map((x) => x.restored_date);
-    const streakRestoresSet = new Set(streakRestores);
-
-    const activitySet = new Set(activity);
-    const canRestoreStreak = activitySet.has(dayBefore) && !activitySet.has(yesterday) && !streakRestoresSet.has(yesterday);
-    
     const streakInfo = calculateUserStreak(user.id, todayDate, formatYMD);
+
+    // Tính toán điều kiện khôi phục thủ công khi chuỗi bị đứt (do không đủ điều kiện auto-shield)
+    const updatedRestores = db.prepare("SELECT restored_date FROM streak_restores WHERE user_id=?").all(user.id).map(x => x.restored_date);
+    const updatedRestoreSet = new Set(updatedRestores);
+    const updatedActivitySet = new Set(activity);
+
+    let canRestoreStreak = false;
+    let restoreShieldsCost = 0;
+
+    // Kiểm tra nếu ngày hôm qua chưa được ghi nhận (chuỗi đang bị gián đoạn)
+    if (!updatedActivitySet.has(yesterday) && !updatedRestoreSet.has(yesterday)) {
+      const missingList = [];
+      let cur = new Date(yesterdayDate);
+      for (let i = 0; i < 2; i++) {
+        const dStr = formatYMD(cur);
+        if (!updatedActivitySet.has(dStr) && !updatedRestoreSet.has(dStr)) {
+          missingList.push(dStr);
+          cur.setDate(cur.getDate() - 1);
+        } else {
+          break;
+        }
+      }
+      const beforeMissing = formatYMD(cur);
+      const hasPriorStreak = updatedActivitySet.has(beforeMissing) || updatedRestoreSet.has(beforeMissing);
+      if (hasPriorStreak && missingList.length > 0 && streakInfo.shields >= missingList.length) {
+        canRestoreStreak = true;
+        restoreShieldsCost = missingList.length;
+      }
+    }
 
     const query = `
       SELECT 
@@ -2566,6 +2623,7 @@ async function api(request, response, url) {
       shields: streakInfo.shields,
       autoShieldUsed: Boolean(streakInfo.autoShieldUsed),
       canRestoreStreak: canRestoreStreak,
+      restoreShieldsCost: restoreShieldsCost,
       recentContributions: recent.map((r) => ({
         action: r.action,
         points: r.points,

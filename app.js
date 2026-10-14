@@ -1208,7 +1208,13 @@ async function hydrateServer() {
             $("#profileCount").textContent = profileData.count || 0;
 
           if ($("#restoreStreakContainer")) {
-             $("#restoreStreakContainer").style.display = profileData.canRestoreStreak ? "block" : "none";
+            const container = $("#restoreStreakContainer");
+            container.style.display = profileData.canRestoreStreak ? "block" : "none";
+            const btn = container.querySelector("button");
+            if (btn) {
+              const cost = profileData.restoreShieldsCost || 1;
+              btn.textContent = `🔥 Khôi phục chuỗi (${cost} khiên)`;
+            }
           }
 
           // Trigger celebration check on home page if unlocked new milestone!
@@ -1220,16 +1226,22 @@ async function hydrateServer() {
             const now = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Ho_Chi_Minh" }));
 
             window.restoreStreak = async function() {
+              const btn = document.querySelector("#restoreStreakContainer button");
               try {
-                const btn = document.querySelector("#restoreStreakContainer button");
-                if(btn) {
+                if (btn) {
                   btn.disabled = true;
                   btn.textContent = "Đang khôi phục...";
                 }
-                await requestAPI("/api/auth/restore-streak", { method: "POST" });
-                window.location.reload();
+                const res = await requestAPI("/api/auth/restore-streak", { method: "POST" });
+                toast(res?.message || "Đã khôi phục chuỗi thành công! 🛡️🔥");
+                await hydrateServer();
               } catch(e) {
-                toast("Không thể khôi phục chuỗi.");
+                toast(e?.message || "Không thể khôi phục chuỗi.");
+                if (btn) {
+                  btn.disabled = false;
+                  const cost = profileData?.restoreShieldsCost || 1;
+                  btn.textContent = `🔥 Khôi phục chuỗi (${cost} khiên)`;
+                }
               }
             };
             const today = now.getDay();
