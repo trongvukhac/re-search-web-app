@@ -1618,7 +1618,7 @@ function getCompetitionTimeState(vnDate, comp) {
       isSunday: true,
       openScheduleText: "Đã đóng cổng",
       state: "sunday_summary",
-      stateLabel: "Khung giờ tổng kết Tuần (0h – 23h59)",
+      stateLabel: "TỔNG KẾT TUẦN",
       ctaText: "Xem bảng vinh danh",
       phaseName: "Tổng kết tuần thi đấu",
       phaseTopic: comp.topic_name,
@@ -1639,7 +1639,7 @@ function getCompetitionTimeState(vnDate, comp) {
   const isReady = qCount >= 10;
 
   let state = "reviewing";
-  let stateLabel = "Đang tổng kết";
+  let stateLabel = "ĐANG TỔNG KẾT";
   let ctaText = "Xem bảng xếp hạng";
   let secondsUntilNext = 0;
   let nextStateLabel = "Sắp mở cổng";
@@ -1660,7 +1660,7 @@ function getCompetitionTimeState(vnDate, comp) {
       // 19h ngày đầu – 23h59 ngày cuối: Khung giờ mở cổng thi đấu liền mạch
       state = "open";
       const targetDayName = dayOfWeek === 1 ? "Thứ Ba" : (dayOfWeek === 3 ? "Thứ Năm" : "Thứ Bảy");
-      stateLabel = `Khung giờ mở cổng Giai đoạn ${phase}`;
+      stateLabel = "ĐANG MỞ CỔNG";
       ctaText = "Tham gia ngay";
       // Đếm ngược đến 23:59:59 của ngày mai (ngày kết thúc giai đoạn)
       const secRemainingToday = ((23 - hours) * 3600) + ((59 - minutes) * 60) + (60 - seconds);
@@ -1669,7 +1669,7 @@ function getCompetitionTimeState(vnDate, comp) {
     } else if (timeInMinutes >= 15 * 60) {
       // 15:00 – 19:00: Khung giờ sẵn sàng đếm ngược
       state = "upcoming";
-      stateLabel = `Khung giờ sẵn sàng đếm ngược (15h – 19h)`;
+      stateLabel = "ĐANG ĐẾM NGƯỢC";
       ctaText = "Xem thể lệ & Chuẩn bị";
       secondsUntilNext = ((19 * 60 - timeInMinutes - 1) * 60) + (60 - seconds);
       nextStateLabel = `Mở cổng GĐ ${phase} (19:00)`;
@@ -1678,9 +1678,7 @@ function getCompetitionTimeState(vnDate, comp) {
       // - Thứ Hai: Khung giờ Khởi động
       // - Thứ Tư, Thứ Sáu: Khung giờ tổng kết giai đoạn
       state = "reviewing";
-      stateLabel = (dayOfWeek === 1) 
-        ? "Khung giờ Khởi động (0h – 15h)" 
-        : `Khung giờ tổng kết Giai đoạn ${phase - 1} (0h – 15h)`;
+      stateLabel = "ĐANG TỔNG KẾT";
       ctaText = (dayOfWeek === 1) ? "Xem thể lệ & Bảng vàng" : `Xem bảng xếp hạng GĐ ${phase - 1}`;
       secondsUntilNext = ((15 * 60 - timeInMinutes - 1) * 60) + (60 - seconds);
       nextStateLabel = `Khung giờ sẵn sàng đếm ngược (15:00)`;
@@ -1688,7 +1686,7 @@ function getCompetitionTimeState(vnDate, comp) {
   } else if (isPhaseEndDay) {
     // Thứ Ba, Thứ Năm, Thứ Bảy: Mở liền mạch cả ngày đến 23:59:59
     state = "open";
-    stateLabel = `Khung giờ mở cổng Giai đoạn ${phase}`;
+    stateLabel = "ĐANG MỞ CỔNG";
     ctaText = "Tham gia ngay";
     secondsUntilNext = ((23 - hours) * 3600) + ((59 - minutes) * 60) + (60 - seconds);
     nextStateLabel = (phase === 3) 

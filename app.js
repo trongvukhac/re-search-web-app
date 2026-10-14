@@ -8874,22 +8874,20 @@ function renderWeeklyCompetitionCard(raw) {
     if (ctaBtn) ctaBtn.className = "comp-cta-button cta-sunday";
   } else if (data.state === "open") {
     badgeEl.classList.add("status-open");
-    const openBadgeText = data.openScheduleText ? `ĐANG MỞ CỔNG (${data.openScheduleText})` : "ĐANG MỞ CỔNG";
-    if (badgeTextEl) badgeTextEl.textContent = openBadgeText;
+    if (badgeTextEl) badgeTextEl.textContent = "ĐANG MỞ CỔNG";
     if (timerLabel) timerLabel.textContent = "Thời gian mở cổng còn lại:";
     if (ctaText) ctaText.textContent = "Tham gia ngay";
     if (ctaBtn) ctaBtn.className = "comp-cta-button cta-open";
   } else if (data.state === "countdown" || data.state === "upcoming") {
     badgeEl.classList.add("status-upcoming");
-    const upcomingBadgeText = "CHUẨN BỊ ĐẾM NGƯỢC (15h - 19h)";
-    if (badgeTextEl) badgeTextEl.textContent = upcomingBadgeText;
+    if (badgeTextEl) badgeTextEl.textContent = "ĐANG ĐẾM NGƯỢC";
     if (timerLabel) timerLabel.textContent = "Mở cổng sau:";
     if (ctaText) ctaText.textContent = "Xem thể lệ & thông tin";
     if (ctaBtn) ctaBtn.className = "comp-cta-button cta-countdown";
   } else {
     badgeEl.classList.add("status-summary");
-    if (badgeTextEl) badgeTextEl.textContent = data.state === "closed" ? "CỔNG ĐÃ ĐÓNG" : "ĐANG TỔNG KẾT";
-    if (timerLabel) timerLabel.textContent = data.state === "closed" ? "Thời gian còn lại:" : "Mở đếm ngược sau:";
+    if (badgeTextEl) badgeTextEl.textContent = "ĐANG TỔNG KẾT";
+    if (timerLabel) timerLabel.textContent = "Mở đếm ngược sau:";
     if (ctaText) ctaText.textContent = "Xem bảng xếp hạng";
     if (ctaBtn) ctaBtn.className = "comp-cta-button cta-summary";
   }
@@ -9157,18 +9155,16 @@ function renderGatewayTab(raw) {
       if (clockLabel) clockLabel.textContent = "Tuần mới bắt đầu sau:";
     } else if (data.state === "open") {
       statusBadge.classList.add("status-open");
-      const openStatusText = data.openScheduleText ? `ĐANG MỞ CỔNG (${data.openScheduleText})` : "ĐANG MỞ CỔNG";
-      if (statusText) statusText.textContent = openStatusText;
+      if (statusText) statusText.textContent = "ĐANG MỞ CỔNG";
       if (clockLabel) clockLabel.textContent = "Thời gian mở cổng còn lại:";
     } else if (data.state === "countdown" || data.state === "upcoming") {
       statusBadge.classList.add("status-upcoming");
-      const upcomingStatusText = "CHUẨN BỊ ĐẾM NGƯỢC (15h - 19h)";
-      if (statusText) statusText.textContent = upcomingStatusText;
+      if (statusText) statusText.textContent = "ĐANG ĐẾM NGƯỢC";
       if (clockLabel) clockLabel.textContent = "Mở cổng trả lời sau:";
     } else {
       statusBadge.classList.add("status-summary");
-      if (statusText) statusText.textContent = data.state === "closed" ? "CỔNG ĐÃ ĐÓNG" : "ĐANG TỔNG KẾT";
-      if (clockLabel) clockLabel.textContent = data.state === "closed" ? "Thời gian còn lại:" : "Mở đếm ngược sau:";
+      if (statusText) statusText.textContent = "ĐANG TỔNG KẾT";
+      if (clockLabel) clockLabel.textContent = "Mở đếm ngược sau:";
     }
   }
 
