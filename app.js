@@ -8551,8 +8551,9 @@ function normalizeCompData(raw) {
     ? raw.userStatus.defaultAvailablePhase
     : (raw.defaultAvailablePhase !== undefined ? raw.defaultAvailablePhase : null);
 
-  const isSaturday = Boolean(raw.isSaturday || raw.timeState?.isSaturday || raw.dayOfWeek === 6 || raw.timeState?.dayOfWeek === 6);
-  const openScheduleText = raw.openScheduleText || raw.timeState?.openScheduleText || (isSaturday ? "09:00 – 23:59:59" : "19:00 – 23:00");
+  const openScheduleText = raw.openScheduleText || raw.timeState?.openScheduleText || (
+    phase === 1 ? "19:00 T2 – 23:59:59 T3" : (phase === 2 ? "19:00 T4 – 23:59:59 T5" : "19:00 T6 – 23:59:59 T7")
+  );
 
   return {
     isSunday,
@@ -8643,14 +8644,14 @@ function renderWeeklyCompetitionCard(raw) {
     if (ctaBtn) ctaBtn.className = "comp-cta-button cta-sunday";
   } else if (data.state === "open") {
     badgeEl.classList.add("status-open");
-    const openBadgeText = data.isSaturday ? "ĐANG MỞ CỔNG (09h - 23h59)" : "ĐANG MỞ CỔNG (19h - 23h)";
+    const openBadgeText = data.openScheduleText ? `ĐANG MỞ CỔNG (${data.openScheduleText})` : "ĐANG MỞ CỔNG";
     if (badgeTextEl) badgeTextEl.textContent = openBadgeText;
     if (timerLabel) timerLabel.textContent = "Thời gian mở cổng còn lại:";
     if (ctaText) ctaText.textContent = "Tham gia ngay";
     if (ctaBtn) ctaBtn.className = "comp-cta-button cta-open";
   } else if (data.state === "countdown" || data.state === "upcoming") {
     badgeEl.classList.add("status-upcoming");
-    const upcomingBadgeText = data.isSaturday ? "SẮP MỞ CỔNG (06h - 09h)" : "SẮP MỞ CỔNG (16h - 19h)";
+    const upcomingBadgeText = "SẮP MỞ CỔNG (16h - 19h)";
     if (badgeTextEl) badgeTextEl.textContent = upcomingBadgeText;
     if (timerLabel) timerLabel.textContent = "Mở cổng sau:";
     if (ctaText) ctaText.textContent = "Xem thể lệ & thông tin";
@@ -8926,12 +8927,12 @@ function renderGatewayTab(raw) {
       if (clockLabel) clockLabel.textContent = "Tuần mới bắt đầu sau:";
     } else if (data.state === "open") {
       statusBadge.classList.add("status-open");
-      const openStatusText = data.isSaturday ? "ĐANG MỞ CỔNG (09h - 23h59)" : "ĐANG MỞ CỔNG (19h - 23h)";
+      const openStatusText = data.openScheduleText ? `ĐANG MỞ CỔNG (${data.openScheduleText})` : "ĐANG MỞ CỔNG";
       if (statusText) statusText.textContent = openStatusText;
       if (clockLabel) clockLabel.textContent = "Thời gian mở cổng còn lại:";
     } else if (data.state === "countdown" || data.state === "upcoming") {
       statusBadge.classList.add("status-upcoming");
-      const upcomingStatusText = data.isSaturday ? "SẮP MỞ CỔNG (06h - 09h)" : "SẮP MỞ CỔNG (16h - 19h)";
+      const upcomingStatusText = "SẮP MỞ CỔNG (16h - 19h)";
       if (statusText) statusText.textContent = upcomingStatusText;
       if (clockLabel) clockLabel.textContent = "Mở cổng trả lời sau:";
     } else {
@@ -9155,8 +9156,7 @@ function renderGatewayTab(raw) {
         startBtn.style.cursor = "not-allowed";
         startBtn.onclick = null;
         if (isCountdown) {
-          const openHourText = data.isSaturday ? "09:00" : "19:00";
-          if (startBtnText) startBtnText.textContent = `Cổng chưa mở (Mở lúc ${openHourText})`;
+          if (startBtnText) startBtnText.textContent = "Cổng chưa mở (Mở lúc 19:00)";
           if (blockedMsg) {
             blockedMsg.style.display = "block";
             blockedMsg.style.color = "";
@@ -9164,9 +9164,7 @@ function renderGatewayTab(raw) {
             blockedMsg.style.border = "";
             blockedMsg.style.borderRadius = "";
             blockedMsg.style.padding = "";
-            blockedMsg.textContent = data.isSaturday
-              ? "Cổng trả lời Thứ Bảy sẽ mở từ 09h00 đến 23h59:59. Vui lòng quay lại đúng giờ!"
-              : "Cổng trả lời sẽ mở từ 19h00 đến 23h00. Vui lòng quay lại đúng giờ!";
+            blockedMsg.textContent = "Cổng thi đấu mở lúc 19h00 và kéo dài xuyên suốt đến 23h59:59 hôm sau. Vui lòng quay lại đúng giờ!";
           }
         } else {
           if (startBtnText) startBtnText.textContent = "Cổng thi đấu đang đóng";

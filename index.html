@@ -16,7 +16,7 @@
     <script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-    <link rel="stylesheet" href="styles.css?v=70" />
+    <link rel="stylesheet" href="styles.css?v=71" />
   </head>
   <body>
     <dialog
@@ -1109,31 +1109,33 @@
 
                 <!-- SECTION 2 -->
                 <section class="rules-section">
-                  <h3 class="rules-heading"><span>⏱️</span> 2. Khung giờ hoạt động hàng ngày (Giờ máy chủ)</h3>
+                  <h3 class="rules-heading"><span>⏱️</span> 2. Khung giờ mở cổng &amp; Lịch thi đấu tuần</h3>
                   <div class="rules-schedule-grid">
                     <div class="schedule-card gate-open">
                       <div class="schedule-badge">
-                        <span class="pulse-dot"></span> ĐANG MỞ CỔNG (T2 – T6)
+                        <span class="pulse-dot"></span> GIAI ĐOẠN 1 (LIỀN MẠCH)
                       </div>
-                      <div class="schedule-time">19h00 – 23h00</div>
-                      <p>Thí sinh tham gia làm bài (10 phút / 10 câu). Mỗi giai đoạn 1 lượt duy nhất (hoặc làm bù).</p>
+                      <div class="schedule-time">19h00 T2 – 23h59:59 T3</div>
+                      <p>Mở cổng xuyên suốt từ 19h tối Thứ Hai đến hết ngày Thứ Ba. Thi đúng hạn nhận thêm <strong>+50 ⭐</strong>.</p>
+                    </div>
+                    <div class="schedule-card gate-open">
+                      <div class="schedule-badge">
+                        <span class="pulse-dot"></span> GIAI ĐOẠN 2 (LIỀN MẠCH)
+                      </div>
+                      <div class="schedule-time">19h00 T4 – 23h59:59 T5</div>
+                      <p>Mở cổng xuyên suốt từ 19h tối Thứ Tư đến hết ngày Thứ Năm. Thi đúng hạn nhận thêm <strong>+50 ⭐</strong> (hoặc làm bù GĐ 1).</p>
                     </div>
                     <div class="schedule-card gate-open" style="border-color: rgba(234, 179, 8, 0.4); background: rgba(234, 179, 8, 0.05);">
                       <div class="schedule-badge" style="color: #eab308;">
-                        <span class="pulse-dot" style="background: #eab308;"></span> THỨ BẢY (CHẶNG CUỐI GĐ 3)
+                        <span class="pulse-dot" style="background: #eab308;"></span> GĐ 3 (CHẶNG CUỐI TUẦN)
                       </div>
-                      <div class="schedule-time" style="color: #facc15;">09h00 – 23h59:59</div>
-                      <p>Mở cổng từ 9h sáng đến hết ngày thứ Bảy để thí sinh thoải mái thời gian thi đấu &amp; làm bù.</p>
+                      <div class="schedule-time" style="color: #facc15;">19h00 T6 – 23h59:59 T7</div>
+                      <p>Mở cổng xuyên suốt từ 19h tối Thứ Sáu đến hết ngày Thứ Bảy. Chặng nước rút tối đa 1.100 ⭐ (hoặc làm bù GĐ 1, 2).</p>
                     </div>
                     <div class="schedule-card gate-summary">
-                      <div class="schedule-badge">📊 ĐANG TỔNG KẾT</div>
-                      <div class="schedule-time">23h00 – 16h00 hôm sau</div>
-                      <p>Đóng cổng thi, đồng bộ điểm số và công khai Bảng xếp hạng tạm thời giai đoạn.</p>
-                    </div>
-                    <div class="schedule-card gate-countdown">
-                      <div class="schedule-badge">⏳ SẮP MỞ CỔNG</div>
-                      <div class="schedule-time">16h00 – 19h00 (T2 – T6)</div>
-                      <p>Hiển thị đồng hồ đếm ngược mở cổng 19h00, chuẩn bị đề thi cho thí sinh.</p>
+                      <div class="schedule-badge">👑 CHỦ NHẬT &amp; CHUYỂN GIAI ĐOẠN</div>
+                      <div class="schedule-time">Chủ Nhật &amp; Trước 19h T2, T4, T6</div>
+                      <p>Tạm đóng cổng thi đấu để tổng kết giai đoạn, vinh danh Bảng vàng và chuẩn bị mở đợt thi tiếp theo lúc 19h00.</p>
                     </div>
                   </div>
                 </section>
@@ -3142,6 +3144,6 @@
       </div>
     </dialog>
 
-    <script src="app.js?v=78" defer></script>
+    <script src="app.js?v=79" defer></script>
   </body>
 </html>

@@ -452,6 +452,21 @@ try { db.exec("ALTER TABLE competition_sessions ADD COLUMN exit_count INTEGER NO
 try { db.exec("ALTER TABLE competition_sessions ADD COLUMN is_on_time INTEGER NOT NULL DEFAULT 0;"); } catch (e) {}
 try { db.exec("ALTER TABLE competition_sessions ADD COLUMN on_time_bonus INTEGER NOT NULL DEFAULT 0;"); } catch (e) {}
 try { db.exec("ALTER TABLE competition_phase_results ADD COLUMN on_time_bonus INTEGER NOT NULL DEFAULT 0;"); } catch (e) {}
+try { db.exec("ALTER TABLE posts ADD COLUMN deleted_at TEXT;"); } catch (e) {}
+try { db.exec("ALTER TABLE responses ADD COLUMN deleted_at TEXT;"); } catch (e) {}
+
+function cleanupExpiredTrash() {
+  try {
+    // Xóa vĩnh viễn các bài đăng và phản hồi trong thùng rác đã quá 7 ngày
+    const deletedPosts = db.prepare("DELETE FROM posts WHERE status = 'deleted' AND deleted_at IS NOT NULL AND datetime(deleted_at) < datetime('now', '-7 days')").run();
+    const deletedResponses = db.prepare("DELETE FROM responses WHERE status = 'deleted' AND deleted_at IS NOT NULL AND datetime(deleted_at) < datetime('now', '-7 days')").run();
+    if (deletedPosts.changes > 0 || deletedResponses.changes > 0) {
+      console.log(`[Trash Cleanup] Đã xóa vĩnh viễn ${deletedPosts.changes} bài đăng và ${deletedResponses.changes} phản hồi quá hạn 7 ngày.`);
+    }
+  } catch (e) {
+    console.error("[Trash Cleanup Error]", e);
+  }
+}
 
 const defaultTopics = [
   "Đề tài", "Lý thuyết", "Phương pháp", 
@@ -1587,9 +1602,10 @@ function getCompetitionTimeState(vnDate, comp) {
   const seconds = vnDate.getSeconds();
   const timeInMinutes = hours * 60 + minutes;
 
-  // Sunday = Summary Day
+  // 1. CHỦ NHẬT: Ngày vinh danh & tổng kết toàn tuần (Cổng đóng cả ngày)
   if (dayOfWeek === 0) {
-    const secondsUntilMonday = ((24 - hours - 1) * 3600) + ((59 - minutes) * 60) + (60 - seconds);
+    // Đếm ngược đến 19:00:00 tối Thứ Hai tuần mới
+    const secondsUntilMonday19 = ((24 - hours + 19 - 1) * 3600) + ((59 - minutes) * 60) + (60 - seconds);
     return {
       phase: 3,
       dayOfWeek: 0,
@@ -1601,8 +1617,8 @@ function getCompetitionTimeState(vnDate, comp) {
       ctaText: "Xem bảng vinh danh",
       phaseName: "Tổng kết tuần thi đấu",
       phaseTopic: comp.topic_name,
-      secondsUntilNext: Math.max(0, secondsUntilMonday),
-      nextStateLabel: "Tuần thi đấu mới",
+      secondsUntilNext: Math.max(0, secondsUntilMonday19),
+      nextStateLabel: "Tuần mới mở cổng (Thứ Hai 19:00)",
       isReady: true,
       visible: true
     };
@@ -1617,76 +1633,66 @@ function getCompetitionTimeState(vnDate, comp) {
   const qCount = db.prepare("SELECT count(*) as c FROM competition_questions WHERE competition_id = ? AND phase = ?").get(comp.id, phase)?.c || 0;
   const isReady = qCount >= 10;
 
-  const isSaturday = (dayOfWeek === 6);
   let state = "reviewing";
   let stateLabel = "Đang tổng kết";
   let ctaText = "Xem bảng xếp hạng";
   let secondsUntilNext = 0;
   let nextStateLabel = "Sắp mở cổng";
-  const openScheduleText = isSaturday ? "09:00 – 23:59:59" : "19:00 – 23:00";
 
-  if (isSaturday) {
-    // Thứ Bảy (Giai đoạn 3 chặng cuối): Cổng mở từ 09:00:00 đến 23:59:59
-    if (timeInMinutes >= 9 * 60) {
+  // Quy cách mở cổng liền mạch theo quy định mới:
+  // - Giai đoạn 1: 19h00 tối Thứ Hai đến 23:59:59 Thứ Ba
+  // - Giai đoạn 2: 19h00 tối Thứ Tư đến 23:59:59 Thứ Năm
+  // - Giai đoạn 3: 19h00 tối Thứ Sáu đến 23:59:59 Thứ Bảy
+  const openScheduleText = phase === 1 
+    ? "19:00 T2 – 23:59:59 T3" 
+    : (phase === 2 ? "19:00 T4 – 23:59:59 T5" : "19:00 T6 – 23:59:59 T7");
+
+  const isPhaseStartDay = (dayOfWeek === 1 || dayOfWeek === 3 || dayOfWeek === 5); // Thứ 2, 4, 6
+  const isPhaseEndDay = (dayOfWeek === 2 || dayOfWeek === 4 || dayOfWeek === 6);   // Thứ 3, 5, 7
+
+  if (isPhaseStartDay) {
+    if (timeInMinutes >= 19 * 60) {
+      // Đang mở cổng từ 19h00 ngày bắt đầu, kéo dài xuyên suốt đến 23:59:59 ngày mai
       state = "open";
-      stateLabel = "Đang mở cổng (09:00 - 23:59:59)";
+      const targetDayName = dayOfWeek === 1 ? "Thứ Ba" : (dayOfWeek === 3 ? "Thứ Năm" : "Thứ Bảy");
+      stateLabel = `Đang mở cổng Giai đoạn ${phase}`;
       ctaText = "Tham gia ngay";
-      secondsUntilNext = ((23 - hours) * 3600) + ((59 - minutes) * 60) + (60 - seconds);
-      nextStateLabel = "Đóng cổng GĐ 3 & Chốt kết quả (23:59:59)";
-    } else if (timeInMinutes >= 6 * 60) {
+      // Đếm ngược đến 23:59:59 của ngày mai (ngày kết thúc giai đoạn)
+      const secRemainingToday = ((23 - hours) * 3600) + ((59 - minutes) * 60) + (60 - seconds);
+      secondsUntilNext = 86400 + secRemainingToday;
+      nextStateLabel = `Đóng cổng GĐ ${phase} (${targetDayName} 23:59:59)`;
+    } else if (timeInMinutes >= 16 * 60) {
+      // 16:00 – 19:00: Sắp mở cổng thi đấu
       state = "upcoming";
-      stateLabel = "Sắp mở cổng thi đấu";
-      ctaText = "Xem thể lệ & Chuẩn bị";
-      secondsUntilNext = ((9 * 60 - timeInMinutes - 1) * 60) + (60 - seconds);
-      nextStateLabel = "Mở cổng trả lời (09:00)";
-    } else {
-      state = "reviewing";
-      stateLabel = "Đang tổng kết & Chuẩn bị chặng cuối";
-      ctaText = "Xem bảng xếp hạng";
-      secondsUntilNext = ((9 * 60 - timeInMinutes - 1) * 60) + (60 - seconds);
-      nextStateLabel = "Mở cổng trả lời (09:00)";
-    }
-  } else {
-    // Thứ Hai đến Thứ Sáu (GĐ 1, GĐ 2 và Thứ Sáu GĐ 3)
-    // 19:00 – 23:00: Đang mở cổng
-    if (timeInMinutes >= 19 * 60 && timeInMinutes < 23 * 60) {
-      state = "open";
-      stateLabel = "Đang mở cổng (19:00 - 23:00)";
-      ctaText = "Tham gia ngay";
-      secondsUntilNext = ((23 * 60 - timeInMinutes - 1) * 60) + (60 - seconds);
-      nextStateLabel = "Đóng cổng & Tổng kết (23:00)";
-    }
-    // 16:00 – 19:00: Sắp mở cổng
-    else if (timeInMinutes >= 16 * 60 && timeInMinutes < 19 * 60) {
-      state = "upcoming";
-      stateLabel = "Sắp mở cổng thi đấu";
+      stateLabel = `Sắp mở cổng Giai đoạn ${phase}`;
       ctaText = "Xem thể lệ & Chuẩn bị";
       secondsUntilNext = ((19 * 60 - timeInMinutes - 1) * 60) + (60 - seconds);
-      nextStateLabel = "Mở cổng trả lời (19:00)";
-    }
-    // Sau 23:00 hoặc trước 16:00: Đang tổng kết
-    else {
+      nextStateLabel = `Mở cổng GĐ ${phase} (19:00)`;
+    } else {
+      // Trước 16:00: Đang tổng kết giai đoạn trước & chuẩn bị
       state = "reviewing";
-      stateLabel = "Đang tổng kết & Xếp hạng";
+      stateLabel = (dayOfWeek === 1) 
+        ? "Đang chuẩn bị tuần mới" 
+        : `Đang tổng kết GĐ ${phase - 1} & Chuẩn bị GĐ ${phase}`;
       ctaText = "Xem bảng xếp hạng";
-      if (dayOfWeek === 5 && hours >= 23) {
-        // Tối thứ Sáu sau 23h: Cổng tiếp theo mở lúc 09:00 sáng Thứ Bảy
-        secondsUntilNext = ((24 - hours + 9 - 1) * 3600) + ((59 - minutes) * 60) + (60 - seconds);
-        nextStateLabel = "Mở cổng chặng cuối (Thứ Bảy 09:00)";
-      } else if (hours >= 23) {
-        secondsUntilNext = ((24 - hours + 16 - 1) * 3600) + ((59 - minutes) * 60) + (60 - seconds);
-        nextStateLabel = "Sắp mở cổng (16:00)";
-      } else {
-        secondsUntilNext = ((16 - hours - 1) * 3600) + ((59 - minutes) * 60) + (60 - seconds);
-        nextStateLabel = "Sắp mở cổng (16:00)";
-      }
+      secondsUntilNext = ((19 * 60 - timeInMinutes - 1) * 60) + (60 - seconds);
+      nextStateLabel = `Mở cổng GĐ ${phase} (19:00)`;
     }
+  } else if (isPhaseEndDay) {
+    // Thứ Ba, Thứ Năm, Thứ Bảy: Mở liền mạch cả ngày đến 23:59:59
+    state = "open";
+    stateLabel = `Đang mở cổng Giai đoạn ${phase}`;
+    ctaText = "Tham gia ngay";
+    secondsUntilNext = ((23 - hours) * 3600) + ((59 - minutes) * 60) + (60 - seconds);
+    nextStateLabel = (phase === 3) 
+      ? "Đóng cổng tuần thi đấu (23:59:59)" 
+      : `Đóng cổng GĐ ${phase} (23:59:59)`;
   }
 
   return {
     phase,
     dayOfWeek,
-    isSaturday,
+    isSaturday: (dayOfWeek === 6),
     isSunday: false,
     openScheduleText,
     state: isReady ? state : "not_ready",
@@ -2649,10 +2655,10 @@ async function api(request, response, url) {
       isPast: idx < vnDayIndex
     }));
 
-    // Khung Diễn đàn
+    // Khung Diễn đàn (chỉ tính bài viết và phản hồi hợp lệ đang hiển thị)
     const contribRow = db.prepare("SELECT coalesce(sum(points), 0) as total FROM contribution_events WHERE user_id = ?").get(targetUser.id);
-    const postsCount = db.prepare("SELECT count(*) as c FROM posts WHERE author_id = ? AND status != 'deleted'").get(targetUser.id).c;
-    const responsesCount = db.prepare("SELECT count(*) as c FROM responses WHERE author_id = ? AND status != 'deleted'").get(targetUser.id).c;
+    const postsCount = db.prepare("SELECT count(*) as c FROM posts WHERE author_id = ? AND status = 'visible'").get(targetUser.id).c;
+    const responsesCount = db.prepare("SELECT count(*) as c FROM responses WHERE author_id = ? AND status = 'visible'").get(targetUser.id).c;
     const activeDaysCount = activeDaysRows.length;
 
     // Khung Thành tích tự học
@@ -2681,35 +2687,45 @@ async function api(request, response, url) {
     `).get(targetUser.id);
     const bestWeekScore = bestWeekRow?.bestWeekScore || 0;
 
-    // Điểm tuần trước
-    const latestComp = db.prepare("SELECT id FROM weekly_competitions ORDER BY id DESC LIMIT 1").get();
+    // Điểm tuần trước: Truy xuất đúng tuần thi đấu trước tuần hiện tại (start_date < ngày Thứ 2 tuần hiện tại)
+    const { mondayStr: currentWeekMondayStr } = getWeekRange(todayVN);
+    const prevComp = db.prepare("SELECT id FROM weekly_competitions WHERE start_date < ? ORDER BY start_date DESC LIMIT 1").get(currentWeekMondayStr);
     let lastWeekScore = 0;
-    if (latestComp) {
-      const prevComp = db.prepare("SELECT id FROM weekly_competitions WHERE id < ? ORDER BY id DESC LIMIT 1").get(latestComp.id);
-      if (prevComp) {
-        const prevRow = db.prepare("SELECT coalesce(sum(best_score), 0) as s FROM competition_phase_results WHERE user_id = ? AND competition_id = ?").get(targetUser.id, prevComp.id);
-        lastWeekScore = prevRow?.s || 0;
-      }
+    if (prevComp) {
+      const prevRow = db.prepare("SELECT coalesce(sum(best_score), 0) as s FROM competition_phase_results WHERE user_id = ? AND competition_id = ?").get(targetUser.id, prevComp.id);
+      lastWeekScore = prevRow?.s || 0;
     }
 
-    // Xếp hạng cao nhất (ưu tiên giải thưởng tuần, nếu chưa có thì lấy hạng tốt nhất từ các giai đoạn)
+    // Xếp hạng cao nhất: Chỉ tính khi đã chốt toàn tuần (khi chốt ở ngày Chủ Nhật, status = 'concluded')
     let bestRank = null;
-    const bestRankRow = db.prepare("SELECT min(rank) as r FROM competition_weekly_rewards WHERE user_id = ? AND rank > 0").get(targetUser.id);
+    const bestRankRow = db.prepare(`
+      SELECT min(r.rank) as r 
+      FROM competition_weekly_rewards r
+      JOIN weekly_competitions c ON r.competition_id = c.id
+      WHERE r.user_id = ? AND r.rank > 0 AND c.status = 'concluded'
+    `).get(targetUser.id);
     if (bestRankRow && bestRankRow.r) {
       bestRank = bestRankRow.r;
     }
     const phaseRankRow = db.prepare(`
       SELECT min(phase_rank) as bestRank FROM (
-        SELECT user_id, RANK() OVER (PARTITION BY competition_id, phase ORDER BY best_score DESC, updated_at ASC) as phase_rank
-        FROM competition_phase_results
+        SELECT r.user_id, RANK() OVER (PARTITION BY r.competition_id, r.phase ORDER BY r.best_score DESC, r.updated_at ASC) as phase_rank
+        FROM competition_phase_results r
+        JOIN weekly_competitions c ON r.competition_id = c.id
+        WHERE c.status = 'concluded'
       ) WHERE user_id = ?
     `).get(targetUser.id);
     if (phaseRankRow && phaseRankRow.bestRank) {
       bestRank = bestRank ? Math.min(bestRank, phaseRankRow.bestRank) : phaseRankRow.bestRank;
     }
 
-    // Trả lời hoàn hảo
-    const perfectRow = db.prepare("SELECT coalesce(sum(first_try_correct_count), 0) as c FROM competition_sessions WHERE user_id = ? AND status = 'completed'").get(targetUser.id);
+    // Trả lời hoàn hảo: Đếm số câu hỏi trả lời đúng ngay lần đầu tiên trong Arena (tries_count = 1 và is_correct = 1)
+    const perfectRow = db.prepare(`
+      SELECT count(DISTINCT a.question_id) as c 
+      FROM competition_answers a 
+      JOIN competition_sessions s ON a.session_id = s.id 
+      WHERE s.user_id = ? AND a.is_correct = 1 AND a.is_first_try = 1
+    `).get(targetUser.id);
     const perfectCount = perfectRow?.c || 0;
 
     // Kỷ lục hoàn thành
@@ -3682,11 +3698,11 @@ async function api(request, response, url) {
     const post = db.prepare("SELECT author_id, status FROM posts WHERE id=?").get(postId);
     if (!post) return error(response, 404, "Không tìm thấy bài đăng.");
     
-    const changed = db
-      .prepare(
-        "UPDATE posts SET status=?,updated_at=CURRENT_TIMESTAMP WHERE id=?",
-      )
-      .run(status, postId);
+    if (status === "deleted") {
+      db.prepare("UPDATE posts SET status=?, deleted_at=CURRENT_TIMESTAMP, updated_at=CURRENT_TIMESTAMP WHERE id=?").run(status, postId);
+    } else {
+      db.prepare("UPDATE posts SET status=?, deleted_at=NULL, updated_at=CURRENT_TIMESTAMP WHERE id=?").run(status, postId);
+    }
       
     if ((status === "hidden" || status === "deleted") && post.status === "visible") {
       recordContribution(
@@ -3708,7 +3724,11 @@ async function api(request, response, url) {
           r.id,
           `Bài đăng gốc bị ${status === "hidden" ? "ẩn" : "xoá"} bởi Admin`
         );
-        db.prepare("UPDATE responses SET status=?,updated_at=CURRENT_TIMESTAMP WHERE id=?").run(status, r.id);
+        if (status === "deleted") {
+          db.prepare("UPDATE responses SET status=?, deleted_at=CURRENT_TIMESTAMP, updated_at=CURRENT_TIMESTAMP WHERE id=?").run(status, r.id);
+        } else {
+          db.prepare("UPDATE responses SET status=?, deleted_at=NULL, updated_at=CURRENT_TIMESTAMP WHERE id=?").run(status, r.id);
+        }
       }
     }
     db.prepare(
@@ -3737,11 +3757,11 @@ async function api(request, response, url) {
     const resp = db.prepare("SELECT author_id, status FROM responses WHERE id=?").get(responseId);
     if (!resp) return error(response, 404, "Không tìm thấy bình luận.");
     
-    const changed = db
-      .prepare(
-        "UPDATE responses SET status=?,updated_at=CURRENT_TIMESTAMP WHERE id=?",
-      )
-      .run(status, responseId);
+    if (status === "deleted") {
+      db.prepare("UPDATE responses SET status=?, deleted_at=CURRENT_TIMESTAMP, updated_at=CURRENT_TIMESTAMP WHERE id=?").run(status, responseId);
+    } else {
+      db.prepare("UPDATE responses SET status=?, deleted_at=NULL, updated_at=CURRENT_TIMESTAMP WHERE id=?").run(status, responseId);
+    }
       
     if ((status === "deleted" || status === "hidden") && resp.status === "visible") {
       recordContribution(
@@ -4502,7 +4522,7 @@ async function api(request, response, url) {
     const timeState = getCompetitionTimeState(vnNow, comp);
 
     if (timeState.state !== "open" && !isSuperAdmin(user)) {
-      return error(response, 403, "Cổng thi đấu hiện không mở. Khung giờ thi đấu là 19h00 - 23h00.");
+      return error(response, 403, "Cổng thi đấu hiện không mở. Lịch mở cổng: GĐ 1 (19h T2 – 23h59 T3), GĐ 2 (19h T4 – 23h59 T5), GĐ 3 (19h T6 – 23h59 T7).");
     }
 
     const body = await readJSON(request);
