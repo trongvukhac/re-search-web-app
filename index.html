@@ -2551,7 +2551,7 @@
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
             <h3 style="margin: 0; font-size: 14px;">2. Thiết lập Bộ 10 câu hỏi theo Giai đoạn</h3>
             <div style="display: flex; gap: 6px; flex-wrap: wrap;">
-              <button type="button" class="button button-sm button-outline" onclick="adminDownloadExcelTemplate()" title="Tải file Excel mẫu chuẩn cấu trúc câu hỏi và đáp án">📥 Tải Excel mẫu</button>
+              <button type="button" class="button button-sm button-outline" onclick="adminDownloadExcelTemplate()" title="Tải file Excel mẫu chuẩn cấu trúc câu hỏi, đáp án và gợi ý Hint">📥 Tải Excel mẫu</button>
               <button type="button" class="button button-sm button-outline" onclick="$('#adminImportExcelInput').click()" title="Tải file Excel câu hỏi lên để hệ thống tự động nhận diện và điền">📤 Nhập từ Excel</button>
               <input type="file" id="adminImportExcelInput" accept=".xlsx, .xls, .csv" style="display: none;" onchange="adminHandleExcelUpload(event)" />
               <button type="button" class="button button-sm button-outline" onclick="adminSeedSampleQuestions()" title="Nạp 30 câu hỏi mẫu NCKH mặc định">⚡ 30 câu mẫu NCKH</button>
@@ -3191,6 +3191,6 @@
       </div>
     </dialog>
 
-    <script src="app.js?v=87" defer></script>
+    <script src="app.js?v=88" defer></script>
   </body>
 </html>

@@ -10823,7 +10823,7 @@ function renderAdminQuestionsList() {
             <option value="C" ${correct === "C" ? "selected" : ""}>Đúng: C</option>
           </select>
         </div>
-        <input type="text" class="input-field admin-q-explanation" style="width:100%; font-size:11px;" placeholder="Lời giải thích đáp án (tùy chọn)..." value="${escapeHTML(explanation)}" />
+        <input type="text" class="input-field admin-q-explanation" style="width:100%; font-size:11px;" placeholder="💡 Gợi ý / Lời giải thích (Hint - tùy chọn, hiển thị khi người chơi bấm nút đèn)..." value="${escapeHTML(explanation)}" />
       </div>
     `;
   }).join("");
@@ -10960,42 +10960,42 @@ function adminDownloadExcelTemplate() {
   const currentPhase = compState.adminSelectedPhase || 1;
   
   const p1Questions = [
-    { "STT": 1, "Giai đoạn": 1, "Câu hỏi": "Bước đầu tiên trong quy trình nghiên cứu khoa học chuẩn là gì?", "Đáp án A": "Xác định vấn đề và câu hỏi nghiên cứu", "Đáp án B": "Tiến hành thu thập dữ liệu thực địa ngay", "Đáp án C": "Viết báo cáo kết quả và thảo luận", "Đáp án đúng (A/B/C)": "A" },
-    { "STT": 2, "Giai đoạn": 1, "Câu hỏi": "Phương pháp nghiên cứu nào thường sử dụng bảng hỏi (survey) để thu thập dữ liệu định lượng?", "Đáp án A": "Nghiên cứu định tính phỏng vấn sâu", "Đáp án B": "Nghiên cứu điều tra khảo sát (Survey research)", "Đáp án C": "Phương pháp quan sát tham dự", "Đáp án đúng (A/B/C)": "B" },
-    { "STT": 3, "Giai đoạn": 1, "Câu hỏi": "Biến độc lập (Independent Variable) trong mô hình nghiên cứu có đặc điểm gì?", "Đáp án A": "Là nguyên nhân tác động đến biến phụ thuộc", "Đáp án B": "Là kết quả bị chi phối bởi biến phụ thuộc", "Đáp án C": "Là biến không bao giờ thay đổi giá trị", "Đáp án đúng (A/B/C)": "A" },
-    { "STT": 4, "Giai đoạn": 1, "Câu hỏi": "Giả thuyết nghiên cứu (Hypothesis) là gì?", "Đáp án A": "Một kết luận chắc chắn đã được chứng minh 100%", "Đáp án B": "Một câu hỏi chưa có hướng trả lời", "Đáp án C": "Một phỏng đoán có căn cứ khoa học về mối quan hệ giữa các biến", "Đáp án đúng (A/B/C)": "C" },
-    { "STT": 5, "Giai đoạn": 1, "Câu hỏi": "Chọn mẫu ngẫu nhiên đơn giản (Simple Random Sampling) thuộc loại chọn mẫu nào?", "Đáp án A": "Chọn mẫu theo xác suất (Probability sampling)", "Đáp án B": "Chọn mẫu phi xác suất (Non-probability sampling)", "Đáp án C": "Chọn mẫu thuận tiện (Convenience sampling)", "Đáp án đúng (A/B/C)": "A" },
-    { "STT": 6, "Giai đoạn": 1, "Câu hỏi": "Tổng quan tài liệu (Literature Review) đóng vai trò gì quan trọng nhất?", "Đáp án A": "Chỉ để làm cho bài viết dài hơn", "Đáp án B": "Xác định khoảng trống nghiên cứu và xây dựng khung lý thuyết", "Đáp án C": "Sao chép nguyên văn các công trình trước", "Đáp án đúng (A/B/C)": "B" },
-    { "STT": 7, "Giai đoạn": 1, "Câu hỏi": "Nghiên cứu thực nghiệm (Experimental Research) có ưu thế nổi bật nào?", "Đáp án A": "Dễ tiến hành và không tốn kém", "Đáp án B": "Khẳng định mối quan hệ nhân quả mạnh mẽ nhờ kiểm soát biến ngoại lai", "Đáp án C": "Không cần thu thập dữ liệu", "Đáp án đúng (A/B/C)": "B" },
-    { "STT": 8, "Giai đoạn": 1, "Câu hỏi": "Khái niệm 'Khoảng trống nghiên cứu' (Research Gap) nghĩa là gì?", "Đáp án A": "Vấn đề chưa được giải quyết hoặc chưa được khám phá thấu đáo", "Đáp án B": "Khoảng cách địa lý giữa các nhà nghiên cứu", "Đáp án C": "Thời gian nghỉ giữa hai đợt khảo sát", "Đáp án đúng (A/B/C)": "A" },
-    { "STT": 9, "Giai đoạn": 1, "Câu hỏi": "Thang đo Likert 5 mức độ thường được xếp vào loại thang đo nào?", "Đáp án A": "Thang đo định danh (Nominal)", "Đáp án B": "Thang đo thứ bậc (Ordinal) hoặc giả định khoảng cách (Interval)", "Đáp án C": "Thang đo tỷ lệ (Ratio)", "Đáp án đúng (A/B/C)": "B" },
-    { "STT": 10, "Giai đoạn": 1, "Câu hỏi": "Hành vi nào sau đây vi phạm nghiêm trọng nhất đạo đức trong nghiên cứu khoa học?", "Đáp án A": "Trích dẫn đầy đủ nguồn tham khảo học thuật", "Đáp án B": "Bảo mật danh tính người tham gia khảo sát", "Đáp án C": "Đạo văn (Plagiarism) và ngụy tạo số liệu khảo sát", "Đáp án đúng (A/B/C)": "C" }
+    { "STT": 1, "Giai đoạn": 1, "Câu hỏi": "Bước đầu tiên trong quy trình nghiên cứu khoa học chuẩn là gì?", "Đáp án A": "Xác định vấn đề và câu hỏi nghiên cứu", "Đáp án B": "Tiến hành thu thập dữ liệu thực địa ngay", "Đáp án C": "Viết báo cáo kết quả và thảo luận", "Đáp án đúng (A/B/C)": "A", "Gợi ý (Hint)": "Trước khi làm bất kỳ khảo sát hay thí nghiệm nào, nhà nghiên cứu phải xác định rõ vấn đề và câu hỏi cần giải quyết." },
+    { "STT": 2, "Giai đoạn": 1, "Câu hỏi": "Phương pháp nghiên cứu nào thường sử dụng bảng hỏi (survey) để thu thập dữ liệu định lượng?", "Đáp án A": "Nghiên cứu định tính phỏng vấn sâu", "Đáp án B": "Nghiên cứu điều tra khảo sát (Survey research)", "Đáp án C": "Phương pháp quan sát tham dự", "Đáp án đúng (A/B/C)": "B", "Gợi ý (Hint)": "Khảo sát diện rộng bằng bảng câu hỏi chuẩn hóa là đặc trưng điển hình của nghiên cứu điều tra (Survey research)." },
+    { "STT": 3, "Giai đoạn": 1, "Câu hỏi": "Biến độc lập (Independent Variable) trong mô hình nghiên cứu có đặc điểm gì?", "Đáp án A": "Là nguyên nhân tác động đến biến phụ thuộc", "Đáp án B": "Là kết quả bị chi phối bởi biến phụ thuộc", "Đáp án C": "Là biến không bao giờ thay đổi giá trị", "Đáp án đúng (A/B/C)": "A", "Gợi ý (Hint)": "Biến độc lập là tác nhân, nguyên nhân gây ra sự biến thiên hoặc tác động lên biến phụ thuộc." },
+    { "STT": 4, "Giai đoạn": 1, "Câu hỏi": "Giả thuyết nghiên cứu (Hypothesis) là gì?", "Đáp án A": "Một kết luận chắc chắn đã được chứng minh 100%", "Đáp án B": "Một câu hỏi chưa có hướng trả lời", "Đáp án C": "Một phỏng đoán có căn cứ khoa học về mối quan hệ giữa các biến", "Đáp án đúng (A/B/C)": "C", "Gợi ý (Hint)": "Giả thuyết là nhận định mang tính phỏng đoán khoa học, cần kiểm chứng thực nghiệm trước khi khẳng định." },
+    { "STT": 5, "Giai đoạn": 1, "Câu hỏi": "Chọn mẫu ngẫu nhiên đơn giản (Simple Random Sampling) thuộc loại chọn mẫu nào?", "Đáp án A": "Chọn mẫu theo xác suất (Probability sampling)", "Đáp án B": "Chọn mẫu phi xác suất (Non-probability sampling)", "Đáp án C": "Chọn mẫu thuận tiện (Convenience sampling)", "Đáp án đúng (A/B/C)": "A", "Gợi ý (Hint)": "Mọi cá thể trong quần thể đều có cơ hội được chọn ngang nhau và xác suất này xác định trước." },
+    { "STT": 6, "Giai đoạn": 1, "Câu hỏi": "Tổng quan tài liệu (Literature Review) đóng vai trò gì quan trọng nhất?", "Đáp án A": "Chỉ để làm cho bài viết dài hơn", "Đáp án B": "Xác định khoảng trống nghiên cứu và xây dựng khung lý thuyết", "Đáp án C": "Sao chép nguyên văn các công trình trước", "Đáp án đúng (A/B/C)": "B", "Gợi ý (Hint)": "Đọc tổng quan giúp phát hiện khoảng trống nghiên cứu (Research Gap) để định vị đề tài của mình." },
+    { "STT": 7, "Giai đoạn": 1, "Câu hỏi": "Nghiên cứu thực nghiệm (Experimental Research) có ưu thế nổi bật nào?", "Đáp án A": "Dễ tiến hành và không tốn kém", "Đáp án B": "Khẳng định mối quan hệ nhân quả mạnh mẽ nhờ kiểm soát biến ngoại lai", "Đáp án C": "Không cần thu thập dữ liệu", "Đáp án đúng (A/B/C)": "B", "Gợi ý (Hint)": "Bằng cách can thiệp và kiểm soát biến ngoại lai, thực nghiệm giúp khẳng định quan hệ nhân quả rõ ràng nhất." },
+    { "STT": 8, "Giai đoạn": 1, "Câu hỏi": "Khái niệm 'Khoảng trống nghiên cứu' (Research Gap) nghĩa là gì?", "Đáp án A": "Vấn đề chưa được giải quyết hoặc chưa được khám phá thấu đáo", "Đáp án B": "Khoảng cách địa lý giữa các nhà nghiên cứu", "Đáp án C": "Thời gian nghỉ giữa hai đợt khảo sát", "Đáp án đúng (A/B/C)": "A", "Gợi ý (Hint)": "Khoảng trống nghiên cứu là khía cạnh tri thức mà các công trình trước chưa khám phá hoặc giải quyết trọn vẹn." },
+    { "STT": 9, "Giai đoạn": 1, "Câu hỏi": "Thang đo Likert 5 mức độ thường được xếp vào loại thang đo nào?", "Đáp án A": "Thang đo định danh (Nominal)", "Đáp án B": "Thang đo thứ bậc (Ordinal) hoặc giả định khoảng cách (Interval)", "Đáp án C": "Thang đo tỷ lệ (Ratio)", "Đáp án đúng (A/B/C)": "B", "Gợi ý (Hint)": "Thang đo Likert phản ánh mức độ đồng ý theo thứ tự, trong phân tích thường giả định khoảng cách (Interval)." },
+    { "STT": 10, "Giai đoạn": 1, "Câu hỏi": "Hành vi nào sau đây vi phạm nghiêm trọng nhất đạo đức trong nghiên cứu khoa học?", "Đáp án A": "Trích dẫn đầy đủ nguồn tham khảo học thuật", "Đáp án B": "Bảo mật danh tính người tham gia khảo sát", "Đáp án C": "Đạo văn (Plagiarism) và ngụy tạo số liệu khảo sát", "Đáp án đúng (A/B/C)": "C", "Gợi ý (Hint)": "Đạo văn và ngụy tạo số liệu là vi phạm nghiêm trọng nhất về tính trung thực trong học thuật." }
   ];
 
   const p2Questions = [
-    { "STT": 1, "Giai đoạn": 2, "Câu hỏi": "Chỉ số Cronbach's Alpha thường dùng để đo lường điều gì trong SPSS?", "Đáp án A": "Độ tin cậy nhất quán nội tại của thang đo", "Đáp án B": "Mức độ tương quan giữa hai biến định lượng", "Đáp án C": "Sự khác biệt trung bình giữa hai nhóm", "Đáp án đúng (A/B/C)": "A" },
-    { "STT": 2, "Giai đoạn": 2, "Câu hỏi": "Giá trị Cronbach's Alpha đạt từ bao nhiêu trở lên được xem là thang đo sử dụng tốt?", "Đáp án A": "Từ 0.70 trở lên", "Đáp án B": "Từ 0.30 trở lên", "Đáp án C": "Từ 0.99 trở lên", "Đáp án đúng (A/B/C)": "A" },
-    { "STT": 3, "Giai đoạn": 2, "Câu hỏi": "Hệ số tương quan biến - tổng (Corrected Item-Total Correlation) nhỏ hơn bao nhiêu thì nên loại biến quan sát?", "Đáp án A": "Nhỏ hơn 0.30", "Đáp án B": "Nhỏ hơn 0.70", "Đáp án C": "Nhỏ hơn 0.50", "Đáp án đúng (A/B/C)": "A" },
-    { "STT": 4, "Giai đoạn": 2, "Câu hỏi": "Chỉ số KMO trong phân tích nhân tố khám phá (EFA) cần đạt tối thiểu bao nhiêu?", "Đáp án A": "KMO >= 0.50", "Đáp án B": "KMO >= 0.05", "Đáp án C": "KMO >= 0.90", "Đáp án đúng (A/B/C)": "A" },
-    { "STT": 5, "Giai đoạn": 2, "Câu hỏi": "Giá trị p-value trong kiểm định Sig nhỏ hơn bao nhiêu thì bác bỏ giả thuyết H0 (mức 5%)?", "Đáp án A": "p > 0.05", "Đáp án B": "p < 0.05", "Đáp án C": "p = 0.50", "Đáp án đúng (A/B/C)": "B" },
-    { "STT": 6, "Giai đoạn": 2, "Câu hỏi": "Hệ số R bình phương hiệu chỉnh (Adjusted R-squared) biểu thị điều gì?", "Đáp án A": "Mức độ phù hợp của mô hình hồi quy đối với dữ liệu thực tế", "Đáp án B": "Số lượng quan sát của mẫu", "Đáp án C": "Độ phân tán của biến phụ thuộc", "Đáp án đúng (A/B/C)": "A" },
-    { "STT": 7, "Giai đoạn": 2, "Câu hỏi": "Hiện tượng đa cộng tuyến trong hồi quy tuyến tính thường được phát hiện qua chỉ số nào?", "Đáp án A": "Hệ số phóng đại phương sai VIF", "Đáp án B": "Hệ số skewness", "Đáp án C": "Chỉ số kurtosis", "Đáp án đúng (A/B/C)": "A" },
-    { "STT": 8, "Giai đoạn": 2, "Câu hỏi": "Kiểm định Independent Samples T-Test dùng để so sánh gì?", "Đáp án A": "Trung bình của 2 nhóm độc lập", "Đáp án B": "Tỷ lệ của nhiều nhóm", "Đáp án C": "Độ lệch chuẩn của 3 nhóm trở lên", "Đáp án đúng (A/B/C)": "A" },
-    { "STT": 9, "Giai đoạn": 2, "Câu hỏi": "Phân tích phương sai một yếu tố (One-way ANOVA) dùng khi nào?", "Đáp án A": "So sánh trung bình của từ 3 nhóm độc lập trở lên", "Đáp án B": "So sánh 2 biến định tính", "Đáp án C": "Xác định hệ số tương quan", "Đáp án đúng (A/B/C)": "A" },
-    { "STT": 10, "Giai đoạn": 2, "Câu hỏi": "Dữ liệu thứ cấp (Secondary Data) là loại dữ liệu nào sau đây?", "Đáp án A": "Dữ liệu do nhà nghiên cứu tự làm khảo sát thu thập trực tiếp", "Đáp án B": "Dữ liệu có sẵn từ niên giám thống kê, báo cáo, nghiên cứu trước", "Đáp án C": "Dữ liệu chỉ bao gồm hình ảnh và video ghi hình", "Đáp án đúng (A/B/C)": "B" }
+    { "STT": 1, "Giai đoạn": 2, "Câu hỏi": "Chỉ số Cronbach's Alpha thường dùng để đo lường điều gì trong SPSS?", "Đáp án A": "Độ tin cậy nhất quán nội tại của thang đo", "Đáp án B": "Mức độ tương quan giữa hai biến định lượng", "Đáp án C": "Sự khác biệt trung bình giữa hai nhóm", "Đáp án đúng (A/B/C)": "A", "Gợi ý (Hint)": "Cronbach's Alpha đánh giá mức độ nhất quán nội tại giữa các biến quan sát trong cùng một thang đo." },
+    { "STT": 2, "Giai đoạn": 2, "Câu hỏi": "Giá trị Cronbach's Alpha đạt từ bao nhiêu trở lên được xem là thang đo sử dụng tốt?", "Đáp án A": "Từ 0.70 trở lên", "Đáp án B": "Từ 0.30 trở lên", "Đáp án C": "Từ 0.99 trở lên", "Đáp án đúng (A/B/C)": "A", "Gợi ý (Hint)": "Theo các chuẩn nghiên cứu phổ biến (Hair et al.), Alpha >= 0.70 là thang đo đạt độ tin cậy tốt." },
+    { "STT": 3, "Giai đoạn": 2, "Câu hỏi": "Hệ số tương quan biến - tổng (Corrected Item-Total Correlation) nhỏ hơn bao nhiêu thì nên loại biến quan sát?", "Đáp án A": "Nhỏ hơn 0.30", "Đáp án B": "Nhỏ hơn 0.70", "Đáp án C": "Nhỏ hơn 0.50", "Đáp án đúng (A/B/C)": "A", "Gợi ý (Hint)": "Biến quan sát có tương quan biến - tổng < 0.30 thường không đóng góp tốt vào thang đo và cần xem xét loại bỏ." },
+    { "STT": 4, "Giai đoạn": 2, "Câu hỏi": "Chỉ số KMO trong phân tích nhân tố khám phá (EFA) cần đạt tối thiểu bao nhiêu?", "Đáp án A": "KMO >= 0.50", "Đáp án B": "KMO >= 0.05", "Đáp án C": "KMO >= 0.90", "Đáp án đúng (A/B/C)": "A", "Gợi ý (Hint)": "Hệ số KMO >= 0.50 là điều kiện tiên quyết để dữ liệu phù hợp với phân tích nhân tố EFA." },
+    { "STT": 5, "Giai đoạn": 2, "Câu hỏi": "Giá trị p-value trong kiểm định Sig nhỏ hơn bao nhiêu thì bác bỏ giả thuyết H0 (mức 5%)?", "Đáp án A": "p > 0.05", "Đáp án B": "p < 0.05", "Đáp án C": "p = 0.50", "Đáp án đúng (A/B/C)": "B", "Gợi ý (Hint)": "Mức ý nghĩa 5% tương đương alpha = 0.05; khi Sig. < 0.05 ta có đủ bằng chứng bác bỏ giả thuyết H0." },
+    { "STT": 6, "Giai đoạn": 2, "Câu hỏi": "Hệ số R bình phương hiệu chỉnh (Adjusted R-squared) biểu thị điều gì?", "Đáp án A": "Mức độ phù hợp của mô hình hồi quy đối với dữ liệu thực tế", "Đáp án B": "Số lượng quan sát của mẫu", "Đáp án C": "Độ phân tán của biến phụ thuộc", "Đáp án đúng (A/B/C)": "A", "Gợi ý (Hint)": "R² hiệu chỉnh đo lường tỷ lệ biến thiên của biến phụ thuộc được giải thích bởi các biến độc lập trong mô hình." },
+    { "STT": 7, "Giai đoạn": 2, "Câu hỏi": "Hiện tượng đa cộng tuyến trong hồi quy tuyến tính thường được phát hiện qua chỉ số nào?", "Đáp án A": "Hệ số phóng đại phương sai VIF", "Đáp án B": "Hệ số skewness", "Đáp án C": "Chỉ số kurtosis", "Đáp án đúng (A/B/C)": "A", "Gợi ý (Hint)": "Hệ số phóng đại phương sai VIF (Variance Inflation Factor) > 2 hoặc > 5 là dấu hiệu của hiện tượng đa cộng tuyến." },
+    { "STT": 8, "Giai đoạn": 2, "Câu hỏi": "Kiểm định Independent Samples T-Test dùng để so sánh gì?", "Đáp án A": "Trung bình của 2 nhóm độc lập", "Đáp án B": "Tỷ lệ của nhiều nhóm", "Đáp án C": "Độ lệch chuẩn của 3 nhóm trở lên", "Đáp án đúng (A/B/C)": "A", "Gợi ý (Hint)": "T-Test độc lập dùng để so sánh sự khác biệt về điểm số trung bình giữa đúng hai nhóm đối tượng riêng biệt." },
+    { "STT": 9, "Giai đoạn": 2, "Câu hỏi": "Phân tích phương sai một yếu tố (One-way ANOVA) dùng khi nào?", "Đáp án A": "So sánh trung bình của từ 3 nhóm độc lập trở lên", "Đáp án B": "So sánh 2 biến định tính", "Đáp án C": "Xác định hệ số tương quan", "Đáp án đúng (A/B/C)": "A", "Gợi ý (Hint)": "Khi cần so sánh giá trị trung bình giữa từ 3 nhóm độc lập trở lên, ta sử dụng phân tích One-way ANOVA." },
+    { "STT": 10, "Giai đoạn": 2, "Câu hỏi": "Dữ liệu thứ cấp (Secondary Data) là loại dữ liệu nào sau đây?", "Đáp án A": "Dữ liệu do nhà nghiên cứu tự làm khảo sát thu thập trực tiếp", "Đáp án B": "Dữ liệu có sẵn từ niên giám thống kê, báo cáo, nghiên cứu trước", "Đáp án C": "Dữ liệu chỉ bao gồm hình ảnh và video ghi hình", "Đáp án đúng (A/B/C)": "B", "Gợi ý (Hint)": "Dữ liệu thứ cấp là dữ liệu đã được thu thập, công bố từ trước bởi cá nhân hay tổ chức khác." }
   ];
 
   const p3Questions = [
-    { "STT": 1, "Giai đoạn": 3, "Câu hỏi": "Cấu trúc chuẩn IMRAD của một bài báo khoa học gồm những phần nào?", "Đáp án A": "Introduction, Methods, Results, and Discussion", "Đáp án B": "Index, Main, Review, Appendix, Data", "Đáp án C": "Idea, Model, Research, Action, Draft", "Đáp án đúng (A/B/C)": "A" },
-    { "STT": 2, "Giai đoạn": 3, "Câu hỏi": "Trong trích dẫn theo chuẩn APA 7th, tài liệu có 3 tác giả trở lên trong bài viết được trích thế nào?", "Đáp án A": "Liệt kê đầy đủ tất cả tên tác giả", "Đáp án B": "Tên tác giả đầu tiên kèm 'et al.' (hoặc 'và cs.')", "Đáp án C": "Chỉ ghi tên nhà xuất bản", "Đáp án đúng (A/B/C)": "B" },
-    { "STT": 3, "Giai đoạn": 3, "Câu hỏi": "Phần Tóm tắt (Abstract) của bài báo khoa học thường có độ dài khoảng bao nhiêu từ?", "Đáp án A": "Khoảng 150 - 250 từ", "Đáp án B": "Trên 1.000 từ", "Đáp án C": "Dưới 20 từ", "Đáp án đúng (A/B/C)": "A" },
-    { "STT": 4, "Giai đoạn": 3, "Câu hỏi": "Phần Thảo luận (Discussion) có nhiệm vụ chính là gì?", "Đáp án A": "Liệt kê lại toàn bộ các số liệu bảng biểu", "Đáp án B": "Diễn giải ý nghĩa kết quả, so sánh với các nghiên cứu trước và nêu hàm ý", "Đáp án C": "Mô tả cách thu thập dữ liệu", "Đáp án đúng (A/B/C)": "B" },
-    { "STT": 5, "Giai đoạn": 3, "Câu hỏi": "Mã số định danh số học thuật quốc tế của bài báo khoa học là gì?", "Đáp án A": "ISBN", "Đáp án B": "DOI (Digital Object Identifier)", "Đáp án C": "ISSN", "Đáp án đúng (A/B/C)": "B" },
-    { "STT": 6, "Giai đoạn": 3, "Câu hỏi": "Chỉ số H-index đo lường điều gì của một nhà nghiên cứu?", "Đáp án A": "Tổng số tiền tài trợ nghiên cứu nhận được", "Đáp án B": "Cả năng suất công bố và tầm ảnh hưởng trích dẫn", "Đáp án C": "Số năm kinh nghiệm giảng dạy", "Đáp án đúng (A/B/C)": "B" },
-    { "STT": 7, "Giai đoạn": 3, "Câu hỏi": "Bình duyệt kín hai chiều (Double-blind peer review) nghĩa là gì?", "Đáp án A": "Cả tác giả và người phản biện đều không biết danh tính của nhau", "Đáp án B": "Tác giả biết người phản biện nhưng người phản biện không biết tác giả", "Đáp án C": "Bài viết được công khai cho cộng đồng nhận xét tự do", "Đáp án đúng (A/B/C)": "A" },
-    { "STT": 8, "Giai đoạn": 3, "Câu hỏi": "Khi diễn giải lại (paraphrase) ý tưởng của tác giả khác, ta có cần trích dẫn nguồn không?", "Đáp án A": "Không cần vì đã viết lại bằng lời của mình", "Đáp án B": "Bắt buộc phải ghi nguồn trích dẫn đầy đủ", "Đáp án C": "Chỉ cần trích dẫn nếu copy nguyên văn", "Đáp án đúng (A/B/C)": "B" },
-    { "STT": 9, "Giai đoạn": 3, "Câu hỏi": "Phần Hàm ý quản trị (Managerial Implications) nhằm trả lời câu hỏi nào?", "Đáp án A": "Nghiên cứu tốn bao nhiêu chi phí?", "Đáp án B": "Ai là người hướng dẫn nghiên cứu?", "Đáp án C": "Kết quả nghiên cứu này giúp ích gì cho các nhà quản lý trong thực tiễn?", "Đáp án đúng (A/B/C)": "C" },
-    { "STT": 10, "Giai đoạn": 3, "Câu hỏi": "Phần Giới hạn nghiên cứu (Limitations) được đưa vào nhằm mục đích gì?", "Đáp án A": "Chỉ ra những ranh giới, hạn chế của đề tài và mở ra hướng nghiên cứu tiếp theo", "Đáp án B": "Thừa nhận bài báo không đạt chất lượng", "Đáp án C": "Tránh bị người đọc đặt câu hỏi", "Đáp án đúng (A/B/C)": "A" }
+    { "STT": 1, "Giai đoạn": 3, "Câu hỏi": "Cấu trúc chuẩn IMRAD của một bài báo khoa học gồm những phần nào?", "Đáp án A": "Introduction, Methods, Results, and Discussion", "Đáp án B": "Index, Main, Review, Appendix, Data", "Đáp án C": "Idea, Model, Research, Action, Draft", "Đáp án đúng (A/B/C)": "A", "Gợi ý (Hint)": "IMRaD viết tắt của: Introduction (Mở đầu), Methods (Phương pháp), Results (Kết quả) và Discussion (Thảo luận)." },
+    { "STT": 2, "Giai đoạn": 3, "Câu hỏi": "Trong trích dẫn theo chuẩn APA 7th, tài liệu có 3 tác giả trở lên trong bài viết được trích thế nào?", "Đáp án A": "Liệt kê đầy đủ tất cả tên tác giả", "Đáp án B": "Tên tác giả đầu tiên kèm 'et al.' (hoặc 'và cs.')", "Đáp án C": "Chỉ ghi tên nhà xuất bản", "Đáp án đúng (A/B/C)": "B", "Gợi ý (Hint)": "Chuẩn APA 7th quy định trích dẫn ngay từ lần đầu tiên cho 3 tác giả trở lên là Tác giả 1 et al. (hoặc và cs.)." },
+    { "STT": 3, "Giai đoạn": 3, "Câu hỏi": "Phần Tóm tắt (Abstract) của bài báo khoa học thường có độ dài khoảng bao nhiêu từ?", "Đáp án A": "Khoảng 150 - 250 từ", "Đáp án B": "Trên 1.000 từ", "Đáp án C": "Dưới 20 từ", "Đáp án đúng (A/B/C)": "A", "Gợi ý (Hint)": "Abstract của đa số tạp chí học thuật quốc tế giới hạn trong khoảng 150 - 250 từ." },
+    { "STT": 4, "Giai đoạn": 3, "Câu hỏi": "Phần Thảo luận (Discussion) có nhiệm vụ chính là gì?", "Đáp án A": "Liệt kê lại toàn bộ các số liệu bảng biểu", "Đáp án B": "Diễn giải ý nghĩa kết quả, so sánh với các nghiên cứu trước và nêu hàm ý", "Đáp án C": "Mô tả cách thu thập dữ liệu", "Đáp án đúng (A/B/C)": "B", "Gợi ý (Hint)": "Discussion không lặp lại số liệu mà phân tích ý nghĩa, so sánh phát hiện với tài liệu trước và nêu hàm ý." },
+    { "STT": 5, "Giai đoạn": 3, "Câu hỏi": "Mã số định danh số học thuật quốc tế của bài báo khoa học là gì?", "Đáp án A": "ISBN", "Đáp án B": "DOI (Digital Object Identifier)", "Đáp án C": "ISSN", "Đáp án đúng (A/B/C)": "B", "Gợi ý (Hint)": "DOI (Digital Object Identifier) là định danh điện tử duy nhất và vĩnh viễn cho mỗi bài báo học thuật." },
+    { "STT": 6, "Giai đoạn": 3, "Câu hỏi": "Chỉ số H-index đo lường điều gì của một nhà nghiên cứu?", "Đáp án A": "Tổng số tiền tài trợ nghiên cứu nhận được", "Đáp án B": "Cả năng suất công bố và tầm ảnh hưởng trích dẫn", "Đáp án C": "Số năm kinh nghiệm giảng dạy", "Đáp án đúng (A/B/C)": "B", "Gợi ý (Hint)": "Nhà nghiên cứu có chỉ số h nếu có h bài báo được trích dẫn ít nhất h lần (đo cả năng suất và ảnh hưởng)." },
+    { "STT": 7, "Giai đoạn": 3, "Câu hỏi": "Bình duyệt kín hai chiều (Double-blind peer review) nghĩa là gì?", "Đáp án A": "Cả tác giả và người phản biện đều không biết danh tính của nhau", "Đáp án B": "Tác giả biết người phản biện nhưng người phản biện không biết tác giả", "Đáp án C": "Bài viết được công khai cho cộng đồng nhận xét tự do", "Đáp án đúng (A/B/C)": "A", "Gợi ý (Hint)": "Cả tác giả và phản biện đều được giấu danh tính để ngăn chặn định kiến và bảo đảm tính khách quan." },
+    { "STT": 8, "Giai đoạn": 3, "Câu hỏi": "Khi diễn giải lại (paraphrase) ý tưởng của tác giả khác, ta có cần trích dẫn nguồn không?", "Đáp án A": "Không cần vì đã viết lại bằng lời của mình", "Đáp án B": "Bắt buộc phải ghi nguồn trích dẫn đầy đủ", "Đáp án C": "Chỉ cần trích dẫn nếu copy nguyên văn", "Đáp án đúng (A/B/C)": "B", "Gợi ý (Hint)": "Ý tưởng gốc vẫn thuộc về tác giả trước đó nên dù viết lại bằng lời văn của mình vẫn bắt buộc phải trích dẫn nguồn." },
+    { "STT": 9, "Giai đoạn": 3, "Câu hỏi": "Phần Hàm ý quản trị (Managerial Implications) nhằm trả lời câu hỏi nào?", "Đáp án A": "Nghiên cứu tốn bao nhiêu chi phí?", "Đáp án B": "Ai là người hướng dẫn nghiên cứu?", "Đáp án C": "Kết quả nghiên cứu này giúp ích gì cho các nhà quản lý trong thực tiễn?", "Đáp án đúng (A/B/C)": "C", "Gợi ý (Hint)": "Hàm ý quản trị chuyển hóa phát hiện học thuật thành giải pháp thực tế hữu ích cho nhà quản lý và doanh nghiệp." },
+    { "STT": 10, "Giai đoạn": 3, "Câu hỏi": "Phần Giới hạn nghiên cứu (Limitations) được đưa vào nhằm mục đích gì?", "Đáp án A": "Chỉ ra những ranh giới, hạn chế của đề tài và mở ra hướng nghiên cứu tiếp theo", "Đáp án B": "Thừa nhận bài báo không đạt chất lượng", "Đáp án C": "Tránh bị người đọc đặt câu hỏi", "Đáp án đúng (A/B/C)": "A", "Gợi ý (Hint)": "Chỉ ra giới hạn giúp độc giả hiểu rõ phạm vi áp dụng của kết quả và mở đường cho các nghiên cứu tiếp theo." }
   ];
 
   const all3Phases = [...p1Questions, ...p2Questions, ...p3Questions];
@@ -11007,7 +11007,8 @@ function adminDownloadExcelTemplate() {
     { wch: 38 }, // A
     { wch: 38 }, // B
     { wch: 38 }, // C
-    { wch: 22 }  // Đáp án đúng
+    { wch: 22 }, // Đáp án đúng (A/B/C)
+    { wch: 55 }  // Gợi ý (Hint)
   ];
 
   if (window.XLSX) {
@@ -11035,9 +11036,9 @@ function adminDownloadExcelTemplate() {
     toast("📥 Đã tải file Excel mẫu 3 giai đoạn (.xlsx) thành công! Bạn có thể nhập 1 giai đoạn hoặc cả 3 giai đoạn cùng lúc.");
   } else {
     // Fallback CSV with all 30 rows
-    let csv = "\uFEFFSTT,Giai đoạn,Câu hỏi,Đáp án A,Đáp án B,Đáp án C,Đáp án đúng (A/B/C)\n";
+    let csv = "\uFEFFSTT,Giai đoạn,Câu hỏi,Đáp án A,Đáp án B,Đáp án C,Đáp án đúng (A/B/C),Gợi ý (Hint)\n";
     all3Phases.forEach(r => {
-      csv += `${r["STT"]},${r["Giai đoạn"]},"${r["Câu hỏi"].replace(/"/g, '""')}","${r["Đáp án A"].replace(/"/g, '""')}","${r["Đáp án B"].replace(/"/g, '""')}","${r["Đáp án C"].replace(/"/g, '""')}",${r["Đáp án đúng (A/B/C)"]}\n`;
+      csv += `${r["STT"]},${r["Giai đoạn"]},"${(r["Câu hỏi"] || "").replace(/"/g, '""')}","${(r["Đáp án A"] || "").replace(/"/g, '""')}","${(r["Đáp án B"] || "").replace(/"/g, '""')}","${(r["Đáp án C"] || "").replace(/"/g, '""')}",${r["Đáp án đúng (A/B/C)"]},"${(r["Gợi ý (Hint)"] || "").replace(/"/g, '""')}"\n`;
     });
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
@@ -11122,7 +11123,11 @@ async function adminHandleExcelUpload(event) {
             if (m) phaseVal = parseInt(m[0], 10);
           }
 
-          const explanation = getCellVal(row, ["lời giải thích", "loi giai thich", "giải thích", "giai thich", "explanation", "chú thích", "chu thich"]);
+          const explanation = getCellVal(row, [
+            "gợi ý (hint)", "goi y (hint)", "gợi ý / lời giải thích", "gợi ý/giải thích",
+            "gợi ý", "goi y", "hint", "hints", "nội dung hint",
+            "lời giải thích", "loi giai thich", "giải thích", "giai thich", "explanation", "chú thích", "chu thich"
+          ], 7);
 
           if (qText && optA && optB && optC) {
             const exists = phaseMap[phaseVal].some(q => q.questionText === qText);
@@ -11168,7 +11173,11 @@ async function adminHandleExcelUpload(event) {
           if (m) phaseVal = parseInt(m[0], 10);
         }
 
-        const explanation = getCellVal(row, ["lời giải thích", "loi giai thich", "giải thích", "giai thich", "explanation", "chú thích", "chu thich"]);
+        const explanation = getCellVal(row, [
+          "gợi ý (hint)", "goi y (hint)", "gợi ý / lời giải thích", "gợi ý/giải thích",
+          "gợi ý", "goi y", "hint", "hints", "nội dung hint",
+          "lời giải thích", "loi giai thich", "giải thích", "giai thich", "explanation", "chú thích", "chu thich"
+        ], 7);
 
         if (qText && optA && optB && optC) {
           phaseMap[phaseVal].push({
@@ -11188,7 +11197,7 @@ async function adminHandleExcelUpload(event) {
     const totalFound = phasesWithQuestions.reduce((acc, p) => acc + phaseMap[p].length, 0);
 
     if (totalFound === 0) {
-      throw new Error("Không nhận diện được câu hỏi hợp lệ. Vui lòng kiểm tra file Excel theo đúng định dạng mẫu (Câu hỏi, Đáp án A, B, C, Đáp án đúng).");
+      throw new Error("Không nhận diện được câu hỏi hợp lệ. Vui lòng kiểm tra file Excel theo đúng định dạng mẫu (Câu hỏi, Đáp án A, B, C, Đáp án đúng, Gợi ý Hint).");
     }
 
     // Lưu toàn bộ câu hỏi của tất cả các giai đoạn vào bản nháp bộ nhớ tạm
