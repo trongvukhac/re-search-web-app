@@ -4417,6 +4417,47 @@ window.filterForumByUser = function() {
 
 // ==========================================
 // MODAL 1: CHỈNH SỬA THẺ TÊN & TRANG TRÍ
+// Trạng thái theo dõi thay đổi trong modal Namecard để hiển thị nút Lưu pop-up
+let namecardInitialState = {
+  displayName: "",
+  bio: "",
+  avatar: "",
+  frame: "none",
+  cover: "default",
+};
+
+function checkNamecardDirty() {
+  const curName = ($("#namecardDisplayNameInput")?.value || "").trim();
+  const curBio = ($("#namecardBioInput")?.value || "").trim();
+  const curAvatar = currentSelectedAvatar || "🌱";
+  const curFrame = currentSelectedFrame || "none";
+  const curCover = currentSelectedCover || "default";
+
+  const isDirty = (
+    curName !== namecardInitialState.displayName ||
+    curBio !== namecardInitialState.bio ||
+    curAvatar !== namecardInitialState.avatar ||
+    curFrame !== namecardInitialState.frame ||
+    curCover !== namecardInitialState.cover
+  );
+
+  const container = $("#namecardStickyActions");
+  if (container) {
+    if (isDirty) {
+      container.classList.add("visible");
+    } else {
+      container.classList.remove("visible");
+    }
+  }
+}
+
+if ($("#namecardDisplayNameInput")) {
+  $("#namecardDisplayNameInput").oninput = checkNamecardDirty;
+}
+if ($("#namecardBioInput")) {
+  $("#namecardBioInput").oninput = checkNamecardDirty;
+}
+
 // ==========================================
 window.openEditNamecardModal = function(section = "all") {
   if (!session) {
@@ -4438,6 +4479,16 @@ window.openEditNamecardModal = function(section = "all") {
     ? session.namecardFrame
     : "none";
   currentSelectedCover = session.coverImage || "default";
+
+  // Lưu trạng thái ban đầu để so sánh dirty
+  namecardInitialState = {
+    displayName: ($("#namecardDisplayNameInput")?.value || "").trim(),
+    bio: ($("#namecardBioInput")?.value || "").trim(),
+    avatar: currentSelectedAvatar,
+    frame: currentSelectedFrame,
+    cover: currentSelectedCover,
+  };
+  checkNamecardDirty();
 
   // Render Pickers
   renderAvatarPicker();
@@ -4511,6 +4562,7 @@ function renderAvatarPicker() {
       btn.classList.add("active");
       currentSelectedAvatar = btn.dataset.emoji;
       if ($("#namecardCustomAvatarInput")) $("#namecardCustomAvatarInput").value = "";
+      checkNamecardDirty();
     };
   });
 
@@ -4526,6 +4578,7 @@ function renderAvatarPicker() {
       currentSelectedAvatar = val;
       container.querySelectorAll(".avatar-choice-btn").forEach(b => b.classList.remove("active"));
       toast(`Đã chọn biểu tượng "${val}".`);
+      checkNamecardDirty();
     };
   }
 }
@@ -4567,6 +4620,7 @@ function renderFramePicker() {
       container.querySelectorAll(".frame-choice-item").forEach(i => i.classList.remove("active"));
       item.classList.add("active");
       currentSelectedFrame = item.dataset.frameId;
+      checkNamecardDirty();
     };
   });
 }
@@ -4609,6 +4663,7 @@ function renderCoverPicker() {
       // Hide custom image preview if preset picked
       const previewBox = $("#coverUploadPreview");
       if (previewBox) previewBox.style.display = "none";
+      checkNamecardDirty();
     };
   });
 }
@@ -4666,6 +4721,7 @@ if ($("#coverFileInput")) {
           previewBox.style.display = "block";
         }
         toast("Đã tối ưu ảnh bìa (< 150KB) sẵn sàng lưu!");
+        checkNamecardDirty();
       };
       img.src = evt.target.result;
     };
@@ -4679,6 +4735,7 @@ if ($("#btnRemoveCustomCover")) {
     const previewBox = $("#coverUploadPreview");
     if (previewBox) previewBox.style.display = "none";
     renderCoverPicker();
+    checkNamecardDirty();
   };
 }
 
@@ -4710,6 +4767,17 @@ if ($("#editNamecardForm")) {
         session = { ...session, ...res.user };
       }
       toast("Đã lưu thẻ tên & trang trí!");
+      
+      // Cập nhật lại initialState sau khi lưu thành công
+      namecardInitialState = {
+        displayName: payload.displayName,
+        bio: payload.bio,
+        avatar: payload.avatar || userCurrentAvatar,
+        frame: payload.namecardFrame,
+        cover: payload.coverImage,
+      };
+      checkNamecardDirty();
+
       $("#editNamecardModal").close();
       hydrateServer();
       if (currentViewingNamecardUserId && session && currentViewingNamecardUserId === session.id) {

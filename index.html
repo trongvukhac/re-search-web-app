@@ -16,7 +16,7 @@
     <script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-    <link rel="stylesheet" href="styles.css?v=73" />
+    <link rel="stylesheet" href="styles.css?v=74" />
   </head>
   <body>
     <dialog
@@ -2074,9 +2074,13 @@
           </div>
         </div>
 
-        <div class="modal-actions" style="margin-top: 24px">
-          <button class="button button-primary" type="submit" id="saveNamecardBtn">
-            Lưu thẻ tên & Trang trí <span>→</span>
+        <div class="namecard-sticky-actions" id="namecardStickyActions">
+          <div class="namecard-dirty-indicator">
+            <span class="dirty-dot"></span>
+            <span>Có thay đổi chưa lưu</span>
+          </div>
+          <button class="button button-primary namecard-save-floating-btn" type="submit" id="saveNamecardBtn">
+            Lưu
           </button>
         </div>
       </form>
@@ -3187,6 +3191,6 @@
       </div>
     </dialog>
 
-    <script src="app.js?v=86" defer></script>
+    <script src="app.js?v=87" defer></script>
   </body>
 </html>
