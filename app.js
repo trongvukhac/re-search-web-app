@@ -1914,8 +1914,8 @@ function go(route, scrollToTop = true) {
     history.replaceState(null, "", `#${route}`);
   }
 
-  // Only scroll to top when actually navigating to a new route and scrollToTop is true
-  if (scrollToTop && !isSameRoute) {
+  // Cuộn mượt lên đầu trang khi scrollToTop = true (kể cả khi bấm lại vào chính trang đang xem)
+  if (scrollToTop) {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
@@ -1935,14 +1935,16 @@ function go(route, scrollToTop = true) {
   }
   if (route === "forum") {
     renderPosts();
-    // Khôi phục vị trí cuộn khi quay về Diễn đàn từ bài viết
-    if (savedForumScrollY > 0) {
+    // Khôi phục vị trí cuộn khi quay về Diễn đàn từ bài viết bằng nút Quay lại (scrollToTop === false)
+    if (!scrollToTop && savedForumScrollY > 0) {
       const scrollTarget = savedForumScrollY;
       // Dùng setTimeout để chờ renderPosts() dựng xong DOM
       setTimeout(() => {
         window.scrollTo({ top: scrollTarget, behavior: "instant" });
         savedForumScrollY = 0;
       }, 50);
+    } else {
+      savedForumScrollY = 0;
     }
   }
   if (route === "documents") renderDocuments();
@@ -1982,6 +1984,23 @@ function showMobileNav() {
 window.hideMobileNav = hideMobileNav;
 window.showMobileNav = showMobileNav;
 
+let lastUserTypingAt = 0;
+if (typeof window !== "undefined") {
+  window.addEventListener("input", () => { lastUserTypingAt = Date.now(); }, { passive: true });
+  window.addEventListener("compositionupdate", () => { lastUserTypingAt = Date.now(); }, { passive: true });
+  window.addEventListener("keydown", (e) => {
+    if (e.key && e.key.length === 1) lastUserTypingAt = Date.now();
+  }, { passive: true });
+  window.addEventListener("touchstart", (e) => {
+    const activeEl = document.activeElement;
+    if (activeEl && (activeEl.tagName === "INPUT" || activeEl.tagName === "TEXTAREA" || activeEl.isContentEditable || (activeEl.closest && activeEl.closest(".ql-editor")))) {
+      if (!activeEl.contains(e.target) && (!e.target.closest || !e.target.closest(".ql-toolbar, .ql-container, input, textarea, select"))) {
+        lastUserTypingAt = 0;
+      }
+    }
+  }, { passive: true });
+}
+
 function initMobileNavScrollHandler() {
   lastMobileScrollY = Math.max(
     0,
@@ -2002,19 +2021,6 @@ function initMobileNavScrollHandler() {
     if (window.innerWidth > 900) return;
     if (document.querySelector("dialog[open]")) return;
 
-    // Bỏ qua sự kiện cuộn tự động khi đang gõ bàn phím trên điện thoại/iPad
-    const activeEl = document.activeElement;
-    if (
-      activeEl &&
-      (activeEl.tagName === "INPUT" ||
-        activeEl.tagName === "TEXTAREA" ||
-        activeEl.tagName === "SELECT" ||
-        activeEl.isContentEditable ||
-        (activeEl.closest && activeEl.closest(".ql-editor, [contenteditable='true']")))
-    ) {
-      return;
-    }
-
     const currentY = Math.max(
       0,
       window.scrollY ||
@@ -2023,15 +2029,8 @@ function initMobileNavScrollHandler() {
         0
     );
 
-    if (isMobileNavSuspended) {
-      lastMobileScrollY = currentY;
-      return;
-    }
-
-    const delta = currentY - lastMobileScrollY;
-
-    // Always restore when near top
-    if (currentY <= 40) {
+    // Luôn hiện thanh điều hướng khi ở gần đầu trang
+    if (currentY <= 50) {
       showMobileNav();
       mobileScrollUpAccumulator = 0;
       mobileScrollDownAccumulator = 0;
@@ -2039,8 +2038,21 @@ function initMobileNavScrollHandler() {
       return;
     }
 
+    // Tránh giật thanh điều hướng do vi sai cuộn khi vừa gõ bàn phím
+    if (Date.now() - lastUserTypingAt < 350) {
+      lastMobileScrollY = currentY;
+      return;
+    }
+
+    if (isMobileNavSuspended) {
+      lastMobileScrollY = currentY;
+      return;
+    }
+
+    const delta = currentY - lastMobileScrollY;
+
     if (delta > 0) {
-      // Scrolling DOWN -> hide after minor threshold
+      // Cuộn xuống -> ẩn sau ngưỡng thích hợp
       mobileScrollDownAccumulator += delta;
       mobileScrollUpAccumulator = 0;
 
@@ -2048,7 +2060,7 @@ function initMobileNavScrollHandler() {
         hideMobileNav();
       }
     } else if (delta < 0) {
-      // Scrolling UP -> accumulate and wait for scroll end or significant upward gesture
+      // Cuộn lên -> hiện thanh điều hướng
       const upDelta = Math.abs(delta);
       mobileScrollUpAccumulator += upDelta;
       mobileScrollDownAccumulator = 0;
@@ -2057,17 +2069,15 @@ function initMobileNavScrollHandler() {
         clearTimeout(mobileNavScrollTimeout);
       }
 
-      // If user scrolls up by a clear intentional amount (>= 30px)
-      if (mobileScrollUpAccumulator >= 30) {
+      if (mobileScrollUpAccumulator >= 20) {
         showMobileNav();
       } else {
-        // Debounce when gesture stops: only show if user made a deliberate upward movement (>= 15px) or reached near top
         mobileNavScrollTimeout = setTimeout(() => {
-          if (mobileScrollUpAccumulator >= 15 || currentY <= 50) {
+          if (mobileScrollUpAccumulator >= 10 || currentY <= 60) {
             showMobileNav();
           }
           mobileScrollUpAccumulator = 0;
-        }, 150);
+        }, 120);
       }
     }
 
@@ -2079,7 +2089,7 @@ function initMobileNavScrollHandler() {
   if ("onscrollend" in window) {
     window.addEventListener("scrollend", () => {
       if (window.innerWidth > 900) return;
-      if (mobileScrollUpAccumulator >= 30 || (window.scrollY || 0) <= 50) {
+      if (mobileScrollUpAccumulator >= 20 || (window.scrollY || 0) <= 60) {
         showMobileNav();
       }
       mobileScrollUpAccumulator = 0;
@@ -2117,19 +2127,6 @@ function initPostDetailNavScrollHandler() {
     if (!postDetailPage || !postDetailPage.classList.contains("active-page")) return;
     if (document.querySelector("dialog[open]")) return;
 
-    // Bỏ qua sự kiện cuộn tự động khi đang gõ bàn phím trong bài viết
-    const activeEl = document.activeElement;
-    if (
-      activeEl &&
-      (activeEl.tagName === "INPUT" ||
-        activeEl.tagName === "TEXTAREA" ||
-        activeEl.tagName === "SELECT" ||
-        activeEl.isContentEditable ||
-        (activeEl.closest && activeEl.closest(".ql-editor, [contenteditable='true']")))
-    ) {
-      return;
-    }
-
     const currentY = Math.max(
       0,
       window.scrollY ||
@@ -2137,10 +2134,13 @@ function initPostDetailNavScrollHandler() {
         document.documentElement.scrollTop ||
         0
     );
-    const delta = currentY - lastPostDetailScrollY;
 
-    // Luôn hiện khi ở gần đầu trang
-    if (currentY <= 45) {
+    // 1. Luôn hiển thị khi ở gần đầu trang (<= 75px) - đảm bảo Back, Copy link, Save không bao giờ kẹt khi cuộn lên
+    if (currentY <= 75) {
+      if (postDetailScrollTimeout) {
+        clearTimeout(postDetailScrollTimeout);
+        postDetailScrollTimeout = null;
+      }
       showPostDetailTopNav();
       postDetailUpAccumulator = 0;
       postDetailDownAccumulator = 0;
@@ -2148,11 +2148,30 @@ function initPostDetailNavScrollHandler() {
       return;
     }
 
+    // 2. Tránh ẩn/hiện do vi sai tự động cuộn khi đang gõ phím trên bàn phím ảo
+    if (Date.now() - lastUserTypingAt < 350) {
+      lastPostDetailScrollY = currentY;
+      return;
+    }
+
+    // 3. Tránh kích hoạt sai khi iOS nảy đáy trang (rubber-band bounce)
+    const maxScroll = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
+    if (maxScroll > 0 && currentY >= maxScroll - 15) {
+      lastPostDetailScrollY = currentY;
+      return;
+    }
+
+    const delta = currentY - lastPostDetailScrollY;
+
     if (delta > 0) {
       // Cuộn xuống -> trượt lên ẩn trọn dưới thanh logo
       postDetailDownAccumulator += delta;
       postDetailUpAccumulator = 0;
-      if (postDetailDownAccumulator >= 15 && currentY > 60) {
+      if (postDetailScrollTimeout) {
+        clearTimeout(postDetailScrollTimeout);
+        postDetailScrollTimeout = null;
+      }
+      if (postDetailDownAccumulator >= 15 && currentY > 75) {
         hidePostDetailTopNav();
       }
     } else if (delta < 0) {
@@ -2165,15 +2184,15 @@ function initPostDetailNavScrollHandler() {
         clearTimeout(postDetailScrollTimeout);
       }
 
-      if (postDetailUpAccumulator >= 15) {
+      if (postDetailUpAccumulator >= 12 || currentY <= 100) {
         showPostDetailTopNav();
       } else {
         postDetailScrollTimeout = setTimeout(() => {
-          if (postDetailUpAccumulator >= 10 || currentY <= 50) {
+          if (postDetailUpAccumulator >= 8 || currentY <= 80) {
             showPostDetailTopNav();
           }
           postDetailUpAccumulator = 0;
-        }, 120);
+        }, 100);
       }
     }
 
@@ -2181,6 +2200,50 @@ function initPostDetailNavScrollHandler() {
   };
 
   window.addEventListener("scroll", onScroll, { passive: true });
+}
+
+function initTapToScrollTop() {
+  // 1. Chạm vào thanh header trên cùng (tương tự Dynamic Island / Status Bar trên iPhone)
+  const header = document.querySelector(".site-header");
+  if (header) {
+    header.addEventListener("click", (e) => {
+      // Bỏ qua nếu bấm vào các nút chức năng, liên kết hoặc ô tìm kiếm
+      if (e.target.closest("button, input, select, textarea, a, .icon-button, .profile-chip, .nav-link")) {
+        return;
+      }
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    });
+  }
+
+  // 2. Bấm vào logo RE:SEARCH
+  const brand = document.querySelector(".brand");
+  if (brand) {
+    brand.addEventListener("click", (e) => {
+      e.preventDefault();
+      go("home", true);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    });
+  }
+
+  // 3. Chạm vào thanh công cụ xem bài viết (bên ngoài các nút bấm) hoặc breadcrumb
+  const postDetailTopNav = document.getElementById("postDetailTopNav");
+  if (postDetailTopNav) {
+    postDetailTopNav.addEventListener("click", (e) => {
+      if (e.target.closest("button, a")) return;
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    });
+  }
+
+  // 4. Chạm vào tiêu đề hộp thoại/modal để cuộn lên đầu modal đó
+  document.addEventListener("click", (e) => {
+    const modalHead = e.target.closest(".modal-head, .doc-viewer-header, .quiz-start-header, .account-header");
+    if (modalHead && !e.target.closest("button, a, input, select, textarea")) {
+      const dialog = modalHead.closest("dialog[open]");
+      if (dialog) {
+        dialog.scrollTo({ top: 0, behavior: "smooth" });
+      }
+    }
+  });
 }
 
 /* ==========================================================================
@@ -2740,12 +2803,17 @@ async function openDetail(id, updateHash = true) {
   $$("[data-route]").forEach((a) =>
     a.classList.toggle("active", a.dataset.route === "forum"),
   );
+  currentActiveRoute = "post-detail";
   window.scrollTo({ top: 0, behavior: "smooth" });
   if (typeof hideMobileNav === "function") hideMobileNav();
   showPostDetailTopNav();
   lastPostDetailScrollY = 0;
   postDetailUpAccumulator = 0;
   postDetailDownAccumulator = 0;
+  if (postDetailScrollTimeout) {
+    clearTimeout(postDetailScrollTimeout);
+    postDetailScrollTimeout = null;
+  }
 
   $("#detailContent").innerHTML = `
     <div style="padding: 48px 24px; text-align: center; color: var(--muted);">
@@ -9011,6 +9079,7 @@ document.addEventListener("click", () => {
 initStudyLoungeEvents();
 initMobileNavScrollHandler();
 initPostDetailNavScrollHandler();
+initTapToScrollTop();
 
 // =========================================================================
 // HOME SHOWCASE: ROTATING BANNER STACK & ARENA CARD (15s Auto-Rotate & Swipe)

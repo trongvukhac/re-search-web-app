@@ -109,6 +109,13 @@ select:focus-visible {
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   box-shadow: 0 2px 10px rgba(10, 44, 30, 0.03);
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.site-header .desktop-nav,
+.site-header .header-actions {
+  cursor: default;
 }
 .brand {
   display: flex;
@@ -3044,8 +3051,10 @@ dialog::backdrop {
 }
 @media (max-width: 800px) {
   .site-header {
-    height: 64px;
-    padding: 0 20px;
+    height: calc(64px + env(safe-area-inset-top, 0px));
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-left: 20px;
+    padding-right: 20px;
   }
   .desktop-nav,
   .desktop-search,
@@ -11690,6 +11699,9 @@ dialog.quiz-start-confirm-modal,
   align-items: center;
   gap: 6px;
   font-weight: 500;
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
 }
 .post-detail-breadcrumb .bc-sep {
   opacity: 0.4;
@@ -11808,7 +11820,7 @@ body:has(#postDetail.active-page) .mobile-fab {
     padding: 0 10px 32px;
   }
   .post-detail-top-nav {
-    top: 64px;
+    top: calc(64px + env(safe-area-inset-top, 0px));
     margin-top: 0;
     margin-bottom: 12px;
     padding: 8px 0;
