@@ -9097,9 +9097,20 @@ const HOME_BANNERS_CONFIG = [
     }
   },
   {
+    id: "leaderboard-w01",
+    title: "Bảng Vàng Tuần 01 — Phương Pháp Nghiên Cứu Định Tính",
+    image: "public/assets/banner-leaderboard-w01.jpg?v=20261016_1",
+    // xuất hiện đến hết ngày 18/10/2026
+    expiresAt: new Date("2026-10-18T23:59:59+07:00").getTime(),
+    action: () => {
+      if (typeof go === "function") go("arena");
+      else toast("Bảng xếp hạng thi đua Đấu trường Arena Tuần 01!");
+    }
+  },
+  {
     id: "halloween",
     title: "Halloween — Cho Kẹo Hay Bị Ghẹo",
-    image: "public/assets/banner-halloween.jpg",
+    image: "public/assets/banner-halloween.jpg?v=20261016_2",
     // sau 1/11/2026 sẽ không hiển thị nữa
     expiresAt: new Date("2026-11-01T23:59:59+07:00").getTime(),
     action: () => {
