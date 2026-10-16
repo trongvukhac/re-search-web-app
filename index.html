@@ -16,7 +16,7 @@
     <script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-    <link rel="stylesheet" href="styles.css?v=80" />
+    <link rel="stylesheet" href="styles.css?v=82" />
   </head>
   <body>
     <dialog
@@ -227,36 +227,68 @@
           </aside>
         </div>
 
-        <!-- MODULE HOẠT ĐỘNG THI ĐUA HÀNG TUẦN -->
-        <div id="weeklyCompetitionModule" class="weekly-competition-card" style="display: none;" onclick="go('arena')">
-          <div class="comp-card-glow"></div>
-          <div class="comp-card-content">
-            <div class="comp-left">
-              <div class="comp-badge-row">
-                <span id="compStatusBadge" class="comp-status-badge">
-                  <span class="pulse-dot"></span>
-                  <span id="compStatusBadgeText">ĐANG MỞ CỔNG</span>
-                </span>
-                <span class="comp-week-tag" id="compWeekTag">TUẦN 01</span>
-              </div>
-              <h3 id="compTopicTitle" class="comp-topic-title">Phương pháp Nghiên cứu & Xử lý Dữ liệu Khoa học</h3>
-              <p id="compPhaseSubtitle" class="comp-phase-subtitle">Giai đoạn 1: Phương pháp & Thiết kế Nghiên cứu Khoa học</p>
-            </div>
-            <div class="comp-right">
-              <div class="comp-timer-box">
-                <span class="comp-timer-label" id="compTimerLabel">Thời gian mở cổng còn lại:</span>
-                <div class="comp-countdown" id="compCountdownTicker">00:00:00</div>
-              </div>
-              <div class="comp-action-box">
-                <div class="comp-user-status" id="compUserStatusTeaser">
-                  <span id="compAttemptsTeaser">Số lượt thi: 0/1</span>
-                  <span id="compBestScoreTeaser" class="comp-star-score" style="display: none;">⭐ 0</span>
+        <!-- KHU VỰC LIÊN KẾT ĐẤU TRƯỜNG ARENA & NGĂN XẾP BANNER THÔNG BÁO -->
+        <div id="homeShowcaseRow" class="home-showcase-row">
+          <!-- CỘT TRÁI: MODAL ĐƯỜNG DẪN ARENA -->
+          <div id="weeklyCompetitionModule" class="weekly-competition-card" style="display: none;" onclick="go('arena')">
+            <div class="comp-card-glow"></div>
+            <div class="comp-card-content">
+              <div class="comp-left">
+                <div class="comp-badge-row">
+                  <span id="compStatusBadge" class="comp-status-badge">
+                    <span class="pulse-dot"></span>
+                    <span id="compStatusBadgeText">ĐANG MỞ CỔNG</span>
+                  </span>
+                  <span class="comp-week-tag" id="compWeekTag">TUẦN 01</span>
+                  <span class="arena-portal-tag">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: -1px; margin-right: 3px;"><path d="M6 9H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h2"/><path d="M18 9h2a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2h-2"/><path d="M6 3h12v7a6 6 0 0 1-12 0V3z"/><path d="M12 16v4"/><path d="M8 20h8"/></svg>
+                    Đấu trường Arena
+                  </span>
                 </div>
-                <button type="button" class="comp-cta-button" id="compCtaBtn" onclick="event.stopPropagation(); handleCompetitionCtaClick()">
-                  <span id="compCtaText">Tham gia ngay</span>
-                  <span class="comp-cta-arrow">→</span>
-                </button>
+                <h3 id="compTopicTitle" class="comp-topic-title">Phương pháp Nghiên cứu & Xử lý Dữ liệu Khoa học</h3>
+                <p id="compPhaseSubtitle" class="comp-phase-subtitle">Giai đoạn 1: Phương pháp & Thiết kế Nghiên cứu Khoa học</p>
               </div>
+              <div class="comp-right">
+                <div class="comp-timer-box">
+                  <span class="comp-timer-label" id="compTimerLabel">Thời gian mở cổng còn lại:</span>
+                  <div class="comp-countdown" id="compCountdownTicker">00:00:00</div>
+                </div>
+                <div class="comp-action-box">
+                  <div class="comp-user-status" id="compUserStatusTeaser">
+                    <span id="compAttemptsTeaser">Số lượt thi: 0/1</span>
+                    <span id="compBestScoreTeaser" class="comp-star-score" style="display: none;">⭐ 0</span>
+                  </div>
+                  <button type="button" class="comp-cta-button" id="compCtaBtn" onclick="event.stopPropagation(); handleCompetitionCtaClick()">
+                    <span id="compCtaText">Tham gia ngay</span>
+                    <span class="comp-cta-arrow">→</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- CỘT PHẢI: NGĂN XẾP BANNER THÔNG BÁO (Kích thước chuẩn 430 x 240 px, luân phiên 15s) -->
+          <div id="bannerStackCard" class="banner-stack-card" aria-label="Ngăn xếp banner thông báo" title="Kéo ngang để xem các banner khác">
+            <div class="banner-timer-bar" id="bannerTimerBar"></div>
+            <div class="banner-drag-hint"><span>⇄ Kéo để xem</span></div>
+            <div class="banner-track" id="bannerTrack">
+              <!-- Slide 1: Ngày Phụ Nữ Việt Nam 20/10 (Sau 21/11/2026 sẽ không hiển thị) -->
+              <div class="banner-slide active" data-banner-id="women-day" data-index="0">
+                <img src="public/assets/banner-women-day.jpg" class="banner-image" alt="Ngày Phụ Nữ Việt Nam 20/10" />
+              </div>
+              <!-- Slide 2: Halloween Cho Kẹo Hay Bị Ghẹo (Sau 01/11/2026 sẽ không hiển thị) -->
+              <div class="banner-slide" data-banner-id="halloween" data-index="1">
+                <img src="public/assets/banner-halloween.jpg" class="banner-image" alt="Halloween Cho Kẹo Hay Bị Ghẹo" />
+              </div>
+              <!-- Slide 3: Tính Năng Mới Namecard (Sau 30/11/2026 sẽ không hiển thị) -->
+              <div class="banner-slide" data-banner-id="namecard" data-index="2">
+                <img src="public/assets/banner-namecard.jpg" class="banner-image" alt="Tính Năng Mới Namecard" />
+              </div>
+            </div>
+            <!-- Floating Navigation Controls ở góc dưới bên phải -->
+            <div class="banner-floating-controls" id="bannerFloatingControls">
+              <div class="banner-dots" id="bannerDotsContainer"></div>
+              <span class="banner-counter-badge" id="bannerCounterBadge">1 / 3</span>
             </div>
           </div>
         </div>
