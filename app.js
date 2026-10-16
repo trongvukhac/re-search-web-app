@@ -9164,9 +9164,6 @@ function initHomeBannerStack() {
       bannerTrack.style.transform = `translateX(-${cur * 100}%)`;
 
       renderDots(totalMobileSlides, cur);
-      $$("#bannerStackCard .banner-counter-badge").forEach((b) => {
-        b.textContent = `${cur + 1} / ${totalMobileSlides}`;
-      });
     } else {
       const cur = ((homeBannerState.activeBannerIndex % totalBanners) + totalBanners) % totalBanners;
       homeBannerState.activeBannerIndex = cur;
@@ -9175,9 +9172,6 @@ function initHomeBannerStack() {
       bannerTrack.style.transform = `translateX(-${cur * 100}%)`;
 
       renderDots(totalBanners, cur);
-      $$("#bannerStackCard .banner-counter-badge").forEach((b) => {
-        b.textContent = `${cur + 1} / ${totalBanners}`;
-      });
     }
   };
 
