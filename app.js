@@ -9019,7 +9019,7 @@ const HOME_BANNERS_CONFIG = [
   {
     id: "women-day",
     title: "Ngày Phụ Nữ Việt Nam 20/10",
-    image: "public/assets/banner-women-day.jpg",
+    image: "public/assets/banner-women-day.jpg?v=20261016_2",
     // sau 21/11/2026 sẽ không hiển thị nữa
     expiresAt: new Date("2026-11-21T23:59:59+07:00").getTime(),
     action: () => {
