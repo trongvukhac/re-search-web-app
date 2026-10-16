@@ -16,7 +16,7 @@
     <script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-    <link rel="stylesheet" href="styles.css?v=82" />
+    <link rel="stylesheet" href="styles.css?v=83" />
   </head>
   <body>
     <dialog
@@ -230,7 +230,7 @@
         <!-- KHU VỰC LIÊN KẾT ĐẤU TRƯỜNG ARENA & NGĂN XẾP BANNER THÔNG BÁO -->
         <div id="homeShowcaseRow" class="home-showcase-row">
           <!-- CỘT TRÁI: MODAL ĐƯỜNG DẪN ARENA -->
-          <div id="weeklyCompetitionModule" class="weekly-competition-card" style="display: none;" onclick="go('arena')">
+          <div id="weeklyCompetitionModule" class="weekly-competition-card" onclick="if (window.handleHomeArenaClick) window.handleHomeArenaClick(event); else go('arena')">
             <div class="comp-card-glow"></div>
             <div class="comp-card-content">
               <div class="comp-left">

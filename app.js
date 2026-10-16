@@ -9012,6 +9012,353 @@ initStudyLoungeEvents();
 initMobileNavScrollHandler();
 initPostDetailNavScrollHandler();
 
+// =========================================================================
+// HOME SHOWCASE: ROTATING BANNER STACK & ARENA CARD (15s Auto-Rotate & Swipe)
+// =========================================================================
+const HOME_BANNERS_CONFIG = [
+  {
+    id: "women-day",
+    title: "Ngày Phụ Nữ Việt Nam 20/10",
+    image: "public/assets/banner-women-day.jpg",
+    // sau 21/11/2026 sẽ không hiển thị nữa
+    expiresAt: new Date("2026-11-21T23:59:59+07:00").getTime(),
+    action: () => {
+      if (typeof openNamecardModal === "function") openNamecardModal();
+      else toast("Sự kiện Ngày Phụ nữ Việt Nam 20/10!");
+    }
+  },
+  {
+    id: "halloween",
+    title: "Halloween — Cho Kẹo Hay Bị Ghẹo",
+    image: "public/assets/banner-halloween.jpg",
+    // sau 1/11/2026 sẽ không hiển thị nữa
+    expiresAt: new Date("2026-11-01T23:59:59+07:00").getTime(),
+    action: () => {
+      if (typeof openNamecardModal === "function") openNamecardModal();
+      else toast("Sự kiện Halloween Bữa tiệc ma mị!");
+    }
+  },
+  {
+    id: "namecard",
+    title: "Tính năng mới Namecard",
+    image: "public/assets/banner-namecard.jpg",
+    // sau 30/11/2026 sẽ không hiển thị nữa
+    expiresAt: new Date("2026-11-30T23:59:59+07:00").getTime(),
+    action: () => {
+      if (typeof openNamecardModal === "function") openNamecardModal();
+    }
+  }
+];
+
+let homeBannerState = {
+  activeBannerIndex: 0,
+  mobileActiveIndex: 0, // 0 = Modal Arena, 1..N = Banners
+  intervalMs: 15000,
+  startTime: Date.now(),
+  rafId: null,
+  isInitialized: false,
+};
+
+function getActiveHomeBanners() {
+  const now = Date.now();
+  return HOME_BANNERS_CONFIG.filter((b) => !b.expiresAt || now <= b.expiresAt);
+}
+
+function initHomeBannerStack() {
+  const stackCard = $("#bannerStackCard");
+  const showcaseRow = $("#homeShowcaseRow");
+  const arenaCard = $("#weeklyCompetitionModule");
+  if (!stackCard || !showcaseRow) return;
+
+  const activeBanners = getActiveHomeBanners();
+  const totalBanners = activeBanners.length;
+
+  // Nếu không còn banner nào còn hạn -> ẩn banner stack và mở rộng card Arena
+  if (totalBanners === 0) {
+    stackCard.style.display = "none";
+    if (arenaCard) {
+      if (arenaCard.parentElement !== showcaseRow) {
+        showcaseRow.insertBefore(arenaCard, showcaseRow.firstChild);
+      }
+      arenaCard.style.display = "flex";
+      arenaCard.style.width = "100%";
+    }
+    if (homeBannerState.rafId) {
+      cancelAnimationFrame(homeBannerState.rafId);
+      homeBannerState.rafId = null;
+    }
+    return;
+  }
+
+  const bannerTrack = $("#bannerTrack");
+  if (!bannerTrack) return;
+
+  // Render động các slide banner (bảo tồn nguyên vẹn #weeklyCompetitionModule)
+  bannerTrack.querySelectorAll(".banner-slide").forEach((el) => el.remove());
+  activeBanners.forEach((b, idx) => {
+    const slide = document.createElement("div");
+    slide.className = "banner-slide";
+    slide.dataset.bannerId = b.id;
+    slide.dataset.index = idx;
+    slide.innerHTML = `<img src="${b.image}" class="banner-image" alt="${escapeHTML(b.title)}" />`;
+    slide.onclick = (e) => {
+      if (Math.abs(diffX) > 10) return;
+      if (b && typeof b.action === "function") b.action();
+    };
+    bannerTrack.appendChild(slide);
+  });
+
+  const syncLayoutAndTrack = () => {
+    const isMobile = window.innerWidth <= 768;
+    if (isMobile) {
+      // Mobile: đưa card Arena vào làm slide đầu tiên trong bannerTrack (ngăn xếp hợp nhất)
+      if (arenaCard && arenaCard.parentElement !== bannerTrack) {
+        bannerTrack.insertBefore(arenaCard, bannerTrack.firstChild);
+      }
+      if (arenaCard) arenaCard.style.display = "flex";
+      stackCard.style.display = "block";
+    } else {
+      // Desktop: đưa card Arena về lại cột bên trái của showcaseRow
+      if (arenaCard && arenaCard.parentElement !== showcaseRow) {
+        showcaseRow.insertBefore(arenaCard, stackCard);
+      }
+      if (arenaCard) arenaCard.style.display = "flex";
+      stackCard.style.display = "block";
+    }
+  };
+
+  const renderDots = (count, activeIdx) => {
+    const dotContainers = $$("#bannerStackCard .banner-dots");
+    dotContainers.forEach((container) => {
+      if (container.children.length !== count) {
+        container.innerHTML = "";
+        for (let i = 0; i < count; i++) {
+          const dot = document.createElement("div");
+          dot.className = `banner-dot ${i === activeIdx ? "active" : ""}`;
+          dot.setAttribute("role", "button");
+          dot.setAttribute("aria-label", `Slide ${i + 1}`);
+          dot.onclick = (e) => {
+            e.stopPropagation();
+            goToSlide(i);
+          };
+          container.appendChild(dot);
+        }
+      } else {
+        Array.from(container.children).forEach((d, i) => {
+          d.classList.toggle("active", i === activeIdx);
+        });
+      }
+    });
+  };
+
+  const updateDisplay = () => {
+    const isMobile = window.innerWidth <= 768;
+    syncLayoutAndTrack();
+
+    if (isMobile) {
+      const totalMobileSlides = totalBanners + 1; // 0 = Arena, 1..totalBanners = Banners
+      const cur = ((homeBannerState.mobileActiveIndex % totalMobileSlides) + totalMobileSlides) % totalMobileSlides;
+      homeBannerState.mobileActiveIndex = cur;
+
+      bannerTrack.style.transition = "transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1)";
+      bannerTrack.style.transform = `translateX(-${cur * 100}%)`;
+
+      renderDots(totalMobileSlides, cur);
+      $$("#bannerStackCard .banner-counter-badge").forEach((b) => {
+        b.textContent = `${cur + 1} / ${totalMobileSlides}`;
+      });
+    } else {
+      const cur = ((homeBannerState.activeBannerIndex % totalBanners) + totalBanners) % totalBanners;
+      homeBannerState.activeBannerIndex = cur;
+
+      bannerTrack.style.transition = "transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1)";
+      bannerTrack.style.transform = `translateX(-${cur * 100}%)`;
+
+      renderDots(totalBanners, cur);
+      $$("#bannerStackCard .banner-counter-badge").forEach((b) => {
+        b.textContent = `${cur + 1} / ${totalBanners}`;
+      });
+    }
+  };
+
+  const goToSlide = (idx) => {
+    const isMobile = window.innerWidth <= 768;
+    if (isMobile) {
+      const totalMobileSlides = totalBanners + 1;
+      homeBannerState.mobileActiveIndex = ((idx % totalMobileSlides) + totalMobileSlides) % totalMobileSlides;
+    } else {
+      homeBannerState.activeBannerIndex = ((idx % totalBanners) + totalBanners) % totalBanners;
+    }
+    updateDisplay();
+    resetHomeBannerTimer();
+  };
+
+  const nextBanner = () => {
+    const isMobile = window.innerWidth <= 768;
+    if (isMobile) {
+      const totalMobileSlides = totalBanners + 1;
+      homeBannerState.mobileActiveIndex = (homeBannerState.mobileActiveIndex + 1) % totalMobileSlides;
+    } else {
+      homeBannerState.activeBannerIndex = (homeBannerState.activeBannerIndex + 1) % totalBanners;
+    }
+    updateDisplay();
+    resetHomeBannerTimer();
+  };
+
+  const prevBanner = () => {
+    const isMobile = window.innerWidth <= 768;
+    if (isMobile) {
+      const totalMobileSlides = totalBanners + 1;
+      homeBannerState.mobileActiveIndex = (homeBannerState.mobileActiveIndex - 1 + totalMobileSlides) % totalMobileSlides;
+    } else {
+      homeBannerState.activeBannerIndex = (homeBannerState.activeBannerIndex - 1 + totalBanners) % totalBanners;
+    }
+    updateDisplay();
+    resetHomeBannerTimer();
+  };
+
+  window.setHomeBannerIndex = (idx) => {
+    goToSlide(idx);
+  };
+
+  window.handleHomeArenaClick = (e) => {
+    if (Math.abs(diffX) > 10) {
+      e.preventDefault();
+      e.stopPropagation();
+      return;
+    }
+    go("arena");
+  };
+
+  const timerBar = $("#bannerTimerBar");
+  const stepTimer = () => {
+    // Chỉ chạy timer khi đang ở trang chủ (hỗ trợ cả trường hợp currentActiveRoute là null lúc mới tải trang)
+    const homeView = $("#homeView");
+    const isHome = (!currentActiveRoute || currentActiveRoute === "home") && (!homeView || homeView.classList.contains("active") || homeView.style.display !== "none");
+    if (!isHome) {
+      homeBannerState.rafId = requestAnimationFrame(stepTimer);
+      return;
+    }
+
+    const elapsed = Date.now() - homeBannerState.startTime;
+    const progress = Math.min(elapsed / homeBannerState.intervalMs, 1);
+    if (timerBar) timerBar.style.width = (progress * 100) + "%";
+
+    if (progress >= 1) {
+      nextBanner();
+      resetHomeBannerTimer();
+    } else {
+      homeBannerState.rafId = requestAnimationFrame(stepTimer);
+    }
+  };
+
+  window.resetHomeBannerTimer = () => {
+    if (homeBannerState.rafId) cancelAnimationFrame(homeBannerState.rafId);
+    homeBannerState.startTime = Date.now();
+    if (timerBar) timerBar.style.width = "0%";
+    homeBannerState.rafId = requestAnimationFrame(stepTimer);
+  };
+
+  // Kéo ngang chuột & Vuốt cảm ứng với hiệu ứng trượt tương tác thời gian thực
+  let startX = 0;
+  let startY = 0;
+  let isDragging = false;
+  let diffX = 0;
+  let isHorizontalSwipe = null;
+
+  const onDragStart = (clientX, clientY) => {
+    isDragging = true;
+    startX = clientX;
+    startY = clientY || 0;
+    diffX = 0;
+    isHorizontalSwipe = null;
+    if (bannerTrack) bannerTrack.style.transition = "none";
+  };
+
+  const onDragMove = (clientX, clientY) => {
+    if (!isDragging) return;
+    const isMobile = window.innerWidth <= 768;
+    const currentIdx = isMobile ? homeBannerState.mobileActiveIndex : homeBannerState.activeBannerIndex;
+
+    const deltaX = clientX - startX;
+    const deltaY = clientY ? clientY - startY : 0;
+
+    if (isHorizontalSwipe === null && clientY !== undefined) {
+      if (Math.abs(deltaX) > 8 || Math.abs(deltaY) > 8) {
+        isHorizontalSwipe = Math.abs(deltaX) > Math.abs(deltaY);
+      }
+    }
+
+    if (isHorizontalSwipe === false) return; // Đang cuộn trang theo chiều dọc
+
+    diffX = deltaX;
+    if (bannerTrack) {
+      bannerTrack.style.transform = `translateX(calc(-${currentIdx * 100}% + ${diffX}px))`;
+    }
+  };
+
+  const onDragEnd = () => {
+    if (!isDragging) return;
+    isDragging = false;
+    const SWIPE_THRESHOLD = 35;
+    if (diffX < -SWIPE_THRESHOLD) {
+      nextBanner();
+    } else if (diffX > SWIPE_THRESHOLD) {
+      prevBanner();
+    } else {
+      updateDisplay();
+    }
+    if (Math.abs(diffX) > 15) {
+      resetHomeBannerTimer();
+    }
+    setTimeout(() => {
+      diffX = 0;
+      isHorizontalSwipe = null;
+    }, 60);
+  };
+
+  if (!homeBannerState.isInitialized) {
+    homeBannerState.isInitialized = true;
+
+    // Chuột kéo trên máy tính
+    stackCard.addEventListener("mousedown", (e) => {
+      if (e.target.closest("button") || e.target.closest(".banner-dot") || e.target.closest("a")) return;
+      e.preventDefault();
+      onDragStart(e.clientX, e.clientY);
+    });
+    window.addEventListener("mousemove", (e) => onDragMove(e.clientX, e.clientY));
+    window.addEventListener("mouseup", () => onDragEnd());
+
+    // Cảm ứng vuốt trên mobile
+    stackCard.addEventListener("touchstart", (e) => {
+      if (e.target.closest("button") || e.target.closest(".banner-dot") || e.target.closest("a")) return;
+      onDragStart(e.touches[0].clientX, e.touches[0].clientY);
+    }, { passive: true });
+
+    stackCard.addEventListener("touchmove", (e) => {
+      if (!isDragging) return;
+      const clientX = e.touches[0].clientX;
+      const clientY = e.touches[0].clientY;
+      onDragMove(clientX, clientY);
+      if (isHorizontalSwipe && e.cancelable) {
+        e.preventDefault();
+      }
+    }, { passive: false });
+
+    stackCard.addEventListener("touchend", () => onDragEnd());
+    stackCard.addEventListener("touchcancel", () => onDragEnd());
+
+    window.addEventListener("resize", () => {
+      updateDisplay();
+    });
+  }
+
+  updateDisplay();
+  resetHomeBannerTimer();
+}
+
+window.initHomeBannerStack = initHomeBannerStack;
+
 renderHome();
 renderPosts();
 renderDocuments();
@@ -9380,285 +9727,6 @@ function renderWeeklyCompetitionCard(raw) {
   updateHomeCountdown();
   compState.homeTimerInterval = setInterval(updateHomeCountdown, 1000);
 }
-
-// =========================================================================
-// HOME SHOWCASE: ROTATING BANNER STACK & ARENA CARD (15s Auto-Rotate & Swipe)
-// =========================================================================
-const HOME_BANNERS_CONFIG = [
-  {
-    id: "women-day",
-    title: "Ngày Phụ Nữ Việt Nam 20/10",
-    image: "public/assets/banner-women-day.jpg",
-    // sau 21/11/2026 sẽ không hiển thị nữa
-    expiresAt: new Date("2026-11-21T23:59:59+07:00").getTime(),
-    action: () => {
-      if (typeof openNamecardModal === "function") openNamecardModal();
-      else toast("Sự kiện Ngày Phụ nữ Việt Nam 20/10!");
-    }
-  },
-  {
-    id: "halloween",
-    title: "Halloween — Cho Kẹo Hay Bị Ghẹo",
-    image: "public/assets/banner-halloween.jpg",
-    // sau 1/11/2026 sẽ không hiển thị nữa
-    expiresAt: new Date("2026-11-01T23:59:59+07:00").getTime(),
-    action: () => {
-      if (typeof openNamecardModal === "function") openNamecardModal();
-      else toast("Sự kiện Halloween Bữa tiệc ma mị!");
-    }
-  },
-  {
-    id: "namecard",
-    title: "Tính năng mới Namecard",
-    image: "public/assets/banner-namecard.jpg",
-    // sau 30/11/2026 sẽ không hiển thị nữa
-    expiresAt: new Date("2026-11-30T23:59:59+07:00").getTime(),
-    action: () => {
-      if (typeof openNamecardModal === "function") openNamecardModal();
-    }
-  }
-];
-
-let homeBannerState = {
-  activeBannerIndex: 0,
-  mobileActiveIndex: 0, // 0 = Modal Arena, 1..N = Banners
-  intervalMs: 15000,
-  startTime: Date.now(),
-  rafId: null,
-  isInitialized: false,
-};
-
-function getActiveHomeBanners() {
-  const now = Date.now();
-  return HOME_BANNERS_CONFIG.filter((b) => !b.expiresAt || now <= b.expiresAt);
-}
-
-function initHomeBannerStack() {
-  const stackCard = $("#bannerStackCard");
-  const showcaseRow = $("#homeShowcaseRow");
-  if (!stackCard || !showcaseRow) return;
-
-  const activeBanners = getActiveHomeBanners();
-  const totalBanners = activeBanners.length;
-
-  // Nếu không còn banner nào còn hạn -> ẩn banner stack và mở rộng card Arena
-  if (totalBanners === 0) {
-    stackCard.style.display = "none";
-    showcaseRow.classList.remove("is-mobile-stack");
-    const arenaCard = $("#weeklyCompetitionModule");
-    if (arenaCard) {
-      arenaCard.style.display = "block";
-      arenaCard.style.flex = "1 1 100%";
-    }
-    if (homeBannerState.rafId) {
-      cancelAnimationFrame(homeBannerState.rafId);
-      homeBannerState.rafId = null;
-    }
-    return;
-  }
-
-  // Render động các slide banner dựa trên danh sách banner còn hiệu lực
-  const bannerTrack = $("#bannerTrack");
-  if (bannerTrack) {
-    bannerTrack.innerHTML = activeBanners.map((b, idx) => `
-      <div class="banner-slide ${idx === homeBannerState.activeBannerIndex ? "active" : ""}" data-banner-id="${b.id}" data-index="${idx}">
-        <img src="${b.image}" class="banner-image" alt="${escapeHTML(b.title)}" />
-      </div>
-    `).join("");
-  }
-
-  // Render các chấm chỉ mục (indicators)
-  const dotContainers = $$("#bannerStackCard .banner-dots");
-  dotContainers.forEach((container) => {
-    container.innerHTML = "";
-    for (let i = 0; i < totalBanners; i++) {
-      const dot = document.createElement("div");
-      dot.className = `banner-dot ${i === homeBannerState.activeBannerIndex ? "active" : ""}`;
-      dot.setAttribute("role", "button");
-      dot.setAttribute("aria-label", `Banner ${i + 1}`);
-      dot.onclick = (e) => {
-        e.stopPropagation();
-        setHomeBannerIndex(i);
-        resetHomeBannerTimer();
-      };
-      container.appendChild(dot);
-    }
-  });
-
-  const updateDisplay = () => {
-    const isMobile = window.innerWidth <= 768;
-    const arenaCard = $("#weeklyCompetitionModule");
-    const slides = $$("#bannerStackCard .banner-slide");
-
-    if (isMobile) {
-      showcaseRow.classList.add("is-mobile-stack");
-      const totalMobileSlides = totalBanners + 1; // 0 = Arena, 1..totalBanners = Banners
-      const cur = homeBannerState.mobileActiveIndex % totalMobileSlides;
-
-      if (cur === 0) {
-        if (arenaCard) arenaCard.style.display = "block";
-        stackCard.style.display = "none";
-      } else {
-        if (arenaCard) arenaCard.style.display = "none";
-        stackCard.style.display = "block";
-        const bannerIdx = cur - 1;
-        slides.forEach((sl, idx) => {
-          sl.classList.toggle("active", idx === bannerIdx);
-          sl.classList.toggle("prev", idx < bannerIdx);
-        });
-      }
-    } else {
-      showcaseRow.classList.remove("is-mobile-stack");
-      if (arenaCard) arenaCard.style.display = "block";
-      stackCard.style.display = "block";
-
-      slides.forEach((sl, idx) => {
-        sl.classList.toggle("active", idx === homeBannerState.activeBannerIndex);
-        sl.classList.toggle("prev", idx < homeBannerState.activeBannerIndex);
-      });
-    }
-
-    // Cập nhật dots & badge đếm
-    $$("#bannerStackCard .banner-dots").forEach((c) => {
-      const dots = c.querySelectorAll(".banner-dot");
-      dots.forEach((d, idx) => {
-        d.classList.toggle("active", idx === homeBannerState.activeBannerIndex);
-      });
-    });
-
-    $$("#bannerStackCard .banner-counter-badge").forEach((b) => {
-      b.textContent = `${homeBannerState.activeBannerIndex + 1} / ${totalBanners}`;
-    });
-  };
-
-  window.setHomeBannerIndex = (idx) => {
-    homeBannerState.activeBannerIndex = (idx + totalBanners) % totalBanners;
-    homeBannerState.mobileActiveIndex = (homeBannerState.activeBannerIndex + 1) % (totalBanners + 1);
-    updateDisplay();
-  };
-
-  const nextBanner = () => {
-    const isMobile = window.innerWidth <= 768;
-    if (isMobile) {
-      const totalMobileSlides = totalBanners + 1;
-      homeBannerState.mobileActiveIndex = (homeBannerState.mobileActiveIndex + 1) % totalMobileSlides;
-      if (homeBannerState.mobileActiveIndex > 0) {
-        homeBannerState.activeBannerIndex = homeBannerState.mobileActiveIndex - 1;
-      }
-    } else {
-      homeBannerState.activeBannerIndex = (homeBannerState.activeBannerIndex + 1) % totalBanners;
-    }
-    updateDisplay();
-  };
-
-  const prevBanner = () => {
-    const isMobile = window.innerWidth <= 768;
-    if (isMobile) {
-      const totalMobileSlides = totalBanners + 1;
-      homeBannerState.mobileActiveIndex = (homeBannerState.mobileActiveIndex - 1 + totalMobileSlides) % totalMobileSlides;
-      if (homeBannerState.mobileActiveIndex > 0) {
-        homeBannerState.activeBannerIndex = homeBannerState.mobileActiveIndex - 1;
-      }
-    } else {
-      homeBannerState.activeBannerIndex = (homeBannerState.activeBannerIndex - 1 + totalBanners) % totalBanners;
-    }
-    updateDisplay();
-  };
-
-  const timerBar = $("#bannerTimerBar");
-  const stepTimer = () => {
-    // Chỉ chạy timer khi đang ở trang chủ
-    if (typeof currentActiveRoute !== "undefined" && currentActiveRoute !== "home") {
-      homeBannerState.rafId = requestAnimationFrame(stepTimer);
-      return;
-    }
-
-    const elapsed = Date.now() - homeBannerState.startTime;
-    const progress = Math.min(elapsed / homeBannerState.intervalMs, 1);
-    if (timerBar) timerBar.style.width = (progress * 100) + "%";
-
-    if (progress >= 1) {
-      nextBanner();
-      resetHomeBannerTimer();
-    } else {
-      homeBannerState.rafId = requestAnimationFrame(stepTimer);
-    }
-  };
-
-  window.resetHomeBannerTimer = () => {
-    if (homeBannerState.rafId) cancelAnimationFrame(homeBannerState.rafId);
-    homeBannerState.startTime = Date.now();
-    homeBannerState.rafId = requestAnimationFrame(stepTimer);
-  };
-
-  // Kéo ngang chuột & Vuốt cảm ứng với cơ chế Reset bộ đếm 15s
-  let startX = 0;
-  let isDragging = false;
-  let diffX = 0;
-
-  const onDragStart = (clientX) => {
-    isDragging = true;
-    startX = clientX;
-    diffX = 0;
-  };
-  const onDragMove = (clientX) => {
-    if (!isDragging) return;
-    diffX = clientX - startX;
-  };
-  const onDragEnd = () => {
-    if (!isDragging) return;
-    isDragging = false;
-    const SWIPE_THRESHOLD = 35;
-    if (diffX < -SWIPE_THRESHOLD) {
-      nextBanner();
-      resetHomeBannerTimer();
-    } else if (diffX > SWIPE_THRESHOLD) {
-      prevBanner();
-      resetHomeBannerTimer();
-    }
-    diffX = 0;
-  };
-
-  if (!homeBannerState.isInitialized) {
-    homeBannerState.isInitialized = true;
-
-    // Gắn sự kiện vuốt kéo vào showcaseRow
-    showcaseRow.addEventListener("mousedown", (e) => {
-      if (e.target.closest("button") || e.target.closest("a")) return;
-      onDragStart(e.clientX);
-    });
-    window.addEventListener("mousemove", (e) => onDragMove(e.clientX));
-    window.addEventListener("mouseup", () => onDragEnd());
-
-    showcaseRow.addEventListener("touchstart", (e) => {
-      if (e.target.closest("button") || e.target.closest("a")) return;
-      onDragStart(e.touches[0].clientX);
-    }, { passive: true });
-    showcaseRow.addEventListener("touchmove", (e) => onDragMove(e.touches[0].clientX), { passive: true });
-    showcaseRow.addEventListener("touchend", () => onDragEnd());
-
-    window.addEventListener("resize", () => {
-      updateDisplay();
-    });
-  }
-
-  // Click banner actions
-  const slides = $$("#bannerStackCard .banner-slide");
-  slides.forEach((sl, idx) => {
-    sl.onclick = (e) => {
-      if (e.target.closest(".banner-dots") || Math.abs(diffX) > 10) return;
-      const b = activeBanners[idx];
-      if (b && typeof b.action === "function") {
-        b.action();
-      }
-    };
-  });
-
-  updateDisplay();
-  resetHomeBannerTimer();
-}
-
-window.initHomeBannerStack = initHomeBannerStack;
 
 async function onEnterArena() {
   const user = session || (typeof window !== "undefined" && window.session);

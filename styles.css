@@ -7053,30 +7053,34 @@ body.study-zen-fullscreen .study-main-col {
    ========================================================================= */
 
 .home-showcase-row {
-  display: flex;
-  align-items: stretch;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 430px;
   gap: 20px;
+  height: 240px;
+  max-height: 240px;
   margin: 0 0 24px 0;
   width: 100%;
+  box-sizing: border-box;
 }
 
 .weekly-competition-card {
   position: relative;
-  flex: 1 1 0;
-  min-width: 0;
+  height: 240px;
+  max-height: 240px;
   min-height: 240px;
   margin: 0;
   border-radius: 16px;
-  background: linear-gradient(135deg, #0f3327 0%, #1a523f 50%, #0d281f 100%);
+  background: linear-gradient(135deg, #09281e 0%, #124233 50%, #0c271e 100%);
   color: #fff;
-  padding: 22px 24px;
+  padding: 18px 24px;
   cursor: pointer;
   overflow: hidden;
-  box-shadow: 0 12px 32px rgba(15, 51, 39, 0.22), 0 2px 6px rgba(0,0,0,0.08);
+  box-shadow: 0 10px 28px rgba(9, 40, 30, 0.25), 0 2px 6px rgba(0,0,0,0.08);
   border: 1px solid rgba(255, 255, 255, 0.12);
   display: flex;
   flex-direction: column;
   justify-content: space-between;
+  box-sizing: border-box;
   transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease, border-color 0.25s ease;
 }
 
@@ -7088,7 +7092,49 @@ body.study-zen-fullscreen .study-main-col {
   justify-content: space-between;
   height: 100%;
   width: 100%;
-  gap: 14px;
+  gap: 0;
+  text-align: left;
+  box-sizing: border-box;
+}
+
+.weekly-competition-card .comp-left {
+  flex: 0 0 auto !important;
+  width: 100%;
+  text-align: left;
+}
+
+.weekly-competition-card .comp-badge-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+  text-align: left;
+}
+
+.weekly-competition-card .comp-topic-title {
+  margin: 0 0 3px 0;
+  font-size: 19px;
+  font-weight: 800;
+  color: #ffffff;
+  line-height: 1.3;
+  letter-spacing: -0.2px;
+  text-align: left;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.weekly-competition-card .comp-phase-subtitle {
+  margin: 0;
+  font-size: 13px;
+  color: #a7d3c0;
+  line-height: 1.35;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .arena-portal-tag {
@@ -7106,20 +7152,70 @@ body.study-zen-fullscreen .study-main-col {
   justify-content: space-between;
   width: 100%;
   padding-top: 12px;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
   gap: 16px;
+  margin-top: auto;
+  text-align: left;
 }
 
 .weekly-competition-card .comp-timer-box {
+  text-align: left !important;
+  border-right: none !important;
+  padding-right: 0 !important;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+}
+
+.weekly-competition-card .comp-timer-label {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.7);
+  margin-bottom: 0;
+  font-weight: 500;
   text-align: left;
-  border-right: none;
-  padding-right: 0;
+}
+
+.weekly-competition-card .comp-countdown {
+  font-family: "Unbounded", sans-serif;
+  font-size: 21px;
+  font-weight: 800;
+  color: #fef08a;
+  letter-spacing: 0.5px;
+  line-height: 1;
+  text-align: left;
 }
 
 .weekly-competition-card .comp-action-box {
+  display: flex;
   flex-direction: row;
   align-items: center;
   gap: 12px;
+}
+
+.weekly-competition-card .comp-user-status {
+  font-size: 11.5px;
+  color: #d1fae5;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.weekly-competition-card .comp-cta-button {
+  height: 38px;
+  padding: 0 18px;
+  border-radius: 9999px;
+  font-weight: 700;
+  font-size: 13.5px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: none;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s ease;
 }
 
 .weekly-competition-card:hover {
@@ -7136,15 +7232,18 @@ body.study-zen-fullscreen .study-main-col {
   width: 430px;
   min-width: 430px;
   height: 240px;
+  max-height: 240px;
   border-radius: 16px;
   overflow: hidden;
   background: #0d1e18;
   border: 1px solid rgba(255, 255, 255, 0.12);
-  box-shadow: 0 12px 32px rgba(15, 51, 39, 0.22), 0 2px 6px rgba(0,0,0,0.08);
+  box-shadow: 0 10px 28px rgba(10, 38, 28, 0.25), 0 2px 6px rgba(0,0,0,0.08);
   cursor: grab;
   user-select: none;
+  -webkit-user-select: none;
   touch-action: pan-y;
   flex-shrink: 0;
+  box-sizing: border-box;
 }
 
 .banner-stack-card:active {
@@ -7159,6 +7258,7 @@ body.study-zen-fullscreen .study-main-col {
   width: 0%;
   background: linear-gradient(90deg, #10b981 0%, #eab308 100%);
   z-index: 20;
+  pointer-events: none;
   transition: width 0.1s linear;
 }
 
@@ -7169,50 +7269,50 @@ body.study-zen-fullscreen .study-main-col {
   z-index: 10;
   background: rgba(0, 0, 0, 0.55);
   backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   padding: 3px 8px;
   border-radius: 12px;
   font-size: 10px;
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.8);
+  color: rgba(255, 255, 255, 0.85);
   pointer-events: none;
   border: 1px solid rgba(255, 255, 255, 0.12);
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .banner-track {
-  position: relative;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
   width: 100%;
   height: 100%;
+  transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+  will-change: transform;
 }
 
 .banner-slide {
-  position: absolute;
-  inset: 0;
   width: 100%;
+  min-width: 100%;
   height: 100%;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.4s ease, transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
-  transform: scale(0.96) translateX(30px);
+  flex-shrink: 0;
+  position: relative;
   cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  overflow: hidden;
 }
 
-.banner-slide.active {
-  opacity: 1;
-  pointer-events: auto;
-  transform: scale(1) translateX(0);
-  z-index: 2;
-}
-
-.banner-slide.prev {
-  opacity: 0;
-  transform: scale(0.96) translateX(-30px);
-}
-
-.banner-image {
+.banner-image,
+.banner-stack-card img {
   width: 100%;
   height: 100%;
   object-fit: cover;
   display: block;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-user-drag: none;
+  pointer-events: none;
 }
 
 .banner-overlay {
@@ -7356,14 +7456,17 @@ body.study-zen-fullscreen .study-main-col {
   position: relative;
   z-index: 2;
   display: flex;
-  align-items: center;
+  flex-direction: column;
   justify-content: space-between;
-  gap: 24px;
-  flex-wrap: wrap;
+  height: 100%;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .comp-left {
-  flex: 1 1 340px;
+  flex: 0 0 auto !important;
+  width: 100%;
+  text-align: left;
 }
 
 .comp-badge-row {
@@ -7466,37 +7569,49 @@ body.study-zen-fullscreen .study-main-col {
 .comp-right {
   display: flex;
   align-items: center;
-  gap: 20px;
-  flex-wrap: wrap;
+  justify-content: space-between;
+  width: 100%;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  gap: 16px;
+  margin-top: auto;
+  text-align: left;
 }
 
 .comp-timer-box {
-  text-align: right;
-  padding-right: 16px;
-  border-right: 1px solid rgba(255, 255, 255, 0.15);
+  text-align: left !important;
+  border-right: none !important;
+  padding-right: 0 !important;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
 }
 
 .comp-timer-label {
   display: block;
   font-size: 11px;
-  color: rgba(255, 255, 255, 0.65);
-  margin-bottom: 2px;
+  color: rgba(255, 255, 255, 0.7);
+  margin-bottom: 0;
   font-weight: 500;
+  text-align: left;
 }
 
 .comp-countdown {
   font-family: "Unbounded", sans-serif;
-  font-size: 20px;
+  font-size: 21px;
   font-weight: 800;
   color: #fef08a;
   letter-spacing: 0.5px;
+  line-height: 1;
+  text-align: left;
 }
 
 .comp-action-box {
   display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 6px;
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
 }
 
 .comp-user-status {
@@ -10394,38 +10509,69 @@ dialog.quiz-arena-modal,
     width: 100%;
     margin-top: 10px;
     margin-bottom: 14px;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
+    display: block;
+    height: auto;
+    max-height: none;
   }
 
   .banner-stack-card {
     width: 100%;
     min-width: 100%;
-    height: 210px;
-    border-radius: 12px;
+    max-width: 100%;
+    height: 228px;
+    max-height: 228px;
+    min-height: 228px;
+    border-radius: 14px;
+    overflow: hidden;
+    position: relative;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.22);
+  }
+
+  .banner-drag-hint {
+    display: none !important;
+  }
+
+  .banner-floating-controls {
+    top: 10px;
+    bottom: auto;
+    right: 12px;
+    padding: 3px 8px;
+    gap: 6px;
   }
 
   .weekly-competition-card {
-    padding: 12px 14px;
+    padding: 13px 16px 12px;
     margin: 0;
-    min-height: 210px;
-    border-radius: 12px;
+    width: 100%;
+    min-width: 100%;
+    max-width: 100%;
+    height: 228px;
+    max-height: 228px;
+    min-height: 228px;
+    border-radius: 14px;
+    border: none;
+    box-shadow: none;
+    flex-shrink: 0;
+    box-sizing: border-box;
   }
   .comp-card-content {
     flex-direction: column;
     align-items: stretch;
     justify-content: space-between;
     height: 100%;
-    gap: 8px;
+    gap: 4px;
+    text-align: left;
   }
   .comp-left {
     flex: none;
     width: 100%;
+    text-align: left;
   }
   .comp-badge-row {
-    margin-bottom: 3px;
+    margin-bottom: 2px;
     gap: 6px;
+    padding-right: 90px;
+    box-sizing: border-box;
   }
   .comp-status-badge {
     padding: 2.5px 8px;
@@ -10435,50 +10581,82 @@ dialog.quiz-arena-modal,
     font-size: 10px;
     padding: 2px 6px;
   }
+  .arena-portal-tag {
+    display: none !important;
+  }
   .comp-topic-title {
-    font-size: 14px;
+    font-size: 15px;
     line-height: 1.25;
     margin: 0 0 2px 0;
+    text-align: left;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
   }
   .comp-phase-subtitle {
     font-size: 11.5px;
     line-height: 1.25;
     margin: 0;
+    text-align: left;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
   .comp-right {
     display: flex;
     align-items: center;
     justify-content: space-between;
     width: 100%;
-    gap: 10px;
+    padding-top: 8px;
+    padding-right: 0 !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.12);
+    gap: 6px;
+    box-sizing: border-box;
   }
   .comp-timer-box {
-    text-align: left;
-    border-right: none;
-    padding-right: 0;
+    text-align: left !important;
+    border-right: none !important;
+    padding-right: 0 !important;
+    white-space: nowrap;
+    flex-shrink: 0;
   }
   .comp-timer-label {
-    font-size: 10px;
-    margin-bottom: 1px;
+    font-size: 9.5px;
+    margin-bottom: 0px;
     line-height: 1.2;
+    text-align: left;
+    white-space: nowrap;
+    display: block;
+    color: rgba(255, 255, 255, 0.7);
   }
   .comp-countdown {
-    font-size: 15px;
+    font-size: 16px;
     line-height: 1.1;
+    margin-top: 1px;
+    text-align: left;
+    white-space: nowrap;
   }
-  .comp-action-box {
-    align-items: flex-end;
+  .weekly-competition-card .comp-action-box {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: flex-end !important;
+    gap: 3px !important;
+    flex-shrink: 0;
+  }
+  .weekly-competition-card .comp-user-status {
+    font-size: 10px;
+    margin-bottom: 0;
     gap: 3px;
+    white-space: nowrap;
   }
-  .comp-user-status {
-    font-size: 11px;
-    margin-bottom: 2px;
-    gap: 6px;
-  }
-  .comp-cta-button {
-    font-size: 11.5px;
-    padding: 5px 12px;
-    border-radius: 8px;
+  .weekly-competition-card .comp-cta-button {
+    font-size: 11px !important;
+    padding: 0 12px !important;
+    border-radius: 9999px !important;
+    height: 28px !important;
+    white-space: nowrap;
   }
   .attempts-grid {
     grid-template-columns: repeat(2, 1fr);
