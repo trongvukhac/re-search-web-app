@@ -337,7 +337,10 @@ h1 em {
 }
 /* Streak Tier Avatar Frames & Background Colors */
 .avatar.avatar-tier-2 {
-  box-shadow: 0 0 0 2px #fff, 0 0 0 4px #f59f00, 0 0 10px rgba(245, 159, 0, 0.55);
+  background: linear-gradient(135deg, #f59f00 0%, #ffd700 60%, #fff5b2 100%) !important;
+  color: #fff !important;
+  box-shadow: 0 0 0 2px #fff, 0 0 0 4px #ffd700, 0 0 12px rgba(255, 204, 0, 0.7);
+  animation: pulseTier2 3s ease-in-out infinite;
 }
 .avatar.avatar-tier-3 {
   background: linear-gradient(135deg, #5f3dc4 0%, #7048e8 50%, #845ef7 100%) !important;
@@ -368,6 +371,10 @@ h1 em {
 @keyframes pulseTier3 {
   0%, 100% { box-shadow: 0 0 0 2px #fff, 0 0 0 4px #845ef7, 0 0 10px rgba(132, 94, 247, 0.5); }
   50% { box-shadow: 0 0 0 2px #fff, 0 0 0 5px #b197fc, 0 0 18px rgba(132, 94, 247, 0.85); }
+}
+@keyframes pulseTier2 {
+  0%, 100% { box-shadow: 0 0 0 2px #fff, 0 0 0 4px #ffd700, 0 0 10px rgba(255, 204, 0, 0.5); }
+  50% { box-shadow: 0 0 0 2px #fff, 0 0 0 6px #ffd700, 0 0 18px rgba(255, 215, 0, 0.85); }
 }
 @keyframes pulseTier4 {
   0%, 100% { box-shadow: 0 0 0 2px #fff, 0 0 0 4px #e03131, 0 0 12px rgba(224, 49, 49, 0.6); }
@@ -782,223 +789,205 @@ div.user-name-tier-5,
   outline-color: #b197fc !important;
 }
 
-/* Flame SVG & Animations */
+/* Flame SVG & Realistic Multi-directional Animations */
 .flame-svg {
   display: inline-block;
   vertical-align: middle;
-  filter: drop-shadow(0 2px 8px var(--flame-glow, rgba(47, 111, 78, 0.4)));
-  animation: flamePulseDance 2.2s ease-in-out infinite;
+  overflow: visible !important;
   transform-origin: 50% 92%;
+  filter: drop-shadow(0 2px 7px var(--flame-glow, rgba(47, 111, 78, 0.45)));
+  animation: flameRootSway 2.4s ease-in-out infinite alternate;
   cursor: pointer;
   transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 .flame-svg:hover {
-  transform: scale(1.15);
+  transform: scale(1.18);
 }
 
+/* 1. Root / Base Silhouette */
+.flame-outer-base,
 .flame-outer {
-  transform-origin: 50% 92%;
-  animation: flameLickOuter 1.8s ease-in-out infinite alternate;
+  transform-origin: 50% 95%;
+  animation: flameBasePulse 2s ease-in-out infinite alternate;
 }
 
-.flame-inner {
+/* 2. Left Tongue (uốn lượn hướng tây bắc, độc lập) */
+.flame-tongue-left {
+  transform-origin: 35% 85%;
+  animation: flameLeftFlicker 1.7s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite alternate;
+}
+
+/* 3. Right Tongue (uốn lượn hướng đông bắc, độc lập) */
+.flame-tongue-right {
+  transform-origin: 65% 85%;
+  animation: flameRightFlicker 1.9s cubic-bezier(0.45, 0.05, 0.55, 0.95) 0.3s infinite alternate;
+}
+
+/* 4. Center Main Tongue (vươn cao & uốn sóng) */
+.flame-tongue-center {
   transform-origin: 50% 90%;
-  animation: flameDanceInner 1.25s cubic-bezier(0.4, 0, 0.2, 1) infinite alternate;
+  animation: flameCenterDance 1.4s ease-in-out infinite alternate;
 }
 
+/* 5. Mid Layer (dòng đối lưu nhiệt nhanh hơn, tạo khối 3D) */
+.flame-mid {
+  transform-origin: 50% 90%;
+  animation: flameMidConvection 1.1s cubic-bezier(0.4, 0, 0.2, 1) infinite alternate;
+}
+
+/* 6. Core Heat (nhịp thở nhiệt phát sáng) */
+.flame-core,
+.flame-inner {
+  transform-origin: 50% 95%;
+  animation: flameCoreHeat 0.9s ease-in-out infinite alternate;
+}
+
+/* 7. Floating Embers (đốm lửa nhỏ bay lên) */
+.flame-ember,
 .flame-spark {
   transform-origin: center;
+  opacity: 0;
 }
+.flame-ember.ember-1,
 .flame-spark.spark-1 {
-  animation: sparkFly1 1.8s cubic-bezier(0.2, 0.8, 0.3, 1) infinite;
+  animation: emberFloatUp1 1.8s cubic-bezier(0.25, 0.46, 0.45, 0.94) infinite;
 }
+.flame-ember.ember-2,
 .flame-spark.spark-2 {
-  animation: sparkFly2 2.1s cubic-bezier(0.2, 0.8, 0.3, 1) 0.5s infinite;
+  animation: emberFloatUp2 2.2s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.6s infinite;
 }
+.flame-ember.ember-3,
 .flame-spark.spark-3 {
-  animation: sparkFly3 1.6s cubic-bezier(0.2, 0.8, 0.3, 1) 0.9s infinite;
+  animation: emberFloatUp3 1.9s cubic-bezier(0.25, 0.46, 0.45, 0.94) 1.1s infinite;
 }
+.flame-ember.ember-4,
 .flame-spark.spark-4 {
-  animation: sparkFly2 1.9s cubic-bezier(0.2, 0.8, 0.3, 1) 0.3s infinite;
+  animation: emberFloatUp1 2.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.3s infinite;
 }
+.flame-ember.ember-5,
 .flame-spark.spark-5 {
-  animation: sparkFly1 2.3s cubic-bezier(0.2, 0.8, 0.3, 1) 0.7s infinite;
+  animation: emberFloatUp2 1.6s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.9s infinite;
 }
 
-/* Star Glints / Sparkles (✦) */
+/* 8. Star Sparkles (✦) */
+.flame-sparkle,
 .flame-star {
   transform-box: fill-box;
   transform-origin: center;
-  filter: drop-shadow(0 0 3px #fff);
+  filter: drop-shadow(0 0 3px #ffffff);
 }
+.flame-sparkle.sparkle-1,
 .flame-star.star-1 {
-  animation: starShine 1.8s ease-in-out infinite;
+  animation: sparkleGlint 1.8s ease-in-out infinite;
 }
+.flame-sparkle.sparkle-2,
 .flame-star.star-2 {
-  animation: starShine 2.2s ease-in-out 0.8s infinite;
+  animation: sparkleGlint 2.1s ease-in-out 0.7s infinite;
 }
+.flame-sparkle.sparkle-3,
 .flame-star.star-3 {
-  animation: starShine 1.5s ease-in-out 0.4s infinite;
+  animation: sparkleGlint 1.5s ease-in-out 0.4s infinite;
 }
+.flame-sparkle.sparkle-mythic,
 .flame-star.star-mythic {
   filter: drop-shadow(0 0 4px #ffd43b) drop-shadow(0 0 8px #f783ac);
 }
 
+/* Tier Glows */
 .flame-svg.flame-tier-0 {
-  --flame-glow: rgba(47, 111, 78, 0.5);
+  --flame-glow: rgba(40, 145, 108, 0.45);
 }
 .flame-svg.flame-tier-1 {
-  --flame-glow: rgba(25, 113, 194, 0.7);
+  --flame-glow: rgba(34, 139, 230, 0.6);
 }
 .flame-svg.flame-tier-2 {
   --flame-glow: rgba(245, 159, 0, 0.75);
 }
 .flame-svg.flame-tier-3 {
   --flame-glow: rgba(132, 94, 247, 0.85);
+  filter: drop-shadow(0 2px 8px rgba(112, 72, 232, 0.75)) drop-shadow(0 0 14px rgba(180, 150, 255, 0.35));
 }
 .flame-svg.flame-tier-4 {
   --flame-glow: rgba(224, 49, 49, 0.9);
-  animation: flamePulseDance 1.8s ease-in-out infinite;
+  filter: drop-shadow(0 2px 10px rgba(224, 49, 49, 0.85)) drop-shadow(0 0 18px rgba(255, 107, 107, 0.45));
 }
-.flame-svg.flame-tier-4 .flame-outer {
-  animation: flameLickOuter 1.4s ease-in-out infinite alternate;
-}
-.flame-svg.flame-tier-4 .flame-inner {
-  animation: flameDanceInner 1s cubic-bezier(0.4, 0, 0.2, 1) infinite alternate;
-}
-
 .flame-svg.flame-tier-5 {
   --flame-glow: rgba(247, 131, 172, 0.95);
-  animation: flamePulseDance 1.8s ease-in-out infinite, mythicAuraPulse 3.5s ease infinite alternate;
-}
-.flame-svg.flame-tier-5 .flame-outer {
-  animation: flameLickOuter 1.3s ease-in-out infinite alternate;
-}
-.flame-svg.flame-tier-5 .flame-inner {
-  animation: flameDanceInner 0.95s cubic-bezier(0.4, 0, 0.2, 1) infinite alternate;
+  filter: drop-shadow(0 2px 12px rgba(112, 72, 232, 0.85)) drop-shadow(0 0 20px rgba(247, 131, 172, 0.65)) drop-shadow(0 0 28px rgba(255, 212, 59, 0.45));
+  animation: flameRootSway 2s ease-in-out infinite alternate, mythicPrismAura 4s ease infinite alternate;
 }
 
-@keyframes flamePulseDance {
-  0%, 100% {
-    transform: scale(1) rotate(0deg);
-    filter: drop-shadow(0 2px 7px var(--flame-glow));
-  }
-  20% {
-    transform: scale(1.06, 0.94) rotate(-2.5deg) skewX(-1.5deg);
-    filter: drop-shadow(0 3px 14px var(--flame-glow));
-  }
-  45% {
-    transform: scale(0.96, 1.05) rotate(1.8deg) skewX(1.2deg);
-    filter: drop-shadow(0 2px 6px var(--flame-glow));
-  }
-  70% {
-    transform: scale(1.03, 0.97) rotate(-1deg) skewX(-0.8deg);
-    filter: drop-shadow(0 3px 15px var(--flame-glow));
-  }
-  85% {
-    transform: scale(0.98, 1.02) rotate(1deg) skewX(0.5deg);
-    filter: drop-shadow(0 2px 9px var(--flame-glow));
-  }
+/* KEYFRAMES FOR REALISTIC FIRE DYNAMICS */
+@keyframes flameRootSway {
+  0% { transform: rotate(-1.5deg) scale(0.99, 1.01); }
+  100% { transform: rotate(1.5deg) scale(1.01, 0.99); }
 }
 
-@keyframes flameLickOuter {
-  0% { transform: scale(1) skewX(0deg); }
-  50% { transform: scale(1.02, 0.98) skewX(1.6deg); }
-  100% { transform: scale(0.98, 1.03) skewX(-1.4deg); }
+@keyframes flameBasePulse {
+  0% { transform: scale(0.98, 1.02); }
+  100% { transform: scale(1.02, 0.98); }
 }
 
-@keyframes flameDanceInner {
+@keyframes flameLeftFlicker {
+  0% { transform: rotate(-3deg) scale(0.94, 1.04) skewX(-2deg); }
+  50% { transform: rotate(1deg) scale(1.04, 0.96) skewX(1deg); }
+  100% { transform: rotate(-4deg) scale(0.98, 1.06) skewX(-3deg); }
+}
+
+@keyframes flameRightFlicker {
+  0% { transform: rotate(2deg) scale(0.96, 1.03) skewX(1deg); }
+  50% { transform: rotate(-2deg) scale(1.03, 0.97) skewX(-2deg); }
+  100% { transform: rotate(4deg) scale(0.97, 1.05) skewX(3deg); }
+}
+
+@keyframes flameCenterDance {
+  0% { transform: scale(0.96, 1.05) translateY(-0.4px) skewX(-1.5deg); }
+  50% { transform: scale(1.03, 0.96) translateY(0.2px) skewX(1.8deg); }
+  100% { transform: scale(0.98, 1.04) translateY(-0.6px) skewX(-1deg); }
+}
+
+@keyframes flameMidConvection {
+  0% { transform: scale(0.94, 1.06) translateY(-0.5px); opacity: 0.94; }
+  100% { transform: scale(1.05, 0.95) translateY(0.3px); opacity: 1; }
+}
+
+@keyframes flameCoreHeat {
+  0% { transform: scale(0.9, 1.08); opacity: 0.88; }
+  100% { transform: scale(1.1, 0.94); opacity: 1; }
+}
+
+@keyframes emberFloatUp1 {
+  0% { transform: translateY(0) translateX(0) scale(0.4); opacity: 0; }
+  20% { opacity: 1; transform: translateY(-2px) translateX(-0.6px) scale(1.1); }
+  70% { opacity: 0.8; transform: translateY(-7px) translateX(0.8px) scale(0.8); }
+  100% { opacity: 0; transform: translateY(-12px) translateX(1.5px) scale(0.2); }
+}
+
+@keyframes emberFloatUp2 {
+  0% { transform: translateY(0) translateX(0) scale(0.4); opacity: 0; }
+  25% { opacity: 1; transform: translateY(-2.5px) translateX(0.8px) scale(1.1); }
+  75% { opacity: 0.75; transform: translateY(-8px) translateX(-1px) scale(0.7); }
+  100% { opacity: 0; transform: translateY(-13px) translateX(-1.8px) scale(0.2); }
+}
+
+@keyframes emberFloatUp3 {
+  0% { transform: translateY(0) scale(0.3); opacity: 0; }
+  30% { opacity: 1; transform: translateY(-3px) scale(1); }
+  70% { opacity: 0.8; transform: translateY(-8px) scale(0.7); }
+  100% { opacity: 0; transform: translateY(-12px) scale(0.2); }
+}
+
+@keyframes sparkleGlint {
+  0%, 100% { transform: scale(0) rotate(0deg); opacity: 0; }
+  50% { transform: scale(1.2) rotate(90deg); opacity: 1; }
+}
+
+@keyframes mythicPrismAura {
   0% {
-    transform: scale(0.92, 1.08) translateY(-0.6px);
-    opacity: 0.9;
-  }
-  50% {
-    transform: scale(1.08, 0.92) translateY(0.4px);
-    opacity: 1;
+    filter: drop-shadow(0 2px 12px rgba(112, 72, 232, 0.85)) drop-shadow(0 0 18px rgba(247, 131, 172, 0.65));
   }
   100% {
-    transform: scale(0.95, 1.05) translateY(-1px);
-    opacity: 0.95;
-  }
-}
-
-@keyframes sparkFly1 {
-  0% {
-    transform: translateY(0) translateX(0) scale(0.6);
-    opacity: 0;
-  }
-  20% {
-    opacity: 1;
-    transform: translateY(-2px) translateX(0.4px) scale(1.1);
-  }
-  80% {
-    opacity: 0.8;
-    transform: translateY(-6px) translateX(1.2px) scale(0.8);
-  }
-  100% {
-    opacity: 0;
-    transform: translateY(-9px) translateX(1.8px) scale(0.3);
-  }
-}
-
-@keyframes sparkFly2 {
-  0% {
-    transform: translateY(0) translateX(0) scale(0.6);
-    opacity: 0;
-  }
-  25% {
-    opacity: 1;
-    transform: translateY(-2.5px) translateX(-0.6px) scale(1.1);
-  }
-  80% {
-    opacity: 0.8;
-    transform: translateY(-6.5px) translateX(-1.4px) scale(0.7);
-  }
-  100% {
-    opacity: 0;
-    transform: translateY(-9.5px) translateX(-2px) scale(0.2);
-  }
-}
-
-@keyframes sparkFly3 {
-  0% {
-    transform: translateY(0) scale(0.5);
-    opacity: 0;
-  }
-  30% {
-    opacity: 1;
-    transform: translateY(-3px) scale(1);
-  }
-  100% {
-    opacity: 0;
-    transform: translateY(-8px) scale(0.2);
-  }
-}
-
-@keyframes starShine {
-  0%, 100% {
-    transform: scale(0.2) rotate(0deg);
-    opacity: 0;
-  }
-  40%, 60% {
-    transform: scale(1.3) rotate(45deg);
-    opacity: 1;
-  }
-  80% {
-    transform: scale(0.5) rotate(90deg);
-    opacity: 0.2;
-  }
-}
-
-@keyframes mythicAuraPulse {
-  0% {
-    filter: drop-shadow(0 2px 10px rgba(112, 72, 232, 0.9)) drop-shadow(0 0 16px rgba(247, 131, 172, 0.6));
-  }
-  50% {
-    filter: drop-shadow(0 2px 14px rgba(255, 107, 107, 0.95)) drop-shadow(0 0 24px rgba(255, 212, 59, 0.8));
-  }
-  100% {
-    filter: drop-shadow(0 2px 12px rgba(112, 72, 232, 0.95)) drop-shadow(0 0 20px rgba(247, 131, 172, 0.7));
+    filter: drop-shadow(0 2px 14px rgba(247, 131, 172, 0.9)) drop-shadow(0 0 24px rgba(255, 212, 59, 0.65)) drop-shadow(0 0 32px rgba(255, 107, 107, 0.45));
   }
 }
 

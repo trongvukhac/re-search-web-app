@@ -391,83 +391,207 @@ function getStreakTier(streak) {
 
 function getFlameSVG(tier = 0, size = 20, extraClass = '') {
   const t = Number(tier) || 0;
-  let gradStops = '';
-  let innerStops = '';
+  
+  let outerGrad = '', midGrad = '', coreGrad = '';
   if (t === 5) {
-    gradStops = '<stop offset="0%" stop-color="#7048e8"/><stop offset="50%" stop-color="#f783ac"/><stop offset="100%" stop-color="#ff6b6b"/>';
-    innerStops = '<stop offset="0%" stop-color="#ffd43b"/><stop offset="100%" stop-color="#ffffff"/>';
+    // Mythic Prism: Celestial Violet -> Neon Fuchsia -> Ember Red -> Solar Gold
+    outerGrad = `
+      <stop offset="0%" stop-color="#4a154b"/>
+      <stop offset="35%" stop-color="#7048e8"/>
+      <stop offset="70%" stop-color="#d6336c"/>
+      <stop offset="100%" stop-color="#f783ac"/>
+    `;
+    midGrad = `
+      <stop offset="0%" stop-color="#e03131"/>
+      <stop offset="45%" stop-color="#ff6b6b"/>
+      <stop offset="85%" stop-color="#ffd43b"/>
+      <stop offset="100%" stop-color="#fff3bf"/>
+    `;
+    coreGrad = `
+      <stop offset="0%" stop-color="#ffd43b"/>
+      <stop offset="60%" stop-color="#fff9db"/>
+      <stop offset="100%" stop-color="#ffffff"/>
+    `;
   } else if (t === 4) {
-    gradStops = '<stop offset="0%" stop-color="#c92a2a"/><stop offset="100%" stop-color="#ff6b6b"/>';
-    innerStops = '<stop offset="0%" stop-color="#ffa8a8"/><stop offset="100%" stop-color="#fff5f5"/>';
+    // Ruby Red: Deep Maroon -> Crimson -> Coral Orange
+    outerGrad = `
+      <stop offset="0%" stop-color="#80101d"/>
+      <stop offset="40%" stop-color="#c92a2a"/>
+      <stop offset="80%" stop-color="#e03131"/>
+      <stop offset="100%" stop-color="#ff6b6b"/>
+    `;
+    midGrad = `
+      <stop offset="0%" stop-color="#e03131"/>
+      <stop offset="50%" stop-color="#f76707"/>
+      <stop offset="85%" stop-color="#ffa94d"/>
+      <stop offset="100%" stop-color="#ffe8cc"/>
+    `;
+    coreGrad = `
+      <stop offset="0%" stop-color="#ffa8a8"/>
+      <stop offset="60%" stop-color="#fff0f0"/>
+      <stop offset="100%" stop-color="#ffffff"/>
+    `;
   } else if (t === 3) {
-    gradStops = '<stop offset="0%" stop-color="#7048e8"/><stop offset="100%" stop-color="#b197fc"/>';
-    innerStops = '<stop offset="0%" stop-color="#e599f7"/><stop offset="100%" stop-color="#ffffff"/>';
+    // Mystic Purple: Deep Violet -> Amethyst -> Lilac Ice
+    outerGrad = `
+      <stop offset="0%" stop-color="#3b1d75"/>
+      <stop offset="40%" stop-color="#5f3dc4"/>
+      <stop offset="80%" stop-color="#7048e8"/>
+      <stop offset="100%" stop-color="#9775fa"/>
+    `;
+    midGrad = `
+      <stop offset="0%" stop-color="#7048e8"/>
+      <stop offset="50%" stop-color="#845ef7"/>
+      <stop offset="85%" stop-color="#cc5de8"/>
+      <stop offset="100%" stop-color="#f3d9fa"/>
+    `;
+    coreGrad = `
+      <stop offset="0%" stop-color="#e599f7"/>
+      <stop offset="70%" stop-color="#f8f0fc"/>
+      <stop offset="100%" stop-color="#ffffff"/>
+    `;
   } else if (t === 2) {
-    gradStops = '<stop offset="0%" stop-color="#e67700"/><stop offset="100%" stop-color="#ffd43b"/>';
-    innerStops = '<stop offset="0%" stop-color="#ffe066"/><stop offset="100%" stop-color="#fff9db"/>';
+    // Golden Solar Flame: Deep Amber -> Crimson Orange -> Golden Yellow -> White-yellow core
+    outerGrad = `
+      <stop offset="0%" stop-color="#b23e00"/>
+      <stop offset="40%" stop-color="#d9480f"/>
+      <stop offset="80%" stop-color="#f76707"/>
+      <stop offset="100%" stop-color="#fab005"/>
+    `;
+    midGrad = `
+      <stop offset="0%" stop-color="#f76707"/>
+      <stop offset="45%" stop-color="#f59f00"/>
+      <stop offset="85%" stop-color="#ffd43b"/>
+      <stop offset="100%" stop-color="#fff3bf"/>
+    `;
+    coreGrad = `
+      <stop offset="0%" stop-color="#ffe066"/>
+      <stop offset="65%" stop-color="#fff9db"/>
+      <stop offset="100%" stop-color="#ffffff"/>
+    `;
   } else if (t === 1) {
-    gradStops = '<stop offset="0%" stop-color="#1864ab"/><stop offset="100%" stop-color="#4dabf7"/>';
-    innerStops = '<stop offset="0%" stop-color="#a5d8ff"/><stop offset="100%" stop-color="#e7f5ff"/>';
+    // Ocean Blue Flame: Deep Navy -> Royal Blue -> Azure -> Sky White
+    outerGrad = `
+      <stop offset="0%" stop-color="#113f67"/>
+      <stop offset="40%" stop-color="#1864ab"/>
+      <stop offset="80%" stop-color="#228be6"/>
+      <stop offset="100%" stop-color="#4dabf7"/>
+    `;
+    midGrad = `
+      <stop offset="0%" stop-color="#228be6"/>
+      <stop offset="50%" stop-color="#339af0"/>
+      <stop offset="85%" stop-color="#74c0fc"/>
+      <stop offset="100%" stop-color="#d0ebff"/>
+    `;
+    coreGrad = `
+      <stop offset="0%" stop-color="#a5d8ff"/>
+      <stop offset="65%" stop-color="#e7f5ff"/>
+      <stop offset="100%" stop-color="#ffffff"/>
+    `;
   } else {
-    gradStops = '<stop offset="0%" stop-color="#246247"/><stop offset="100%" stop-color="#6cb28e"/>';
-    innerStops = '<stop offset="0%" stop-color="#a9d09b"/><stop offset="100%" stop-color="#dcebd5"/>';
+    // Tier 0: Emerald Forest Green
+    outerGrad = `
+      <stop offset="0%" stop-color="#0e3324"/>
+      <stop offset="40%" stop-color="#194a37"/>
+      <stop offset="80%" stop-color="#246247"/>
+      <stop offset="100%" stop-color="#40916c"/>
+    `;
+    midGrad = `
+      <stop offset="0%" stop-color="#246247"/>
+      <stop offset="50%" stop-color="#2d7a58"/>
+      <stop offset="85%" stop-color="#52b788"/>
+      <stop offset="100%" stop-color="#b7e4c7"/>
+    `;
+    coreGrad = `
+      <stop offset="0%" stop-color="#95d5b2"/>
+      <stop offset="65%" stop-color="#d8f3dc"/>
+      <stop offset="100%" stop-color="#ffffff"/>
+    `;
   }
 
-  const gradId = `flameGrad_${t}_${size}_${Math.floor(Math.random()*100000)}`;
-  const innerGradId = `flameInner_${t}_${size}_${Math.floor(Math.random()*100000)}`;
+  const id = `flm_${t}_${size}_${Math.floor(Math.random() * 100000)}`;
 
-  const starSparkle = (cx, cy, s, extraCls = '') => 
-    `<path class="flame-star ${extraCls}" d="M${cx} ${cy - s} Q${cx} ${cy} ${cx + s} ${cy} Q${cx} ${cy} ${cx} ${cy + s} Q${cx} ${cy} ${cx - s} ${cy} Q${cx} ${cy} ${cx} ${cy - s}Z" fill="url(#${innerGradId})"/>`;
-
-  let extraEffects = '';
+  let embers = '';
   if (t === 1) {
-    extraEffects = `<circle class="flame-spark spark-1" cx="16.2" cy="4.2" r="0.75" fill="url(#${innerGradId})"/>`;
+    embers = `
+      <g class="flame-ember-group">
+        <path class="flame-ember flame-spark ember-1 spark-1" d="M15 3.5 C15.6 2.6 15.6 1.8 15 1 C14.4 1.8 14.4 2.6 15 3.5Z" fill="url(#core_${id})"/>
+      </g>
+    `;
   } else if (t === 2) {
-    extraEffects = `
-      <circle class="flame-spark spark-1" cx="16.5" cy="4" r="0.8" fill="url(#${innerGradId})"/>
-      <circle class="flame-spark spark-2" cx="7.8" cy="7" r="0.65" fill="url(#${innerGradId})"/>
+    embers = `
+      <g class="flame-ember-group">
+        <path class="flame-ember flame-spark ember-1 spark-1" d="M15.2 3.2 C15.8 2.2 15.8 1.4 15.2 0.5 C14.6 1.4 14.6 2.2 15.2 3.2Z" fill="url(#core_${id})"/>
+        <path class="flame-ember flame-spark ember-2 spark-2" d="M6.8 6.5 C7.4 5.6 7.4 4.8 6.8 4 C6.2 4.8 6.2 5.6 6.8 6.5Z" fill="url(#mid_${id})"/>
+      </g>
     `;
   } else if (t === 3) {
-    extraEffects = `
-      <circle class="flame-spark spark-1" cx="16.8" cy="3.8" r="0.85" fill="url(#${innerGradId})"/>
-      <circle class="flame-spark spark-2" cx="7.2" cy="6.5" r="0.7" fill="url(#${innerGradId})"/>
-      <circle class="flame-spark spark-3" cx="14" cy="1.2" r="0.55" fill="url(#${innerGradId})"/>
-      ${starSparkle(18.5, 9.5, 1.6, 'star-1')}
+    embers = `
+      <g class="flame-ember-group">
+        <path class="flame-ember flame-spark ember-1 spark-1" d="M15.5 3 C16.2 2 16.2 1.2 15.5 0.2 C14.8 1.2 14.8 2 15.5 3Z" fill="url(#core_${id})"/>
+        <path class="flame-ember flame-spark ember-2 spark-2" d="M6.5 6 C7.2 5 7.2 4.2 6.5 3.2 C5.8 4.2 5.8 5 6.5 6Z" fill="url(#mid_${id})"/>
+        <path class="flame-ember flame-spark ember-3 spark-3" d="M19.2 6.5 C19.8 5.6 19.8 4.8 19.2 4 C18.6 4.8 18.6 5.6 19.2 6.5Z" fill="url(#mid_${id})"/>
+        <path class="flame-sparkle flame-star sparkle-1 star-1" d="M19 10 Q19 11.2 20 11.2 Q19 11.2 19 12.5 Q19 11.2 18 11.2 Q19 11.2 19 10Z" fill="#ffffff"/>
+      </g>
     `;
   } else if (t === 4) {
-    extraEffects = `
-      <circle class="flame-spark spark-1" cx="17.2" cy="3.5" r="0.9" fill="url(#${innerGradId})"/>
-      <circle class="flame-spark spark-2" cx="6.5" cy="6" r="0.75" fill="url(#${innerGradId})"/>
-      <circle class="flame-spark spark-3" cx="14.5" cy="1" r="0.65" fill="url(#${innerGradId})"/>
-      <circle class="flame-spark spark-4" cx="8" cy="11.5" r="0.6" fill="url(#${innerGradId})"/>
-      ${starSparkle(19, 9, 1.8, 'star-1')}
-      ${starSparkle(5.5, 12, 1.4, 'star-2')}
+    embers = `
+      <g class="flame-ember-group">
+        <path class="flame-ember flame-spark ember-1 spark-1" d="M15 2.5 C15.8 1.4 15.8 0.5 15 -0.5 C14.2 0.5 14.2 1.4 15 2.5Z" fill="url(#core_${id})"/>
+        <path class="flame-ember flame-spark ember-2 spark-2" d="M6 5.5 C6.8 4.4 6.8 3.5 6 2.5 C5.2 3.5 5.2 4.4 6 5.5Z" fill="url(#mid_${id})"/>
+        <path class="flame-ember flame-spark ember-3 spark-3" d="M19.5 5.5 C20.3 4.5 20.3 3.6 19.5 2.6 C18.7 3.6 18.7 4.5 19.5 5.5Z" fill="url(#core_${id})"/>
+        <path class="flame-ember flame-spark ember-4 spark-4" d="M11.5 0.5 C12.2 -0.3 12.2 -1 11.5 -1.8 C10.8 -1 10.8 -0.3 11.5 0.5Z" fill="url(#core_${id})"/>
+        <path class="flame-sparkle flame-star sparkle-1 star-1" d="M19.5 8.5 Q19.5 10 21 10 Q19.5 10 19.5 11.5 Q19.5 10 18 10 Q19.5 10 19.5 8.5Z" fill="#ffffff"/>
+        <path class="flame-sparkle flame-star sparkle-2 star-2" d="M4.5 10.5 Q4.5 11.8 5.8 11.8 Q4.5 11.8 4.5 13 Q4.5 11.8 3.2 11.8 Q4.5 11.8 4.5 10.5Z" fill="#ffffff"/>
+      </g>
     `;
   } else if (t === 5) {
-    extraEffects = `
-      <circle class="flame-spark spark-1" cx="17.5" cy="3" r="0.95" fill="url(#${innerGradId})"/>
-      <circle class="flame-spark spark-2" cx="6" cy="5.5" r="0.85" fill="url(#${innerGradId})"/>
-      <circle class="flame-spark spark-3" cx="14" cy="0.8" r="0.7" fill="url(#${innerGradId})"/>
-      <circle class="flame-spark spark-4" cx="7.5" cy="10.5" r="0.65" fill="url(#${innerGradId})"/>
-      <circle class="flame-spark spark-5" cx="18.5" cy="13.5" r="0.6" fill="url(#${innerGradId})"/>
-      ${starSparkle(19.2, 8.5, 2.1, 'star-1 star-mythic')}
-      ${starSparkle(5, 11, 1.7, 'star-2 star-mythic')}
-      ${starSparkle(12, 0.2, 1.5, 'star-3 star-mythic')}
+    embers = `
+      <g class="flame-ember-group">
+        <path class="flame-ember flame-spark ember-1 spark-1" d="M15 2 C16 0.8 16 -0.2 15 -1.2 C14 -0.2 14 0.8 15 2Z" fill="url(#core_${id})"/>
+        <path class="flame-ember flame-spark ember-2 spark-2" d="M5.5 4.8 C6.4 3.6 6.4 2.6 5.5 1.5 C4.6 2.6 4.6 3.6 5.5 4.8Z" fill="url(#mid_${id})"/>
+        <path class="flame-ember flame-spark ember-3 spark-3" d="M20 4.8 C20.9 3.7 20.9 2.7 20 1.6 C19.1 2.7 19.1 3.7 20 4.8Z" fill="url(#core_${id})"/>
+        <path class="flame-ember flame-spark ember-4 spark-4" d="M11.2 -0.2 C12 -1.2 12 -2.1 11.2 -3 C10.4 -2.1 10.4 -1.2 11.2 -0.2Z" fill="url(#core_${id})"/>
+        <path class="flame-ember flame-spark ember-5 spark-5" d="M16.5 6.5 C17.3 5.5 17.3 4.6 16.5 3.7 C15.7 4.6 15.7 5.5 16.5 6.5Z" fill="url(#mid_${id})"/>
+        <path class="flame-sparkle flame-star sparkle-1 star-1 sparkle-mythic star-mythic" d="M20 7.5 Q20 9.2 21.6 9.2 Q20 9.2 20 11 Q20 9.2 18.4 9.2 Q20 9.2 20 7.5Z" fill="#ffffff"/>
+        <path class="flame-sparkle flame-star sparkle-2 star-2 sparkle-mythic star-mythic" d="M4 9.5 Q4 11 5.4 11 Q4 11 4 12.5 Q4 11 2.6 11 Q4 11 4 9.5Z" fill="#ffffff"/>
+        <path class="flame-sparkle flame-star sparkle-3 star-3 sparkle-mythic star-mythic" d="M12 -2.5 Q12 -1 13.5 -1 Q12 -1 12 0.5 Q12 -1 10.5 -1 Q12 -1 12 -2.5Z" fill="#ffffff"/>
+      </g>
     `;
   }
 
   return `<svg class="flame-svg flame-tier-${t} ${extraClass}" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
     <defs>
-      <linearGradient id="${gradId}" x1="0%" y1="100%" x2="0%" y2="0%">
-        ${gradStops}
+      <linearGradient id="out_${id}" x1="0%" y1="100%" x2="0%" y2="0%">
+        ${outerGrad}
       </linearGradient>
-      <linearGradient id="${innerGradId}" x1="0%" y1="100%" x2="0%" y2="0%">
-        ${innerStops}
+      <linearGradient id="mid_${id}" x1="0%" y1="100%" x2="0%" y2="0%">
+        ${midGrad}
+      </linearGradient>
+      <linearGradient id="core_${id}" x1="0%" y1="100%" x2="0%" y2="0%">
+        ${coreGrad}
       </linearGradient>
     </defs>
-    <path class="flame-outer" d="M12.2 1.2C12.2 1.2 13.5 3.8 13.2 6.5C12.8 9.2 10.5 10.5 10 13C9.5 11.5 10 9.8 9.2 8.5C7.8 10.8 6.2 13.2 6.2 16.2C6.2 19.8 8.8 22.5 12.5 22.5C16.5 22.5 19.2 19.5 19.2 15.5C19.2 12 17.5 9.5 16.5 7.2C16 8.8 15 10 14 10.8C14.6 8 14.8 4.5 12.2 1.2Z" fill="url(#${gradId})"/>
-    <path class="flame-inner" d="M12.5 11.8C11.5 13.2 10.5 14.8 10.5 16.5C10.5 18.2 11.5 19.5 12.6 19.5C13.8 19.5 14.8 18.2 14.6 16.5C14.4 14.8 13.5 13.2 12.5 11.8Z" fill="url(#${innerGradId})"/>
-    ${extraEffects}
+    
+    <!-- Outer Base Body -->
+    <path class="flame-outer-base flame-outer" d="M12 23C7.2 23 3.6 19.5 3.6 15.4C3.6 12.8 5 10.8 6.5 9.2C6.2 11.2 7.5 12.5 8.8 12.5C7.8 10.2 8.5 7.6 10.2 5.2C10.2 7 11 8.5 12.2 9.2C11.8 6.8 12.4 3.8 13.8 1.2C15.2 4.2 15 7.2 14.2 9.2C15.6 9.2 17.2 7.8 17.6 6C19.2 8.5 20.4 11.5 20.4 14.8C20.4 19.2 16.8 23 12 23Z" fill="url(#out_${id})"/>
+    
+    <!-- Left Wing Tongue -->
+    <path class="flame-tongue-left" d="M4.5 16.5C3.2 15 3.2 13 4 11.2C4.5 12.8 5.5 13.8 7 14C6.2 12.2 6.5 10 7.8 8.2C7.6 10.2 8.6 11.8 10 12.2C8.2 14.8 7.2 17.8 8.5 20.8C6.8 19.8 5.2 18.5 4.5 16.5Z" fill="url(#out_${id})" opacity="0.95"/>
+
+    <!-- Right Wing Tongue -->
+    <path class="flame-tongue-right" d="M19.5 16.2C20.8 14.5 20.8 12.5 19.8 10.6C19.4 12.2 18.2 13.2 16.8 12.8C17.8 11 17.8 8.8 16.6 6.8C17 8.8 15.8 10.5 14.4 11.2C16 13.5 16.8 16.2 15.2 19.2C17.2 18.8 18.8 17.8 19.5 16.2Z" fill="url(#out_${id})" opacity="0.95"/>
+
+    <!-- Center Main Dancing Tongue -->
+    <path class="flame-tongue-center" d="M13.8 1.2C14.6 3.8 14.2 6.5 13.4 8.2C14.5 8.5 15.8 7.2 16 5.8C16.8 8.2 16.5 10.8 14.8 12.6C13.6 13.8 13.2 15.5 13.2 17.2C13.2 19.2 14 20.6 14.8 21.4C13.2 22 11.4 21.6 10.2 20.5C9.4 18.8 9.8 16.4 10.8 14.5C11.8 12.5 11.2 10.5 10.5 9C9.5 10.8 9.8 13 9.2 14C8.8 11.8 9.2 9.2 11 6.2C12 4.6 12.8 2.8 13.8 1.2Z" fill="url(#mid_${id})"/>
+
+    <!-- Mid Layer Tongues (3D depth layer) -->
+    <path class="flame-mid" d="M12 21.6C8.8 21.6 6.6 19 6.6 16C6.6 13.8 7.8 12.2 9 11C8.8 12.5 9.6 13.6 10.8 14C10.2 12 10.8 10 12.2 8.2C12 10 12.8 11.4 14 12C13.4 10 14 7.6 15.2 5.6C16 7.8 15.6 10 14.8 11.6C15.8 12 17 11 17.2 9.6C18 11.5 18 14 17.2 16.2C16.4 19.6 14.4 21.6 12 21.6Z" fill="url(#mid_${id})"/>
+
+    <!-- Inner Core Heat (hot glowing heart) -->
+    <path class="flame-core flame-inner" d="M12 21C10.2 21 8.8 19.5 8.8 17.6C8.8 15.8 10 14.2 11.2 12.8C11.6 14.2 12.4 15 13 15.2C12.6 13.8 13.2 12.2 14 11C14.8 13 15.2 15.2 14.5 17.2C14 19.4 12.8 21 12 21Z" fill="url(#core_${id})"/>
+    
+    ${embers}
   </svg>`;
 }
 
