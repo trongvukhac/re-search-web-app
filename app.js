@@ -4362,9 +4362,17 @@ const FRAME_OPTIONS = [
   { id: "ice", name: "Vương quốc băng giá", minDays: 14 },
   { id: "stars", name: "Tinh tú sao trời", minDays: 30 },
   { id: "gold", name: "Kỷ nguyên hoàng kim", minDays: 50 },
+
+  // Khung hữu hạn nhận qua hoạt động giới hạn (thời hạn 30 ngày)
+  { id: "ton_vinh_phai_dep", name: "Tôn vinh phái đẹp", isLimited: true, lockNote: "Khung nhận được qua hoạt động giới hạn" },
+  { id: "bua_tiec_ma_mi", name: "Bữa tiệc ma mị", isLimited: true, lockNote: "Khung nhận được qua hoạt động giới hạn" },
 ];
 
 const COVER_PRESETS = [
+  // Ảnh bìa hữu hạn nhận qua hoạt động giới hạn (thời hạn 30 ngày)
+  { id: "ton_vinh_phai_dep", name: "Tôn vinh phái đẹp", type: "image", value: "covers/ton-vinh-phai-dep.png", isLimited: true, lockNote: "Ảnh bìa nhận được qua hoạt động giới hạn" },
+  { id: "bua_tiec_ma_mi", name: "Bữa tiệc ma mị", type: "image", value: "covers/bua-tiec-ma-mi.png", isLimited: true, lockNote: "Ảnh bìa nhận được qua hoạt động giới hạn" },
+
   // 5 ảnh bìa Namecard độc quyền theo chuỗi
   { id: "khu_rung_tri_thuc", name: "Khu rừng tri thức", type: "image", value: "covers/khu-rung-tri-thuc.png", minDays: 3 },
   { id: "mua_anh_dao_no", name: "Mùa anh đào nở", type: "image", value: "covers/mua-anh-dao-no.png", minDays: 7 },
@@ -4389,6 +4397,11 @@ window.openNamecard = async function(userId) {
     const data = await requestAPI(`/api/users/${userId}/namecard`);
     if (!data || !data.user) return;
     currentViewingNamecardUserId = userId;
+    if (data.user.isSelf && session) {
+      if (data.user.limitedItems) {
+        session.limitedItems = data.user.limitedItems;
+      }
+    }
 
     // Reset scroll & action buttons visibility
     const cardEl = $("#namecardCard");
@@ -4759,6 +4772,7 @@ function renderFramePicker() {
   if (!container) return;
   const longestStreak = Math.max(Number(session?.maxStreak || 0), Number(session?.streak || 0));
   const isPrivileged = session?.role === "admin" || session?.role === "ta";
+  const limitedFrames = session?.limitedItems?.frames || {};
   const frameNotice = $("#namecardFrameNotice");
   if (frameNotice) {
     const nextFrame = FRAME_OPTIONS.filter(frame => frame.minDays > 0).find(frame => frame.minDays > longestStreak);
@@ -4770,22 +4784,48 @@ function renderFramePicker() {
   }
 
   container.innerHTML = FRAME_OPTIONS.map(f => {
-    const isUnlocked = isPrivileged || longestStreak >= f.minDays;
+    let isUnlocked = false;
+    let lockTooltip = "";
+    let badgeHtml = "";
+
+    if (f.isLimited) {
+      const limStatus = limitedFrames[f.id];
+      isUnlocked = isPrivileged || Boolean(limStatus && limStatus.isUnlocked);
+      if (isUnlocked) {
+        const remDays = limStatus?.remainingDays || 30;
+        lockTooltip = `${f.name} (Hạn dùng còn ${remDays} ngày)`;
+        badgeHtml = `<span class="choice-unlock-badge" style="background:#fef3c7;color:#b45309;font-weight:700;">⏳ ${remDays}d</span>`;
+      } else {
+        lockTooltip = f.lockNote || "Khung nhận được qua hoạt động giới hạn";
+        badgeHtml = `<span class="choice-lock-badge" title="${lockTooltip}">🔒 Sự kiện</span>`;
+      }
+    } else {
+      isUnlocked = isPrivileged || longestStreak >= (f.minDays || 0);
+      lockTooltip = isUnlocked ? f.name : `Cần chuỗi ${f.minDays}+ ngày`;
+      badgeHtml = isUnlocked 
+        ? `<span class="choice-unlock-badge">${f.minDays ? `${f.minDays} ngày` : "Có sẵn"}</span>` 
+        : `<span class="choice-lock-badge" title="Cần chuỗi ${f.minDays}+ ngày">🔒 ${f.minDays}</span>`;
+    }
+
     const isActive = f.id === currentSelectedFrame;
-    const lockTooltip = isUnlocked ? f.name : `Cần chuỗi ${f.minDays}+ ngày`;
     return `
       <div class="frame-choice-item ${isActive ? 'active' : ''} ${isUnlocked ? '' : 'locked'}" data-frame-id="${f.id}" title="${lockTooltip}">
         <div class="frame-choice-preview" data-frame-preview="${f.id}"></div>
         <span class="choice-label">${f.name}</span>
-        ${isUnlocked ? `<span class="choice-unlock-badge">${f.minDays ? `${f.minDays} ngày` : "Có sẵn"}</span>` : `<span class="choice-lock-badge" title="Cần chuỗi ${f.minDays}+ ngày">🔒 ${f.minDays}</span>`}
+        ${badgeHtml}
       </div>
     `;
   }).join("");
 
   container.querySelectorAll(".frame-choice-item").forEach(item => {
     item.onclick = () => {
+      const f = FRAME_OPTIONS.find(frame => frame.id === item.dataset.frameId);
       if (item.classList.contains("locked")) {
-        toast(`Khung này mở khóa khi bạn đạt chuỗi ${FRAME_OPTIONS.find(frame => frame.id === item.dataset.frameId)?.minDays}+ ngày.`);
+        if (f?.isLimited) {
+          toast(f.lockNote || "Khung nhận được qua hoạt động giới hạn");
+        } else {
+          toast(`Khung này mở khóa khi bạn đạt chuỗi ${f?.minDays || 0}+ ngày.`);
+        }
         return;
       }
       container.querySelectorAll(".frame-choice-item").forEach(i => i.classList.remove("active"));
@@ -4801,31 +4841,56 @@ function renderCoverPicker() {
   if (!container) return;
   const longestStreak = Math.max(Number(session?.maxStreak || 0), Number(session?.streak || 0));
   const isPrivileged = session?.role === "admin" || session?.role === "ta";
+  const limitedCovers = session?.limitedItems?.covers || {};
 
   container.innerHTML = COVER_PRESETS.map(p => {
-    const isUnlocked = isPrivileged || longestStreak >= (p.minDays || 0);
+    let isUnlocked = false;
+    let lockTooltip = "";
+    let badgeHtml = "";
+
+    if (p.isLimited) {
+      const limStatus = limitedCovers[p.id];
+      isUnlocked = isPrivileged || Boolean(limStatus && limStatus.isUnlocked);
+      if (isUnlocked) {
+        const remDays = limStatus?.remainingDays || 30;
+        lockTooltip = `${p.name} (Hạn dùng còn ${remDays} ngày)`;
+        badgeHtml = `<span class="choice-unlock-badge" style="background:#fef3c7;color:#b45309;font-weight:700;">⏳ ${remDays}d</span>`;
+      } else {
+        lockTooltip = p.lockNote || "Ảnh bìa nhận được qua hoạt động giới hạn";
+        badgeHtml = `<span class="choice-lock-badge" title="${lockTooltip}">🔒 Sự kiện</span>`;
+      }
+    } else {
+      isUnlocked = isPrivileged || longestStreak >= (p.minDays || 0);
+      lockTooltip = isUnlocked ? p.name : `Cần chuỗi ${p.minDays}+ ngày`;
+      badgeHtml = isUnlocked 
+        ? (p.minDays ? `<span class="choice-unlock-badge">${p.minDays} ngày</span>` : '') 
+        : `<span class="choice-lock-badge" title="Cần chuỗi ${p.minDays}+ ngày">🔒 ${p.minDays}</span>`;
+    }
+
     const isActive = p.id === currentSelectedCover;
     let previewStyle = "";
     if (p.type === "image") previewStyle = `background: url('${p.value}') center / cover no-repeat;`;
     else if (p.type === "gradient") previewStyle = `background: ${p.value};`;
     else previewStyle = `background: ${p.value};`;
 
-    const lockTooltip = isUnlocked ? p.name : `Cần chuỗi ${p.minDays}+ ngày`;
-
     return `
       <div class="cover-choice-item ${isActive ? 'active' : ''} ${isUnlocked ? '' : 'locked'}" data-cover-id="${p.id}" title="${lockTooltip}">
         <div class="choice-preview-box" style="${previewStyle}"></div>
         <span class="choice-label">${p.name}</span>
-        ${isUnlocked ? (p.minDays ? `<span class="choice-unlock-badge">${p.minDays} ngày</span>` : '') : `<span class="choice-lock-badge" title="Cần chuỗi ${p.minDays}+ ngày">🔒 ${p.minDays}</span>`}
+        ${badgeHtml}
       </div>
     `;
   }).join("");
 
   container.querySelectorAll(".cover-choice-item").forEach(item => {
     item.onclick = () => {
+      const p = COVER_PRESETS.find(preset => preset.id === item.dataset.coverId);
       if (item.classList.contains("locked")) {
-        const preset = COVER_PRESETS.find(p => p.id === item.dataset.coverId);
-        toast(`Ảnh bìa này mở khóa khi bạn đạt chuỗi ${preset?.minDays || 0}+ ngày.`);
+        if (p?.isLimited) {
+          toast(p.lockNote || "Ảnh bìa nhận được qua hoạt động giới hạn");
+        } else {
+          toast(`Ảnh bìa này mở khóa khi bạn đạt chuỗi ${p?.minDays || 0}+ ngày.`);
+        }
         return;
       }
       container.querySelectorAll(".cover-choice-item").forEach(i => i.classList.remove("active"));

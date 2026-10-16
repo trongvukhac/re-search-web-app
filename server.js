@@ -181,6 +181,14 @@ db.exec(`
     last_milestone_rewarded INTEGER NOT NULL DEFAULT 0,
     updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
   );
+  CREATE TABLE IF NOT EXISTS user_limited_items (
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    item_type TEXT NOT NULL,
+    item_id TEXT NOT NULL,
+    unlocked_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    expires_at TEXT NOT NULL,
+    PRIMARY KEY (user_id, item_type, item_id)
+  );
   CREATE TABLE IF NOT EXISTS study_sessions (
     user_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
     goal TEXT,
@@ -886,6 +894,7 @@ function publicUser(user, streakInfo = null) {
     maxStreak: user.id ? getUserMaxStreak(user.id) : 0,
     streakTier: info.streakTier || 0,
     shields: info.shields || 0,
+    limitedItems: user.id ? getUserLimitedItemsStatus(user.id) : { frames: {}, covers: {} },
   };
 }
 function requireUser(request, response) {
@@ -1261,6 +1270,107 @@ function formatDMY(date) {
   const month = String(d.getMonth() + 1).padStart(2, "0");
   const year = d.getFullYear();
   return `${day}/${month}/${year}`;
+}
+
+// =========================================================================
+// KHUNG & ẢNH BÌA HOẠT ĐỘNG GIỚI HẠN (LIMITED EVENT ITEMS)
+// =========================================================================
+
+const LIMITED_THEMES = [
+  {
+    id: "ton_vinh_phai_dep",
+    name: "Tôn vinh phái đẹp",
+    coverId: "ton_vinh_phai_dep",
+    frameId: "ton_vinh_phai_dep",
+    durationDays: 30,
+    isEligible: (vnDate) => {
+      // 19-21/10 hoặc 7-9/3
+      const m = vnDate.getMonth() + 1; // 1-12
+      const d = vnDate.getDate();
+      if (m === 10 && d >= 19 && d <= 21) return true;
+      if (m === 3 && d >= 7 && d <= 9) return true;
+      return false;
+    }
+  },
+  {
+    id: "bua_tiec_ma_mi",
+    name: "Bữa tiệc ma mị",
+    coverId: "bua_tiec_ma_mi",
+    frameId: "bua_tiec_ma_mi",
+    durationDays: 30,
+    isEligible: (vnDate) => {
+      // Tuần từ 26/10 đến 01/11
+      const m = vnDate.getMonth() + 1;
+      const d = vnDate.getDate();
+      if (m === 10 && d >= 26 && d <= 31) return true;
+      if (m === 11 && d === 1) return true;
+      return false;
+    }
+  }
+];
+
+function checkAndGrantLimitedItems(userId) {
+  if (!userId) return;
+  const vnNow = getVietnamNow();
+  for (const theme of LIMITED_THEMES) {
+    if (theme.isEligible(vnNow)) {
+      // Tính hạn dùng 30 ngày kể từ hiện tại
+      const expDate = new Date(vnNow.getTime() + theme.durationDays * 24 * 60 * 60 * 1000);
+      const expiresAt = expDate.toISOString();
+      const unlockedAt = vnNow.toISOString();
+
+      // Cấp/gia hạn cả khung và cover
+      const itemsToGrant = [
+        { type: "frame", id: theme.frameId },
+        { type: "cover", id: theme.coverId }
+      ];
+
+      for (const item of itemsToGrant) {
+        const existing = db.prepare(
+          "SELECT expires_at FROM user_limited_items WHERE user_id=? AND item_type=? AND item_id=?"
+        ).get(userId, item.type, item.id);
+
+        if (!existing) {
+          db.prepare(`
+            INSERT INTO user_limited_items (user_id, item_type, item_id, unlocked_at, expires_at)
+            VALUES (?, ?, ?, ?, ?)
+          `).run(userId, item.type, item.id, unlockedAt, expiresAt);
+        } else {
+          // Nếu đã có nhưng ngày hết hạn mới xa hơn thì cập nhật
+          if (new Date(expiresAt) > new Date(existing.expires_at)) {
+            db.prepare(`
+              UPDATE user_limited_items
+              SET expires_at=?
+              WHERE user_id=? AND item_type=? AND item_id=?
+            `).run(expiresAt, userId, item.type, item.id);
+          }
+        }
+      }
+    }
+  }
+}
+
+function getUserLimitedItemsStatus(userId) {
+  if (!userId) return { frames: {}, covers: {} };
+  const rows = db.prepare(
+    "SELECT item_type, item_id, unlocked_at, expires_at FROM user_limited_items WHERE user_id=?"
+  ).all(userId);
+  const now = getVietnamNow().getTime();
+  const res = { frames: {}, covers: {} };
+
+  for (const r of rows) {
+    const expTime = new Date(r.expires_at).getTime();
+    const isUnlocked = expTime > now;
+    const remainingDays = isUnlocked ? Math.ceil((expTime - now) / (24 * 60 * 60 * 1000)) : 0;
+    const info = {
+      isUnlocked,
+      expiresAt: r.expires_at,
+      remainingDays
+    };
+    if (r.item_type === "frame") res.frames[r.item_id] = info;
+    else if (r.item_type === "cover") res.covers[r.item_id] = info;
+  }
+  return res;
 }
 
 function getWeekRange(date) {
@@ -1889,6 +1999,9 @@ async function api(request, response, url) {
     return json(response, 200, { ok: true });
   if (method === "GET" && pathName === "/api/session") {
     const session = sessionFrom(request);
+    if (session) {
+      checkAndGrantLimitedItems(session.id);
+    }
     return json(response, 200, {
       authenticated: Boolean(session),
       user: session ? publicUser(session) : null,
@@ -2064,6 +2177,7 @@ async function api(request, response, url) {
       .get((email || "").trim().toLowerCase());
     if (!user || !verifyPassword(password || "", user.password_hash))
       return error(response, 401, "Email hoặc mật khẩu chưa đúng.");
+    checkAndGrantLimitedItems(user.id);
     const csrfToken = createSession(response, user.id, request);
     return json(response, 200, { user: publicUser(user), csrfToken });
   }
@@ -2888,6 +3002,10 @@ async function api(request, response, url) {
 
     const canUploadCustomCover = Boolean(currentStreak >= 30 || maxStreak >= 30 || targetUser.role === "admin" || targetUser.role === "ta");
 
+    // Lấy thông tin mở khóa khung/ảnh bìa giới hạn của người dùng
+    checkAndGrantLimitedItems(targetUser.id);
+    const limitedItems = getUserLimitedItemsStatus(targetUser.id);
+
     return json(response, 200, {
       user: {
         id: targetUser.id,
@@ -2900,7 +3018,8 @@ async function api(request, response, url) {
         namecardFrame: (targetUser.namecard_frame && targetUser.namecard_frame !== "default") ? targetUser.namecard_frame : "none",
         namecardTheme: targetUser.namecard_theme || "default",
         isSelf,
-        canUploadCustomCover
+        canUploadCustomCover,
+        limitedItems
       },
       streakCard: {
         streak: currentStreak,
@@ -2987,6 +3106,13 @@ async function api(request, response, url) {
       ["ky_nguyen_hoang_kim", 50],
     ]);
 
+    const LIMITED_COVER_IDS = new Set(["ton_vinh_phai_dep", "bua_tiec_ma_mi"]);
+    const LIMITED_FRAME_IDS = new Set(["ton_vinh_phai_dep", "bua_tiec_ma_mi"]);
+
+    // Cập nhật cấp vật phẩm giới hạn nếu đủ điều kiện
+    checkAndGrantLimitedItems(user.id);
+    const userLimited = getUserLimitedItemsStatus(user.id);
+
     let newCoverImage = currentUser.cover_image || "default";
     if (typeof coverImage === "string") {
       const trimmedCover = coverImage.trim();
@@ -2997,6 +3123,13 @@ async function api(request, response, url) {
         }
         if (trimmedCover.length > 250000) {
           return error(response, 400, "Dung lượng ảnh bìa quá lớn (tối đa ~150KB). Vui lòng nén hoặc chọn ảnh nhỏ hơn.");
+        }
+        newCoverImage = trimmedCover;
+      } else if (LIMITED_COVER_IDS.has(trimmedCover)) {
+        const coverStatus = userLimited.covers[trimmedCover];
+        const isCoverUnlocked = isPrivileged || (coverStatus && coverStatus.isUnlocked);
+        if (!isCoverUnlocked) {
+          return error(response, 403, "Ảnh bìa này nhận được qua hoạt động giới hạn và hiện đang bị khóa.");
         }
         newCoverImage = trimmedCover;
       } else {
@@ -3036,10 +3169,18 @@ async function api(request, response, url) {
       ["leaves", 3], ["sakura", 7], ["ice", 14], ["stars", 30], ["gold", 50],
     ]);
     const requestedFrame = typeof namecardFrame === "string" ? namecardFrame.trim() : (currentUser.namecard_frame || "none");
-    const frameRequirement = allowedFrames.get(requestedFrame);
-    if (frameRequirement === undefined) return error(response, 400, "Khung Namecard không hợp lệ.");
-    const canUseRequestedFrame = isPrivileged || unlockedStreak >= frameRequirement;
-    if (!canUseRequestedFrame) return error(response, 403, `Khung này yêu cầu chuỗi hoạt động ${frameRequirement}+ ngày.`);
+    if (LIMITED_FRAME_IDS.has(requestedFrame)) {
+      const frameStatus = userLimited.frames[requestedFrame];
+      const isFrameUnlocked = isPrivileged || (frameStatus && frameStatus.isUnlocked);
+      if (!isFrameUnlocked) {
+        return error(response, 403, "Khung này nhận được qua hoạt động giới hạn và hiện đang bị khóa.");
+      }
+    } else {
+      const frameRequirement = allowedFrames.get(requestedFrame);
+      if (frameRequirement === undefined) return error(response, 400, "Khung Namecard không hợp lệ.");
+      const canUseRequestedFrame = isPrivileged || unlockedStreak >= frameRequirement;
+      if (!canUseRequestedFrame) return error(response, 403, `Khung này yêu cầu chuỗi hoạt động ${frameRequirement}+ ngày.`);
+    }
     const newFrame = requestedFrame;
     const newTheme = typeof namecardTheme === "string" ? namecardTheme.trim() : (currentUser.namecard_theme || "default");
     const newStudentId = typeof studentId === "string" ? studentId.trim().slice(0, 30) : currentUser.student_id;

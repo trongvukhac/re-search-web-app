@@ -11748,6 +11748,18 @@ dialog.modal.namecard-modal {
   background-size: 100% 100%;
 }
 
+/* 2 Khung hoạt động giới hạn */
+.namecard-frame-layer[data-frame="ton_vinh_phai_dep"] {
+  background-image: url("frames/v2/ton_vinh_phai_dep.png?v=1");
+  inset: -46px -42px -64px -42px;
+  background-size: 100% 100%;
+}
+.namecard-frame-layer[data-frame="bua_tiec_ma_mi"] {
+  background-image: url("frames/v2/bua_tiec_ma_mi.png?v=1");
+  inset: -46px -42px -64px -42px;
+  background-size: 100% 100%;
+}
+
 /* Khung cơ bản miễn phí (độ dày 4px bo góc chuẩn theo namecard) */
 .namecard-frame-layer[data-frame^="basic_"] {
   inset: 0px;
@@ -11849,6 +11861,8 @@ dialog.modal.namecard-modal {
 .frame-choice-preview[data-frame-preview="gold"] { background-image: url("frames/v2/thumbs/gold.png?v=6"); background-size: 100% 100%; }
 .frame-choice-preview[data-frame-preview="sakura"] { background-image: url("frames/v2/thumbs/sakura.png?v=6"); background-size: 100% 100%; }
 .frame-choice-preview[data-frame-preview="ice"] { background-image: url("frames/v2/thumbs/ice.png?v=6"); background-size: 100% 100%; }
+.frame-choice-preview[data-frame-preview="ton_vinh_phai_dep"] { background-image: url("frames/v2/thumbs/ton_vinh_phai_dep.png?v=1"); background-size: 100% 100%; }
+.frame-choice-preview[data-frame-preview="bua_tiec_ma_mi"] { background-image: url("frames/v2/thumbs/bua_tiec_ma_mi.png?v=1"); background-size: 100% 100%; }
 
 /* Khung cơ bản miễn phí swatch */
 .frame-choice-preview[data-frame-preview="basic_ocean"] {
