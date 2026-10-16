@@ -4791,7 +4791,10 @@ function renderFramePicker() {
     if (f.isLimited) {
       const limStatus = limitedFrames[f.id];
       isUnlocked = isPrivileged || Boolean(limStatus && limStatus.isUnlocked);
-      if (isUnlocked) {
+      if (isPrivileged || limStatus?.isPermanent) {
+        lockTooltip = `${f.name} (Đặc quyền Quản trị viên: Vĩnh viễn)`;
+        badgeHtml = `<span class="choice-unlock-badge" style="background:#e0f2fe;color:#0369a1;font-weight:700;">👑 Vĩnh viễn</span>`;
+      } else if (isUnlocked) {
         const remDays = limStatus?.remainingDays || 30;
         lockTooltip = `${f.name} (Hạn dùng còn ${remDays} ngày)`;
         badgeHtml = `<span class="choice-unlock-badge" style="background:#fef3c7;color:#b45309;font-weight:700;">⏳ ${remDays}d</span>`;
@@ -4851,7 +4854,10 @@ function renderCoverPicker() {
     if (p.isLimited) {
       const limStatus = limitedCovers[p.id];
       isUnlocked = isPrivileged || Boolean(limStatus && limStatus.isUnlocked);
-      if (isUnlocked) {
+      if (isPrivileged || limStatus?.isPermanent) {
+        lockTooltip = `${p.name} (Đặc quyền Quản trị viên: Vĩnh viễn)`;
+        badgeHtml = `<span class="choice-unlock-badge" style="background:#e0f2fe;color:#0369a1;font-weight:700;">👑 Vĩnh viễn</span>`;
+      } else if (isUnlocked) {
         const remDays = limStatus?.remainingDays || 30;
         lockTooltip = `${p.name} (Hạn dùng còn ${remDays} ngày)`;
         badgeHtml = `<span class="choice-unlock-badge" style="background:#fef3c7;color:#b45309;font-weight:700;">⏳ ${remDays}d</span>`;

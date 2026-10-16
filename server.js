@@ -1352,6 +1352,11 @@ function checkAndGrantLimitedItems(userId) {
 
 function getUserLimitedItemsStatus(userId) {
   if (!userId) return { frames: {}, covers: {} };
+
+  // Kiểm tra quyền Admin / TA: có quyền sử dụng vĩnh viễn
+  const userRow = db.prepare("SELECT role FROM users WHERE id=?").get(userId);
+  const isPrivileged = userRow && (userRow.role === "admin" || userRow.role === "ta");
+
   const rows = db.prepare(
     "SELECT item_type, item_id, unlocked_at, expires_at FROM user_limited_items WHERE user_id=?"
   ).all(userId);
@@ -1360,16 +1365,36 @@ function getUserLimitedItemsStatus(userId) {
 
   for (const r of rows) {
     const expTime = new Date(r.expires_at).getTime();
-    const isUnlocked = expTime > now;
-    const remainingDays = isUnlocked ? Math.ceil((expTime - now) / (24 * 60 * 60 * 1000)) : 0;
+    const isUnlocked = isPrivileged || expTime > now;
+    const remainingDays = isPrivileged ? 9999 : (isUnlocked ? Math.ceil((expTime - now) / (24 * 60 * 60 * 1000)) : 0);
     const info = {
       isUnlocked,
       expiresAt: r.expires_at,
-      remainingDays
+      remainingDays,
+      isPermanent: Boolean(isPrivileged)
     };
     if (r.item_type === "frame") res.frames[r.item_id] = info;
     else if (r.item_type === "cover") res.covers[r.item_id] = info;
   }
+
+  // Đối với Admin / TA, nếu chưa có dòng trong user_limited_items thì mặc định luôn mở vĩnh viễn tất cả các item giới hạn
+  if (isPrivileged) {
+    for (const theme of LIMITED_THEMES) {
+      if (!res.frames[theme.frameId]) {
+        res.frames[theme.frameId] = { isUnlocked: true, expiresAt: null, remainingDays: 9999, isPermanent: true };
+      } else {
+        res.frames[theme.frameId].isUnlocked = true;
+        res.frames[theme.frameId].isPermanent = true;
+      }
+      if (!res.covers[theme.coverId]) {
+        res.covers[theme.coverId] = { isUnlocked: true, expiresAt: null, remainingDays: 9999, isPermanent: true };
+      } else {
+        res.covers[theme.coverId].isUnlocked = true;
+        res.covers[theme.coverId].isPermanent = true;
+      }
+    }
+  }
+
   return res;
 }
 
