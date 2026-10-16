@@ -244,18 +244,23 @@ function isUserBusyWithCriticalTask() {
   try {
     // 1. Đang làm bài thi Đấu trường
     if (typeof compState !== "undefined" && compState.activeSessionId) return true;
-    const quizModal = document.getElementById("compQuizModal");
+    const quizModal = document.getElementById("competitionQuizModal") || document.getElementById("compQuizModal");
     if (quizModal && quizModal.open) return true;
 
-    // 2. Đang mở hộp thoại viết bài hỏi đáp / tài liệu
-    const newQuestionModal = document.getElementById("newQuestionModal");
-    if (newQuestionModal && newQuestionModal.open) return true;
-    const submitDocModal = document.getElementById("submitDocModal");
-    if (submitDocModal && submitDocModal.open) return true;
+    // 2. Đang mở bất kỳ hộp thoại dialog nào
+    const openDialogs = document.querySelectorAll("dialog[open]");
+    if (openDialogs && openDialogs.length > 0) return true;
 
-    // 3. Đang soạn thảo văn bản
+    // 3. Đang soạn thảo văn bản hoặc đang focus ô nhập liệu
     const activeEl = document.activeElement;
-    if (activeEl && (activeEl.tagName === "INPUT" || activeEl.tagName === "TEXTAREA" || activeEl.isContentEditable)) {
+    if (
+      activeEl &&
+      (activeEl.tagName === "INPUT" ||
+        activeEl.tagName === "TEXTAREA" ||
+        activeEl.tagName === "SELECT" ||
+        activeEl.isContentEditable ||
+        (activeEl.closest && activeEl.closest(".ql-editor, [contenteditable='true']")))
+    ) {
       return true;
     }
   } catch (e) {}
@@ -1186,8 +1191,12 @@ function renderLeaderboard() {
 
 let initialStudyRouteHandled = false;
 
-async function hydrateServer() {
+async function hydrateServer(force = false) {
   if (!serverMode) return;
+  // Hoãn làm mới ngầm nếu người dùng đang gõ văn bản hoặc đang mở hộp thoại
+  if (!force && typeof isUserBusyWithCriticalTask === "function" && isUserBusyWithCriticalTask()) {
+    return;
+  }
   try {
     const current = await requestAPI("/api/session", { headers: {} });
     csrfToken = current.csrfToken;
@@ -1834,6 +1843,8 @@ function updateResponsiveAsidePlacement() {
   const forumSlot = document.getElementById("forumCommunityAsideSlot");
 
   if (!cardsContainer || !homeSlot || !forumSlot) return;
+  // Tránh chuyển DOM node trong khi người dùng đang nhập văn bản
+  if (typeof isUserBusyWithCriticalTask === "function" && isUserBusyWithCriticalTask()) return;
 
   const isMobile = window.innerWidth <= 900;
   if (isMobile) {
@@ -1990,6 +2001,19 @@ function initMobileNavScrollHandler() {
     if (window.innerWidth > 900) return;
     if (document.querySelector("dialog[open]")) return;
 
+    // Bỏ qua sự kiện cuộn tự động khi đang gõ bàn phím trên điện thoại/iPad
+    const activeEl = document.activeElement;
+    if (
+      activeEl &&
+      (activeEl.tagName === "INPUT" ||
+        activeEl.tagName === "TEXTAREA" ||
+        activeEl.tagName === "SELECT" ||
+        activeEl.isContentEditable ||
+        (activeEl.closest && activeEl.closest(".ql-editor, [contenteditable='true']")))
+    ) {
+      return;
+    }
+
     const currentY = Math.max(
       0,
       window.scrollY ||
@@ -2091,6 +2115,19 @@ function initPostDetailNavScrollHandler() {
     const postDetailPage = document.getElementById("postDetail");
     if (!postDetailPage || !postDetailPage.classList.contains("active-page")) return;
     if (document.querySelector("dialog[open]")) return;
+
+    // Bỏ qua sự kiện cuộn tự động khi đang gõ bàn phím trong bài viết
+    const activeEl = document.activeElement;
+    if (
+      activeEl &&
+      (activeEl.tagName === "INPUT" ||
+        activeEl.tagName === "TEXTAREA" ||
+        activeEl.tagName === "SELECT" ||
+        activeEl.isContentEditable ||
+        (activeEl.closest && activeEl.closest(".ql-editor, [contenteditable='true']")))
+    ) {
+      return;
+    }
 
     const currentY = Math.max(
       0,
@@ -2238,18 +2275,8 @@ function handleModalOutsideScroll(e) {
 window.addEventListener("wheel", handleModalOutsideScroll, { passive: false });
 window.addEventListener("touchmove", handleModalOutsideScroll, { passive: false });
 
-// Ensure input focusout cleans up any visual viewport translation on mobile
-document.addEventListener("focusout", (e) => {
-  if (
-    e.target &&
-    (e.target.tagName === "INPUT" ||
-      e.target.tagName === "TEXTAREA" ||
-      e.target.tagName === "SELECT" ||
-      e.target.isContentEditable)
-  ) {
-    window.scrollTo(window.scrollX, window.scrollY);
-  }
-});
+// Mobile keyboard focusout: không can thiệp scrollTo để tránh gây giật cuộn trên iOS/Android
+// Trình duyệt di động hiện đại tự quản lý visualViewport khi bàn phím đóng
 
 window.addEventListener("click", (e) => {
   if (e.target && e.target.tagName === "DIALOG") {
@@ -2259,6 +2286,9 @@ window.addEventListener("click", (e) => {
       "documentViewerModal",
       "documentModal",
       "editModal",
+      "authModal",
+      "changePasswordModal",
+      "studySettingsModal",
       "competitionQuizModal",
       "quizStartConfirmModal",
       "quizExitConfirmModal",
@@ -2268,6 +2298,19 @@ window.addEventListener("click", (e) => {
     ];
     if (noBackdropCloseIds.includes(e.target.id)) return;
     
+    // Nếu người dùng đang focus nhập liệu, không đóng dialog nhầm
+    const activeEl = document.activeElement;
+    if (
+      activeEl &&
+      (activeEl.tagName === "INPUT" ||
+        activeEl.tagName === "TEXTAREA" ||
+        activeEl.tagName === "SELECT" ||
+        activeEl.isContentEditable ||
+        (activeEl.closest && activeEl.closest(".ql-editor, [contenteditable='true']")))
+    ) {
+      return;
+    }
+
     // Only close if click is actually outside dialog box boundaries
     const rect = e.target.getBoundingClientRect();
     const isOutside = (
@@ -3076,7 +3119,11 @@ $("#homeSearch").addEventListener("keydown", (e) => {
     renderPosts();
   }
 });
-$("#forumSearch").addEventListener("input", renderPosts);
+let forumSearchDebounceTimer = null;
+$("#forumSearch").addEventListener("input", () => {
+  if (forumSearchDebounceTimer) clearTimeout(forumSearchDebounceTimer);
+  forumSearchDebounceTimer = setTimeout(renderPosts, 180);
+});
 $$(".filter-chip").forEach((c) =>
   c.addEventListener("click", () => {
     currentFilter = c.dataset.filter;
