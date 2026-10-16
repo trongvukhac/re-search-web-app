@@ -1099,7 +1099,7 @@ const AUDIO_TRACK_URLS = {
 
 const azureAudioUrlCache = new Map(); // trackId -> { url: string, expiresAt: number }
 
-function resolveGitHubRedirect(ghUrl) {
+function resolveGitHubRedirectOnce(ghUrl) {
   return new Promise((resolve, reject) => {
     const req = https.get(ghUrl, (res) => {
       res.resume(); // Ensure stream data is consumed to free the socket
@@ -1111,19 +1111,32 @@ function resolveGitHubRedirect(ghUrl) {
         reject(new Error(`GitHub redirect failed with status ${res.statusCode}`));
       }
     });
-    req.setTimeout(10000, () => {
+    req.setTimeout(15000, () => {
       req.destroy(new Error("GitHub redirect request timed out"));
     });
     req.on("error", reject);
   });
 }
 
-async function getAudioAzureUrl(trackId, forceRefresh = false) {
-  if (!forceRefresh) {
-    const cached = azureAudioUrlCache.get(trackId);
-    if (cached && cached.expiresAt > Date.now()) {
-      return cached.url;
+async function resolveGitHubRedirect(ghUrl, maxRetries = 2) {
+  let lastErr = null;
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      if (attempt > 0) {
+        await new Promise(r => setTimeout(r, 600 * attempt));
+      }
+      return await resolveGitHubRedirectOnce(ghUrl);
+    } catch (err) {
+      lastErr = err;
     }
+  }
+  throw lastErr || new Error("GitHub redirect failed");
+}
+
+async function getAudioAzureUrl(trackId, forceRefresh = false) {
+  const cached = azureAudioUrlCache.get(trackId);
+  if (!forceRefresh && cached && cached.expiresAt > Date.now()) {
+    return cached.url;
   }
   const ghUrl = AUDIO_TRACK_URLS[trackId];
   if (!ghUrl) return null;
@@ -1131,11 +1144,15 @@ async function getAudioAzureUrl(trackId, forceRefresh = false) {
     const directUrl = await resolveGitHubRedirect(ghUrl);
     azureAudioUrlCache.set(trackId, {
       url: directUrl,
-      expiresAt: Date.now() + 10 * 60 * 1000 // Cache 10 mins (Azure SAS token typically expires in 30-60 mins)
+      expiresAt: Date.now() + 15 * 60 * 1000 // Cache 15 mins (Azure SAS token typically expires in 60 mins)
     });
     return directUrl;
   } catch (err) {
     console.error(`Failed to resolve GitHub redirect for ${trackId}:`, err.message);
+    // If refresh failed but we have a stale cached URL, keep using it as fallback
+    if (cached && cached.url) {
+      return cached.url;
+    }
     return null;
   }
 }
@@ -1188,31 +1205,47 @@ async function fetchAzureAudioStream(trackId, reqMethod, headers, isRetry = fals
 
 async function streamAudioTrack(request, response, trackId) {
   try {
-    const directUrl = await getAudioAzureUrl(trackId);
-    if (!directUrl) {
+    const headers = {};
+    if (request.headers.range) {
+      headers["Range"] = request.headers.range;
+    }
+
+    const reqMethod = request.method === "HEAD" ? "HEAD" : "GET";
+    const result = await fetchAzureAudioStream(trackId, reqMethod, headers);
+    if (!result) {
       return error(response, 404, "Không tìm thấy tệp âm thanh.");
     }
 
-    let redirectUrl = directUrl;
-    try {
-      const u = new URL(directUrl);
-      u.searchParams.set("response-content-disposition", "inline");
-      u.searchParams.set("response-content-type", "audio/mpeg");
-      redirectUrl = u.toString();
-    } catch (e) {}
+    const { statusCode, headers: azureHeaders, stream, req: azureReq } = result;
 
-    // Direct 302 redirect with CORS and edge cache headers:
-    // Enables the browser to stream directly from Azure Blob CDN with multi-threaded byte-ranges,
-    // achieving sub-50ms TTFB and instant playback with zero server latency!
-    response.writeHead(302, {
-      "Location": redirectUrl,
+    const resHeaders = {
+      "Content-Type": "audio/mpeg",
+      "Content-Disposition": "inline",
+      "Accept-Ranges": "bytes",
       "Access-Control-Allow-Origin": "*",
       "Access-Control-Allow-Headers": "Range, Accept-Encoding",
-      "Access-Control-Expose-Headers": "Location, Content-Range, Content-Length, Accept-Ranges",
-      "Cache-Control": "public, max-age=1200",
+      "Access-Control-Expose-Headers": "Content-Range, Content-Length, Accept-Ranges",
+      "Cache-Control": "public, max-age=86400",
       "X-Content-Type-Options": "nosniff"
+    };
+
+    if (azureHeaders["content-range"]) {
+      resHeaders["Content-Range"] = azureHeaders["content-range"];
+    }
+    if (azureHeaders["content-length"]) {
+      resHeaders["Content-Length"] = azureHeaders["content-length"];
+    }
+
+    response.writeHead(statusCode || 200, resHeaders);
+    if (reqMethod === "HEAD") {
+      response.end();
+    } else {
+      stream.pipe(response);
+    }
+
+    request.on("close", () => {
+      try { azureReq.destroy(); } catch (e) {}
     });
-    response.end();
   } catch (err) {
     console.error(`Audio stream handler error (${trackId}):`, err.message);
     if (!response.headersSent) {
@@ -1225,12 +1258,13 @@ async function prewarmAudioUrls() {
   const trackIds = Object.keys(AUDIO_TRACK_URLS);
   for (const trackId of trackIds) {
     try {
-      await getAudioAzureUrl(trackId, true);
+      await getAudioAzureUrl(trackId, false);
+      await new Promise(r => setTimeout(r, 250));
     } catch (e) {}
   }
 }
-prewarmAudioUrls();
-setInterval(prewarmAudioUrls, 20 * 60 * 1000);
+setTimeout(prewarmAudioUrls, 2000);
+setInterval(prewarmAudioUrls, 10 * 60 * 1000);
 
 // =========================================================================
 // HOẠT ĐỘNG THI ĐUA ĐỊNH KỲ HÀNG TUẦN (WEEKLY COMPETITION MODULE)

@@ -1068,16 +1068,8 @@ function applySession(user) {
 
   const badgeDesk = $("#studyNavBadgeDesktop");
   const badgeMob = $("#studyNavBadgeMobile");
-  if (badgeDesk) {
-    badgeDesk.textContent = "BETA";
-    badgeDesk.className = "study-nav-badge beta";
-    badgeDesk.style.display = "inline-block";
-  }
-  if (badgeMob) {
-    badgeMob.textContent = "BETA";
-    badgeMob.className = "study-nav-badge mobile beta";
-    badgeMob.style.display = "inline-block";
-  }
+  if (badgeDesk) badgeDesk.style.display = "none";
+  if (badgeMob) badgeMob.style.display = "none";
 
   const notice = $("#studyLockedNotice");
   const mainStudy = $("#studyMainContent");

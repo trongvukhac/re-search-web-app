@@ -126,6 +126,8 @@ select:focus-visible {
   font-weight: 800;
   letter-spacing: 1px;
   font-size: 17px;
+  white-space: nowrap !important;
+  flex-shrink: 0 !important;
 }
 .brand img {
   width: 32px;
@@ -133,17 +135,26 @@ select:focus-visible {
   object-fit: contain;
   border-radius: 7px;
   display: block;
+  flex-shrink: 0;
+}
+.brand span {
+  white-space: nowrap !important;
 }
 .brand-colon {
   color: #8faf82;
+  white-space: nowrap !important;
 }
 .brand > span:last-child {
   transform: translateY(-1.5px);
+  white-space: nowrap !important;
 }
 .desktop-nav {
   display: flex;
   gap: 8px;
-  margin-left: 88px;
+  margin-left: clamp(12px, 3vw, 48px);
+  align-items: center;
+  white-space: nowrap !important;
+  flex-shrink: 0;
 }
 .nav-link {
   color: #61716a;
@@ -152,11 +163,29 @@ select:focus-visible {
   border-radius: 7px;
   font-weight: 700;
   font-size: 13px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap !important;
+  transition: all 0.2s ease;
 }
 .nav-link:hover,
 .nav-link.active {
   color: var(--ink);
   background: var(--sage-2);
+}
+.desktop-nav .nav-link-icon {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+.desktop-nav .nav-link-icon svg {
+  display: block;
+}
+.desktop-nav .nav-link-text {
+  display: inline;
+  white-space: nowrap !important;
 }
 .header-actions {
   display: flex;
@@ -190,10 +219,18 @@ select:focus-visible {
   gap: 8px;
   text-align: left;
   color: var(--ink);
+  white-space: nowrap !important;
+  flex-shrink: 0 !important;
 }
 .profile-chip-text {
   font-size: 12px;
   font-weight: 700;
+  white-space: nowrap !important;
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: inline-block;
+  vertical-align: middle;
 }
 .profile-chip b {
   font-size: 9px;
@@ -3049,7 +3086,33 @@ dialog::backdrop {
 .toast.show {
   opacity: 1;
 }
-@media (max-width: 800px) {
+/* ==========================================================================
+   DESKTOP ZOOM (>= 125%) / COMPACT SCREENS (<= 1080px)
+   ========================================================================== */
+@media (max-width: 1080px) and (min-height: 521px) {
+  .site-header {
+    padding: 0 16px;
+  }
+  .desktop-nav {
+    margin-left: clamp(8px, 1.8vw, 24px);
+    gap: 4px;
+  }
+  .desktop-nav .nav-link-icon {
+    display: inline-flex !important;
+  }
+  .desktop-nav .nav-link-text {
+    display: none !important;
+  }
+  .desktop-nav .nav-link {
+    padding: 8px 10px;
+    border-radius: 8px;
+  }
+  .profile-chip-text {
+    max-width: 90px;
+  }
+}
+
+@media (max-width: 800px) and (min-height: 521px) {
   .site-header {
     height: calc(64px + env(safe-area-inset-top, 0px));
     padding-top: env(safe-area-inset-top, 0px);
@@ -3337,15 +3400,15 @@ dialog::backdrop {
   .mobile-link {
     color: #64748b;
     text-decoration: none;
-    font-size: 9.5px;
-    font-weight: 700;
+    font-size: 10px;
+    font-weight: 600;
     text-align: center;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 2px;
-    flex: 1;
+    gap: 3px;
+    flex: 1 1 0%;
     min-width: 0;
     height: 100%;
     padding: 4px 2px;
@@ -3355,17 +3418,34 @@ dialog::backdrop {
     -webkit-tap-highlight-color: transparent;
   }
 
+  .mobile-nav-label {
+    display: block;
+    font-size: 10px !important;
+    font-weight: 600 !important;
+    line-height: 1.15 !important;
+    letter-spacing: -0.15px;
+    white-space: nowrap !important;
+    text-align: center;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: clip;
+  }
+
   .mobile-link svg {
-    width: 21px;
-    height: 21px;
+    width: 20px;
+    height: 20px;
     margin: 0 auto;
     transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), stroke 0.2s ease;
     stroke: currentColor;
+    flex-shrink: 0;
   }
 
   .mobile-link.active {
     color: var(--primary, #123d30);
-    font-weight: 800;
+  }
+
+  .mobile-link.active .mobile-nav-label {
+    font-weight: 700 !important;
   }
 
   .mobile-link.active svg {
@@ -5975,80 +6055,10 @@ form .ql-editor,
   }
 }
 
-/* Study Lounge BETA Badges & Card */
-.study-nav-badge {
-  display: inline-block;
-  font-size: 9px;
-  font-weight: 700;
-  padding: 1px 6px;
-  border-radius: 999px;
-  background: rgba(99, 102, 241, 0.12);
-  color: #6366f1;
-  border: 1px solid rgba(99, 102, 241, 0.3);
-  margin-left: 5px;
-  vertical-align: middle;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  line-height: 1.2;
-}
-
-.study-nav-badge.beta {
-  background: linear-gradient(135deg, rgba(99, 102, 241, 0.14) 0%, rgba(168, 85, 247, 0.14) 100%);
-  color: #6366f1;
-  border-color: rgba(99, 102, 241, 0.35);
-}
-
-.study-nav-badge.admin {
-  background: rgba(16, 185, 129, 0.15);
-  color: #10b981;
-  border-color: rgba(16, 185, 129, 0.3);
-}
-
-.study-nav-badge.mobile {
-  position: absolute;
-  top: 1px;
-  right: 8px;
-  font-size: 7px;
-  padding: 0 4px;
-}
-
-/* Arena Navigation Badges */
+/* Study Lounge & Arena Badges (Disabled per user request) */
+.study-nav-badge,
 .arena-nav-badge {
-  display: inline-block;
-  font-size: 9px;
-  font-weight: 800;
-  padding: 1px 6px;
-  border-radius: 999px;
-  background: rgba(245, 158, 11, 0.15);
-  color: #d97706;
-  border: 1px solid rgba(245, 158, 11, 0.35);
-  margin-left: 5px;
-  vertical-align: middle;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  line-height: 1.2;
-}
-
-.arena-nav-badge.beta {
-  background: linear-gradient(135deg, rgba(245, 158, 11, 0.16) 0%, rgba(239, 68, 68, 0.14) 100%);
-  color: #b45309;
-  border-color: rgba(245, 158, 11, 0.4);
-}
-
-.arena-nav-badge.mobile {
-  position: absolute;
-  top: 1px;
-  right: 6px;
-  font-size: 7px;
-  padding: 0 4px;
-}
-
-[data-user-theme="dark"] .arena-nav-badge.beta,
-[data-user-theme="midnight"] .arena-nav-badge.beta,
-body.dark-theme .arena-nav-badge.beta {
-  color: #fbbf24;
-  border-color: rgba(251, 191, 36, 0.4);
-  background: rgba(245, 158, 11, 0.2);
+  display: none !important;
 }
 
 .nav-link-arena {
@@ -7063,7 +7073,7 @@ body.study-zen-fullscreen .study-main-col {
 
 .home-showcase-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 430px;
+  grid-template-columns: minmax(0, 1.15fr) minmax(280px, 430px);
   gap: 20px;
   height: 240px;
   max-height: 240px;
@@ -7175,6 +7185,9 @@ body.study-zen-fullscreen .study-main-col {
   flex-direction: column;
   align-items: flex-start;
   gap: 2px;
+  flex-shrink: 0 !important;
+  white-space: nowrap !important;
+  min-width: fit-content;
 }
 
 .weekly-competition-card .comp-timer-label {
@@ -7183,6 +7196,7 @@ body.study-zen-fullscreen .study-main-col {
   margin-bottom: 0;
   font-weight: 500;
   text-align: left;
+  white-space: nowrap !important;
 }
 
 .weekly-competition-card .comp-countdown {
@@ -7193,6 +7207,8 @@ body.study-zen-fullscreen .study-main-col {
   letter-spacing: 0.5px;
   line-height: 1;
   text-align: left;
+  white-space: nowrap !important;
+  font-variant-numeric: tabular-nums;
 }
 
 .weekly-competition-card .comp-action-box {
@@ -7200,6 +7216,8 @@ body.study-zen-fullscreen .study-main-col {
   flex-direction: row;
   align-items: center;
   gap: 12px;
+  flex-shrink: 0 !important;
+  white-space: nowrap;
 }
 
 .weekly-competition-card .comp-user-status {
@@ -7238,8 +7256,9 @@ body.study-zen-fullscreen .study-main-col {
    ======================================================== */
 .banner-stack-card {
   position: relative;
-  width: 430px;
-  min-width: 430px;
+  width: 100%;
+  max-width: 430px;
+  min-width: 0;
   height: 240px;
   max-height: 240px;
   border-radius: 16px;
@@ -10491,7 +10510,7 @@ dialog.quiz-arena-modal,
 }
 
 /* Responsive queries */
-@media (max-width: 768px) {
+@media (max-width: 980px) and (min-height: 521px) {
   .home-showcase-row {
     position: relative;
     width: 100%;
@@ -13589,3 +13608,156 @@ input:disabled {
   border-color: #cbd5e1 !important;
   opacity: 0.85;
 }
+
+/* ==========================================================================
+   MOBILE LANDSCAPE & COMPACT VIEWPORT OPTIMIZATIONS (Height <= 520px)
+   ========================================================================== */
+@media (max-height: 520px) {
+  .site-header {
+    height: 52px !important;
+    padding: 0 16px !important;
+  }
+  .brand {
+    font-size: 15px !important;
+    gap: 6px !important;
+  }
+  .brand img {
+    width: 26px !important;
+    height: 26px !important;
+  }
+  .desktop-nav {
+    display: flex !important;
+    gap: 6px !important;
+    margin-left: clamp(8px, 1.5vw, 20px) !important;
+  }
+  .desktop-nav .nav-link-icon {
+    display: inline-flex !important;
+  }
+  .desktop-nav .nav-link-text {
+    display: none !important;
+  }
+  .desktop-nav .nav-link {
+    padding: 6px 9px !important;
+    border-radius: 6px !important;
+  }
+  .header-actions {
+    gap: 8px !important;
+  }
+  .desktop-search {
+    display: inline-flex !important;
+    width: 32px !important;
+    height: 32px !important;
+    font-size: 20px !important;
+  }
+  .profile-chip {
+    padding: 2px 6px !important;
+    gap: 6px !important;
+  }
+  .profile-chip-text {
+    max-width: 80px !important;
+    font-size: 11px !important;
+  }
+  .avatar {
+    width: 28px !important;
+    height: 28px !important;
+  }
+
+  /* Hide bottom floating island nav & FAB in landscape mobile to maximize screen real estate */
+  .mobile-nav,
+  .mobile-fab {
+    display: none !important;
+  }
+
+  body {
+    padding-bottom: 20px !important;
+  }
+
+  .page {
+    padding: 16px 16px 28px !important;
+    min-height: auto !important;
+  }
+
+  .home-hero {
+    gap: 12px !important;
+    margin-bottom: 14px !important;
+  }
+
+  .hero-copy h1 {
+    font-size: 22px !important;
+    line-height: 1.25 !important;
+    letter-spacing: -0.5px !important;
+    margin-bottom: 6px !important;
+  }
+
+  .hero-intro {
+    font-size: 12px !important;
+    line-height: 1.4 !important;
+    margin: 4px 0 10px !important;
+  }
+
+  .hero-actions {
+    margin-top: 8px !important;
+    gap: 8px !important;
+  }
+
+  /* Home showcase: Two cards side by side, compact 190px */
+  .home-showcase-row {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    height: 190px !important;
+    max-height: 190px !important;
+    min-height: 190px !important;
+    gap: 12px !important;
+    margin-bottom: 16px !important;
+  }
+
+  .weekly-competition-card,
+  .banner-stack-card {
+    height: 190px !important;
+    min-height: 190px !important;
+    max-height: 190px !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    border-radius: 12px !important;
+  }
+
+  .weekly-competition-card {
+    padding: 12px 14px !important;
+  }
+
+  .weekly-competition-card .comp-topic-title {
+    font-size: 14px !important;
+    line-height: 1.25 !important;
+    margin-bottom: 2px !important;
+    -webkit-line-clamp: 2 !important;
+    line-clamp: 2 !important;
+  }
+
+  .weekly-competition-card .comp-phase-subtitle {
+    font-size: 11px !important;
+  }
+
+  .weekly-competition-card .comp-right {
+    padding-top: 8px !important;
+    gap: 8px !important;
+  }
+
+  .weekly-competition-card .comp-countdown {
+    font-size: 16px !important;
+  }
+
+  .weekly-competition-card .comp-timer-label {
+    font-size: 10px !important;
+  }
+
+  .weekly-competition-card .comp-cta-button {
+    height: 32px !important;
+    padding: 0 12px !important;
+    font-size: 12px !important;
+  }
+
+  .weekly-competition-card .comp-user-status {
+    font-size: 10px !important;
+  }
+}
+
