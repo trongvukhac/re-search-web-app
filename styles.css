@@ -198,16 +198,34 @@ select:focus-visible {
   --ring-width: 2.5px;
   width: 38px;
   height: 38px;
-  display: inline-grid;
-  place-items: center;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  line-height: 1;
+  letter-spacing: 0;
+  text-indent: 0;
   background: var(--ink);
   color: white;
   border-radius: 50%;
-  font-size: 18px;
+  font-size: 20px;
   font-weight: 800;
-  letter-spacing: 0.3px;
   flex: none;
   position: relative;
+  box-sizing: border-box;
+  padding: 0;
+  margin: 0;
+  user-select: none;
+  font-variant-numeric: tabular-nums;
+  -webkit-font-smoothing: antialiased;
+}
+.avatar > * {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  line-height: 1;
+  letter-spacing: 0;
 }
 .avatar-sm {
   --ring-inset: -4px;
@@ -228,7 +246,7 @@ select:focus-visible {
   --ring-width: 3.5px;
   width: 72px;
   height: 72px;
-  font-size: 32px;
+  font-size: 38px;
   background: #305e4d;
 }
 .avatar.teal {
@@ -367,6 +385,7 @@ h1 em {
   border-radius: 50%;
   padding: var(--ring-width, 2.5px);
   -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
   -webkit-mask-composite: xor;
   mask-composite: exclude;
   animation: spinAvatarBorder 3.5s linear infinite;
@@ -3109,7 +3128,7 @@ dialog::backdrop {
   .post-card .avatar {
     width: 27px;
     height: 27px;
-    font-size: 8px;
+    font-size: 14px;
   }
   .post-card h3,
   .forum-feed .post-card h3 {
@@ -3201,7 +3220,7 @@ dialog::backdrop {
   .avatar-lg {
     width: 53px;
     height: 53px;
-    font-size: 14px;
+    font-size: 28px;
   }
   .account-header .button-outline {
     min-height: 34px;
@@ -3804,7 +3823,7 @@ dialog.detail-modal[open] {
 .lb-avatar-wrap .avatar {
   width: 30px;
   height: 30px;
-  font-size: 14px;
+  font-size: 16px;
 }
 .lb-rank-badge {
   position: absolute;
@@ -8164,10 +8183,14 @@ body.study-zen-fullscreen .study-main-col {
   width: 52px !important;
   height: 52px !important;
   border-radius: 50%;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 22px;
+  text-align: center;
+  line-height: 1;
+  letter-spacing: 0;
+  text-indent: 0;
+  font-size: 27px;
   background: var(--sage-2);
   box-shadow: 0 4px 12px rgba(0,0,0,0.12);
   border: 2.5px solid #ffffff;
@@ -8177,7 +8200,7 @@ body.study-zen-fullscreen .study-main-col {
 .podium-col.rank-1 .podium-avatar {
   width: 66px !important;
   height: 66px !important;
-  font-size: 30px;
+  font-size: 35px;
   border-color: #facc15;
   box-shadow: 0 0 20px rgba(250, 204, 21, 0.5);
 }
@@ -8383,12 +8406,15 @@ body.study-zen-fullscreen .study-main-col {
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
+  text-align: center;
+  line-height: 1;
+  letter-spacing: 0;
   background: var(--sage-2);
   border: 1px solid var(--line);
-  font-size: 13px;
+  font-size: 16px;
   font-weight: 700;
   color: #123d30;
   flex-shrink: 0;
@@ -9386,13 +9412,13 @@ body.dark-theme .comp-tab-btn.active {
   .podium-avatar {
     width: 44px !important;
     height: 44px !important;
-    font-size: 18px;
+    font-size: 23px;
   }
 
   .podium-col.rank-1 .podium-avatar {
     width: 56px !important;
     height: 56px !important;
-    font-size: 22px;
+    font-size: 29px;
   }
 
   .podium-crown {
@@ -9451,13 +9477,13 @@ body.dark-theme .comp-tab-btn.active {
   .comp-lb-avatar-wrap .avatar {
     width: 27px;
     height: 27px;
-    font-size: 13px;
+    font-size: 14px;
   }
 
   .comp-lb-avatar {
-    width: 24px;
-    height: 24px;
-    font-size: 11px;
+    width: 27px;
+    height: 27px;
+    font-size: 14px;
     flex-shrink: 0;
   }
 
@@ -11949,16 +11975,37 @@ dialog.modal.namecard-modal {
   background: #ffffff;
   border: 4px solid #ffffff;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.14);
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 48px;
+  text-align: center;
+  line-height: 1;
+  letter-spacing: 0;
+  text-indent: 0;
+  font-size: 52px;
   position: relative;
   overflow: visible;
   --ring-inset: -7.5px;
   --ring-width: 4px;
   user-select: none;
+  box-sizing: border-box;
+  padding: 0;
   transition: all 0.3s ease;
+}
+
+#namecardAvatar,
+.namecard-avatar-circle > span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  line-height: 1;
+  letter-spacing: 0;
+  text-indent: 0;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
 }
 
 /* Streak Tier Avatar Frames & Glow for Namecard (Stands still in place, no zoom) */
@@ -12369,10 +12416,15 @@ dialog.modal.full-cover-viewer-modal {
   border-radius: 10px;
   border: 1.5px solid #e2e8f0;
   background: #ffffff;
-  font-size: 22px;
-  display: flex;
+  font-size: 23px;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
+  text-align: center;
+  line-height: 1;
+  letter-spacing: 0;
+  padding: 0;
+  margin: 0;
   cursor: pointer;
   transition: all 0.15s ease;
 }
@@ -12965,13 +13017,13 @@ dialog.modal.full-cover-viewer-modal {
   .podium-avatar {
     width: 38px !important;
     height: 38px !important;
-    font-size: 15px !important;
+    font-size: 20px !important;
   }
 
   .podium-col.rank-1 .podium-avatar {
     width: 48px !important;
     height: 48px !important;
-    font-size: 19px !important;
+    font-size: 25px !important;
   }
 
   .podium-name {
@@ -12997,7 +13049,7 @@ dialog.modal.full-cover-viewer-modal {
   .comp-lb-avatar-wrap .avatar {
     width: 24px !important;
     height: 24px !important;
-    font-size: 11px !important;
+    font-size: 13px !important;
   }
 
   .comp-lb-name {
