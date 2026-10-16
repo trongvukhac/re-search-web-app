@@ -370,10 +370,17 @@ h1 em {
   box-shadow: 0 0 0 3px #fff, 0 0 0 6px #ffd700;
 }
 
-/* Rotating Circular Gradient Border (Tiers 3, 4, 5 only - stands still in place, no zoom) */
-@keyframes spinAvatarBorder {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+/* Diagonal Gradient Border (Tiers 3, 4, 5 only - moves smoothly along 135deg diagonal) */
+@keyframes diagonalBorderShift {
+  0% {
+    background-position: 0% 0%;
+  }
+  50% {
+    background-position: 100% 100%;
+  }
+  100% {
+    background-position: 0% 0%;
+  }
 }
 
 .avatar.avatar-tier-3::before,
@@ -388,9 +395,11 @@ h1 em {
   mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
   -webkit-mask-composite: xor;
   mask-composite: exclude;
-  animation: spinAvatarBorder 3.5s linear infinite;
   pointer-events: none;
   z-index: 2;
+  transform: none;
+  background-size: 280% 280%;
+  animation: diagonalBorderShift 7s ease-in-out infinite;
 }
 
 .avatar.avatar-tier-3 {
@@ -402,8 +411,10 @@ h1 em {
   box-shadow: 0 0 0 3px #fff;
 }
 .avatar.avatar-tier-3::before {
-  background: conic-gradient(from 0deg, #5f3dc4, #845ef7, #d0bfff, #845ef7, #5f3dc4);
-  filter: drop-shadow(0 0 3px rgba(132, 94, 247, 0.6));
+  background: linear-gradient(135deg, #5f3dc4 0%, #9775fa 25%, #e5dbff 50%, #7048e8 75%, #5f3dc4 100%);
+  background-size: 280% 280%;
+  filter: drop-shadow(0 0 4px rgba(132, 94, 247, 0.55));
+  animation: diagonalBorderShift 7.5s ease-in-out infinite;
 }
 
 .avatar.avatar-tier-4 {
@@ -415,30 +426,33 @@ h1 em {
   box-shadow: 0 0 0 3px #fff;
 }
 .avatar.avatar-tier-4::before {
-  background: conic-gradient(from 0deg, #c92a2a, #ff6b6b, #ffa8a8, #ff6b6b, #c92a2a);
-  filter: drop-shadow(0 0 4px rgba(224, 49, 49, 0.7));
+  background: linear-gradient(135deg, #c92a2a 0%, #ff6b6b 25%, #ffe3e3 50%, #e03131 75%, #c92a2a 100%);
+  background-size: 280% 280%;
+  filter: drop-shadow(0 0 4px rgba(224, 49, 49, 0.65));
+  animation: diagonalBorderShift 7s ease-in-out infinite;
 }
 
 .avatar.avatar-tier-5 {
   background: linear-gradient(135deg, #5f3dc4 0%, #a61e4d 45%, #e03131 85%, #f783ac 100%) !important;
-  background-size: 200% 200% !important;
+  background-size: 250% 250% !important;
   color: #fff !important;
   box-shadow: 0 0 0 2px #fff;
-  animation: mythicBgShift 6s ease infinite;
+  animation: mythicBgShift 8s ease-in-out infinite;
 }
 .avatar-lg.avatar-tier-5 {
   box-shadow: 0 0 0 3px #fff;
 }
 .avatar.avatar-tier-5::before {
-  background: conic-gradient(from 0deg, #7048e8, #f783ac, #ff6b6b, #ffd43b, #7048e8);
-  filter: drop-shadow(0 0 5px rgba(247, 131, 172, 0.8));
-  animation: spinAvatarBorder 2.8s linear infinite;
+  background: linear-gradient(135deg, #7048e8 0%, #f783ac 20%, #ffd43b 40%, #ff6b6b 65%, #a61e4d 85%, #7048e8 100%);
+  background-size: 300% 300%;
+  filter: drop-shadow(0 0 5px rgba(247, 131, 172, 0.75));
+  animation: diagonalBorderShift 6.5s ease-in-out infinite;
 }
 
 @keyframes mythicBgShift {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
+  0% { background-position: 0% 0%; }
+  50% { background-position: 100% 100%; }
+  100% { background-position: 0% 0%; }
 }
 
 /* Streak Tier User Name Colors */
@@ -12028,11 +12042,11 @@ dialog.modal.namecard-modal {
 
 .namecard-avatar-circle.avatar-tier-5 {
   background: linear-gradient(135deg, #5f3dc4 0%, #a61e4d 45%, #e03131 85%, #f783ac 100%) !important;
-  background-size: 200% 200% !important;
+  background-size: 250% 250% !important;
   color: #ffffff !important;
   border: 4px solid #ffffff;
-  animation: mythicBgShift 6s ease infinite;
-  -webkit-animation: mythicBgShift 6s ease infinite;
+  animation: mythicBgShift 8s ease-in-out infinite;
+  -webkit-animation: mythicBgShift 8s ease-in-out infinite;
 }
 
 .namecard-identity {
