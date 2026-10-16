@@ -11750,13 +11750,13 @@ dialog.modal.namecard-modal {
 
 /* 2 Khung hoạt động giới hạn */
 .namecard-frame-layer[data-frame="ton_vinh_phai_dep"] {
-  background-image: url("frames/v2/ton_vinh_phai_dep.png?v=1");
-  inset: -46px -42px -64px -42px;
+  background-image: url("frames/v2/ton_vinh_phai_dep.png?v=2");
+  inset: -46px -29px -45px -41px;
   background-size: 100% 100%;
 }
 .namecard-frame-layer[data-frame="bua_tiec_ma_mi"] {
-  background-image: url("frames/v2/bua_tiec_ma_mi.png?v=1");
-  inset: -46px -42px -64px -42px;
+  background-image: url("frames/v2/bua_tiec_ma_mi.png?v=2");
+  inset: -52px -40px -53px -42px;
   background-size: 100% 100%;
 }
 
