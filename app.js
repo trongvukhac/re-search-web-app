@@ -4406,7 +4406,7 @@ const FRAME_OPTIONS = [
   // Mặc định: không dùng khung (không có khung)
   { id: "none", name: "Không khung", minDays: 0 },
 
-  // Khung cơ bản miễn phí (độ dày 4-5px) tương ứng danh sách ảnh bìa
+  // Khung cơ bản miễn phí (độ dày 12px) tương ứng danh sách ảnh bìa
   { id: "basic_ocean", name: "Xanh đại dương", minDays: 0 },
   { id: "basic_emerald", name: "Ngọc lục bảo", minDays: 0 },
   { id: "basic_sunset", name: "Hoàng hôn tím", minDays: 0 },
