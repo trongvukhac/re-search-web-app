@@ -9092,6 +9092,18 @@ const HOME_BANNERS_CONFIG = [
     }
   },
   {
+    id: "leaderboard-w02",
+    title: "Bảng Vàng Tuần 02 — Phỏng Vấn Sâu",
+    image: "public/assets/banner-leaderboard-w02.jpg?v=20261018_1",
+    // xuất hiện từ 18/10/2026 đến hết ngày 25/10/2026
+    startsAt: new Date("2026-10-18T00:00:00+07:00").getTime(),
+    expiresAt: new Date("2026-10-25T23:59:59+07:00").getTime(),
+    action: () => {
+      if (typeof go === "function") go("arena");
+      else toast("Bảng xếp hạng thi đua Đấu trường Arena Tuần 02!");
+    }
+  },
+  {
     id: "leaderboard-w01",
     title: "Bảng Vàng Tuần 01 — Phương Pháp Nghiên Cứu Định Tính",
     image: "public/assets/banner-leaderboard-w01.jpg?v=20261016_1",
@@ -9136,7 +9148,11 @@ let homeBannerState = {
 
 function getActiveHomeBanners() {
   const now = Date.now();
-  return HOME_BANNERS_CONFIG.filter((b) => !b.expiresAt || now <= b.expiresAt);
+  return HOME_BANNERS_CONFIG.filter((b) => {
+    if (b.startsAt && now < b.startsAt) return false;
+    if (b.expiresAt && now > b.expiresAt) return false;
+    return true;
+  });
 }
 
 function initHomeBannerStack() {
@@ -9846,9 +9862,54 @@ async function onEnterArena() {
   }
 }
 
+function stopSundayCeremonySound() {
+  if (compState.sundayAudio) {
+    try {
+      compState.sundayAudio.pause();
+      compState.sundayAudio.currentTime = 0;
+    } catch (e) {}
+  }
+}
+
+function playSundayCeremonySound() {
+  try {
+    if (!compState.sundayAudio) {
+      compState.sundayAudio = new Audio("/public/assets/tunetank-winner-awards-logo-484332.mp3");
+      compState.sundayAudio.preload = "auto";
+      compState.sundayAudio.playsInline = true;
+      compState.sundayAudio.setAttribute("playsinline", "true");
+      compState.sundayAudio.setAttribute("webkit-playsinline", "true");
+    }
+    compState.sundayAudio.currentTime = 0;
+    compState.sundayAudio.volume = 0.85;
+    const playPromise = compState.sundayAudio.play();
+    if (playPromise !== undefined) {
+      playPromise.catch(err => {
+        console.warn("Sunday ceremony audio play deferred/blocked by autoplay policy:", err);
+        const resumeOnUserInteraction = () => {
+          if (compState.sundayAudio) {
+            compState.sundayAudio.play().catch(() => {});
+          }
+          window.removeEventListener("click", resumeOnUserInteraction);
+          window.removeEventListener("keydown", resumeOnUserInteraction);
+          window.removeEventListener("touchstart", resumeOnUserInteraction);
+        };
+        window.addEventListener("click", resumeOnUserInteraction, { once: true });
+        window.addEventListener("keydown", resumeOnUserInteraction, { once: true });
+        window.addEventListener("touchstart", resumeOnUserInteraction, { once: true });
+      });
+    }
+  } catch (e) {
+    console.warn("Could not play Sunday ceremony audio:", e);
+  }
+}
+window.playSundayCeremonySound = playSundayCeremonySound;
+window.stopSundayCeremonySound = stopSundayCeremonySound;
+
 function onLeaveArena() {
   if (compState.gatewayTimerInterval) clearInterval(compState.gatewayTimerInterval);
   stopArenaLeaderboardAutoRefresh();
+  stopSundayCeremonySound();
 }
 
 window.onEnterArena = onEnterArena;
@@ -9864,6 +9925,7 @@ async function openCompetitionModal(initialTab = null) {
 function closeCompetitionModal() {
   if (compState.gatewayTimerInterval) clearInterval(compState.gatewayTimerInterval);
   stopArenaLeaderboardAutoRefresh();
+  stopSundayCeremonySound();
 }
 
 function handleCompetitionCtaClick() {
@@ -9936,7 +9998,7 @@ function launchSundayCeremonyAnimation() {
     draw();
   }
 
-  playCompSound("victory");
+  playSundayCeremonySound();
 }
 window.launchSundayCeremonyAnimation = launchSundayCeremonyAnimation;
 
@@ -9948,6 +10010,10 @@ function switchCompTab(tabName) {
   $$(".comp-tab-panel").forEach(panel => {
     panel.style.display = "none";
   });
+
+  if (tabName !== "leaderboard") {
+    stopSundayCeremonySound();
+  }
 
   if (tabName === "gateway") {
     stopArenaLeaderboardAutoRefresh();
