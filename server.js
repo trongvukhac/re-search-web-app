@@ -1468,6 +1468,28 @@ function getPhaseForDayOfWeek(dayOfWeek) {
   return 0; // Sunday
 }
 
+function isPhaseOnTimeWindow(comp, phase, vnDate) {
+  if (phase !== 1 && phase !== 2) return false;
+  if (!comp || !comp.start_date || !vnDate) return false;
+
+  // comp.start_date is 'YYYY-MM-DD' representing Monday of the competition week
+  const mondayMidnight = new Date(comp.start_date + "T00:00:00+07:00").getTime();
+  const currentMs = vnDate.getTime();
+
+  if (phase === 1) {
+    // Giai đoạn 1: Thứ Hai 19:00:00 đến Thứ Ba 23:59:59.999 (Giờ VN)
+    const openMs = mondayMidnight + (19 * 3600 * 1000);
+    const closeMs = mondayMidnight + (1 * 86400 * 1000) + (23 * 3600 + 59 * 60 + 59) * 1000 + 999;
+    return (currentMs >= openMs && currentMs <= closeMs);
+  } else if (phase === 2) {
+    // Giai đoạn 2: Thứ Tư 19:00:00 đến Thứ Năm 23:59:59.999 (Giờ VN)
+    const openMs = mondayMidnight + (2 * 86400 * 1000) + (19 * 3600 * 1000);
+    const closeMs = mondayMidnight + (3 * 86400 * 1000) + (23 * 3600 + 59 * 60 + 59) * 1000 + 999;
+    return (currentMs >= openMs && currentMs <= closeMs);
+  }
+  return false;
+}
+
 const SAMPLE_COMPETITION_QUESTIONS = {
   1: [ // Giai đoạn 1: Thứ Hai – Thứ Ba
     {
@@ -4531,7 +4553,7 @@ async function api(request, response, url) {
       const newBest = Math.max(existing.best_score, score);
       const newAttempts = existing.attempts_used + 1;
       const bestSessionId = (score >= existing.best_score) ? sessionId : existing.best_session_id;
-      const bestBonus = Math.max(existing.on_time_bonus || 0, onTimeBonus || 0);
+      const bestBonus = (score >= existing.best_score) ? (onTimeBonus || 0) : (existing.on_time_bonus || 0);
 
       db.prepare(`
         UPDATE competition_phase_results 
@@ -4656,9 +4678,9 @@ async function api(request, response, url) {
 
       let p1Bonus = p1Row?.on_time_bonus || 0;
       if (!p1Bonus) {
-        const s1 = db.prepare("SELECT on_time_bonus, is_on_time FROM competition_sessions WHERE user_id = ? AND competition_id = ? AND phase = 1 AND status IN ('completed', 'expired') ORDER BY id DESC LIMIT 1").get(user.id, comp.id);
-        if (s1 && (s1.on_time_bonus > 0 || s1.is_on_time === 1)) {
-          p1Bonus = s1.on_time_bonus || 50;
+        const s1 = db.prepare("SELECT on_time_bonus FROM competition_sessions WHERE user_id = ? AND competition_id = ? AND phase = 1 AND status IN ('completed', 'expired') ORDER BY id DESC LIMIT 1").get(user.id, comp.id);
+        if (s1 && s1.on_time_bonus > 0) {
+          p1Bonus = s1.on_time_bonus;
           try {
             db.prepare("UPDATE competition_phase_results SET on_time_bonus = ? WHERE user_id = ? AND competition_id = ? AND phase = 1").run(p1Bonus, user.id, comp.id);
           } catch (e) {}
@@ -4666,9 +4688,9 @@ async function api(request, response, url) {
       }
       let p2Bonus = p2Row?.on_time_bonus || 0;
       if (!p2Bonus) {
-        const s2 = db.prepare("SELECT on_time_bonus, is_on_time FROM competition_sessions WHERE user_id = ? AND competition_id = ? AND phase = 2 AND status IN ('completed', 'expired') ORDER BY id DESC LIMIT 1").get(user.id, comp.id);
-        if (s2 && (s2.on_time_bonus > 0 || s2.is_on_time === 1)) {
-          p2Bonus = s2.on_time_bonus || 50;
+        const s2 = db.prepare("SELECT on_time_bonus FROM competition_sessions WHERE user_id = ? AND competition_id = ? AND phase = 2 AND status IN ('completed', 'expired') ORDER BY id DESC LIMIT 1").get(user.id, comp.id);
+        if (s2 && s2.on_time_bonus > 0) {
+          p2Bonus = s2.on_time_bonus;
           try {
             db.prepare("UPDATE competition_phase_results SET on_time_bonus = ? WHERE user_id = ? AND competition_id = ? AND phase = 2").run(p2Bonus, user.id, comp.id);
           } catch (e) {}
@@ -4736,9 +4758,9 @@ async function api(request, response, url) {
           bestScore: p1,
           isCurrent: curPhase === 1 && !timeState.isSunday,
           isAvailable: !timeState.isSunday && (curPhase >= 1) && (completedP1 < 1 || (hasActiveSession && activePhase === 1)),
-          isCatchUp: !timeState.isSunday && curPhase > 1 && completedP1 < 1,
-          isOnTime: curPhase === 1 && !timeState.isSunday,
-          onTimeBonusEligible: (curPhase === 1 && !timeState.isSunday) ? 50 : 0,
+          isCatchUp: !timeState.isSunday && (curPhase > 1 || !isPhaseOnTimeWindow(comp, 1, vnNow)) && completedP1 < 1,
+          isOnTime: !timeState.isSunday && isPhaseOnTimeWindow(comp, 1, vnNow),
+          onTimeBonusEligible: (!timeState.isSunday && isPhaseOnTimeWindow(comp, 1, vnNow)) ? 50 : 0,
           onTimeBonusEarned: p1Bonus,
           hasActive: hasActiveSession && activePhase === 1
         },
@@ -4752,9 +4774,9 @@ async function api(request, response, url) {
           bestScore: p2,
           isCurrent: curPhase === 2 && !timeState.isSunday,
           isAvailable: !timeState.isSunday && (curPhase >= 2) && (completedP2 < 1 || (hasActiveSession && activePhase === 2)),
-          isCatchUp: !timeState.isSunday && curPhase > 2 && completedP2 < 1,
-          isOnTime: curPhase === 2 && !timeState.isSunday,
-          onTimeBonusEligible: (curPhase === 2 && !timeState.isSunday) ? 50 : 0,
+          isCatchUp: !timeState.isSunday && (curPhase > 2 || !isPhaseOnTimeWindow(comp, 2, vnNow)) && completedP2 < 1,
+          isOnTime: !timeState.isSunday && isPhaseOnTimeWindow(comp, 2, vnNow),
+          onTimeBonusEligible: (!timeState.isSunday && isPhaseOnTimeWindow(comp, 2, vnNow)) ? 50 : 0,
           onTimeBonusEarned: p2Bonus,
           hasActive: hasActiveSession && activePhase === 2
         },
@@ -5107,17 +5129,20 @@ async function api(request, response, url) {
         db.prepare("UPDATE competition_sessions SET status = 'expired', remaining_seconds = 0, is_paused = 0, finished_at = CURRENT_TIMESTAMP WHERE id = ?").run(activeSession.id);
         return error(response, 400, "Phiên thi của bạn đã hết thời gian và đã kết thúc.");
       } else {
-        db.prepare("UPDATE competition_sessions SET server_start_timestamp_ms = ?, remaining_seconds = ?, accumulated_penalty_seconds = 0, is_paused = 0 WHERE id = ?").run(nowMs, remaining, activeSession.id);
+        const sessionOnTimeEligible = isPhaseOnTimeWindow(comp, activeSession.phase, vnNow);
+        const newIsOnTime = (activeSession.is_on_time && sessionOnTimeEligible) ? 1 : 0;
+        db.prepare("UPDATE competition_sessions SET server_start_timestamp_ms = ?, remaining_seconds = ?, accumulated_penalty_seconds = 0, is_paused = 0, is_on_time = ? WHERE id = ?").run(nowMs, remaining, newIsOnTime, activeSession.id);
         activeSession.remaining_seconds = remaining;
         activeSession.server_start_timestamp_ms = nowMs;
         activeSession.is_paused = 0;
+        activeSession.is_on_time = newIsOnTime;
       }
     }
 
     if (!activeSession) {
       const sessionToken = randomToken();
       const attemptNumber = 1;
-      const isOnTime = (phase === currentPhase && (phase === 1 || phase === 2)) ? 1 : 0;
+      const isOnTime = isPhaseOnTimeWindow(comp, phase, vnNow) ? 1 : 0;
 
       db.prepare(`
         INSERT INTO competition_sessions (
@@ -5147,6 +5172,8 @@ async function api(request, response, url) {
     const phaseDays = phase === 1 ? "Thứ Hai – Thứ Ba" : (phase === 2 ? "Thứ Tư – Thứ Năm" : "Thứ Sáu – Thứ Bảy");
     const phaseName = `Giai đoạn ${phase} (${phaseDays})`;
 
+    const isSessionOnTime = Boolean(activeSession.is_on_time && isPhaseOnTimeWindow(comp, phase, vnNow));
+
     return json(response, 200, {
       ok: true,
       isResumed: isResumed && Boolean(activeSession),
@@ -5154,9 +5181,9 @@ async function api(request, response, url) {
       phase,
       phaseName,
       phaseTopic,
-      isOnTime: Boolean(activeSession.is_on_time),
-      potentialOnTimeBonus: activeSession.is_on_time ? 50 : 0,
-      isCatchUp: phase < currentPhase,
+      isOnTime: isSessionOnTime,
+      potentialOnTimeBonus: isSessionOnTime ? 50 : 0,
+      isCatchUp: phase < currentPhase || !isSessionOnTime,
       attemptNumber: activeSession.attempt_number,
       totalQuestions: 10,
       currentQuestionIndex: currentQ.question_index,
@@ -5240,13 +5267,16 @@ async function api(request, response, url) {
 
     if (effectiveRemaining <= 0 || selectedOption === "TIMEOUT") {
       effectiveRemaining = 0;
-      const onTimeBonus = (session.is_on_time === 1 && (session.phase === 1 || session.phase === 2)) ? 50 : 0;
+      const vnNow = getVietnamNow();
+      const comp = db.prepare("SELECT * FROM weekly_competitions WHERE id = ?").get(session.competition_id);
+      const isSessionOnTime = isPhaseOnTimeWindow(comp, session.phase, vnNow);
+      const onTimeBonus = (session.is_on_time === 1 && isSessionOnTime) ? 50 : 0;
       const finalScore = session.correct_points + session.first_try_bonus + onTimeBonus;
       db.prepare(`
         UPDATE competition_sessions 
-        SET status = 'expired', remaining_seconds = 0, time_points = 0, on_time_bonus = ?, total_score = ?, finished_at = CURRENT_TIMESTAMP 
+        SET status = 'expired', remaining_seconds = 0, time_points = 0, is_on_time = ?, on_time_bonus = ?, total_score = ?, finished_at = CURRENT_TIMESTAMP 
         WHERE id = ?
-      `).run(onTimeBonus, finalScore, session.id);
+      `).run(onTimeBonus > 0 ? 1 : 0, onTimeBonus, finalScore, session.id);
 
       const bestScore = updateUserPhaseBestScore(user.id, session.competition_id, session.phase, finalScore, session.id, onTimeBonus);
 
@@ -5333,7 +5363,10 @@ async function api(request, response, url) {
 
       if (nextQIndex > 10) {
         const timeBonus = effectiveRemaining;
-        const onTimeBonus = (session.is_on_time === 1 && (session.phase === 1 || session.phase === 2)) ? 50 : 0;
+        const vnNow = getVietnamNow();
+        const comp = db.prepare("SELECT * FROM weekly_competitions WHERE id = ?").get(session.competition_id);
+        const isSessionOnTime = isPhaseOnTimeWindow(comp, session.phase, vnNow);
+        const onTimeBonus = (session.is_on_time === 1 && isSessionOnTime) ? 50 : 0;
         const totalScore = newCorrectPoints + newFirstTryBonus + timeBonus + onTimeBonus;
 
         db.prepare(`
@@ -5344,13 +5377,14 @@ async function api(request, response, url) {
               correct_points = ?,
               first_try_bonus = ?,
               time_points = ?,
+              is_on_time = ?,
               on_time_bonus = ?,
               total_score = ?,
               remaining_seconds = ?,
               status = 'completed',
               finished_at = CURRENT_TIMESTAMP
           WHERE id = ?
-        `).run(newCorrectCount, newFirstTryCount, newCorrectPoints, newFirstTryBonus, timeBonus, onTimeBonus, totalScore, effectiveRemaining, session.id);
+        `).run(newCorrectCount, newFirstTryCount, newCorrectPoints, newFirstTryBonus, timeBonus, onTimeBonus > 0 ? 1 : 0, onTimeBonus, totalScore, effectiveRemaining, session.id);
 
         const bestScore = updateUserPhaseBestScore(user.id, session.competition_id, session.phase, totalScore, session.id, onTimeBonus);
 
@@ -5522,7 +5556,10 @@ async function api(request, response, url) {
 
         if (nextQIndex > 10) {
           const timeBonus = effectiveRemaining;
-          const onTimeBonus = (session.is_on_time === 1 && (session.phase === 1 || session.phase === 2)) ? 50 : 0;
+          const vnNow = getVietnamNow();
+          const comp = db.prepare("SELECT * FROM weekly_competitions WHERE id = ?").get(session.competition_id);
+          const isSessionOnTime = isPhaseOnTimeWindow(comp, session.phase, vnNow);
+          const onTimeBonus = (session.is_on_time === 1 && isSessionOnTime) ? 50 : 0;
           const totalScore = session.correct_points + session.first_try_bonus + timeBonus + onTimeBonus;
 
           db.prepare(`
@@ -5530,13 +5567,14 @@ async function api(request, response, url) {
             SET current_question_index = 10,
                 accumulated_penalty_seconds = ?,
                 time_points = ?,
+                is_on_time = ?,
                 on_time_bonus = ?,
                 total_score = ?,
                 remaining_seconds = ?,
                 status = 'completed',
                 finished_at = CURRENT_TIMESTAMP
             WHERE id = ?
-          `).run(newPenaltyTotal, timeBonus, onTimeBonus, totalScore, effectiveRemaining, session.id);
+          `).run(newPenaltyTotal, timeBonus, onTimeBonus > 0 ? 1 : 0, onTimeBonus, totalScore, effectiveRemaining, session.id);
 
           const bestScore = updateUserPhaseBestScore(user.id, session.competition_id, session.phase, totalScore, session.id, onTimeBonus);
 
@@ -5659,7 +5697,10 @@ async function api(request, response, url) {
     // Check if this is the 3rd exit: LIMIT IS MAX 2 EXITS!
     if (newExitCount >= 3) {
       // Dừng và tính điểm bài thi luôn
-      const onTimeBonus = (session.is_on_time === 1 && (session.phase === 1 || session.phase === 2)) ? 50 : 0;
+      const vnNow = getVietnamNow();
+      const comp = db.prepare("SELECT * FROM weekly_competitions WHERE id = ?").get(session.competition_id);
+      const isSessionOnTime = isPhaseOnTimeWindow(comp, session.phase, vnNow);
+      const onTimeBonus = (session.is_on_time === 1 && isSessionOnTime) ? 50 : 0;
       const totalScore = (session.correct_points || 0) + (session.first_try_bonus || 0) + onTimeBonus;
       db.prepare(`
         UPDATE competition_sessions 
@@ -5667,11 +5708,12 @@ async function api(request, response, url) {
             remaining_seconds = 0,
             is_paused = 0,
             exit_count = ?,
+            is_on_time = ?,
             on_time_bonus = ?,
             total_score = ?,
             finished_at = CURRENT_TIMESTAMP
         WHERE id = ?
-      `).run(newExitCount, onTimeBonus, totalScore, session.id);
+      `).run(newExitCount, onTimeBonus > 0 ? 1 : 0, onTimeBonus, totalScore, session.id);
 
       const bestScore = updateUserPhaseBestScore(user.id, session.competition_id, session.phase, totalScore, session.id, onTimeBonus);
 

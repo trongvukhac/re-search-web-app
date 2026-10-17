@@ -10612,8 +10612,8 @@ function openQuizStartConfirmModal(phase) {
     promptTextEl.textContent = "Bạn chỉ có 1 lượt thi duy nhất cho giai đoạn này, bắt đầu thi chứ?";
   }
 
-  const isOnTime = (targetPhase === currentPhase && (targetPhase === 1 || targetPhase === 2) && !isSunday);
-  const isCatchUp = targetPhase < currentPhase;
+  const isOnTime = Boolean(phaseObj ? phaseObj.isOnTime : (targetPhase === currentPhase && (targetPhase === 1 || targetPhase === 2) && !isSunday));
+  const isCatchUp = Boolean(phaseObj ? phaseObj.isCatchUp : (targetPhase < currentPhase));
 
   if (bonusCardEl) {
     if (isOnTime) {
