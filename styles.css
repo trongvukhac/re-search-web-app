@@ -268,6 +268,7 @@ select:focus-visible {
   user-select: none;
   font-variant-numeric: tabular-nums;
   -webkit-font-smoothing: antialiased;
+  overflow: visible !important;
 }
 .avatar > * {
   display: inline-flex;
@@ -503,6 +504,35 @@ h1 em {
   0% { background-position: 0% 0%; }
   50% { background-position: 100% 100%; }
   100% { background-position: 0% 0%; }
+}
+
+/* ==========================================================================
+   AVATAR TIER BULLETPROOF SHIELD (BẢO VỆ VIỀN VÀ HÀO QUANG TOÀN DIỆN KHỎI BỊ CẮT)
+   Quy tắc kỹ thuật bất biến:
+   1. Mọi phần tử .avatar và container chứa avatar KHÔNG ĐƯỢC có overflow: hidden
+   2. Container danh sách/bảng xếp hạng (.comp-lb-user, .lb-item) bắt buộc overflow: visible !important
+      (Cơ chế cắt chữ dài tự động bằng dấu 3 chấm đã được thực hiện tại .comp-lb-name / .lb-name-text)
+   3. Wrappers luôn có padding an toàn và z-index để không bị đè hay cắt cạnh
+   ========================================================================== */
+.avatar,
+.avatar[class*="avatar-tier-"],
+.comp-lb-avatar-wrap,
+.lb-avatar-wrap,
+.podium-avatar-wrap,
+.podium-avatar {
+  overflow: visible !important;
+}
+
+.comp-lb-user,
+.lb-item {
+  overflow: visible !important;
+}
+
+.comp-lb-avatar-wrap,
+.lb-avatar-wrap {
+  overflow: visible !important;
+  z-index: 2 !important;
+  flex-shrink: 0 !important;
 }
 
 /* Streak Tier User Name Colors */
@@ -2699,7 +2729,7 @@ dialog.modal:not(.quiz-arena-modal):not(.quiz-start-confirm-modal):not(.quiz-exi
   inset: 0;
   margin: auto;
   border: 0;
-  border-radius: 11px;
+  border-radius: 16px;
   padding: 0;
   color: var(--ink);
   background: #fbfcf8;
@@ -3924,11 +3954,15 @@ dialog.detail-modal[open] {
   justify-content: center;
   margin-right: 10px;
   flex-shrink: 0;
+  padding: 4px;
+  overflow: visible;
+  z-index: 2;
 }
 .lb-avatar-wrap .avatar {
   width: 30px;
   height: 30px;
   font-size: 16px;
+  overflow: visible !important;
 }
 .lb-rank-badge {
   position: absolute;
@@ -8576,6 +8610,9 @@ body.study-zen-fullscreen .study-main-col {
   display: inline-flex;
   justify-content: center;
   align-items: center;
+  padding: 4px;
+  overflow: visible;
+  z-index: 2;
 }
 
 .podium-avatar {
@@ -8594,6 +8631,7 @@ body.study-zen-fullscreen .study-main-col {
   box-shadow: 0 4px 12px rgba(0,0,0,0.12);
   border: 2.5px solid #ffffff;
   flex-shrink: 0;
+  overflow: visible !important;
 }
 
 .podium-col.rank-1 .podium-avatar {
@@ -8602,6 +8640,7 @@ body.study-zen-fullscreen .study-main-col {
   font-size: 35px;
   border-color: #facc15;
   box-shadow: 0 0 20px rgba(250, 204, 21, 0.5);
+  overflow: visible !important;
 }
 
 .podium-crown {
@@ -8785,7 +8824,7 @@ body.study-zen-fullscreen .study-main-col {
   gap: 8px;
   min-width: 0;
   flex: 1;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .comp-lb-avatar-wrap {
@@ -8794,12 +8833,15 @@ body.study-zen-fullscreen .study-main-col {
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  padding: 5px;
-  margin: -2px 0;
+  padding: 6px;
+  margin: 0;
+  overflow: visible;
+  z-index: 2;
 }
 
 .comp-lb-avatar-wrap .avatar {
   flex-shrink: 0;
+  overflow: visible !important;
 }
 
 .comp-lb-avatar {
@@ -9866,18 +9908,21 @@ body.dark-theme .comp-tab-btn.active {
     gap: 6px;
     min-width: 0;
     flex-wrap: nowrap;
-    overflow: hidden;
+    overflow: visible;
   }
 
   .comp-lb-avatar-wrap {
-    padding: 3px;
+    padding: 5px;
     flex-shrink: 0;
+    overflow: visible;
+    z-index: 2;
   }
 
   .comp-lb-avatar-wrap .avatar {
     width: 27px;
     height: 27px;
     font-size: 14px;
+    overflow: visible !important;
   }
 
   .comp-lb-avatar {
@@ -12086,7 +12131,7 @@ dialog.modal.namecard-modal {
   inset: 0;
   width: 100%;
   height: 100%;
-  border-radius: 24px;
+  border-radius: 28px;
   overflow: hidden;
   background: #ffffff;
   box-shadow: 0 30px 70px -15px rgba(15, 23, 42, 0.4);
@@ -12215,10 +12260,10 @@ dialog.modal.namecard-modal {
   background-size: 100% 100%;
 }
 
-/* Khung cơ bản miễn phí (độ dày 12px bo góc chuẩn theo namecard - gấp 3 lần độ dày ban đầu 4px) */
+/* Khung cơ bản miễn phí (độ dày 12px, bo góc ngoài 28px - bo góc trong chuẩn công thức: 28px - 12px = 16px) */
 .namecard-frame-layer[data-frame^="basic_"] {
   inset: 0px;
-  border-radius: 24px;
+  border-radius: 28px;
   background: none;
   pointer-events: none;
   z-index: 25;
@@ -12323,9 +12368,9 @@ dialog.modal.namecard-modal {
 .frame-choice-preview[data-frame-preview="ton_vinh_phai_dep"] { background-image: url("frames/v2/thumbs/ton_vinh_phai_dep.png?v=1"); background-size: 100% 100%; }
 .frame-choice-preview[data-frame-preview="bua_tiec_ma_mi"] { background-image: url("frames/v2/thumbs/bua_tiec_ma_mi.png?v=1"); background-size: 100% 100%; }
 
-/* Khung cơ bản miễn phí swatch */
+/* Khung cơ bản miễn phí swatch (viền 4px, góc ngoài 8px - góc trong chuẩn: 8px - 4px = 4px) */
 .frame-choice-preview[data-frame-preview="basic_ocean"] {
-  border: 6px solid transparent;
+  border: 4px solid transparent;
   background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 50%, #93c5fd 100%) border-box;
   -webkit-mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
   mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
@@ -12333,7 +12378,7 @@ dialog.modal.namecard-modal {
   mask-composite: exclude;
 }
 .frame-choice-preview[data-frame-preview="basic_emerald"] {
-  border: 6px solid transparent;
+  border: 4px solid transparent;
   background: linear-gradient(135deg, #064e3b 0%, #059669 50%, #6ee7b7 100%) border-box;
   -webkit-mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
   mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
@@ -12341,7 +12386,7 @@ dialog.modal.namecard-modal {
   mask-composite: exclude;
 }
 .frame-choice-preview[data-frame-preview="basic_sunset"] {
-  border: 6px solid transparent;
+  border: 4px solid transparent;
   background: linear-gradient(135deg, #4c0519 0%, #db2777 50%, #fcd34d 100%) border-box;
   -webkit-mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
   mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
@@ -12349,7 +12394,7 @@ dialog.modal.namecard-modal {
   mask-composite: exclude;
 }
 .frame-choice-preview[data-frame-preview="basic_aurora"] {
-  border: 6px solid transparent;
+  border: 4px solid transparent;
   background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #4338ca 100%) border-box;
   -webkit-mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
   mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
@@ -12357,7 +12402,7 @@ dialog.modal.namecard-modal {
   mask-composite: exclude;
 }
 .frame-choice-preview[data-frame-preview="basic_royal"] {
-  border: 6px solid transparent;
+  border: 4px solid transparent;
   background: linear-gradient(135deg, #3b0764 0%, #7c3aed 50%, #c084fc 100%) border-box;
   -webkit-mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
   mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
@@ -12365,19 +12410,19 @@ dialog.modal.namecard-modal {
   mask-composite: exclude;
 }
 .frame-choice-preview[data-frame-preview="basic_midnight"] {
-  border: 6px solid #0f172a;
+  border: 4px solid #0f172a;
   background: #f8fafc;
 }
 .frame-choice-preview[data-frame-preview="basic_slate"] {
-  border: 6px solid #334155;
+  border: 4px solid #334155;
   background: #f8fafc;
 }
 .frame-choice-preview[data-frame-preview="basic_deep_green"] {
-  border: 6px solid #064e3b;
+  border: 4px solid #064e3b;
   background: #f8fafc;
 }
 .frame-choice-preview[data-frame-preview="basic_pure_black"] {
-  border: 6px solid #18181b;
+  border: 4px solid #18181b;
   background: #f8fafc;
 }
 
@@ -12406,7 +12451,7 @@ dialog.modal.namecard-modal {
   position: relative;
   z-index: 3;
   background: #ffffff;
-  border-radius: 28px 28px 24px 24px;
+  border-radius: 18px 18px 0 0;
   box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.06);
   flex: 1;
   display: flex;
@@ -12655,7 +12700,7 @@ dialog.modal.namecard-modal {
 .namecard-block {
   background: #f8fafc;
   border: 1px solid #eef2f6;
-  border-radius: 18px;
+  border-radius: 20px;
   padding: 18px 20px;
 }
 
@@ -12739,7 +12784,7 @@ dialog.modal.namecard-modal {
 .namecard-tile {
   background: #ffffff;
   border: 1px solid #e2e8f0;
-  border-radius: 14px;
+  border-radius: 12px;
   padding: 12px 16px;
   text-align: center;
   display: flex;
@@ -12804,7 +12849,7 @@ dialog.modal.namecard-modal {
 .namecard-tile.horizontal .nc-tile-icon {
   width: 36px;
   height: 36px;
-  border-radius: 10px;
+  border-radius: 8px;
   margin-bottom: 0;
 }
 
@@ -12947,8 +12992,8 @@ dialog.modal.full-cover-viewer-modal {
 .frame-choice-item,
 .cover-choice-item {
   border: 1.5px solid #e2e8f0;
-  border-radius: 10px;
-  padding: 8px 6px;
+  border-radius: 14px;
+  padding: 6px;
   text-align: center;
   cursor: pointer;
   background: #ffffff;
@@ -12985,7 +13030,7 @@ dialog.modal.full-cover-viewer-modal {
 .choice-preview-box {
   width: 100%;
   height: 32px;
-  border-radius: 6px;
+  border-radius: 8px;
   margin-bottom: 4px;
   background-size: cover;
   background-position: center;
