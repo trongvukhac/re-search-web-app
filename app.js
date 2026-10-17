@@ -9296,7 +9296,6 @@ function initHomeBannerStack() {
     go("arena");
   };
 
-  const timerBar = $("#bannerTimerBar");
   const stepTimer = () => {
     // Chỉ chạy timer khi đang ở trang chủ (hỗ trợ cả trường hợp currentActiveRoute là null lúc mới tải trang)
     const homeView = $("#homeView");
@@ -9308,7 +9307,6 @@ function initHomeBannerStack() {
 
     const elapsed = Date.now() - homeBannerState.startTime;
     const progress = Math.min(elapsed / homeBannerState.intervalMs, 1);
-    if (timerBar) timerBar.style.width = (progress * 100) + "%";
 
     if (progress >= 1) {
       nextBanner();
@@ -9321,7 +9319,6 @@ function initHomeBannerStack() {
   window.resetHomeBannerTimer = () => {
     if (homeBannerState.rafId) cancelAnimationFrame(homeBannerState.rafId);
     homeBannerState.startTime = Date.now();
-    if (timerBar) timerBar.style.width = "0%";
     homeBannerState.rafId = requestAnimationFrame(stepTimer);
   };
 
@@ -10525,7 +10522,11 @@ function renderLeaderboardUI(data) {
   let rowsHTML = "";
 
   rest.forEach(u => {
-    const isCurrent = currentUserEntry && currentUserEntry.userId === u.userId;
+    const isCurrent = Boolean(
+      u.isCurrentUser ||
+      (currentUserEntry && (currentUserEntry.userId == u.userId || currentUserEntry.userId == u.id)) ||
+      (typeof session !== "undefined" && session && (session.id == u.userId || session.id == u.id || session.userId == u.userId))
+    );
     const avatarClass = getAvatarClass(u.streakTier, false, u.role);
     const nameClass = getNameClass(u.streakTier);
     rowsHTML += `
@@ -10535,7 +10536,11 @@ function renderLeaderboardUI(data) {
           <div class="comp-lb-avatar-wrap">
             <span class="avatar avatar-sm ${avatarClass}">${escapeHTML(u.avatar || u.initials || "U")}</span>
           </div>
-          <span class="comp-lb-name ${nameClass}">${getFlameSVG(u.streakTier, 15)} <span class="lb-name-text">${escapeHTML(u.displayName)}</span> ${isCurrent ? '<span class="you-tag">(Bạn)</span>' : ""}</span>
+          <span class="comp-lb-name ${nameClass}">
+            ${getFlameSVG(u.streakTier, 15)}
+            <span class="lb-name-text">${escapeHTML(u.displayName)}</span>
+          </span>
+          ${isCurrent ? '<span class="you-tag">(Bạn)</span>' : ""}
         </div>
         <span class="comp-lb-score">⭐ ${u.score}</span>
       </div>
@@ -10552,7 +10557,11 @@ function renderLeaderboardUI(data) {
           <div class="comp-lb-avatar-wrap">
             <span class="avatar avatar-sm ${myAvatarClass}">${escapeHTML(currentUserEntry.avatar || currentUserEntry.initials || "U")}</span>
           </div>
-          <span class="comp-lb-name ${myNameClass}">${getFlameSVG(currentUserEntry.streakTier, 15)} <span class="lb-name-text">${escapeHTML(currentUserEntry.displayName)}</span> <span class="you-tag">(Bạn)</span></span>
+          <span class="comp-lb-name ${myNameClass}">
+            ${getFlameSVG(currentUserEntry.streakTier, 15)}
+            <span class="lb-name-text">${escapeHTML(currentUserEntry.displayName)}</span>
+          </span>
+          <span class="you-tag">(Bạn)</span>
         </div>
         <span class="comp-lb-score">⭐ ${currentUserEntry.score}</span>
       </div>

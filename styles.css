@@ -914,7 +914,7 @@ div.user-name-tier-5,
   vertical-align: middle;
   overflow: visible !important;
   transform-origin: 50% 92%;
-  filter: drop-shadow(0 2px 7px var(--flame-glow, rgba(47, 111, 78, 0.45)));
+  filter: none !important;
   animation: flameRootSway 2.4s ease-in-out infinite alternate;
   cursor: pointer;
   transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -1009,31 +1009,21 @@ div.user-name-tier-5,
 }
 .flame-sparkle.sparkle-mythic,
 .flame-star.star-mythic {
-  filter: drop-shadow(0 0 4px #ffd43b) drop-shadow(0 0 8px #f783ac);
+  filter: none !important;
 }
 
-/* Tier Glows */
-.flame-svg.flame-tier-0 {
-  --flame-glow: rgba(40, 145, 108, 0.45);
-}
-.flame-svg.flame-tier-1 {
-  --flame-glow: rgba(34, 139, 230, 0.6);
-}
-.flame-svg.flame-tier-2 {
-  --flame-glow: rgba(245, 159, 0, 0.75);
-}
-.flame-svg.flame-tier-3 {
-  --flame-glow: rgba(132, 94, 247, 0.85);
-  filter: drop-shadow(0 2px 8px rgba(112, 72, 232, 0.75)) drop-shadow(0 0 14px rgba(180, 150, 255, 0.35));
-}
-.flame-svg.flame-tier-4 {
-  --flame-glow: rgba(224, 49, 49, 0.9);
-  filter: drop-shadow(0 2px 10px rgba(224, 49, 49, 0.85)) drop-shadow(0 0 18px rgba(255, 107, 107, 0.45));
+/* Tier Glows (Crisp vector rendering without blurry halo or background) */
+.flame-svg,
+.flame-svg.flame-tier-0,
+.flame-svg.flame-tier-1,
+.flame-svg.flame-tier-2,
+.flame-svg.flame-tier-3,
+.flame-svg.flame-tier-4,
+.flame-svg.flame-tier-5 {
+  filter: none !important;
 }
 .flame-svg.flame-tier-5 {
-  --flame-glow: rgba(247, 131, 172, 0.95);
-  filter: drop-shadow(0 2px 12px rgba(112, 72, 232, 0.85)) drop-shadow(0 0 20px rgba(247, 131, 172, 0.65)) drop-shadow(0 0 28px rgba(255, 212, 59, 0.45));
-  animation: flameRootSway 2s ease-in-out infinite alternate, mythicPrismAura 4s ease infinite alternate;
+  animation: flameRootSway 2s ease-in-out infinite alternate;
 }
 
 /* KEYFRAMES FOR REALISTIC FIRE DYNAMICS */
@@ -1102,11 +1092,8 @@ div.user-name-tier-5,
 }
 
 @keyframes mythicPrismAura {
-  0% {
-    filter: drop-shadow(0 2px 12px rgba(112, 72, 232, 0.85)) drop-shadow(0 0 18px rgba(247, 131, 172, 0.65));
-  }
-  100% {
-    filter: drop-shadow(0 2px 14px rgba(247, 131, 172, 0.9)) drop-shadow(0 0 24px rgba(255, 212, 59, 0.65)) drop-shadow(0 0 32px rgba(255, 107, 107, 0.45));
+  0%, 100% {
+    filter: none;
   }
 }
 
@@ -7279,15 +7266,7 @@ body.study-zen-fullscreen .study-main-col {
 }
 
 .banner-timer-bar {
-  position: absolute;
-  top: 0;
-  left: 0;
-  height: 3px;
-  width: 0%;
-  background: linear-gradient(90deg, #10b981 0%, #eab308 100%);
-  z-index: 20;
-  pointer-events: none;
-  transition: width 0.1s linear;
+  display: none !important;
 }
 
 .banner-drag-hint {
@@ -8803,9 +8782,10 @@ body.study-zen-fullscreen .study-main-col {
 .comp-lb-user {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   min-width: 0;
-  overflow: visible;
+  flex: 1;
+  overflow: hidden;
 }
 
 .comp-lb-avatar-wrap {
@@ -8841,16 +8821,13 @@ body.study-zen-fullscreen .study-main-col {
 }
 
 .comp-lb-name {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  color: var(--ink);
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 6px;
   font-weight: 700;
   min-width: 0;
-  flex: 1;
+  flex: 1 1 auto;
+  overflow: hidden;
 }
 
 .comp-lb-name .lb-name-text {
@@ -8859,7 +8836,7 @@ body.study-zen-fullscreen .study-main-col {
   white-space: nowrap;
   word-break: keep-all;
   min-width: 0;
-  flex: 1;
+  flex: 1 1 auto;
 }
 
 .you-tag {
@@ -8869,7 +8846,9 @@ body.study-zen-fullscreen .study-main-col {
   padding: 2px 6px;
   border-radius: 4px;
   font-weight: 800;
-  flex-shrink: 0;
+  flex-shrink: 0 !important;
+  white-space: nowrap !important;
+  line-height: 1.2;
 }
 
 .comp-lb-score {
@@ -9886,7 +9865,8 @@ body.dark-theme .comp-tab-btn.active {
   .comp-lb-user {
     gap: 6px;
     min-width: 0;
-    overflow: visible;
+    flex-wrap: nowrap;
+    overflow: hidden;
   }
 
   .comp-lb-avatar-wrap {
@@ -9929,7 +9909,8 @@ body.dark-theme .comp-tab-btn.active {
   .you-tag {
     font-size: 9.5px;
     padding: 1px 4px;
-    flex-shrink: 0;
+    flex-shrink: 0 !important;
+    white-space: nowrap !important;
   }
 
   .comp-lb-score {
@@ -12488,8 +12469,9 @@ dialog.modal.namecard-modal {
 }
 
 .namecard-avatar-circle {
-  width: 104px;
-  height: 104px;
+  width: 104px !important;
+  height: 104px !important;
+  flex-shrink: 0 !important;
   border-radius: 50%;
   background: #ffffff;
   border: 4px solid #ffffff;
@@ -12501,7 +12483,7 @@ dialog.modal.namecard-modal {
   line-height: 1;
   letter-spacing: 0;
   text-indent: 0;
-  font-size: 52px;
+  font-size: 52px !important;
   position: relative;
   overflow: visible;
   --ring-inset: -7.5px;
@@ -13657,9 +13639,77 @@ input:disabled {
     max-width: 80px !important;
     font-size: 11px !important;
   }
-  .avatar {
+  .site-header .avatar,
+  .profile-chip .avatar {
     width: 28px !important;
     height: 28px !important;
+    font-size: 14px !important;
+  }
+
+  /* Protect Namecard avatar from any parent or global overrides */
+  .namecard-avatar-circle {
+    width: 104px !important;
+    height: 104px !important;
+    font-size: 52px !important;
+    flex-shrink: 0 !important;
+  }
+
+  /* Arena Leaderboard & Podium in Mobile Landscape */
+  .comp-podium-wrap {
+    gap: 8px !important;
+    padding: 10px 0 4px 0 !important;
+    margin-bottom: 12px !important;
+  }
+  .podium-col {
+    width: 88px !important;
+    max-width: 95px !important;
+  }
+  .podium-avatar {
+    width: 38px !important;
+    height: 38px !important;
+    font-size: 20px !important;
+  }
+  .podium-col.rank-1 .podium-avatar {
+    width: 48px !important;
+    height: 48px !important;
+    font-size: 26px !important;
+  }
+  .podium-crown {
+    font-size: 16px !important;
+    top: -12px !important;
+  }
+  .podium-crown.gold {
+    font-size: 20px !important;
+    top: -16px !important;
+  }
+  .podium-name {
+    font-size: 10.5px !important;
+    max-width: 80px !important;
+  }
+  .podium-score {
+    font-size: 9.5px !important;
+  }
+  .podium-stand.stand-1 {
+    height: 52px !important;
+  }
+  .podium-stand.stand-2 {
+    height: 40px !important;
+  }
+  .podium-stand.stand-3 {
+    height: 30px !important;
+  }
+  .stand-num {
+    font-size: 15px !important;
+  }
+  .comp-lb-avatar-wrap .avatar {
+    width: 26px !important;
+    height: 26px !important;
+    font-size: 14px !important;
+  }
+  .comp-lb-avatar {
+    width: 26px !important;
+    height: 26px !important;
+    font-size: 14px !important;
   }
 
   /* Hide bottom floating island nav & FAB in landscape mobile to maximize screen real estate */
