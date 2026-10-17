@@ -9741,7 +9741,12 @@ function renderWeeklyCompetitionCard(raw) {
   if (weekTag) weekTag.textContent = data.weekTitle || `TUẦN ${String(data.weekNumber || 1).padStart(2, "0")}`;
 
   if (attemptsTeaser) {
-    attemptsTeaser.textContent = `Số lượt thi: ${data.userAttempts || 0}/1`;
+    if (data.isSunday) {
+      attemptsTeaser.style.setProperty("display", "none", "important");
+    } else {
+      attemptsTeaser.style.display = "";
+      attemptsTeaser.textContent = `Số lượt thi: ${data.userAttempts || 0}/1`;
+    }
   }
   if (bestScoreTeaser) {
     if (data.userBestScore > 0) {
@@ -9862,7 +9867,14 @@ async function onEnterArena() {
   }
 }
 
+let sundayCeremonySoundPlayed = false;
+let sundayInteractionCleanup = null;
+
 function stopSundayCeremonySound() {
+  if (sundayInteractionCleanup) {
+    try { sundayInteractionCleanup(); } catch (e) {}
+    sundayInteractionCleanup = null;
+  }
   if (compState.sundayAudio) {
     try {
       compState.sundayAudio.pause();
@@ -9872,13 +9884,22 @@ function stopSundayCeremonySound() {
 }
 
 function playSundayCeremonySound() {
+  // Chỉ chạy 1 lần duy nhất khi vào trang, không tự chạy lại
+  if (sundayCeremonySoundPlayed) {
+    return;
+  }
+  sundayCeremonySoundPlayed = true;
+
   try {
     if (!compState.sundayAudio) {
       compState.sundayAudio = new Audio("/public/assets/tunetank-winner-awards-logo-484332.mp3");
       compState.sundayAudio.preload = "auto";
       compState.sundayAudio.playsInline = true;
+      compState.sundayAudio.loop = false;
       compState.sundayAudio.setAttribute("playsinline", "true");
       compState.sundayAudio.setAttribute("webkit-playsinline", "true");
+    } else {
+      compState.sundayAudio.loop = false;
     }
     compState.sundayAudio.currentTime = 0;
     compState.sundayAudio.volume = 0.85;
@@ -9887,13 +9908,20 @@ function playSundayCeremonySound() {
       playPromise.catch(err => {
         console.warn("Sunday ceremony audio play deferred/blocked by autoplay policy:", err);
         const resumeOnUserInteraction = () => {
-          if (compState.sundayAudio) {
+          if (sundayInteractionCleanup) {
+            try { sundayInteractionCleanup(); } catch (e) {}
+            sundayInteractionCleanup = null;
+          }
+          if (compState.sundayAudio && compState.sundayAudio.paused) {
             compState.sundayAudio.play().catch(() => {});
           }
+        };
+        const cleanup = () => {
           window.removeEventListener("click", resumeOnUserInteraction);
           window.removeEventListener("keydown", resumeOnUserInteraction);
           window.removeEventListener("touchstart", resumeOnUserInteraction);
         };
+        sundayInteractionCleanup = cleanup;
         window.addEventListener("click", resumeOnUserInteraction, { once: true });
         window.addEventListener("keydown", resumeOnUserInteraction, { once: true });
         window.addEventListener("touchstart", resumeOnUserInteraction, { once: true });
@@ -10019,6 +10047,23 @@ function switchCompTab(tabName) {
     stopArenaLeaderboardAutoRefresh();
     const gEl = $("#compTabGateway");
     if (gEl) gEl.style.display = "block";
+    const norm = normalizeCompData(compState.overview || compState.status);
+    if (norm.isSunday) {
+      if (gEl) gEl.classList.add("is-sunday");
+      const actionContainer = $("#gatewayActionContainer") || $(".gateway-action-container");
+      if (actionContainer) {
+        actionContainer.style.setProperty("display", "none", "important");
+        actionContainer.classList.add("hidden");
+      }
+      const startBtn = $("#gatewayStartQuizBtn");
+      if (startBtn) startBtn.style.setProperty("display", "none", "important");
+      const attemptsCard = $(".comp-user-attempts-card");
+      if (attemptsCard) attemptsCard.style.setProperty("display", "none", "important");
+      const phasesJourney = $(".comp-phases-journey-container");
+      if (phasesJourney) phasesJourney.style.setProperty("display", "none", "important");
+      const sundayNotice = $("#gatewaySundayContainer");
+      if (sundayNotice) sundayNotice.style.setProperty("display", "block", "important");
+    }
     if (compState.overview) renderGatewayTab(compState.overview);
   } else if (tabName === "leaderboard") {
     const lEl = $("#compTabLeaderboard");
@@ -10166,20 +10211,30 @@ function renderGatewayTab(raw) {
   const phasesJourneyContainer = $(".comp-phases-journey-container");
   const actionContainer = $("#gatewayActionContainer") || $(".gateway-action-container");
   const sundayNoticeContainer = $("#gatewaySundayContainer");
+  const gatewayTab = $("#compTabGateway");
 
   if (data.isSunday) {
-    if (attemptsCard) attemptsCard.style.display = "none";
-    if (phasesJourneyContainer) phasesJourneyContainer.style.display = "none";
-    if (actionContainer) actionContainer.style.display = "none";
-    if (sundayNoticeContainer) sundayNoticeContainer.style.display = "block";
+    if (gatewayTab) gatewayTab.classList.add("is-sunday");
+    if (attemptsCard) attemptsCard.style.setProperty("display", "none", "important");
+    if (phasesJourneyContainer) phasesJourneyContainer.style.setProperty("display", "none", "important");
+    if (actionContainer) {
+      actionContainer.style.setProperty("display", "none", "important");
+      actionContainer.classList.add("hidden");
+    }
+    if (startBtn) startBtn.style.setProperty("display", "none", "important");
+    if (blockedMsg) blockedMsg.style.setProperty("display", "none", "important");
+    if (sundayNoticeContainer) sundayNoticeContainer.style.setProperty("display", "block", "important");
     return;
   } else {
+    if (gatewayTab) gatewayTab.classList.remove("is-sunday");
     if (attemptsCard) attemptsCard.style.display = "block";
     if (phasesJourneyContainer) phasesJourneyContainer.style.display = "block";
     if (actionContainer) {
       actionContainer.style.display = "flex";
       actionContainer.style.flexDirection = "column";
+      actionContainer.classList.remove("hidden");
     }
+    if (startBtn) startBtn.style.display = "";
     if (sundayNoticeContainer) sundayNoticeContainer.style.display = "none";
   }
 
