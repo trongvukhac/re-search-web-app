@@ -2855,7 +2855,7 @@ async function openDetail(id, updateHash = true) {
 
       updatePostReadAccumulator();
 
-      if (postReadAccumulatedMs >= 60000 && !postReadTracked) {
+      if (postReadAccumulatedMs >= 10000 && !postReadTracked) {
         postReadTracked = true;
         clearInterval(postReadTimer);
         postReadTimer = null;

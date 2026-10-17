@@ -553,13 +553,13 @@ function canRecordRead(identifier, postId) {
   const key = `${identifier}:${postId}`;
   const now = Date.now();
   const lastRead = readCooldowns.get(key);
-  if (lastRead && now - lastRead < 30 * 60 * 1000) {
+  if (lastRead && now - lastRead < 10 * 1000) {
     return false;
   }
   readCooldowns.set(key, now);
   if (readCooldowns.size > 5000) {
     for (const [k, time] of readCooldowns.entries()) {
-      if (now - time > 35 * 60 * 1000) readCooldowns.delete(k);
+      if (now - time > 60 * 1000) readCooldowns.delete(k);
     }
   }
   return true;
