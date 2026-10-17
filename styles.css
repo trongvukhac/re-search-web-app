@@ -268,6 +268,7 @@ select:focus-visible {
   user-select: none;
   font-variant-numeric: tabular-nums;
   -webkit-font-smoothing: antialiased;
+  overflow: visible !important;
 }
 .avatar > * {
   display: inline-flex;
@@ -3924,11 +3925,15 @@ dialog.detail-modal[open] {
   justify-content: center;
   margin-right: 10px;
   flex-shrink: 0;
+  padding: 4px;
+  overflow: visible;
+  z-index: 2;
 }
 .lb-avatar-wrap .avatar {
   width: 30px;
   height: 30px;
   font-size: 16px;
+  overflow: visible !important;
 }
 .lb-rank-badge {
   position: absolute;
@@ -8576,6 +8581,9 @@ body.study-zen-fullscreen .study-main-col {
   display: inline-flex;
   justify-content: center;
   align-items: center;
+  padding: 4px;
+  overflow: visible;
+  z-index: 2;
 }
 
 .podium-avatar {
@@ -8594,6 +8602,7 @@ body.study-zen-fullscreen .study-main-col {
   box-shadow: 0 4px 12px rgba(0,0,0,0.12);
   border: 2.5px solid #ffffff;
   flex-shrink: 0;
+  overflow: visible !important;
 }
 
 .podium-col.rank-1 .podium-avatar {
@@ -8602,6 +8611,7 @@ body.study-zen-fullscreen .study-main-col {
   font-size: 35px;
   border-color: #facc15;
   box-shadow: 0 0 20px rgba(250, 204, 21, 0.5);
+  overflow: visible !important;
 }
 
 .podium-crown {
@@ -8785,7 +8795,7 @@ body.study-zen-fullscreen .study-main-col {
   gap: 8px;
   min-width: 0;
   flex: 1;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .comp-lb-avatar-wrap {
@@ -8794,12 +8804,15 @@ body.study-zen-fullscreen .study-main-col {
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  padding: 5px;
-  margin: -2px 0;
+  padding: 6px;
+  margin: 0;
+  overflow: visible;
+  z-index: 2;
 }
 
 .comp-lb-avatar-wrap .avatar {
   flex-shrink: 0;
+  overflow: visible !important;
 }
 
 .comp-lb-avatar {
@@ -9866,18 +9879,21 @@ body.dark-theme .comp-tab-btn.active {
     gap: 6px;
     min-width: 0;
     flex-wrap: nowrap;
-    overflow: hidden;
+    overflow: visible;
   }
 
   .comp-lb-avatar-wrap {
-    padding: 3px;
+    padding: 5px;
     flex-shrink: 0;
+    overflow: visible;
+    z-index: 2;
   }
 
   .comp-lb-avatar-wrap .avatar {
     width: 27px;
     height: 27px;
     font-size: 14px;
+    overflow: visible !important;
   }
 
   .comp-lb-avatar {
@@ -12064,13 +12080,14 @@ dialog.modal.namecard-modal {
   transform: translateY(-8px) scale(0.9) !important;
 }
 
-/* Sân khấu NamecardStage: Luôn giữ nguyên kích thước chuẩn PC (680px x 760px),
-   được đặt ở vị trí trung tâm modal để khung thoải mái vươn ra ngoài mà không bị dialog cắt cụt */
+/* Sân khấu NamecardStage: Chuẩn hóa kích thước 640px x 760px,
+   thu hẹp tinh tế 2 bên trái phải theo hướng vào bên trong (mỗi bên 20px),
+   được đặt ở vị trí trung tâm modal để khung nghệ thuật vươn ra ngoài mà không bị dialog cắt cụt */
 .namecard-stage {
   position: absolute;
   top: calc(85px * var(--nc-scale, 1));
-  left: calc(75px * var(--nc-scale, 1));
-  width: 680px;
+  left: calc(95px * var(--nc-scale, 1));
+  width: 640px;
   height: 760px;
   overflow: visible;
   display: flex;
@@ -12093,13 +12110,13 @@ dialog.modal.namecard-modal {
   z-index: 10;
 }
 
-/* Stationary Cover Image - Cố định ở đỉnh canvas, khớp khoảng đệm 200px của spacer */
+/* Stationary Cover Image - Cố định ở đỉnh canvas, khớp kích thước gốc 640x380 px, thể hiện trọn vẹn không bị cắt */
 .namecard-cover {
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
-  height: 215px;
+  height: 380px;
   background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 50%, #93c5fd 100%);
   background-size: cover;
   background-position: center;
@@ -12176,46 +12193,46 @@ dialog.modal.namecard-modal {
   display: none;
 }
 
-/* 5 Khung nghệ thuật cao cấp */
+/* 5 Khung nghệ thuật cao cấp (Hiệu chỉnh chuẩn khớp theo tỷ lệ 640px x 760px) */
 .namecard-frame-layer[data-frame="leaves"] {
   background-image: url("frames/v2/leaves.png?v=5");
-  inset: -42px -38px -61px -38px;
+  inset: -42px -24px -55px -48px;
   background-size: 100% 100%;
 }
 .namecard-frame-layer[data-frame="sakura"] {
   background-image: url("frames/v2/sakura.png?v=5");
-  inset: -46px -42px -64px -42px;
+  inset: -46px -28px -58px -52px;
   background-size: 100% 100%;
 }
 .namecard-frame-layer[data-frame="ice"] {
   background-image: url("frames/v2/ice.png?v=5");
-  inset: -54px -52px -58px -66px;
+  inset: -54px -38px -52px -76px;
   background-size: 100% 100%;
 }
 .namecard-frame-layer[data-frame="stars"] {
   background-image: url("frames/v2/stars.png?v=5");
-  inset: -54px -50px -58px -66px;
+  inset: -54px -36px -52px -76px;
   background-size: 100% 100%;
 }
 .namecard-frame-layer[data-frame="gold"] {
   background-image: url("frames/v2/gold.png?v=5");
-  inset: -60px -30px -68px -44px;
+  inset: -60px -16px -62px -54px;
   background-size: 100% 100%;
 }
 
-/* 2 Khung hoạt động giới hạn */
+/* 2 Khung hoạt động giới hạn (Cạnh trên, dưới, trái, phải khít 100% với mép namecard 640px) */
 .namecard-frame-layer[data-frame="ton_vinh_phai_dep"] {
   background-image: url("frames/v2/ton_vinh_phai_dep.png?v=2");
-  inset: -46px -29px -45px -41px;
+  inset: -46px -18px -28px -51px;
   background-size: 100% 100%;
 }
 .namecard-frame-layer[data-frame="bua_tiec_ma_mi"] {
   background-image: url("frames/v2/bua_tiec_ma_mi.png?v=2");
-  inset: -52px -40px -53px -42px;
+  inset: -48px -26px -36px -54px;
   background-size: 100% 100%;
 }
 
-/* Khung cơ bản miễn phí (độ dày 4px bo góc chuẩn theo namecard) */
+/* Khung cơ bản miễn phí (độ dày 12px bo góc chuẩn theo namecard - gấp 3 lần độ dày cũ) */
 .namecard-frame-layer[data-frame^="basic_"] {
   inset: 0px;
   border-radius: 24px;
@@ -12224,61 +12241,65 @@ dialog.modal.namecard-modal {
   z-index: 10;
 }
 .namecard-frame-layer[data-frame="basic_ocean"] {
-  border: 4px solid transparent;
+  border: 12px solid transparent;
   background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 50%, #93c5fd 100%) border-box;
   -webkit-mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
   mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
   -webkit-mask-composite: xor;
   mask-composite: exclude;
-  box-shadow: 0 0 10px rgba(59, 130, 246, 0.25);
+  box-shadow: 0 0 16px rgba(59, 130, 246, 0.35);
 }
 .namecard-frame-layer[data-frame="basic_emerald"] {
-  border: 4px solid transparent;
+  border: 12px solid transparent;
   background: linear-gradient(135deg, #064e3b 0%, #059669 50%, #6ee7b7 100%) border-box;
   -webkit-mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
   mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
   -webkit-mask-composite: xor;
   mask-composite: exclude;
-  box-shadow: 0 0 10px rgba(16, 185, 129, 0.25);
+  box-shadow: 0 0 16px rgba(16, 185, 129, 0.35);
 }
 .namecard-frame-layer[data-frame="basic_sunset"] {
-  border: 4px solid transparent;
+  border: 12px solid transparent;
   background: linear-gradient(135deg, #4c0519 0%, #db2777 50%, #fcd34d 100%) border-box;
   -webkit-mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
   mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
   -webkit-mask-composite: xor;
   mask-composite: exclude;
-  box-shadow: 0 0 10px rgba(219, 39, 119, 0.25);
+  box-shadow: 0 0 16px rgba(219, 39, 119, 0.35);
 }
 .namecard-frame-layer[data-frame="basic_aurora"] {
-  border: 4px solid transparent;
+  border: 12px solid transparent;
   background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #4338ca 100%) border-box;
   -webkit-mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
   mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
   -webkit-mask-composite: xor;
   mask-composite: exclude;
-  box-shadow: 0 0 10px rgba(67, 56, 202, 0.25);
+  box-shadow: 0 0 16px rgba(67, 56, 202, 0.35);
 }
 .namecard-frame-layer[data-frame="basic_royal"] {
-  border: 4px solid transparent;
+  border: 12px solid transparent;
   background: linear-gradient(135deg, #3b0764 0%, #7c3aed 50%, #c084fc 100%) border-box;
   -webkit-mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
   mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
   -webkit-mask-composite: xor;
   mask-composite: exclude;
-  box-shadow: 0 0 10px rgba(124, 58, 237, 0.25);
+  box-shadow: 0 0 16px rgba(124, 58, 237, 0.35);
 }
 .namecard-frame-layer[data-frame="basic_midnight"] {
-  border: 4px solid #0f172a;
+  border: 12px solid #0f172a;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.25);
 }
 .namecard-frame-layer[data-frame="basic_slate"] {
-  border: 4px solid #334155;
+  border: 12px solid #334155;
+  box-shadow: 0 4px 16px rgba(51, 65, 85, 0.25);
 }
 .namecard-frame-layer[data-frame="basic_deep_green"] {
-  border: 4px solid #064e3b;
+  border: 12px solid #064e3b;
+  box-shadow: 0 4px 16px rgba(6, 78, 59, 0.25);
 }
 .namecard-frame-layer[data-frame="basic_pure_black"] {
-  border: 4px solid #18181b;
+  border: 12px solid #18181b;
+  box-shadow: 0 4px 16px rgba(24, 24, 27, 0.35);
 }
 
 
@@ -12321,7 +12342,7 @@ dialog.modal.namecard-modal {
 
 /* Khung cơ bản miễn phí swatch */
 .frame-choice-preview[data-frame-preview="basic_ocean"] {
-  border: 3.5px solid transparent;
+  border: 6px solid transparent;
   background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 50%, #93c5fd 100%) border-box;
   -webkit-mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
   mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
@@ -12329,7 +12350,7 @@ dialog.modal.namecard-modal {
   mask-composite: exclude;
 }
 .frame-choice-preview[data-frame-preview="basic_emerald"] {
-  border: 3.5px solid transparent;
+  border: 6px solid transparent;
   background: linear-gradient(135deg, #064e3b 0%, #059669 50%, #6ee7b7 100%) border-box;
   -webkit-mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
   mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
@@ -12337,7 +12358,7 @@ dialog.modal.namecard-modal {
   mask-composite: exclude;
 }
 .frame-choice-preview[data-frame-preview="basic_sunset"] {
-  border: 3.5px solid transparent;
+  border: 6px solid transparent;
   background: linear-gradient(135deg, #4c0519 0%, #db2777 50%, #fcd34d 100%) border-box;
   -webkit-mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
   mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
@@ -12345,7 +12366,7 @@ dialog.modal.namecard-modal {
   mask-composite: exclude;
 }
 .frame-choice-preview[data-frame-preview="basic_aurora"] {
-  border: 3.5px solid transparent;
+  border: 6px solid transparent;
   background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #4338ca 100%) border-box;
   -webkit-mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
   mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
@@ -12353,7 +12374,7 @@ dialog.modal.namecard-modal {
   mask-composite: exclude;
 }
 .frame-choice-preview[data-frame-preview="basic_royal"] {
-  border: 3.5px solid transparent;
+  border: 6px solid transparent;
   background: linear-gradient(135deg, #3b0764 0%, #7c3aed 50%, #c084fc 100%) border-box;
   -webkit-mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
   mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
@@ -12361,19 +12382,19 @@ dialog.modal.namecard-modal {
   mask-composite: exclude;
 }
 .frame-choice-preview[data-frame-preview="basic_midnight"] {
-  border: 3.5px solid #0f172a;
+  border: 6px solid #0f172a;
   background: #f8fafc;
 }
 .frame-choice-preview[data-frame-preview="basic_slate"] {
-  border: 3.5px solid #334155;
+  border: 6px solid #334155;
   background: #f8fafc;
 }
 .frame-choice-preview[data-frame-preview="basic_deep_green"] {
-  border: 3.5px solid #064e3b;
+  border: 6px solid #064e3b;
   background: #f8fafc;
 }
 .frame-choice-preview[data-frame-preview="basic_pure_black"] {
-  border: 3.5px solid #18181b;
+  border: 6px solid #18181b;
   background: #f8fafc;
 }
 
@@ -12390,9 +12411,9 @@ dialog.modal.namecard-modal {
 }
 
 
-/* Spacer allowing fixed cover behind to be visible at top */
+/* Spacer allowing fixed cover behind to be visible at top (khớp trọn vẹn 380px chiều cao ảnh bìa gốc) */
 .namecard-cover-spacer {
-  height: 200px;
+  height: 380px;
   flex-shrink: 0;
   pointer-events: none;
 }
@@ -12435,18 +12456,9 @@ dialog.modal.namecard-modal {
   transform: translateY(-1px);
 }
 
-/* Header */
+/* Header: Thu hẹp nhẹ 2 bên trái phải (padding 0 32px) để nội dung cân đối với khung dày */
 .namecard-header {
-  padding: 0 32px 20px;
-  display: flex;
-  align-items: flex-start;
-  position: relative;
-  font-family: var(--sans);
-}
-
-/* Header */
-.namecard-header {
-  padding: 0 28px 18px;
+  padding: 0 32px 18px;
   display: flex;
   flex-direction: column;
   position: relative;
@@ -12647,9 +12659,9 @@ dialog.modal.namecard-modal {
 
 /* Bố cục Namecard được chuẩn hóa đồng nhất trên mọi kích cỡ */
 
-/* Sections Body */
+/* Sections Body: Thu hẹp nhẹ 2 bên trái phải theo hướng vào trong (padding 0 32px 90px) */
 .namecard-body {
-  padding: 0 28px 90px;
+  padding: 0 32px 90px;
   display: flex;
   flex-direction: column;
   gap: 18px;
