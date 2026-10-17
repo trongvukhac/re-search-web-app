@@ -205,6 +205,7 @@ db.exec(`
 `);
 
 try { db.exec("ALTER TABLE users ADD COLUMN student_id TEXT;"); } catch (e) {}
+try { db.exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_users_unique_student_id ON users(LOWER(TRIM(student_id))) WHERE student_id IS NOT NULL AND TRIM(student_id) != '';"); } catch (e) {}
 try { db.exec("ALTER TABLE users ADD COLUMN real_name TEXT;"); } catch (e) {}
 try { db.exec("ALTER TABLE users ADD COLUMN class_name TEXT;"); } catch (e) {}
 try { db.exec("ALTER TABLE users ADD COLUMN avatar TEXT;"); } catch (e) {}
@@ -3242,30 +3243,52 @@ async function api(request, response, url) {
     }
     const newFrame = requestedFrame;
     const newTheme = typeof namecardTheme === "string" ? namecardTheme.trim() : (currentUser.namecard_theme || "default");
-    const newStudentId = typeof studentId === "string" ? studentId.trim().slice(0, 30) : currentUser.student_id;
+    let newStudentId = currentUser.student_id;
+    if (typeof studentId === "string") {
+      const trimmedStudentId = studentId.trim().slice(0, 30);
+      if (trimmedStudentId) {
+        const existingStudent = db.prepare(
+          "SELECT id FROM users WHERE LOWER(TRIM(student_id)) = LOWER(?) AND id != ?"
+        ).get(trimmedStudentId, user.id);
+
+        if (existingStudent) {
+          return error(response, 400, "Mã số sinh viên đã có người sử dụng");
+        }
+        newStudentId = trimmedStudentId;
+      } else {
+        newStudentId = null;
+      }
+    }
     const newRealName = typeof realName === "string" ? realName.trim().slice(0, 80) : currentUser.real_name;
     const newClassName = typeof className === "string" ? className.trim().slice(0, 50) : currentUser.class_name;
 
-    db.prepare(`
-      UPDATE users 
-      SET email=?, email_changed=?, student_id=?, real_name=?, class_name=?, display_name=?, bio=?, avatar=?, avatar_changed=?, avatar_last_changed=?, cover_image=?, namecard_frame=?, namecard_theme=?, updated_at=CURRENT_TIMESTAMP 
-      WHERE id=?
-    `).run(
-      newEmail,
-      emailChanged,
-      newStudentId || null,
-      newRealName || null,
-      newClassName || null,
-      newDisplayName,
-      newBio || null,
-      newAvatar,
-      avatarChanged,
-      avatarLastChanged,
-      newCoverImage,
-      newFrame,
-      newTheme,
-      user.id,
-    );
+    try {
+      db.prepare(`
+        UPDATE users 
+        SET email=?, email_changed=?, student_id=?, real_name=?, class_name=?, display_name=?, bio=?, avatar=?, avatar_changed=?, avatar_last_changed=?, cover_image=?, namecard_frame=?, namecard_theme=?, updated_at=CURRENT_TIMESTAMP 
+        WHERE id=?
+      `).run(
+        newEmail,
+        emailChanged,
+        newStudentId || null,
+        newRealName || null,
+        newClassName || null,
+        newDisplayName,
+        newBio || null,
+        newAvatar,
+        avatarChanged,
+        avatarLastChanged,
+        newCoverImage,
+        newFrame,
+        newTheme,
+        user.id,
+      );
+    } catch (e) {
+      if (e.message && (e.message.includes("UNIQUE") || e.message.includes("student_id"))) {
+        return error(response, 400, "Mã số sinh viên đã có người sử dụng");
+      }
+      throw e;
+    }
 
     const updatedUser = db.prepare("SELECT * FROM users WHERE id=?").get(user.id);
     return json(response, 200, { ok: true, user: publicUser(updatedUser) });

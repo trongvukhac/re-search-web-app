@@ -5229,6 +5229,9 @@ if ($("#editProfileForm")) {
       hydrateServer();
     } catch (err) {
       toast(err.message);
+      if (err.message && err.message.toLowerCase().includes("mã số sinh viên")) {
+        $("#profileStudentId")?.focus();
+      }
     } finally {
       setSubmitLoading(e, false);
     }
