@@ -16,7 +16,7 @@
     <script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-    <link rel="stylesheet" href="styles.css?v=90" />
+    <link rel="stylesheet" href="styles.css?v=91" />
   </head>
   <body>
     <dialog
@@ -3032,6 +3032,19 @@
               <span class="opt-text" id="quizOptC">Đáp án C</span>
             </button>
           </div>
+
+          <!-- KHUNG ĐIỀU HƯỚNG CHẾ ĐỘ LUYỆN TẬP: CHUYỂN CÂU TRƯỚC / SAU & BẢNG SỐ CÂU 1..10 -->
+          <div class="quiz-practice-nav-bar" id="quizPracticeNavBar" style="display: none;">
+            <button type="button" class="button button-outline quiz-practice-nav-btn" id="quizPracticePrevBtn" onclick="navigatePracticeQuestion(-1)">
+              <span>←</span> Câu trước
+            </button>
+            <div class="quiz-practice-q-palette" id="quizPracticeQPalette">
+              <!-- Render 1..10 nút câu -->
+            </div>
+            <button type="button" class="button button-primary quiz-practice-nav-btn" id="quizPracticeNextBtn" onclick="navigatePracticeQuestion(1)">
+              <span id="quizPracticeNextBtnText">Câu sau</span> <span>→</span>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -3248,6 +3261,6 @@
       </div>
     </dialog>
 
-    <script src="app.js?v=97" defer></script>
+    <script src="app.js?v=98" defer></script>
   </body>
 </html>

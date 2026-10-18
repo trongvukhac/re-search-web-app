@@ -10260,8 +10260,8 @@ function renderGatewayTab(raw) {
     statusBadge.className = "comp-status-badge";
     if (data.isSunday) {
       statusBadge.classList.add("status-sunday");
-      if (statusText) statusText.textContent = "TỔNG KẾT TUẦN";
-      if (clockLabel) clockLabel.textContent = "Tuần mới bắt đầu sau:";
+      if (statusText) statusText.textContent = "CHẾ ĐỘ LUYỆN TẬP";
+      if (clockLabel) clockLabel.textContent = "Khởi động tuần mới sau:";
     } else if (data.state === "open") {
       statusBadge.classList.add("status-open");
       if (statusText) statusText.textContent = "ĐANG MỞ CỔNG";
@@ -10278,16 +10278,34 @@ function renderGatewayTab(raw) {
   }
 
   if (phaseTag) {
-    phaseTag.textContent = data.isSunday ? "Tổng kết tuần" : `Giai đoạn ${data.phase}`;
+    phaseTag.textContent = data.isSunday ? "Luyện tập Chủ Nhật" : `Giai đoạn ${data.phase}`;
   }
   if (phaseTitle) {
-    phaseTitle.textContent = data.phaseTopic || data.weekTopic || "Chủ đề giai đoạn";
+    phaseTitle.textContent = data.isSunday ? "Luyện tập tự do 3 Giai đoạn" : (data.phaseTopic || data.weekTopic || "Chủ đề giai đoạn");
   }
   if (weekTitle) {
     weekTitle.textContent = `Chủ đề tuần: ${data.weekTopic || ""}`;
   }
   if (attemptsPhaseLabel) {
-    attemptsPhaseLabel.textContent = data.isSunday ? "Tổng kết toàn tuần" : `Giai đoạn ${data.phase}`;
+    attemptsPhaseLabel.textContent = data.isSunday ? "Luyện tập tự do" : `Giai đoạn ${data.phase}`;
+  }
+
+  const attemptsNoteText = $(".attempts-note-banner .note-banner-text");
+  if (attemptsNoteText) {
+    if (data.isSunday) {
+      attemptsNoteText.innerHTML = `🎯 <strong>Chế độ Luyện tập ngày Chủ Nhật:</strong> Thí sinh được làm lại toàn bộ câu hỏi của cả 3 giai đoạn để ôn tập kiến thức. Bài làm <strong>không tính điểm thi đua</strong>, <strong>không tính thời gian</strong>, làm <strong>không giới hạn số lượt</strong> và có thể <strong>chuyển qua lại câu trước/sau tự do</strong>.`;
+    } else {
+      attemptsNoteText.innerHTML = `<strong>Mỗi giai đoạn chỉ có duy nhất 1 lượt thi!</strong> Thí sinh làm bài đúng hạn ở GĐ 1 &amp; GĐ 2 nhận thêm <strong>+50 ⭐</strong> mỗi đợt. Nếu lỡ, bạn vẫn có thể <strong>làm bù trong tuần</strong> (không cộng thưởng đúng hạn).`;
+    }
+  }
+
+  const phasesJourneyHeader = $(".phases-journey-header h4");
+  const phasesJourneyHint = $(".phases-journey-header .journey-sub-hint");
+  if (phasesJourneyHeader) {
+    phasesJourneyHeader.textContent = data.isSunday ? "Luyện tập 3 giai đoạn" : "Thi đấu";
+  }
+  if (phasesJourneyHint) {
+    phasesJourneyHint.textContent = data.isSunday ? "Làm lại câu hỏi không giới hạn số lượt & thời gian" : "Đừng quên hoàn thành các bài thi trước CN nhé";
   }
 
   // Khởi tạo & duy trì đồng hồ đếm ngược bằng timestamp chống lệch/nhảy giờ (hoạt động cho cả ngày thường và chủ nhật)
@@ -10370,7 +10388,23 @@ function renderGatewayTab(raw) {
       let scoreInfoHTML = "";
       let actionBtnHTML = "";
 
-      if (p.isCompleted) {
+      if (data.isSunday) {
+        cardClass += " card-practice";
+        chipHTML = '<span class="pj-status-chip chip-practice">🎯 LUYỆN TẬP</span>';
+        if (p.isCompleted) {
+          const phaseScore = (p.score !== undefined) ? p.score : (p.bestScore ?? 0);
+          scoreInfoHTML = `<div class="pj-score-box"><span class="pj-score-label">Điểm thi tuần:</span><span class="pj-score-val">⭐ ${phaseScore}</span></div>`;
+          actionBtnHTML = `
+            <div class="pj-action-group">
+              <button type="button" class="pj-action-btn btn-play-practice" onclick="startPracticeQuiz(${p.phase})">🎯 Luyện tập GĐ ${p.phase}</button>
+              <button type="button" class="pj-action-btn btn-view-result" onclick="openPhaseResultModal(${p.phase})">Xem bài thi chính thức</button>
+            </div>
+          `;
+        } else {
+          scoreInfoHTML = `<div class="pj-score-box"><span class="pj-score-label">Chế độ:</span><span class="pj-score-val" style="color: #a78bfa;">Luyện tập tự do</span></div>`;
+          actionBtnHTML = `<button type="button" class="pj-action-btn btn-play-practice" onclick="startPracticeQuiz(${p.phase})">🎯 Luyện tập GĐ ${p.phase}</button>`;
+        }
+      } else if (p.isCompleted) {
         cardClass += " card-completed";
         chipHTML = '<span class="pj-status-chip chip-completed">✅ ĐÃ XONG</span>';
         const phaseScore = (p.score !== undefined) ? p.score : (p.bestScore ?? 0);
@@ -10919,6 +10953,399 @@ async function proceedStartQuizSession() {
   await executeStartQuizSession(targetPhase);
 }
 
+// ==========================================
+// ARENA SUNDAY PRACTICE MODE IMPLEMENTATION
+// ==========================================
+compState.practice = {
+  active: false,
+  phase: 1,
+  phaseTopic: "",
+  questions: [],
+  currentIndex: 0,
+  userAnswers: {},
+  correctCount: 0
+};
+
+async function startPracticeQuiz(targetPhase) {
+  if (!session) {
+    openAuth();
+    return;
+  }
+
+  const phase = Number(targetPhase || 1);
+  try {
+    const res = await requestAPI(`/api/competition/practice/questions?phase=${phase}`);
+    if (!res || !res.questions || !res.questions.length) {
+      toast("Không tải được bộ câu hỏi luyện tập của giai đoạn này.");
+      return;
+    }
+
+    compState.practice = {
+      active: true,
+      phase,
+      phaseTopic: res.phaseTopic || `Giai đoạn ${phase}`,
+      questions: res.questions,
+      currentIndex: 0,
+      userAnswers: {},
+      correctCount: 0
+    };
+
+    if (compState.quizTimerInterval) {
+      clearInterval(compState.quizTimerInterval);
+      compState.quizTimerInterval = null;
+    }
+
+    const quizModal = $("#competitionQuizModal");
+    if (!quizModal) return;
+
+    $("#quizPlayView").style.display = "flex";
+    $("#quizResultView").style.display = "none";
+
+    const phaseBadge = $("#quizPhaseBadge");
+    if (phaseBadge) {
+      phaseBadge.textContent = `🎯 Luyện tập GĐ ${phase}`;
+      phaseBadge.classList.add("practice-mode");
+    }
+
+    const exitBtn = $("#quizExitBtn");
+    if (exitBtn) {
+      exitBtn.onclick = closePracticeQuiz;
+      const exitText = exitBtn.querySelector(".exit-btn-text");
+      if (exitText) exitText.textContent = "Đóng luyện tập";
+    }
+
+    const timerDigits = $("#quizTimerDigits");
+    const timerBar = $("#quizTimerProgressBar");
+    const timerDisplay = $("#quizTimerDisplay");
+    if (timerDigits) timerDigits.textContent = "Tự do";
+    if (timerBar) {
+      timerBar.style.width = "100%";
+      timerBar.classList.remove("is-danger");
+    }
+    if (timerDisplay) timerDisplay.classList.remove("low-time");
+
+    const starsBadge = $("#quizLiveStars");
+    if (starsBadge) starsBadge.textContent = `🎯 0 / ${res.questions.length}`;
+
+    const practiceNavBar = $("#quizPracticeNavBar");
+    if (practiceNavBar) practiceNavBar.style.display = "flex";
+
+    try {
+      if (quizModal.open) quizModal.close();
+      quizModal.showModal();
+    } catch (e) {
+      console.warn("Could not open practice modal:", e);
+    }
+
+    renderPracticeQuestion();
+  } catch (err) {
+    toast(err.message || "Không thể bắt đầu chế độ luyện tập.");
+  }
+}
+window.startPracticeQuiz = startPracticeQuiz;
+
+function renderPracticeQuestion() {
+  const p = compState.practice;
+  if (!p || !p.active || !p.questions) return;
+  const q = p.questions[p.currentIndex];
+  if (!q) return;
+
+  const counter = $("#quizQuestionCounter");
+  const questionText = $("#quizQuestionText");
+  const optA = $("#quizOptA");
+  const optB = $("#quizOptB");
+  const optC = $("#quizOptC");
+
+  if (counter) counter.textContent = `Câu ${p.currentIndex + 1} / ${p.questions.length}`;
+  if (questionText) questionText.textContent = q.questionText;
+  if (optA) optA.textContent = q.optionA;
+  if (optB) optB.textContent = q.optionB;
+  if (optC) optC.textContent = q.optionC;
+
+  const userAns = p.userAnswers[p.currentIndex];
+  const eliminated = userAns?.eliminatedOptions || [];
+
+  const triesPill = $("#quizTriesPill");
+  const triesText = $("#quizTriesText");
+  if (triesPill) {
+    const dots = triesPill.querySelectorAll(".tries-dot");
+    dots.forEach((dot) => {
+      dot.className = "tries-dot";
+      if (userAns?.isCorrect) {
+        dot.classList.add("active");
+      }
+    });
+  }
+  if (triesText) {
+    if (userAns?.isCorrect) {
+      triesText.textContent = "✅ Đã trả lời đúng! (Xem giải thích 💡)";
+    } else if (eliminated.length > 0) {
+      triesText.textContent = `❌ Chưa đúng (đã thử ${eliminated.length} lần, chọn lại)`;
+    } else {
+      triesText.textContent = "Chế độ Luyện tập (Không tính giờ)";
+    }
+  }
+
+  $$(".quiz-option-btn").forEach(btn => {
+    const opt = btn.getAttribute("data-option");
+    btn.onclick = () => submitPracticeAnswer(opt);
+    btn.className = "quiz-option-btn";
+    btn.disabled = false;
+    btn.style.pointerEvents = "auto";
+
+    if (userAns?.isCorrect && userAns.selectedOption === opt) {
+      btn.classList.add("opt-correct");
+    } else if (eliminated.includes(opt)) {
+      btn.classList.add("opt-wrong");
+      btn.disabled = true;
+    }
+  });
+
+  const hintBox = $("#quizHintBox");
+  const hintBtn = $("#quizHintBtn");
+  const hintContent = $("#quizHintContent");
+  if (userAns?.isCorrect) {
+    if (hintContent) hintContent.textContent = q.explanation || "Chưa có lời giải thích chi tiết cho câu hỏi này.";
+    if (hintBox) hintBox.style.display = "block";
+    if (hintBtn) hintBtn.classList.add("active");
+  } else {
+    if (hintBox) hintBox.style.display = "none";
+    if (hintBtn) hintBtn.classList.remove("active");
+  }
+
+  const prevBtn = $("#quizPracticePrevBtn");
+  const nextBtn = $("#quizPracticeNextBtn");
+  const nextBtnText = $("#quizPracticeNextBtnText");
+
+  if (prevBtn) {
+    prevBtn.disabled = (p.currentIndex === 0);
+    prevBtn.style.opacity = (p.currentIndex === 0) ? "0.5" : "1";
+    prevBtn.style.cursor = (p.currentIndex === 0) ? "not-allowed" : "pointer";
+  }
+
+  const isLastQ = (p.currentIndex === p.questions.length - 1);
+  if (nextBtnText) {
+    nextBtnText.textContent = isLastQ ? "Hoàn thành bài tập" : "Câu sau";
+  }
+
+  renderPracticePalette();
+}
+
+function renderPracticePalette() {
+  const p = compState.practice;
+  const palette = $("#quizPracticeQPalette");
+  if (!palette || !p || !p.questions) return;
+
+  palette.innerHTML = p.questions.map((q, idx) => {
+    const isCur = (idx === p.currentIndex);
+    const ans = p.userAnswers[idx];
+    let cls = "q-palette-btn";
+    if (isCur) cls += " active";
+    if (ans?.isCorrect) cls += " answered-correct";
+    else if (ans && ans.eliminatedOptions && ans.eliminatedOptions.length > 0) cls += " answered-wrong";
+
+    const label = ans?.isCorrect ? `✓` : `${idx + 1}`;
+    return `<button type="button" class="${cls}" onclick="jumpToPracticeQuestion(${idx})" title="Câu ${idx + 1}">${label}</button>`;
+  }).join("");
+}
+
+function submitPracticeAnswer(selectedOption) {
+  const p = compState.practice;
+  if (!p || !p.active) return;
+  const q = p.questions[p.currentIndex];
+  if (!q) return;
+
+  if (!p.userAnswers[p.currentIndex]) {
+    p.userAnswers[p.currentIndex] = {
+      selectedOption: null,
+      isCorrect: false,
+      eliminatedOptions: []
+    };
+  }
+
+  const userAns = p.userAnswers[p.currentIndex];
+  if (userAns.isCorrect) return;
+
+  const btn = document.querySelector(`.quiz-option-btn[data-option="${selectedOption}"]`);
+
+  if (selectedOption === q.correctOption) {
+    userAns.selectedOption = selectedOption;
+    userAns.isCorrect = true;
+    if (btn) btn.classList.add("opt-correct");
+    playCompSound("correct");
+
+    const bonusToast = $("#quizBonusToast");
+    if (bonusToast) {
+      bonusToast.textContent = "Chính xác! 🎯";
+      bonusToast.style.display = "block";
+      setTimeout(() => { bonusToast.style.display = "none"; }, 1200);
+    }
+
+    p.correctCount = Object.values(p.userAnswers).filter(a => a.isCorrect).length;
+    const starsBadge = $("#quizLiveStars");
+    if (starsBadge) starsBadge.textContent = `🎯 ${p.correctCount} / ${p.questions.length}`;
+
+    const hintBox = $("#quizHintBox");
+    const hintContent = $("#quizHintContent");
+    const hintBtn = $("#quizHintBtn");
+    if (hintContent) hintContent.textContent = q.explanation || "Chính xác! Bạn đã chọn đúng đáp án.";
+    if (hintBox) hintBox.style.display = "block";
+    if (hintBtn) hintBtn.classList.add("active");
+
+    const triesText = $("#quizTriesText");
+    if (triesText) triesText.textContent = "✅ Đã trả lời đúng! (Xem giải thích 💡)";
+
+    renderPracticePalette();
+  } else {
+    if (!userAns.eliminatedOptions.includes(selectedOption)) {
+      userAns.eliminatedOptions.push(selectedOption);
+    }
+    if (btn) {
+      btn.classList.add("opt-wrong");
+      btn.disabled = true;
+    }
+    playCompSound("wrong");
+
+    const penaltyToast = $("#quizPenaltyToast");
+    if (penaltyToast) {
+      penaltyToast.textContent = "Chưa đúng, thử lại! 🔄";
+      penaltyToast.style.display = "block";
+      setTimeout(() => { penaltyToast.style.display = "none"; }, 1200);
+    }
+
+    const triesText = $("#quizTriesText");
+    if (triesText) triesText.textContent = `❌ Chưa đúng (đã thử ${userAns.eliminatedOptions.length} lần, chọn lại)`;
+
+    renderPracticePalette();
+  }
+}
+
+function navigatePracticeQuestion(direction) {
+  const p = compState.practice;
+  if (!p || !p.active) return;
+
+  if (direction === -1) {
+    if (p.currentIndex > 0) {
+      p.currentIndex--;
+      renderPracticeQuestion();
+    }
+  } else if (direction === 1) {
+    if (p.currentIndex < p.questions.length - 1) {
+      p.currentIndex++;
+      renderPracticeQuestion();
+    } else {
+      finishPracticeQuiz();
+    }
+  }
+}
+window.navigatePracticeQuestion = navigatePracticeQuestion;
+
+function jumpToPracticeQuestion(targetIndex) {
+  const p = compState.practice;
+  if (!p || !p.active) return;
+  if (targetIndex >= 0 && targetIndex < p.questions.length) {
+    p.currentIndex = targetIndex;
+    renderPracticeQuestion();
+  }
+}
+window.jumpToPracticeQuestion = jumpToPracticeQuestion;
+
+function finishPracticeQuiz() {
+  const p = compState.practice;
+  if (!p || !p.active) return;
+
+  p.correctCount = Object.values(p.userAnswers).filter(a => a.isCorrect).length;
+
+  $("#quizPlayView").style.display = "none";
+  const resView = $("#quizResultView");
+  if (!resView) return;
+  resView.style.display = "block";
+
+  const resTitle = $("#quizResultTitle");
+  if (resTitle) resTitle.textContent = "KẾT QUẢ LUYỆN TẬP";
+
+  const resSubtitle = $("#resultSubtitle");
+  if (resSubtitle) resSubtitle.textContent = `Chế độ Luyện tập Chủ Nhật • Giai đoạn ${p.phase}`;
+
+  const resScore = $("#resultTotalScore");
+  if (resScore) resScore.textContent = `${p.correctCount} / ${p.questions.length}`;
+
+  const resMaxLabel = $("#resultMaxScoreLabel");
+  if (resMaxLabel) resMaxLabel.textContent = "câu đúng";
+
+  const resCorrectCount = $("#resultCorrectCount");
+  if (resCorrectCount) resCorrectCount.textContent = `${p.correctCount} / ${p.questions.length}`;
+
+  const resCorrectPts = $("#resultCorrectPts");
+  if (resCorrectPts) resCorrectPts.textContent = `(Tỉ lệ: ${Math.round((p.correctCount / p.questions.length) * 100)}%)`;
+
+  const resFirstTryCount = $("#resultFirstTryCount");
+  if (resFirstTryCount) resFirstTryCount.textContent = `${p.correctCount} câu`;
+
+  const resFirstTryPts = $("#resultFirstTryPts");
+  if (resFirstTryPts) resFirstTryPts.textContent = "Luyện tập";
+
+  const resRemainingTime = $("#resultRemainingTime");
+  if (resRemainingTime) resRemainingTime.textContent = "Tự do";
+
+  const resTimePts = $("#resultTimePts");
+  if (resTimePts) resTimePts.textContent = "Không tính giờ";
+
+  const onTimeBox = $("#resultOnTimeBonusBox");
+  if (onTimeBox) onTimeBox.style.display = "none";
+
+  const recordBox = $(".result-phase-record-box");
+  if (recordBox) {
+    recordBox.innerHTML = `<span>Chế độ:</span><strong>Luyện tập tự do (Không tính điểm thi đua)</strong>`;
+  }
+
+  const notice = $(".result-leaderboard-notice");
+  if (notice) {
+    notice.innerHTML = `ℹ️ <em>Bài làm luyện tập giúp bạn củng cố kiến thức trước khi bước vào tuần mới. Không lưu điểm vào Bảng xếp hạng.</em>`;
+  }
+
+  const actions = $(".result-actions");
+  if (actions) {
+    actions.innerHTML = `
+      <button type="button" class="button button-outline" onclick="startPracticeQuiz(${p.phase})">🔄 Luyện tập lại GĐ ${p.phase}</button>
+      <button type="button" class="button button-primary" onclick="closePracticeQuiz()">🚪 Về Cổng thi đấu</button>
+      <button type="button" class="button button-outline" onclick="closeQuizAndOpenLeaderboard()">📊 Xem BXH tuần</button>
+    `;
+  }
+
+  playCompSound("complete");
+  if (typeof startQuizConfettiAnimation === "function") {
+    startQuizConfettiAnimation();
+  }
+}
+window.finishPracticeQuiz = finishPracticeQuiz;
+
+function closePracticeQuiz() {
+  if (compState.practice) compState.practice.active = false;
+  const practiceNavBar = $("#quizPracticeNavBar");
+  if (practiceNavBar) practiceNavBar.style.display = "none";
+
+  const exitBtn = $("#quizExitBtn");
+  if (exitBtn) {
+    exitBtn.onclick = promptQuizExit;
+    const exitText = exitBtn.querySelector(".exit-btn-text");
+    if (exitText) exitText.textContent = "Tạm dừng & Thoát";
+  }
+
+  const phaseBadge = $("#quizPhaseBadge");
+  if (phaseBadge) phaseBadge.classList.remove("practice-mode");
+
+  const onTimeBox = $("#resultOnTimeBonusBox");
+  if (onTimeBox) onTimeBox.style.display = "";
+
+  const modal = $("#competitionQuizModal");
+  if (modal && modal.open) {
+    modal.close();
+  }
+  if (compState.confettiAnimationId) cancelAnimationFrame(compState.confettiAnimationId);
+}
+window.closePracticeQuiz = closePracticeQuiz;
+
 async function startCompetitionQuiz(targetPhase) {
   if (!session) {
     openAuth();
@@ -11246,12 +11673,19 @@ function toggleQuizHint(forceState) {
   const hintContent = $("#quizHintContent");
   if (!hintBox) return;
 
-  const q = compState.activeQuestions ? compState.activeQuestions[compState.currentQIndex] : null;
   const isHidden = (hintBox.style.display === "none" || !hintBox.style.display);
   const shouldOpen = (typeof forceState === "boolean") ? forceState : isHidden;
 
+  let rawExplanation = "";
+  if (compState.practice && compState.practice.active) {
+    const q = compState.practice.questions ? compState.practice.questions[compState.practice.currentIndex] : null;
+    rawExplanation = (q && (q.explanation || q.hint)) ? String(q.explanation || q.hint).trim() : "";
+  } else {
+    const q = compState.activeQuestions ? compState.activeQuestions[compState.currentQIndex] : null;
+    rawExplanation = (q && (q.explanation || q.hint)) ? String(q.explanation || q.hint).trim() : "";
+  }
+
   if (shouldOpen) {
-    const rawExplanation = (q && (q.explanation || q.hint)) ? String(q.explanation || q.hint).trim() : "";
     const explanationText = rawExplanation || "Chưa có lời giải thích chi tiết cho câu hỏi này.";
     if (hintContent) hintContent.textContent = explanationText;
     hintBox.style.display = "block";
@@ -11288,6 +11722,10 @@ function updateTriesUI(triesUsed) {
 }
 
 async function submitQuizAnswer(selectedOption) {
+  if (compState.practice && compState.practice.active) {
+    submitPracticeAnswer(selectedOption);
+    return;
+  }
   if (compState.isSubmittingAnswer) return;
   const q = compState.activeQuestions[compState.currentQIndex];
   if (!q) return;
@@ -11524,6 +11962,10 @@ async function openPhaseResultModal(phase) {
 }
 
 function closeQuizAndGoHome() {
+  if (compState.practice && compState.practice.active) {
+    closePracticeQuiz();
+    return;
+  }
   const modal = $("#competitionQuizModal");
   if (modal) modal.close();
   if (compState.confettiAnimationId) cancelAnimationFrame(compState.confettiAnimationId);
@@ -11534,6 +11976,9 @@ function closeQuizAndGoHome() {
 }
 
 function closeQuizAndOpenLeaderboard() {
+  if (compState.practice && compState.practice.active) {
+    closePracticeQuiz();
+  }
   const modal = $("#competitionQuizModal");
   if (modal) modal.close();
   if (compState.confettiAnimationId) cancelAnimationFrame(compState.confettiAnimationId);

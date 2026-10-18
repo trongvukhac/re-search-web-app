@@ -4900,6 +4900,47 @@ async function api(request, response, url) {
     });
   }
 
+  if (method === "GET" && pathName === "/api/competition/practice/questions") {
+    const user = requireUser(request, response);
+    if (!user) return;
+
+    if (!ARENA_ENABLED && user.role !== "admin") {
+      return error(response, 403, "Đấu trường Arena đang tạm khoá để thử nghiệm nội bộ.");
+    }
+
+    if (!isVLUEmail(user)) {
+      return error(response, 403, "Đấu trường Arena chỉ dành cho sinh viên Văn Lang (email @vanlanguni.vn hoặc @vlu.edu.vn).");
+    }
+
+    const vnNow = getVietnamNow();
+    const comp = getOrCreateCurrentCompetition(vnNow);
+
+    const targetPhase = Math.max(1, Math.min(3, parseInt(url.searchParams.get("phase") || "1", 10)));
+    const phaseTopic = comp[`phase${targetPhase}_topic`] || comp.topic_name || "Nội dung câu hỏi chuyên đề";
+
+    const questions = db.prepare(
+      "SELECT id, question_index, question_text, option_a, option_b, option_c, correct_option, explanation FROM competition_questions WHERE competition_id = ? AND phase = ? ORDER BY question_index ASC"
+    ).all(comp.id, targetPhase);
+
+    return sendJSON(response, 200, {
+      ok: true,
+      mode: "practice",
+      phase: targetPhase,
+      phaseTopic,
+      weekTopic: comp.topic_name,
+      questions: questions.map(q => ({
+        id: q.id,
+        questionIndex: q.question_index,
+        questionText: q.question_text,
+        optionA: q.option_a,
+        optionB: q.option_b,
+        optionC: q.option_c,
+        correctOption: q.correct_option,
+        explanation: q.explanation || ""
+      }))
+    });
+  }
+
   if (method === "GET" && pathName === "/api/competition/phase/result") {
     const user = requireUser(request, response);
     if (!user) return;
