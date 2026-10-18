@@ -10293,7 +10293,7 @@ function renderGatewayTab(raw) {
   const attemptsNoteText = $(".attempts-note-banner .note-banner-text");
   if (attemptsNoteText) {
     if (data.isSunday) {
-      attemptsNoteText.innerHTML = `🎯 <strong>Chế độ Luyện tập ngày Chủ Nhật:</strong> Thí sinh được làm lại toàn bộ câu hỏi của cả 3 giai đoạn để ôn tập kiến thức. Bài làm <strong>không tính điểm thi đua</strong>, <strong>không tính thời gian</strong>, làm <strong>không giới hạn số lượt</strong> và có thể <strong>chuyển qua lại câu trước/sau tự do</strong>.`;
+      attemptsNoteText.innerHTML = `🎯 <strong>Chế độ Luyện tập ngày Chủ Nhật:</strong> Thí sinh được làm lại toàn bộ câu hỏi của cả 3 giai đoạn để ôn tập kiến thức. Bài làm <strong>không tính điểm thi đua</strong>, <strong>không tính thời gian</strong>, làm <strong>không giới hạn số lượt</strong>, có thể <strong>chuyển câu trước/sau tự do</strong> và <strong>hoàn toàn không ghi nhận vào thành tích Namecard hay Bảng xếp hạng</strong>.`;
     } else {
       attemptsNoteText.innerHTML = `<strong>Mỗi giai đoạn chỉ có duy nhất 1 lượt thi!</strong> Thí sinh làm bài đúng hạn ở GĐ 1 &amp; GĐ 2 nhận thêm <strong>+50 ⭐</strong> mỗi đợt. Nếu lỡ, bạn vẫn có thể <strong>làm bù trong tuần</strong> (không cộng thưởng đúng hạn).`;
     }
@@ -11296,12 +11296,12 @@ function finishPracticeQuiz() {
 
   const recordBox = $(".result-phase-record-box");
   if (recordBox) {
-    recordBox.innerHTML = `<span>Chế độ:</span><strong>Luyện tập tự do (Không tính điểm thi đua)</strong>`;
+    recordBox.innerHTML = `<span>Chế độ:</span><strong>Luyện tập tự do (Không tính vào thành tích hay Namecard)</strong>`;
   }
 
   const notice = $(".result-leaderboard-notice");
   if (notice) {
-    notice.innerHTML = `ℹ️ <em>Bài làm luyện tập giúp bạn củng cố kiến thức trước khi bước vào tuần mới. Không lưu điểm vào Bảng xếp hạng.</em>`;
+    notice.innerHTML = `ℹ️ <em>Bài làm luyện tập giúp bạn củng cố kiến thức trước khi bước vào tuần mới. Hoàn toàn không tính vào thành tích cá nhân, Namecard hay Bảng xếp hạng.</em>`;
   }
 
   const actions = $(".result-actions");
