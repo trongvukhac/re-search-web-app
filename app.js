@@ -9747,7 +9747,41 @@ function normalizeCompData(raw) {
   const activeQuestionIndex = raw.userStatus?.activeQuestionIndex ?? (raw.activeQuestionIndex || 1);
   const isPaused = Boolean(raw.userStatus?.isPaused || raw.isPaused);
   const exitCount = raw.userStatus?.exitCount ?? (raw.exitCount || 0);
-  const phasesStatus = Array.isArray(raw.phasesStatus) ? raw.phasesStatus : (Array.isArray(raw.userStatus?.phasesStatus) ? raw.userStatus.phasesStatus : []);
+  let phasesStatus = Array.isArray(raw.phasesStatus) && raw.phasesStatus.length ? raw.phasesStatus : (Array.isArray(raw.userStatus?.phasesStatus) && raw.userStatus.phasesStatus.length ? raw.userStatus.phasesStatus : []);
+  if (!phasesStatus.length && raw.week) {
+    phasesStatus = [
+      {
+        phase: 1,
+        name: "Giai đoạn 1",
+        days: "Thứ Hai – Thứ Ba",
+        topic: raw.week.phase1_topic || raw.week.phase1Topic || "Phương pháp & Thiết kế",
+        isCompleted: false,
+        score: 0,
+        bestScore: 0,
+        isAvailable: !isSunday
+      },
+      {
+        phase: 2,
+        name: "Giai đoạn 2",
+        days: "Thứ Tư – Thứ Năm",
+        topic: raw.week.phase2_topic || raw.week.phase2Topic || "Kỹ thuật Thu thập & Xử lý",
+        isCompleted: false,
+        score: 0,
+        bestScore: 0,
+        isAvailable: !isSunday
+      },
+      {
+        phase: 3,
+        name: "Giai đoạn 3",
+        days: "Thứ Sáu – Thứ Bảy",
+        topic: raw.week.phase3_topic || raw.week.phase3Topic || "Tư duy Phân tích & Báo cáo",
+        isCompleted: false,
+        score: 0,
+        bestScore: 0,
+        isAvailable: !isSunday
+      }
+    ];
+  }
   const maxAttempts = raw.maxAttempts || raw.userStatus?.maxAttempts || 1;
   const totalOnTimeBonus = raw.totalOnTimeBonus ?? raw.userStatus?.totalOnTimeBonus ?? raw.userSummary?.totalOnTimeBonus ?? 0;
   const defaultAvailablePhase = (raw.userStatus?.defaultAvailablePhase !== undefined)
@@ -9922,6 +9956,7 @@ async function onEnterArena() {
       compState.lastResultsVersion = overview.resultsVersion;
     }
     renderCompetitionOverview(overview);
+    renderGatewayTab(overview);
 
     if (!compState.activeTab) {
       if (norm.isSunday) {
@@ -10138,19 +10173,27 @@ function switchCompTab(tabName) {
       const sundayNotice = $("#gatewaySundayContainer");
       if (sundayNotice) sundayNotice.style.setProperty("display", "block", "important");
     }
-    if (compState.overview) renderGatewayTab(compState.overview);
+    if (compState.overview) {
+      renderGatewayTab(compState.overview);
+    } else if (compState.status) {
+      renderGatewayTab(compState.status);
+    }
   } else if (tabName === "leaderboard") {
     const lEl = $("#compTabLeaderboard");
     if (lEl) lEl.style.display = "block";
     const norm = normalizeCompData(compState.overview || compState.status);
     if (norm.isSunday) {
-      // Ngày chủ nhật: giữ hiển thị cả 4 tab [Toàn tuần] [GĐ 1] [GĐ 2] [GĐ 3] để thí sinh tiện tra cứu thứ hạng
+      // Ngày chủ nhật: chỉ hiển thị BXH toàn tuần (ẩn các tab GĐ 1, GĐ 2, GĐ 3)
       $$(".lb-phase-btn").forEach(btn => {
-        btn.style.display = "inline-flex";
-        btn.classList.toggle("active", btn.dataset.lbPhase === (compState.activeLbPhase || "week"));
+        if (btn.dataset.lbPhase !== "week") {
+          btn.style.display = "none";
+        } else {
+          btn.style.display = "inline-flex";
+          btn.classList.add("active");
+        }
       });
-      compState.activeLbPhase = compState.activeLbPhase || "week";
-      loadAndRenderLeaderboard(compState.activeLbPhase);
+      compState.activeLbPhase = "week";
+      loadAndRenderLeaderboard("week");
       stopArenaLeaderboardAutoRefresh();
       launchSundayCeremonyAnimation();
     } else {

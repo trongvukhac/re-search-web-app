@@ -4645,14 +4645,63 @@ async function api(request, response, url) {
     let userSummary = null;
     let userStatus = null;
     let defaultAvailablePhase = null;
-    let phasesStatus = [];
+    const curPhase = timeState.phase || 1;
+    let phasesStatus = [
+      {
+        phase: 1,
+        name: "Giai đoạn 1",
+        days: "Thứ Hai – Thứ Ba",
+        topic: comp.phase1_topic,
+        isCompleted: false,
+        score: 0,
+        bestScore: 0,
+        isCurrent: curPhase === 1 && !timeState.isSunday,
+        isAvailable: !timeState.isSunday && (curPhase >= 1),
+        isCatchUp: false,
+        isOnTime: !timeState.isSunday && isPhaseOnTimeWindow(comp, 1, vnNow),
+        onTimeBonusEligible: (!timeState.isSunday && isPhaseOnTimeWindow(comp, 1, vnNow)) ? 50 : 0,
+        onTimeBonusEarned: 0,
+        hasActive: false
+      },
+      {
+        phase: 2,
+        name: "Giai đoạn 2",
+        days: "Thứ Tư – Thứ Năm",
+        topic: comp.phase2_topic,
+        isCompleted: false,
+        score: 0,
+        bestScore: 0,
+        isCurrent: curPhase === 2 && !timeState.isSunday,
+        isAvailable: !timeState.isSunday && (curPhase >= 2),
+        isCatchUp: false,
+        isOnTime: !timeState.isSunday && isPhaseOnTimeWindow(comp, 2, vnNow),
+        onTimeBonusEligible: (!timeState.isSunday && isPhaseOnTimeWindow(comp, 2, vnNow)) ? 50 : 0,
+        onTimeBonusEarned: 0,
+        hasActive: false
+      },
+      {
+        phase: 3,
+        name: "Giai đoạn 3",
+        days: "Thứ Sáu – Thứ Bảy",
+        topic: comp.phase3_topic,
+        isCompleted: false,
+        score: 0,
+        bestScore: 0,
+        isCurrent: curPhase === 3 && !timeState.isSunday,
+        isAvailable: !timeState.isSunday && (curPhase >= 3),
+        isCatchUp: false,
+        isOnTime: false,
+        onTimeBonusEligible: 0,
+        onTimeBonusEarned: 0,
+        hasActive: false
+      }
+    ];
 
     if (!timeState.isSunday) {
       defaultAvailablePhase = timeState.phase || 1;
     }
 
     if (user) {
-      const curPhase = timeState.phase || 1;
 
       const pResults = db.prepare(
         "SELECT phase, best_score, attempts_used, on_time_bonus FROM competition_phase_results WHERE user_id = ? AND competition_id = ?"
