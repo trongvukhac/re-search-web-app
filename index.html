@@ -1442,6 +1442,20 @@
               <span><b id="adminTotalUsers">--</b> thành viên</span>
               <span><b id="adminPendingDocs">--</b> cần phản hồi</span>
             </div>
+            <div style="margin: 12px 0;">
+              <form onsubmit="adminLookupUserById(event, 'adminAccountLookupId')" style="display: flex; gap: 6px;">
+                <input
+                  type="text"
+                  id="adminAccountLookupId"
+                  class="input"
+                  placeholder="Tra cứu hồ sơ theo ID..."
+                  style="flex: 1; padding: 6px 10px; font-size: 13px; background: rgba(255,255,255,0.08); color: inherit; border: 1px solid rgba(255,255,255,0.2);"
+                />
+                <button type="submit" class="button button-sm button-primary" style="white-space: nowrap;">
+                  🔍 Tra cứu
+                </button>
+              </form>
+            </div>
             <button class="button button-dark" id="adminButton">
               Mở quản trị <span>→</span>
             </button>
@@ -1872,6 +1886,56 @@
 
           <!-- Các khung thành tích -->
           <div class="namecard-body">
+            <!-- 0. Khối hồ sơ sinh viên / định danh (Chỉ hiển thị cho chủ tài khoản & Admin/TA) -->
+            <div class="namecard-block" id="ncIdentityBlock" style="display: none; border-color: rgba(99, 102, 241, 0.25); background: rgba(99, 102, 241, 0.03);">
+              <div class="namecard-block-header">
+                <div class="namecard-block-title" style="color: #4f46e5;">
+                  <span class="nc-icon" style="color: #4f46e5;">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                  </span>
+                  <h3>Hồ sơ sinh viên <span id="ncIdentityNotice" style="font-size: 11px; font-weight: normal; opacity: 0.8; margin-left: 6px;">(Chỉ bạn &amp; Admin thấy)</span></h3>
+                </div>
+              </div>
+              <div class="namecard-tiles namecard-tiles-2">
+                <div class="namecard-tile horizontal">
+                  <div class="nc-tile-icon" style="color: #4f46e5; background: #eef2ff;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 8h10"/><path d="M7 12h6"/></svg>
+                  </div>
+                  <div class="nc-tile-info">
+                    <div class="nc-tile-val" id="ncStatStudentId">—</div>
+                    <div class="nc-tile-lbl">Mã số sinh viên (MSSV)</div>
+                  </div>
+                </div>
+                <div class="namecard-tile horizontal">
+                  <div class="nc-tile-icon" style="color: #0d9488; background: #f0fdfa;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                  </div>
+                  <div class="nc-tile-info">
+                    <div class="nc-tile-val" id="ncStatRealName">—</div>
+                    <div class="nc-tile-lbl">Họ và tên thật</div>
+                  </div>
+                </div>
+                <div class="namecard-tile horizontal">
+                  <div class="nc-tile-icon" style="color: #2563eb; background: #eff6ff;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+                  </div>
+                  <div class="nc-tile-info">
+                    <div class="nc-tile-val" id="ncStatClassName">—</div>
+                    <div class="nc-tile-lbl">Lớp học</div>
+                  </div>
+                </div>
+                <div class="namecard-tile horizontal">
+                  <div class="nc-tile-icon" style="color: #7c3aed; background: #f5f3ff;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                  </div>
+                  <div class="nc-tile-info">
+                    <div class="nc-tile-val" id="ncStatEmail" style="word-break: break-all; font-size: 13px;">—</div>
+                    <div class="nc-tile-lbl">Email tài khoản</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             <!-- 1. Diễn đàn -->
             <div class="namecard-block">
               <div class="namecard-block-header">
@@ -2463,15 +2527,60 @@
           <div><strong id="adminTopics">0</strong><span>Chủ đề chờ</span></div>
           <div><strong id="adminPendingResetsCount">0</strong><span>Yêu cầu đổi MK</span></div>
         </div>
+        <div class="admin-quick-lookup-card" style="margin-top: 18px; padding: 16px; background: var(--surface-2, #f8fafc); border: 1px solid var(--border, #e2e8f0); border-radius: 12px;">
+          <h4 style="margin: 0 0 8px 0; font-size: 15px; display: flex; align-items: center; gap: 8px;">
+            <span>🔍</span> <span>Tra cứu hồ sơ người dùng bằng ID</span>
+          </h4>
+          <p style="margin: 0 0 12px 0; font-size: 13px; color: var(--text-muted, #64748b);">
+            Nhập ID người dùng (ví dụ: <code>1</code>, <code>25</code> hoặc <code>#00025</code>) để mở ngay hồ sơ Namecard và thông tin sinh viên chi tiết.
+          </p>
+          <form onsubmit="adminLookupUserById(event, 'adminOverviewLookupId')" style="display: flex; gap: 8px; max-width: 440px;">
+            <input
+              type="text"
+              id="adminOverviewLookupId"
+              class="input"
+              placeholder="Nhập ID (VD: 1, 25, #00025)..."
+              style="flex: 1; padding: 8px 12px; font-size: 14px;"
+            />
+            <button type="submit" class="button button-primary" style="white-space: nowrap;">
+              Tra cứu hồ sơ
+            </button>
+          </form>
+        </div>
       </div>
 
       <div id="adminTabMembers" class="admin-tab-content" style="display: none">
+        <div style="display: flex; flex-wrap: wrap; gap: 12px; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+          <form onsubmit="adminLookupUserById(event, 'adminMemberLookupId')" style="display: flex; gap: 8px; flex: 1; min-width: 260px; max-width: 380px;">
+            <input
+              type="text"
+              id="adminMemberLookupId"
+              class="input"
+              placeholder="Tra cứu nhanh theo ID (VD: 25, #00025)..."
+              style="flex: 1; padding: 7px 12px; font-size: 13px;"
+            />
+            <button type="submit" class="button button-primary button-sm" style="white-space: nowrap;">
+              🔍 Tra cứu ID
+            </button>
+          </form>
+          <div style="flex: 1; min-width: 240px; max-width: 360px;">
+            <input
+              type="search"
+              id="adminUserSearchInput"
+              class="input"
+              placeholder="Lọc danh sách theo ID, tên, MSSV, email..."
+              oninput="filterAdminMembers(this.value)"
+              style="width: 100%; padding: 7px 12px; font-size: 13px;"
+            />
+          </div>
+        </div>
         <div style="max-height: 400px; overflow-y: auto; overflow-x: auto">
           <table
-            style="width: 100%; min-width: 780px; border-collapse: collapse; text-align: left"
+            style="width: 100%; min-width: 840px; border-collapse: collapse; text-align: left"
           >
             <thead>
               <tr style="border-bottom: 1px solid var(--sage-2)">
+                <th style="padding: 12px 8px; width: 75px;">ID</th>
                 <th style="padding: 12px 8px">Tên / Email</th>
                 <th style="padding: 12px 8px">MSSV</th>
                 <th style="padding: 12px 8px">Tên thật</th>

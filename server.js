@@ -2944,11 +2944,12 @@ async function api(request, response, url) {
   const namecardMatch = pathName.match(/^\/api\/users\/(\d+)\/namecard$/);
   if (method === "GET" && namecardMatch) {
     const targetUserId = Number(namecardMatch[1]);
-    const targetUser = db.prepare("SELECT id, display_name, email, role, avatar, bio, cover_image, namecard_frame, namecard_theme, created_at FROM users WHERE id = ?").get(targetUserId);
+    const targetUser = db.prepare("SELECT id, display_name, email, role, avatar, bio, cover_image, namecard_frame, namecard_theme, student_id, real_name, class_name, created_at FROM users WHERE id = ?").get(targetUserId);
     if (!targetUser) return error(response, 404, "Không tìm thấy người dùng.");
 
     const viewer = sessionFrom(request);
     const isSelf = Boolean(viewer && viewer.id === targetUser.id);
+    const isPrivileged = Boolean(viewer && isSuperAdmin(viewer));
 
     // Chuỗi & Cấp bậc
     const streakInfo = calculateUserStreak(targetUser.id);
@@ -3102,7 +3103,14 @@ async function api(request, response, url) {
         namecardTheme: targetUser.namecard_theme || "default",
         isSelf,
         canUploadCustomCover,
-        limitedItems
+        limitedItems,
+        ...(isSelf || isPrivileged ? {
+          studentId: targetUser.student_id || null,
+          realName: targetUser.real_name || null,
+          className: targetUser.class_name || null,
+          email: targetUser.email || null,
+          isPrivilegedViewer: isPrivileged,
+        } : {})
       },
       streakCard: {
         streak: currentStreak,
@@ -4037,6 +4045,39 @@ async function api(request, response, url) {
         streakTier: getAuthorStreakTier(u.id),
       }));
     return json(response, 200, { users });
+  }
+  const adminUserByIdMatch = pathName.match(/^\/api\/admin\/users\/(\d+)$/);
+  if (method === "GET" && adminUserByIdMatch) {
+    const user = requireUser(request, response);
+    if (!user || !isSuperAdmin(user))
+      return user
+        ? error(response, 403, "Chỉ TA/Admin mới có quyền này.")
+        : undefined;
+    const targetId = Number(adminUserByIdMatch[1]);
+    const target = db
+      .prepare(
+        "SELECT u.id, u.email, u.display_name, u.role, u.created_at, u.student_id, u.real_name, u.class_name, u.bio, u.avatar, u.cover_image, coalesce(sum(c.points), 0) as totalPoints FROM users u LEFT JOIN contribution_events c ON u.id = c.user_id WHERE u.id = ? GROUP BY u.id",
+      )
+      .get(targetId);
+    if (!target) return error(response, 404, "Không tìm thấy người dùng với ID này.");
+    return json(response, 200, {
+      user: {
+        id: target.id,
+        userCode: String(target.id).padStart(5, '0'),
+        email: target.email,
+        displayName: target.display_name,
+        role: target.role,
+        createdAt: target.created_at.replace(' ', 'T') + 'Z',
+        totalPoints: target.totalPoints,
+        studentId: target.student_id || null,
+        realName: target.real_name || null,
+        className: target.class_name || null,
+        bio: target.bio || "",
+        avatar: target.avatar,
+        coverImage: target.cover_image,
+        streakTier: getAuthorStreakTier(target.id),
+      }
+    });
   }
   const roleMatch = pathName.match(/^\/api\/admin\/users\/(\d+)\/role$/);
   if (method === "PATCH" && roleMatch) {

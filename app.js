@@ -4042,13 +4042,23 @@ window.restoreTrashItem = async function(type, id) {
   }
 };
 
-async function loadAdminMembers() {
-  const data = await requestAPI("/api/admin/users");
+let adminMembersCache = [];
+
+function renderAdminUserRows(users) {
   const NA = `<span style="color: var(--muted); font-style: italic; font-size: 12px;">Chưa cập nhật</span>`;
-  $("#adminUserList").innerHTML = data.users
+  const container = $("#adminUserList");
+  if (!container) return;
+  if (!users || users.length === 0) {
+    container.innerHTML = `<tr><td colspan="8" style="text-align: center; padding: 24px; color: var(--muted); font-style: italic;">Không tìm thấy người dùng phù hợp.</td></tr>`;
+    return;
+  }
+  container.innerHTML = users
     .map(
       (u) => `
     <tr style="border-bottom: 1px solid var(--sage-2);">
+      <td style="padding: 12px 8px; font-family: monospace; font-size: 13px; font-weight: bold; color: var(--text);">
+        #${String(u.id).padStart(5, '0')}
+      </td>
       <td style="padding: 12px 8px; min-width: 150px;"><strong class="${getNameClass(u.streakTier)}">${escapeHTML(u.displayName)}</strong><br><small style="color:var(--muted)">${escapeHTML(u.email)}</small></td>
       <td style="padding: 12px 8px; font-family: monospace; font-size: 13px;">${u.studentId ? escapeHTML(u.studentId) : NA}</td>
       <td style="padding: 12px 8px; font-size: 13px;">${u.realName ? escapeHTML(u.realName) : NA}</td>
@@ -4056,6 +4066,7 @@ async function loadAdminMembers() {
       <td style="padding: 12px 8px;">${getRoleDisplay(u.role)}</td>
       <td style="padding: 12px 8px;"><strong style="color: var(--primary)">${u.totalPoints || 0}</strong></td>
       <td style="padding: 12px 8px; display: flex; gap: 6px; flex-wrap: wrap;">
+        <button class="button button-primary" style="padding: 4px 8px; font-size: 12px;" onclick="openNamecard(${u.id})" title="Xem hồ sơ & thông tin chi tiết">👁️ Hồ sơ</button>
         <button class="button button-outline" style="padding: 4px 8px; font-size: 12px;" onclick="changeUserRole(${u.id}, '${u.role}')">Đổi quyền</button>
         <button class="button button-outline" style="padding: 4px 8px; font-size: 12px;" onclick="adjustUserPoints(${u.id})">Cộng/Trừ điểm</button>
       </td>
@@ -4064,6 +4075,60 @@ async function loadAdminMembers() {
     )
     .join("");
 }
+
+async function loadAdminMembers() {
+  const data = await requestAPI("/api/admin/users");
+  adminMembersCache = data.users || [];
+  const searchVal = $("#adminUserSearchInput")?.value?.trim() || "";
+  if (searchVal) {
+    filterAdminMembers(searchVal);
+  } else {
+    renderAdminUserRows(adminMembersCache);
+  }
+}
+
+window.filterAdminMembers = (query) => {
+  if (!query || !query.trim()) {
+    renderAdminUserRows(adminMembersCache);
+    return;
+  }
+  const q = query.trim().toLowerCase();
+  const rawNum = q.replace(/[^0-9]/g, "");
+  const filtered = adminMembersCache.filter((u) => {
+    const idStr = String(u.id);
+    const paddedId = `#${idStr.padStart(5, '0')}`.toLowerCase();
+    const matchId = idStr === q || paddedId.includes(q) || (rawNum && idStr === String(parseInt(rawNum, 10)));
+    const matchName = (u.displayName || "").toLowerCase().includes(q);
+    const matchEmail = (u.email || "").toLowerCase().includes(q);
+    const matchStudentId = (u.studentId || "").toLowerCase().includes(q);
+    const matchRealName = (u.realName || "").toLowerCase().includes(q);
+    const matchClass = (u.className || "").toLowerCase().includes(q);
+    return matchId || matchName || matchEmail || matchStudentId || matchRealName || matchClass;
+  });
+  renderAdminUserRows(filtered);
+};
+
+window.adminLookupUserById = async (e, inputId) => {
+  if (e && e.preventDefault) e.preventDefault();
+  const inputEl = document.getElementById(inputId);
+  if (!inputEl) return;
+  const rawVal = inputEl.value.trim();
+  if (!rawVal) {
+    toast("Vui lòng nhập ID người dùng cần tra cứu.");
+    return;
+  }
+  const cleaned = rawVal.replace(/[^0-9]/g, "");
+  const userId = parseInt(cleaned, 10);
+  if (!userId || isNaN(userId)) {
+    toast("ID người dùng không hợp lệ. Vui lòng nhập số ID (VD: 1, 25, #00025).");
+    return;
+  }
+  try {
+    await openNamecard(userId);
+  } catch (err) {
+    toast(err.message || "Không thể tải hồ sơ người dùng.");
+  }
+};
 
 window.changeUserRole = async (id, currentRole) => {
   const newRole = prompt(`Nhập quyền mới (student, lecturer, admin). Hiện tại: ${currentRole}`);
@@ -4641,6 +4706,29 @@ window.openNamecard = async function(userId) {
       $("#ncStatFastest").textContent = fm > 0 ? `${fm} phút ${fs} giây` : `${fs} giây`;
     } else {
       $("#ncStatFastest").textContent = "Chưa có";
+    }
+
+    // 0. Khối hồ sơ sinh viên / định danh (Chỉ hiển thị cho chủ tài khoản & Admin/TA)
+    const identityBlock = $("#ncIdentityBlock");
+    const canSeeIdentity = Boolean(data.user.isSelf || data.user.isPrivilegedViewer || (data.user.studentId || data.user.realName || data.user.className || data.user.email));
+    if (identityBlock) {
+      if (canSeeIdentity) {
+        identityBlock.style.display = "block";
+        const noticeEl = $("#ncIdentityNotice");
+        if (noticeEl) {
+          if (data.user.isPrivilegedViewer && !data.user.isSelf) {
+            noticeEl.textContent = "(Chế độ xem Quản trị viên)";
+          } else {
+            noticeEl.textContent = "(Chỉ bạn & Admin thấy)";
+          }
+        }
+        if ($("#ncStatStudentId")) $("#ncStatStudentId").textContent = data.user.studentId || "Chưa cập nhật";
+        if ($("#ncStatRealName")) $("#ncStatRealName").textContent = data.user.realName || "Chưa cập nhật";
+        if ($("#ncStatClassName")) $("#ncStatClassName").textContent = data.user.className || "Chưa cập nhật";
+        if ($("#ncStatEmail")) $("#ncStatEmail").textContent = data.user.email || "Chưa cập nhật";
+      } else {
+        identityBlock.style.display = "none";
+      }
     }
 
     $("#namecardModal").showModal();
