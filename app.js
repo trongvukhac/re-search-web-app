@@ -6,7 +6,46 @@ let posts = [...seedPosts];
 let currentFilter = "all";
 let currentDocFilter = "all";
 let anonymous = false;
-let session = null;
+
+function getCachedUser() {
+  try {
+    const raw = localStorage.getItem("research_cached_user");
+    return raw ? JSON.parse(raw) : null;
+  } catch (e) {
+    return null;
+  }
+}
+
+function setCachedUser(u) {
+  try {
+    if (u) {
+      localStorage.setItem("research_cached_user", JSON.stringify(u));
+    } else {
+      localStorage.removeItem("research_cached_user");
+    }
+  } catch (e) {}
+}
+
+function getCachedContribs() {
+  try {
+    const raw = localStorage.getItem("research_cached_contribs");
+    return raw ? JSON.parse(raw) : null;
+  } catch (e) {
+    return null;
+  }
+}
+
+function setCachedContribs(c) {
+  try {
+    if (c) {
+      localStorage.setItem("research_cached_contribs", JSON.stringify(c));
+    } else {
+      localStorage.removeItem("research_cached_contribs");
+    }
+  } catch (e) {}
+}
+
+let session = getCachedUser();
 let csrfToken = null;
 const serverMode =
   location.protocol === "http:" || location.protocol === "https:";
@@ -980,6 +1019,12 @@ window.isStudentProfileCompleted = isStudentProfileCompleted;
 
 function applySession(user) {
   session = user || null;
+  if (user) {
+    setCachedUser(user);
+  } else {
+    setCachedUser(null);
+    setCachedContribs(null);
+  }
   const roleDisplay = getRoleDisplay(user?.role);
   const streakTier = Number(user?.streakTier || 0);
 
@@ -1181,6 +1226,133 @@ function renderLeaderboard() {
     .join("");
 }
 
+function renderProfileStats(profileData) {
+  if (!profileData) return;
+  const streak = Number(profileData.streak || 0);
+  const streakTier = Number(profileData.streakTier || getStreakTier(streak));
+  window.currentStreakCount = streak;
+  window.currentStreakTier = streakTier;
+
+  const contribCard = $("#homeContributionCard");
+  if (contribCard) {
+    contribCard.setAttribute("data-streak-tier", streakTier);
+  }
+
+  const flameHero = $("#streakFlameHero");
+  if (flameHero) {
+    flameHero.innerHTML = getFlameSVG(streakTier, 46);
+  }
+
+  if ($("#activityStreak"))
+    $("#activityStreak").innerHTML = `${streak} <span>ngày</span>`;
+
+  const tierLabel = $("#streakTierLabel");
+  if (tierLabel) {
+    tierLabel.textContent = getStreakTitle(streak, streakTier);
+  }
+
+  const shieldsCount = $("#streakShieldsCount");
+  if (shieldsCount) {
+    shieldsCount.textContent = profileData.shields || 0;
+  }
+  const journeyShieldsCount = $("#journeyShieldsCount");
+  if (journeyShieldsCount) {
+    journeyShieldsCount.textContent = profileData.shields || 0;
+  }
+
+  const shieldNotice = $("#streakShieldNotice");
+  if (shieldNotice) {
+    shieldNotice.style.display = profileData.autoShieldUsed ? "block" : "none";
+  }
+
+  if ($("#profilePoints"))
+    $("#profilePoints").textContent = profileData.total || 0;
+  if ($("#profileStreak"))
+    $("#profileStreak").innerHTML = `${streak} <em>ngày</em>`;
+  if ($("#profileCount"))
+    $("#profileCount").textContent = profileData.count || 0;
+
+  if ($("#restoreStreakContainer")) {
+    const container = $("#restoreStreakContainer");
+    container.style.display = profileData.canRestoreStreak ? "block" : "none";
+    const btn = container.querySelector("button");
+    if (btn) {
+      const cost = profileData.restoreShieldsCost || 1;
+      btn.textContent = `🔥 Khôi phục chuỗi (${cost} khiên)`;
+    }
+  }
+
+  if (typeof triggerMilestoneCelebration === "function") {
+    triggerMilestoneCelebration(streak, streakTier);
+  }
+
+  const grid = $("#activityGrid");
+  if (grid) {
+    const days = ["T2", "T3", "T4", "T5", "T6", "T7", "CN"];
+    const now = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Ho_Chi_Minh" }));
+
+    window.restoreStreak = async function() {
+      const btn = document.querySelector("#restoreStreakContainer button");
+      try {
+        if (btn) {
+          btn.disabled = true;
+          btn.textContent = "Đang khôi phục...";
+        }
+        const res = await requestAPI("/api/auth/restore-streak", { method: "POST" });
+        toast(res?.message || "Đã khôi phục chuỗi thành công! 🛡️🔥");
+        await hydrateServer();
+      } catch(e) {
+        toast(e?.message || "Không thể khôi phục chuỗi.");
+        if (btn) {
+          btn.disabled = false;
+          const cost = profileData?.restoreShieldsCost || 1;
+          btn.textContent = `🔥 Khôi phục chuỗi (${cost} khiên)`;
+        }
+      }
+    };
+    const today = now.getDay();
+    const vnDayIndex = today === 0 ? 6 : today - 1;
+    
+    const startOfWeek = new Date(now);
+    startOfWeek.setDate(now.getDate() - vnDayIndex);
+    
+    const weekDates = [];
+    for (let i = 0; i < 7; i++) {
+       const d = new Date(startOfWeek);
+       d.setDate(startOfWeek.getDate() + i);
+       const y = d.getFullYear();
+       const m = String(d.getMonth()+1).padStart(2, '0');
+       const day = String(d.getDate()).padStart(2, '0');
+       weekDates.push(`${y}-${m}-${day}`);
+    }
+
+    const activeSet = new Set(profileData.activityDays || []);
+
+    grid.innerHTML = days
+      .map((d, i) => {
+        const dateStr = weekDates[i];
+        const isActive = activeSet.has(dateStr);
+        const isToday = i === vnDayIndex;
+
+        let cls = "";
+        let mark = "";
+
+        if (isActive) {
+           cls = "done";
+           mark = getFlameSVG(streakTier, 14);
+        } else if (isToday) {
+           cls = "today";
+           mark = `<span style="opacity: 0.5;">${getFlameSVG(0, 13)}</span>`;
+        } else {
+           mark = "○";
+        }
+
+        return `<div class="day ${cls}"><small>${d}</small><i>${mark}</i></div>`;
+      })
+      .join("");
+  }
+}
+
 let initialStudyRouteHandled = false;
 
 async function hydrateServer(force = false) {
@@ -1190,7 +1362,18 @@ async function hydrateServer(force = false) {
     return;
   }
   try {
-    const current = await requestAPI("/api/session", { headers: {} });
+    const isHome = !currentActiveRoute || currentActiveRoute === "home";
+    const shouldFetchForumLb = isHome;
+
+    // Kích hoạt tất cả API song song ngay từ đầu để loại bỏ hoàn toàn độ trễ waterfall
+    const sessionPromise = requestAPI("/api/session", { headers: {} }).catch(() => ({ authenticated: false, user: null }));
+    const contribsPromise = requestAPI("/api/me/contributions").catch(() => null);
+    const postsPromise = requestAPI("/api/posts").catch(() => ({ posts: [] }));
+    const docsPromise = requestAPI("/api/documents").catch(() => ({ documents: [] }));
+    const leaderboardPromise = shouldFetchForumLb ? requestAPI("/api/leaderboard").catch(() => null) : Promise.resolve(null);
+    const topicsPromise = requestAPI("/api/topics").catch(() => ({ topics: [] }));
+
+    const current = await sessionPromise;
     csrfToken = current.csrfToken;
     applySession(current.user);
 
@@ -1204,14 +1387,11 @@ async function hydrateServer(force = false) {
       }
     }
 
-    const isHome = !currentActiveRoute || currentActiveRoute === "home";
-    const shouldFetchForumLb = isHome;
-
     const [postsData, docsData, leaderboardData, topicsData] = await Promise.all([
-      requestAPI("/api/posts").catch(() => ({ posts: [] })),
-      requestAPI("/api/documents").catch(() => ({ documents: [] })),
-      shouldFetchForumLb ? requestAPI("/api/leaderboard").catch(() => null) : Promise.resolve(null),
-      requestAPI("/api/topics").catch(() => ({ topics: [] })),
+      postsPromise,
+      docsPromise,
+      leaderboardPromise,
+      topicsPromise,
     ]);
 
     if (topicsData.topics) {
@@ -1286,131 +1466,10 @@ async function hydrateServer(force = false) {
       setAuthBtn("#accountLoginBtn", false);
 
       try {
-        const profileData = await requestAPI("/api/me/contributions");
+        const profileData = await contribsPromise;
         if (profileData) {
-          const streak = Number(profileData.streak || 0);
-          const streakTier = Number(profileData.streakTier || getStreakTier(streak));
-          window.currentStreakCount = streak;
-          window.currentStreakTier = streakTier;
-
-          const contribCard = $("#homeContributionCard");
-          if (contribCard) {
-            contribCard.setAttribute("data-streak-tier", streakTier);
-          }
-
-          const flameHero = $("#streakFlameHero");
-          if (flameHero) {
-            flameHero.innerHTML = getFlameSVG(streakTier, 46);
-          }
-
-          if ($("#activityStreak"))
-            $("#activityStreak").innerHTML = `${streak} <span>ngày</span>`;
-
-          const tierLabel = $("#streakTierLabel");
-          if (tierLabel) {
-            tierLabel.textContent = getStreakTitle(streak, streakTier);
-          }
-
-          const shieldsCount = $("#streakShieldsCount");
-          if (shieldsCount) {
-            shieldsCount.textContent = profileData.shields || 0;
-          }
-          const journeyShieldsCount = $("#journeyShieldsCount");
-          if (journeyShieldsCount) {
-            journeyShieldsCount.textContent = profileData.shields || 0;
-          }
-
-          const shieldNotice = $("#streakShieldNotice");
-          if (shieldNotice) {
-            shieldNotice.style.display = profileData.autoShieldUsed ? "block" : "none";
-          }
-
-          if ($("#profilePoints"))
-            $("#profilePoints").textContent = profileData.total || 0;
-          if ($("#profileStreak"))
-            $("#profileStreak").innerHTML = `${streak} <em>ngày</em>`;
-          if ($("#profileCount"))
-            $("#profileCount").textContent = profileData.count || 0;
-
-          if ($("#restoreStreakContainer")) {
-            const container = $("#restoreStreakContainer");
-            container.style.display = profileData.canRestoreStreak ? "block" : "none";
-            const btn = container.querySelector("button");
-            if (btn) {
-              const cost = profileData.restoreShieldsCost || 1;
-              btn.textContent = `🔥 Khôi phục chuỗi (${cost} khiên)`;
-            }
-          }
-
-          // Trigger celebration check on home page if unlocked new milestone!
-          triggerMilestoneCelebration(streak, streakTier);
-
-          const grid = $("#activityGrid");
-          if (grid) {
-            const days = ["T2", "T3", "T4", "T5", "T6", "T7", "CN"];
-            const now = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Ho_Chi_Minh" }));
-
-            window.restoreStreak = async function() {
-              const btn = document.querySelector("#restoreStreakContainer button");
-              try {
-                if (btn) {
-                  btn.disabled = true;
-                  btn.textContent = "Đang khôi phục...";
-                }
-                const res = await requestAPI("/api/auth/restore-streak", { method: "POST" });
-                toast(res?.message || "Đã khôi phục chuỗi thành công! 🛡️🔥");
-                await hydrateServer();
-              } catch(e) {
-                toast(e?.message || "Không thể khôi phục chuỗi.");
-                if (btn) {
-                  btn.disabled = false;
-                  const cost = profileData?.restoreShieldsCost || 1;
-                  btn.textContent = `🔥 Khôi phục chuỗi (${cost} khiên)`;
-                }
-              }
-            };
-            const today = now.getDay();
-            const vnDayIndex = today === 0 ? 6 : today - 1;
-            
-            const startOfWeek = new Date(now);
-            startOfWeek.setDate(now.getDate() - vnDayIndex);
-            
-            const weekDates = [];
-            for (let i = 0; i < 7; i++) {
-               const d = new Date(startOfWeek);
-               d.setDate(startOfWeek.getDate() + i);
-               const y = d.getFullYear();
-               const m = String(d.getMonth()+1).padStart(2, '0');
-               const day = String(d.getDate()).padStart(2, '0');
-               weekDates.push(`${y}-${m}-${day}`);
-            }
-
-            const activeSet = new Set(profileData.activityDays || []);
-
-            grid.innerHTML = days
-              .map((d, i) => {
-                const dateStr = weekDates[i];
-                const isActive = activeSet.has(dateStr);
-                const isToday = i === vnDayIndex;
-                const isPast = i < vnDayIndex;
-
-                let cls = "";
-                let mark = "";
-
-                if (isActive) {
-                   cls = "done";
-                   mark = getFlameSVG(streakTier, 14);
-                } else if (isToday) {
-                   cls = "today";
-                   mark = `<span style="opacity: 0.5;">${getFlameSVG(0, 13)}</span>`;
-                } else {
-                   mark = "○";
-                }
-
-                return `<div class="day ${cls}"><small>${d}</small><i>${mark}</i></div>`;
-              })
-              .join("");
-          }
+          setCachedContribs(profileData);
+          renderProfileStats(profileData);
 
           const container = $("#recentContributionsContainer");
           if (container && profileData.recentContributions) {
@@ -1469,6 +1528,8 @@ async function hydrateServer(force = false) {
         if ($("#adminPanel")) $("#adminPanel").style.display = "none";
       }
     } else {
+      setCachedUser(null);
+      setCachedContribs(null);
       const setAuthBtn = (id, show, displayStyle = "") => {
         const el = $(id);
         if (!el) return;
@@ -3708,6 +3769,8 @@ window.executeLogout = async function() {
     try {
       await requestAPI("/api/auth/logout", { method: "POST" });
       session = null;
+      setCachedUser(null);
+      setCachedContribs(null);
       window.location.reload();
     } catch (e) {
       toast("Đăng xuất thất bại.");
@@ -9441,6 +9504,15 @@ function initHomeBannerStack() {
 
 window.initHomeBannerStack = initHomeBannerStack;
 
+const initialCachedUser = getCachedUser();
+if (initialCachedUser) {
+  applySession(initialCachedUser);
+  const initialCachedContribs = getCachedContribs();
+  if (initialCachedContribs) {
+    renderProfileStats(initialCachedContribs);
+  }
+}
+
 renderHome();
 renderPosts();
 renderDocuments();
@@ -10058,9 +10130,11 @@ function switchCompTab(tabName) {
       const startBtn = $("#gatewayStartQuizBtn");
       if (startBtn) startBtn.style.setProperty("display", "none", "important");
       const attemptsCard = $(".comp-user-attempts-card");
-      if (attemptsCard) attemptsCard.style.setProperty("display", "none", "important");
+      if (attemptsCard) attemptsCard.style.display = "block";
+      const attemptStatBoxCount = $("#attemptStatBoxCount");
+      if (attemptStatBoxCount) attemptStatBoxCount.style.setProperty("display", "none", "important");
       const phasesJourney = $(".comp-phases-journey-container");
-      if (phasesJourney) phasesJourney.style.setProperty("display", "none", "important");
+      if (phasesJourney) phasesJourney.style.display = "block";
       const sundayNotice = $("#gatewaySundayContainer");
       if (sundayNotice) sundayNotice.style.setProperty("display", "block", "important");
     }
@@ -10070,17 +10144,13 @@ function switchCompTab(tabName) {
     if (lEl) lEl.style.display = "block";
     const norm = normalizeCompData(compState.overview || compState.status);
     if (norm.isSunday) {
-      // Ngày chủ nhật: chỉ hiện tab toàn tuần trong ngày chủ nhật (ẩn các tab GĐ 1, GĐ 2, GĐ 3)
+      // Ngày chủ nhật: giữ hiển thị cả 4 tab [Toàn tuần] [GĐ 1] [GĐ 2] [GĐ 3] để thí sinh tiện tra cứu thứ hạng
       $$(".lb-phase-btn").forEach(btn => {
-        if (btn.dataset.lbPhase !== "week") {
-          btn.style.display = "none";
-        } else {
-          btn.style.display = "inline-flex";
-          btn.classList.add("active");
-        }
+        btn.style.display = "inline-flex";
+        btn.classList.toggle("active", btn.dataset.lbPhase === (compState.activeLbPhase || "week"));
       });
-      compState.activeLbPhase = "week";
-      loadAndRenderLeaderboard("week");
+      compState.activeLbPhase = compState.activeLbPhase || "week";
+      loadAndRenderLeaderboard(compState.activeLbPhase);
       stopArenaLeaderboardAutoRefresh();
       launchSundayCeremonyAnimation();
     } else {
@@ -10212,11 +10282,13 @@ function renderGatewayTab(raw) {
   const actionContainer = $("#gatewayActionContainer") || $(".gateway-action-container");
   const sundayNoticeContainer = $("#gatewaySundayContainer");
   const gatewayTab = $("#compTabGateway");
+  const attemptStatBoxCount = $("#attemptStatBoxCount");
 
   if (data.isSunday) {
     if (gatewayTab) gatewayTab.classList.add("is-sunday");
-    if (attemptsCard) attemptsCard.style.setProperty("display", "none", "important");
-    if (phasesJourneyContainer) phasesJourneyContainer.style.setProperty("display", "none", "important");
+    if (attemptsCard) attemptsCard.style.display = "block";
+    if (attemptStatBoxCount) attemptStatBoxCount.style.setProperty("display", "none", "important");
+    if (phasesJourneyContainer) phasesJourneyContainer.style.display = "block";
     if (actionContainer) {
       actionContainer.style.setProperty("display", "none", "important");
       actionContainer.classList.add("hidden");
@@ -10224,10 +10296,10 @@ function renderGatewayTab(raw) {
     if (startBtn) startBtn.style.setProperty("display", "none", "important");
     if (blockedMsg) blockedMsg.style.setProperty("display", "none", "important");
     if (sundayNoticeContainer) sundayNoticeContainer.style.setProperty("display", "block", "important");
-    return;
   } else {
     if (gatewayTab) gatewayTab.classList.remove("is-sunday");
     if (attemptsCard) attemptsCard.style.display = "block";
+    if (attemptStatBoxCount) attemptStatBoxCount.style.display = "";
     if (phasesJourneyContainer) phasesJourneyContainer.style.display = "block";
     if (actionContainer) {
       actionContainer.style.display = "flex";
@@ -10285,7 +10357,7 @@ function renderGatewayTab(raw) {
         }
       } else {
         cardClass += " card-locked";
-        const lockLabel = (data.state === "countdown" || data.state === "upcoming") ? "ĐANG ĐẾM NGƯỢC" : (p.phase > data.phase ? "CHƯA MỞ" : "ĐÃ ĐÓNG CỔNG");
+        const lockLabel = (data.state === "countdown" || data.state === "upcoming") ? "ĐANG ĐẾM NGƯỢC" : (data.isSunday ? "ĐÃ ĐÓNG CỔNG" : (p.phase > data.phase ? "CHƯA MỞ" : "ĐÃ ĐÓNG CỔNG"));
         chipHTML = `<span class="pj-status-chip chip-locked">🔒 ${lockLabel}</span>`;
         scoreInfoHTML = `<div class="pj-score-box"><span class="pj-score-label">Trạng thái:</span><span class="pj-score-val" style="color: #94a3b8;">${lockLabel}</span></div>`;
         actionBtnHTML = `<button type="button" class="pj-action-btn btn-disabled" disabled>${lockLabel}</button>`;
@@ -10310,7 +10382,14 @@ function renderGatewayTab(raw) {
   }
 
   if (blockedMsg) blockedMsg.style.display = "none";
-  if (startBtn) {
+  if (data.isSunday) {
+    if (actionContainer) {
+      actionContainer.style.setProperty("display", "none", "important");
+      actionContainer.classList.add("hidden");
+    }
+    if (startBtn) startBtn.style.setProperty("display", "none", "important");
+    if (blockedMsg) blockedMsg.style.display = "none";
+  } else if (startBtn) {
     if (data.state === "open") {
       if (data.hasActiveSession) {
         startBtn.disabled = false;

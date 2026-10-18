@@ -8467,7 +8467,8 @@ body.study-zen-fullscreen .study-main-col {
 .gateway-action-container.hidden,
 .gateway-action-container[style*="display: none"],
 #compTabGateway.is-sunday .gateway-action-container,
-#compTabGateway.is-sunday #gatewayStartQuizBtn {
+#compTabGateway.is-sunday #gatewayStartQuizBtn,
+#compTabGateway.is-sunday #attemptStatBoxCount {
   display: none !important;
 }
 
