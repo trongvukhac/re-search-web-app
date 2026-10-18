@@ -49,7 +49,8 @@ const MIME = {
 
 fs.mkdirSync(DATABASE_DIR, { recursive: true });
 const db = new DatabaseSync(DATABASE_PATH);
-db.exec("PRAGMA foreign_keys = ON; PRAGMA journal_mode = WAL;");
+db.exec("PRAGMA foreign_keys = ON; PRAGMA journal_mode = WAL; PRAGMA synchronous = NORMAL; PRAGMA busy_timeout = 5000; PRAGMA cache_size = -64000;");
+try { db.exec("PRAGMA wal_checkpoint(TRUNCATE);"); } catch (e) {}
 db.exec(`
   CREATE TABLE IF NOT EXISTS users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -4922,7 +4923,7 @@ async function api(request, response, url) {
       "SELECT id, question_index, question_text, option_a, option_b, option_c, correct_option, explanation FROM competition_questions WHERE competition_id = ? AND phase = ? ORDER BY question_index ASC"
     ).all(comp.id, targetPhase);
 
-    return sendJSON(response, 200, {
+    return json(response, 200, {
       ok: true,
       mode: "practice",
       phase: targetPhase,
