@@ -4721,19 +4721,15 @@ window.openNamecard = async function(userId) {
       $("#ncStatFastest").textContent = "Chưa có";
     }
 
-    // 0. Khối hồ sơ sinh viên / định danh (Chỉ hiển thị cho chủ tài khoản & Admin/TA)
+    // 0. Khối thông tin hồ sơ người dùng (Nội bộ - Chỉ hiển thị cho Admin/TA)
     const identityBlock = $("#ncIdentityBlock");
-    const canSeeIdentity = Boolean(data.user.isSelf || data.user.isPrivilegedViewer || (data.user.studentId || data.user.realName || data.user.className || data.user.email));
+    const canSeeIdentity = Boolean(data.user.isPrivilegedViewer);
     if (identityBlock) {
       if (canSeeIdentity) {
         identityBlock.style.display = "block";
         const noticeEl = $("#ncIdentityNotice");
         if (noticeEl) {
-          if (data.user.isPrivilegedViewer && !data.user.isSelf) {
-            noticeEl.textContent = "(Chế độ xem Quản trị viên)";
-          } else {
-            noticeEl.textContent = "(Chỉ bạn & Admin thấy)";
-          }
+          noticeEl.textContent = "(Chỉ Quản trị viên thấy)";
         }
         if ($("#ncStatStudentId")) $("#ncStatStudentId").textContent = data.user.studentId || "Chưa cập nhật";
         if ($("#ncStatRealName")) $("#ncStatRealName").textContent = data.user.realName || "Chưa cập nhật";
@@ -4798,6 +4794,41 @@ window.copyNamecardId = function() {
     toast(`Đã sao chép ID ${text}!`);
   }).catch(() => {
     toast(`ID người dùng: ${text}`);
+  });
+};
+
+window.copyNcProfileField = function(elementId, label) {
+  const el = document.getElementById(elementId);
+  const val = el?.textContent?.trim() || "";
+  if (!val || val === "—" || val === "Chưa cập nhật") {
+    toast(`Chưa có thông tin ${label} để sao chép.`);
+    return;
+  }
+  navigator.clipboard.writeText(val).then(() => {
+    toast(`Đã sao chép ${label}: ${val}`);
+  }).catch(() => {
+    toast(`${label}: ${val}`);
+  });
+};
+
+window.copyAllNcProfileInfo = function() {
+  const mssv = document.getElementById("ncStatStudentId")?.textContent?.trim() || "Chưa cập nhật";
+  const name = document.getElementById("ncStatRealName")?.textContent?.trim() || "Chưa cập nhật";
+  const className = document.getElementById("ncStatClassName")?.textContent?.trim() || "Chưa cập nhật";
+  const email = document.getElementById("ncStatEmail")?.textContent?.trim() || "Chưa cập nhật";
+  const id = $("#namecardIdText")?.textContent?.replace("ID ", "").trim() || "";
+  const lines = [
+    `ID: ${id}`,
+    `MSSV: ${mssv}`,
+    `Họ và tên: ${name}`,
+    `Lớp: ${className}`,
+    `Email: ${email}`
+  ];
+  const text = lines.join("\n");
+  navigator.clipboard.writeText(text).then(() => {
+    toast("Đã sao chép toàn bộ thông tin hồ sơ!");
+  }).catch(() => {
+    toast("Đã lấy thông tin hồ sơ");
   });
 };
 

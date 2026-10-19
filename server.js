@@ -3104,12 +3104,12 @@ async function api(request, response, url) {
         isSelf,
         canUploadCustomCover,
         limitedItems,
-        ...(isSelf || isPrivileged ? {
+        ...(isPrivileged ? {
           studentId: targetUser.student_id || null,
           realName: targetUser.real_name || null,
           className: targetUser.class_name || null,
           email: targetUser.email || null,
-          isPrivilegedViewer: isPrivileged,
+          isPrivilegedViewer: true,
         } : {})
       },
       streakCard: {
