@@ -27,9 +27,20 @@ function computeAppBuildId() {
 const APP_BUILD_ID = computeAppBuildId();
 
 // ============================================================
-// FEATURE FLAG: Kích hoạt tính năng RE:SEARCH ARENA
+// FEATURE FLAG & ROSTER: Kích hoạt tính năng RE:SEARCH ARENA & 2 Bảng thi (Lớp 06 & 07)
 // ============================================================
 const ARENA_ENABLED = true;
+const ARENA_ROSTER = require("./arena_roster.json");
+const CLASS_06_STUDENT_IDS = new Set(ARENA_ROSTER["06"].studentIds.map(x => String(x).trim()));
+const CLASS_07_STUDENT_IDS = new Set(ARENA_ROSTER["07"].studentIds.map(x => String(x).trim()));
+
+function getArenaClassByStudentId(studentId) {
+  if (!studentId) return null;
+  const cleanId = String(studentId).trim();
+  if (CLASS_06_STUDENT_IDS.has(cleanId)) return "06";
+  if (CLASS_07_STUDENT_IDS.has(cleanId)) return "07";
+  return null;
+}
 const MIME = {
   ".html": "text/html; charset=utf-8",
   ".css": "text/css; charset=utf-8",
@@ -233,6 +244,18 @@ try { db.exec("ALTER TABLE users ADD COLUMN bio TEXT;"); } catch (e) {}
 try { db.exec("ALTER TABLE users ADD COLUMN cover_image TEXT;"); } catch (e) {}
 try { db.exec("ALTER TABLE users ADD COLUMN namecard_frame TEXT DEFAULT 'default';"); } catch (e) {}
 try { db.exec("ALTER TABLE users ADD COLUMN namecard_theme TEXT DEFAULT 'default';"); } catch (e) {}
+
+// Tự động đồng bộ mã lớp cho các sinh viên có MSSV trong danh sách lớp 06 hoặc 07
+try {
+  for (const id of CLASS_06_STUDENT_IDS) {
+    db.prepare("UPDATE users SET class_name = '261_71RESE30312_06' WHERE LOWER(TRIM(student_id)) = LOWER(?) AND (class_name IS NULL OR class_name != '261_71RESE30312_06')").run(id);
+  }
+  for (const id of CLASS_07_STUDENT_IDS) {
+    db.prepare("UPDATE users SET class_name = '261_71RESE30312_07' WHERE LOWER(TRIM(student_id)) = LOWER(?) AND (class_name IS NULL OR class_name != '261_71RESE30312_07')").run(id);
+  }
+} catch (e) {
+  console.warn("Lỗi đồng bộ mã lớp tự động:", e.message);
+}
 try {
   db.exec(`
     CREATE TABLE IF NOT EXISTS study_logs (
@@ -888,6 +911,8 @@ function publicUser(user, streakInfo = null) {
     studentId: user.student_id || "",
     realName: user.real_name || "",
     className: user.class_name || "",
+    arenaClass: getArenaClassByStudentId(user.student_id),
+    isPrivilegedArena: Boolean(user.role === "admin" || user.role === "ta" || user.role === "lecturer"),
     bio: user.bio || "",
     coverImage: user.cover_image || "default",
     namecardFrame: (user.namecard_frame && user.namecard_frame !== "default") ? user.namecard_frame : "none",
@@ -1944,6 +1969,8 @@ function awardCompetitionSundayRewards(competitionId) {
         u.display_name as displayName,
         u.email,
         u.role,
+        u.student_id as studentId,
+        u.class_name as className,
         count(DISTINCT r.phase) as phasesParticipated,
         sum(r.best_score) as totalStars,
         min(r.updated_at) as firstCompletedAt
@@ -1971,96 +1998,107 @@ function awardCompetitionSundayRewards(competitionId) {
     `);
 
     let awardedCount = 0;
+    const classes = ["06", "07"];
 
     db.exec("BEGIN");
     try {
-      for (let i = 0; i < participants.length; i++) {
-        const p = participants[i];
-        const rank = i + 1;
+      for (const cls of classes) {
+        const targetIds = cls === "07" ? CLASS_07_STUDENT_IDS : CLASS_06_STUDENT_IDS;
+        const targetName = cls === "07" ? "261_71RESE30312_07" : "261_71RESE30312_06";
+        const classParts = participants.filter(p => {
+          if (p.studentId && targetIds.has(String(p.studentId).trim())) return true;
+          if (p.className && p.className.trim() === targetName) return true;
+          return false;
+        });
 
-        // Check if already awarded
-        const existing = db.prepare("SELECT id FROM competition_weekly_rewards WHERE competition_id = ? AND user_id = ?").get(competitionId, p.userId);
-        if (existing) continue;
+        for (let i = 0; i < classParts.length; i++) {
+          const p = classParts[i];
+          const rank = i + 1;
 
-        // Participation bonus
-        let partBonus = 1;
-        if (p.phasesParticipated === 2) partBonus = 3;
-        else if (p.phasesParticipated >= 3) partBonus = 5;
+          // Check if already awarded
+          const existing = db.prepare("SELECT id FROM competition_weekly_rewards WHERE competition_id = ? AND user_id = ?").get(competitionId, p.userId);
+          if (existing) continue;
 
-        // Rank base reward
-        let rankActivityPoints = 5;
-        let shields = 1;
+          // Participation bonus
+          let partBonus = 1;
+          if (p.phasesParticipated === 2) partBonus = 3;
+          else if (p.phasesParticipated >= 3) partBonus = 5;
 
-        if (rank === 1) {
-          rankActivityPoints = 20;
-          shields = 2;
-        } else if (rank === 2) {
-          rankActivityPoints = 18;
-          shields = 2;
-        } else if (rank === 3) {
-          rankActivityPoints = 15;
-          shields = 2;
-        } else if (rank <= 10) {
-          rankActivityPoints = 10;
-          shields = 1;
-        }
+          // Rank base reward
+          let rankActivityPoints = 5;
+          let shields = 1;
 
-        const totalPointsToAward = rankActivityPoints + partBonus;
+          if (rank === 1) {
+            rankActivityPoints = 20;
+            shields = 2;
+          } else if (rank === 2) {
+            rankActivityPoints = 18;
+            shields = 2;
+          } else if (rank === 3) {
+            rankActivityPoints = 15;
+            shields = 2;
+          } else if (rank <= 10) {
+            rankActivityPoints = 10;
+            shields = 1;
+          }
 
-        // Add activity points
-        insertEvent.run(
-          p.userId,
-          "competition_reward",
-          rankActivityPoints,
-          "competition",
-          competitionId,
-          `Thưởng Top ${rank} Hoạt động thi đua tuần (${comp.week_key}): +${rankActivityPoints}đ, +${shields} khiên bảo vệ chuỗi`
-        );
+          const totalPointsToAward = rankActivityPoints + partBonus;
 
-        if (partBonus > 0) {
+          // Add activity points
           insertEvent.run(
             p.userId,
-            "competition_phase_bonus",
-            partBonus,
+            "competition_reward",
+            rankActivityPoints,
             "competition",
             competitionId,
-            `Thưởng tham gia ${p.phasesParticipated}/3 giai đoạn thi đua tuần (${comp.week_key}): +${partBonus}đ hoạt động`
+            `Thưởng Top ${rank} Hoạt động thi đua tuần (${comp.week_key} - Bảng thi lớp ${cls}): +${rankActivityPoints}đ, +${shields} khiên bảo vệ chuỗi`
           );
+
+          if (partBonus > 0) {
+            insertEvent.run(
+              p.userId,
+              "competition_phase_bonus",
+              partBonus,
+              "competition",
+              competitionId,
+              `Thưởng tham gia ${p.phasesParticipated}/3 giai đoạn thi đua tuần (${comp.week_key}): +${partBonus}đ hoạt động`
+            );
+          }
+
+          // Add shields
+          const prevShields = db.prepare("SELECT shields FROM user_streak_shields WHERE user_id = ?").get(p.userId)?.shields || 0;
+          const balanceAfter = Math.min(3, prevShields + shields);
+          db.prepare(`
+            INSERT INTO user_streak_shields (user_id, shields, last_milestone_rewarded, updated_at)
+            VALUES (?, ?, 0, CURRENT_TIMESTAMP)
+            ON CONFLICT(user_id) DO UPDATE SET 
+              shields = MIN(3, shields + ?),
+              updated_at = CURRENT_TIMESTAMP
+          `).run(p.userId, shields, shields);
+          logShieldTransaction(p.userId, 'add', shields, balanceAfter, `Thưởng Top ${rank} Đấu trường Tuần (${comp.week_key} - Bảng thi lớp ${cls})`);
+
+          insertReward.run(
+            competitionId,
+            p.userId,
+            rank,
+            p.totalStars,
+            p.phasesParticipated,
+            partBonus,
+            totalPointsToAward,
+            shields
+          );
+
+          awardedCount++;
         }
-
-        // Add shields
-        const prevShields = db.prepare("SELECT shields FROM user_streak_shields WHERE user_id = ?").get(p.userId)?.shields || 0;
-        const balanceAfter = Math.min(3, prevShields + shields);
-        db.prepare(`
-          INSERT INTO user_streak_shields (user_id, shields, last_milestone_rewarded, updated_at)
-          VALUES (?, ?, 0, CURRENT_TIMESTAMP)
-          ON CONFLICT(user_id) DO UPDATE SET 
-            shields = MIN(3, shields + ?),
-            updated_at = CURRENT_TIMESTAMP
-        `).run(p.userId, shields, shields);
-        logShieldTransaction(p.userId, 'add', shields, balanceAfter, `Thưởng Top ${rank} Đấu trường Tuần (${comp.week_key})`);
-
-        insertReward.run(
-          competitionId,
-          p.userId,
-          rank,
-          p.totalStars,
-          p.phasesParticipated,
-          partBonus,
-          totalPointsToAward,
-          shields
-        );
-
-        awardedCount++;
       }
 
       db.prepare("UPDATE weekly_competitions SET status = 'concluded' WHERE id = ?").run(competitionId);
       db.exec("COMMIT");
       console.log(`[Weekly Competition] Đã tổng kết và trao thưởng cho ${awardedCount} thành viên tuần ${comp.week_key}`);
       return { awarded: awardedCount, ok: true };
-    } catch (e) {
+    } catch (err) {
       db.exec("ROLLBACK");
-      throw e;
+      throw err;
     }
   } catch (err) {
     console.error("Lỗi trao thưởng thi đua tuần:", err);
@@ -3291,7 +3329,16 @@ async function api(request, response, url) {
       }
     }
     const newRealName = typeof realName === "string" ? realName.trim().slice(0, 80) : currentUser.real_name;
-    const newClassName = typeof className === "string" ? className.trim().slice(0, 50) : currentUser.class_name;
+    let newClassName = typeof className === "string" ? className.trim().slice(0, 50) : currentUser.class_name;
+    // Tự động xếp sinh viên vào bảng thi của lớp tương ứng khi cập nhật mã số sinh viên hợp lệ
+    if (newStudentId) {
+      const matchedClass = getArenaClassByStudentId(newStudentId);
+      if (matchedClass === "06") {
+        newClassName = "261_71RESE30312_06";
+      } else if (matchedClass === "07") {
+        newClassName = "261_71RESE30312_07";
+      }
+    }
 
     try {
       db.prepare(`
@@ -4624,6 +4671,8 @@ async function api(request, response, url) {
 
     let userStatus = {
       authenticated: false,
+      requiresStudentId: false,
+      arenaClass: null,
       attemptsUsed: 0,
       maxAttempts: 1,
       canPlay: false,
@@ -4640,10 +4689,15 @@ async function api(request, response, url) {
       const attemptsUsed = phaseRes?.attempts_used || 0;
       const bestScore = phaseRes?.best_score || 0;
       const hasPlayedPhase = attemptsUsed > 0;
-      const canPlay = (timeState.state === "open" || isSuperAdmin(user)) && timeState.isReady && attemptsUsed < 1;
+      const isPrivileged = Boolean(user && (user.role === "admin" || user.role === "ta" || user.role === "lecturer"));
+      const arenaClass = getArenaClassByStudentId(user.student_id);
+      const requiresStudentId = Boolean(!isPrivileged && !arenaClass);
+      const canPlay = !requiresStudentId && (timeState.state === "open" || isSuperAdmin(user)) && timeState.isReady && attemptsUsed < 1;
 
       userStatus = {
         authenticated: true,
+        requiresStudentId,
+        arenaClass,
         attemptsUsed,
         maxAttempts: 1,
         canPlay,
@@ -4652,8 +4706,12 @@ async function api(request, response, url) {
       };
     }
 
+    const isPrivileged = Boolean(user && (user.role === "admin" || user.role === "ta" || user.role === "lecturer"));
     return json(response, 200, {
       ok: true,
+      requiresStudentId: Boolean(user && !isPrivileged && !userStatus.arenaClass),
+      arenaClass: userStatus.arenaClass,
+      isPrivilegedArena: isPrivileged,
       resultsVersion: competitionResultsVersion,
       serverTime: vnNow.toISOString(),
       serverTimestampMs: getVietnamTimestampMs(),
@@ -4926,15 +4984,21 @@ async function api(request, response, url) {
       } catch (e) {}
     }
 
+    const isPrivileged = Boolean(user && (user.role === "admin" || user.role === "ta" || user.role === "lecturer"));
+    const arenaClass = user ? getArenaClassByStudentId(user.student_id) : null;
+    const requiresStudentId = Boolean(user && !isPrivileged && !arenaClass);
+
     return json(response, 200, {
       ok: true,
+      requiresStudentId,
+      arenaClass,
       resultsVersion: competitionResultsVersion,
       week: comp,
       phase: timeState.phase,
       isSunday: Boolean(timeState.isSunday),
       timeState,
       userSummary,
-      userStatus,
+      userStatus: userStatus ? { ...userStatus, requiresStudentId, arenaClass } : null,
       userWeeklyReward,
       totalOnTimeBonus: userStatus?.totalOnTimeBonus ?? userSummary?.totalOnTimeBonus ?? 0,
       defaultAvailablePhase,
@@ -4952,6 +5016,18 @@ async function api(request, response, url) {
 
     if (!isVLUEmail(user)) {
       return error(response, 403, "Đấu trường Arena chỉ dành cho sinh viên Văn Lang (email @vanlanguni.vn hoặc @vlu.edu.vn).");
+    }
+
+    const isPrivileged = Boolean(user && (user.role === "admin" || user.role === "ta" || user.role === "lecturer"));
+    if (!isPrivileged) {
+      const arenaClass = getArenaClassByStudentId(user.student_id);
+      if (!arenaClass) {
+        return json(response, 403, {
+          ok: false,
+          requiresStudentId: true,
+          error: "Bạn cần cập nhật mã số sinh viên trước khi tham gia Arena"
+        });
+      }
     }
 
     const vnNow = getVietnamNow();
@@ -5046,7 +5122,32 @@ async function api(request, response, url) {
     const comp = getOrCreateCurrentCompetition(vnNow);
     const timeState = getCompetitionTimeState(vnNow, comp);
     const user = sessionFrom(request);
+    const isPrivileged = Boolean(user && (user.role === "admin" || user.role === "ta" || user.role === "lecturer"));
 
+    let targetClass = "06";
+    if (isPrivileged) {
+      const qClass = url.searchParams.get("class");
+      if (qClass === "07" || qClass === "06") {
+        targetClass = qClass;
+      }
+    } else {
+      if (!user) {
+        return error(response, 401, "Bạn cần đăng nhập để xem Bảng xếp hạng.");
+      }
+      const studentClass = getArenaClassByStudentId(user.student_id);
+      if (!studentClass) {
+        return json(response, 403, {
+          ok: false,
+          requiresStudentId: true,
+          error: "Bạn cần cập nhật mã số sinh viên trước khi tham gia Arena"
+        });
+      }
+      // Người dùng không thể theo dõi bảng thi của lớp kia
+      targetClass = studentClass;
+    }
+
+    const targetClassStudentIds = targetClass === "07" ? CLASS_07_STUDENT_IDS : CLASS_06_STUDENT_IDS;
+    const targetClassName = targetClass === "07" ? "261_71RESE30312_07" : "261_71RESE30312_06";
     const phaseParam = url.searchParams.get("phase") || (timeState.isSunday ? "week" : String(timeState.phase || 1));
 
     let results = [];
@@ -5058,6 +5159,8 @@ async function api(request, response, url) {
           u.email,
           u.avatar,
           u.role,
+          u.student_id as studentId,
+          u.class_name as className,
           coalesce(s.shields, 0) as shields,
           sum(r.best_score) as totalScore,
           count(DISTINCT r.phase) as phasesCount,
@@ -5078,6 +5181,8 @@ async function api(request, response, url) {
           u.email,
           u.avatar,
           u.role,
+          u.student_id as studentId,
+          u.class_name as className,
           coalesce(s.shields, 0) as shields,
           r.best_score as totalScore,
           r.attempts_used as attemptsUsed,
@@ -5090,8 +5195,15 @@ async function api(request, response, url) {
       `).all(comp.id, phaseNum);
     }
 
+    // Lọc theo bảng thi lớp tương ứng (06 hoặc 07)
+    const filteredResults = results.filter(row => {
+      if (row.studentId && targetClassStudentIds.has(String(row.studentId).trim())) return true;
+      if (row.className && row.className.trim() === targetClassName) return true;
+      return false;
+    });
+
     const todayDate = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Ho_Chi_Minh" }));
-    const formatted = results.map((row, idx) => {
+    const formatted = filteredResults.map((row, idx) => {
       const streakInfo = calculateUserStreak(row.userId, todayDate);
       return {
         rank: idx + 1,
@@ -5136,10 +5248,10 @@ async function api(request, response, url) {
     const isSunday = Boolean(timeState.isSunday || timeState.state === "sunday_summary");
     const weekNumStr = String(comp.week_number || 1).padStart(2, "0");
     const isWeekPhase = (phaseParam === "week");
-    let phaseTitle = isWeekPhase ? `Bảng xếp hạng tuần ${weekNumStr}` : "Bảng xếp hạng giai đoạn";
+    const classTitle = `Bảng thi lớp ${targetClass}`;
+    const phaseTitle = `Bảng xếp hạng - ${classTitle}`;
 
     let canShow = false;
-    const isPrivileged = Boolean(user && (user.role === "admin" || user.role === "ta" || user.role === "lecturer"));
     if (isPrivileged || url.searchParams.get("admin_preview") === "true") {
       canShow = true;
     } else if (isWeekPhase) {
@@ -5164,10 +5276,13 @@ async function api(request, response, url) {
       ok: true,
       resultsVersion: competitionResultsVersion,
       phase: phaseParam,
+      classCode: targetClass,
+      classTitle,
       phaseTitle,
       weekNumber: comp.week_number || 1,
       weekNumberStr: weekNumStr,
       canShow,
+      isPrivileged,
       message: canShow ? null : "Chờ chút nhé",
       totalParticipants: canShow ? formatted.length : 0,
       top10: canShow ? top10 : [],
@@ -5188,6 +5303,18 @@ async function api(request, response, url) {
 
     if (!isVLUEmail(user)) {
       return error(response, 403, "Đấu trường Arena chỉ dành cho sinh viên Văn Lang (email @vanlanguni.vn hoặc @vlu.edu.vn).");
+    }
+
+    const isPrivileged = Boolean(user && (user.role === "admin" || user.role === "ta" || user.role === "lecturer"));
+    if (!isPrivileged) {
+      const arenaClass = getArenaClassByStudentId(user.student_id);
+      if (!arenaClass) {
+        return json(response, 403, {
+          ok: false,
+          requiresStudentId: true,
+          error: "Bạn cần cập nhật mã số sinh viên trước khi tham gia Arena"
+        });
+      }
     }
 
     const vnNow = getVietnamNow();

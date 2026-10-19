@@ -72,7 +72,64 @@ function isVLUEmail(user = (session || (typeof window !== "undefined" && window.
 }
 window.isVLUEmail = isVLUEmail;
 
+const ARENA_06_SET = new Set([
+  "2573201083638", "2573201084821", "2573201081114", "2573201081770", "2573201081549",
+  "2573201083706", "2573201082482", "2573201082484", "2573201083718", "2573201082823",
+  "2573201083511", "2573201081601", "2573201081875", "2573201082930", "2573201083130",
+  "2573201083373", "2573201083767", "2573201084808", "2573201082938", "2573201082547",
+  "2573201084798", "2573201081040", "2573201083810", "2573201083626", "2573201082566",
+  "2573201083358", "2573201083520", "2573201082821", "2573201081486", "2573201082105",
+  "2573201080956", "2573201082368", "2573201082224", "2573201083297", "2573201081636",
+  "2573201080385", "2573201082543", "2573201082001", "2573201080526", "2573201081819",
+  "2573201081168", "2573201081555", "2573201082562", "2573201081268", "2573201084104",
+  "2573201082762", "2573201084817", "2573201082745", "2573201083036", "2573201082852",
+  "2573201082135", "2573201083099", "2573201084207", "2573201082298", "2573201082746",
+  "2573201083519", "2573201080483", "2573201082651", "2573201080848", "2573201084261",
+  "2573201084838", "2573201082567", "2573201082410", "2573201081249", "2573201083195",
+  "2573201082043", "2573201082312", "2573201082759", "2573201081275", "2573201081201",
+  "2573201081504", "2573201081345", "2573201080784", "2573201084422", "2573201084424",
+  "2573201083516", "2573201080948", "2573201080983", "2573201082445", "2573201084479",
+  "2573201082866", "2573201083526", "2573201082336", "2573201081112", "2573201080427",
+  "2573201081049", "2573201080916", "2573201081898", "2573201080919", "2573201082638",
+  "2573201080498", "2573201081097", "2573201081545", "2573201084679", "2573201084694",
+  "2573201081836", "2573201081777", "2573201081809", "2573201084728", "2573201081053"
+]);
+
+const ARENA_07_SET = new Set([
+  "2573201084810", "2573201080500", "2573201081546", "2573201084852", "2573201080338",
+  "2573201083631", "2573201081712", "2573201083521", "2573201081438", "2573201081219",
+  "2573201081260", "2573201080824", "2573201081016", "2573201083734", "2573201081435",
+  "2573201044333", "2573201081064", "2573201082442", "2573201082639", "2573201083532",
+  "2573201081932", "2573201083814", "2573201082136", "2573201080898", "2573201082986",
+  "2573201082446", "2573201081374", "2573201080439", "2573201082703", "2573201082472",
+  "2573201080496", "2573201080961", "2573201081430", "2573201084865", "2573201082887",
+  "2573201081579", "2573201083958", "2573201081428", "2573201081873", "2573201081144",
+  "2573201081045", "2573201081054", "2573201083005", "2573201080801", "2573201083204",
+  "2573201080692", "2573201081746", "2573201084106", "2573201081715", "2573201082586",
+  "2573201080829", "2573201081207", "2573201081371", "2573201084853", "2573201081317",
+  "2573201083069", "2573201082576", "2573201081619", "2573201084181", "2573201083117",
+  "2573201080532", "2573201080411", "2573201081246", "2573201082897", "2573201083329",
+  "2573201084836", "2573201082665", "2573201084292", "2573201080502", "2573201081214",
+  "2573201083275", "2573201080450", "2573201083156", "2573201082138", "2573201084366",
+  "2573201084372", "2573201082935", "2573201082448", "2573201081189", "2573201082917",
+  "2573201083477", "2573201084407", "2573201084423", "2573201084755", "2573201084465",
+  "2573201083104", "2573201082593", "2573201082884", "2573201081839", "2573201083606",
+  "2573201083440", "2573201082103", "2573201081564", "2573201041155", "2573201082210",
+  "2573201081293", "2573201082356", "2573201082013", "2573201081038", "2573201082447"
+]);
+
+function getArenaClassByStudentId(studentId) {
+  const cleanId = String(studentId || "").trim();
+  if (!cleanId) return null;
+  if (ARENA_06_SET.has(cleanId)) return "06";
+  if (ARENA_07_SET.has(cleanId)) return "07";
+  return null;
+}
+window.getArenaClassByStudentId = getArenaClassByStudentId;
+
 function canAccessArena(user = (session || (typeof window !== "undefined" && window.session))) {
+  if (!user) return false;
+  if (user.role === "admin" || user.role === "lecturer" || user.role === "ta") return true;
   return isVLUEmail(user);
 }
 window.canAccessArena = canAccessArena;
@@ -83,6 +140,7 @@ const compState = {
   currentSession: null,
   activeTab: "gateway",
   activeLbPhase: "1",
+  activeLbClass: "06",
   cachedLeaderboard: {},
   lastResultsVersion: null,
   lbAutoRefreshInterval: null,
@@ -5328,6 +5386,19 @@ window.openEditProfileModal = function() {
   $("#editProfileModal").showModal();
 };
 
+window.openEditProfileModalForArena = function() {
+  if (typeof openEditProfileModal === "function") {
+    openEditProfileModal();
+    setTimeout(() => {
+      const studentIdInput = $("#profileStudentId");
+      if (studentIdInput) {
+        studentIdInput.focus();
+        studentIdInput.select();
+      }
+    }, 120);
+  }
+};
+
 const changeEmailBtn = $("#changeEmailActionBtn");
 if (changeEmailBtn) {
   changeEmailBtn.onclick = async () => {
@@ -5422,6 +5493,9 @@ if ($("#editProfileForm")) {
       $("#editProfileModal").close();
       if (typeof syncAuth === "function") syncAuth(session);
       hydrateServer();
+      if (typeof currentActiveRoute !== "undefined" && currentActiveRoute === "arena") {
+        if (typeof onEnterArena === "function") onEnterArena();
+      }
     } catch (err) {
       toast(err.message);
       if (err.message && err.message.toLowerCase().includes("mã số sinh viên")) {
@@ -10038,19 +10112,45 @@ function renderWeeklyCompetitionCard(raw) {
 async function onEnterArena() {
   const user = session || (typeof window !== "undefined" && window.session);
   const isAdmin = Boolean(user && user.role === "admin");
+  const isPrivileged = Boolean(user && (user.role === "admin" || user.role === "lecturer" || user.role === "ta"));
   const lockedNotice = $("#arenaLockedNotice");
+  const studentIdNotice = $("#arenaStudentIdRequiredNotice");
   const mainContent = $("#arenaMainContent");
+  const lbClassSelectorWrap = $("#lbClassSelectorWrap");
 
   if (!canAccessArena(user)) {
     if (lockedNotice) lockedNotice.style.display = "block";
+    if (studentIdNotice) studentIdNotice.style.display = "none";
     if (mainContent) mainContent.style.display = "none";
     return;
   }
 
+  // Đối với sinh viên (không phải admin/giảng viên/ta): kiểm tra mã số sinh viên hợp lệ trong 2 lớp 06 & 07
+  const studentClass = getArenaClassByStudentId(user?.studentId) || user?.arenaClass;
+  if (!isPrivileged && !studentClass) {
+    if (lockedNotice) lockedNotice.style.display = "none";
+    if (mainContent) mainContent.style.display = "none";
+    if (studentIdNotice) studentIdNotice.style.display = "block";
+    return;
+  }
+
   if (lockedNotice) lockedNotice.style.display = "none";
+  if (studentIdNotice) studentIdNotice.style.display = "none";
   if (mainContent) mainContent.style.display = "block";
   const adminBar = $("#arenaAdminBar");
   if (adminBar) adminBar.style.display = isAdmin ? "flex" : "none";
+
+  // Cấu hình bảng thi cho lớp tương ứng hoặc bộ chọn cho giảng viên/admin
+  if (isPrivileged) {
+    if (lbClassSelectorWrap) lbClassSelectorWrap.style.display = "flex";
+    if (!compState.activeLbClass) compState.activeLbClass = "06";
+    $$(".lb-class-btn").forEach(btn => {
+      btn.classList.toggle("active", btn.dataset.lbClass === compState.activeLbClass);
+    });
+  } else {
+    if (lbClassSelectorWrap) lbClassSelectorWrap.style.display = "none";
+    compState.activeLbClass = studentClass;
+  }
 
   try {
     const overview = await requestAPI("/api/competition/overview");
@@ -10087,6 +10187,18 @@ async function onEnterArena() {
     console.error("Error loading Arena overview:", e);
   }
 }
+
+window.switchLbClass = async function(classCode) {
+  const user = session || (typeof window !== "undefined" && window.session);
+  const isPrivileged = Boolean(user && (user.role === "admin" || user.role === "lecturer" || user.role === "ta"));
+  if (!isPrivileged) return;
+
+  compState.activeLbClass = String(classCode);
+  $$(".lb-class-btn").forEach(btn => {
+    btn.classList.toggle("active", btn.dataset.lbClass === String(classCode));
+  });
+  await loadAndRenderLeaderboard(compState.activeLbPhase || 1, false, false);
+};
 
 function stopSundayCeremonySound() {
   if (typeof sundayInteractionCleanup === "function") {
@@ -10718,9 +10830,11 @@ function startArenaLeaderboardAutoRefresh() {
 
     try {
       const targetPhase = compState.activeLbPhase || 1;
-      const data = await requestAPI(`/api/competition/leaderboard?phase=${targetPhase}`);
+      const targetClass = compState.activeLbClass || "06";
+      const cacheKey = `${targetPhase}_${targetClass}`;
+      const data = await requestAPI(`/api/competition/leaderboard?phase=${targetPhase}&class=${targetClass}`);
       if (data && data.ok) {
-        compState.cachedLeaderboard[targetPhase] = data;
+        compState.cachedLeaderboard[cacheKey] = data;
         if (data.resultsVersion) compState.lastResultsVersion = data.resultsVersion;
         const noticeEl = $("#lbSummaryNotice");
         renderLeaderboardNotice(noticeEl, targetPhase, data);
@@ -10738,9 +10852,8 @@ function renderLeaderboardNotice(noticeEl, phase, data) {
   const isOpen = (norm.state === "open" && !norm.isSunday);
   const isSunday = Boolean(norm.isSunday);
 
-  const isWeekPhase = (String(phase) === "week" || data?.phase === "week");
-  const weekNum = String(data?.weekNumber || 1).padStart(2, "0");
-  const baseTitle = isWeekPhase ? `Bảng xếp hạng tuần ${weekNum}` : `Bảng xếp hạng Giai đoạn ${phase}`;
+  const classCode = data?.classCode || compState.activeLbClass || "06";
+  const baseTitle = `Bảng xếp hạng - Bảng thi lớp ${classCode}`;
 
   if (isOpen) {
     noticeEl.innerHTML = `<span>${baseTitle}</span> <span class="lb-status-badge live" style="margin-left: 8px; font-size: 11.5px; color: #22c55e; font-weight: 600;">🟢 Tự động cập nhật trực tiếp</span>`;
@@ -10765,10 +10878,13 @@ async function loadAndRenderLeaderboard(phase, forceRefresh = false, isSilent = 
   const lbList = $("#compLbList");
   const noticeEl = $("#lbSummaryNotice");
 
+  const targetClass = compState.activeLbClass || "06";
+  const cacheKey = `${phase}_${targetClass}`;
+
   // In reviewing / summary time (or if data already cached and not forceRefresh):
   // Return cached leaderboard immediately to avoid reloading!
-  if (!forceRefresh && compState.cachedLeaderboard && compState.cachedLeaderboard[phase]) {
-    const cachedData = compState.cachedLeaderboard[phase];
+  if (!forceRefresh && compState.cachedLeaderboard && compState.cachedLeaderboard[cacheKey]) {
+    const cachedData = compState.cachedLeaderboard[cacheKey];
     renderLeaderboardNotice(noticeEl, phase, cachedData);
     renderLeaderboardUI(cachedData);
     return;
@@ -10782,8 +10898,8 @@ async function loadAndRenderLeaderboard(phase, forceRefresh = false, isSilent = 
   }
 
   try {
-    const data = await requestAPI(`/api/competition/leaderboard?phase=${phase}`);
-    compState.cachedLeaderboard[phase] = data;
+    const data = await requestAPI(`/api/competition/leaderboard?phase=${phase}&class=${targetClass}`);
+    compState.cachedLeaderboard[cacheKey] = data;
     if (data.resultsVersion) {
       compState.lastResultsVersion = data.resultsVersion;
     }

@@ -8589,6 +8589,56 @@ body.study-zen-fullscreen .study-main-col {
   border-color: var(--primary);
 }
 
+.lb-class-selector-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  margin: 4px 0 10px 0;
+  width: 100%;
+}
+
+.lb-class-selector-inner {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--sage-2, #f1f5f9);
+  border: 1px solid var(--line, #e2e8f0);
+  padding: 3px 5px;
+  border-radius: 999px;
+}
+
+.lb-class-label {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--muted, #64748b);
+  padding: 0 6px 0 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.lb-class-btn {
+  background: transparent;
+  border: none;
+  color: var(--ink, #334155);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 5px 12px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.lb-class-btn:hover {
+  color: var(--primary, #0f172a);
+  background: rgba(0, 0, 0, 0.04);
+}
+
+.lb-class-btn.active {
+  background: #123d30;
+  color: #ffffff !important;
+  box-shadow: 0 2px 6px rgba(18, 61, 48, 0.25);
+}
+
 .lb-summary-notice {
   font-size: 12.5px;
   color: var(--muted);

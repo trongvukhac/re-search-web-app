@@ -16,7 +16,7 @@
     <script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js" defer></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" defer></script>
-    <link rel="stylesheet" href="styles.css?v=94" />
+    <link rel="stylesheet" href="styles.css?v=95" />
   </head>
   <body>
     <dialog
@@ -856,6 +856,23 @@
           </div>
         </div>
 
+        <!-- NOTICE KHI CHƯA CẬP NHẬT MSSV HỢP LỆ VÀO LỚP 06/07 -->
+        <div id="arenaStudentIdRequiredNotice" class="arena-locked-card" style="display: none;">
+          <div class="arena-locked-halo"></div>
+          <div class="arena-locked-icon-wrap">
+            <div class="arena-locked-icon">📋</div>
+            <span class="arena-locked-ring"></span>
+          </div>
+          <h2 class="arena-locked-title" style="margin-top: 14px; margin-bottom: 20px; font-size: 19px; font-weight: 700; color: var(--text); text-align: center; line-height: 1.4;">
+            Bạn cần cập nhật mã số sinh viên trước khi tham gia Arena
+          </h2>
+          <div class="arena-locked-actions" style="justify-content: center; margin-top: 10px;">
+            <button type="button" class="button button-primary button-lg" onclick="openEditProfileModalForArena()" id="arenaUpdateStudentIdBtn">
+              Cập nhật ngay
+            </button>
+          </div>
+        </div>
+
         <!-- LOCKED NOTICE FOR NON-ADMIN USERS (PREVIEW MODE) -->
         <div id="arenaLockedNotice" class="arena-locked-card" style="display: none;">
           <div class="arena-locked-halo"></div>
@@ -1065,8 +1082,18 @@
                   <button type="button" class="lb-phase-btn week-lb-btn" data-lb-phase="week" onclick="switchLbPhase('week')">👑 Toàn tuần</button>
                   <button type="button" class="lb-refresh-btn" id="lbRefreshBtn" onclick="refreshArenaLeaderboard()" title="Làm mới bảng xếp hạng">🔄 Làm mới</button>
                 </div>
+
+                <!-- BẢNG THI LỚP 06 / 07 (CHO ADMIN & GIẢNG VIÊN) -->
+                <div id="lbClassSelectorWrap" class="lb-class-selector-wrap" style="display: none;">
+                  <div class="lb-class-selector-inner">
+                    <span class="lb-class-label">Bảng thi:</span>
+                    <button type="button" class="lb-class-btn active" data-lb-class="06" onclick="switchLbClass('06')">Bảng thi lớp 06</button>
+                    <button type="button" class="lb-class-btn" data-lb-class="07" onclick="switchLbClass('07')">Bảng thi lớp 07</button>
+                  </div>
+                </div>
+
                 <div class="lb-summary-notice" id="lbSummaryNotice">
-                  Bảng xếp hạng giai đoạn
+                  Bảng xếp hạng - Bảng thi lớp 06
                 </div>
               </div>
 
@@ -3392,6 +3419,6 @@
       </div>
     </dialog>
 
-    <script src="app.js?v=102" defer></script>
+    <script src="app.js?v=103" defer></script>
   </body>
 </html>
