@@ -13025,26 +13025,85 @@ dialog.modal.namecard-modal {
 
 .namecard-internal-block {
   border: 1px dashed rgba(99, 102, 241, 0.4) !important;
-  background: rgba(99, 102, 241, 0.035) !important;
-  border-radius: 16px;
-  padding: 14px 16px;
+  background: rgba(99, 102, 241, 0.03) !important;
+  border-radius: 14px;
+  padding: 12px 14px;
 }
 
-.nc-internal-header-actions {
+.nc-admin-table {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.nc-admin-row {
   display: flex;
   align-items: center;
+  justify-content: space-between;
+  padding: 7px 12px;
+  border-bottom: 1px solid #f1f5f9;
   gap: 8px;
+}
+
+.nc-admin-row:last-child {
+  border-bottom: none;
+}
+
+.nc-admin-lbl {
+  width: 78px;
+  flex-shrink: 0;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #64748b;
+}
+
+.nc-admin-val {
+  flex: 1;
+  min-width: 0;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #0f172a;
+  word-break: break-all;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+.nc-admin-copy-btn {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  color: #64748b;
+  border-radius: 5px;
+  padding: 3px 8px;
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  flex-shrink: 0;
+  transition: all 0.15s ease;
+}
+
+.nc-admin-copy-btn:hover {
+  background: #eef2ff;
+  border-color: #c7d2fe;
+  color: #4f46e5;
+  transform: translateY(-1px);
+}
+
+.nc-admin-copy-btn:active {
+  transform: translateY(0);
 }
 
 .nc-copy-all-btn {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  gap: 4px;
   background: #ffffff;
   color: #4f46e5;
   border: 1px solid rgba(99, 102, 241, 0.3);
-  border-radius: 8px;
-  padding: 4px 10px;
+  border-radius: 6px;
+  padding: 3px 8px;
   font-size: 11px;
   font-weight: 600;
   cursor: pointer;
@@ -13062,111 +13121,6 @@ dialog.modal.namecard-modal {
   transform: translateY(0);
 }
 
-.nc-internal-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
-}
-
-@media (max-width: 520px) {
-  .nc-internal-grid {
-    grid-template-columns: 1fr;
-  }
-}
-
-.nc-internal-item {
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: 10px;
-  padding: 8px 10px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  box-sizing: border-box;
-  min-width: 0;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
-}
-
-.nc-internal-item:hover {
-  border-color: #cbd5e1;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
-}
-
-.nc-internal-left {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-width: 0;
-  flex: 1;
-}
-
-.nc-internal-icon {
-  width: 28px;
-  height: 28px;
-  border-radius: 7px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.nc-internal-info {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-  flex: 1;
-}
-
-.nc-internal-lbl {
-  font-size: 10.5px;
-  font-weight: 600;
-  color: #64748b;
-  text-transform: uppercase;
-  letter-spacing: 0.3px;
-  line-height: 1.2;
-  margin-bottom: 2px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.nc-internal-val {
-  font-size: 12.5px;
-  font-weight: 600;
-  color: #0f172a;
-  line-height: 1.3;
-  word-break: break-all;
-  white-space: normal;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-}
-
-.nc-item-copy-btn {
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  color: #64748b;
-  border-radius: 6px;
-  width: 26px;
-  height: 26px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  flex-shrink: 0;
-  padding: 0;
-  transition: all 0.15s ease;
-}
-
-.nc-item-copy-btn:hover {
-  background: #eef2ff;
-  border-color: #c7d2fe;
-  color: #4f46e5;
-  transform: translateY(-1px);
-}
-
-.nc-item-copy-btn:active {
-  transform: translateY(0);
-}
 
 /* ==========================================
    FULL COVER VIEWER MODAL (LIGHTBOX)
