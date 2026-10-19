@@ -1681,7 +1681,7 @@ function renderActivityRow(r) {
       case "response_hidden": return `Bài đăng gốc đã bị xoá. Phản hồi của bạn không được tính điểm.`;
       case "weekly_active_reward": return r.reason || `Điểm năng động tuần`;
       case "competition_reward": return escapeHTML(r.reason || `Thưởng Bảng xếp hạng tuần Đấu trường Arena`);
-      case "competition_phase_bonus": return escapeHTML(r.reason || `Thưởng tham gia các giai đoạn Đấu trường Arena`);
+      case "competition_phase_bonus": return escapeHTML(r.reason || `Thưởng tham gia các chặng thi đấu Đấu trường Arena`);
       default: return r.action;
     }
   };
@@ -9952,7 +9952,7 @@ function normalizeCompData(raw) {
     phasesStatus = [
       {
         phase: 1,
-        name: "Giai đoạn 1",
+        name: "Chặng 1",
         days: "Thứ Hai – Thứ Ba",
         topic: raw.week.phase1_topic || raw.week.phase1Topic || "Phương pháp & Thiết kế",
         isCompleted: false,
@@ -9962,7 +9962,7 @@ function normalizeCompData(raw) {
       },
       {
         phase: 2,
-        name: "Giai đoạn 2",
+        name: "Chặng 2",
         days: "Thứ Tư – Thứ Năm",
         topic: raw.week.phase2_topic || raw.week.phase2Topic || "Kỹ thuật Thu thập & Xử lý",
         isCompleted: false,
@@ -9972,7 +9972,7 @@ function normalizeCompData(raw) {
       },
       {
         phase: 3,
-        name: "Giai đoạn 3",
+        name: "Chặng 3",
         days: "Thứ Sáu – Thứ Bảy",
         topic: raw.week.phase3_topic || raw.week.phase3Topic || "Tư duy Phân tích & Báo cáo",
         isCompleted: false,
@@ -10041,7 +10041,7 @@ function renderWeeklyCompetitionCard(raw) {
     if (data.isSunday) {
       phaseSubtitle.textContent = "Chủ Nhật: Tổng kết toàn tuần & Trao thưởng";
     } else {
-      phaseSubtitle.textContent = `Giai đoạn ${data.phase}: ${data.phaseTopic || ""}`;
+      phaseSubtitle.textContent = `Chặng ${data.phase}: ${data.phaseTopic || ""}`;
     }
   }
   if (weekTag) weekTag.textContent = data.weekTitle || `TUẦN ${String(data.weekNumber || 1).padStart(2, "0")}`;
@@ -10513,31 +10513,31 @@ function renderGatewayTab(raw) {
   }
 
   if (phaseTag) {
-    phaseTag.textContent = data.isSunday ? "Luyện tập Chủ Nhật" : `Giai đoạn ${data.phase}`;
+    phaseTag.textContent = data.isSunday ? "Luyện tập Chủ Nhật" : `Chặng ${data.phase}`;
   }
   if (phaseTitle) {
-    phaseTitle.textContent = data.isSunday ? "Luyện tập tự do 3 Giai đoạn" : (data.phaseTopic || data.weekTopic || "Chủ đề giai đoạn");
+    phaseTitle.textContent = data.isSunday ? "Luyện tập tự do 3 Chặng" : (data.phaseTopic || data.weekTopic || "Chủ đề chặng");
   }
   if (weekTitle) {
     weekTitle.textContent = `Chủ đề tuần: ${data.weekTopic || ""}`;
   }
   if (attemptsPhaseLabel) {
-    attemptsPhaseLabel.textContent = data.isSunday ? "Luyện tập tự do" : `Giai đoạn ${data.phase}`;
+    attemptsPhaseLabel.textContent = data.isSunday ? "Luyện tập tự do" : `Chặng ${data.phase}`;
   }
 
   const attemptsNoteText = $(".attempts-note-banner .note-banner-text");
   if (attemptsNoteText) {
     if (data.isSunday) {
-      attemptsNoteText.innerHTML = `🎯 <strong>Chế độ Luyện tập ngày Chủ Nhật:</strong> Thí sinh được làm lại toàn bộ câu hỏi của cả 3 giai đoạn để ôn tập kiến thức. Bài làm <strong>không tính điểm thi đua</strong>, <strong>không tính thời gian</strong>, làm <strong>không giới hạn số lượt</strong>, có thể <strong>chuyển câu trước/sau tự do</strong> và <strong>hoàn toàn không ghi nhận vào thành tích Namecard hay Bảng xếp hạng</strong>.`;
+      attemptsNoteText.innerHTML = `🎯 <strong>Chế độ Luyện tập ngày Chủ Nhật:</strong> Thí sinh được làm lại toàn bộ câu hỏi của cả 3 chặng để ôn tập kiến thức. Bài làm <strong>không tính điểm thi đua</strong>, <strong>không tính thời gian</strong>, làm <strong>không giới hạn số lượt</strong>, có thể <strong>chuyển câu trước/sau tự do</strong> và <strong>hoàn toàn không ghi nhận vào thành tích Namecard hay Bảng xếp hạng</strong>.`;
     } else {
-      attemptsNoteText.innerHTML = `<strong>Mỗi giai đoạn chỉ có duy nhất 1 lượt thi!</strong> Thí sinh làm bài đúng hạn ở GĐ 1 &amp; GĐ 2 nhận thêm <strong>+50 ⭐</strong> mỗi đợt. Nếu lỡ, bạn vẫn có thể <strong>làm bù trong tuần</strong> (không cộng thưởng đúng hạn).`;
+      attemptsNoteText.innerHTML = `<strong>Mỗi chặng thi đấu chỉ có duy nhất 1 lượt thi!</strong> Thí sinh làm bài đúng hạn ở Chặng 1 &amp; Chặng 2 nhận thêm <strong>+50 ⭐</strong> mỗi đợt. Nếu lỡ, bạn vẫn có thể <strong>làm bù trong tuần</strong> (không cộng thưởng đúng hạn).`;
     }
   }
 
   const phasesJourneyHeader = $(".phases-journey-header h4");
   const phasesJourneyHint = $(".phases-journey-header .journey-sub-hint");
   if (phasesJourneyHeader) {
-    phasesJourneyHeader.textContent = data.isSunday ? "Luyện tập 3 giai đoạn" : "Thi đấu";
+    phasesJourneyHeader.textContent = data.isSunday ? "Luyện tập 3 chặng" : "Thi đấu";
   }
   if (phasesJourneyHint) {
     phasesJourneyHint.textContent = data.isSunday ? "Làm lại câu hỏi không giới hạn số lượt & thời gian" : "Đừng quên hoàn thành các bài thi trước CN nhé";
@@ -10660,12 +10660,12 @@ function renderGatewayTab(raw) {
           cardClass += " card-catch-up";
           chipHTML = '<span class="pj-status-chip chip-catch-up">🔄 LÀM BÙ TUẦN</span>';
           scoreInfoHTML = `<div class="pj-score-box"><span class="pj-score-label">Chế độ:</span><span class="pj-score-val" style="color: #fbbf24;">Làm bù (Không +50⭐)</span></div>`;
-          actionBtnHTML = `<button type="button" class="pj-action-btn btn-play-catchup" onclick="openQuizStartConfirmModal(${p.phase})">Làm bù GĐ ${p.phase}</button>`;
+          actionBtnHTML = `<button type="button" class="pj-action-btn btn-play-catchup" onclick="openQuizStartConfirmModal(${p.phase})">Làm bù Chặng ${p.phase}</button>`;
         } else {
           cardClass += " card-on-time";
           chipHTML = '<span class="pj-status-chip chip-on-time">🟢 ĐANG MỞ</span>';
           scoreInfoHTML = `<div class="pj-score-box"><span class="pj-score-label">Chặng cuối tuần:</span><span class="pj-score-val">Tối đa 1.100 ⭐</span></div>`;
-          actionBtnHTML = `<button type="button" class="pj-action-btn btn-play-ontime" onclick="openQuizStartConfirmModal(${p.phase})">Bắt đầu Giai đoạn 3</button>`;
+          actionBtnHTML = `<button type="button" class="pj-action-btn btn-play-ontime" onclick="openQuizStartConfirmModal(${p.phase})">Bắt đầu Chặng 3</button>`;
         }
       } else {
         cardClass += " card-locked";
@@ -10679,7 +10679,7 @@ function renderGatewayTab(raw) {
         <div class="${cardClass}">
           <div class="pj-card-top">
             <div>
-              <div class="pj-phase-num">Giai đoạn ${p.phase}</div>
+              <div class="pj-phase-num">Chặng ${p.phase}</div>
               <div class="pj-phase-days">${pDays}</div>
             </div>
             ${chipHTML}
@@ -10727,11 +10727,11 @@ function renderGatewayTab(raw) {
         const targetP = data.defaultAvailablePhase;
         const pObj = (data.phasesStatus || []).find(p => p.phase === targetP);
         if (pObj && pObj.isCatchUp) {
-          if (startBtnText) startBtnText.textContent = `Làm bù Giai đoạn ${targetP}`;
+          if (startBtnText) startBtnText.textContent = `Làm bù Chặng ${targetP}`;
         } else if (targetP === 3) {
-          if (startBtnText) startBtnText.textContent = `Bắt đầu Giai đoạn 3 (Chặng cuối tuần)`;
+          if (startBtnText) startBtnText.textContent = `Bắt đầu Chặng 3 (Chặng cuối tuần)`;
         } else {
-          if (startBtnText) startBtnText.textContent = `Bắt đầu Giai đoạn ${targetP} (+50 ⭐ đúng hạn)`;
+          if (startBtnText) startBtnText.textContent = `Bắt đầu Chặng ${targetP} (+50 ⭐ đúng hạn)`;
         }
         startBtn.onclick = () => openQuizStartConfirmModal(targetP);
       } else {
@@ -10740,7 +10740,7 @@ function renderGatewayTab(raw) {
         startBtn.disabled = false;
         startBtn.style.opacity = "1";
         startBtn.style.cursor = "pointer";
-        if (startBtnText) startBtnText.textContent = `Xem lịch sử hoàn thành (GĐ ${targetReviewPhase})`;
+        if (startBtnText) startBtnText.textContent = `Xem lịch sử hoàn thành (Chặng ${targetReviewPhase})`;
         startBtn.onclick = () => openPhaseResultModal(targetReviewPhase);
         if (blockedMsg) {
           blockedMsg.style.display = "block";
@@ -10749,7 +10749,7 @@ function renderGatewayTab(raw) {
           blockedMsg.style.border = "1px solid rgba(14, 165, 233, 0.35)";
           blockedMsg.style.borderRadius = "8px";
           blockedMsg.style.padding = "8px 12px";
-          blockedMsg.innerHTML = `✅ <strong>Bạn đã hoàn thành lượt thi Giai đoạn ${targetReviewPhase}!</strong> Bấm nút trên hoặc từng thẻ giai đoạn bên dưới để xem lại kết quả bài làm.`;
+          blockedMsg.innerHTML = `✅ <strong>Bạn đã hoàn thành lượt thi Chặng ${targetReviewPhase}!</strong> Bấm nút trên hoặc từng thẻ chặng bên dưới để xem lại kết quả bài làm.`;
         }
       }
     } else {
@@ -10762,7 +10762,7 @@ function renderGatewayTab(raw) {
         startBtn.disabled = false;
         startBtn.style.opacity = "1";
         startBtn.style.cursor = "pointer";
-        if (startBtnText) startBtnText.textContent = `Xem lịch sử hoàn thành (GĐ ${targetReviewPhase})`;
+        if (startBtnText) startBtnText.textContent = `Xem lịch sử hoàn thành (Chặng ${targetReviewPhase})`;
         startBtn.onclick = () => openPhaseResultModal(targetReviewPhase);
         if (blockedMsg) {
           blockedMsg.style.display = "block";
@@ -10771,7 +10771,7 @@ function renderGatewayTab(raw) {
           blockedMsg.style.border = "1px solid rgba(14, 165, 233, 0.35)";
           blockedMsg.style.borderRadius = "8px";
           blockedMsg.style.padding = "8px 12px";
-          blockedMsg.innerHTML = `✅ <strong>Bạn đã hoàn thành lượt thi Giai đoạn ${targetReviewPhase}!</strong> Bấm nút trên hoặc từng thẻ giai đoạn bên dưới để xem lại kết quả bài làm.`;
+          blockedMsg.innerHTML = `✅ <strong>Bạn đã hoàn thành lượt thi Chặng ${targetReviewPhase}!</strong> Bấm nút trên hoặc từng thẻ chặng bên dưới để xem lại kết quả bài làm.`;
         }
       } else {
         startBtn.disabled = true;
@@ -10966,7 +10966,7 @@ function renderLeaderboardUI(data) {
 
   if (top10.length === 0) {
     if (footerNote) footerNote.style.display = "none";
-    podiumWrap.innerHTML = `<div class="comp-lb-empty">Chưa có thành viên nào hoàn thành lượt thi trong giai đoạn này.</div>`;
+    podiumWrap.innerHTML = `<div class="comp-lb-empty">Chưa có thành viên nào hoàn thành lượt thi trong chặng này.</div>`;
     lbList.innerHTML = "";
     return;
   }
@@ -11107,7 +11107,7 @@ function openQuizStartConfirmModal(phase) {
 
   const phaseObj = (compState.overview?.phasesStatus || []).find(p => p.phase === targetPhase);
   if (phaseObj && phaseObj.isCompleted) {
-    toast(`Bạn đã hoàn thành bài thi Giai đoạn ${targetPhase} rồi (1/1 lượt).`);
+    toast(`Bạn đã hoàn thành bài thi Chặng ${targetPhase} rồi (1/1 lượt).`);
     return;
   }
 
@@ -11120,12 +11120,12 @@ function openQuizStartConfirmModal(phase) {
   const proceedBtnEl = $("#quizStartProceedBtn");
 
   const daysText = targetPhase === 1 ? "Thứ Hai – Thứ Ba" : (targetPhase === 2 ? "Thứ Tư – Thứ Năm" : "Thứ Sáu – Thứ Bảy");
-  if (titleEl) titleEl.textContent = `Xác nhận lượt thi - Giai đoạn ${targetPhase}`;
-  if (phaseTagEl) phaseTagEl.textContent = `Giai đoạn ${targetPhase} (${daysText})`;
+  if (titleEl) titleEl.textContent = `Xác nhận lượt thi - Chặng ${targetPhase}`;
+  if (phaseTagEl) phaseTagEl.textContent = `Chặng ${targetPhase} (${daysText})`;
 
   // Mandatory prompt required by user
   if (promptTextEl) {
-    promptTextEl.textContent = "Bạn chỉ có 1 lượt thi duy nhất cho giai đoạn này, bắt đầu thi chứ?";
+    promptTextEl.textContent = "Bạn chỉ có 1 lượt thi duy nhất cho chặng thi đấu này, bắt đầu thi chứ?";
   }
 
   const isOnTime = Boolean(phaseObj ? phaseObj.isOnTime : (targetPhase === currentPhase && (targetPhase === 1 || targetPhase === 2) && !isSunday));
@@ -11138,7 +11138,7 @@ function openQuizStartConfirmModal(phase) {
         <span style="font-size: 22px;">🎁</span>
         <div>
           <strong>ĐẶC QUYỀN ĐÚNG HẠN: +50 ⭐ THƯỞNG THÊM!</strong><br>
-          Bạn đang tham gia đúng hạn Giai đoạn ${targetPhase}. Hệ thống sẽ cộng thêm <strong>+50 ⭐</strong> vào tổng điểm khi bạn hoàn thành bài thi! (Tối đa toàn bài: <strong>1.150 ⭐</strong>).
+          Bạn đang tham gia đúng hạn Chặng ${targetPhase}. Hệ thống sẽ cộng thêm <strong>+50 ⭐</strong> vào tổng điểm khi bạn hoàn thành bài thi! (Tối đa toàn bài: <strong>1.150 ⭐</strong>).
         </div>
       `;
     } else if (isCatchUp) {
@@ -11147,7 +11147,7 @@ function openQuizStartConfirmModal(phase) {
         <span style="font-size: 22px;">🔄</span>
         <div>
           <strong>LƯỢT LÀM BÙ TRONG TUẦN</strong><br>
-          Bạn đang làm bù Giai đoạn ${targetPhase} đã qua. Bạn vẫn được tính điểm bài thi bình thường (tối đa <strong>1.100 ⭐</strong>), nhưng <em>không nhận điểm thưởng đúng hạn (+50 ⭐)</em>.
+          Bạn đang làm bù Chặng ${targetPhase} đã qua. Bạn vẫn được tính điểm bài thi bình thường (tối đa <strong>1.100 ⭐</strong>), nhưng <em>không nhận điểm thưởng đúng hạn (+50 ⭐)</em>.
         </div>
       `;
     } else {
@@ -11155,8 +11155,8 @@ function openQuizStartConfirmModal(phase) {
       bonusCardEl.innerHTML = `
         <span style="font-size: 22px;">🏁</span>
         <div>
-          <strong>GIAI ĐOẠN 3 - CHẶNG CUỐI TUẦN</strong><br>
-          Đây là giai đoạn cuối cùng trước khi tổng kết trao giải vào Chủ Nhật. Lỡ giai đoạn này sẽ <strong>không có cơ hội làm bù</strong>! Điểm tối đa: <strong>1.100 ⭐</strong>.
+          <strong>CHẶNG 3 - CHẶNG CUỐI TUẦN</strong><br>
+          Đây là chặng thi đấu cuối cùng trước khi tổng kết trao giải vào Chủ Nhật. Lỡ chặng này sẽ <strong>không có cơ hội làm bù</strong>! Điểm tối đa: <strong>1.100 ⭐</strong>.
         </div>
       `;
     }
@@ -11215,14 +11215,14 @@ async function startPracticeQuiz(targetPhase) {
   try {
     const res = await requestAPI(`/api/competition/practice/questions?phase=${phase}`);
     if (!res || !res.questions || !res.questions.length) {
-      toast("Không tải được bộ câu hỏi luyện tập của giai đoạn này.");
+      toast("Không tải được bộ câu hỏi luyện tập của chặng này.");
       return;
     }
 
     compState.practice = {
       active: true,
       phase,
-      phaseTopic: res.phaseTopic || `Giai đoạn ${phase}`,
+      phaseTopic: res.phaseTopic || `Chặng ${phase}`,
       questions: res.questions,
       currentIndex: 0,
       userAnswers: {},
@@ -11504,7 +11504,7 @@ function finishPracticeQuiz() {
   if (resTitle) resTitle.textContent = "KẾT QUẢ LUYỆN TẬP";
 
   const resSubtitle = $("#resultSubtitle");
-  if (resSubtitle) resSubtitle.textContent = `Chế độ Luyện tập Chủ Nhật • Giai đoạn ${p.phase}`;
+  if (resSubtitle) resSubtitle.textContent = `Chế độ Luyện tập Chủ Nhật • Chặng ${p.phase}`;
 
   const resScore = $("#resultTotalScore");
   if (resScore) resScore.textContent = `${p.correctCount} / ${p.questions.length}`;
@@ -11605,7 +11605,7 @@ async function startCompetitionQuiz(targetPhase) {
 
   const phaseObj = (compState.overview?.phasesStatus || []).find(p => p.phase === Number(phase));
   if (phaseObj && phaseObj.isCompleted) {
-    toast(`Bạn đã hoàn thành bài thi Giai đoạn ${phase} rồi (1/1 lượt).`);
+    toast(`Bạn đã hoàn thành bài thi Chặng ${phase} rồi (1/1 lượt).`);
     return;
   }
 
@@ -11646,7 +11646,7 @@ async function executeStartQuizSession(targetPhase) {
     if (res.phase) {
       const phaseBadge = $("#quizPhaseBadge");
       const bonusTag = res.isOnTime ? " (+50⭐ đúng hạn)" : (res.isCatchUp ? " (Làm bù)" : "");
-      if (phaseBadge) phaseBadge.textContent = `Giai đoạn ${res.phase}${bonusTag}`;
+      if (phaseBadge) phaseBadge.textContent = `Chặng ${res.phase}${bonusTag}`;
     }
 
     try {
@@ -12104,7 +12104,7 @@ function showQuizFinalResult(result, options = {}) {
   if (titleEl) {
     if (isHistorical) {
       const phaseNum = options.phase || result?.phase;
-      titleEl.textContent = phaseNum ? `KẾT QUẢ GIAI ĐOẠN ${phaseNum}` : "LỊCH SỬ KẾT QUẢ BÀI THI";
+      titleEl.textContent = phaseNum ? `KẾT QUẢ CHẶNG ${phaseNum}` : "LỊCH SỬ KẾT QUẢ BÀI THI";
     } else {
       titleEl.textContent = "KẾT THÚC LƯỢT THI";
     }
@@ -12114,7 +12114,7 @@ function showQuizFinalResult(result, options = {}) {
     if (isHistorical) {
       const phaseNum = options.phase || result?.phase;
       const daysText = phaseNum === 1 ? "Thứ Hai – Thứ Ba" : (phaseNum === 2 ? "Thứ Tư – Thứ Năm" : "Thứ Sáu – Thứ Bảy");
-      subtitleEl.textContent = `Kết quả chính thức bài thi Giai đoạn ${phaseNum || ""}${phaseNum ? ` (${daysText})` : ""}`;
+      subtitleEl.textContent = `Kết quả chính thức bài thi Chặng ${phaseNum || ""}${phaseNum ? ` (${daysText})` : ""}`;
     } else {
       subtitleEl.textContent = "Chúc mừng bạn đã hoàn thành bài thi!";
     }
@@ -12144,12 +12144,12 @@ function showQuizFinalResult(result, options = {}) {
   const bonusPts = $("#resultOnTimeBonusPts");
   if (bonusStatus && bonusPts) {
     if (onTimeBonus > 0) {
-      bonusStatus.textContent = "Đúng hạn GĐ";
+      bonusStatus.textContent = "Đúng hạn Chặng";
       bonusStatus.style.color = "#34d399";
       bonusPts.textContent = `+${onTimeBonus} ⭐`;
       bonusPts.style.color = "#34d399";
     } else {
-      bonusStatus.textContent = "Làm bù / GĐ 3";
+      bonusStatus.textContent = "Làm bù / Chặng 3";
       bonusStatus.style.color = "#94a3b8";
       bonusPts.textContent = "+0 ⭐";
       bonusPts.style.color = "#94a3b8";
@@ -12180,7 +12180,7 @@ async function openPhaseResultModal(phase) {
   try {
     const res = await requestAPI(`/api/competition/phase/result?phase=${phase}`);
     if (!res || !res.result) {
-      toast(`Không tìm thấy kết quả bài thi của Giai đoạn ${phase}.`);
+      toast(`Không tìm thấy kết quả bài thi của Chặng ${phase}.`);
       return;
     }
     const quizModal = $("#competitionQuizModal");
@@ -12196,7 +12196,7 @@ async function openPhaseResultModal(phase) {
       console.warn("Could not open competitionQuizModal:", err);
     }
   } catch (e) {
-    toast(e.message || `Không thể tải kết quả bài thi Giai đoạn ${phase}.`);
+    toast(e.message || `Không thể tải kết quả bài thi Chặng ${phase}.`);
   }
 }
 

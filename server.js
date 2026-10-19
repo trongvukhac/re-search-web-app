@@ -1876,7 +1876,7 @@ function getCompetitionTimeState(vnDate, comp) {
   const phase = getPhaseForDayOfWeek(dayOfWeek);
   const phaseTopic = phase === 1 ? comp.phase1_topic : phase === 2 ? comp.phase2_topic : comp.phase3_topic;
   const phaseDays = phase === 1 ? "Thứ Hai – Thứ Ba" : phase === 2 ? "Thứ Tư – Thứ Năm" : "Thứ Sáu – Thứ Bảy";
-  const phaseName = `Giai đoạn ${phase} (${phaseDays})`;
+  const phaseName = `Chặng ${phase} (${phaseDays})`;
 
   // Check if phase has 10 questions
   const qCount = db.prepare("SELECT count(*) as c FROM competition_questions WHERE competition_id = ? AND phase = ?").get(comp.id, phase)?.c || 0;
@@ -2061,7 +2061,7 @@ function awardCompetitionSundayRewards(competitionId) {
               partBonus,
               "competition",
               competitionId,
-              `Thưởng tham gia ${p.phasesParticipated}/3 giai đoạn thi đua tuần (${comp.week_key}): +${partBonus}đ hoạt động`
+              `Thưởng tham gia ${p.phasesParticipated}/3 chặng thi đua tuần (${comp.week_key}): +${partBonus}đ hoạt động`
             );
           }
 
@@ -4749,7 +4749,7 @@ async function api(request, response, url) {
     let phasesStatus = [
       {
         phase: 1,
-        name: "Giai đoạn 1",
+        name: "Chặng 1",
         days: "Thứ Hai – Thứ Ba",
         topic: comp.phase1_topic,
         isCompleted: false,
@@ -4765,7 +4765,7 @@ async function api(request, response, url) {
       },
       {
         phase: 2,
-        name: "Giai đoạn 2",
+        name: "Chặng 2",
         days: "Thứ Tư – Thứ Năm",
         topic: comp.phase2_topic,
         isCompleted: false,
@@ -4781,7 +4781,7 @@ async function api(request, response, url) {
       },
       {
         phase: 3,
-        name: "Giai đoạn 3",
+        name: "Chặng 3",
         days: "Thứ Sáu – Thứ Bảy",
         topic: comp.phase3_topic,
         isCompleted: false,
@@ -4899,7 +4899,7 @@ async function api(request, response, url) {
       phasesStatus = [
         {
           phase: 1,
-          name: "Giai đoạn 1",
+          name: "Chặng 1",
           days: "Thứ Hai – Thứ Ba",
           topic: comp.phase1_topic,
           isCompleted: completedP1 >= 1,
@@ -4915,7 +4915,7 @@ async function api(request, response, url) {
         },
         {
           phase: 2,
-          name: "Giai đoạn 2",
+          name: "Chặng 2",
           days: "Thứ Tư – Thứ Năm",
           topic: comp.phase2_topic,
           isCompleted: completedP2 >= 1,
@@ -4931,7 +4931,7 @@ async function api(request, response, url) {
         },
         {
           phase: 3,
-          name: "Giai đoạn 3",
+          name: "Chặng 3",
           days: "Thứ Sáu – Thứ Bảy",
           topic: comp.phase3_topic,
           isCompleted: completedP3 >= 1,
@@ -5082,7 +5082,7 @@ async function api(request, response, url) {
     }
 
     if (!phaseRes && !session) {
-      return error(response, 404, `Bạn chưa có kết quả bài thi cho Giai đoạn ${phase}.`);
+      return error(response, 404, `Bạn chưa có kết quả bài thi cho Chặng ${phase}.`);
     }
 
     const totalScore = session?.total_score ?? phaseRes?.best_score ?? 0;
@@ -5340,12 +5340,12 @@ async function api(request, response, url) {
     if (activeSession) {
       sessionPhase = activeSession.phase;
       if (requestedPhase && requestedPhase !== activeSession.phase) {
-        return error(response, 400, `Bạn đang có bài thi Giai đoạn ${activeSession.phase} dở dang. Vui lòng hoàn thành trước khi bắt đầu giai đoạn khác.`);
+        return error(response, 400, `Bạn đang có bài thi Chặng ${activeSession.phase} dở dang. Vui lòng hoàn thành trước khi bắt đầu chặng khác.`);
       }
     } else {
       if (requestedPhase) {
         if (requestedPhase < 1 || requestedPhase > currentPhase) {
-          return error(response, 400, "Giai đoạn này không hợp lệ hoặc chưa mở.");
+          return error(response, 400, "Chặng này không hợp lệ hoặc chưa mở.");
         }
         sessionPhase = requestedPhase;
       } else {
@@ -5361,7 +5361,7 @@ async function api(request, response, url) {
       ).get(user.id, comp.id, sessionPhase)?.c || 0;
 
       if (completedSessions >= 1 || hasPhaseResult >= 1) {
-        return error(response, 400, "Bạn chỉ có 1 lượt thi duy nhất cho giai đoạn này và đã hoàn thành.");
+        return error(response, 400, "Bạn chỉ có 1 lượt thi duy nhất cho chặng thi đấu này và đã hoàn thành.");
       }
     }
 
@@ -5371,7 +5371,7 @@ async function api(request, response, url) {
     ).all(comp.id, phase);
 
     if (questions.length < 10) {
-      return error(response, 400, "Bộ câu hỏi cho giai đoạn này chưa sẵn sàng.");
+      return error(response, 400, "Bộ câu hỏi cho chặng này chưa sẵn sàng.");
     }
 
     const isResumed = Boolean(activeSession);
@@ -5429,7 +5429,7 @@ async function api(request, response, url) {
 
     const phaseTopic = phase === 1 ? comp.phase1_topic : (phase === 2 ? comp.phase2_topic : comp.phase3_topic);
     const phaseDays = phase === 1 ? "Thứ Hai – Thứ Ba" : (phase === 2 ? "Thứ Tư – Thứ Năm" : "Thứ Sáu – Thứ Bảy");
-    const phaseName = `Giai đoạn ${phase} (${phaseDays})`;
+    const phaseName = `Chặng ${phase} (${phaseDays})`;
 
     const isSessionOnTime = Boolean(activeSession.is_on_time && isPhaseOnTimeWindow(comp, phase, vnNow));
 
