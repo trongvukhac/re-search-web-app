@@ -1883,15 +1883,15 @@ function getCompetitionTimeState(vnDate, comp) {
   const isReady = qCount >= 10;
 
   let state = "reviewing";
-  let stateLabel = "ĐANG TỔNG KẾT";
-  let ctaText = "Xem bảng xếp hạng";
+  let stateLabel = "CHUẨN BỊ";
+  let ctaText = "Xem thể lệ & Chuẩn bị";
   let secondsUntilNext = 0;
   let nextStateLabel = "Sắp mở cổng";
 
-  // Quy cách mở cổng: 19h ngày đầu – 23h59 ngày cuối giai đoạn
-  // - Giai đoạn 1: 19h00 tối Thứ Hai đến 23:59:59 Thứ Ba
-  // - Giai đoạn 2: 19h00 tối Thứ Tư đến 23:59:59 Thứ Năm
-  // - Giai đoạn 3: 19h00 tối Thứ Sáu đến 23:59:59 Thứ Bảy
+  // Quy cách mở cổng: 19h ngày đầu – 23h59 ngày cuối chặng
+  // - Chặng 1: 19h00 tối Thứ Hai đến 23:59:59 Thứ Ba
+  // - Chặng 2: 19h00 tối Thứ Tư đến 23:59:59 Thứ Năm
+  // - Chặng 3: 19h00 tối Thứ Sáu đến 23:59:59 Thứ Bảy
   const openScheduleText = phase === 1 
     ? "19:00 T2 – 23:59:59 T3" 
     : (phase === 2 ? "19:00 T4 – 23:59:59 T5" : "19:00 T6 – 23:59:59 T7");
@@ -1906,24 +1906,24 @@ function getCompetitionTimeState(vnDate, comp) {
       const targetDayName = dayOfWeek === 1 ? "Thứ Ba" : (dayOfWeek === 3 ? "Thứ Năm" : "Thứ Bảy");
       stateLabel = "ĐANG MỞ CỔNG";
       ctaText = "Tham gia ngay";
-      // Đếm ngược đến 23:59:59 của ngày mai (ngày kết thúc giai đoạn)
+      // Đếm ngược đến 23:59:59 của ngày mai (ngày kết thúc chặng)
       const secRemainingToday = ((23 - hours) * 3600) + ((59 - minutes) * 60) + (60 - seconds);
       secondsUntilNext = 86400 + secRemainingToday;
-      nextStateLabel = `Đóng cổng GĐ ${phase} (${targetDayName} 23:59:59)`;
+      nextStateLabel = `Đóng cổng Chặng ${phase} (${targetDayName} 23:59:59)`;
     } else if (timeInMinutes >= 15 * 60) {
       // 15:00 – 19:00: Khung giờ sẵn sàng đếm ngược
       state = "upcoming";
       stateLabel = "ĐANG ĐẾM NGƯỢC";
       ctaText = "Xem thể lệ & Chuẩn bị";
       secondsUntilNext = ((19 * 60 - timeInMinutes - 1) * 60) + (60 - seconds);
-      nextStateLabel = `Mở cổng GĐ ${phase} (19:00)`;
+      nextStateLabel = `Mở cổng Chặng ${phase} (19:00)`;
     } else {
       // 00:00 – 15:00:
-      // - Thứ Hai: Khung giờ Khởi động
-      // - Thứ Tư, Thứ Sáu: Khung giờ tổng kết giai đoạn
+      // - Thứ Hai: Khung giờ Khởi động tuần mới / Chuẩn bị
+      // - Thứ Tư, Thứ Sáu: Khung giờ Chuẩn bị cho chặng mới
       state = "reviewing";
-      stateLabel = "ĐANG TỔNG KẾT";
-      ctaText = (dayOfWeek === 1) ? "Xem thể lệ & Bảng vàng" : `Xem bảng xếp hạng GĐ ${phase - 1}`;
+      stateLabel = "CHUẨN BỊ";
+      ctaText = (dayOfWeek === 1) ? "Xem thể lệ & Bảng vàng" : `Xem bảng xếp hạng Chặng ${phase - 1}`;
       secondsUntilNext = ((15 * 60 - timeInMinutes - 1) * 60) + (60 - seconds);
       nextStateLabel = `Khung giờ sẵn sàng đếm ngược (15:00)`;
     }
@@ -1935,7 +1935,7 @@ function getCompetitionTimeState(vnDate, comp) {
     secondsUntilNext = ((23 - hours) * 3600) + ((59 - minutes) * 60) + (60 - seconds);
     nextStateLabel = (phase === 3) 
       ? "Đóng cổng tuần thi đấu (23:59:59)" 
-      : `Đóng cổng GĐ ${phase} (23:59:59)`;
+      : `Đóng cổng Chặng ${phase} (23:59:59)`;
   }
 
   return {
@@ -6263,10 +6263,10 @@ async function api(request, response, url) {
       if (target.getDay() === 0) target.setDate(target.getDate() + 1);
       target.setHours(19, 30, 0, 0);
       simulatedTimeOffsetMs = target.getTime() - realVnNow.getTime();
-    } else if (preset === "reviewing" || preset === "23:30") {
+    } else if (preset === "reviewing" || preset === "10:00" || preset === "preparing") {
       const target = new Date(realVnNow);
       if (target.getDay() === 0) target.setDate(target.getDate() + 1);
-      target.setHours(23, 30, 0, 0);
+      target.setHours(10, 0, 0, 0);
       simulatedTimeOffsetMs = target.getTime() - realVnNow.getTime();
     } else if (preset === "sunday" || preset === "summary") {
       const { sunday } = getWeekRange(realVnNow);

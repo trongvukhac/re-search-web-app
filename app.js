@@ -10098,9 +10098,9 @@ function renderWeeklyCompetitionCard(raw) {
     if (ctaBtn) ctaBtn.className = "comp-cta-button cta-countdown";
   } else {
     badgeEl.classList.add("status-summary");
-    if (badgeTextEl) badgeTextEl.textContent = "ĐANG TỔNG KẾT";
+    if (badgeTextEl) badgeTextEl.textContent = "CHUẨN BỊ";
     if (timerLabel) timerLabel.textContent = "Mở đếm ngược sau:";
-    if (ctaText) ctaText.textContent = "Xem bảng xếp hạng";
+    if (ctaText) ctaText.textContent = "Xem thể lệ & Chuẩn bị";
     if (ctaBtn) ctaBtn.className = "comp-cta-button cta-summary";
   }
 
@@ -10507,7 +10507,7 @@ function renderGatewayTab(raw) {
       if (clockLabel) clockLabel.textContent = "Mở cổng trả lời sau:";
     } else {
       statusBadge.classList.add("status-summary");
-      if (statusText) statusText.textContent = "ĐANG TỔNG KẾT";
+      if (statusText) statusText.textContent = "CHUẨN BỊ";
       if (clockLabel) clockLabel.textContent = "Mở đếm ngược sau:";
     }
   }
@@ -10798,7 +10798,7 @@ function renderGatewayTab(raw) {
             blockedMsg.style.border = "";
             blockedMsg.style.borderRadius = "";
             blockedMsg.style.padding = "";
-            blockedMsg.textContent = "Hệ thống đang trong khung giờ tổng kết. Bạn có thể xem bảng xếp hạng tạm thời.";
+            blockedMsg.textContent = "Hệ thống đang trong khung giờ chuẩn bị (0h – 15h). Vui lòng quay lại vào khung giờ mở cổng!";
           }
         }
       }
@@ -10872,7 +10872,7 @@ function renderLeaderboardNotice(noticeEl, phase, data) {
   } else if (isSunday) {
     noticeEl.innerHTML = `<span>${baseTitle}</span> <span class="lb-status-badge sunday" style="margin-left: 8px; font-size: 11.5px; color: #eab308; font-weight: 600;">👑 Tổng kết toàn tuần</span>`;
   } else {
-    noticeEl.innerHTML = `<span>${baseTitle}</span> <span class="lb-status-badge closed" style="margin-left: 8px; font-size: 11.5px; color: #94a3b8; font-weight: 500;">🔒 Khung giờ tổng kết (Số liệu đã chốt)</span>`;
+    noticeEl.innerHTML = `<span>${baseTitle}</span> <span class="lb-status-badge closed" style="margin-left: 8px; font-size: 11.5px; color: #94a3b8; font-weight: 500;">🔒 Khung giờ chuẩn bị (Số liệu đã chốt)</span>`;
   }
 }
 
@@ -10953,7 +10953,7 @@ function renderLeaderboardUI(data) {
         <div style="font-size: 40px; margin-bottom: 12px;">⏳</div>
         <div style="font-size: 20px; font-weight: 700; color: var(--text); margin-bottom: 8px;">Chờ chút nhé</div>
         <div style="font-size: 14px; color: var(--muted); max-width: 420px; margin: 0 auto; line-height: 1.6;">
-          Bảng xếp hạng chỉ xuất hiện thông tin khi tới giờ tổng kết sau khi đóng cổng thi.
+          Bảng xếp hạng chỉ xuất hiện thông tin khi tới khung giờ chuẩn bị sau khi đóng cổng thi.
         </div>
       </div>
     `;
