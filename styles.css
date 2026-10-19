@@ -8630,6 +8630,8 @@ body.study-zen-fullscreen .study-main-col {
 }
 
 .podium-avatar {
+  position: relative;
+  z-index: 1;
   width: 52px !important;
   height: 52px !important;
   border-radius: 50%;
@@ -8665,7 +8667,8 @@ body.study-zen-fullscreen .study-main-col {
   font-size: 22px;
   filter: drop-shadow(0 2px 4px rgba(0,0,0,0.25));
   animation: crownBob 2s ease-in-out infinite alternate;
-  z-index: 2;
+  z-index: 50 !important;
+  pointer-events: none;
 }
 
 .podium-crown.gold {
@@ -9879,6 +9882,7 @@ body.dark-theme .comp-tab-btn.active {
   .podium-crown {
     font-size: 18px;
     top: -14px;
+    z-index: 50 !important;
   }
 
   .podium-crown.gold {
@@ -14001,6 +14005,7 @@ input:disabled {
   .podium-crown {
     font-size: 16px !important;
     top: -12px !important;
+    z-index: 50 !important;
   }
   .podium-crown.gold {
     font-size: 20px !important;

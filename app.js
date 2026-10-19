@@ -10855,8 +10855,8 @@ function renderLeaderboardUI(data) {
     podiumHTML += `
       <div class="podium-col rank-2" data-namecard-user-id="${top2.userId}" style="cursor: pointer;" title="Xem thẻ tên">
         <div class="podium-avatar-wrap">
-          <span class="podium-crown silver">🥈</span>
           <div class="podium-avatar avatar ${top2AvatarClass}">${escapeHTML(top2.avatar || top2.initials || "U")}</div>
+          <span class="podium-crown silver">🥈</span>
         </div>
         <div class="podium-name ${top2NameClass}" title="${escapeHTML(top2.displayName)}">${getFlameSVG(top2.streakTier, 14)} <span>${escapeHTML(top2.displayName)}</span></div>
         <div class="podium-score">⭐ ${top2.score}</div>
@@ -10875,8 +10875,8 @@ function renderLeaderboardUI(data) {
     podiumHTML += `
       <div class="podium-col rank-1" data-namecard-user-id="${top1.userId}" style="cursor: pointer;" title="Xem thẻ tên">
         <div class="podium-avatar-wrap">
-          <span class="podium-crown gold">👑</span>
           <div class="podium-avatar rank-1-avatar avatar avatar-lg ${top1AvatarClass}">${escapeHTML(top1.avatar || top1.initials || "U")}</div>
+          <span class="podium-crown gold">👑</span>
         </div>
         <div class="podium-name font-bold ${top1NameClass}" title="${escapeHTML(top1.displayName)}">${getFlameSVG(top1.streakTier, 16)} <span>${escapeHTML(top1.displayName)}</span></div>
         <div class="podium-score gold-score">⭐ ${top1.score}</div>
@@ -10893,8 +10893,8 @@ function renderLeaderboardUI(data) {
     podiumHTML += `
       <div class="podium-col rank-3" data-namecard-user-id="${top3.userId}" style="cursor: pointer;" title="Xem thẻ tên">
         <div class="podium-avatar-wrap">
-          <span class="podium-crown bronze">🥉</span>
           <div class="podium-avatar avatar ${top3AvatarClass}">${escapeHTML(top3.avatar || top3.initials || "U")}</div>
+          <span class="podium-crown bronze">🥉</span>
         </div>
         <div class="podium-name ${top3NameClass}" title="${escapeHTML(top3.displayName)}">${getFlameSVG(top3.streakTier, 14)} <span>${escapeHTML(top3.displayName)}</span></div>
         <div class="podium-score">⭐ ${top3.score}</div>
