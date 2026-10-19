@@ -10,7 +10,7 @@
   "engines": {
     "node": ">=24"
   },
-  "dependencies": {
+  "devDependencies": {
     "puppeteer": "^25.10.0"
   }
 }
