@@ -9361,6 +9361,18 @@ const HOME_BANNERS_CONFIG = [
     }
   },
   {
+    id: "arena-class-league",
+    title: "Cơ chế mới Arena: Phân bảng đấu theo lớp",
+    image: "public/assets/banner-arena-class-league.jpg?v=20261019_1",
+    // thời hạn: từ 19/10/2026 - 1/11/2026
+    startsAt: new Date("2026-10-19T00:00:00+07:00").getTime(),
+    expiresAt: new Date("2026-11-01T23:59:59+07:00").getTime(),
+    action: () => {
+      if (typeof go === "function") go("arena");
+      else toast("Cơ chế mới: Bảng thi đấu Đấu trường Arena theo lớp!");
+    }
+  },
+  {
     id: "leaderboard-w02",
     title: "Bảng Vàng Tuần 02 — Phỏng Vấn Sâu",
     image: "public/assets/banner-leaderboard-w02.jpg?v=20261018_1",
