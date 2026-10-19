@@ -13,10 +13,10 @@
     />
     <link rel="icon" type="image/png" href="public/assets/research-logo.png" />
     <link href="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.snow.css" rel="stylesheet" />
-    <script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-    <link rel="stylesheet" href="styles.css?v=91" />
+    <script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js" defer></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" defer></script>
+    <link rel="stylesheet" href="styles.css?v=92" />
   </head>
   <body>
     <dialog
@@ -3053,7 +3053,9 @@
         </div>
         <div style="flex: 1; width: 100%; min-height: 0">
           <iframe
-            src="https://drive.google.com/file/d/1f6D7iaooXW8wNsn_43eGrz8awphbW09A/preview"
+            data-src="https://drive.google.com/file/d/1f6D7iaooXW8wNsn_43eGrz8awphbW09A/preview"
+            src="about:blank"
+            loading="lazy"
             width="100%"
             height="100%"
             allow="autoplay"
@@ -3370,6 +3372,6 @@
       </div>
     </dialog>
 
-    <script src="app.js?v=99" defer></script>
+    <script src="app.js?v=100" defer></script>
   </body>
 </html>

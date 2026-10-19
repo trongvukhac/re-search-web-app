@@ -115,6 +115,9 @@ const compState = {
 };
 window.compState = compState;
 
+let sundayCeremonySoundPlayed = false;
+let sundayInteractionCleanup = null;
+
 window.notifyPerkLocked = function(days, featureName) {
   toast(`🔒 Tính năng "${featureName}" mở khóa ở Chuỗi ${days} ngày! Bền bỉ học tập mỗi ngày để mở khóa nhé 🔥`);
 };
@@ -4310,8 +4313,18 @@ if ($("#viewAllContributionsBtn")) {
 if ($("#closeHistory")) {
   $("#closeHistory").onclick = () => $("#historyModal").close();
 }
-$("#openGuide").onclick = () =>
-  document.getElementById("guideModal").showModal();
+if ($("#openGuide")) {
+  $("#openGuide").onclick = () => {
+    const modal = document.getElementById("guideModal");
+    if (modal) {
+      const iframe = modal.querySelector("iframe");
+      if (iframe && !iframe.src && iframe.dataset.src) {
+        iframe.src = iframe.dataset.src;
+      }
+      modal.showModal();
+    }
+  };
+}
 window.addEventListener("keydown", (e) => {
   if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
     e.preventDefault();
@@ -9592,25 +9605,7 @@ function initHomeBannerStack() {
 
 window.initHomeBannerStack = initHomeBannerStack;
 
-const initialCachedUser = getCachedUser();
-if (initialCachedUser) {
-  applySession(initialCachedUser);
-  const initialCachedContribs = getCachedContribs();
-  if (initialCachedContribs) {
-    renderProfileStats(initialCachedContribs);
-  }
-}
 
-renderHome();
-renderPosts();
-renderDocuments();
-const initialRequestedRoute = (location.hash.slice(1) || "home");
-if (initialRequestedRoute === "study" && serverMode) {
-  go("home", false);
-} else {
-  go(initialRequestedRoute, false);
-}
-hydrateServer();
 
 /* ==========================================================================
    RE:SEARCH - HOẠT ĐỘNG THI ĐUA ĐỊNH KỲ HÀNG TUẦN (WEEKLY COMPETITION ARENA)
@@ -10062,15 +10057,12 @@ async function onEnterArena() {
   }
 }
 
-let sundayCeremonySoundPlayed = false;
-let sundayInteractionCleanup = null;
-
 function stopSundayCeremonySound() {
-  if (sundayInteractionCleanup) {
+  if (typeof sundayInteractionCleanup === "function") {
     try { sundayInteractionCleanup(); } catch (e) {}
     sundayInteractionCleanup = null;
   }
-  if (compState.sundayAudio) {
+  if (compState && compState.sundayAudio) {
     try {
       compState.sundayAudio.pause();
       compState.sundayAudio.currentTime = 0;
@@ -12860,5 +12852,29 @@ window.addEventListener("beforeunload", () => {
     navigator.sendBeacon("/api/study/leave");
   }
 });
+
+/* ==========================================================================
+   APPLICATION BOOTSTRAP & INITIAL HYDRATION
+   ========================================================================== */
+const initialCachedUser = getCachedUser();
+if (initialCachedUser) {
+  applySession(initialCachedUser);
+  const initialCachedContribs = getCachedContribs();
+  if (initialCachedContribs) {
+    renderProfileStats(initialCachedContribs);
+  }
+}
+
+renderHome();
+renderPosts();
+renderDocuments();
+const initialRequestedRoute = (location.hash.slice(1) || "home");
+if (initialRequestedRoute === "study" && serverMode) {
+  go("home", false);
+} else {
+  go(initialRequestedRoute, false);
+}
+hydrateServer();
+
 
 
