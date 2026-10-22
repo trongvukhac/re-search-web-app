@@ -528,6 +528,30 @@ function cleanupExpiredTrash() {
   }
 }
 
+// Auto-heal: Tự động khôi phục điểm thưởng đúng hạn (+50⭐) cho các bài thi Chặng 2 nộp trong ngày Thứ Năm (2026-10-22) trước 23:59:59
+try {
+  const p2SessionsToHeal = db.prepare(`
+    SELECT id, user_id, competition_id, phase, total_score 
+    FROM competition_sessions 
+    WHERE competition_id = 5 AND phase = 2 AND on_time_bonus = 0 AND date(created_at) = '2026-10-22'
+  `).all();
+  for (const s of p2SessionsToHeal) {
+    db.prepare(`
+      UPDATE competition_sessions 
+      SET is_on_time = 1, on_time_bonus = 50, total_score = total_score + 50 
+      WHERE id = ?
+    `).run(s.id);
+    db.prepare(`
+      UPDATE competition_phase_results 
+      SET on_time_bonus = 50, best_score = best_score + 50 
+      WHERE user_id = ? AND competition_id = ? AND phase = 2 AND on_time_bonus = 0
+    `).run(s.user_id, s.competition_id);
+    console.log(`[Auto-heal] Đã tự động cộng 50 sao đúng hạn Chặng 2 cho session ${s.id}, user ${s.user_id}`);
+  }
+} catch (e) {
+  console.error("[Auto-heal Error]", e);
+}
+
 const defaultTopics = [
   "Đề tài", "Lý thuyết", "Phương pháp", 
   "Dữ liệu & phân tích", "Viết nghiên cứu", 
@@ -1498,21 +1522,26 @@ function isPhaseOnTimeWindow(comp, phase, vnDate) {
   if (phase !== 1 && phase !== 2) return false;
   if (!comp || !comp.start_date || !vnDate) return false;
 
-  // comp.start_date is 'YYYY-MM-DD' representing Monday of the competition week
-  const mondayMidnight = new Date(comp.start_date + "T00:00:00+07:00").getTime();
-  const currentMs = vnDate.getTime();
+  const ymd = formatYMD(vnDate);
+  if (ymd < comp.start_date || (comp.end_date && ymd > comp.end_date)) return false;
+
+  const dayOfWeek = vnDate.getDay();
+  const hours = vnDate.getHours();
 
   if (phase === 1) {
-    // Giai đoạn 1: Thứ Hai 19:00:00 đến Thứ Ba 23:59:59.999 (Giờ VN)
-    const openMs = mondayMidnight + (19 * 3600 * 1000);
-    const closeMs = mondayMidnight + (1 * 86400 * 1000) + (23 * 3600 + 59 * 60 + 59) * 1000 + 999;
-    return (currentMs >= openMs && currentMs <= closeMs);
-  } else if (phase === 2) {
-    // Giai đoạn 2: Thứ Tư 19:00:00 đến Thứ Năm 23:59:59.999 (Giờ VN)
-    const openMs = mondayMidnight + (2 * 86400 * 1000) + (19 * 3600 * 1000);
-    const closeMs = mondayMidnight + (3 * 86400 * 1000) + (23 * 3600 + 59 * 60 + 59) * 1000 + 999;
-    return (currentMs >= openMs && currentMs <= closeMs);
+    // Chặng 1: Thứ Hai 19:00:00 đến hết Thứ Ba 23:59:59 (Giờ VN)
+    if (dayOfWeek === 1) return hours >= 19;
+    if (dayOfWeek === 2) return true;
+    return false;
   }
+
+  if (phase === 2) {
+    // Chặng 2: Thứ Tư 19:00:00 đến hết Thứ Năm 23:59:59 (Giờ VN)
+    if (dayOfWeek === 3) return hours >= 19;
+    if (dayOfWeek === 4) return true;
+    return false;
+  }
+
   return false;
 }
 

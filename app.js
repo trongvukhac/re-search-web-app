@@ -11163,7 +11163,7 @@ function openQuizStartConfirmModal(phase) {
   }
 
   if (proceedBtnEl) {
-    proceedBtnEl.innerHTML = isOnTime ? "Bắt đầu thi (+50 ⭐)" : (isCatchUp ? `Bắt đầu làm bù GĐ ${targetPhase}` : "Bắt đầu thi ngay");
+    proceedBtnEl.innerHTML = isOnTime ? "Bắt đầu thi (+50 ⭐)" : (isCatchUp ? `Bắt đầu làm bù Chặng ${targetPhase}` : "Bắt đầu thi ngay");
   }
 
   try {
