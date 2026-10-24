@@ -594,22 +594,22 @@ function getFlameSVG(tier = 0, size = 20, extraClass = '') {
       <stop offset="100%" stop-color="#ffffff"/>
     `;
   } else {
-    // Tier 0: Emerald Forest Green
+    // Tier 0: Radiant Luminous Emerald-Mint Fire
     outerGrad = `
-      <stop offset="0%" stop-color="#0e3324"/>
-      <stop offset="40%" stop-color="#194a37"/>
-      <stop offset="80%" stop-color="#246247"/>
-      <stop offset="100%" stop-color="#40916c"/>
+      <stop offset="0%" stop-color="#047857"/>
+      <stop offset="35%" stop-color="#059669"/>
+      <stop offset="70%" stop-color="#10b981"/>
+      <stop offset="100%" stop-color="#34d399"/>
     `;
     midGrad = `
-      <stop offset="0%" stop-color="#246247"/>
-      <stop offset="50%" stop-color="#2d7a58"/>
-      <stop offset="85%" stop-color="#52b788"/>
-      <stop offset="100%" stop-color="#b7e4c7"/>
+      <stop offset="0%" stop-color="#10b981"/>
+      <stop offset="45%" stop-color="#34d399"/>
+      <stop offset="80%" stop-color="#6ee7b7"/>
+      <stop offset="100%" stop-color="#a7f3d0"/>
     `;
     coreGrad = `
-      <stop offset="0%" stop-color="#95d5b2"/>
-      <stop offset="65%" stop-color="#d8f3dc"/>
+      <stop offset="0%" stop-color="#6ee7b7"/>
+      <stop offset="60%" stop-color="#d1fae5"/>
       <stop offset="100%" stop-color="#ffffff"/>
     `;
   }
@@ -1898,10 +1898,11 @@ function postCard(post) {
     : "";
   const authorUserId = (!post.anonymous && post.authorId) ? post.authorId : "";
   const ncAttr = authorUserId ? `data-namecard-user-id="${authorUserId}" style="cursor: pointer;" title="Xem thẻ tên"` : "";
-  return `<article class="post-card ${post.authorRole === "admin" ? "admin-post" : ""}" data-post-id="${post.id}" style="position: relative;">
+  return `<article class="post-card ${post.authorRole === "admin" ? "admin-post" : ""}" data-post-id="${post.id}" data-topic="${escapeHTML(post.topic)}" style="position: relative;">
+    <div class="post-card-accent-bar"></div>
     ${adminBtns}${editBtn}
     <span class="avatar avatar-xs ${getAvatarClass(post.streakTier, post.anonymous, post.authorRole)}" ${ncAttr}>${post.initials}</span>
-    <div>
+    <div class="post-main-content">
       <div class="post-meta" style="${post.lecturerRecommended ? 'margin: 0 0 2px 0;' : 'margin: 6px 0 2px 0;'}">
         <div style="line-height: 1.2;">${pinnedIcon}<b class="${getNameClass(post.streakTier)}" ${ncAttr}>${escapeHTML(post.author)}</b>${post.authorRole === "lecturer" ? ' <span style="color: var(--primary); font-weight: 700; margin-left: 4px; font-size: 11px;">[Giảng viên]</span>' : ""}${post.anonymous ? " · Ẩn danh" : ""} · ${post.time}${getEditedIndicator(post.editedAt)}</div>
         ${post.lecturerRecommended ? '<div style="font-size: 11px; color: var(--primary); font-weight: 600; margin-top: 3px; display: flex; align-items: center; gap: 4px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path></svg> Giảng viên đề xuất</div>' : ''}
@@ -1909,7 +1910,19 @@ function postCard(post) {
       <h3 style="margin-top: 0;">${escapeHTML(post.title)}</h3>
       <div class="post-copy-preview">${escapeHTML(post.excerpt)}</div>
     </div>
-    <div class="post-stats"><span class="post-tag">${post.topic}</span><span style="font-weight:600; color:var(--primary); display: inline-flex; align-items: center; gap: 3px;"><svg class="icon-upvote-svg" width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 4 3 20 21 20"/></svg>${post.upvotes}</span><span style="font-weight:600; color:var(--sage-5); display: inline-flex; align-items: center; gap: 4px;"><svg class="icon-chat-svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>${post.responses}</span></div>
+    <div class="post-stats">
+      <span class="post-tag">${escapeHTML(post.topic)}</span>
+      <div class="post-metrics">
+        <span class="post-metric-pill post-metric-votes" title="Lượt đánh giá hữu ích">
+          <svg class="icon-upvote-svg" width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 4 3 20 21 20"/></svg>
+          <span>${post.upvotes}</span>
+        </span>
+        <span class="post-metric-pill post-metric-replies" title="Số phản hồi thảo luận">
+          <svg class="icon-chat-svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          <span>${post.responses}</span>
+        </span>
+      </div>
+    </div>
   </article>`;
 }
 
@@ -2020,6 +2033,24 @@ function renderHome() {
       renderPosts();
     }),
   );
+
+  window.applyQuickSearch = (keyword) => {
+    const homeSearch = document.getElementById("homeSearch");
+    if (homeSearch) {
+      homeSearch.value = keyword;
+      homeSearch.dispatchEvent(new Event("input", { bubbles: true }));
+      homeSearch.focus();
+      homeSearch.scrollIntoView({ behavior: "smooth", block: "center" });
+    } else {
+      go("forum");
+      const forumSearch = document.getElementById("forumSearch");
+      if (forumSearch) {
+        forumSearch.value = keyword;
+        forumSearch.dispatchEvent(new Event("input", { bubbles: true }));
+        forumSearch.focus();
+      }
+    }
+  };
 
   const pinnedPost = posts.find((p) => p.isPinned);
   const pinnedContainer = $("#pinnedNotificationContainer");
