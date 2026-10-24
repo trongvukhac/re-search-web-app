@@ -2566,6 +2566,14 @@
         >
           🗑️ Thùng rác (7 ngày) <span id="adminTrashBadge" style="display:none; background:#64748b; color:#fff; font-size:10px; border-radius:10px; padding:1px 6px; margin-left:4px; font-weight:bold;">0</span>
         </button>
+        <button
+          type="button"
+          class="auth-tab admin-tab"
+          data-admin-tab="hidden"
+          id="adminTabHiddenBtn"
+        >
+          👁️ Bài viết bị ẩn <span id="adminHiddenBadge" style="display:none; background:#d97706; color:#fff; font-size:10px; border-radius:10px; padding:1px 6px; margin-left:4px; font-weight:bold;">0</span>
+        </button>
       </div>
 
       <div id="adminTabOverview" class="admin-tab-content">
@@ -2863,6 +2871,39 @@
             </thead>
             <tbody id="adminTrashBody">
               <tr><td colspan="6" style="padding: 24px; text-align: center; color: var(--muted)">Đang tải...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- TAB NỘI DUNG BỊ ẨN (ADMIN) -->
+      <div id="adminTabHidden" class="admin-tab-content" style="display: none">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:8px;">
+          <p style="font-size:13px; color:var(--muted); margin:0;">
+            Các bài đăng và bình luận bị ẩn tạm thời (không bị tự động xóa sau 7 ngày). Khi mở lại, điểm hoạt động sẽ được hoàn trả (+2 điểm cho bài viết, +4 điểm cho bình luận).
+          </p>
+          <button type="button" class="button button-subtle button-small" id="refreshAdminHiddenBtn" onclick="loadAdminHidden()">Làm mới ⟳</button>
+        </div>
+        
+        <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+          <button type="button" class="button button-sm button-outline active" id="adminHiddenFilterAll" onclick="filterAdminHidden('all')">Tất cả</button>
+          <button type="button" class="button button-sm button-outline" id="adminHiddenFilterPosts" onclick="filterAdminHidden('post')">Bài viết bị ẩn</button>
+          <button type="button" class="button button-sm button-outline" id="adminHiddenFilterResponses" onclick="filterAdminHidden('response')">Bình luận bị ẩn</button>
+        </div>
+
+        <div style="max-height: 420px; overflow-y: auto">
+          <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 13px;">
+            <thead>
+              <tr style="border-bottom: 1px solid var(--sage-2); color: var(--muted);">
+                <th style="padding: 10px 8px">Loại</th>
+                <th style="padding: 10px 8px">Nội dung</th>
+                <th style="padding: 10px 8px">Tác giả</th>
+                <th style="padding: 10px 8px">Thời gian ẩn</th>
+                <th style="padding: 10px 8px; text-align:right">Thao tác</th>
+              </tr>
+            </thead>
+            <tbody id="adminHiddenBody">
+              <tr><td colspan="5" style="padding: 24px; text-align: center; color: var(--muted)">Đang tải...</td></tr>
             </tbody>
           </table>
         </div>

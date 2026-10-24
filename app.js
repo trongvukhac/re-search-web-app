@@ -1311,7 +1311,7 @@ function renderLeaderboard() {
   if (!list || list.length === 0) {
     let emptyMsg = "Chưa có dữ liệu đóng góp.";
     if (isStreak) emptyMsg = "Chưa có dữ liệu chuỗi.";
-    if (isArena) emptyMsg = "Chưa có dữ liệu thi đua tuần này.";
+    if (isArena) emptyMsg = "Chưa có dữ liệu thi đua từ các tuần đã chốt.";
     lbEl.innerHTML = `<p style="color: var(--muted); font-size: 13px; text-align: center; padding: 12px 0;">${emptyMsg}</p>`;
     return;
   }
@@ -1721,6 +1721,10 @@ function renderActivityRow(r) {
     post_deleted: "✕",
     post_hidden: "👁️",
     response_hidden: "👁️",
+    post_unhidden: "↺",
+    response_unhidden: "↺",
+    post_restored: "↺",
+    response_restored: "↺",
     weekly_active_reward: "🎁",
     post_read: "📖",
     document_read: "📄",
@@ -1753,9 +1757,13 @@ function renderActivityRow(r) {
       case "document_comment_deleted": return escapeHTML(r.reason || `Thảo luận tài liệu của bạn đã bị xóa`);
       case "admin_adjustment": return r.points > 0 ? `Được TA cộng điểm: ${escapeHTML(r.reason || '')}` : `Bị trừ điểm do vi phạm quy định: ${escapeHTML(r.reason || '')}`;
       case "response_deleted": return `Phản hồi của bạn đã bị xóa`;
-      case "post_deleted": return `Câu hỏi của bạn đã bị xóa`;
-      case "post_hidden": return `Bài đăng của bạn đã bị xoá`;
-      case "response_hidden": return `Bài đăng gốc đã bị xoá. Phản hồi của bạn không được tính điểm.`;
+      case "post_deleted": return `Câu hỏi của bạn đã bị chuyển vào Thùng rác`;
+      case "post_hidden": return `Bài đăng của bạn đã bị ẩn`;
+      case "response_hidden": return `Bình luận của bạn đã bị ẩn do bài viết gốc bị ẩn`;
+      case "post_unhidden": return `Bài đăng của bạn đã được mở lại (huỷ ẩn)`;
+      case "response_unhidden": return `Bình luận của bạn đã được mở lại`;
+      case "post_restored": return `Bài đăng của bạn đã được khôi phục từ Thùng rác`;
+      case "response_restored": return `Bình luận của bạn đã được khôi phục`;
       case "weekly_active_reward": return r.reason || `Điểm năng động tuần`;
       case "competition_reward": return escapeHTML(r.reason || `Thưởng Bảng xếp hạng tuần Đấu trường Arena`);
       case "competition_phase_bonus": return escapeHTML(r.reason || `Thưởng tham gia các chặng thi đấu Đấu trường Arena`);
@@ -1834,9 +1842,12 @@ function getEditedIndicator(editedAt) {
 }
 
 function postCard(post) {
-  const adminBtn =
+  const adminBtns =
     session?.role === "admin"
-      ? `<button class="button button-outline" style="position:absolute; right: 40px; top: 10px; font-size: 10px; padding: 2px 6px; color: var(--error); border-color: var(--error);" onclick="event.stopPropagation(); hidePost(${post.id})">Ẩn bài</button>`
+      ? `<div style="position:absolute; right: 40px; top: 10px; display: flex; gap: 4px; z-index: 2;">
+          <button class="button button-outline" style="font-size: 10px; padding: 2px 7px; color: var(--error); border-color: var(--error); font-weight: 600;" onclick="event.stopPropagation(); deletePost(${post.id})" title="Chuyển vào thùng rác (lưu trữ 7 ngày, trừ điểm hoạt động)">🗑️ Xoá</button>
+          <button class="button button-outline" style="font-size: 10px; padding: 2px 7px; color: #d97706; border-color: #d97706;" onclick="event.stopPropagation(); hidePost(${post.id})" title="Ẩn bài tạm thời khỏi diễn đàn (trừ điểm hoạt động, có thể mở lại)">Ẩn</button>
+        </div>`
       : "";
   const editBtn = post.isAuthor ? renderEditBtn(post.id, post.createdAt, 'posts') : "";
   const pinnedIcon = post.isPinned
@@ -1845,7 +1856,7 @@ function postCard(post) {
   const authorUserId = (!post.anonymous && post.authorId) ? post.authorId : "";
   const ncAttr = authorUserId ? `data-namecard-user-id="${authorUserId}" style="cursor: pointer;" title="Xem thẻ tên"` : "";
   return `<article class="post-card ${post.authorRole === "admin" ? "admin-post" : ""}" data-post-id="${post.id}" style="position: relative;">
-    ${adminBtn}${editBtn}
+    ${adminBtns}${editBtn}
     <span class="avatar avatar-xs ${getAvatarClass(post.streakTier, post.anonymous, post.authorRole)}" ${ncAttr}>${post.initials}</span>
     <div>
       <div class="post-meta" style="${post.lecturerRecommended ? 'margin: 0 0 2px 0;' : 'margin: 6px 0 2px 0;'}">
@@ -1860,14 +1871,18 @@ function postCard(post) {
 }
 
 window.hidePost = async (id) => {
-  if (confirm("Bạn có chắc chắn muốn ẩn bài đăng này không?")) {
+  if (confirm("Bạn có chắc chắn muốn ẩn bài đăng này?\n- Bài đăng sẽ bị ẩn khỏi diễn đàn (không bị tự động xóa sau 7 ngày).\n- Tác giả sẽ bị trừ điểm hoạt động (-2 điểm).\n- Bạn có thể mở lại bài bất cứ lúc nào trong bảng quản trị để hoàn lại điểm.")) {
     try {
       await requestAPI(`/api/admin/posts/${id}/status`, {
         method: "PATCH",
         body: JSON.stringify({ status: "hidden" }),
       });
-      toast("Đã ẩn bài đăng.");
-      hydrateServer();
+      toast("Đã ẩn bài đăng và trừ điểm hoạt động.");
+      if (currentActiveRoute === "post-detail" && window.currentDetailPostId == id) {
+        openDetail(id, false);
+      } else {
+        hydrateServer();
+      }
     } catch (e) {
       toast(e.message);
     }
@@ -1875,15 +1890,34 @@ window.hidePost = async (id) => {
 };
 
 window.deletePost = async (id) => {
-  if (confirm("Chuyển bài đăng này vào Thùng rác (lưu trữ 7 ngày)?\nSau 7 ngày bài viết sẽ bị xóa vĩnh viễn.")) {
+  if (confirm("Chuyển bài đăng này vào Thùng rác (lưu trữ 7 ngày)?\n- Tác giả sẽ bị trừ điểm hoạt động (-2 điểm).\n- Sau 7 ngày, bài viết và toàn bộ nội dung sẽ bị xóa vĩnh viễn.\n- Trong vòng 7 ngày, Admin có thể khôi phục từ Thùng rác để cộng lại điểm.")) {
     try {
       await requestAPI(`/api/admin/posts/${id}/status`, {
         method: "PATCH",
         body: JSON.stringify({ status: "deleted" }),
       });
-      toast("Đã chuyển bài đăng vào Thùng rác.");
+      toast("Đã chuyển bài đăng vào Thùng rác và trừ điểm hoạt động.");
       go("forum");
       hydrateServer();
+    } catch (e) {
+      toast(e.message);
+    }
+  }
+};
+
+window.unhidePost = async (id) => {
+  if (confirm("Mở lại (huỷ ẩn) bài đăng này trên diễn đàn?\n- Bài đăng sẽ hiển thị công khai trở lại.\n- Điểm hoạt động sẽ được cộng lại cho tác giả (+2 điểm).")) {
+    try {
+      await requestAPI(`/api/admin/posts/${id}/status`, {
+        method: "PATCH",
+        body: JSON.stringify({ status: "visible" }),
+      });
+      toast("Đã mở lại bài đăng và hoàn trả điểm cho tác giả!");
+      if (currentActiveRoute === "post-detail" && window.currentDetailPostId == id) {
+        openDetail(id, false);
+      } else {
+        hydrateServer();
+      }
     } catch (e) {
       toast(e.message);
     }
@@ -3154,11 +3188,24 @@ async function openDetail(id, updateHash = true) {
     let adminBtns = "";
     if (session?.role === "admin") {
       const pinText = post.isPinned ? "Bỏ ghim" : "Ghim bài";
-      adminBtns = `<button class="button button-outline" style="color: var(--primary); border-color: var(--primary);" onclick="pinPost(${post.id}, ${!post.isPinned})">${pinText}</button>
-                   <button class="button button-outline" style="color: #d97706; border-color: #d97706;" onclick="hidePost(${post.id})">Ẩn bài</button>
-                   <button class="button button-outline" style="color: var(--error); border-color: var(--error);" onclick="deletePost(${post.id})">🗑️ Xoá bài</button>`;
+      if (post.status === "hidden") {
+        adminBtns = `<button class="button button-outline" style="color: var(--primary); border-color: var(--primary);" onclick="pinPost(${post.id}, ${!post.isPinned})">${pinText}</button>
+                     <button class="button button-outline" style="color: #166534; border-color: #166534; background: rgba(34,197,94,0.1); font-weight: 700;" onclick="unhidePost(${post.id})">👁️ Mở lại bài (Huỷ ẩn)</button>
+                     <button class="button button-outline" style="color: var(--error); border-color: var(--error); font-weight: 600;" onclick="deletePost(${post.id})">🗑️ Xoá bài</button>`;
+      } else {
+        adminBtns = `<button class="button button-outline" style="color: var(--primary); border-color: var(--primary);" onclick="pinPost(${post.id}, ${!post.isPinned})">${pinText}</button>
+                     <button class="button button-outline" style="color: var(--error); border-color: var(--error); font-weight: 600;" onclick="deletePost(${post.id})">🗑️ Xoá bài</button>
+                     <button class="button button-outline" style="color: #d97706; border-color: #d97706;" onclick="hidePost(${post.id})">Ẩn bài</button>`;
+      }
     }
     const editBtn = post.isAuthor ? renderEditBtn(post.id, post.createdAt, 'posts') : "";
+
+    const hiddenBanner = post.status === "hidden"
+      ? `<div style="background: rgba(217,119,6,0.12); border: 1px solid #d97706; color: #b45309; border-radius: 8px; padding: 10px 14px; margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between; font-size: 13px; gap: 8px; flex-wrap: wrap;">
+          <span>⚠️ <strong>Bài viết này đang bị ẩn</strong> (Đã trừ 2 điểm hoạt động, bài không bị xoá sau 7 ngày).</span>
+          <button class="button button-small" style="background: #166534; color: #fff; border: 0; padding: 4px 10px; font-weight: 600; white-space: nowrap;" onclick="unhidePost(${post.id})">Mở lại bài ngay</button>
+        </div>`
+      : "";
 
     if ($("#postDetailBreadcrumbTopic")) {
       $("#postDetailBreadcrumbTopic").textContent = post.topic;
@@ -3172,6 +3219,7 @@ async function openDetail(id, updateHash = true) {
     }
 
     $("#detailContent").innerHTML = `
+      ${hiddenBanner}
       <div class="modal-head" style="position: relative; margin-bottom: 16px;">
         <div style="flex: 1;">
           <p class="eyebrow">${escapeHTML(post.topic.toUpperCase())}</p>
@@ -4181,6 +4229,133 @@ window.restoreTrashItem = async function(type, id) {
   }
 };
 
+let cachedHiddenData = { posts: [], responses: [] };
+let currentHiddenFilter = "all";
+
+async function loadAdminHidden() {
+  const tbody = $("#adminHiddenBody");
+  if (!tbody) return;
+  tbody.innerHTML = `<tr><td colspan="5" style="padding: 24px; text-align: center; color: var(--muted)">Đang tải danh sách nội dung bị ẩn...</td></tr>`;
+  try {
+    const data = await requestAPI("/api/admin/hidden");
+    cachedHiddenData = data;
+    const totalCount = (data.posts?.length || 0) + (data.responses?.length || 0);
+    if ($("#adminHiddenBadge")) {
+      if (totalCount > 0) {
+        $("#adminHiddenBadge").textContent = totalCount;
+        $("#adminHiddenBadge").style.display = "inline-block";
+      } else {
+        $("#adminHiddenBadge").style.display = "none";
+      }
+    }
+    renderAdminHiddenTable();
+  } catch (err) {
+    tbody.innerHTML = `<tr><td colspan="5" style="padding: 24px; text-align: center; color: #dc2626">Lỗi tải danh sách: ${escapeHTML(err.message)}</td></tr>`;
+  }
+}
+window.loadAdminHidden = loadAdminHidden;
+
+function filterAdminHidden(filter) {
+  currentHiddenFilter = filter;
+  $$("#adminTabHidden .button-sm").forEach(b => b.classList.remove("active"));
+  if (filter === 'all') $("#adminHiddenFilterAll")?.classList.add("active");
+  if (filter === 'post') $("#adminHiddenFilterPosts")?.classList.add("active");
+  if (filter === 'response') $("#adminHiddenFilterResponses")?.classList.add("active");
+  renderAdminHiddenTable();
+}
+window.filterAdminHidden = filterAdminHidden;
+
+function renderAdminHiddenTable() {
+  const tbody = $("#adminHiddenBody");
+  if (!tbody) return;
+  
+  let items = [];
+  if (currentHiddenFilter === 'all' || currentHiddenFilter === 'post') {
+    items = items.concat(cachedHiddenData.posts || []);
+  }
+  if (currentHiddenFilter === 'all' || currentHiddenFilter === 'response') {
+    items = items.concat(cachedHiddenData.responses || []);
+  }
+
+  items.sort((a, b) => new Date(b.hiddenAt || 0) - new Date(a.hiddenAt || 0));
+
+  if (!items.length) {
+    tbody.innerHTML = `<tr><td colspan="5" style="padding: 24px; text-align: center; color: var(--muted)">Không có bài viết hoặc bình luận nào đang bị ẩn.</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = items.map(item => {
+    const isPost = item.type === 'post';
+    const typeBadge = isPost
+      ? `<span style="background: rgba(217,119,6,0.15); color: #b45309; padding: 2px 8px; border-radius: 12px; font-weight: 700; font-size: 11px;">Bài đăng</span>`
+      : `<span style="background: rgba(59,130,246,0.15); color: #1d4ed8; padding: 2px 8px; border-radius: 12px; font-weight: 700; font-size: 11px;">Bình luận</span>`;
+
+    const contentHtml = isPost
+      ? `<strong style="color:var(--ink); cursor:pointer;" onclick="$('#adminModal').close(); openDetail(${item.id});" title="Bấm để xem chi tiết bài đăng">${escapeHTML(item.title)} 🔗</strong><br><small style="color:var(--muted)">Chủ đề: ${escapeHTML(item.topic)}</small>`
+      : `<span style="color:var(--ink); font-style: italic;">"${escapeHTML(item.excerpt)}"</span><br><small style="color:var(--muted)">Trong bài: ${escapeHTML(item.postTitle)}</small>`;
+
+    const authorHtml = `<strong>${escapeHTML(item.authorName || 'Vô danh')}</strong>` +
+      (item.studentId ? `<br><small style="color:var(--muted)">MSSV: ${escapeHTML(item.studentId)}</small>` : '');
+
+    const hiddenTimeFormatted = new Date(item.hiddenAt).toLocaleString("vi-VN", {
+      hour: "2-digit",
+      minute: "2-digit",
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric"
+    });
+
+    return `<tr style="border-bottom: 1px solid var(--sage-2);">
+      <td style="padding: 10px 8px; white-space: nowrap;">${typeBadge}</td>
+      <td style="padding: 10px 8px; max-width: 280px; word-break: break-word;">${contentHtml}</td>
+      <td style="padding: 10px 8px; white-space: nowrap;">${authorHtml}</td>
+      <td style="padding: 10px 8px; white-space: nowrap; color: var(--muted); font-size: 12px;">${hiddenTimeFormatted}</td>
+      <td style="padding: 10px 8px; text-align: right; white-space: nowrap;">
+        <button type="button" class="button button-small" style="background:#166534; color:#fff; border:0; padding: 3px 10px; font-size: 11px; margin-right: 4px; font-weight: 600;" onclick="unhideItemFromAdmin('${item.type}', ${item.id})">Mở lại ↺</button>
+        <button type="button" class="button button-outline button-small" style="color:var(--error); border-color:var(--error); padding: 3px 8px; font-size: 11px;" onclick="moveHiddenToTrash('${item.type}', ${item.id})" title="Chuyển vào thùng rác">🗑️ Xoá</button>
+      </td>
+    </tr>`;
+  }).join("");
+}
+
+window.unhideItemFromAdmin = async function(type, id) {
+  const isPost = type === 'post';
+  const typeText = isPost ? 'bài đăng' : 'bình luận';
+  const pointsText = isPost ? '+2' : '+4';
+  if (!confirm(`Mở lại (huỷ ẩn) ${typeText} này trên diễn đàn?\nĐiểm hoạt động sẽ được hoàn trả (${pointsText} điểm cho tác giả).`)) return;
+  try {
+    const url = isPost ? `/api/admin/posts/${id}/status` : `/api/admin/responses/${id}/status`;
+    await requestAPI(url, {
+      method: "PATCH",
+      body: JSON.stringify({ status: "visible" })
+    });
+    toast(`Đã mở lại ${typeText} và hoàn trả điểm thành công!`);
+    loadAdminHidden();
+    hydrateServer();
+  } catch (err) {
+    toast(`Lỗi: ${err.message}`);
+  }
+};
+
+window.moveHiddenToTrash = async function(type, id) {
+  const isPost = type === 'post';
+  const typeText = isPost ? 'bài đăng' : 'bình luận';
+  if (!confirm(`Chuyển ${typeText} này vào Thùng rác (lưu trữ 7 ngày)?\nSau 7 ngày nội dung sẽ bị xóa vĩnh viễn.`)) return;
+  try {
+    const url = isPost ? `/api/admin/posts/${id}/status` : `/api/admin/responses/${id}/status`;
+    await requestAPI(url, {
+      method: "PATCH",
+      body: JSON.stringify({ status: "deleted" })
+    });
+    toast(`Đã chuyển ${typeText} vào Thùng rác.`);
+    loadAdminHidden();
+    loadAdminTrash();
+    hydrateServer();
+  } catch (err) {
+    toast(`Lỗi: ${err.message}`);
+  }
+};
+
 let adminMembersCache = [];
 
 function renderAdminUserRows(users) {
@@ -4411,6 +4586,10 @@ $$(".admin-tab").forEach((tab) => {
       $("#adminTabTrash").style.display = "block";
       loadAdminTrash();
     }
+    if (target === "hidden") {
+      $("#adminTabHidden").style.display = "block";
+      loadAdminHidden();
+    }
   });
 });
 
@@ -4427,6 +4606,8 @@ window.switchAdminTab = switchAdminTab;
 $("#adminButton").onclick = async () => {
   if (serverMode) {
     try {
+      loadAdminTrash();
+      loadAdminHidden();
       $$(".admin-tab")[0].click(); // Click "Overview" tab to load it
     } catch (e) {
       toast("Không thể tải dữ liệu quản trị.");

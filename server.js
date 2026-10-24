@@ -517,11 +517,22 @@ try { db.exec("ALTER TABLE responses ADD COLUMN deleted_at TEXT;"); } catch (e) 
 
 function cleanupExpiredTrash() {
   try {
-    // Xóa vĩnh viễn các bài đăng và phản hồi trong thùng rác đã quá 7 ngày
-    const deletedPosts = db.prepare("DELETE FROM posts WHERE status = 'deleted' AND deleted_at IS NOT NULL AND datetime(deleted_at) < datetime('now', '-7 days')").run();
+    // Xóa vĩnh viễn các bài đăng trong thùng rác đã quá 7 ngày cùng toàn bộ nội dung liên quan
+    const expiredPosts = db.prepare("SELECT id FROM posts WHERE status = 'deleted' AND deleted_at IS NOT NULL AND datetime(deleted_at) < datetime('now', '-7 days')").all();
+    if (expiredPosts.length > 0) {
+      const expiredPostIds = expiredPosts.map(p => p.id);
+      const placeholders = expiredPostIds.map(() => '?').join(',');
+      db.prepare(`DELETE FROM responses WHERE post_id IN (${placeholders})`).run(...expiredPostIds);
+      db.prepare(`DELETE FROM saved_posts WHERE post_id IN (${placeholders})`).run(...expiredPostIds);
+      db.prepare(`DELETE FROM votes WHERE target_type='post' AND target_id IN (${placeholders})`).run(...expiredPostIds);
+      const deletedPosts = db.prepare(`DELETE FROM posts WHERE id IN (${placeholders})`).run(...expiredPostIds);
+      console.log(`[Trash Cleanup] Đã xóa vĩnh viễn ${deletedPosts.changes} bài đăng quá hạn 7 ngày.`);
+    }
+
+    // Xóa các phản hồi lẻ trong thùng rác đã quá 7 ngày
     const deletedResponses = db.prepare("DELETE FROM responses WHERE status = 'deleted' AND deleted_at IS NOT NULL AND datetime(deleted_at) < datetime('now', '-7 days')").run();
-    if (deletedPosts.changes > 0 || deletedResponses.changes > 0) {
-      console.log(`[Trash Cleanup] Đã xóa vĩnh viễn ${deletedPosts.changes} bài đăng và ${deletedResponses.changes} phản hồi quá hạn 7 ngày.`);
+    if (deletedResponses.changes > 0) {
+      console.log(`[Trash Cleanup] Đã xóa vĩnh viễn ${deletedResponses.changes} phản hồi quá hạn 7 ngày.`);
     }
   } catch (e) {
     console.error("[Trash Cleanup Error]", e);
@@ -1104,6 +1115,7 @@ function serializePost(row, viewer) {
     lecturerRecommended: Boolean(row.lecturer_recommended > 0),
     isSaved: Boolean(row.is_saved),
     readCount: Number(row.read_count || 0),
+    status: row.status || 'visible',
   };
 }
 function listPosts(viewer, search = "") {
@@ -2029,6 +2041,7 @@ function awardCompetitionSundayRewards(competitionId) {
     `).all(competitionId);
 
     if (!participants.length) {
+      db.prepare("UPDATE weekly_competitions SET status = 'concluded' WHERE id = ?").run(competitionId);
       return { awarded: 0, message: "Chưa có thành viên nào tham gia tuần này." };
     }
 
@@ -2518,17 +2531,18 @@ async function api(request, response, url) {
   const postIdMatch = pathName.match(/^\/api\/posts\/(\d+)$/);
   if (method === "GET" && postIdMatch) {
     const viewer = sessionFrom(request) || { role: "student" };
+    const allowHidden = isAdmin(viewer) ? 1 : 0;
     const row = db
       .prepare(
-        `SELECT p.*,u.display_name,u.avatar,u.role,(SELECT coalesce(sum(vote_value),0) FROM votes v WHERE v.target_type='post' AND v.target_id=p.id) helpful_count,(SELECT count(*) FROM responses r WHERE r.post_id=p.id AND r.status='visible') response_count,(SELECT count(*) FROM votes v JOIN users vu ON vu.id=v.user_id WHERE v.target_type='post' AND v.target_id=p.id AND v.vote_value > 0 AND vu.role='lecturer') lecturer_recommended,(SELECT 1 FROM saved_posts sp WHERE sp.post_id=p.id AND sp.user_id=?) is_saved FROM posts p JOIN users u ON u.id=p.author_id WHERE p.id=? AND p.status='visible'`,
+        `SELECT p.*,u.display_name,u.avatar,u.role,(SELECT coalesce(sum(vote_value),0) FROM votes v WHERE v.target_type='post' AND v.target_id=p.id) helpful_count,(SELECT count(*) FROM responses r WHERE r.post_id=p.id AND (r.status='visible' OR (r.status='hidden' AND ?=1))) response_count,(SELECT count(*) FROM votes v JOIN users vu ON vu.id=v.user_id WHERE v.target_type='post' AND v.target_id=p.id AND v.vote_value > 0 AND vu.role='lecturer') lecturer_recommended,(SELECT 1 FROM saved_posts sp WHERE sp.post_id=p.id AND sp.user_id=?) is_saved FROM posts p JOIN users u ON u.id=p.author_id WHERE p.id=? AND (p.status='visible' OR (p.status='hidden' AND ?=1))`,
       )
-      .get(viewer?.id || null, Number(postIdMatch[1]));
+      .get(allowHidden, viewer?.id || null, Number(postIdMatch[1]), allowHidden);
     if (!row) return error(response, 404, "Không tìm thấy bài đăng.");
     const responses = db
       .prepare(
-        `SELECT r.*,u.display_name,u.avatar,u.role,(SELECT coalesce(sum(vote_value),0) FROM votes v WHERE v.target_type='response' AND v.target_id=r.id) helpful_count,(SELECT count(*) FROM votes v JOIN users vu ON vu.id=v.user_id WHERE v.target_type='response' AND v.target_id=r.id AND v.vote_value > 0 AND vu.role='lecturer') lecturer_recommended FROM responses r JOIN users u ON u.id=r.author_id WHERE r.post_id=? AND r.status='visible' ORDER BY r.created_at ASC`,
+        `SELECT r.*,u.display_name,u.avatar,u.role,(SELECT coalesce(sum(vote_value),0) FROM votes v WHERE v.target_type='response' AND v.target_id=r.id) helpful_count,(SELECT count(*) FROM votes v JOIN users vu ON vu.id=v.user_id WHERE v.target_type='response' AND v.target_id=r.id AND v.vote_value > 0 AND vu.role='lecturer') lecturer_recommended FROM responses r JOIN users u ON u.id=r.author_id WHERE r.post_id=? AND (r.status='visible' OR (r.status='hidden' AND ?=1)) ORDER BY r.created_at ASC`,
       )
-      .all(row.id)
+      .all(row.id, allowHidden)
       .map((r) => ({
         id: r.id,
         parentId: r.parent_id || null,
@@ -2821,21 +2835,7 @@ async function api(request, response, url) {
     }));
 
     // 3. TOP THI ĐUA (ARENA)
-    const vnNow = getVietnamNow();
-    const comp = getOrCreateCurrentCompetition(vnNow);
-
-    let targetCompId = comp.id;
-    const hasCurrentResults = db.prepare("SELECT 1 FROM competition_phase_results WHERE competition_id = ? LIMIT 1").get(comp.id);
-    if (!hasCurrentResults) {
-      const latestWithResults = db.prepare(`
-        SELECT competition_id FROM competition_phase_results 
-        ORDER BY competition_id DESC LIMIT 1
-      `).get();
-      if (latestWithResults) {
-        targetCompId = latestWithResults.competition_id;
-      }
-    }
-
+    // Xếp theo tổng điểm tất cả các tuần đã chốt (chỉ cập nhật vào ngày Chủ Nhật khi c.status = 'concluded', không lấy tuần đang diễn ra)
     let targetClass = "06";
     if (user && user.student_id) {
       const cls = getArenaClassByStudentId(user.student_id);
@@ -2853,13 +2853,15 @@ async function api(request, response, url) {
         u.student_id as studentId,
         u.class_name as className,
         sum(r.best_score) as totalScore,
+        count(DISTINCT r.competition_id) as weeksCount,
         min(r.updated_at) as firstCompletedAt
       FROM users u
       JOIN competition_phase_results r ON u.id = r.user_id
-      WHERE r.competition_id = ? AND u.role NOT IN ('admin', 'lecturer')
+      JOIN weekly_competitions c ON r.competition_id = c.id
+      WHERE c.status = 'concluded' AND u.role NOT IN ('admin', 'lecturer')
       GROUP BY u.id
       ORDER BY totalScore DESC, firstCompletedAt ASC, u.id ASC
-    `).all(targetCompId);
+    `).all();
 
     let filteredArena = arenaRows.filter(row => {
       if (row.studentId && targetClassStudentIds.has(String(row.studentId).trim())) return true;
@@ -4340,48 +4342,128 @@ async function api(request, response, url) {
     const postId = Number(moderationMatch[1]);
     const post = db.prepare("SELECT author_id, status FROM posts WHERE id=?").get(postId);
     if (!post) return error(response, 404, "Không tìm thấy bài đăng.");
-    
-    if (status === "deleted") {
-      db.prepare("UPDATE posts SET status=?, deleted_at=CURRENT_TIMESTAMP, updated_at=CURRENT_TIMESTAMP WHERE id=?").run(status, postId);
-    } else {
-      db.prepare("UPDATE posts SET status=?, deleted_at=NULL, updated_at=CURRENT_TIMESTAMP WHERE id=?").run(status, postId);
-    }
-      
-    if ((status === "hidden" || status === "deleted") && post.status === "visible") {
-      recordContribution(
-        post.author_id,
-        `post_${status}`,
-        -2,
-        "post",
-        postId,
-        `Bài đăng bị ${status === "hidden" ? "ẩn" : "xoá"} bởi Admin`
-      );
-      
-      const responses = db.prepare("SELECT id, author_id FROM responses WHERE post_id=? AND status='visible'").all(postId);
-      for (const r of responses) {
+    const oldStatus = post.status;
+
+    if (status !== oldStatus) {
+      if (status === "deleted") {
+        db.prepare("UPDATE posts SET status=?, deleted_at=CURRENT_TIMESTAMP, updated_at=CURRENT_TIMESTAMP WHERE id=?").run(status, postId);
+      } else {
+        db.prepare("UPDATE posts SET status=?, deleted_at=NULL, updated_at=CURRENT_TIMESTAMP WHERE id=?").run(status, postId);
+      }
+
+      // 1. Chuyển từ visible sang deleted (Xoá bài -> Thùng rác): trừ điểm (-2 cho post, -4 cho các responses visible)
+      if (status === "deleted" && oldStatus === "visible") {
         recordContribution(
-          r.author_id,
-          `response_${status}`,
-          -4,
-          "response",
-          r.id,
-          `Bài đăng gốc bị ${status === "hidden" ? "ẩn" : "xoá"} bởi Admin`
+          post.author_id,
+          "post_deleted",
+          -2,
+          "post",
+          postId,
+          "Bài đăng bị chuyển vào Thùng rác bởi Admin"
         );
-        if (status === "deleted") {
-          db.prepare("UPDATE responses SET status=?, deleted_at=CURRENT_TIMESTAMP, updated_at=CURRENT_TIMESTAMP WHERE id=?").run(status, r.id);
-        } else {
-          db.prepare("UPDATE responses SET status=?, deleted_at=NULL, updated_at=CURRENT_TIMESTAMP WHERE id=?").run(status, r.id);
+        const responses = db.prepare("SELECT id, author_id FROM responses WHERE post_id=? AND status='visible'").all(postId);
+        for (const r of responses) {
+          recordContribution(
+            r.author_id,
+            "response_deleted",
+            -4,
+            "response",
+            r.id,
+            "Bài đăng gốc bị chuyển vào Thùng rác bởi Admin"
+          );
+          db.prepare("UPDATE responses SET status='deleted', deleted_at=CURRENT_TIMESTAMP, updated_at=CURRENT_TIMESTAMP WHERE id=?").run(r.id);
         }
       }
+      // 2. Chuyển từ hidden sang deleted (Chuyển bài đang ẩn vào thùng rác):
+      // Điểm đã bị trừ lúc ẩn, không trừ thêm. Chuyển các phản hồi đang ẩn sang deleted
+      else if (status === "deleted" && oldStatus === "hidden") {
+        db.prepare("UPDATE responses SET status='deleted', deleted_at=CURRENT_TIMESTAMP, updated_at=CURRENT_TIMESTAMP WHERE post_id=? AND status='hidden'").run(postId);
+      }
+      // 3. Chuyển từ visible sang hidden (Ẩn bài): trừ điểm (-2 cho post, -4 cho các responses visible)
+      else if (status === "hidden" && oldStatus === "visible") {
+        recordContribution(
+          post.author_id,
+          "post_hidden",
+          -2,
+          "post",
+          postId,
+          "Bài đăng bị ẩn bởi Admin"
+        );
+        const responses = db.prepare("SELECT id, author_id FROM responses WHERE post_id=? AND status='visible'").all(postId);
+        for (const r of responses) {
+          recordContribution(
+            r.author_id,
+            "response_hidden",
+            -4,
+            "response",
+            r.id,
+            "Bài đăng gốc bị ẩn bởi Admin"
+          );
+          db.prepare("UPDATE responses SET status='hidden', deleted_at=NULL, updated_at=CURRENT_TIMESTAMP WHERE id=?").run(r.id);
+        }
+      }
+      // 4. Chuyển từ deleted sang hidden: điểm giữ nguyên (-2), huỷ thời hạn thùng rác
+      else if (status === "hidden" && oldStatus === "deleted") {
+        db.prepare("UPDATE responses SET status='hidden', deleted_at=NULL, updated_at=CURRENT_TIMESTAMP WHERE post_id=? AND status='deleted'").run(postId);
+      }
+      // 5. Chuyển từ hidden sang visible (HUỶ ẨN / MỞ LẠI BÀI): cộng lại điểm (+2 cho post, +4 cho responses bị ẩn)
+      else if (status === "visible" && oldStatus === "hidden") {
+        recordContribution(
+          post.author_id,
+          "post_unhidden",
+          2,
+          "post",
+          postId,
+          "Admin mở lại (huỷ ẩn) bài đăng"
+        );
+        const responses = db.prepare("SELECT id, author_id FROM responses WHERE post_id=? AND status='hidden'").all(postId);
+        for (const r of responses) {
+          recordContribution(
+            r.author_id,
+            "response_unhidden",
+            4,
+            "response",
+            r.id,
+            "Bình luận được mở lại do bài viết gốc được huỷ ẩn"
+          );
+          db.prepare("UPDATE responses SET status='visible', deleted_at=NULL, updated_at=CURRENT_TIMESTAMP WHERE id=?").run(r.id);
+        }
+      }
+      // 6. Chuyển từ deleted sang visible (Khôi phục bài từ thùng rác): cộng lại điểm (+2 cho post, +4 cho responses deleted)
+      else if (status === "visible" && oldStatus === "deleted") {
+        recordContribution(
+          post.author_id,
+          "post_restored",
+          2,
+          "post",
+          postId,
+          "Admin khôi phục bài đăng từ thùng rác"
+        );
+        const responses = db.prepare("SELECT id, author_id FROM responses WHERE post_id=? AND status='deleted'").all(postId);
+        for (const r of responses) {
+          recordContribution(
+            r.author_id,
+            "response_restored",
+            4,
+            "response",
+            r.id,
+            "Bình luận được khôi phục do bài viết gốc được phục hồi"
+          );
+          db.prepare("UPDATE responses SET status='visible', deleted_at=NULL, updated_at=CURRENT_TIMESTAMP WHERE id=?").run(r.id);
+        }
+      }
+
+      db.prepare(
+        "INSERT INTO audit_logs(actor_id,action,subject_type,subject_id,reason) VALUES (?,?,?,?,?)",
+      ).run(
+        user.id,
+        `post_${status}`,
+        "post",
+        postId,
+        typeof reason === "string" ? reason.slice(0, 500) : null,
+      );
     }
-    db.prepare(
-      "INSERT INTO audit_logs(actor_id,action,subject_type,subject_id,reason) VALUES (?,?,?,?,?)",
-    ).run(
-      user.id,
-      `post_${status}`,
-      "post",
-      postId,
-    );
+
     return json(response, 200, { ok: true });
   }
   const responseModMatch = pathName.match(
@@ -4399,33 +4481,54 @@ async function api(request, response, url) {
     const responseId = Number(responseModMatch[1]);
     const resp = db.prepare("SELECT author_id, status FROM responses WHERE id=?").get(responseId);
     if (!resp) return error(response, 404, "Không tìm thấy bình luận.");
+    const oldStatus = resp.status;
     
-    if (status === "deleted") {
-      db.prepare("UPDATE responses SET status=?, deleted_at=CURRENT_TIMESTAMP, updated_at=CURRENT_TIMESTAMP WHERE id=?").run(status, responseId);
-    } else {
-      db.prepare("UPDATE responses SET status=?, deleted_at=NULL, updated_at=CURRENT_TIMESTAMP WHERE id=?").run(status, responseId);
-    }
-      
-    if ((status === "deleted" || status === "hidden") && resp.status === "visible") {
-      recordContribution(
-        resp.author_id,
+    if (status !== oldStatus) {
+      if (status === "deleted") {
+        db.prepare("UPDATE responses SET status=?, deleted_at=CURRENT_TIMESTAMP, updated_at=CURRENT_TIMESTAMP WHERE id=?").run(status, responseId);
+      } else {
+        db.prepare("UPDATE responses SET status=?, deleted_at=NULL, updated_at=CURRENT_TIMESTAMP WHERE id=?").run(status, responseId);
+      }
+        
+      if ((status === "deleted" || status === "hidden") && oldStatus === "visible") {
+        recordContribution(
+          resp.author_id,
+          `response_${status}`,
+          -4,
+          "response",
+          responseId,
+          `Bình luận bị ${status === "hidden" ? "ẩn" : "xoá"} bởi Admin`
+        );
+      } else if (status === "visible" && oldStatus === "hidden") {
+        recordContribution(
+          resp.author_id,
+          "response_unhidden",
+          4,
+          "response",
+          responseId,
+          "Admin mở lại (huỷ ẩn) bình luận"
+        );
+      } else if (status === "visible" && oldStatus === "deleted") {
+        recordContribution(
+          resp.author_id,
+          "response_restored",
+          4,
+          "response",
+          responseId,
+          "Admin khôi phục bình luận từ thùng rác"
+        );
+      }
+
+      db.prepare(
+        "INSERT INTO audit_logs(actor_id,action,subject_type,subject_id,reason) VALUES (?,?,?,?,?)",
+      ).run(
+        user.id,
         `response_${status}`,
-        -4,
         "response",
         responseId,
-        `Bình luận bị ${status === "hidden" ? "ẩn" : "xoá"} bởi Admin`
+        typeof reason === "string" ? reason.slice(0, 500) : null,
       );
     }
-
-    db.prepare(
-      "INSERT INTO audit_logs(actor_id,action,subject_type,subject_id,reason) VALUES (?,?,?,?,?)",
-    ).run(
-      user.id,
-      `response_${status}`,
-      "response",
-      responseId,
-      typeof reason === "string" ? reason.slice(0, 500) : null,
-    );
     return json(response, 200, { ok: true });
   }
   const pinMatch = pathName.match(/^\/api\/admin\/posts\/(\d+)\/pin$/);
@@ -4647,6 +4750,63 @@ async function api(request, response, url) {
     return json(response, 200, {
       ok: true,
       message: "Đã hủy và xóa mã xác thực này thành công.",
+    });
+  }
+
+  // --- ADMIN HIDDEN CONTENT APIS (Bài viết & Bình luận bị ẩn) ---
+  if (method === "GET" && pathName === "/api/admin/hidden") {
+    const user = requireUser(request, response);
+    if (!user || !isAdmin(user))
+      return user
+        ? error(response, 403, "Chỉ TA/Admin mới có quyền này.")
+        : undefined;
+
+    const hiddenPosts = db.prepare(`
+      SELECT p.id, p.title, p.content, p.topic, p.author_id, p.updated_at, p.created_at,
+             u.display_name as author_name, u.role as author_role, u.student_id
+      FROM posts p
+      JOIN users u ON u.id = p.author_id
+      WHERE p.status = 'hidden'
+      ORDER BY p.updated_at DESC
+    `).all();
+
+    const hiddenResponses = db.prepare(`
+      SELECT r.id, r.post_id, r.content, r.author_id, r.updated_at, r.created_at,
+             u.display_name as author_name, u.role as author_role, u.student_id,
+             p.title as post_title
+      FROM responses r
+      JOIN users u ON u.id = r.author_id
+      LEFT JOIN posts p ON p.id = r.post_id
+      WHERE r.status = 'hidden'
+      ORDER BY r.updated_at DESC
+    `).all();
+
+    return json(response, 200, {
+      posts: hiddenPosts.map(p => ({
+        id: p.id,
+        type: 'post',
+        title: p.title,
+        excerpt: p.content.slice(0, 160),
+        topic: p.topic,
+        authorName: p.author_name,
+        authorRole: p.author_role,
+        studentId: p.student_id,
+        createdAt: p.created_at,
+        hiddenAt: p.updated_at || p.created_at
+      })),
+      responses: hiddenResponses.map(r => ({
+        id: r.id,
+        type: 'response',
+        postId: r.post_id,
+        postTitle: r.post_title || `Bài viết #${r.post_id}`,
+        content: r.content,
+        excerpt: r.content.replace(/<[^>]*>/g, '').slice(0, 160),
+        authorName: r.author_name,
+        authorRole: r.author_role,
+        studentId: r.student_id,
+        createdAt: r.created_at,
+        hiddenAt: r.updated_at || r.created_at
+      }))
     });
   }
 
@@ -6667,6 +6827,21 @@ try {
 function checkAndAwardSundayCompetitionRewards() {
   try {
     const vnNow = getVietnamNow();
+    const formatYMD = (d) => {
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, "0");
+      const day = String(d.getDate()).padStart(2, "0");
+      return `${y}-${m}-${day}`;
+    };
+    const todayStr = formatYMD(vnNow);
+
+    // Chốt bất kỳ tuần thi đấu nào trong quá khứ đã quá hạn kết thúc mà chưa chuyển concluded
+    const pastUnconcluded = db.prepare("SELECT id FROM weekly_competitions WHERE end_date < ? AND status != 'concluded'").all(todayStr);
+    for (const p of pastUnconcluded) {
+      awardCompetitionSundayRewards(p.id);
+    }
+
+    // Vào ngày Chủ Nhật (getDay() === 0), tự động chốt bảng thi đua của tuần hiện tại
     if (vnNow.getDay() === 0) {
       const comp = getOrCreateCurrentCompetition(vnNow);
       if (comp && comp.status !== 'concluded') {
