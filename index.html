@@ -424,10 +424,41 @@
               </section>
               <section class="mini-card leaderboard-card">
                 <p class="eyebrow">BẢNG XẾP HẠNG</p>
-                <div class="lb-tabs">
-                  <button type="button" class="lb-tab active" id="tabTopContrib" onclick="switchLeaderboardTab('contributions')">Top đóng góp</button>
-                  <button type="button" class="lb-tab" id="tabTopStreak" onclick="switchLeaderboardTab('streak')">Top giữ chuỗi</button>
-                  <button type="button" class="lb-tab" id="tabTopArena" onclick="switchLeaderboardTab('competition')">Top thi đua</button>
+                <div class="lb-carousel-header">
+                  <button
+                    type="button"
+                    class="lb-nav-btn lb-prev-btn"
+                    id="lbPrevBtn"
+                    onclick="cycleLeaderboardTab(-1)"
+                    aria-label="Bảng xếp hạng trước"
+                    title="Bảng xếp hạng trước"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                      <polyline points="15 18 9 12 15 6"></polyline>
+                    </svg>
+                  </button>
+
+                  <div class="lb-title-container" onclick="cycleLeaderboardTab(1)" title="Nhấn để đổi bảng xếp hạng">
+                    <span class="lb-active-title" id="lbActiveTitle">Top đóng góp</span>
+                    <div class="lb-dots" id="lbDots">
+                      <span class="lb-dot active" data-tab="contributions" onclick="event.stopPropagation(); switchLeaderboardTab('contributions')"></span>
+                      <span class="lb-dot" data-tab="streak" onclick="event.stopPropagation(); switchLeaderboardTab('streak')"></span>
+                      <span class="lb-dot" data-tab="competition" onclick="event.stopPropagation(); switchLeaderboardTab('competition')"></span>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    class="lb-nav-btn lb-next-btn"
+                    id="lbNextBtn"
+                    onclick="cycleLeaderboardTab(1)"
+                    aria-label="Bảng xếp hạng tiếp theo"
+                    title="Bảng xếp hạng tiếp theo"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                      <polyline points="9 18 15 12 9 6"></polyline>
+                    </svg>
+                  </button>
                 </div>
                 <div
                   id="leaderboardList"

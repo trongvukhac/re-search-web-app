@@ -1202,6 +1202,10 @@ function applySession(user) {
   if (tabContrib) {
     tabContrib.style.display = isVLU ? "" : "none";
   }
+  const dotContrib = document.querySelector(".lb-dot[data-tab='contributions']");
+  if (dotContrib) {
+    dotContrib.style.display = isVLU ? "" : "none";
+  }
   if (!isVLU && currentLeaderboardTab === "contributions") {
     currentLeaderboardTab = "streak";
     $("#tabTopStreak")?.classList.add("active");
@@ -1243,6 +1247,22 @@ function formatLeaderboardRank(rank) {
   return "50+";
 }
 
+const LEADERBOARD_TABS = [
+  { id: "contributions", title: "Top đóng góp" },
+  { id: "streak", title: "Top giữ chuỗi" },
+  { id: "competition", title: "Top thi đua" }
+];
+
+window.cycleLeaderboardTab = function(direction = 1) {
+  const isVLU = typeof isVLUEmail === "function" ? isVLUEmail() : true;
+  const availableTabs = isVLU ? LEADERBOARD_TABS : LEADERBOARD_TABS.filter(t => t.id !== "contributions");
+  const currentIdx = availableTabs.findIndex(t => t.id === currentLeaderboardTab);
+  let nextIdx = (currentIdx === -1 ? 0 : currentIdx + direction);
+  if (nextIdx >= availableTabs.length) nextIdx = 0;
+  if (nextIdx < 0) nextIdx = availableTabs.length - 1;
+  window.switchLeaderboardTab(availableTabs[nextIdx].id);
+};
+
 window.switchLeaderboardTab = function(tab) {
   // Chặn tab "Top đóng góp" với người dùng không phải VLU
   if (tab === "contributions" && !isVLUEmail()) {
@@ -1250,15 +1270,38 @@ window.switchLeaderboardTab = function(tab) {
     return;
   }
   currentLeaderboardTab = tab;
+
+  // Cập nhật tiêu đề carousel và dots
+  const tabObj = LEADERBOARD_TABS.find(t => t.id === tab);
+  const titleEl = $("#lbActiveTitle");
+  if (titleEl && tabObj) {
+    titleEl.textContent = tabObj.title;
+  }
+  document.querySelectorAll(".lb-dot").forEach(dot => {
+    dot.classList.toggle("active", dot.getAttribute("data-tab") === tab);
+  });
+
+  // Hỗ trợ backwards compatibility nếu các nút cũ còn tồn tại
   $("#tabTopContrib")?.classList.toggle("active", tab === "contributions");
   $("#tabTopStreak")?.classList.toggle("active", tab === "streak");
   $("#tabTopArena")?.classList.toggle("active", tab === "competition");
+
   renderLeaderboard();
 };
 
 function renderLeaderboard() {
   const lbEl = $("#leaderboardList");
   if (!lbEl) return;
+
+  // Đảm bảo tiêu đề và dots đồng bộ với currentLeaderboardTab
+  const tabObj = LEADERBOARD_TABS.find(t => t.id === currentLeaderboardTab);
+  const titleEl = $("#lbActiveTitle");
+  if (titleEl && tabObj) {
+    titleEl.textContent = tabObj.title;
+  }
+  document.querySelectorAll(".lb-dot").forEach(dot => {
+    dot.classList.toggle("active", dot.getAttribute("data-tab") === currentLeaderboardTab);
+  });
 
   const isContrib = currentLeaderboardTab === "contributions";
   const isStreak = currentLeaderboardTab === "streak";

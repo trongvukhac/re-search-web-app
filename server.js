@@ -2835,15 +2835,7 @@ async function api(request, response, url) {
     }));
 
     // 3. TOP THI ĐUA (ARENA)
-    // Xếp theo tổng điểm tất cả các tuần đã chốt (chỉ cập nhật vào ngày Chủ Nhật khi c.status = 'concluded', không lấy tuần đang diễn ra)
-    let targetClass = "06";
-    if (user && user.student_id) {
-      const cls = getArenaClassByStudentId(user.student_id);
-      if (cls === "07") targetClass = "07";
-    }
-    const targetClassStudentIds = targetClass === "07" ? CLASS_07_STUDENT_IDS : CLASS_06_STUDENT_IDS;
-    const targetClassName = targetClass === "07" ? "261_71RESE30312_07" : "261_71RESE30312_06";
-
+    // Xếp theo tổng điểm tất cả các tuần đã chốt gộp chung cả 2 bảng thi (chỉ cập nhật vào ngày Chủ Nhật khi c.status = 'concluded', không lấy tuần đang diễn ra)
     const arenaRows = db.prepare(`
       SELECT 
         u.id as userId,
@@ -2863,17 +2855,7 @@ async function api(request, response, url) {
       ORDER BY totalScore DESC, firstCompletedAt ASC, u.id ASC
     `).all();
 
-    let filteredArena = arenaRows.filter(row => {
-      if (row.studentId && targetClassStudentIds.has(String(row.studentId).trim())) return true;
-      if (row.className && row.className.trim() === targetClassName) return true;
-      return false;
-    });
-
-    if (filteredArena.length === 0 && arenaRows.length > 0 && !user?.student_id) {
-      filteredArena = arenaRows;
-    }
-
-    const topArenaUsers = filteredArena.slice(0, 5).map((row, idx) => ({
+    const topArenaUsers = arenaRows.slice(0, 5).map((row, idx) => ({
       id: row.userId,
       displayName: row.displayName,
       avatar: row.avatar,
@@ -2895,14 +2877,14 @@ async function api(request, response, url) {
       const myStreakRank = myStreakIdx !== -1 ? myStreakIdx + 1 : streakList.length + 1;
       const myStreakItem = myStreakIdx !== -1 ? streakList[myStreakIdx] : null;
 
-      const myArenaIdx = filteredArena.findIndex(r => r.userId === user.id);
+      const myArenaIdx = arenaRows.findIndex(r => r.userId === user.id);
       let myArenaRank = null;
       let myArenaScore = 0;
       if (myArenaIdx !== -1) {
         myArenaRank = myArenaIdx + 1;
-        myArenaScore = Number(filteredArena[myArenaIdx].totalScore || 0);
+        myArenaScore = Number(arenaRows[myArenaIdx].totalScore || 0);
       } else {
-        myArenaRank = filteredArena.length + 1;
+        myArenaRank = arenaRows.length + 1;
         myArenaScore = 0;
       }
 
