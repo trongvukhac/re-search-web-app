@@ -860,7 +860,7 @@ window.openStreakShieldModal = async function() {
       let slotsHTML = "";
       for (let i = 1; i <= max; i++) {
         const isFilled = i <= count;
-        slotsHTML += `<div class="shield-slot ${isFilled ? 'filled' : 'empty'}" title="${isFilled ? `Khiên số ${i} (Đang kích hoạt)` : `Ô khiên ${i} (Trống)`}">${isFilled ? '🛡️' : '➕'}</div>`;
+        slotsHTML += `<div class="shield-slot ${isFilled ? 'filled' : 'empty'}" title="${isFilled ? `Khiên số ${i} (Đang kích hoạt)` : `Ô khiên ${i} (Trống)`}">${isFilled ? '<svg class="shield-icon-svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>' : '<svg class="ui-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>'}</div>`;
       }
       slotsEl.innerHTML = slotsHTML;
     }
@@ -870,10 +870,10 @@ window.openStreakShieldModal = async function() {
     const statusText = document.getElementById("shieldModalStatusText");
     if (statusDot && statusText) {
       if (count > 0) {
-        statusDot.textContent = "🟢";
+        statusDot.innerHTML = `<svg width="10" height="10" viewBox="0 0 24 24" fill="#10b981"><circle cx="12" cy="12" r="10"/></svg>`;
         statusText.textContent = `Đang sẵn sàng tự động giữ chuỗi: Bạn có ${count} khiên bảo vệ phòng khi bận rộn.`;
       } else {
-        statusDot.textContent = "⚪";
+        statusDot.innerHTML = `<svg width="10" height="10" viewBox="0 0 24 24" fill="#94a3b8"><circle cx="12" cy="12" r="10"/></svg>`;
         statusText.textContent = "Đang cạn khiên: Hãy duy trì hoạt động hoặc tham gia Đấu trường Arena để nhận thêm!";
       }
     }
@@ -923,7 +923,7 @@ function renderShieldHistoryUI(logs = [], filterType = "all") {
     const deltaText = isAdd ? `+${item.amount}` : `-${item.amount}`;
     const badgeClass = isAdd ? "add" : "use";
     const itemClass = isAdd ? "is-add" : "is-use";
-    const badgeIcon = isAdd ? "🛡️+" : "🛡️-";
+    const badgeIcon = isAdd ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px;"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>+' : '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px;"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>-';
 
     let timeStr = "";
     if (item.createdAt) {
@@ -952,7 +952,7 @@ function renderShieldHistoryUI(logs = [], filterType = "all") {
           <div class="shield-log-badge ${badgeClass}">${badgeIcon}</div>
           <div class="shield-log-info">
             <span class="shield-log-reason" title="${escapeHTML(item.reason)}">${escapeHTML(item.reason)}</span>
-            <span class="shield-log-time">🗓️ ${escapeHTML(timeStr)}</span>
+            <span class="shield-log-time"><svg class="ui-icon" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px; margin-right:3px;"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>${escapeHTML(timeStr)}</span>
           </div>
         </div>
         <div class="shield-log-right">
@@ -1459,7 +1459,7 @@ function renderProfileStats(profileData) {
     const btn = container.querySelector("button");
     if (btn) {
       const cost = profileData.restoreShieldsCost || 1;
-      btn.textContent = `🔥 Khôi phục chuỗi (${cost} khiên)`;
+      btn.innerHTML = `<svg class="ui-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg> Khôi phục chuỗi (${cost} khiên)`;
     }
   }
 
@@ -1487,7 +1487,7 @@ function renderProfileStats(profileData) {
         if (btn) {
           btn.disabled = false;
           const cost = profileData?.restoreShieldsCost || 1;
-          btn.textContent = `🔥 Khôi phục chuỗi (${cost} khiên)`;
+          btn.innerHTML = `<svg class="ui-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg> Khôi phục chuỗi (${cost} khiên)`;
         }
       }
     };
@@ -1888,13 +1888,13 @@ function postCard(post) {
   const adminBtns =
     session?.role === "admin"
       ? `<div style="position:absolute; right: 40px; top: 10px; display: flex; gap: 4px; z-index: 2;">
-          <button class="button button-outline" style="font-size: 10px; padding: 2px 7px; color: var(--error); border-color: var(--error); font-weight: 600;" onclick="event.stopPropagation(); deletePost(${post.id})" title="Chuyển vào thùng rác (lưu trữ 7 ngày, trừ điểm hoạt động)">🗑️ Xoá</button>
-          <button class="button button-outline" style="font-size: 10px; padding: 2px 7px; color: #d97706; border-color: #d97706;" onclick="event.stopPropagation(); hidePost(${post.id})" title="Ẩn bài tạm thời khỏi diễn đàn (trừ điểm hoạt động, có thể mở lại)">Ẩn</button>
+          <button class="button button-outline" style="font-size: 10px; padding: 2px 7px; color: var(--error); border-color: var(--error); font-weight: 600;" onclick="event.stopPropagation(); deletePost(${post.id})" title="Chuyển vào thùng rác (lưu trữ 7 ngày, trừ điểm hoạt động)"><svg class="ui-btn-icon" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>Xoá</button>
+          <button class="button button-outline" style="font-size: 10px; padding: 2px 7px; color: #d97706; border-color: #d97706;" onclick="event.stopPropagation(); hidePost(${post.id})" title="Ẩn bài tạm thời khỏi diễn đàn (trừ điểm hoạt động, có thể mở lại)"><svg class="ui-btn-icon" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>Ẩn</button>
         </div>`
       : "";
   const editBtn = post.isAuthor ? renderEditBtn(post.id, post.createdAt, 'posts') : "";
   const pinnedIcon = post.isPinned
-    ? `<span title="Đã ghim" style="color:var(--primary)">📌 </span>`
+    ? `<span title="Đã ghim" style="color:var(--primary); display: inline-flex; align-items: center; margin-right: 4px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M16 12V4h1V2H7v2h1v8l-2 2v2h5.2v6h1.6v-6H18v-2l-2-2z"/></svg></span>`
     : "";
   const authorUserId = (!post.anonymous && post.authorId) ? post.authorId : "";
   const ncAttr = authorUserId ? `data-namecard-user-id="${authorUserId}" style="cursor: pointer;" title="Xem thẻ tên"` : "";
@@ -1909,7 +1909,7 @@ function postCard(post) {
       <h3 style="margin-top: 0;">${escapeHTML(post.title)}</h3>
       <div class="post-copy-preview">${escapeHTML(post.excerpt)}</div>
     </div>
-    <div class="post-stats"><span class="post-tag">${post.topic}</span><span style="font-weight:600; color:var(--primary)">▲ ${post.upvotes}</span><span style="font-weight:600; color:var(--sage-5); display: inline-flex; align-items: center; gap: 4px;"><svg class="icon-chat-svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>${post.responses}</span></div>
+    <div class="post-stats"><span class="post-tag">${post.topic}</span><span style="font-weight:600; color:var(--primary); display: inline-flex; align-items: center; gap: 3px;"><svg class="icon-upvote-svg" width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 4 3 20 21 20"/></svg>${post.upvotes}</span><span style="font-weight:600; color:var(--sage-5); display: inline-flex; align-items: center; gap: 4px;"><svg class="icon-chat-svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>${post.responses}</span></div>
   </article>`;
 }
 
@@ -2027,7 +2027,7 @@ function renderHome() {
     if (pinnedPost) {
       pinnedContainer.innerHTML = `
         <section class="announcement" style="cursor: pointer" onclick="openDetail(${pinnedPost.id})">
-          <div class="announcement-icon">📌</div>
+          <div class="announcement-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="17" x2="12" y2="22"></line><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.89A2 2 0 0 1 15 10.77V6h1a1 1 0 0 0 0-2H8a1 1 0 0 0 0 2h1v4.77a2 2 0 0 1-1.11 1.79l-1.78.89A2 2 0 0 0 5 15.24Z"></path></svg></div>
           <div>
             <p class="eyebrow">THÔNG BÁO ĐƯỢC GHIM</p>
             <h2>${escapeHTML(pinnedPost.title)}</h2>
@@ -3086,7 +3086,7 @@ async function openDetail(id, updateHash = true) {
 
   $("#detailContent").innerHTML = `
     <div style="padding: 48px 24px; text-align: center; color: var(--muted);">
-      <div style="font-size: 28px; margin-bottom: 10px;">⏳</div>
+      <div style="margin-bottom: 10px; color: var(--primary);"><svg class="ui-icon" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
       <p style="font-size: 15px;">Đang tải bài viết...</p>
     </div>
   `;
@@ -3108,7 +3108,7 @@ async function openDetail(id, updateHash = true) {
     shareBtn.onclick = () => {
       const url = `${window.location.origin}/#post-${id}`;
       navigator.clipboard.writeText(url).then(() => {
-        toast("📋 Đã sao chép liên kết bài viết!");
+        toast("Đã sao chép liên kết bài viết!");
       }).catch(() => {
         prompt("Sao chép liên kết bài viết:", url);
       });
@@ -3211,9 +3211,9 @@ async function openDetail(id, updateHash = true) {
           </div>
           <div class="response-copy collapsible-wrapper"><div class="collapsible-content ql-editor">${DOMPurify.sanitize(r.content)}</div><button type="button" class="read-more-btn" onclick="toggleReadMore(this)">Xem thêm</button></div>
           <div class="detail-actions" style="margin-top:8px; display:flex; align-items:center; border: none; padding: 0;">
-            <button class="button button-outline button-sm" onclick="voteResponse(${r.id}, 1)">▲ <span>Hữu ích</span></button>
+            <button class="button button-outline button-sm" onclick="voteResponse(${r.id}, 1)"><svg class="icon-upvote-svg" width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 4 3 20 21 20"/></svg> <span>Hữu ích</span></button>
             <span style="font-weight:600; color:var(--primary); width:16px; text-align:center;">${r.helpfulCount}</span>
-            <button class="button button-outline button-sm" onclick="voteResponse(${r.id}, -1)">▼ <span>Không hữu ích</span></button>
+            <button class="button button-outline button-sm" onclick="voteResponse(${r.id}, -1)"><svg class="icon-upvote-svg" width="12" height="12" viewBox="0 0 24 24" fill="currentColor" style="transform: rotate(180deg);"><polygon points="12 4 3 20 21 20"/></svg> <span>Không hữu ích</span></button>
             <button class="button button-outline button-sm" style="margin-left: 8px;" onclick="showReplyForm(${r.id}, ${post.id}, ${targetParentId})">Phản hồi</button>
             ${deleteBtn}
           </div>
@@ -3231,21 +3231,26 @@ async function openDetail(id, updateHash = true) {
     let adminBtns = "";
     if (session?.role === "admin") {
       const pinText = post.isPinned ? "Bỏ ghim" : "Ghim bài";
+      const pinIcon = `<svg class="ui-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px; vertical-align: -1px;"><line x1="12" y1="17" x2="12" y2="22"></line><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.89A2 2 0 0 1 15 10.77V6h1a1 1 0 0 0 0-2H8a1 1 0 0 0 0 2h1v4.77a2 2 0 0 1-1.11 1.79l-1.78.89A2 2 0 0 0 5 15.24Z"></path></svg>`;
+      const unhideIcon = `<svg class="ui-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px; vertical-align: -1px;"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>`;
+      const trashIcon = `<svg class="ui-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px; vertical-align: -1px;"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>`;
+      const hideIcon = `<svg class="ui-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px; vertical-align: -1px;"><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><line x1="2" y1="2" x2="22" y2="22"/></svg>`;
+
       if (post.status === "hidden") {
-        adminBtns = `<button class="button button-outline" style="color: var(--primary); border-color: var(--primary);" onclick="pinPost(${post.id}, ${!post.isPinned})">${pinText}</button>
-                     <button class="button button-outline" style="color: #166534; border-color: #166534; background: rgba(34,197,94,0.1); font-weight: 700;" onclick="unhidePost(${post.id})">👁️ Mở lại bài (Huỷ ẩn)</button>
-                     <button class="button button-outline" style="color: var(--error); border-color: var(--error); font-weight: 600;" onclick="deletePost(${post.id})">🗑️ Xoá bài</button>`;
+        adminBtns = `<button class="button button-outline" style="color: var(--primary); border-color: var(--primary);" onclick="pinPost(${post.id}, ${!post.isPinned})">${pinIcon} ${pinText}</button>
+                     <button class="button button-outline" style="color: #166534; border-color: #166534; background: rgba(34,197,94,0.1); font-weight: 700;" onclick="unhidePost(${post.id})">${unhideIcon} Mở lại bài (Huỷ ẩn)</button>
+                     <button class="button button-outline" style="color: var(--error); border-color: var(--error); font-weight: 600;" onclick="deletePost(${post.id})">${trashIcon} Xoá bài</button>`;
       } else {
-        adminBtns = `<button class="button button-outline" style="color: var(--primary); border-color: var(--primary);" onclick="pinPost(${post.id}, ${!post.isPinned})">${pinText}</button>
-                     <button class="button button-outline" style="color: var(--error); border-color: var(--error); font-weight: 600;" onclick="deletePost(${post.id})">🗑️ Xoá bài</button>
-                     <button class="button button-outline" style="color: #d97706; border-color: #d97706;" onclick="hidePost(${post.id})">Ẩn bài</button>`;
+        adminBtns = `<button class="button button-outline" style="color: var(--primary); border-color: var(--primary);" onclick="pinPost(${post.id}, ${!post.isPinned})">${pinIcon} ${pinText}</button>
+                     <button class="button button-outline" style="color: var(--error); border-color: var(--error); font-weight: 600;" onclick="deletePost(${post.id})">${trashIcon} Xoá bài</button>
+                     <button class="button button-outline" style="color: #d97706; border-color: #d97706;" onclick="hidePost(${post.id})">${hideIcon} Ẩn bài</button>`;
       }
     }
     const editBtn = post.isAuthor ? renderEditBtn(post.id, post.createdAt, 'posts') : "";
 
     const hiddenBanner = post.status === "hidden"
       ? `<div style="background: rgba(217,119,6,0.12); border: 1px solid #d97706; color: #b45309; border-radius: 8px; padding: 10px 14px; margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between; font-size: 13px; gap: 8px; flex-wrap: wrap;">
-          <span>⚠️ <strong>Bài viết này đang bị ẩn</strong> (Đã trừ 2 điểm hoạt động, bài không bị xoá sau 7 ngày).</span>
+          <span style="display: flex; align-items: center; gap: 6px;"><svg class="ui-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: #d97706; flex-shrink: 0;"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> <strong>Bài viết này đang bị ẩn</strong> (Đã trừ 2 điểm hoạt động, bài không bị xoá sau 7 ngày).</span>
           <button class="button button-small" style="background: #166534; color: #fff; border: 0; padding: 4px 10px; font-weight: 600; white-space: nowrap;" onclick="unhidePost(${post.id})">Mở lại bài ngay</button>
         </div>`
       : "";
@@ -3257,7 +3262,9 @@ async function openDetail(id, updateHash = true) {
     const saveBtn = $("#postDetailSaveBtn");
     if (saveBtn) {
       saveBtn.className = `button button-outline button-sm post-detail-save-btn ${post.isSaved ? "is-saved" : ""}`;
-      saveBtn.innerHTML = post.isSaved ? `★ Đã lưu` : `☆ Lưu`;
+      saveBtn.innerHTML = post.isSaved 
+        ? `<svg class="ui-icon" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg> Đã lưu` 
+        : `<svg class="ui-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg> Lưu`;
       saveBtn.onclick = () => toggleSavePost(post.id);
     }
 
@@ -3266,7 +3273,7 @@ async function openDetail(id, updateHash = true) {
       <div class="modal-head" style="position: relative; margin-bottom: 16px;">
         <div style="flex: 1;">
           <p class="eyebrow">${escapeHTML(post.topic.toUpperCase())}</p>
-          <h2 class="detail-title" style="margin-top: 6px;">${post.isPinned ? "📌 " : ""}${escapeHTML(post.title)}</h2>
+          <h2 class="detail-title" style="margin-top: 6px;">${post.isPinned ? `<svg class="ui-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: -2px; margin-right: 4px; color: var(--primary);"><line x1="12" y1="17" x2="12" y2="22"></line><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.89A2 2 0 0 1 15 10.77V6h1a1 1 0 0 0 0-2H8a1 1 0 0 0 0 2h1v4.77a2 2 0 0 1-1.11 1.79l-1.78.89A2 2 0 0 0 5 15.24Z"></path></svg>` : ""}${escapeHTML(post.title)}</h2>
         </div>
         ${editBtn ? `<div style="position:relative; width:24px; height:24px; margin-top: 4px;">${editBtn}</div>` : ""}
         <button id="closeDetail" style="display:none;" aria-hidden="true"></button>
@@ -3282,9 +3289,9 @@ async function openDetail(id, updateHash = true) {
       </div>
       <div class="detail-copy ql-editor">${DOMPurify.sanitize(post.content || post.excerpt)}</div>
       <div class="detail-actions">
-        <button class="button button-outline button-sm" onclick="votePost(${post.id}, 1)">▲ <span>Hữu ích</span></button>
+        <button class="button button-outline button-sm" onclick="votePost(${post.id}, 1)"><svg class="icon-upvote-svg" width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 4 3 20 21 20"/></svg> <span>Hữu ích</span></button>
         <span style="font-weight:600; color:var(--primary); min-width: 16px; text-align: center;">${post.helpfulCount || post.upvotes || 0}</span>
-        <button class="button button-outline button-sm" onclick="votePost(${post.id}, -1)">▼ <span>Không hữu ích</span></button>
+        <button class="button button-outline button-sm" onclick="votePost(${post.id}, -1)"><svg class="icon-upvote-svg" width="12" height="12" viewBox="0 0 24 24" fill="currentColor" style="transform: rotate(180deg);"><polygon points="12 4 3 20 21 20"/></svg> <span>Không hữu ích</span></button>
         <span class="detail-action-frame" id="detailResponseCountBadge">
           <svg class="icon-chat-svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
           <span>${post.responseCount || 0} phản hồi</span>
@@ -3304,7 +3311,7 @@ async function openDetail(id, updateHash = true) {
       <form id="replyForm" class="reply-bar collapsed">
         <div class="reply-avatar-dropdown" onclick="toggleAnonymousDropdown(event)">
           <span class="avatar avatar-sm ${getAvatarClass(session?.streakTier, false, session?.role)}" id="replyAvatarLabel" style="${(!session?.role || session?.role === 'student') ? ((session?.streakTier >= 3) ? '' : 'background: var(--primary); color: white;') : ''}">${session?.initials || '?'}</span>
-          <span class="dropdown-arrow">▼</span>
+          <span class="dropdown-arrow"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span>
           <div id="anonymousDropdown" class="dropdown-menu">
             <div onclick="setAnonymousReply(false)">Phản hồi công khai</div>
             <div onclick="setAnonymousReply(true)">Phản hồi ẩn danh</div>
@@ -3314,9 +3321,9 @@ async function openDetail(id, updateHash = true) {
         <div class="reply-pill">
           <div id="replyContentContainer"></div>
           <div class="reply-actions">
-             <button type="button" class="btn-expand-tools" onclick="expandReplyTools()">+</button>
+             <button type="button" class="btn-expand-tools" onclick="expandReplyTools()" title="Mở rộng công cụ"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
              <button type="button" class="btn-collapse-tools" onclick="collapseReplyTools()">Thu gọn</button>
-             <button type="submit" class="btn-send">➤</button>
+             <button type="submit" class="btn-send" title="Gửi phản hồi"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button>
           </div>
         </div>
         <input type="checkbox" id="replyAnonymous" style="display:none;">
@@ -4354,8 +4361,8 @@ function renderAdminHiddenTable() {
       <td style="padding: 10px 8px; white-space: nowrap;">${authorHtml}</td>
       <td style="padding: 10px 8px; white-space: nowrap; color: var(--muted); font-size: 12px;">${hiddenTimeFormatted}</td>
       <td style="padding: 10px 8px; text-align: right; white-space: nowrap;">
-        <button type="button" class="button button-small" style="background:#166534; color:#fff; border:0; padding: 3px 10px; font-size: 11px; margin-right: 4px; font-weight: 600;" onclick="unhideItemFromAdmin('${item.type}', ${item.id})">Mở lại ↺</button>
-        <button type="button" class="button button-outline button-small" style="color:var(--error); border-color:var(--error); padding: 3px 8px; font-size: 11px;" onclick="moveHiddenToTrash('${item.type}', ${item.id})" title="Chuyển vào thùng rác">🗑️ Xoá</button>
+        <button type="button" class="button button-small" style="background:#166534; color:#fff; border:0; padding: 3px 10px; font-size: 11px; margin-right: 4px; font-weight: 600;" onclick="unhideItemFromAdmin('${item.type}', ${item.id})"><svg class="ui-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px; margin-right:2px;"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>Mở lại</button>
+        <button type="button" class="button button-outline button-small" style="color:var(--error); border-color:var(--error); padding: 3px 8px; font-size: 11px;" onclick="moveHiddenToTrash('${item.type}', ${item.id})" title="Chuyển vào thùng rác"><svg class="ui-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px; margin-right:2px;"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>Xoá</button>
       </td>
     </tr>`;
   }).join("");
@@ -4423,7 +4430,7 @@ function renderAdminUserRows(users) {
       <td style="padding: 12px 8px;">${getRoleDisplay(u.role)}</td>
       <td style="padding: 12px 8px;"><strong style="color: var(--primary)">${u.totalPoints || 0}</strong></td>
       <td style="padding: 12px 8px; display: flex; gap: 6px; flex-wrap: wrap;">
-        <button class="button button-primary" style="padding: 4px 8px; font-size: 12px;" onclick="openNamecard(${u.id})" title="Xem hồ sơ & thông tin chi tiết">👁️ Hồ sơ</button>
+        <button class="button button-primary" style="padding: 4px 8px; font-size: 12px;" onclick="openNamecard(${u.id})" title="Xem hồ sơ & thông tin chi tiết"><svg class="ui-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px; margin-right:2px;"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>Hồ sơ</button>
         <button class="button button-outline" style="padding: 4px 8px; font-size: 12px;" onclick="changeUserRole(${u.id}, '${u.role}')">Đổi quyền</button>
         <button class="button button-outline" style="padding: 4px 8px; font-size: 12px;" onclick="adjustUserPoints(${u.id})">Cộng/Trừ điểm</button>
       </td>
@@ -5409,21 +5416,21 @@ function renderFramePicker() {
       isUnlocked = isPrivileged || Boolean(limStatus && limStatus.isUnlocked);
       if (isPrivileged || limStatus?.isPermanent) {
         lockTooltip = `${f.name} (Đặc quyền Quản trị viên: Vĩnh viễn)`;
-        badgeHtml = `<span class="choice-unlock-badge" style="background:#e0f2fe;color:#0369a1;font-weight:700;">👑 Vĩnh viễn</span>`;
+        badgeHtml = `<span class="choice-unlock-badge" style="background:#e0f2fe;color:#0369a1;font-weight:700;"><svg class="ui-icon" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px; margin-right:2px;"><path d="m2 4 3 12h14l3-12-6 7-4-7-4 7-6-7zm3 16h14"/></svg>Vĩnh viễn</span>`;
       } else if (isUnlocked) {
         const remDays = limStatus?.remainingDays || 30;
         lockTooltip = `${f.name} (Hạn dùng còn ${remDays} ngày)`;
-        badgeHtml = `<span class="choice-unlock-badge" style="background:#fef3c7;color:#b45309;font-weight:700;">⏳ ${remDays}d</span>`;
+        badgeHtml = `<span class="choice-unlock-badge" style="background:#fef3c7;color:#b45309;font-weight:700;"><svg class="ui-icon" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px; margin-right:2px;"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>${remDays}d</span>`;
       } else {
         lockTooltip = f.lockNote || "Khung nhận được qua hoạt động giới hạn";
-        badgeHtml = `<span class="choice-lock-badge" title="${lockTooltip}">🔒 Sự kiện</span>`;
+        badgeHtml = `<span class="choice-lock-badge" title="${lockTooltip}"><svg class="ui-icon" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px; margin-right:2px;"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>Sự kiện</span>`;
       }
     } else {
       isUnlocked = isPrivileged || longestStreak >= (f.minDays || 0);
       lockTooltip = isUnlocked ? f.name : `Cần chuỗi ${f.minDays}+ ngày`;
       badgeHtml = isUnlocked 
         ? `<span class="choice-unlock-badge">${f.minDays ? `${f.minDays} ngày` : "Có sẵn"}</span>` 
-        : `<span class="choice-lock-badge" title="Cần chuỗi ${f.minDays}+ ngày">🔒 ${f.minDays}</span>`;
+        : `<span class="choice-lock-badge" title="Cần chuỗi ${f.minDays}+ ngày"><svg class="ui-icon" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px; margin-right:2px;"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>${f.minDays}</span>`;
     }
 
     const isActive = f.id === currentSelectedFrame;
@@ -5472,14 +5479,14 @@ function renderCoverPicker() {
       isUnlocked = isPrivileged || Boolean(limStatus && limStatus.isUnlocked);
       if (isPrivileged || limStatus?.isPermanent) {
         lockTooltip = `${p.name} (Đặc quyền Quản trị viên: Vĩnh viễn)`;
-        badgeHtml = `<span class="choice-unlock-badge" style="background:#e0f2fe;color:#0369a1;font-weight:700;">👑 Vĩnh viễn</span>`;
+        badgeHtml = `<span class="choice-unlock-badge" style="background:#e0f2fe;color:#0369a1;font-weight:700;"><svg class="ui-icon" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px; margin-right:2px;"><path d="m2 4 3 12h14l3-12-6 7-4-7-4 7-6-7zm3 16h14"/></svg>Vĩnh viễn</span>`;
       } else if (isUnlocked) {
         const remDays = limStatus?.remainingDays || 30;
         lockTooltip = `${p.name} (Hạn dùng còn ${remDays} ngày)`;
-        badgeHtml = `<span class="choice-unlock-badge" style="background:#fef3c7;color:#b45309;font-weight:700;">⏳ ${remDays}d</span>`;
+        badgeHtml = `<span class="choice-unlock-badge" style="background:#fef3c7;color:#b45309;font-weight:700;"><svg class="ui-icon" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px; margin-right:2px;"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>${remDays}d</span>`;
       } else {
         lockTooltip = p.lockNote || "Ảnh bìa nhận được qua hoạt động giới hạn";
-        badgeHtml = `<span class="choice-lock-badge" title="${lockTooltip}">🔒 Sự kiện</span>`;
+        badgeHtml = `<span class="choice-lock-badge" title="${lockTooltip}"><svg class="ui-icon" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px; margin-right:2px;"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>Sự kiện</span>`;
       }
     } else {
       isUnlocked = isPrivileged || longestStreak >= (p.minDays || 0);
@@ -8185,7 +8192,7 @@ function renderCustomAudioList(category, containerEl, tracks) {
             ${isActive ? 'Tắt' : 'Bật'}
           </button>
           <button type="button" class="ambient-track-delete" onclick="confirmDeleteCustomAudioTrack('${t.id}')" title="Xóa tệp âm thanh này">
-            🗑️
+            <svg class="ui-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
           </button>
         </div>
         <div class="ambient-slider-row" style="display:flex; align-items:center; gap:8px;">
@@ -10927,52 +10934,52 @@ function renderGatewayTab(raw) {
 
       if (data.isSunday) {
         cardClass += " card-practice";
-        chipHTML = '<span class="pj-status-chip chip-practice">🎯 LUYỆN TẬP</span>';
+        chipHTML = '<span class="pj-status-chip chip-practice"><svg class="ui-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px; margin-right:3px;"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="6" r="2"/></svg>LUYỆN TẬP</span>';
         if (p.isCompleted) {
           const phaseScore = (p.score !== undefined) ? p.score : (p.bestScore ?? 0);
-          scoreInfoHTML = `<div class="pj-score-box"><span class="pj-score-label">Điểm thi tuần:</span><span class="pj-score-val">⭐ ${phaseScore}</span></div>`;
+          scoreInfoHTML = `<div class="pj-score-box"><span class="pj-score-label">Điểm thi tuần:</span><span class="pj-score-val"><svg class="ui-icon" width="12" height="12" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.5" style="color: #f59e0b; margin-right: 2px;"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>${phaseScore}</span></div>`;
           actionBtnHTML = `
             <div class="pj-action-group">
-              <button type="button" class="pj-action-btn btn-play-practice" onclick="startPracticeQuiz(${p.phase})">🎯 Luyện tập GĐ ${p.phase}</button>
+              <button type="button" class="pj-action-btn btn-play-practice" onclick="startPracticeQuiz(${p.phase})"><svg class="ui-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px; margin-right:4px;"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>Luyện tập GĐ ${p.phase}</button>
               <button type="button" class="pj-action-btn btn-view-result" onclick="openPhaseResultModal(${p.phase})">Xem bài thi chính thức</button>
             </div>
           `;
         } else {
           scoreInfoHTML = `<div class="pj-score-box"><span class="pj-score-label">Chế độ:</span><span class="pj-score-val" style="color: #a78bfa;">Luyện tập tự do</span></div>`;
-          actionBtnHTML = `<button type="button" class="pj-action-btn btn-play-practice" onclick="startPracticeQuiz(${p.phase})">🎯 Luyện tập GĐ ${p.phase}</button>`;
+          actionBtnHTML = `<button type="button" class="pj-action-btn btn-play-practice" onclick="startPracticeQuiz(${p.phase})"><svg class="ui-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px; margin-right:4px;"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>Luyện tập GĐ ${p.phase}</button>`;
         }
       } else if (p.isCompleted) {
         cardClass += " card-completed";
-        chipHTML = '<span class="pj-status-chip chip-completed">✅ ĐÃ XONG</span>';
+        chipHTML = '<span class="pj-status-chip chip-completed"><svg class="ui-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px; margin-right:3px;"><polyline points="20 6 9 17 4 12"/></svg>ĐÃ XONG</span>';
         const phaseScore = (p.score !== undefined) ? p.score : (p.bestScore ?? 0);
-        scoreInfoHTML = `<div class="pj-score-box"><span class="pj-score-label">Điểm:</span><span class="pj-score-val">⭐ ${phaseScore}</span></div>`;
+        scoreInfoHTML = `<div class="pj-score-box"><span class="pj-score-label">Điểm:</span><span class="pj-score-val"><svg class="ui-icon" width="12" height="12" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.5" style="color: #f59e0b; margin-right: 2px;"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>${phaseScore}</span></div>`;
         actionBtnHTML = `<button type="button" class="pj-action-btn btn-view-result" onclick="openPhaseResultModal(${p.phase})">Xem lịch sử hoàn thành</button>`;
       } else if (p.hasActiveSession) {
         cardClass += " card-on-time";
-        chipHTML = '<span class="pj-status-chip chip-on-time">⏸️ ĐANG LÀM DỞ</span>';
+        chipHTML = '<span class="pj-status-chip chip-on-time"><svg class="ui-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px; margin-right:3px;"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>ĐANG LÀM DỞ</span>';
         scoreInfoHTML = `<div class="pj-score-box"><span class="pj-score-label">Còn lại:</span><span class="pj-score-val">${formatCompSeconds(p.activeRemaining || 600)}</span></div>`;
         actionBtnHTML = `<button type="button" class="pj-action-btn btn-resume" onclick="startCompetitionQuiz(${p.phase})">Tiếp tục bài thi</button>`;
       } else if (data.state === "open" && p.isAvailable) {
         if (p.isOnTime) {
           cardClass += " card-on-time";
-          chipHTML = '<span class="pj-status-chip chip-on-time">🟢 ĐÚNG HẠN (+50⭐)</span>';
+          chipHTML = '<span class="pj-status-chip chip-on-time"><svg class="ui-icon" width="10" height="10" viewBox="0 0 24 24" fill="#10b981" style="vertical-align:-1px; margin-right:3px;"><circle cx="12" cy="12" r="10"/></svg>ĐÚNG HẠN (+50⭐)</span>';
           scoreInfoHTML = `<div class="pj-score-box"><span class="pj-score-label">Đặc quyền:</span><span class="pj-score-val" style="color: #34d399;">+50 ⭐ đúng hạn</span></div>`;
           actionBtnHTML = `<button type="button" class="pj-action-btn btn-play-ontime" onclick="openQuizStartConfirmModal(${p.phase})">Bắt đầu thi (+50 ⭐)</button>`;
         } else if (p.isCatchUp) {
           cardClass += " card-catch-up";
-          chipHTML = '<span class="pj-status-chip chip-catch-up">🔄 LÀM BÙ TUẦN</span>';
+          chipHTML = '<span class="pj-status-chip chip-catch-up"><svg class="ui-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px; margin-right:3px;"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>LÀM BÙ TUẦN</span>';
           scoreInfoHTML = `<div class="pj-score-box"><span class="pj-score-label">Chế độ:</span><span class="pj-score-val" style="color: #fbbf24;">Làm bù (Không +50⭐)</span></div>`;
           actionBtnHTML = `<button type="button" class="pj-action-btn btn-play-catchup" onclick="openQuizStartConfirmModal(${p.phase})">Làm bù Chặng ${p.phase}</button>`;
         } else {
           cardClass += " card-on-time";
-          chipHTML = '<span class="pj-status-chip chip-on-time">🟢 ĐANG MỞ</span>';
+          chipHTML = '<span class="pj-status-chip chip-on-time"><svg class="ui-icon" width="10" height="10" viewBox="0 0 24 24" fill="#10b981" style="vertical-align:-1px; margin-right:3px;"><circle cx="12" cy="12" r="10"/></svg>ĐANG MỞ</span>';
           scoreInfoHTML = `<div class="pj-score-box"><span class="pj-score-label">Chặng cuối tuần:</span><span class="pj-score-val">Tối đa 1.100 ⭐</span></div>`;
           actionBtnHTML = `<button type="button" class="pj-action-btn btn-play-ontime" onclick="openQuizStartConfirmModal(${p.phase})">Bắt đầu Chặng 3</button>`;
         }
       } else {
         cardClass += " card-locked";
         const lockLabel = (data.state === "countdown" || data.state === "upcoming") ? "ĐANG ĐẾM NGƯỢC" : (data.isSunday ? "ĐÃ ĐÓNG CỔNG" : (p.phase > data.phase ? "CHƯA MỞ" : "ĐÃ ĐÓNG CỔNG"));
-        chipHTML = `<span class="pj-status-chip chip-locked">🔒 ${lockLabel}</span>`;
+        chipHTML = `<span class="pj-status-chip chip-locked"><svg class="ui-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px; margin-right:3px;"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>${lockLabel}</span>`;
         scoreInfoHTML = `<div class="pj-score-box"><span class="pj-score-label">Trạng thái:</span><span class="pj-score-val" style="color: #94a3b8;">${lockLabel}</span></div>`;
         actionBtnHTML = `<button type="button" class="pj-action-btn btn-disabled" disabled>${lockLabel}</button>`;
       }
@@ -11170,11 +11177,11 @@ function renderLeaderboardNotice(noticeEl, phase, data) {
   const baseTitle = `Bảng xếp hạng - Bảng thi lớp ${classCode}`;
 
   if (isOpen) {
-    noticeEl.innerHTML = `<span>${baseTitle}</span> <span class="lb-status-badge live" style="margin-left: 8px; font-size: 11.5px; color: #22c55e; font-weight: 600;">🟢 Tự động cập nhật trực tiếp</span>`;
+    noticeEl.innerHTML = `<span>${baseTitle}</span> <span class="lb-status-badge live" style="margin-left: 8px; font-size: 11.5px; color: #22c55e; font-weight: 600;"><svg class="ui-icon" width="10" height="10" viewBox="0 0 24 24" fill="#22c55e" style="margin-right:4px; vertical-align:-1px;"><circle cx="12" cy="12" r="10"/></svg>Tự động cập nhật trực tiếp</span>`;
   } else if (isSunday) {
-    noticeEl.innerHTML = `<span>${baseTitle}</span> <span class="lb-status-badge sunday" style="margin-left: 8px; font-size: 11.5px; color: #eab308; font-weight: 600;">👑 Tổng kết toàn tuần</span>`;
+    noticeEl.innerHTML = `<span>${baseTitle}</span> <span class="lb-status-badge sunday" style="margin-left: 8px; font-size: 11.5px; color: #eab308; font-weight: 600;"><svg class="ui-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:4px; vertical-align:-1px;"><path d="m2 4 3 12h14l3-12-6 7-4-7-4 7-6-7zm3 16h14"/></svg>Tổng kết toàn tuần</span>`;
   } else {
-    noticeEl.innerHTML = `<span>${baseTitle}</span> <span class="lb-status-badge closed" style="margin-left: 8px; font-size: 11.5px; color: #94a3b8; font-weight: 500;">🔒 Khung giờ chuẩn bị (Số liệu đã chốt)</span>`;
+    noticeEl.innerHTML = `<span>${baseTitle}</span> <span class="lb-status-badge closed" style="margin-left: 8px; font-size: 11.5px; color: #94a3b8; font-weight: 500;"><svg class="ui-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:4px; vertical-align:-1px;"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>Khung giờ chuẩn bị (Số liệu đã chốt)</span>`;
   }
 }
 
@@ -11238,7 +11245,7 @@ window.refreshArenaLeaderboard = async function() {
   await loadAndRenderLeaderboard(compState.activeLbPhase || 1, true, false);
   if (btn) {
     btn.disabled = false;
-    btn.textContent = "🔄 Làm mới";
+    btn.innerHTML = `<svg class="ui-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px; vertical-align: -1px;"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg> Làm mới`;
   }
 };
 
@@ -11252,7 +11259,7 @@ function renderLeaderboardUI(data) {
     if (footerNote) footerNote.style.display = "none";
     podiumWrap.innerHTML = `
       <div class="comp-lb-waiting-wrap" style="text-align: center; padding: 48px 20px; background: rgba(255,255,255,0.02); border: 1px dashed rgba(255,255,255,0.12); border-radius: 16px; margin: 24px 0;">
-        <div style="font-size: 40px; margin-bottom: 12px;">⏳</div>
+        <div style="margin-bottom: 12px; color: var(--primary);"><svg class="ui-icon" width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
         <div style="font-size: 20px; font-weight: 700; color: var(--text); margin-bottom: 8px;">Chờ chút nhé</div>
         <div style="font-size: 14px; color: var(--muted); max-width: 420px; margin: 0 auto; line-height: 1.6;">
           Bảng xếp hạng chỉ xuất hiện thông tin khi tới khung giờ chuẩn bị sau khi đóng cổng thi.
@@ -11286,10 +11293,10 @@ function renderLeaderboardUI(data) {
       <div class="podium-col rank-2" data-namecard-user-id="${top2.userId}" style="cursor: pointer;" title="Xem thẻ tên">
         <div class="podium-avatar-wrap">
           <div class="podium-avatar avatar ${top2AvatarClass}">${escapeHTML(top2.avatar || top2.initials || "U")}</div>
-          <span class="podium-crown silver">🥈</span>
+          <span class="podium-crown silver"><svg class="ui-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11"/></svg></span>
         </div>
         <div class="podium-name ${top2NameClass}" title="${escapeHTML(top2.displayName)}">${getFlameSVG(top2.streakTier, 14)} <span>${escapeHTML(top2.displayName)}</span></div>
-        <div class="podium-score">⭐ ${top2.score}</div>
+        <div class="podium-score"><svg class="ui-icon" width="13" height="13" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.5" style="color: #f59e0b; margin-right: 2px;"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>${top2.score}</div>
         <div class="podium-stand stand-2">
           <span class="stand-num">2</span>
         </div>
@@ -11306,10 +11313,10 @@ function renderLeaderboardUI(data) {
       <div class="podium-col rank-1" data-namecard-user-id="${top1.userId}" style="cursor: pointer;" title="Xem thẻ tên">
         <div class="podium-avatar-wrap">
           <div class="podium-avatar rank-1-avatar avatar avatar-lg ${top1AvatarClass}">${escapeHTML(top1.avatar || top1.initials || "U")}</div>
-          <span class="podium-crown gold">👑</span>
+          <span class="podium-crown gold"><svg class="ui-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m2 4 3 12h14l3-12-6 7-4-7-4 7-6-7zm3 16h14"/></svg></span>
         </div>
         <div class="podium-name font-bold ${top1NameClass}" title="${escapeHTML(top1.displayName)}">${getFlameSVG(top1.streakTier, 16)} <span>${escapeHTML(top1.displayName)}</span></div>
-        <div class="podium-score gold-score">⭐ ${top1.score}</div>
+        <div class="podium-score gold-score"><svg class="ui-icon" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.5" style="color: #f59e0b; margin-right: 2px;"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>${top1.score}</div>
         <div class="podium-stand stand-1">
           <span class="stand-num">1</span>
         </div>
@@ -11324,10 +11331,10 @@ function renderLeaderboardUI(data) {
       <div class="podium-col rank-3" data-namecard-user-id="${top3.userId}" style="cursor: pointer;" title="Xem thẻ tên">
         <div class="podium-avatar-wrap">
           <div class="podium-avatar avatar ${top3AvatarClass}">${escapeHTML(top3.avatar || top3.initials || "U")}</div>
-          <span class="podium-crown bronze">🥉</span>
+          <span class="podium-crown bronze"><svg class="ui-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11"/></svg></span>
         </div>
         <div class="podium-name ${top3NameClass}" title="${escapeHTML(top3.displayName)}">${getFlameSVG(top3.streakTier, 14)} <span>${escapeHTML(top3.displayName)}</span></div>
-        <div class="podium-score">⭐ ${top3.score}</div>
+        <div class="podium-score"><svg class="ui-icon" width="13" height="13" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.5" style="color: #f59e0b; margin-right: 2px;"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>${top3.score}</div>
         <div class="podium-stand stand-3">
           <span class="stand-num">3</span>
         </div>
@@ -11363,7 +11370,7 @@ function renderLeaderboardUI(data) {
           </span>
           ${isCurrent ? '<span class="you-tag">(Bạn)</span>' : ""}
         </div>
-        <span class="comp-lb-score">⭐ ${u.score}</span>
+        <span class="comp-lb-score"><svg class="ui-icon" width="13" height="13" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.5" style="color: #f59e0b; margin-right: 2px;"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>${u.score}</span>
       </div>
     `;
   });
@@ -11384,7 +11391,7 @@ function renderLeaderboardUI(data) {
           </span>
           <span class="you-tag">(Bạn)</span>
         </div>
-        <span class="comp-lb-score">⭐ ${currentUserEntry.score}</span>
+        <span class="comp-lb-score"><svg class="ui-icon" width="13" height="13" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.5" style="color: #f59e0b; margin-right: 2px;"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>${currentUserEntry.score}</span>
       </div>
     `;
   }
@@ -11437,7 +11444,7 @@ function openQuizStartConfirmModal(phase) {
     if (isOnTime) {
       bonusCardEl.className = "quiz-start-bonus-card on-time";
       bonusCardEl.innerHTML = `
-        <span style="font-size: 22px;">🎁</span>
+        <svg class="ui-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: #10b981; flex-shrink: 0;"><polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/><line x1="12" y1="22" x2="12" y2="7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/></svg>
         <div>
           <strong>ĐẶC QUYỀN ĐÚNG HẠN: +50 ⭐ THƯỞNG THÊM!</strong><br>
           Bạn đang tham gia đúng hạn Chặng ${targetPhase}. Hệ thống sẽ cộng thêm <strong>+50 ⭐</strong> vào tổng điểm khi bạn hoàn thành bài thi! (Tối đa toàn bài: <strong>1.150 ⭐</strong>).
@@ -11446,7 +11453,7 @@ function openQuizStartConfirmModal(phase) {
     } else if (isCatchUp) {
       bonusCardEl.className = "quiz-start-bonus-card catch-up";
       bonusCardEl.innerHTML = `
-        <span style="font-size: 22px;">🔄</span>
+        <svg class="ui-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: #f59e0b; flex-shrink: 0;"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
         <div>
           <strong>LƯỢT LÀM BÙ TRONG TUẦN</strong><br>
           Bạn đang làm bù Chặng ${targetPhase} đã qua. Bạn vẫn được tính điểm bài thi bình thường (tối đa <strong>1.100 ⭐</strong>), nhưng <em>không nhận điểm thưởng đúng hạn (+50 ⭐)</em>.
@@ -11455,7 +11462,7 @@ function openQuizStartConfirmModal(phase) {
     } else {
       bonusCardEl.className = "quiz-start-bonus-card final-phase";
       bonusCardEl.innerHTML = `
-        <span style="font-size: 22px;">🏁</span>
+        <svg class="ui-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: #6366f1; flex-shrink: 0;"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>
         <div>
           <strong>CHẶNG 3 - CHẶNG CUỐI TUẦN</strong><br>
           Đây là chặng thi đấu cuối cùng trước khi tổng kết trao giải vào Chủ Nhật. Lỡ chặng này sẽ <strong>không có cơ hội làm bù</strong>! Điểm tối đa: <strong>1.100 ⭐</strong>.

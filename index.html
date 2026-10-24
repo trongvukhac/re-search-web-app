@@ -52,7 +52,7 @@
             onclick="this.closest('dialog').close()"
             aria-label="Đóng"
           >
-            ×
+            <svg class="ui-icon modal-close-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
           </button>
         </div>
         <iframe
@@ -167,13 +167,14 @@
           class="icon-button desktop-search"
           id="openSearch"
           aria-label="Tìm kiếm"
+          title="Tìm kiếm (⌘K)"
         >
-          ⌕
+          <svg class="ui-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
         </button>
         <button class="profile-chip" data-route="account">
           <span class="avatar avatar-sm" id="navAvatar">🦊</span>
           <span class="profile-chip-text">Đăng nhập</span>
-          <span class="chevron">⌄</span>
+          <span class="chevron"><svg class="ui-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg></span>
         </button>
       </div>
     </header>
@@ -189,10 +190,10 @@
             </p>
             <div class="hero-actions">
               <button class="button button-primary" id="askFromHome">
-                <span>+</span> Đặt câu hỏi
+                <svg class="ui-btn-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg> Đặt câu hỏi
               </button>
               <button class="button button-quiet" data-route="forum">
-                Khám phá diễn đàn <span>→</span>
+                Khám phá diễn đàn <svg class="ui-btn-icon" style="margin-left:6px; margin-right:0;" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
               </button>
             </div>
           </div>
@@ -203,7 +204,7 @@
               </div>
               <div class="topline-actions">
                 <button type="button" class="streak-journey-btn" id="btnStreakJourney" onclick="openStreakJourneyModal()" title="Xem hành trình giữ chuỗi">
-                  <span>🗺️</span> Hành trình
+                  <svg class="ui-btn-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"></polygon><line x1="8" y1="2" x2="8" y2="18"></line><line x1="16" y1="6" x2="16" y2="22"></line></svg> Hành trình
                 </button>
               </div>
             </div>
@@ -217,16 +218,16 @@
                 <div class="streak-tier-label" id="streakTierLabel">Tân binh</div>
               </div>
               <div class="streak-shield-wrap">
-                <button type="button" class="streak-shield-badge" id="streakShieldsBadge" onclick="openStreakShieldModal()" title="Bấm để xem chi tiết &amp; lịch sử khiên bảo vệ chuỗi"><span class="shield-icon">🛡️</span> <b id="streakShieldsCount">0</b> khiên</button>
+                <button type="button" class="streak-shield-badge" id="streakShieldsBadge" onclick="openStreakShieldModal()" title="Bấm để xem chi tiết &amp; lịch sử khiên bảo vệ chuỗi"><span class="shield-icon"><svg class="ui-icon shield-icon-svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg></span> <b id="streakShieldsCount">0</b> khiên</button>
               </div>
             </div>
 
             <div id="streakShieldNotice" class="streak-shield-notice" style="display: none;">
-              🛡️ Khiên đã tự động giữ chuỗi cho bạn hôm qua!
+              <svg class="ui-icon shield-icon-svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:4px;"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg> Khiên đã tự động giữ chuỗi cho bạn hôm qua!
             </div>
 
             <div id="restoreStreakContainer" style="display: none; margin-bottom: 12px; text-align: center;">
-              <button class="button button-primary button-sm" style="background: #f76707; border: none; width: 100%; justify-content: center;" onclick="restoreStreak()">🔥 Khôi phục chuỗi</button>
+              <button class="button button-primary button-sm" style="background: #f76707; border: none; width: 100%; justify-content: center; display: inline-flex; align-items: center;" onclick="restoreStreak()"><svg class="ui-btn-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 17c1.38 0 2.5-1.12 2.5-2.5 0-.61-.22-1.17-.58-1.61L12 12l-.92.89c-.36.44-.58 1-.58 1.61z"></path><path d="M12 2c-.67 2.1-2.07 3.91-3.69 5.34C6.18 9.21 5 11.45 5 14a7 7 0 0 0 14 0c0-3.32-1.92-6.2-4.5-7.5-.16 1.5-1.02 2.76-2.25 3.42C12.44 7.6 12.3 4.67 12 2z"></path></svg> Khôi phục chuỗi</button>
             </div>
             <div
               class="week-strip"
@@ -265,11 +266,11 @@
                 <div class="comp-action-box">
                   <div class="comp-user-status" id="compUserStatusTeaser">
                     <span id="compAttemptsTeaser" style="display: none;">Số lượt thi: 0/1</span>
-                    <span id="compBestScoreTeaser" class="comp-star-score" style="display: none;">⭐ 0</span>
+                    <span id="compBestScoreTeaser" class="comp-star-score" style="display: none;"><svg class="ui-icon" width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg> 0</span>
                   </div>
                   <button type="button" class="comp-cta-button" id="compCtaBtn" onclick="event.stopPropagation(); handleCompetitionCtaClick()">
                     <span id="compCtaText">Tham gia ngay</span>
-                    <span class="comp-cta-arrow">→</span>
+                    <span class="comp-cta-arrow"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg></span>
                   </button>
                 </div>
               </div>
@@ -370,20 +371,21 @@
             <h1>Hỏi, trao đổi,<br /><em>cùng hiểu sâu hơn.</em></h1>
           </div>
           <button class="button button-primary" id="askFromForum">
-            <span>+</span> Đặt câu hỏi
+            <svg class="ui-btn-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg> Đặt câu hỏi
           </button>
         </div>
         <div class="forum-tools">
           <div class="search-inline">
-            <span>⌕</span
-            ><input
+            <span class="search-inline-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg></span>
+            <input
               id="forumSearch"
               type="search"
               placeholder="Tìm trong câu hỏi, phản hồi và chủ đề"
             />
           </div>
           <button class="filter-button" id="filterButton">
-            ☷ <span>Lọc</span>
+            <svg class="ui-btn-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"></line><line x1="4" y1="10" x2="4" y2="3"></line><line x1="12" y1="21" x2="12" y2="12"></line><line x1="12" y1="8" x2="12" y2="3"></line><line x1="20" y1="21" x2="20" y2="16"></line><line x1="20" y1="12" x2="20" y2="3"></line><line x1="1" y1="14" x2="7" y2="14"></line><line x1="9" y1="8" x2="15" y2="8"></line><line x1="17" y1="16" x2="23" y2="16"></line></svg>
+            <span>Lọc</span>
           </button>
         </div>
         <div class="filters open" id="filters">
@@ -525,13 +527,14 @@
           <div class="study-header-actions">
             <span class="study-live-badge"><span class="pulse-dot"></span> <span id="studyLiveCount">0</span> đang học</span>
             <button type="button" class="study-action-btn" id="studyStreakChip" onclick="openStreakJourneyModal()" title="Xem hành trình mở khóa đặc quyền">
-              <span>🔥 Chuỗi:</span> <strong id="studyUserStreakVal">0</strong> ngày
+              <svg class="ui-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:3px;"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 17c1.38 0 2.5-1.12 2.5-2.5 0-.61-.22-1.17-.58-1.61L12 12l-.92.89c-.36.44-.58 1-.58 1.61z"></path><path d="M12 2c-.67 2.1-2.07 3.91-3.69 5.34C6.18 9.21 5 11.45 5 14a7 7 0 0 0 14 0c0-3.32-1.92-6.2-4.5-7.5-.16 1.5-1.02 2.76-2.25 3.42C12.44 7.6 12.3 4.67 12 2z"></path></svg>
+              <span>Chuỗi:</span> <strong id="studyUserStreakVal">0</strong> ngày
             </button>
             <button type="button" class="study-action-btn" id="studyZenToggleBtn" onclick="toggleStudyZenView()" title="Chế độ Tối giản: Thu gọn bảng để ngắm trọn hình nền">
-              <span id="studyZenIcon">🖼️</span> <span id="studyZenText">Tối giản</span>
+              <span id="studyZenIcon"><svg class="ui-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path></svg></span> <span id="studyZenText">Tối giản</span>
             </button>
             <button type="button" class="study-action-btn icon-only" id="studySettingsBtn" title="Cài đặt Pomodoro" onclick="openStudySettingsModal()">
-              ⚙️
+              <svg class="ui-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
             </button>
           </div>
         </div>
@@ -542,15 +545,15 @@
             <div class="study-card study-timer-card" id="timerMainCard">
               <div class="timer-mode-selector">
                 <button type="button" class="study-mode-btn active" id="btnModeFocus" data-study-mode="focus">
-                  <strong id="labelModeFocus">⏱️ 25 phút</strong>
+                  <strong id="labelModeFocus"><svg class="ui-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:3px;"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg> 25 phút</strong>
                   <span>Tập trung</span>
                 </button>
                 <button type="button" class="study-mode-btn" id="btnModeShortBreak" data-study-mode="shortbreak">
-                  <strong id="labelModeShortBreak">☕ 5 phút</strong>
+                  <strong id="labelModeShortBreak"><svg class="ui-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:3px;"><path d="M18 8h1a4 4 0 0 1 0 8h-1"></path><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"></path><line x1="6" y1="1" x2="6" y2="4"></line><line x1="10" y1="1" x2="10" y2="4"></line><line x1="14" y1="1" x2="14" y2="4"></line></svg> 5 phút</strong>
                   <span>Nghỉ ngắn</span>
                 </button>
                 <button type="button" class="study-mode-btn" id="btnModeLongBreak" data-study-mode="longbreak">
-                  <strong id="labelModeLongBreak">🌿 15 phút</strong>
+                  <strong id="labelModeLongBreak"><svg class="ui-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:3px;"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"></path><path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"></path></svg> 15 phút</strong>
                   <span>Nghỉ dài</span>
                 </button>
               </div>
@@ -588,30 +591,30 @@
 
               <!-- Dedicated Study Quote Card -->
               <div class="study-quote-card" id="timerQuoteWrap">
-                <span class="quote-icon">✨</span>
+                <span class="quote-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M3 21c3 0 7-1 7-8V5c0-1.1-.9-2-2-2H4c-1.1 0-2 .9-2 2v6c0 1.1.9 2 2 2h4c0 3.5-1.5 5.5-5 6v2zm14 0c3 0 7-1 7-8V5c0-1.1-.9-2-2-2h-4c-1.1 0-2 .9-2 2v6c0 1.1.9 2 2 2h4c0 3.5-1.5 5.5-5 6v2z"/></svg></span>
                 <span class="timer-quote-text" id="timerQuoteText">“Từng bước nhỏ tạo nên bước tiến lớn.”</span>
               </div>
 
               <div class="study-goal-box">
-                <label for="studyGoalInput">🎯 Mục tiêu ca học này:</label>
+                <label for="studyGoalInput"><svg class="ui-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:4px;"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="6"></circle><circle cx="12" cy="12" r="2"></circle></svg> Mục tiêu ca học này:</label>
                 <input type="text" id="studyGoalInput" maxlength="80" placeholder="Ví dụ: Đọc tổng quan tài liệu, xử lý dữ liệu SPSS, hoàn thiện đề cương..." />
               </div>
 
               <div class="study-actions">
                 <button type="button" class="button button-outline study-action-ctrl" id="studyResetBtn" title="Đặt lại lượt này">
-                  <span class="btn-icon">↺</span> <span class="btn-label">Đặt lại</span>
+                  <span class="btn-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 4v6h6"></path><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path></svg></span> <span class="btn-label">Đặt lại</span>
                 </button>
                 <button type="button" class="button button-primary study-btn-pulse study-action-ctrl" id="studyStartBtn">
-                  <span class="btn-icon">▶</span> <span class="btn-label" id="studyStartBtnText">Bắt đầu học</span>
+                  <span class="btn-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg></span> <span class="btn-label" id="studyStartBtnText">Bắt đầu học</span>
                 </button>
                 <button type="button" class="button button-outline study-action-ctrl" id="studyPauseBtn" style="display: none;">
-                  <span class="btn-icon">⏸</span> <span class="btn-label">Tạm dừng</span>
+                  <span class="btn-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg></span> <span class="btn-label">Tạm dừng</span>
                 </button>
                 <button type="button" class="button button-outline study-action-ctrl" id="studyNextBtn" title="Bỏ qua / Sang lượt kế tiếp">
-                  <span class="btn-icon">⏭</span> <span class="btn-label">Qua lượt kế tiếp</span>
+                  <span class="btn-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 4 15 12 5 20 5 4"></polygon><line x1="19" y1="5" x2="19" y2="19" stroke="currentColor" stroke-width="2"></line></svg></span> <span class="btn-label">Qua lượt kế tiếp</span>
                 </button>
                 <button type="button" class="button button-quiet study-action-ctrl" id="studyCompleteBtn" style="display: none;">
-                  <span class="btn-icon">✓</span> <span class="btn-label">Hoàn tất</span>
+                  <span class="btn-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></span> <span class="btn-label">Hoàn tất</span>
                 </button>
               </div>
             </div>
@@ -846,7 +849,7 @@
             <div class="study-card todo-card" id="todoMainCard">
               <div class="todo-head">
                 <div>
-                  <h3>📝 Những việc cần làm</h3>
+                  <h3><svg class="ui-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:5px;"><rect x="3" y="5" width="6" height="6" rx="1"></rect><path d="m3 17 2 2 4-4"></path><path d="M13 6h8"></path><path d="M13 12h8"></path><path d="M13 18h8"></path></svg>Những việc cần làm</h3>
                   <div class="todo-progress-bar-wrap">
                     <div class="todo-progress-bar" id="todoProgressBar" style="width: 0%;"></div>
                   </div>
@@ -855,7 +858,7 @@
               </div>
               <div class="todo-input-wrap">
                 <input type="text" id="newTodoInput" placeholder="Thêm mục tiêu nhỏ..." maxlength="80" />
-                <button class="button button-sm button-primary" id="addTodoBtn">+</button>
+                <button class="button button-sm button-primary" id="addTodoBtn"><svg class="ui-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg></button>
               </div>
               <ul class="todo-list" id="studyTodoList"></ul>
             </div>
@@ -864,7 +867,7 @@
             <div class="study-card co-study-card">
               <div class="co-study-head">
                 <div>
-                  <h3>👥 Bàn học chung <span class="badge" id="coStudyCountBadge">0</span></h3>
+                  <h3><svg class="ui-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:5px;"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>Bàn học chung <span class="badge" id="coStudyCountBadge">0</span></h3>
                   <p class="co-study-tip">Đang cùng học trực tuyến</p>
                 </div>
               </div>
@@ -883,7 +886,7 @@
           <div class="arena-banner-overlay"></div>
           <div class="arena-banner-content">
             <div class="arena-banner-tags">
-              <span class="arena-tag-gold">🏆 RE:SEARCH ARENA</span>
+              <span class="arena-tag-gold"><svg class="ui-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px; margin-right:3px;"><path d="M6 9H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h2"/><path d="M18 9h2a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2h-2"/><path d="M6 3h12v7a6 6 0 0 1-12 0V3z"/><path d="M12 16v4"/><path d="M8 20h8"/></svg> RE:SEARCH ARENA</span>
               <span class="arena-tag-season" id="arenaTagSeason">TUẦN 01</span>
               <span class="arena-tag-type" id="arenaHeroStatusTag">ĐẤU TRƯỜNG HỌC THUẬT</span>
             </div>
@@ -896,7 +899,7 @@
         <div id="arenaStudentIdRequiredNotice" class="arena-locked-card" style="display: none;">
           <div class="arena-locked-halo"></div>
           <div class="arena-locked-icon-wrap">
-            <div class="arena-locked-icon">📋</div>
+            <div class="arena-locked-icon"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg></div>
             <span class="arena-locked-ring"></span>
           </div>
           <h2 class="arena-locked-title" style="margin-top: 14px; margin-bottom: 20px; font-size: 19px; font-weight: 700; color: var(--text); text-align: center; line-height: 1.4;">
@@ -913,7 +916,7 @@
         <div id="arenaLockedNotice" class="arena-locked-card" style="display: none;">
           <div class="arena-locked-halo"></div>
           <div class="arena-locked-icon-wrap">
-            <div class="arena-locked-icon">🔒</div>
+            <div class="arena-locked-icon"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>
             <span class="arena-locked-ring"></span>
           </div>
           <div class="arena-locked-badge">
@@ -927,17 +930,17 @@
 
           <div class="arena-locked-preview-grid">
             <div class="arena-preview-card">
-              <div class="preview-card-icon">⚡</div>
+              <div class="preview-card-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg></div>
               <div class="preview-card-title">3 Chặng thi đấu mỗi tuần</div>
               <p class="preview-card-desc">Thử thách 10 câu hỏi trắc nghiệm NCKH theo chủ đề (T2-T3, T4-T5, T6-T7).</p>
             </div>
             <div class="arena-preview-card highlight">
-              <div class="preview-card-icon">👑</div>
+              <div class="preview-card-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4l3 12h14l3-12-6 7-4-7-4 7-6-7zm3 16h14v2H5z"></path></svg></div>
               <div class="preview-card-title">Bảng Vàng Vinh Danh</div>
               <p class="preview-card-desc">Cạnh tranh thời gian thực, vinh danh Quán quân, Á quân, Quý quân toàn tuần.</p>
             </div>
             <div class="arena-preview-card">
-              <div class="preview-card-icon">🎁</div>
+              <div class="preview-card-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 12 20 22 4 22 4 12"></polyline><rect x="2" y="7" width="20" height="5"></rect><line x1="12" y1="22" x2="12" y2="7"></line><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"></path><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"></path></svg></div>
               <div class="preview-card-title">Phần thưởng Độc quyền</div>
               <p class="preview-card-desc">Nhận Khiên bảo vệ chuỗi tự học + Điểm rèn luyện hoạt động khoa học.</p>
             </div>
@@ -945,13 +948,13 @@
 
           <div class="arena-locked-actions">
             <button type="button" class="button button-primary arena-cta-home" onclick="go('home')">
-              <span>🏠</span> Về Trang chủ
+              <svg class="ui-btn-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg> Về Trang chủ
             </button>
             <button type="button" class="button button-outline" onclick="go('study')">
-              <span>🎧</span> Phòng tự học Pomodoro
+              <svg class="ui-btn-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/></svg> Phòng tự học Pomodoro
             </button>
             <button type="button" class="button button-outline" onclick="go('forum')">
-              <span>💬</span> Diễn đàn NCKH
+              <svg class="ui-btn-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> Diễn đàn NCKH
             </button>
           </div>
         </div>
@@ -961,12 +964,12 @@
           <!-- ADMIN NOTICE BAR -->
           <div class="arena-admin-bar" id="arenaAdminBar" style="display: none;">
             <div class="admin-bar-left">
-              <span class="admin-badge-icon">👑</span>
+              <span class="admin-badge-icon"><svg class="ui-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4l3 12h14l3-12-6 7-4-7-4 7-6-7zm3 16h14v2H5z"></path></svg></span>
               <span><strong>Chế độ Ban Quản trị:</strong> Bạn đang xem trước và điều hành hệ thống Đấu trường Arena.</span>
             </div>
             <div class="admin-bar-actions">
               <button type="button" class="button button-sm button-outline" onclick="go('account'); switchAdminTab('competition');">
-                ⚙️ Quản lý Đề &amp; Thời gian (Admin)
+                <svg class="ui-btn-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg> Quản lý Đề &amp; Thời gian (Admin)
               </button>
             </div>
           </div>
@@ -1082,13 +1085,15 @@
               <!-- SUNDAY NOTICE CONTAINER (CHỦ NHẬT TẠM ẨN CỔNG, CHỈ HIỆN NÚT BẢNG XẾP HẠNG) -->
               <div id="gatewaySundayContainer" class="gateway-sunday-container" style="display: none;">
                 <div class="sunday-hero-banner">
-                  <div class="sunday-cup-icon">👑</div>
+                  <div class="sunday-cup-icon">
+                    <svg class="ui-icon" width="34" height="34" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M5 16L3 5l5.5 5L12 4l3.5 6L21 5l-2 11H5zm14 3c0 .6-.4 1-1 1H6c-.6 0-1-.4-1-1v-1h14v1z"/></svg>
+                  </div>
                   <div class="sunday-hero-content">
                     <span class="sunday-pill-tag">NGÀY CHỦ NHẬT • TỔNG KẾT &amp; VINH DANH</span>
                     <h3>Cổng thi đấu tuần đã đóng</h3>
                     <p>Hôm nay là ngày tổng kết, trao thưởng và vinh danh những cá nhân xuất sắc nhất trên Bảng vàng Đấu trường. Hãy xem Bảng xếp hạng tuần ngay!</p>
                     <button type="button" class="button button-primary button-lg sunday-goto-lb-btn" onclick="switchCompTab('leaderboard')">
-                      <span>👑</span> Xem Bảng xếp hạng tuần &amp; Vinh danh
+                      <svg class="ui-btn-icon" width="15" height="15" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M5 16L3 5l5.5 5L12 4l3.5 6L21 5l-2 11H5zm14 3c0 .6-.4 1-1 1H6c-.6 0-1-.4-1-1v-1h14v1z"/></svg> Xem Bảng xếp hạng tuần &amp; Vinh danh
                     </button>
                   </div>
                 </div>
@@ -1102,7 +1107,9 @@
                 <canvas id="sundayCeremonyCanvas" class="sunday-ceremony-canvas"></canvas>
                 <div class="ceremony-glow-halo"></div>
                 <div class="ceremony-content">
-                  <div class="ceremony-trophy-icon">🏆</div>
+                  <div class="ceremony-trophy-icon">
+                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"></path><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"></path><path d="M4 22h16"></path><path d="M10 14.66V17c0 .55-.45 1-1 1H8v4h8v-4h-1c-.55 0-1-.45-1-1v-2.34"></path><path d="M18 2H6v7a6 6 0 0 0 12 0V2z"></path></svg>
+                  </div>
                   <div class="ceremony-badge">LỄ CÔNG BỐ KẾT QUẢ &amp; VINH DANH TUẦN THI ĐẤU</div>
                   <h2 class="ceremony-heading">VINH DANH NHÀ VÔ ĐỊCH ĐẤU TRƯỜNG ARENA</h2>
                   <p class="ceremony-desc">Chúc mừng tất cả các thành viên đã xuất sắc hoàn thành chặng thi đấu tuần!</p>
@@ -1115,8 +1122,8 @@
                   <button type="button" class="lb-phase-btn active" data-lb-phase="1" onclick="switchLbPhase(1)">Chặng 1 (T2-T3)</button>
                   <button type="button" class="lb-phase-btn" data-lb-phase="2" onclick="switchLbPhase(2)">Chặng 2 (T4-T5)</button>
                   <button type="button" class="lb-phase-btn" data-lb-phase="3" onclick="switchLbPhase(3)">Chặng 3 (T6-T7)</button>
-                  <button type="button" class="lb-phase-btn week-lb-btn" data-lb-phase="week" onclick="switchLbPhase('week')">👑 Toàn tuần</button>
-                  <button type="button" class="lb-refresh-btn" id="lbRefreshBtn" onclick="refreshArenaLeaderboard()" title="Làm mới bảng xếp hạng">🔄 Làm mới</button>
+                  <button type="button" class="lb-phase-btn week-lb-btn" data-lb-phase="week" onclick="switchLbPhase('week')"><svg class="ui-btn-icon" width="13" height="13" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M5 16L3 5l5.5 5L12 4l3.5 6L21 5l-2 11H5zm14 3c0 .6-.4 1-1 1H6c-.6 0-1-.4-1-1v-1h14v1z"/></svg> Toàn tuần</button>
+                  <button type="button" class="lb-refresh-btn" id="lbRefreshBtn" onclick="refreshArenaLeaderboard()" title="Làm mới bảng xếp hạng"><svg class="ui-btn-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg> Làm mới</button>
                 </div>
 
                 <!-- BẢNG THI LỚP 06 / 07 (CHO ADMIN & GIẢNG VIÊN) -->
@@ -1159,7 +1166,7 @@
               <div class="rules-content-body">
                 <!-- SECTION 1 -->
                 <section class="rules-section">
-                  <h3 class="rules-heading"><span>🗓️</span> 1. Chu kỳ thi đấu &amp; 3 Chặng trong tuần</h3>
+                  <h3 class="rules-heading"><svg class="ui-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg> 1. Chu kỳ thi đấu &amp; 3 Chặng trong tuần</h3>
                   <p class="rules-intro-text">
                     Đấu trường được tổ chức định kỳ mỗi tuần từ <strong>Thứ Hai đến Chủ Nhật</strong>, chia làm 3 chặng độc lập. <strong>Mỗi chặng người chơi có duy nhất 1 lượt thi:</strong>
                   </p>
@@ -1193,7 +1200,7 @@
                   <!-- CƠ CHẾ LÀM BÙ -->
                   <div class="rules-callout-card rules-catchup-card">
                     <div class="callout-header">
-                      <span class="callout-badge-tag blue">🔄 Cơ chế làm bù trong tuần</span>
+                      <span class="callout-badge-tag blue"><svg class="ui-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg> Cơ chế làm bù trong tuần</span>
                       <strong>Không lo mất điểm nếu bận rộn:</strong>
                     </div>
                     <ul class="callout-bullets">
@@ -1207,7 +1214,7 @@
                   <!-- CHỦ NHẬT TỔNG KẾT -->
                   <div class="rules-callout-card rules-sunday-card">
                     <div class="callout-header">
-                      <span class="callout-badge-tag gold">👑 Chủ Nhật</span>
+                      <span class="callout-badge-tag gold"><svg class="ui-icon" width="13" height="13" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M5 16L3 5l5.5 5L12 4l3.5 6L21 5l-2 11H5zm14 3c0 .6-.4 1-1 1H6c-.6 0-1-.4-1-1v-1h14v1z"/></svg> Chủ Nhật</span>
                       <strong>Tổng kết toàn tuần &amp; Trao thưởng</strong>
                     </div>
                     <p class="callout-desc">
@@ -1218,7 +1225,7 @@
 
                 <!-- SECTION 2 -->
                 <section class="rules-section">
-                  <h3 class="rules-heading"><span>⏱️</span> 2. Khung giờ &amp; Lịch hoạt động</h3>
+                  <h3 class="rules-heading"><svg class="ui-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg> 2. Khung giờ &amp; Lịch hoạt động</h3>
                   <div class="rules-schedule-grid">
                     <div class="schedule-card gate-summary">
                       <div class="schedule-badge">🏁 CHUẨN BỊ</div>
@@ -1240,7 +1247,7 @@
                       <p>Khung giờ mở cổng làm bài liền mạch từng chặng (T2–T3, T4–T5, T6–T7).</p>
                     </div>
                     <div class="schedule-card gate-summary" style="border-color: rgba(234, 179, 8, 0.4); background: rgba(234, 179, 8, 0.05);">
-                      <div class="schedule-badge" style="color: #eab308;">👑 TỔNG KẾT TUẦN</div>
+                      <div class="schedule-badge" style="color: #eab308;"><svg class="ui-icon" width="13" height="13" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M5 16L3 5l5.5 5L12 4l3.5 6L21 5l-2 11H5zm14 3c0 .6-.4 1-1 1H6c-.6 0-1-.4-1-1v-1h14v1z"/></svg> TỔNG KẾT TUẦN</div>
                       <div class="schedule-time" style="color: #facc15;">0h – 23h59 ngày Chủ nhật</div>
                       <p>Khung giờ tổng kết toàn bộ tuần thi đấu, chốt điểm và vinh danh trao thưởng.</p>
                     </div>
@@ -1249,7 +1256,7 @@
 
                 <!-- SECTION 3 -->
                 <section class="rules-section">
-                  <h3 class="rules-heading"><span>🎯</span> 3. Cơ chế làm bài, Tính điểm &amp; Trừ thời gian</h3>
+                  <h3 class="rules-heading"><svg class="ui-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="6"></circle><circle cx="12" cy="12" r="2"></circle></svg> 3. Cơ chế làm bài, Tính điểm &amp; Trừ thời gian</h3>
                   <div class="rules-formula-card">
                     <div class="formula-title">TỔNG ĐIỂM = ĐIỂM ĐÚNG (400⭐) + THƯỞNG LẦN 1 (100⭐) + GIÂY CÒN LẠI (600⭐) + THƯỞNG ĐÚNG HẠN (+50⭐)</div>
                     <div class="formula-grid">
@@ -1275,7 +1282,7 @@
 
                   <div class="rules-penalty-box">
                     <div class="penalty-header">
-                      <span class="penalty-icon">⚠️</span>
+                      <span class="penalty-icon"><svg class="ui-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg></span>
                       <h4>Quy tắc trả lời sai theo từng câu (Tối đa 3 lần chọn):</h4>
                     </div>
                     <div class="penalty-steps-grid">
@@ -1301,7 +1308,7 @@
 
                 <!-- SECTION 4 -->
                 <section class="rules-section">
-                  <h3 class="rules-heading"><span>🎁</span> 4. Cơ cấu Giải thưởng Tuần &amp; Điểm thưởng Chặng</h3>
+                  <h3 class="rules-heading"><svg class="ui-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 12 20 22 4 22 4 12"></polyline><rect x="2" y="7" width="20" height="5"></rect><line x1="12" y1="22" x2="12" y2="7"></line><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"></path><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"></path></svg> 4. Cơ cấu Giải thưởng Tuần &amp; Điểm thưởng Chặng</h3>
                   <p class="rules-intro-text">Sau khi kết thúc Chặng 3 vào thứ Bảy, Chủ Nhật là thời điểm hệ thống chốt Bảng xếp hạng tuần và trao thưởng chính thức:</p>
 
                   <div class="rules-rewards-table-wrap">
@@ -1315,29 +1322,29 @@
                       </thead>
                       <tbody>
                         <tr class="rank-top1">
-                          <td>🥇 <strong>Quán quân (Top 1)</strong></td>
+                          <td><svg class="ui-icon" width="16" height="16" viewBox="0 0 24 24" fill="#f59e0b" stroke="none" style="margin-right: 4px;"><circle cx="12" cy="8" r="7"></circle><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"></polyline></svg> <strong>Quán quân (Top 1)</strong></td>
                           <td><strong class="pts-val">+20 điểm</strong></td>
-                          <td>🛡️🛡️ 2 khiên</td>
+                          <td><svg class="shield-icon-svg" width="15" height="15" viewBox="0 0 24 24" fill="currentColor" stroke="none" style="color: #10b981; margin-right: 2px;"><path d="M12 2L3 7v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-9-5z"/></svg><svg class="shield-icon-svg" width="15" height="15" viewBox="0 0 24 24" fill="currentColor" stroke="none" style="color: #10b981; margin-right: 4px;"><path d="M12 2L3 7v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-9-5z"/></svg> 2 khiên</td>
                         </tr>
                         <tr class="rank-top2">
-                          <td>🥈 <strong>Á quân (Top 2)</strong></td>
+                          <td><svg class="ui-icon" width="16" height="16" viewBox="0 0 24 24" fill="#94a3b8" stroke="none" style="margin-right: 4px;"><circle cx="12" cy="8" r="7"></circle><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"></polyline></svg> <strong>Á quân (Top 2)</strong></td>
                           <td><strong class="pts-val">+18 điểm</strong></td>
-                          <td>🛡️🛡️ 2 khiên</td>
+                          <td><svg class="shield-icon-svg" width="15" height="15" viewBox="0 0 24 24" fill="currentColor" stroke="none" style="color: #10b981; margin-right: 2px;"><path d="M12 2L3 7v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-9-5z"/></svg><svg class="shield-icon-svg" width="15" height="15" viewBox="0 0 24 24" fill="currentColor" stroke="none" style="color: #10b981; margin-right: 4px;"><path d="M12 2L3 7v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-9-5z"/></svg> 2 khiên</td>
                         </tr>
                         <tr class="rank-top3">
-                          <td>🥉 <strong>Quý quân (Top 3)</strong></td>
+                          <td><svg class="ui-icon" width="16" height="16" viewBox="0 0 24 24" fill="#b45309" stroke="none" style="margin-right: 4px;"><circle cx="12" cy="8" r="7"></circle><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"></polyline></svg> <strong>Quý quân (Top 3)</strong></td>
                           <td><strong class="pts-val">+15 điểm</strong></td>
-                          <td>🛡️🛡️ 2 khiên</td>
+                          <td><svg class="shield-icon-svg" width="15" height="15" viewBox="0 0 24 24" fill="currentColor" stroke="none" style="color: #10b981; margin-right: 2px;"><path d="M12 2L3 7v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-9-5z"/></svg><svg class="shield-icon-svg" width="15" height="15" viewBox="0 0 24 24" fill="currentColor" stroke="none" style="color: #10b981; margin-right: 4px;"><path d="M12 2L3 7v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-9-5z"/></svg> 2 khiên</td>
                         </tr>
                         <tr class="rank-top4-10">
-                          <td>🏅 <strong>Top 4 – Top 10</strong></td>
+                          <td><svg class="ui-icon" width="16" height="16" viewBox="0 0 24 24" fill="#10b981" stroke="none" style="margin-right: 4px;"><circle cx="12" cy="8" r="7"></circle><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"></polyline></svg> <strong>Top 4 – Top 10</strong></td>
                           <td><strong class="pts-val">+10 điểm</strong></td>
-                          <td>🛡️ 1 khiên</td>
+                          <td><svg class="shield-icon-svg" width="15" height="15" viewBox="0 0 24 24" fill="currentColor" stroke="none" style="color: #10b981; margin-right: 4px;"><path d="M12 2L3 7v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-9-5z"/></svg> 1 khiên</td>
                         </tr>
                         <tr class="rank-participation">
-                          <td>👥 <strong>Tất cả thành viên tham gia (≥ 1 chặng)</strong></td>
+                          <td><svg class="ui-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px;"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg> <strong>Tất cả thành viên tham gia (≥ 1 chặng)</strong></td>
                           <td><strong class="pts-val">+5 điểm</strong></td>
-                          <td>🛡️ 1 khiên</td>
+                          <td><svg class="shield-icon-svg" width="15" height="15" viewBox="0 0 24 24" fill="currentColor" stroke="none" style="color: #10b981; margin-right: 4px;"><path d="M12 2L3 7v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-9-5z"/></svg> 1 khiên</td>
                         </tr>
                       </tbody>
                     </table>
@@ -1354,7 +1361,7 @@
 
                   <!-- GIẢI THÍCH KHIÊN BẢO VỆ CHUỖI -->
                   <div class="rules-shield-explain">
-                    <span class="shield-explain-icon">🛡️</span>
+                    <span class="shield-explain-icon"><svg class="shield-icon-svg" width="22" height="22" viewBox="0 0 24 24" fill="currentColor" stroke="none" style="color: #10b981;"><path d="M12 2L3 7v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-9-5z"/></svg></span>
                     <div>
                       <strong>Đặc quyền Khiên giữ chuỗi tự học:</strong>
                       <p>Khiên bảo vệ sẽ tự động kích hoạt để giữ chuỗi trong trường hợp bạn quên đăng nhập</p>
@@ -1390,7 +1397,7 @@
               style="display: none"
               onclick="openMyNamecard()"
             >
-              📇 Xem thẻ tên
+              <svg class="ui-btn-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="18" rx="2"></rect><circle cx="8" cy="10" r="2"></circle><line x1="14" y1="9" x2="18" y2="9"></line><line x1="14" y1="13" x2="18" y2="13"></line><line x1="6" y1="17" x2="18" y2="17"></line></svg> Xem thẻ tên
             </button>
             <button
               class="button button-primary"
@@ -1398,7 +1405,7 @@
               style="display: none"
               onclick="openEditNamecardModal()"
             >
-              🎨 Chỉnh sửa thẻ tên
+              <svg class="ui-btn-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13.5" cy="6.5" r=".5" fill="currentColor"></circle><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"></circle><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"></circle><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"></circle><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"></path></svg> Chỉnh sửa thẻ tên
             </button>
             <button
               class="button button-outline"
@@ -1406,7 +1413,7 @@
               style="display: none"
               onclick="openEditProfileModal()"
             >
-              📝 Chỉnh sửa hồ sơ
+              <svg class="ui-btn-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg> Chỉnh sửa hồ sơ
             </button>
             <button
               class="button button-outline"
@@ -1414,7 +1421,7 @@
               style="display: none"
               onclick="openChangePasswordModal()"
             >
-              🔑 Đổi mật khẩu
+              <svg class="ui-btn-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="15" r="4"></circle><path d="M10.85 12.15L19 4"></path><path d="M18 5l2 2"></path><path d="M15 8l2 2"></path></svg> Đổi mật khẩu
             </button>
             <button
               class="button button-outline"
@@ -1425,7 +1432,7 @@
               "
               id="logoutButton"
             >
-              Đăng xuất
+              <svg class="ui-btn-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg> Đăng xuất
             </button>
             <button
               type="button"
@@ -1434,7 +1441,7 @@
               onclick="openAuth()"
               style="display: none;"
             >
-              Đăng nhập
+              <svg class="ui-btn-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path><polyline points="10 17 15 12 10 7"></polyline><line x1="15" y1="12" x2="3" y2="12"></line></svg> Đăng nhập
             </button>
           </div>
         </div>
@@ -1460,8 +1467,8 @@
         <div class="account-card" id="accountStudentPromptCard" style="display: none; margin-bottom: 24px; padding: 18px 22px; background: #fff; border: 1px solid var(--line); border-left: 4px solid var(--primary); border-radius: 12px; box-shadow: 0 1px 4px rgba(0,0,0,0.04);">
           <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px;">
             <div style="display: flex; align-items: center; gap: 14px; max-width: 680px;">
-              <div style="width: 42px; height: 42px; border-radius: 10px; background: rgba(30, 93, 70, 0.08); color: var(--primary); display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0;">
-                🎓
+              <div style="width: 42px; height: 42px; border-radius: 10px; background: rgba(30, 93, 70, 0.08); color: var(--primary); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"></path><path d="M6 12v5c3 3 9 3 12 0v-5"></path></svg>
               </div>
               <div>
                 <strong style="font-size: 14.5px; color: var(--ink); display: block; margin-bottom: 4px; font-weight: 700;">Yêu cầu cập nhật thông tin sinh viên</strong>
@@ -1596,7 +1603,7 @@
             onclick="this.closest('dialog').close()"
             aria-label="Đóng"
           >
-            ×
+            <svg class="ui-icon modal-close-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
           </button>
         </div>
         <label
@@ -1671,7 +1678,7 @@
             type="button"
             onclick="this.closest('dialog').close()"
             aria-label="Đóng"
-          >×</button>
+          ><svg class="ui-icon modal-close-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
         </div>
         <label id="editTitleLabel" style="display:none;"
           >Tiêu đề<input
@@ -1699,7 +1706,7 @@
             onclick="this.closest('dialog').close()"
             aria-label="Đóng"
           >
-            ×
+            <svg class="ui-icon modal-close-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
           </button>
         </div>
         <div
@@ -1781,7 +1788,7 @@
             onclick="this.closest('dialog').close()"
             aria-label="Đóng"
           >
-            ×
+            <svg class="ui-icon modal-close-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
           </button>
         </div>
         <div class="auth-tabs">
@@ -1842,7 +1849,7 @@
             onclick="this.closest('dialog').close()"
             aria-label="Đóng"
           >
-            ×
+            <svg class="ui-icon modal-close-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
           </button>
         </div>
 
@@ -2191,7 +2198,7 @@
             onclick="this.closest('dialog').close()"
             aria-label="Đóng"
           >
-            ×
+            <svg class="ui-icon modal-close-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
           </button>
         </div>
         <label>
@@ -2269,7 +2276,7 @@
           <div style="margin-top: 12px;">
             <input type="file" id="coverFileInput" accept="image/*" style="display: none;" />
             <button type="button" class="button button-outline" id="btnUploadCustomCover" style="width: 100%; justify-content: center; gap: 8px;">
-              <span>📷</span> Tải ảnh bìa từ thiết bị lên (Tối đa 150KB)
+              <svg class="ui-btn-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg> Tải ảnh bìa từ thiết bị lên (Tối đa 150KB)
             </button>
             <div id="coverUploadPreview" style="display: none; margin-top: 10px; border-radius: 8px; overflow: hidden; height: 80px; position: relative;">
               <img id="coverUploadImg" src="" style="width: 100%; height: 100%; object-fit: cover;" alt="Preview ảnh bìa" />
@@ -2304,12 +2311,12 @@
             onclick="this.closest('dialog').close()"
             aria-label="Đóng"
           >
-            ×
+            <svg class="ui-icon modal-close-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
           </button>
         </div>
 
         <div class="account-security-banner">
-          🔒 <b>Thông tin định danh nội bộ:</b> Mã sinh viên, tên thật và lớp học được lưu trữ bảo mật nhằm phục vụ điểm danh, đối soát với Giảng viên và Nhà trường. Hệ thống cam kết <b>KHÔNG</b> hiển thị công khai các thông tin này trên Thẻ tên (Namecard).
+          <svg class="ui-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px;"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg> <b>Thông tin định danh nội bộ:</b> Mã sinh viên, tên thật và lớp học được lưu trữ bảo mật nhằm phục vụ điểm danh, đối soát với Giảng viên và Nhà trường. Hệ thống cam kết <b>KHÔNG</b> hiển thị công khai các thông tin này trên Thẻ tên (Namecard).
         </div>
         <label style="margin-top: 14px;">
           Địa chỉ Email (Đổi duy nhất 1 lần)
@@ -2364,7 +2371,7 @@
 
     <!-- MODAL XEM ĐẦY ĐỦ ẢNH BÌA -->
     <dialog class="modal full-cover-viewer-modal" id="fullCoverViewerModal">
-      <button type="button" class="namecard-close-btn" onclick="document.getElementById('fullCoverViewerModal').close()" aria-label="Đóng">✕</button>
+      <button type="button" class="namecard-close-btn" onclick="document.getElementById('fullCoverViewerModal').close()" aria-label="Đóng"><svg class="ui-icon modal-close-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
       <div class="full-cover-viewer-body">
         <img id="fullCoverViewerImg" src="" alt="Ảnh bìa đầy đủ" style="display: none;" />
         <div id="fullCoverViewerBanner" style="display: none; width: 100%; height: 380px; border-radius: 16px;"></div>
@@ -2385,7 +2392,7 @@
             onclick="this.closest('dialog').close()"
             aria-label="Đóng"
           >
-            ×
+            <svg class="ui-icon modal-close-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
           </button>
         </div>
 
@@ -2435,7 +2442,7 @@
           <p class="eyebrow">LỊCH SỬ HOẠT ĐỘNG</p>
           <h2>Tất cả đóng góp</h2>
         </div>
-        <button class="close-modal" id="closeHistory" aria-label="Đóng">×</button>
+        <button class="close-modal" id="closeHistory" aria-label="Đóng"><svg class="ui-icon modal-close-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
       </div>
       <div id="historyContent" style="margin-top: 16px; display: flex; flex-direction: column; gap: 12px; max-height: 60vh; overflow-y: auto;">
         <!-- Filled by JS -->
@@ -2449,15 +2456,17 @@
         </div>
         <div style="display: flex; align-items: center; gap: 10px;">
           <button type="button" class="journey-shield-btn" onclick="openStreakShieldModal()" title="Bấm để xem chi tiết &amp; lịch sử khiên">
-            <span>🛡️</span> <b id="journeyShieldsCount">0</b> khiên
+            <svg class="shield-icon-svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M12 2L3 7v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-9-5z"/></svg> <b id="journeyShieldsCount">0</b> khiên
           </button>
-          <button class="close-modal" id="closeStreakJourney" onclick="closeStreakJourneyModal()" aria-label="Đóng">×</button>
+          <button class="close-modal" id="closeStreakJourney" onclick="closeStreakJourneyModal()" aria-label="Đóng"><svg class="ui-icon modal-close-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
         </div>
       </div>
       <div class="streak-journey-body">
         <div class="streak-journey-banner-container" id="streakJourneyBannerSlot">
           <div class="journey-banner-placeholder">
-            <div class="journey-banner-icon">👑</div>
+            <div class="journey-banner-icon">
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M5 16L3 5l5.5 5L12 4l3.5 6L21 5l-2 11H5zm14 3c0 .6-.4 1-1 1H6c-.6 0-1-.4-1-1v-1h14v1z"/></svg>
+            </div>
             <div class="journey-banner-title">Hành trình giữ chuỗi 50 ngày</div>
             <div class="journey-banner-subtitle">Hoạt động sôi nổi mỗi ngày để thắp sáng chuỗi</div>
           </div>
@@ -2472,9 +2481,9 @@
       <div class="streak-shield-header">
         <div>
           <p class="eyebrow">BẢO VỆ CHUỖI NĂNG ĐỘNG</p>
-          <h2><span>🛡️</span> Khiên bảo vệ chuỗi</h2>
+          <h2><svg class="shield-icon-svg" width="22" height="22" viewBox="0 0 24 24" fill="currentColor" stroke="none" style="margin-right: 6px;"><path d="M12 2L3 7v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-9-5z"/></svg> Khiên bảo vệ chuỗi</h2>
         </div>
-        <button class="close-modal" id="closeStreakShield" onclick="closeStreakShieldModal()" aria-label="Đóng">×</button>
+        <button class="close-modal" id="closeStreakShield" onclick="closeStreakShieldModal()" aria-label="Đóng"><svg class="ui-icon modal-close-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
       </div>
       <div class="streak-shield-body">
         <!-- KHỐI 1: TỔNG QUAN KHIÊN HIỆN CÓ & SLOTS -->
@@ -2501,19 +2510,19 @@
         <!-- KHỐI 2: CHỨC NĂNG CỦA KHIÊN -->
         <div class="shield-rules-box">
           <div class="shield-rules-title">
-            <span>💡</span> <b>Chức năng &amp; Cơ chế hoạt động của Khiên</b>
+            <svg class="ui-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px;"><path d="M9 18h6"></path><path d="M10 22h4"></path><path d="M12 2a7 7 0 0 0-7 7c0 2.38 1.19 4.47 3 5.74V17a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1v-2.26c1.81-1.27 3-3.36 3-5.74a7 7 0 0 0-7-7z"></path></svg> <b>Chức năng &amp; Cơ chế hoạt động của Khiên</b>
           </div>
           <ul class="shield-rules-list">
             <li>
-              <span>🛡️</span>
+              <svg class="shield-icon-svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="none" style="margin-right: 8px; flex-shrink: 0;"><path d="M12 2L3 7v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-9-5z"/></svg>
               <span><strong>Tự động giữ chuỗi:</strong> Nếu bạn lỡ quên hoặc không kịp vào web trong 1 ngày, hệ thống sẽ tự động dùng 1 khiên để giữ nguyên số ngày chuỗi (không bị reset về 0).</span>
             </li>
             <li>
-              <span>🔄</span>
+              <svg class="ui-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px; flex-shrink: 0;"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
               <span><strong>Giới hạn lưu trữ:</strong> Mỗi tài khoản có thể tích lũy tối đa <strong>3 khiên</strong> cùng lúc. Không áp dụng giữ chuỗi quá 2 ngày bỏ lỡ liên tiếp.</span>
             </li>
             <li>
-              <span>🎁</span>
+              <svg class="ui-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px; flex-shrink: 0;"><polyline points="20 12 20 22 4 22 4 12"></polyline><rect x="2" y="7" width="20" height="5"></rect><line x1="12" y1="22" x2="12" y2="7"></line><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"></path><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"></path></svg>
               <span><strong>Cách nhận thêm khiên:</strong> Tặng 1 khiên chào mừng khi tạo tài khoản; Đạt mốc chuỗi 7, 14 ngày (+1 khiên), 30, 50 ngày (+2 khiên); Đạt Top 1-10 Đấu trường Arena tuần (+1 đến +2 khiên).</span>
             </li>
           </ul>
@@ -2523,12 +2532,12 @@
         <div class="shield-history-section">
           <div class="shield-history-header">
             <div class="shield-history-title">
-              <span>📜</span> Lịch sử biến động khiên
+              <svg class="ui-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg> Lịch sử biến động khiên
             </div>
             <div class="shield-history-tabs">
               <button type="button" class="shield-tab-btn active" data-shield-filter="all" onclick="filterShieldHistory('all')">Tất cả</button>
-              <button type="button" class="shield-tab-btn" data-shield-filter="add" onclick="filterShieldHistory('add')">🟢 Lịch sử cộng</button>
-              <button type="button" class="shield-tab-btn" data-shield-filter="use" onclick="filterShieldHistory('use')">🔴 Lịch sử trừ</button>
+              <button type="button" class="shield-tab-btn" data-shield-filter="add" onclick="filterShieldHistory('add')"><svg class="ui-btn-icon" width="10" height="10" viewBox="0 0 24 24" fill="#10b981" stroke="none"><circle cx="12" cy="12" r="10"></circle></svg> Lịch sử cộng</button>
+              <button type="button" class="shield-tab-btn" data-shield-filter="use" onclick="filterShieldHistory('use')"><svg class="ui-btn-icon" width="10" height="10" viewBox="0 0 24 24" fill="#ef4444" stroke="none"><circle cx="12" cy="12" r="10"></circle></svg> Lịch sử trừ</button>
             </div>
           </div>
           <div class="shield-history-list" id="shieldHistoryList">
@@ -2550,7 +2559,7 @@
           <p class="eyebrow">QUẢN TRỊ HỆ THỐNG</p>
           <h2>Bảng điều khiển Admin</h2>
         </div>
-        <button class="close-modal" id="closeAdmin" aria-label="Đóng">×</button>
+        <button class="close-modal" id="closeAdmin" aria-label="Đóng"><svg class="ui-icon modal-close-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
       </div>
       <div class="auth-tabs" style="margin-bottom: 24px">
         <button
@@ -2595,7 +2604,7 @@
           data-admin-tab="trash"
           id="adminTabTrashBtn"
         >
-          🗑️ Thùng rác (7 ngày) <span id="adminTrashBadge" style="display:none; background:#64748b; color:#fff; font-size:10px; border-radius:10px; padding:1px 6px; margin-left:4px; font-weight:bold;">0</span>
+          <svg class="ui-btn-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>Thùng rác (7 ngày) <span id="adminTrashBadge" style="display:none; background:#64748b; color:#fff; font-size:10px; border-radius:10px; padding:1px 6px; margin-left:4px; font-weight:bold;">0</span>
         </button>
         <button
           type="button"
@@ -2603,7 +2612,7 @@
           data-admin-tab="hidden"
           id="adminTabHiddenBtn"
         >
-          👁️ Bài viết bị ẩn <span id="adminHiddenBadge" style="display:none; background:#d97706; color:#fff; font-size:10px; border-radius:10px; padding:1px 6px; margin-left:4px; font-weight:bold;">0</span>
+          <svg class="ui-btn-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>Bài viết bị ẩn <span id="adminHiddenBadge" style="display:none; background:#d97706; color:#fff; font-size:10px; border-radius:10px; padding:1px 6px; margin-left:4px; font-weight:bold;">0</span>
         </button>
       </div>
 
@@ -2620,7 +2629,7 @@
         </div>
         <div class="admin-quick-lookup-card" style="margin-top: 18px; padding: 16px; background: var(--surface-2, #f8fafc); border: 1px solid var(--border, #e2e8f0); border-radius: 12px;">
           <h4 style="margin: 0 0 8px 0; font-size: 15px; display: flex; align-items: center; gap: 8px;">
-            <span>🔍</span> <span>Tra cứu hồ sơ người dùng bằng ID</span>
+            <svg class="ui-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg> <span>Tra cứu hồ sơ người dùng bằng ID</span>
           </h4>
           <p style="margin: 0 0 12px 0; font-size: 13px; color: var(--text-muted, #64748b);">
             Nhập ID người dùng (ví dụ: <code>1</code>, <code>25</code> hoặc <code>#00025</code>) để mở ngay hồ sơ Namecard và thông tin sinh viên chi tiết.
@@ -2651,7 +2660,7 @@
               style="flex: 1; padding: 7px 12px; font-size: 13px;"
             />
             <button type="submit" class="button button-primary button-sm" style="white-space: nowrap;">
-              🔍 Tra cứu ID
+              <svg class="ui-btn-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>Tra cứu ID
             </button>
           </form>
           <div style="flex: 1; min-width: 240px; max-width: 360px;">
@@ -2735,15 +2744,15 @@
         <!-- SIMULATOR BAR -->
         <div class="admin-comp-sim-bar" style="background: var(--sage-2); border: 1px solid var(--line); border-radius: 8px; padding: 14px; margin-bottom: 16px;">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 8px;">
-            <strong style="color: var(--ink); font-size: 13px;">⏰ Giả lập thời gian máy chủ (Dành cho Admin/TA kiểm thử):</strong>
+            <strong style="color: var(--ink); font-size: 13px;"><svg class="ui-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px; vertical-align: -2px;"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>Giả lập thời gian máy chủ (Dành cho Admin/TA kiểm thử):</strong>
             <span id="adminSimCurrentTime" style="font-weight: 700; color: #246247; font-size: 12px; background: rgba(36,98,71,0.1); padding: 3px 8px; border-radius: 4px;">Đang tải...</span>
           </div>
           <div style="display: flex; gap: 6px; flex-wrap: wrap;">
-            <button type="button" class="button button-sm button-outline" onclick="adminSetSimTime('reviewing')">🏁 10:00 (Chuẩn bị)</button>
-            <button type="button" class="button button-sm button-outline" onclick="adminSetSimTime('upcoming')">⏳ 16:00 (Sẵn sàng đếm ngược)</button>
-            <button type="button" class="button button-sm button-outline" onclick="adminSetSimTime('open')">🟢 19:30 (Đang mở cổng)</button>
-            <button type="button" class="button button-sm button-outline" onclick="adminSetSimTime('sunday')">👑 Chủ Nhật (Tổng kết tuần)</button>
-            <button type="button" class="button button-sm" style="background:#246247; color:#fff;" onclick="adminSetSimTime('real')">🔄 Giờ thực tế</button>
+            <button type="button" class="button button-sm button-outline" onclick="adminSetSimTime('reviewing')"><svg class="ui-btn-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>10:00 (Chuẩn bị)</button>
+            <button type="button" class="button button-sm button-outline" onclick="adminSetSimTime('upcoming')"><svg class="ui-btn-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>16:00 (Sẵn sàng đếm ngược)</button>
+            <button type="button" class="button button-sm button-outline" onclick="adminSetSimTime('open')"><svg class="ui-btn-icon" width="12" height="12" viewBox="0 0 24 24" fill="#10b981"><circle cx="12" cy="12" r="8"/></svg>19:30 (Đang mở cổng)</button>
+            <button type="button" class="button button-sm button-outline" onclick="adminSetSimTime('sunday')"><svg class="ui-btn-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m2 4 3 12h14l3-12-6 7-4-7-4 7-6-7zm3 16h14"/></svg>Chủ Nhật (Tổng kết tuần)</button>
+            <button type="button" class="button button-sm" style="background:#246247; color:#fff;" onclick="adminSetSimTime('real')"><svg class="ui-btn-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg> Giờ thực tế</button>
           </div>
         </div>
 
@@ -2755,7 +2764,7 @@
               <h4 style="margin: 2px 0 0 0; font-size: 15px; color: #14532d;">Thiết lập câu hỏi &amp; Chủ đề theo Tuần</h4>
             </div>
             <div id="adminWeekDateRangeBadge" style="background: #dcfce7; color: #15803d; padding: 6px 14px; border-radius: 20px; font-size: 12.5px; font-weight: 700; border: 1px solid #bbf7d0;">
-              🗓️ Khoảng thời gian: từ ngày --/--/---- đến ngày --/--/----
+              <svg class="ui-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px;"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg> Khoảng thời gian: từ ngày --/--/---- đến ngày --/--/----
             </div>
           </div>
           <div style="margin-top: 10px;">
@@ -2799,7 +2808,7 @@
               </div>
             </div>
             <div style="text-align: right; margin-top: 4px;">
-              <button type="button" class="button button-primary button-sm" onclick="saveAdminCompetitionTopics()">💾 Lưu thông tin chủ đề</button>
+              <button type="button" class="button button-primary button-sm" onclick="saveAdminCompetitionTopics()"><svg class="ui-btn-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg> Lưu thông tin chủ đề</button>
             </div>
           </div>
 
@@ -2808,10 +2817,10 @@
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
             <h3 style="margin: 0; font-size: 14px;">2. Thiết lập Bộ 10 câu hỏi theo Chặng</h3>
             <div style="display: flex; gap: 6px; flex-wrap: wrap;">
-              <button type="button" class="button button-sm button-outline" onclick="adminDownloadExcelTemplate()" title="Tải file Excel mẫu chuẩn cấu trúc câu hỏi, đáp án và gợi ý Hint">📥 Tải Excel mẫu</button>
-              <button type="button" class="button button-sm button-outline" onclick="$('#adminImportExcelInput').click()" title="Tải file Excel câu hỏi lên để hệ thống tự động nhận diện và điền">📤 Nhập từ Excel</button>
+              <button type="button" class="button button-sm button-outline" onclick="adminDownloadExcelTemplate()" title="Tải file Excel mẫu chuẩn cấu trúc câu hỏi, đáp án và gợi ý Hint"><svg class="ui-btn-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg> Tải Excel mẫu</button>
+              <button type="button" class="button button-sm button-outline" onclick="$('#adminImportExcelInput').click()" title="Tải file Excel câu hỏi lên để hệ thống tự động nhận diện và điền"><svg class="ui-btn-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg> Nhập từ Excel</button>
               <input type="file" id="adminImportExcelInput" accept=".xlsx, .xls, .csv" style="display: none;" onchange="adminHandleExcelUpload(event)" />
-              <button type="button" class="button button-sm button-outline" onclick="adminSeedSampleQuestions()" title="Nạp 30 câu hỏi mẫu NCKH mặc định">⚡ 30 câu mẫu NCKH</button>
+              <button type="button" class="button button-sm button-outline" onclick="adminSeedSampleQuestions()" title="Nạp 30 câu hỏi mẫu NCKH mặc định"><svg class="ui-btn-icon" width="13" height="13" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> 30 câu mẫu NCKH</button>
             </div>
           </div>
 
@@ -2832,7 +2841,7 @@
 
           <div style="margin-top: 14px; display: flex; justify-content: space-between; gap: 8px;">
             <button type="button" class="button button-sm button-outline" onclick="adminAddEmptyQuestion()">+ Thêm câu hỏi</button>
-            <button type="button" class="button button-primary button-sm" onclick="adminSaveQuestions()">💾 Lưu 10 câu hỏi chặng</button>
+            <button type="button" class="button button-primary button-sm" onclick="adminSaveQuestions()"><svg class="ui-btn-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg> Lưu 10 câu hỏi chặng</button>
           </div>
         </div>
 
@@ -2842,7 +2851,7 @@
             <strong style="display: block; font-size: 13px;">3. Thao tác Tổng kết & Trao thưởng Tuần:</strong>
             <span style="font-size: 12px; color: var(--muted);">Tự động chạy vào Chủ Nhật hoặc bấm để chốt điểm và trao thưởng (+điểm hoạt động & khiên) ngay.</span>
           </div>
-          <button type="button" class="button button-primary button-sm" onclick="adminConcludeWeekNow()">🏆 Tổng kết & Trao thưởng</button>
+          <button type="button" class="button button-primary button-sm" onclick="adminConcludeWeekNow()"><svg class="ui-btn-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"></path><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"></path><path d="M4 22h16"></path><path d="M10 14.66V17c0 .55-.45 1-1 1H8v4h8v-4h-1c-.55 0-1-.45-1-1v-2.34"></path><path d="M18 2H6v7a6 6 0 0 0 12 0V2z"></path></svg> Tổng kết & Trao thưởng</button>
         </div>
       </div>
 
@@ -2852,7 +2861,7 @@
           <p style="font-size:13px; color:var(--muted); margin:0;">
             Danh sách yêu cầu cấp lại mật khẩu. Cung cấp <strong>Mã 6 chữ số</strong> cho sinh viên tương ứng để họ tự đặt lại mật khẩu mới.
           </p>
-          <button type="button" class="button button-subtle button-small" id="refreshAdminResetsBtn">Làm mới ⟳</button>
+          <button type="button" class="button button-subtle button-small" id="refreshAdminResetsBtn"><svg class="ui-btn-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg> Làm mới</button>
         </div>
         <div style="max-height: 420px; overflow-y: auto">
           <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 13px;">
@@ -3060,7 +3069,7 @@
           <p class="eyebrow">CÀI ĐẶT PHÒNG TỰ HỌC</p>
           <h2>Cấu hình chu kỳ Pomodoro</h2>
         </div>
-        <button class="close-modal" type="button" onclick="this.closest('dialog').close()" aria-label="Đóng">×</button>
+        <button class="close-modal" type="button" onclick="this.closest('dialog').close()" aria-label="Đóng"><svg class="ui-icon modal-close-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
       </div>
 
       <div class="settings-body">
@@ -3133,7 +3142,7 @@
                 <option value="singingbowl">Thiền định</option>
                 <option value="chime">Vui tươi</option>
               </select>
-              <button type="button" class="button button-sm button-outline" onclick="previewSelectedAlarm()">▶ Nghe thử</button>
+              <button type="button" class="button button-sm button-outline" onclick="previewSelectedAlarm()"><svg class="ui-btn-icon" width="10" height="10" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="5 3 19 12 5 21 5 3"/></svg> Nghe thử</button>
             </div>
           </div>
         </div>
@@ -3172,7 +3181,7 @@
             aria-label="Đóng"
             onclick="this.closest('dialog').close()"
           >
-            ×
+            <svg class="ui-icon modal-close-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
           </button>
         </div>
         <div style="flex: 1; width: 100%; min-height: 0">
@@ -3213,7 +3222,7 @@
                 <div class="quiz-timer-bar" id="quizTimerProgressBar" style="width: 100%;"></div>
               </div>
               <div class="quiz-timer-display" id="quizTimerDisplay">
-                <span class="timer-icon">⏱️</span>
+                <span class="timer-icon"><svg class="ui-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg></span>
                 <span id="quizTimerDigits">10:00</span>
               </div>
             </div>
@@ -3236,7 +3245,7 @@
                 <span class="tries-text" id="quizTriesText">Lần thử 1/3 (Sai: -30s)</span>
               </div>
               <button type="button" class="quiz-hint-btn" id="quizHintBtn" onclick="toggleQuizHint()" title="Xem lời giải thích đáp án (Hint)" aria-label="Xem lời giải thích">
-                💡
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6"></path><path d="M10 22h4"></path><path d="M12 2a7 7 0 0 0-7 7c0 2.38 1.19 4.47 3 5.74V17a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1v-2.26c1.81-1.27 3-3.36 3-5.74a7 7 0 0 0-7-7z"></path></svg>
               </button>
             </div>
             <h3 class="quiz-question-text" id="quizQuestionText">Nội dung câu hỏi đang tải...</h3>
@@ -3244,8 +3253,8 @@
             <!-- KHUNG LỜI GIẢI THÍCH (HINT) - CHỈ KHI BẤM NÚT BÓNG ĐÈN MỚI HIỆN -->
             <div class="quiz-hint-box" id="quizHintBox" style="display: none;">
               <div class="quiz-hint-box-header">
-                <span class="quiz-hint-tag">💡 Lời giải thích &amp; Gợi ý (Hint)</span>
-                <button type="button" class="quiz-hint-close-btn" onclick="toggleQuizHint(false)" aria-label="Đóng">&times;</button>
+                <span class="quiz-hint-tag"><svg class="ui-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px;"><path d="M9 18h6"></path><path d="M10 22h4"></path><path d="M12 2a7 7 0 0 0-7 7c0 2.38 1.19 4.47 3 5.74V17a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1v-2.26c1.81-1.27 3-3.36 3-5.74a7 7 0 0 0-7-7z"></path></svg> Lời giải thích &amp; Gợi ý (Hint)</span>
+                <button type="button" class="quiz-hint-close-btn" onclick="toggleQuizHint(false)" aria-label="Đóng"><svg class="ui-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
               </div>
               <div class="quiz-hint-body" id="quizHintContent">
                 Nội dung lời giải thích...
@@ -3288,7 +3297,7 @@
         <button type="button" class="quiz-result-close-btn" onclick="closeQuizAndGoHome()" title="Đóng màn hình kết quả" aria-label="Đóng">&times;</button>
         <canvas id="quizConfettiCanvas" class="quiz-confetti-canvas"></canvas>
         <div class="result-card-inner">
-          <div class="result-badge-anim">🏆</div>
+          <div class="result-badge-anim"><svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"></path><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"></path><path d="M4 22h16"></path><path d="M10 14.66V17c0 .55-.45 1-1 1H8v4h8v-4h-1c-.55 0-1-.45-1-1v-2.34"></path><path d="M18 2H6v7a6 6 0 0 0 12 0V2z"></path></svg></div>
           <h2 id="quizResultTitle">KẾT THÚC LƯỢT THI</h2>
           <p class="result-subtitle" id="resultSubtitle">Chúc mừng bạn đã hoàn thành bài thi!</p>
 
@@ -3300,22 +3309,22 @@
 
           <div class="result-breakdown-grid" style="grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));">
             <div class="res-item">
-              <span class="res-label">🎯 Số câu đúng</span>
+              <span class="res-label"><svg class="ui-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px;"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="6"></circle><circle cx="12" cy="12" r="2"></circle></svg> Số câu đúng</span>
               <strong id="resultCorrectCount">0 / 10</strong>
               <span class="res-pts" id="resultCorrectPts">+0 ⭐</span>
             </div>
             <div class="res-item">
-              <span class="res-label">⚡ Đúng ngay lần 1</span>
+              <span class="res-label"><svg class="ui-icon" width="13" height="13" viewBox="0 0 24 24" fill="currentColor" stroke="none" style="margin-right: 4px;"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> Đúng ngay lần 1</span>
               <strong id="resultFirstTryCount">0 / 10</strong>
               <span class="res-pts" id="resultFirstTryPts">+0 ⭐</span>
             </div>
             <div class="res-item">
-              <span class="res-label">⏱️ Thời gian còn lại</span>
+              <span class="res-label"><svg class="ui-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px;"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg> Thời gian còn lại</span>
               <strong id="resultRemainingTime">0 giây</strong>
               <span class="res-pts" id="resultTimePts">+0 ⭐</span>
             </div>
             <div class="res-item" id="resultOnTimeBonusBox">
-              <span class="res-label">🎁 Thưởng đúng hạn</span>
+              <span class="res-label"><svg class="ui-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px;"><polyline points="20 12 20 22 4 22 4 12"></polyline><rect x="2" y="7" width="20" height="5"></rect><line x1="12" y1="22" x2="12" y2="7"></line><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"></path><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"></path></svg> Thưởng đúng hạn</span>
               <strong id="resultOnTimeBonusStatus">Đúng hạn</strong>
               <span class="res-pts" id="resultOnTimeBonusPts">+0 ⭐</span>
             </div>
@@ -3331,8 +3340,8 @@
           </p>
 
           <div class="result-actions">
-            <button type="button" class="button button-outline" onclick="closeQuizAndGoHome()">🏠 Về trang chủ</button>
-            <button type="button" class="button button-primary" onclick="closeQuizAndOpenLeaderboard()">📊 Xem bảng xếp hạng</button>
+            <button type="button" class="button button-outline" onclick="closeQuizAndGoHome()"><svg class="ui-btn-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg> Về trang chủ</button>
+            <button type="button" class="button button-primary" onclick="closeQuizAndOpenLeaderboard()"><svg class="ui-btn-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg> Xem bảng xếp hạng</button>
           </div>
         </div>
       </div>
@@ -3342,7 +3351,7 @@
     <dialog id="quizStartConfirmModal" class="quiz-start-confirm-modal" style="max-width: 520px; width: 92vw; height: fit-content; padding: 0;">
       <div class="quiz-start-modal-card">
         <div class="quiz-start-header">
-          <div class="quiz-start-badge-icon">🎯</div>
+          <div class="quiz-start-badge-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="6"></circle><circle cx="12" cy="12" r="2"></circle></svg></div>
           <div class="quiz-start-title-group">
             <h3 id="quizStartTitle">Xác nhận bắt đầu lượt thi</h3>
             <span class="quiz-start-phase-tag" id="quizStartPhaseTag">Chặng 1</span>
@@ -3352,7 +3361,7 @@
         <div class="quiz-start-body">
           <!-- CÂU HỎI XÁC NHẬN BẮT BUỘC THEO YÊU CẦU -->
           <div class="quiz-start-warning-card">
-            <div class="warning-icon">⚠️</div>
+            <div class="warning-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg></div>
             <div class="warning-content">
               <div class="warning-prompt" id="quizStartPromptText">Bạn chỉ có 1 lượt thi duy nhất cho chặng thi đấu này, bắt đầu thi chứ?</div>
               <p class="warning-subtext">Sau khi bắt đầu, hệ thống sẽ kích hoạt đồng hồ đếm ngược 10 phút và ghi nhận lượt thi chính thức.</p>
@@ -3366,21 +3375,21 @@
 
           <div class="quiz-start-rules-summary">
             <div class="qsr-item">
-              <span class="qsr-icon">⏱️</span>
+              <span class="qsr-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg></span>
               <div class="qsr-info">
                 <strong>10 phút / 10 câu hỏi</strong>
                 <span>Cộng điểm theo giây còn lại (Tối đa +600 ⭐)</span>
               </div>
             </div>
             <div class="qsr-item">
-              <span class="qsr-icon">🎯</span>
+              <span class="qsr-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="6"></circle><circle cx="12" cy="12" r="2"></circle></svg></span>
               <div class="qsr-info">
                 <strong>Đúng ngay lần đầu: +50 ⭐/câu</strong>
                 <span>(+40 ⭐ đúng + 10 ⭐ thưởng lần 1)</span>
               </div>
             </div>
             <div class="qsr-item">
-              <span class="qsr-icon">🚪</span>
+              <span class="qsr-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg></span>
               <div class="qsr-info">
                 <strong>Tối đa 2 lần tạm dừng thoát</strong>
                 <span>Thoát lần thứ 3 sẽ dừng và tính điểm bài thi luôn</span>
@@ -3404,7 +3413,7 @@
     <dialog id="quizExitConfirmModal" class="quiz-exit-confirm-modal" style="max-width: 500px; width: 92vw; height: fit-content; padding: 0;">
       <div class="quiz-exit-modal-card">
         <div class="quiz-exit-header">
-          <div class="quiz-exit-badge-icon" id="quizExitBadgeIcon">⏸️</div>
+          <div class="quiz-exit-badge-icon" id="quizExitBadgeIcon"><svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg></div>
           <div class="quiz-exit-title-group">
             <h3 id="quizExitTitle">Tạm dừng & Thoát bài thi</h3>
             <p id="quizExitSubTitle">Lưu tiến trình & tạm dừng đồng hồ khi ra màn hình chính</p>
@@ -3414,25 +3423,25 @@
         <div class="quiz-exit-body">
           <div class="quiz-exit-stats-grid" style="grid-template-columns: repeat(4, 1fr);">
             <div class="quiz-exit-stat-box">
-              <span class="stat-box-label">⏱️ Thời gian</span>
+              <span class="stat-box-label"><svg class="ui-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 3px;"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg> Thời gian</span>
               <strong class="stat-box-val" id="quizExitTimeLeft">10:00</strong>
             </div>
             <div class="quiz-exit-stat-box">
-              <span class="stat-box-label">📝 Tiến trình</span>
+              <span class="stat-box-label"><svg class="ui-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 3px;"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg> Tiến trình</span>
               <strong class="stat-box-val" id="quizExitCurrentQ">Câu 1 / 10</strong>
             </div>
             <div class="quiz-exit-stat-box">
-              <span class="stat-box-label">⭐ Tạm tính</span>
+              <span class="stat-box-label"><svg class="ui-icon" width="12" height="12" viewBox="0 0 24 24" fill="currentColor" stroke="none" style="color: #f59e0b; margin-right: 3px;"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg> Tạm tính</span>
               <strong class="stat-box-val" id="quizExitCurrentStars">⭐ 0</strong>
             </div>
             <div class="quiz-exit-stat-box">
-              <span class="stat-box-label">🚪 Lần thoát</span>
+              <span class="stat-box-label"><svg class="ui-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 3px;"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg> Lần thoát</span>
               <strong class="stat-box-val" id="quizExitCountBadge">0 / 2</strong>
             </div>
           </div>
 
           <div class="quiz-exit-guarantee-card pause-mode" id="quizExitGuaranteeCard">
-            <div class="guarantee-icon" id="quizExitGuaranteeIcon">⏸️</div>
+            <div class="guarantee-icon" id="quizExitGuaranteeIcon"><svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg></div>
             <div class="guarantee-text" id="quizExitGuaranteeText">
               <strong>⏸️ Tạm dừng thời gian & Lưu tiến trình:</strong><br>
               Khi bạn bấm xác nhận thoát ra màn hình chính, thời gian sẽ được <strong>TẠM DỪNG</strong> và lưu lại toàn bộ tiến trình. Lượt thi này <em>KHÔNG bị tính là mất</em>.<br>
@@ -3469,7 +3478,11 @@
       "
     >
       <div style="text-align: center;">
-        <div style="font-size: 38px; line-height: 1; margin-bottom: 12px;">🚪</div>
+        <div style="display: flex; justify-content: center; margin-bottom: 14px;">
+          <div style="width: 54px; height: 54px; border-radius: 14px; background: rgba(220, 38, 38, 0.08); color: #dc2626; display: flex; align-items: center; justify-content: center;">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+          </div>
+        </div>
         <h3 style="margin: 0 0 8px; font-size: 18.5px; font-weight: 700; color: var(--ink);">Xác nhận đăng xuất</h3>
         <p style="margin: 0 0 22px; font-size: 14px; color: var(--muted); line-height: 1.5;">
           Bạn có chắc chắn muốn đăng xuất không?
