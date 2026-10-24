@@ -1231,7 +1231,17 @@ function applySession(user) {
 }
 
 let currentLeaderboardTab = "contributions";
-let cachedLeaderboardData = { leaderboard: [], streakLeaderboard: [] };
+let cachedLeaderboardData = { leaderboard: [], streakLeaderboard: [], arenaLeaderboard: [], currentUser: null };
+
+function formatLeaderboardRank(rank) {
+  if (!rank || rank <= 0) return "--";
+  if (rank <= 9) return String(rank);
+  if (rank <= 19) return "10+";
+  if (rank <= 29) return "20+";
+  if (rank <= 39) return "30+";
+  if (rank <= 49) return "40+";
+  return "50+";
+}
 
 window.switchLeaderboardTab = function(tab) {
   // Chặn tab "Top đóng góp" với người dùng không phải VLU
@@ -1242,6 +1252,7 @@ window.switchLeaderboardTab = function(tab) {
   currentLeaderboardTab = tab;
   $("#tabTopContrib")?.classList.toggle("active", tab === "contributions");
   $("#tabTopStreak")?.classList.toggle("active", tab === "streak");
+  $("#tabTopArena")?.classList.toggle("active", tab === "competition");
   renderLeaderboard();
 };
 
@@ -1250,41 +1261,107 @@ function renderLeaderboard() {
   if (!lbEl) return;
 
   const isContrib = currentLeaderboardTab === "contributions";
-  const list = isContrib
-    ? (cachedLeaderboardData.leaderboard || [])
-    : (cachedLeaderboardData.streakLeaderboard || []);
+  const isStreak = currentLeaderboardTab === "streak";
+  const isArena = currentLeaderboardTab === "competition";
+
+  let list = [];
+  let userRankInfo = null;
+
+  if (isContrib) {
+    list = cachedLeaderboardData.leaderboard || [];
+    if (cachedLeaderboardData.currentUser) {
+      userRankInfo = {
+        ...cachedLeaderboardData.currentUser,
+        rank: cachedLeaderboardData.currentUser.contributions?.rank,
+        valDisplay: `${cachedLeaderboardData.currentUser.contributions?.totalPoints || 0}đ`
+      };
+    }
+  } else if (isStreak) {
+    list = cachedLeaderboardData.streakLeaderboard || [];
+    if (cachedLeaderboardData.currentUser) {
+      userRankInfo = {
+        ...cachedLeaderboardData.currentUser,
+        rank: cachedLeaderboardData.currentUser.streak?.rank,
+        streak: cachedLeaderboardData.currentUser.streak?.streak || 0,
+        streakTier: cachedLeaderboardData.currentUser.streak?.streakTier || 0,
+        valDisplay: `<span style="display:inline-flex;align-items:center;gap:3px;">${getFlameSVG(cachedLeaderboardData.currentUser.streak?.streakTier || 0, 15)} ${cachedLeaderboardData.currentUser.streak?.streak || 0} ngày</span>`
+      };
+    }
+  } else if (isArena) {
+    list = cachedLeaderboardData.arenaLeaderboard || [];
+    if (cachedLeaderboardData.currentUser) {
+      userRankInfo = {
+        ...cachedLeaderboardData.currentUser,
+        rank: cachedLeaderboardData.currentUser.arena?.rank,
+        valDisplay: `⭐ ${cachedLeaderboardData.currentUser.arena?.score || 0}`
+      };
+    }
+  }
+
+  if (!cachedLeaderboardData.leaderboard?.length && !cachedLeaderboardData.arenaLeaderboard?.length && !cachedLeaderboardData.streakLeaderboard?.length) {
+    requestAPI("/api/leaderboard").then(data => {
+      if (data && (data.leaderboard || data.streakLeaderboard || data.arenaLeaderboard)) {
+        cachedLeaderboardData = data;
+        renderLeaderboard();
+        updateResponsiveAsidePlacement();
+      }
+    }).catch(() => {});
+  }
 
   if (!list || list.length === 0) {
-    if (!cachedLeaderboardData.leaderboard?.length) {
-      requestAPI("/api/leaderboard").then(data => {
-        if (data && (data.leaderboard || data.streakLeaderboard)) {
-          cachedLeaderboardData = data;
-          renderLeaderboard();
-          updateResponsiveAsidePlacement();
-        }
-      }).catch(() => {});
-    }
-    lbEl.innerHTML = `<p style="color: var(--muted); font-size: 13px; text-align: center; padding: 12px 0;">${isContrib ? "Chưa có dữ liệu đóng góp." : "Chưa có dữ liệu chuỗi."}</p>`;
+    let emptyMsg = "Chưa có dữ liệu đóng góp.";
+    if (isStreak) emptyMsg = "Chưa có dữ liệu chuỗi.";
+    if (isArena) emptyMsg = "Chưa có dữ liệu thi đua tuần này.";
+    lbEl.innerHTML = `<p style="color: var(--muted); font-size: 13px; text-align: center; padding: 12px 0;">${emptyMsg}</p>`;
     return;
   }
 
-  lbEl.innerHTML = list
-    .map(
-      (user, idx) => `
-    <div class="leaderboard-item" data-namecard-user-id="${user.id}" style="cursor: pointer;">
-      <div class="lb-avatar-wrap">
-        <span class="avatar avatar-sm ${getAvatarClass(user.streakTier, false, user.role)}">${user.initials || '?'}</span>
-        <span class="lb-rank-badge rank-${idx + 1}">${idx + 1}</span>
-      </div>
-      <div class="lb-info">
-        <span class="lb-name ${getNameClass(user.streakTier)}">${escapeHTML(user.displayName)}</span>
-        ${user.role && user.role !== 'student' ? `<span class="lb-role lb-role-${user.role}">${getRoleDisplay(user.role)}</span>` : ""}
-      </div>
-      <div class="lb-points">${isContrib ? `${user.totalPoints}đ` : `<span style="display:inline-flex;align-items:center;gap:3px;">${getFlameSVG(user.streakTier || 0, 15)} ${user.streak} ngày</span>`}</div>
-    </div>
-  `
-    )
+  const currentUserId = cachedLeaderboardData.currentUser?.id;
+  const isUserInTop5 = Boolean(currentUserId && list.slice(0, 5).some(u => u.id === currentUserId));
+
+  let html = list
+    .slice(0, 5)
+    .map((user, idx) => {
+      const isMe = Boolean(currentUserId && user.id === currentUserId);
+      const pointsDisplay = isContrib
+        ? `${user.totalPoints}đ`
+        : (isStreak
+            ? `<span style="display:inline-flex;align-items:center;gap:3px;">${getFlameSVG(user.streakTier || 0, 15)} ${user.streak} ngày</span>`
+            : `⭐ ${user.score || 0}`);
+
+      return `
+        <div class="leaderboard-item ${isMe ? "is-me" : ""}" data-namecard-user-id="${user.id}" style="cursor: pointer;">
+          <div class="lb-avatar-wrap">
+            <span class="avatar avatar-sm ${getAvatarClass(user.streakTier, false, user.role)}">${user.initials || '?'}</span>
+            <span class="lb-rank-badge rank-${idx + 1}">${idx + 1}</span>
+          </div>
+          <div class="lb-info">
+            <span class="lb-name ${getNameClass(user.streakTier)}">${escapeHTML(user.displayName)}</span>
+            ${user.role && user.role !== 'student' ? `<span class="lb-role lb-role-${user.role}">${getRoleDisplay(user.role)}</span>` : ""}
+          </div>
+          <div class="lb-points">${pointsDisplay}</div>
+        </div>
+      `;
+    })
     .join("");
+
+  if (!isUserInTop5 && userRankInfo && userRankInfo.rank) {
+    html += `
+      <div class="leaderboard-item is-me lb-my-rank-row" data-namecard-user-id="${userRankInfo.id}" style="cursor: pointer;">
+        <div class="lb-avatar-wrap">
+          <span class="avatar avatar-sm ${getAvatarClass(userRankInfo.streakTier, false, userRankInfo.role)}">${userRankInfo.initials || '?'}</span>
+          <span class="lb-rank-badge rank-me">${formatLeaderboardRank(userRankInfo.rank)}</span>
+        </div>
+        <div class="lb-info">
+          <span class="lb-name ${getNameClass(userRankInfo.streakTier)}">${escapeHTML(userRankInfo.displayName)}</span>
+          ${userRankInfo.role && userRankInfo.role !== 'student' ? `<span class="lb-role lb-role-${userRankInfo.role}">${getRoleDisplay(userRankInfo.role)}</span>` : ""}
+        </div>
+        <div class="lb-points">${userRankInfo.valDisplay}</div>
+      </div>
+    `;
+  }
+
+  lbEl.innerHTML = html;
 }
 
 function renderProfileStats(profileData) {
@@ -1423,8 +1500,8 @@ async function hydrateServer(force = false) {
     return;
   }
   try {
-    const isHome = !currentActiveRoute || currentActiveRoute === "home";
-    const shouldFetchForumLb = isHome;
+    const isHomeOrForum = !currentActiveRoute || currentActiveRoute === "home" || currentActiveRoute === "forum";
+    const shouldFetchForumLb = isHomeOrForum;
 
     // Kích hoạt tất cả API song song ngay từ đầu để loại bỏ hoàn toàn độ trễ waterfall
     const sessionPromise = requestAPI("/api/session", { headers: {} }).catch(() => ({ authenticated: false, user: null }));
@@ -2035,9 +2112,9 @@ function go(route, scrollToTop = true) {
 
   if (route === "home") {
     renderHome();
-    if (!cachedLeaderboardData?.leaderboard?.length) {
+    if (!cachedLeaderboardData?.leaderboard?.length && !cachedLeaderboardData?.arenaLeaderboard?.length) {
       requestAPI("/api/leaderboard").then(data => {
-        if (data && (data.leaderboard || data.streakLeaderboard)) {
+        if (data && (data.leaderboard || data.streakLeaderboard || data.arenaLeaderboard)) {
           cachedLeaderboardData = data;
           renderLeaderboard();
           updateResponsiveAsidePlacement();
@@ -2049,6 +2126,7 @@ function go(route, scrollToTop = true) {
   }
   if (route === "forum") {
     renderPosts();
+    renderLeaderboard();
     // Khôi phục vị trí cuộn khi quay về Diễn đàn từ bài viết bằng nút Quay lại (scrollToTop === false)
     if (!scrollToTop && savedForumScrollY > 0) {
       const scrollTarget = savedForumScrollY;

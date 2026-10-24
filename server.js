@@ -2755,27 +2755,32 @@ async function api(request, response, url) {
     }
   }
   if (method === "GET" && pathName === "/api/leaderboard") {
-    const topUsers = db
+    const user = sessionFrom(request);
+
+    // 1. TOP ĐÓNG GÓP
+    const allContribStudents = db
       .prepare(`
         SELECT u.id, u.display_name as displayName, u.avatar, u.role, coalesce(sum(c.points), 0) as totalPoints
         FROM users u
-        JOIN contribution_events c ON u.id = c.user_id
+        LEFT JOIN contribution_events c ON u.id = c.user_id
         WHERE u.role NOT IN ('admin', 'lecturer')
         GROUP BY u.id
-        ORDER BY totalPoints DESC
-        LIMIT 5
+        ORDER BY totalPoints DESC, u.id ASC
       `)
-      .all()
-      .map(u => ({
-        id: u.id,
-        displayName: u.displayName,
-        avatar: u.avatar,
-        initials: u.avatar || getAvatarEmoji(u.displayName),
-        role: u.role,
-        totalPoints: Number(u.totalPoints),
-        streakTier: getAuthorStreakTier(u.id)
-      }));
+      .all();
 
+    const topUsers = allContribStudents.slice(0, 5).map((u, idx) => ({
+      id: u.id,
+      displayName: u.displayName,
+      avatar: u.avatar,
+      initials: u.avatar || getAvatarEmoji(u.displayName),
+      role: u.role,
+      totalPoints: Number(u.totalPoints),
+      streakTier: getAuthorStreakTier(u.id),
+      rank: idx + 1
+    }));
+
+    // 2. TOP GIỮ CHUỖI
     const todayDate = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Ho_Chi_Minh" }));
     const formatYMD = (d) => {
       const y = d.getFullYear();
@@ -2785,7 +2790,7 @@ async function api(request, response, url) {
     };
 
     const students = db
-      .prepare("SELECT id, display_name as displayName, avatar, role FROM users WHERE role NOT IN ('admin', 'lecturer')")
+      .prepare("SELECT id, display_name as displayName, avatar, role, student_id as studentId, class_name as className FROM users WHERE role NOT IN ('admin', 'lecturer')")
       .all();
 
     const streakList = students.map(s => {
@@ -2810,11 +2815,123 @@ async function api(request, response, url) {
       return a.id - b.id;
     });
 
-    const topStreakUsers = streakList.slice(0, 5);
+    const topStreakUsers = streakList.slice(0, 5).map((s, idx) => ({
+      ...s,
+      rank: idx + 1
+    }));
+
+    // 3. TOP THI ĐUA (ARENA)
+    const vnNow = getVietnamNow();
+    const comp = getOrCreateCurrentCompetition(vnNow);
+
+    let targetCompId = comp.id;
+    const hasCurrentResults = db.prepare("SELECT 1 FROM competition_phase_results WHERE competition_id = ? LIMIT 1").get(comp.id);
+    if (!hasCurrentResults) {
+      const latestWithResults = db.prepare(`
+        SELECT competition_id FROM competition_phase_results 
+        ORDER BY competition_id DESC LIMIT 1
+      `).get();
+      if (latestWithResults) {
+        targetCompId = latestWithResults.competition_id;
+      }
+    }
+
+    let targetClass = "06";
+    if (user && user.student_id) {
+      const cls = getArenaClassByStudentId(user.student_id);
+      if (cls === "07") targetClass = "07";
+    }
+    const targetClassStudentIds = targetClass === "07" ? CLASS_07_STUDENT_IDS : CLASS_06_STUDENT_IDS;
+    const targetClassName = targetClass === "07" ? "261_71RESE30312_07" : "261_71RESE30312_06";
+
+    const arenaRows = db.prepare(`
+      SELECT 
+        u.id as userId,
+        u.display_name as displayName,
+        u.avatar,
+        u.role,
+        u.student_id as studentId,
+        u.class_name as className,
+        sum(r.best_score) as totalScore,
+        min(r.updated_at) as firstCompletedAt
+      FROM users u
+      JOIN competition_phase_results r ON u.id = r.user_id
+      WHERE r.competition_id = ? AND u.role NOT IN ('admin', 'lecturer')
+      GROUP BY u.id
+      ORDER BY totalScore DESC, firstCompletedAt ASC, u.id ASC
+    `).all(targetCompId);
+
+    let filteredArena = arenaRows.filter(row => {
+      if (row.studentId && targetClassStudentIds.has(String(row.studentId).trim())) return true;
+      if (row.className && row.className.trim() === targetClassName) return true;
+      return false;
+    });
+
+    if (filteredArena.length === 0 && arenaRows.length > 0 && !user?.student_id) {
+      filteredArena = arenaRows;
+    }
+
+    const topArenaUsers = filteredArena.slice(0, 5).map((row, idx) => ({
+      id: row.userId,
+      displayName: row.displayName,
+      avatar: row.avatar,
+      initials: row.avatar || getAvatarEmoji(row.displayName),
+      role: row.role,
+      score: Number(row.totalScore || 0),
+      streakTier: getAuthorStreakTier(row.userId),
+      rank: idx + 1
+    }));
+
+    // 4. THÔNG TIN XẾP HẠNG CỦA NGƯỜI DÙNG HIỆN TẠI
+    let currentUserData = null;
+    if (user && user.role !== "admin" && user.role !== "lecturer") {
+      const myContribIdx = allContribStudents.findIndex(u => u.id === user.id);
+      const myContribRank = myContribIdx !== -1 ? myContribIdx + 1 : allContribStudents.length + 1;
+      const myContribItem = myContribIdx !== -1 ? allContribStudents[myContribIdx] : null;
+
+      const myStreakIdx = streakList.findIndex(s => s.id === user.id);
+      const myStreakRank = myStreakIdx !== -1 ? myStreakIdx + 1 : streakList.length + 1;
+      const myStreakItem = myStreakIdx !== -1 ? streakList[myStreakIdx] : null;
+
+      const myArenaIdx = filteredArena.findIndex(r => r.userId === user.id);
+      let myArenaRank = null;
+      let myArenaScore = 0;
+      if (myArenaIdx !== -1) {
+        myArenaRank = myArenaIdx + 1;
+        myArenaScore = Number(filteredArena[myArenaIdx].totalScore || 0);
+      } else {
+        myArenaRank = filteredArena.length + 1;
+        myArenaScore = 0;
+      }
+
+      currentUserData = {
+        id: user.id,
+        displayName: user.display_name,
+        avatar: user.avatar,
+        initials: user.avatar || getAvatarEmoji(user.display_name),
+        role: user.role,
+        streakTier: getAuthorStreakTier(user.id),
+        contributions: {
+          rank: myContribRank,
+          totalPoints: myContribItem ? Number(myContribItem.totalPoints) : 0
+        },
+        streak: {
+          rank: myStreakRank,
+          streak: myStreakItem ? myStreakItem.streak : 0,
+          streakTier: myStreakItem ? myStreakItem.streakTier : 0
+        },
+        arena: {
+          rank: myArenaRank,
+          score: myArenaScore
+        }
+      };
+    }
 
     return json(response, 200, {
       leaderboard: topUsers,
-      streakLeaderboard: topStreakUsers
+      streakLeaderboard: topStreakUsers,
+      arenaLeaderboard: topArenaUsers,
+      currentUser: currentUserData
     });
   }
   if (method === "GET" && pathName === "/api/me/contributions") {

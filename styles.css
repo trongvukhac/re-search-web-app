@@ -3968,19 +3968,21 @@ dialog.detail-modal[open] {
   position: absolute;
   top: -4px;
   left: -4px;
-  width: 15px;
+  min-width: 15px;
   height: 15px;
-  border-radius: 50%;
+  padding: 0 2.5px;
+  border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 9px;
+  font-size: 8.5px;
   font-weight: 800;
   border: 1.5px solid #fff;
   background: #7a9484;
   color: #fff;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
   z-index: 2;
+  box-sizing: border-box;
 }
 .lb-rank-badge.rank-1 {
   background: #FFD700;
@@ -3997,6 +3999,10 @@ dialog.detail-modal[open] {
 .lb-rank-badge.rank-4,
 .lb-rank-badge.rank-5 {
   background: #7a9484;
+  color: #ffffff;
+}
+.lb-rank-badge.rank-me {
+  background: #246247;
   color: #ffffff;
 }
 .lb-info {
@@ -4038,6 +4044,51 @@ dialog.detail-modal[open] {
   margin-left: 6px;
   flex-shrink: 0;
   white-space: nowrap;
+}
+
+/* User Highlight in Leaderboard (Top 5 item or 6th row) */
+.leaderboard-item.is-me {
+  background: #f0f7f3;
+  border: 1.5px solid #246247;
+}
+.leaderboard-item.is-me:hover {
+  background: #e6f2eb;
+  border-color: #1b4332;
+}
+.leaderboard-item.lb-my-rank-row {
+  margin-top: 4px;
+  box-shadow: 0 2px 8px rgba(36, 98, 71, 0.08);
+}
+
+/* Theme overrides for current user leaderboard highlight */
+[data-user-theme="ruby"] .leaderboard-item.is-me {
+  background: #fff1f2;
+  border-color: #e11d48;
+}
+[data-user-theme="ruby"] .leaderboard-item.is-me:hover {
+  background: #ffe4e6;
+  border-color: #be123c;
+}
+[data-user-theme="ruby"] .leaderboard-item.lb-my-rank-row {
+  box-shadow: 0 2px 8px rgba(225, 29, 72, 0.1);
+}
+[data-user-theme="ruby"] .lb-rank-badge.rank-me {
+  background: #e11d48;
+}
+
+[data-user-theme="mythic"] .leaderboard-item.is-me {
+  background: #faf5ff;
+  border-color: #9333ea;
+}
+[data-user-theme="mythic"] .leaderboard-item.is-me:hover {
+  background: #f3e8ff;
+  border-color: #7e22ce;
+}
+[data-user-theme="mythic"] .leaderboard-item.lb-my-rank-row {
+  box-shadow: 0 2px 8px rgba(147, 51, 234, 0.1);
+}
+[data-user-theme="mythic"] .lb-rank-badge.rank-me {
+  background: #9333ea;
 }
 
 /* Fix iOS & Mobile Auto-Zoom ONLY on interactive typing form inputs */
