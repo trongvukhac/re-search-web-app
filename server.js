@@ -867,23 +867,41 @@ function getUserMaxStreak(userId) {
   const activities = db.prepare("SELECT activity_date FROM activity_days WHERE user_id=? ORDER BY activity_date ASC").all(userId);
   const restores = db.prepare("SELECT restored_date FROM streak_restores WHERE user_id=? ORDER BY restored_date ASC").all(userId);
 
-  const allDates = Array.from(new Set([...activities.map(a => a.activity_date), ...restores.map(r => r.restored_date)])).sort();
+  const activitySet = new Set(activities.map(a => a.activity_date));
+  const restoreSet = new Set(restores.map(r => r.restored_date));
+
+  const allDates = Array.from(new Set([...activitySet, ...restoreSet])).sort();
   if (allDates.length === 0) {
     const cur = calculateUserStreak(userId).streak || 0;
     return cur;
   }
 
-  let maxStreak = 1;
-  let currentRun = 1;
+  let maxStreak = 0;
+  let currentRun = 0;
+
+  if (activitySet.has(allDates[0])) {
+    currentRun = 1;
+    maxStreak = 1;
+  }
+
   for (let i = 1; i < allDates.length; i++) {
     const prev = new Date(allDates[i - 1] + "T00:00:00Z");
     const curr = new Date(allDates[i] + "T00:00:00Z");
     const diffDays = Math.round((curr - prev) / (1000 * 60 * 60 * 24));
+    const isActivity = activitySet.has(allDates[i]);
+
     if (diffDays === 1) {
-      currentRun++;
-      if (currentRun > maxStreak) maxStreak = currentRun;
+      if (isActivity) {
+        currentRun++;
+      }
+      // Ngày được khiên cứu (restored) chỉ giữ chuỗi không đứt, không cộng dồn thêm điểm ngày hoạt động
     } else {
-      currentRun = 1;
+      // Bị gián đoạn chuỗi (khoảng cách > 1 ngày)
+      currentRun = isActivity ? 1 : 0;
+    }
+
+    if (currentRun > maxStreak) {
+      maxStreak = currentRun;
     }
   }
   const curStreak = calculateUserStreak(userId).streak || 0;
