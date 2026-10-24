@@ -494,7 +494,7 @@ function getStreakTier(streak) {
   return 0;
 }
 
-function getFlameSVG(tier = 0, size = 20, extraClass = '') {
+function getFlame2DSVG(tier = 0, size = 20, extraClass = '') {
   const t = Number(tier) || 0;
   
   let outerGrad = '', midGrad = '', coreGrad = '';
@@ -594,22 +594,22 @@ function getFlameSVG(tier = 0, size = 20, extraClass = '') {
       <stop offset="100%" stop-color="#ffffff"/>
     `;
   } else {
-    // Tier 0: Radiant Luminous Emerald-Mint Fire
+    // Tier 0: Emerald Forest Green
     outerGrad = `
-      <stop offset="0%" stop-color="#047857"/>
-      <stop offset="35%" stop-color="#059669"/>
-      <stop offset="70%" stop-color="#10b981"/>
-      <stop offset="100%" stop-color="#34d399"/>
+      <stop offset="0%" stop-color="#0e3324"/>
+      <stop offset="40%" stop-color="#194a37"/>
+      <stop offset="80%" stop-color="#246247"/>
+      <stop offset="100%" stop-color="#40916c"/>
     `;
     midGrad = `
-      <stop offset="0%" stop-color="#10b981"/>
-      <stop offset="45%" stop-color="#34d399"/>
-      <stop offset="80%" stop-color="#6ee7b7"/>
-      <stop offset="100%" stop-color="#a7f3d0"/>
+      <stop offset="0%" stop-color="#246247"/>
+      <stop offset="50%" stop-color="#2d7a58"/>
+      <stop offset="85%" stop-color="#52b788"/>
+      <stop offset="100%" stop-color="#b7e4c7"/>
     `;
     coreGrad = `
-      <stop offset="0%" stop-color="#6ee7b7"/>
-      <stop offset="60%" stop-color="#d1fae5"/>
+      <stop offset="0%" stop-color="#95d5b2"/>
+      <stop offset="65%" stop-color="#d8f3dc"/>
       <stop offset="100%" stop-color="#ffffff"/>
     `;
   }
@@ -699,6 +699,502 @@ function getFlameSVG(tier = 0, size = 20, extraClass = '') {
     ${embers}
   </svg>`;
 }
+
+/* ==========================================================================
+   STREAK ICON PREFERENCE (2D vs 3D) & VOLUMETRIC 3D ROTATING FLAME GENERATOR
+   ========================================================================== */
+
+function getStreakStylePreference() {
+  try {
+    return localStorage.getItem("re_streak_style") || "3d";
+  } catch (e) {
+    return "3d";
+  }
+}
+window.getStreakStylePreference = getStreakStylePreference;
+
+function setStreakStyle(style) {
+  const s = (style === "2d") ? "2d" : "3d";
+  try {
+    localStorage.setItem("re_streak_style", s);
+  } catch (e) {}
+
+  // Cập nhật các nút chuyển đổi trên Study Hero
+  document.querySelectorAll(".streak-style-btn").forEach(btn => {
+    btn.classList.toggle("active", btn.getAttribute("data-streak-style") === s);
+  });
+
+  // Cập nhật các nút trong modal chỉnh sửa hồ sơ
+  const p2d = document.getElementById("profileStreak2dBtn");
+  const p3d = document.getElementById("profileStreak3dBtn");
+  if (p2d && p3d) {
+    if (s === "2d") {
+      p2d.classList.add("active");
+      p2d.style.borderColor = "var(--primary)";
+      p2d.style.background = "#123d30";
+      p2d.style.color = "#ffffff";
+      p3d.classList.remove("active");
+      p3d.style.borderColor = "var(--line)";
+      p3d.style.background = "#ffffff";
+      p3d.style.color = "var(--ink)";
+    } else {
+      p3d.classList.add("active");
+      p3d.style.borderColor = "var(--primary)";
+      p3d.style.background = "#123d30";
+      p3d.style.color = "#ffffff";
+      p2d.classList.remove("active");
+      p2d.style.borderColor = "var(--line)";
+      p2d.style.background = "#ffffff";
+      p2d.style.color = "var(--ink)";
+    }
+  }
+
+  // Cập nhật ngọn lửa Streak Hero tại trang tự học
+  const heroEl = document.getElementById("streakFlameHero");
+  if (heroEl) {
+    const currentTier = cachedLeaderboardData?.currentUser?.streak?.streakTier || 0;
+    heroEl.innerHTML = getFlameSVG(currentTier, 46);
+  }
+
+  // Tái render bảng xếp hạng đang hiển thị để cập nhật icon tức thì
+  if (typeof renderLeaderboard === "function") {
+    renderLeaderboard();
+  }
+  if (typeof renderLeaderboardUI === "function" && window.lastArenaLeaderboardData) {
+    renderLeaderboardUI(window.lastArenaLeaderboardData);
+  }
+
+  window.dispatchEvent(new CustomEvent("streakStyleChanged", { detail: { style: s } }));
+}
+window.setStreakStyle = setStreakStyle;
+
+/**
+ * Tạo Icon Chuỗi Tự Học Phong Cách 3D Đa Tầng (Volumetric 3D Facets)
+ * Xoay ngang liên tục 360 độ (chu kỳ 20 giây) với hiệu ứng ánh sáng quang học riêng theo từng Tier
+ */
+function getFlame3DSVG(tier = 0, size = 20, extraClass = '') {
+  const t = Number(tier) || 0;
+  const uid = `flm3d_${t}_${size}_${Math.floor(Math.random() * 100000)}`;
+
+  let gradOuter = '', gradFacetL = '', gradFacetR = '', gradCore = '';
+
+  if (t === 5) {
+    // Mythic Prism (Thần Thoại Thất Sắc)
+    gradOuter = `
+      <linearGradient id="out_${uid}" x1="0%" y1="100%" x2="0%" y2="0%">
+        <stop offset="0%" stop-color="#4a154b"/>
+        <stop offset="35%" stop-color="#7048e8"/>
+        <stop offset="70%" stop-color="#d6336c"/>
+        <stop offset="100%" stop-color="#f783ac"/>
+      </linearGradient>
+    `;
+    gradFacetL = `
+      <linearGradient id="fl_${uid}" x1="0%" y1="100%" x2="100%" y2="0%">
+        <stop offset="0%" stop-color="#7048e8"/>
+        <stop offset="50%" stop-color="#d6336c"/>
+        <stop offset="100%" stop-color="#f783ac"/>
+      </linearGradient>
+    `;
+    gradFacetR = `
+      <linearGradient id="fr_${uid}" x1="100%" y1="100%" x2="0%" y2="0%">
+        <stop offset="0%" stop-color="#e03131"/>
+        <stop offset="50%" stop-color="#ff6b6b"/>
+        <stop offset="100%" stop-color="#ffd43b"/>
+      </linearGradient>
+    `;
+    gradCore = `
+      <linearGradient id="core_${uid}" x1="0%" y1="100%" x2="0%" y2="0%">
+        <stop offset="0%" stop-color="#ffd43b"/>
+        <stop offset="60%" stop-color="#fff9db"/>
+        <stop offset="100%" stop-color="#ffffff"/>
+      </linearGradient>
+    `;
+  } else if (t === 4) {
+    // Ruby Red (Long Lửa Hồng Ngọc)
+    gradOuter = `
+      <linearGradient id="out_${uid}" x1="0%" y1="100%" x2="0%" y2="0%">
+        <stop offset="0%" stop-color="#80101d"/>
+        <stop offset="40%" stop-color="#c92a2a"/>
+        <stop offset="80%" stop-color="#e03131"/>
+        <stop offset="100%" stop-color="#ff6b6b"/>
+      </linearGradient>
+    `;
+    gradFacetL = `
+      <linearGradient id="fl_${uid}" x1="0%" y1="100%" x2="100%" y2="0%">
+        <stop offset="0%" stop-color="#c92a2a"/>
+        <stop offset="50%" stop-color="#e03131"/>
+        <stop offset="100%" stop-color="#ff8787"/>
+      </linearGradient>
+    `;
+    gradFacetR = `
+      <linearGradient id="fr_${uid}" x1="100%" y1="100%" x2="0%" y2="0%">
+        <stop offset="0%" stop-color="#e03131"/>
+        <stop offset="50%" stop-color="#f76707"/>
+        <stop offset="100%" stop-color="#ffa94d"/>
+      </linearGradient>
+    `;
+    gradCore = `
+      <linearGradient id="core_${uid}" x1="0%" y1="100%" x2="0%" y2="0%">
+        <stop offset="0%" stop-color="#ffa8a8"/>
+        <stop offset="60%" stop-color="#fff0f0"/>
+        <stop offset="100%" stop-color="#ffffff"/>
+      </linearGradient>
+    `;
+  } else if (t === 3) {
+    // Mystic Purple (Tử Tinh Thần Bí)
+    gradOuter = `
+      <linearGradient id="out_${uid}" x1="0%" y1="100%" x2="0%" y2="0%">
+        <stop offset="0%" stop-color="#3b1d75"/>
+        <stop offset="40%" stop-color="#5f3dc4"/>
+        <stop offset="80%" stop-color="#7048e8"/>
+        <stop offset="100%" stop-color="#9775fa"/>
+      </linearGradient>
+    `;
+    gradFacetL = `
+      <linearGradient id="fl_${uid}" x1="0%" y1="100%" x2="100%" y2="0%">
+        <stop offset="0%" stop-color="#5f3dc4"/>
+        <stop offset="50%" stop-color="#7048e8"/>
+        <stop offset="100%" stop-color="#b197fc"/>
+      </linearGradient>
+    `;
+    gradFacetR = `
+      <linearGradient id="fr_${uid}" x1="100%" y1="100%" x2="0%" y2="0%">
+        <stop offset="0%" stop-color="#7048e8"/>
+        <stop offset="50%" stop-color="#845ef7"/>
+        <stop offset="100%" stop-color="#e599f7"/>
+      </linearGradient>
+    `;
+    gradCore = `
+      <linearGradient id="core_${uid}" x1="0%" y1="100%" x2="0%" y2="0%">
+        <stop offset="0%" stop-color="#e599f7"/>
+        <stop offset="70%" stop-color="#f8f0fc"/>
+        <stop offset="100%" stop-color="#ffffff"/>
+      </linearGradient>
+    `;
+  } else if (t === 2) {
+    // Golden Solar Flame (Thái Dương Hoàng Kim)
+    gradOuter = `
+      <linearGradient id="out_${uid}" x1="0%" y1="100%" x2="0%" y2="0%">
+        <stop offset="0%" stop-color="#b23e00"/>
+        <stop offset="40%" stop-color="#d9480f"/>
+        <stop offset="80%" stop-color="#f76707"/>
+        <stop offset="100%" stop-color="#fab005"/>
+      </linearGradient>
+    `;
+    gradFacetL = `
+      <linearGradient id="fl_${uid}" x1="0%" y1="100%" x2="100%" y2="0%">
+        <stop offset="0%" stop-color="#d9480f"/>
+        <stop offset="50%" stop-color="#f76707"/>
+        <stop offset="100%" stop-color="#ffd43b"/>
+      </linearGradient>
+    `;
+    gradFacetR = `
+      <linearGradient id="fr_${uid}" x1="100%" y1="100%" x2="0%" y2="0%">
+        <stop offset="0%" stop-color="#f76707"/>
+        <stop offset="50%" stop-color="#f59f00"/>
+        <stop offset="100%" stop-color="#ffe066"/>
+      </linearGradient>
+    `;
+    gradCore = `
+      <linearGradient id="core_${uid}" x1="0%" y1="100%" x2="0%" y2="0%">
+        <stop offset="0%" stop-color="#ffe066"/>
+        <stop offset="65%" stop-color="#fff9db"/>
+        <stop offset="100%" stop-color="#ffffff"/>
+      </linearGradient>
+    `;
+  } else if (t === 1) {
+    // Ocean Blue Flame (Lam Ngọc Đại Dương)
+    gradOuter = `
+      <linearGradient id="out_${uid}" x1="0%" y1="100%" x2="0%" y2="0%">
+        <stop offset="0%" stop-color="#113f67"/>
+        <stop offset="40%" stop-color="#1864ab"/>
+        <stop offset="80%" stop-color="#228be6"/>
+        <stop offset="100%" stop-color="#4dabf7"/>
+      </linearGradient>
+    `;
+    gradFacetL = `
+      <linearGradient id="fl_${uid}" x1="0%" y1="100%" x2="100%" y2="0%">
+        <stop offset="0%" stop-color="#1864ab"/>
+        <stop offset="50%" stop-color="#228be6"/>
+        <stop offset="100%" stop-color="#74c0fc"/>
+      </linearGradient>
+    `;
+    gradFacetR = `
+      <linearGradient id="fr_${uid}" x1="100%" y1="100%" x2="0%" y2="0%">
+        <stop offset="0%" stop-color="#228be6"/>
+        <stop offset="50%" stop-color="#339af0"/>
+        <stop offset="100%" stop-color="#a5d8ff"/>
+      </linearGradient>
+    `;
+    gradCore = `
+      <linearGradient id="core_${uid}" x1="0%" y1="100%" x2="0%" y2="0%">
+        <stop offset="0%" stop-color="#a5d8ff"/>
+        <stop offset="65%" stop-color="#e7f5ff"/>
+        <stop offset="100%" stop-color="#ffffff"/>
+      </linearGradient>
+    `;
+  } else {
+    // Tier 0: Emerald Forest Jade (Lục Bảo Tinh Hoa)
+    gradOuter = `
+      <linearGradient id="out_${uid}" x1="0%" y1="100%" x2="0%" y2="0%">
+        <stop offset="0%" stop-color="#0e3324"/>
+        <stop offset="40%" stop-color="#194a37"/>
+        <stop offset="80%" stop-color="#246247"/>
+        <stop offset="100%" stop-color="#40916c"/>
+      </linearGradient>
+    `;
+    gradFacetL = `
+      <linearGradient id="fl_${uid}" x1="0%" y1="100%" x2="100%" y2="0%">
+        <stop offset="0%" stop-color="#194a37"/>
+        <stop offset="50%" stop-color="#246247"/>
+        <stop offset="100%" stop-color="#52b788"/>
+      </linearGradient>
+    `;
+    gradFacetR = `
+      <linearGradient id="fr_${uid}" x1="100%" y1="100%" x2="0%" y2="0%">
+        <stop offset="0%" stop-color="#246247"/>
+        <stop offset="50%" stop-color="#2d7a58"/>
+        <stop offset="100%" stop-color="#95d5b2"/>
+      </linearGradient>
+    `;
+    gradCore = `
+      <linearGradient id="core_${uid}" x1="0%" y1="100%" x2="0%" y2="0%">
+        <stop offset="0%" stop-color="#95d5b2"/>
+        <stop offset="65%" stop-color="#d8f3dc"/>
+        <stop offset="100%" stop-color="#ffffff"/>
+      </linearGradient>
+    `;
+  }
+
+  const defs = `
+    <defs>
+      ${gradOuter}
+      ${gradFacetL}
+      ${gradFacetR}
+      ${gradCore}
+    </defs>
+  `;
+
+  const facetFrontSVG = `
+    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      ${defs}
+      <path d="M12 23C7.2 23 3.6 19.5 3.6 15.4C3.6 12.8 5 10.8 6.5 9.2C6.2 11.2 7.5 12.5 8.8 12.5C7.8 10.2 8.5 7.6 10.2 5.2C10.2 7 11 8.5 12.2 9.2C11.8 6.8 12.4 3.8 13.8 1.2C15.2 4.2 15 7.2 14.2 9.2C15.6 9.2 17.2 7.8 17.6 6C19.2 8.5 20.4 11.5 20.4 14.8C20.4 19.2 16.8 23 12 23Z" fill="url(#out_${uid})"/>
+      <path d="M12 23C7.2 23 3.6 19.5 3.6 15.4C3.6 12.8 5 10.8 6.5 9.2 L12 13.5 Z" fill="url(#fl_${uid})" opacity="0.9"/>
+      <path d="M12 23 L12 13.5 L17.6 6C19.2 8.5 20.4 11.5 20.4 14.8C20.4 19.2 16.8 23 12 23Z" fill="url(#fr_${uid})" opacity="0.85"/>
+      <path d="M12 6.5 L14.5 12 L12 18 L9.5 12 Z" fill="url(#core_${uid})"/>
+      <path d="M12 9 L13 12 L12 14 L11 12 Z" fill="#ffffff"/>
+    </svg>
+  `;
+
+  const facetAngleSVG = `
+    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      ${defs}
+      <path d="M12 23C7.8 23 4.5 19.5 4.5 15.4C4.5 12.8 5.8 10.8 7.2 9.2C7 11.2 8.2 12.5 9.4 12.5C8.5 10.2 9.2 7.6 10.7 5.2C10.7 7 11.5 8.5 12.5 9.2C12.1 6.8 12.6 3.8 13.8 1.2C15 4.2 14.8 7.2 14.1 9.2C15.4 9.2 16.8 7.8 17.2 6C18.6 8.5 19.6 11.5 19.6 14.8C19.6 19.2 16.2 23 12 23Z" fill="url(#fl_${uid})"/>
+      <path d="M12 8 L14 13 L12 18 L10 13 Z" fill="url(#core_${uid})" opacity="0.85"/>
+    </svg>
+  `;
+
+  const facetBackSVG = `
+    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      ${defs}
+      <path d="M12 23C7.2 23 3.6 19.5 3.6 15.4C3.6 12.8 5 10.8 6.5 9.2C6.2 11.2 7.5 12.5 8.8 12.5C7.8 10.2 8.5 7.6 10.2 5.2C10.2 7 11 8.5 12.2 9.2C11.8 6.8 12.4 3.8 13.8 1.2C15.2 4.2 15 7.2 14.2 9.2C15.6 9.2 17.2 7.8 17.6 6C19.2 8.5 20.4 11.5 20.4 14.8C20.4 19.2 16.8 23 12 23Z" fill="url(#out_${uid})"/>
+      <path d="M12 7 L14 12 L12 17 L10 12 Z" fill="url(#fr_${uid})" opacity="0.7"/>
+    </svg>
+  `;
+
+  return `<div class="streak-3d-wrap streak-3d-tier-${t} ${extraClass}" style="width: ${size}px; height: ${size}px;" data-streak-tier="${t}" title="Chuỗi cấp độ ${t} (3D Xoay 360°)">
+    <div class="streak-3d-scene">
+      <div class="streak-3d-turntable">
+        <div class="streak-3d-facet facet-front">${facetFrontSVG}</div>
+        <div class="streak-3d-facet facet-angle-1">${facetAngleSVG}</div>
+        <div class="streak-3d-facet facet-angle-2">${facetAngleSVG}</div>
+        <div class="streak-3d-facet facet-back">${facetBackSVG}</div>
+        <div class="streak-3d-core"></div>
+        <div class="streak-3d-orbit"></div>
+      </div>
+    </div>
+  </div>`;
+}
+
+/**
+ * Hàm điều phối hiển thị Icon Chuỗi tự động theo tùy chọn người dùng (2D hoặc 3D)
+ */
+function getFlameSVG(tier = 0, size = 20, extraClass = '', forceMode = null) {
+  const mode = forceMode || getStreakStylePreference();
+  if (mode === '3d') {
+    return getFlame3DSVG(tier, size, extraClass);
+  }
+  return getFlame2DSVG(tier, size, extraClass);
+}
+
+/* ==========================================================================
+   ARENA TOP 3 MEDAL DESIGNER (HUY CHƯƠNG ĐẤU TRƯỜNG CAO CẤP)
+   ========================================================================== */
+
+/**
+ * Tạo Icon Huy Chương Quán Quân / Á Quân / Quý Quân Đấu Trường Arena
+ * Đồ họa vector metallic đa tầng, ruy băng chiến thắng, vòng nguyệt quế và số La Mã
+ */
+function getArenaMedalSVG(rank = 1, size = 34) {
+  const r = Number(rank) || 1;
+  const uid = `med_${r}_${size}_${Math.floor(Math.random() * 100000)}`;
+
+  if (r === 1) {
+    // Top 1 Gold Medal (Huy Chương Vàng Hoàng Gia)
+    return `<svg class="arena-medal-svg medal-gold" width="${size}" height="${size}" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="goldRim_${uid}" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#fffbeb"/>
+          <stop offset="25%" stop-color="#fde047"/>
+          <stop offset="50%" stop-color="#eab308"/>
+          <stop offset="75%" stop-color="#ca8a04"/>
+          <stop offset="100%" stop-color="#854d0e"/>
+        </linearGradient>
+        <radialGradient id="goldDisc_${uid}" cx="35%" cy="30%" r="70%">
+          <stop offset="0%" stop-color="#fef08a"/>
+          <stop offset="45%" stop-color="#eab308"/>
+          <stop offset="85%" stop-color="#a16207"/>
+          <stop offset="100%" stop-color="#713f12"/>
+        </radialGradient>
+        <linearGradient id="ribbonLeft_${uid}" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#ef4444"/>
+          <stop offset="50%" stop-color="#b91c1c"/>
+          <stop offset="100%" stop-color="#7f1d1d"/>
+        </linearGradient>
+        <linearGradient id="ribbonRight_${uid}" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#f87171"/>
+          <stop offset="50%" stop-color="#dc2626"/>
+          <stop offset="100%" stop-color="#991b1b"/>
+        </linearGradient>
+        <filter id="goldGlow_${uid}" x="-20%" y="-20%" width="140%" height="140%">
+          <feDropShadow dx="0" dy="2.5" stdDeviation="3" flood-color="#ca8a04" flood-opacity="0.55"/>
+        </filter>
+      </defs>
+      <!-- Dual Draped Crimson Ribbons -->
+      <path d="M16 2 L24 20 L19 22 L11 4 Z" fill="url(#ribbonLeft_${uid})"/>
+      <path d="M16 2 L19 22 L13 21 Z" fill="#991b1b" opacity="0.65"/>
+      <path d="M32 2 L24 20 L29 22 L37 4 Z" fill="url(#ribbonRight_${uid})"/>
+      <path d="M32 2 L29 22 L35 21 Z" fill="#7f1d1d" opacity="0.65"/>
+      <!-- Embossed Gold Medal Ring with Relief -->
+      <circle cx="24" cy="27" r="17" fill="url(#goldRim_${uid})" filter="url(#goldGlow_${uid})"/>
+      <circle cx="24" cy="27" r="14.5" fill="#713f12"/>
+      <circle cx="24" cy="27" r="13.5" fill="url(#goldDisc_${uid})"/>
+      <!-- Laurel Wreath of Victory -->
+      <path d="M15 27 C15 22 18 18 21 16 C20 18 19 21 20 23 C18 24 16 25 15 27 Z" fill="#fffbeb" opacity="0.8"/>
+      <path d="M33 27 C33 22 30 18 27 16 C28 18 29 21 28 23 C30 24 32 25 33 27 Z" fill="#fffbeb" opacity="0.8"/>
+      <path d="M17 31 C18 34 21 36 24 37 C22 36 20 34 20 32 Z" fill="#fef08a" opacity="0.85"/>
+      <path d="M31 31 C30 34 27 36 24 37 C26 36 28 34 28 32 Z" fill="#fef08a" opacity="0.85"/>
+      <!-- Roman Numeral I -->
+      <path d="M22 21.5 H26 M24 21.5 V32.5 M21.5 32.5 H26.5" stroke="#ffffff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+      <!-- Sparkle Star Accent -->
+      <path d="M33 15 Q33 18.5 35 18.5 Q33 18.5 33 22 Q33 18.5 31 18.5 Q33 18.5 33 15 Z" fill="#ffffff"/>
+      <circle cx="33" cy="18.5" r="1" fill="#fffbeb"/>
+    </svg>`;
+  } else if (r === 2) {
+    // Top 2 Silver Medal (Huy Chương Bạc Tinh Thể)
+    return `<svg class="arena-medal-svg medal-silver" width="${size}" height="${size}" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="silverRim_${uid}" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#ffffff"/>
+          <stop offset="25%" stop-color="#e2e8f0"/>
+          <stop offset="50%" stop-color="#94a3b8"/>
+          <stop offset="75%" stop-color="#64748b"/>
+          <stop offset="100%" stop-color="#334155"/>
+        </linearGradient>
+        <radialGradient id="silverDisc_${uid}" cx="35%" cy="30%" r="70%">
+          <stop offset="0%" stop-color="#f8fafc"/>
+          <stop offset="45%" stop-color="#cbd5e1"/>
+          <stop offset="85%" stop-color="#64748b"/>
+          <stop offset="100%" stop-color="#334155"/>
+        </radialGradient>
+        <linearGradient id="ribbonSilvL_${uid}" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#38bdf8"/>
+          <stop offset="50%" stop-color="#0284c7"/>
+          <stop offset="100%" stop-color="#0369a1"/>
+        </linearGradient>
+        <linearGradient id="ribbonSilvR_${uid}" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#60a5fa"/>
+          <stop offset="50%" stop-color="#2563eb"/>
+          <stop offset="100%" stop-color="#1d4ed8"/>
+        </linearGradient>
+        <filter id="silverGlow_${uid}" x="-20%" y="-20%" width="140%" height="140%">
+          <feDropShadow dx="0" dy="2.5" stdDeviation="3" flood-color="#64748b" flood-opacity="0.45"/>
+        </filter>
+      </defs>
+      <!-- Dual Draped Sapphire Ribbons -->
+      <path d="M16 2 L24 20 L19 22 L11 4 Z" fill="url(#ribbonSilvL_${uid})"/>
+      <path d="M16 2 L19 22 L13 21 Z" fill="#0369a1" opacity="0.65"/>
+      <path d="M32 2 L24 20 L29 22 L37 4 Z" fill="url(#ribbonSilvR_${uid})"/>
+      <path d="M32 2 L29 22 L35 21 Z" fill="#1e3a8a" opacity="0.65"/>
+      <!-- Embossed Silver Medal Ring -->
+      <circle cx="24" cy="27" r="17" fill="url(#silverRim_${uid})" filter="url(#silverGlow_${uid})"/>
+      <circle cx="24" cy="27" r="14.5" fill="#334155"/>
+      <circle cx="24" cy="27" r="13.5" fill="url(#silverDisc_${uid})"/>
+      <!-- Laurel Wreath -->
+      <path d="M15 27 C15 22 18 18 21 16 C20 18 19 21 20 23 C18 24 16 25 15 27 Z" fill="#ffffff" opacity="0.8"/>
+      <path d="M33 27 C33 22 30 18 27 16 C28 18 29 21 28 23 C30 24 32 25 33 27 Z" fill="#ffffff" opacity="0.8"/>
+      <path d="M17 31 C18 34 21 36 24 37 C22 36 20 34 20 32 Z" fill="#e2e8f0" opacity="0.85"/>
+      <path d="M31 31 C30 34 27 36 24 37 C26 36 28 34 28 32 Z" fill="#e2e8f0" opacity="0.85"/>
+      <!-- Roman Numeral II -->
+      <path d="M19 21.5 H22 M20.5 21.5 V32.5 M19 32.5 H22 M26 21.5 H29 M27.5 21.5 V32.5 M26 32.5 H29" stroke="#ffffff" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"/>
+      <!-- Sparkle Star Accent -->
+      <path d="M33 15 Q33 18.5 35 18.5 Q33 18.5 33 22 Q33 18.5 31 18.5 Q33 18.5 33 15 Z" fill="#ffffff"/>
+      <circle cx="33" cy="18.5" r="1" fill="#e0f2fe"/>
+    </svg>`;
+  } else {
+    // Top 3 Bronze Medal (Huy Chương Đồng Quý Quân)
+    return `<svg class="arena-medal-svg medal-bronze" width="${size}" height="${size}" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="bronzeRim_${uid}" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#ffedd5"/>
+          <stop offset="25%" stop-color="#fdba74"/>
+          <stop offset="50%" stop-color="#ea580c"/>
+          <stop offset="75%" stop-color="#9a3412"/>
+          <stop offset="100%" stop-color="#431407"/>
+        </linearGradient>
+        <radialGradient id="bronzeDisc_${uid}" cx="35%" cy="30%" r="70%">
+          <stop offset="0%" stop-color="#fed7aa"/>
+          <stop offset="45%" stop-color="#c2410c"/>
+          <stop offset="85%" stop-color="#7c2d12"/>
+          <stop offset="100%" stop-color="#431407"/>
+        </radialGradient>
+        <linearGradient id="ribbonBrzL_${uid}" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#10b981"/>
+          <stop offset="50%" stop-color="#047857"/>
+          <stop offset="100%" stop-color="#064e3b"/>
+        </linearGradient>
+        <linearGradient id="ribbonBrzR_${uid}" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#34d399"/>
+          <stop offset="50%" stop-color="#059669"/>
+          <stop offset="100%" stop-color="#065f46"/>
+        </linearGradient>
+        <filter id="bronzeGlow_${uid}" x="-20%" y="-20%" width="140%" height="140%">
+          <feDropShadow dx="0" dy="2.5" stdDeviation="3" flood-color="#9a3412" flood-opacity="0.45"/>
+        </filter>
+      </defs>
+      <!-- Dual Draped Emerald-Bronze Ribbons -->
+      <path d="M16 2 L24 20 L19 22 L11 4 Z" fill="url(#ribbonBrzL_${uid})"/>
+      <path d="M16 2 L19 22 L13 21 Z" fill="#064e3b" opacity="0.65"/>
+      <path d="M32 2 L24 20 L29 22 L37 4 Z" fill="url(#ribbonBrzR_${uid})"/>
+      <path d="M32 2 L29 22 L35 21 Z" fill="#022c22" opacity="0.65"/>
+      <!-- Embossed Bronze Medal Ring -->
+      <circle cx="24" cy="27" r="17" fill="url(#bronzeRim_${uid})" filter="url(#bronzeGlow_${uid})"/>
+      <circle cx="24" cy="27" r="14.5" fill="#431407"/>
+      <circle cx="24" cy="27" r="13.5" fill="url(#bronzeDisc_${uid})"/>
+      <!-- Laurel Wreath -->
+      <path d="M15 27 C15 22 18 18 21 16 C20 18 19 21 20 23 C18 24 16 25 15 27 Z" fill="#ffedd5" opacity="0.8"/>
+      <path d="M33 27 C33 22 30 18 27 16 C28 18 29 21 28 23 C30 24 32 25 33 27 Z" fill="#ffedd5" opacity="0.8"/>
+      <path d="M17 31 C18 34 21 36 24 37 C22 36 20 34 20 32 Z" fill="#fed7aa" opacity="0.85"/>
+      <path d="M31 31 C30 34 27 36 24 37 C26 36 28 34 28 32 Z" fill="#fed7aa" opacity="0.85"/>
+      <!-- Roman Numeral III -->
+      <path d="M17 21.5 H19.5 M18.2 21.5 V32.5 M17 32.5 H19.5 M22.5 21.5 H25.5 M24 21.5 V32.5 M22.5 32.5 H25.5 M28.5 21.5 H31 M29.8 21.5 V32.5 M28.5 32.5 H31" stroke="#ffffff" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/>
+      <!-- Sparkle Star Accent -->
+      <path d="M33 15 Q33 18.5 35 18.5 Q33 18.5 33 22 Q33 18.5 31 18.5 Q33 18.5 33 15 Z" fill="#ffffff"/>
+      <circle cx="33" cy="18.5" r="1" fill="#fff7ed"/>
+    </svg>`;
+  }
+}
+window.getArenaMedalSVG = getArenaMedalSVG;
 
 function getAvatarClass(tier, isAnonymous = false, role = '') {
   if (isAnonymous) return 'ink';
@@ -1898,11 +2394,10 @@ function postCard(post) {
     : "";
   const authorUserId = (!post.anonymous && post.authorId) ? post.authorId : "";
   const ncAttr = authorUserId ? `data-namecard-user-id="${authorUserId}" style="cursor: pointer;" title="Xem thẻ tên"` : "";
-  return `<article class="post-card ${post.authorRole === "admin" ? "admin-post" : ""}" data-post-id="${post.id}" data-topic="${escapeHTML(post.topic)}" style="position: relative;">
-    <div class="post-card-accent-bar"></div>
+  return `<article class="post-card ${post.authorRole === "admin" ? "admin-post" : ""}" data-post-id="${post.id}" style="position: relative;">
     ${adminBtns}${editBtn}
     <span class="avatar avatar-xs ${getAvatarClass(post.streakTier, post.anonymous, post.authorRole)}" ${ncAttr}>${post.initials}</span>
-    <div class="post-main-content">
+    <div>
       <div class="post-meta" style="${post.lecturerRecommended ? 'margin: 0 0 2px 0;' : 'margin: 6px 0 2px 0;'}">
         <div style="line-height: 1.2;">${pinnedIcon}<b class="${getNameClass(post.streakTier)}" ${ncAttr}>${escapeHTML(post.author)}</b>${post.authorRole === "lecturer" ? ' <span style="color: var(--primary); font-weight: 700; margin-left: 4px; font-size: 11px;">[Giảng viên]</span>' : ""}${post.anonymous ? " · Ẩn danh" : ""} · ${post.time}${getEditedIndicator(post.editedAt)}</div>
         ${post.lecturerRecommended ? '<div style="font-size: 11px; color: var(--primary); font-weight: 600; margin-top: 3px; display: flex; align-items: center; gap: 4px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path></svg> Giảng viên đề xuất</div>' : ''}
@@ -1910,19 +2405,7 @@ function postCard(post) {
       <h3 style="margin-top: 0;">${escapeHTML(post.title)}</h3>
       <div class="post-copy-preview">${escapeHTML(post.excerpt)}</div>
     </div>
-    <div class="post-stats">
-      <span class="post-tag">${escapeHTML(post.topic)}</span>
-      <div class="post-metrics">
-        <span class="post-metric-pill post-metric-votes" title="Lượt đánh giá hữu ích">
-          <svg class="icon-upvote-svg" width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 4 3 20 21 20"/></svg>
-          <span>${post.upvotes}</span>
-        </span>
-        <span class="post-metric-pill post-metric-replies" title="Số phản hồi thảo luận">
-          <svg class="icon-chat-svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-          <span>${post.responses}</span>
-        </span>
-      </div>
-    </div>
+    <div class="post-stats"><span class="post-tag">${post.topic}</span><span style="font-weight:600; color:var(--primary); display: inline-flex; align-items: center; gap: 3px;"><svg class="icon-upvote-svg" width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 4 3 20 21 20"/></svg>${post.upvotes}</span><span style="font-weight:600; color:var(--sage-5); display: inline-flex; align-items: center; gap: 4px;"><svg class="icon-chat-svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>${post.responses}</span></div>
   </article>`;
 }
 
@@ -2033,24 +2516,6 @@ function renderHome() {
       renderPosts();
     }),
   );
-
-  window.applyQuickSearch = (keyword) => {
-    const homeSearch = document.getElementById("homeSearch");
-    if (homeSearch) {
-      homeSearch.value = keyword;
-      homeSearch.dispatchEvent(new Event("input", { bubbles: true }));
-      homeSearch.focus();
-      homeSearch.scrollIntoView({ behavior: "smooth", block: "center" });
-    } else {
-      go("forum");
-      const forumSearch = document.getElementById("forumSearch");
-      if (forumSearch) {
-        forumSearch.value = keyword;
-        forumSearch.dispatchEvent(new Event("input", { bubbles: true }));
-        forumSearch.focus();
-      }
-    }
-  };
 
   const pinnedPost = posts.find((p) => p.isPinned);
   const pinnedContainer = $("#pinnedNotificationContainer");
@@ -4126,7 +4591,7 @@ async function loadAdminPasswordResets() {
           `<br><small style="color:var(--muted)">${escapeHTML(r.email)}</small>`;
 
         const codeBox = `<div style="display:flex; align-items:center; gap:6px;">
-          <span style="font-family: monospace; font-size: 15px; font-weight: 800; letter-spacing: 1.5px; background: var(--sage-2); padding: 3px 8px; border-radius: 4px; color: ${isPending ? "var(--ink)" : "var(--muted)"};">${r.code}</span>
+          <span style="font-family: var(--unbounded); font-size: 14px; font-weight: 800; letter-spacing: 1.5px; background: var(--sage-2); padding: 3px 8px; border-radius: 4px; color: ${isPending ? "var(--ink)" : "var(--muted)"};">${r.code}</span>
           <button type="button" class="button button-subtle button-small" style="padding: 2px 6px; font-size: 11px;" title="Sao chép mã" onclick="copyResetCode('${r.code}')">📋 Copy</button>
         </div>`;
 
@@ -4451,11 +4916,11 @@ function renderAdminUserRows(users) {
     .map(
       (u) => `
     <tr style="border-bottom: 1px solid var(--sage-2);">
-      <td style="padding: 12px 8px; font-family: monospace; font-size: 13px; font-weight: bold; color: var(--text);">
+      <td style="padding: 12px 8px; font-family: var(--sans); font-size: 13px; font-weight: bold; color: var(--text); font-variant-numeric: tabular-nums;">
         #${String(u.id).padStart(5, '0')}
       </td>
       <td style="padding: 12px 8px; min-width: 150px;"><strong class="${getNameClass(u.streakTier)}">${escapeHTML(u.displayName)}</strong><br><small style="color:var(--muted)">${escapeHTML(u.email)}</small></td>
-      <td style="padding: 12px 8px; font-family: monospace; font-size: 13px;">${u.studentId ? escapeHTML(u.studentId) : NA}</td>
+      <td style="padding: 12px 8px; font-family: var(--sans); font-size: 13px; font-variant-numeric: tabular-nums;">${u.studentId ? escapeHTML(u.studentId) : NA}</td>
       <td style="padding: 12px 8px; font-size: 13px;">${u.realName ? escapeHTML(u.realName) : NA}</td>
       <td style="padding: 12px 8px; font-size: 13px;">${u.className ? escapeHTML(u.className) : NA}</td>
       <td style="padding: 12px 8px;">${getRoleDisplay(u.role)}</td>
@@ -11281,6 +11746,7 @@ window.refreshArenaLeaderboard = async function() {
 };
 
 function renderLeaderboardUI(data) {
+  window.lastArenaLeaderboardData = data;
   const podiumWrap = $("#compPodiumWrap");
   const lbList = $("#compLbList");
   const footerNote = $("#compLbFooterNote");
@@ -11324,7 +11790,7 @@ function renderLeaderboardUI(data) {
       <div class="podium-col rank-2" data-namecard-user-id="${top2.userId}" style="cursor: pointer;" title="Xem thẻ tên">
         <div class="podium-avatar-wrap">
           <div class="podium-avatar avatar ${top2AvatarClass}">${escapeHTML(top2.avatar || top2.initials || "U")}</div>
-          <span class="podium-crown silver"><svg class="ui-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11"/></svg></span>
+          <span class="podium-crown silver">${getArenaMedalSVG(2, 34)}</span>
         </div>
         <div class="podium-name ${top2NameClass}" title="${escapeHTML(top2.displayName)}">${getFlameSVG(top2.streakTier, 14)} <span>${escapeHTML(top2.displayName)}</span></div>
         <div class="podium-score"><svg class="ui-icon" width="13" height="13" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.5" style="color: #f59e0b; margin-right: 2px;"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>${top2.score}</div>
@@ -11344,7 +11810,7 @@ function renderLeaderboardUI(data) {
       <div class="podium-col rank-1" data-namecard-user-id="${top1.userId}" style="cursor: pointer;" title="Xem thẻ tên">
         <div class="podium-avatar-wrap">
           <div class="podium-avatar rank-1-avatar avatar avatar-lg ${top1AvatarClass}">${escapeHTML(top1.avatar || top1.initials || "U")}</div>
-          <span class="podium-crown gold"><svg class="ui-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m2 4 3 12h14l3-12-6 7-4-7-4 7-6-7zm3 16h14"/></svg></span>
+          <span class="podium-crown gold">${getArenaMedalSVG(1, 38)}</span>
         </div>
         <div class="podium-name font-bold ${top1NameClass}" title="${escapeHTML(top1.displayName)}">${getFlameSVG(top1.streakTier, 16)} <span>${escapeHTML(top1.displayName)}</span></div>
         <div class="podium-score gold-score"><svg class="ui-icon" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.5" style="color: #f59e0b; margin-right: 2px;"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>${top1.score}</div>
@@ -11362,7 +11828,7 @@ function renderLeaderboardUI(data) {
       <div class="podium-col rank-3" data-namecard-user-id="${top3.userId}" style="cursor: pointer;" title="Xem thẻ tên">
         <div class="podium-avatar-wrap">
           <div class="podium-avatar avatar ${top3AvatarClass}">${escapeHTML(top3.avatar || top3.initials || "U")}</div>
-          <span class="podium-crown bronze"><svg class="ui-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11"/></svg></span>
+          <span class="podium-crown bronze">${getArenaMedalSVG(3, 34)}</span>
         </div>
         <div class="podium-name ${top3NameClass}" title="${escapeHTML(top3.displayName)}">${getFlameSVG(top3.streakTier, 14)} <span>${escapeHTML(top3.displayName)}</span></div>
         <div class="podium-score"><svg class="ui-icon" width="13" height="13" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.5" style="color: #f59e0b; margin-right: 2px;"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>${top3.score}</div>
@@ -13364,6 +13830,7 @@ if (initialCachedUser) {
   }
 }
 
+setStreakStyle(getStreakStylePreference());
 renderHome();
 renderPosts();
 renderDocuments();
