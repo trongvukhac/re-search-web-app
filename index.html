@@ -203,10 +203,6 @@
                 <span>THÀNH TÍCH NĂNG ĐỘNG</span>
               </div>
               <div class="topline-actions">
-                <div class="streak-style-switcher-pill" id="studyStreakStylePill" title="Chọn kiểu hiển thị icon ngọn lửa chuỗi: 2D tĩnh hoặc 3D xoay 360°">
-                  <button type="button" class="streak-style-btn" data-streak-style="2d" onclick="setStreakStyle('2d')">2D</button>
-                  <button type="button" class="streak-style-btn active" data-streak-style="3d" onclick="setStreakStyle('3d')">3D ✦</button>
-                </div>
                 <button type="button" class="streak-journey-btn" id="btnStreakJourney" onclick="openStreakJourneyModal()" title="Xem hành trình giữ chuỗi">
                   <svg class="ui-btn-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"></polygon><line x1="8" y1="2" x2="8" y2="18"></line><line x1="16" y1="6" x2="16" y2="22"></line></svg> Hành trình
                 </button>
@@ -214,7 +210,7 @@
             </div>
             
             <div class="streak-hero">
-              <div class="streak-flame-wrap" id="streakFlameHero"></div>
+              <div class="streak-flame-wrap streak-flame-interactive" id="streakFlameHero" role="button" tabindex="0" onclick="toggleStreakStyle(event)" onkeydown="if(event.key==='Enter'||event.key===' ')toggleStreakStyle(event)" title="Bấm để chuyển đổi phong cách biểu tượng Chuỗi (2D / 3D)"></div>
               <div class="streak-val-wrap">
                 <div class="streak-number" id="activityStreak">
                   0 <span>ngày</span>
@@ -2365,19 +2361,6 @@
             placeholder="Ví dụ: KTPM2020"
           />
         </label>
-        <div style="margin-top: 16px; padding: 12px 14px; background: var(--sage-2); border: 1px solid var(--line); border-radius: 10px;">
-          <label style="margin: 0 0 8px 0; font-weight: 700; font-size: 13px; color: var(--ink); display: flex; align-items: center; justify-content: space-between;">
-            <span>Phong cách biểu tượng chuỗi:</span>
-            <span style="font-size: 11px; font-weight: 600; color: var(--primary);">2D hoặc 3D</span>
-          </label>
-          <div class="streak-profile-toggle-row" style="display: flex; gap: 8px;">
-            <button type="button" class="streak-profile-toggle-btn" id="profileStreak2dBtn" onclick="setStreakStyle('2d')" style="flex: 1; padding: 8px 12px; border-radius: 8px; border: 1.5px solid var(--line); background: #ffffff; color: var(--ink); font-weight: 600; font-size: 12.5px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;">
-              <span>2D Cổ điển</span>
-            </button>
-            <button type="button" class="streak-profile-toggle-btn active" id="profileStreak3dBtn" onclick="setStreakStyle('3d')" style="flex: 1; padding: 8px 12px; border-radius: 8px; border: 1.5px solid var(--primary); background: #123d30; color: #ffffff; font-weight: 700; font-size: 12.5px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;">
-              <span>3D Xoay 360° ✦</span>
-            </button>
-          </div>
         </div>
         <div class="modal-actions" style="margin-top: 24px">
           <button class="button button-primary" type="submit" id="saveAccountInfoBtn">

@@ -713,47 +713,38 @@ function getStreakStylePreference() {
 }
 window.getStreakStylePreference = getStreakStylePreference;
 
-function setStreakStyle(style) {
+function toggleStreakStyle(event) {
+  if (event) {
+    event.stopPropagation();
+    event.preventDefault();
+  }
+  const current = getStreakStylePreference();
+  const next = (current === "3d") ? "2d" : "3d";
+  setStreakStyle(next, true);
+}
+window.toggleStreakStyle = toggleStreakStyle;
+
+function setStreakStyle(style, showFeedback = false) {
   const s = (style === "2d") ? "2d" : "3d";
   try {
     localStorage.setItem("re_streak_style", s);
   } catch (e) {}
-
-  // Cập nhật các nút chuyển đổi trên Study Hero
-  document.querySelectorAll(".streak-style-btn").forEach(btn => {
-    btn.classList.toggle("active", btn.getAttribute("data-streak-style") === s);
-  });
-
-  // Cập nhật các nút trong modal chỉnh sửa hồ sơ
-  const p2d = document.getElementById("profileStreak2dBtn");
-  const p3d = document.getElementById("profileStreak3dBtn");
-  if (p2d && p3d) {
-    if (s === "2d") {
-      p2d.classList.add("active");
-      p2d.style.borderColor = "var(--primary)";
-      p2d.style.background = "#123d30";
-      p2d.style.color = "#ffffff";
-      p3d.classList.remove("active");
-      p3d.style.borderColor = "var(--line)";
-      p3d.style.background = "#ffffff";
-      p3d.style.color = "var(--ink)";
-    } else {
-      p3d.classList.add("active");
-      p3d.style.borderColor = "var(--primary)";
-      p3d.style.background = "#123d30";
-      p3d.style.color = "#ffffff";
-      p2d.classList.remove("active");
-      p2d.style.borderColor = "var(--line)";
-      p2d.style.background = "#ffffff";
-      p2d.style.color = "var(--ink)";
-    }
-  }
 
   // Cập nhật ngọn lửa Streak Hero tại trang tự học
   const heroEl = document.getElementById("streakFlameHero");
   if (heroEl) {
     const currentTier = cachedLeaderboardData?.currentUser?.streak?.streakTier || 0;
     heroEl.innerHTML = getFlameSVG(currentTier, 46);
+    if (showFeedback) {
+      heroEl.classList.remove("streak-just-toggled");
+      void heroEl.offsetWidth; // trigger reflow
+      heroEl.classList.add("streak-just-toggled");
+      setTimeout(() => heroEl.classList.remove("streak-just-toggled"), 500);
+
+      if (typeof toast === "function") {
+        toast(s === "3d" ? "✦ Đã kích hoạt ngọn lửa 3D (Xoay 360° thể tích)" : "🔥 Đã chuyển về ngọn lửa 2D");
+      }
+    }
   }
 
   // Tái render bảng xếp hạng đang hiển thị để cập nhật icon tức thì
@@ -769,248 +760,139 @@ function setStreakStyle(style) {
 window.setStreakStyle = setStreakStyle;
 
 /**
- * Tạo Icon Chuỗi Tự Học Phong Cách 3D Đa Tầng (Volumetric 3D Facets)
- * Xoay ngang liên tục 360 độ (chu kỳ 20 giây) với hiệu ứng ánh sáng quang học riêng theo từng Tier
+ * Tạo Icon Chuỗi Phong Cách 3D Thể Tích Đa Diện (Volumetric 3D Crystal Flame Spire)
+ * Cấu trúc lăng trụ tinh thể 3D đa diện thực thụ xoay 360 độ liên tục chu kỳ 20 giây quanh trục ngang
  */
 function getFlame3DSVG(tier = 0, size = 20, extraClass = '') {
   const t = Number(tier) || 0;
   const uid = `flm3d_${t}_${size}_${Math.floor(Math.random() * 100000)}`;
 
-  let gradOuter = '', gradFacetL = '', gradFacetR = '', gradCore = '';
+  const tierConfig = {
+    0: {
+      core1: '#a7f3d0', core2: '#10b981', glow: 'rgba(16, 185, 129, 0.6)',
+      f1_top: '#6ee7b7', f1_bot: '#047857',
+      f2_top: '#34d399', f2_bot: '#065f46',
+      f3_top: '#a7f3d0', f3_bot: '#059669',
+      f4_top: '#059669', f4_bot: '#064e3b',
+      f5_top: '#10b981', f5_bot: '#022c22',
+      f6_top: '#a7f3d0', f6_bot: '#047857',
+      spark: '#6ee7b7'
+    },
+    1: {
+      core1: '#bae6fd', core2: '#0284c7', glow: 'rgba(2, 132, 199, 0.7)',
+      f1_top: '#7dd3fc', f1_bot: '#0369a1',
+      f2_top: '#38bdf8', f2_bot: '#075985',
+      f3_top: '#bae6fd', f3_bot: '#0284c7',
+      f4_top: '#0284c7', f4_bot: '#0c4a6e',
+      f5_top: '#0ea5e9', f5_bot: '#082f49',
+      f6_top: '#e0f2fe', f6_bot: '#0369a1',
+      spark: '#7dd3fc'
+    },
+    2: {
+      core1: '#fef08a', core2: '#f59e0b', glow: 'rgba(245, 158, 11, 0.75)',
+      f1_top: '#fde047', f1_bot: '#d97706',
+      f2_top: '#facc15', f2_bot: '#b45309',
+      f3_top: '#fef08a', f3_bot: '#f59e0b',
+      f4_top: '#f59e0b', f4_bot: '#78350f',
+      f5_top: '#fbbf24', f5_bot: '#451a03',
+      f6_top: '#fffbeb', f6_bot: '#d97706',
+      spark: '#fde047'
+    },
+    3: {
+      core1: '#f3e8ff', core2: '#a855f7', glow: 'rgba(168, 85, 247, 0.85)',
+      f1_top: '#d8b4fe', f1_bot: '#7e22ce',
+      f2_top: '#c084fc', f2_bot: '#6b21a8',
+      f3_top: '#f3e8ff', f3_bot: '#9333ea',
+      f4_top: '#9333ea', f4_bot: '#581c87',
+      f5_top: '#a855f7', f5_bot: '#2e1065',
+      f6_top: '#faf5ff', f6_bot: '#7e22ce',
+      spark: '#e9d5ff'
+    },
+    4: {
+      core1: '#fee2e2', core2: '#ef4444', glow: 'rgba(239, 68, 68, 0.9)',
+      f1_top: '#fca5a5', f1_bot: '#b91c1c',
+      f2_top: '#f87171', f2_bot: '#991b1b',
+      f3_top: '#fee2e2', f3_bot: '#dc2626',
+      f4_top: '#dc2626', f4_bot: '#7f1d1d',
+      f5_top: '#ef4444', f5_bot: '#450a0a',
+      f6_top: '#fff1f2', f6_bot: '#b91c1c',
+      spark: '#fecaca'
+    },
+    5: {
+      core1: '#ffffff', core2: '#ec4899', glow: 'rgba(236, 72, 153, 0.95)',
+      f1_top: '#f472b6', f1_bot: '#6366f1',
+      f2_top: '#38bdf8', f2_bot: '#a855f7',
+      f3_top: '#fef08a', f3_bot: '#ec4899',
+      f4_top: '#10b981', f4_bot: '#3b82f6',
+      f5_top: '#ec4899', f5_bot: '#4f46e5',
+      f6_top: '#ffffff', f6_bot: '#db2777',
+      spark: '#ffffff'
+    }
+  }[t] || {
+    core1: '#a7f3d0', core2: '#10b981', glow: 'rgba(16, 185, 129, 0.6)',
+    f1_top: '#6ee7b7', f1_bot: '#047857',
+    f2_top: '#34d399', f2_bot: '#065f46',
+    f3_top: '#a7f3d0', f3_bot: '#059669',
+    f4_top: '#059669', f4_bot: '#064e3b',
+    f5_top: '#10b981', f5_bot: '#022c22',
+    f6_top: '#a7f3d0', f6_bot: '#047857',
+    spark: '#6ee7b7'
+  };
 
-  if (t === 5) {
-    // Mythic Prism (Thần Thoại Thất Sắc)
-    gradOuter = `
-      <linearGradient id="out_${uid}" x1="0%" y1="100%" x2="0%" y2="0%">
-        <stop offset="0%" stop-color="#4a154b"/>
-        <stop offset="35%" stop-color="#7048e8"/>
-        <stop offset="70%" stop-color="#d6336c"/>
-        <stop offset="100%" stop-color="#f783ac"/>
-      </linearGradient>
-    `;
-    gradFacetL = `
-      <linearGradient id="fl_${uid}" x1="0%" y1="100%" x2="100%" y2="0%">
-        <stop offset="0%" stop-color="#7048e8"/>
-        <stop offset="50%" stop-color="#d6336c"/>
-        <stop offset="100%" stop-color="#f783ac"/>
-      </linearGradient>
-    `;
-    gradFacetR = `
-      <linearGradient id="fr_${uid}" x1="100%" y1="100%" x2="0%" y2="0%">
-        <stop offset="0%" stop-color="#e03131"/>
-        <stop offset="50%" stop-color="#ff6b6b"/>
-        <stop offset="100%" stop-color="#ffd43b"/>
-      </linearGradient>
-    `;
-    gradCore = `
-      <linearGradient id="core_${uid}" x1="0%" y1="100%" x2="0%" y2="0%">
-        <stop offset="0%" stop-color="#ffd43b"/>
-        <stop offset="60%" stop-color="#fff9db"/>
-        <stop offset="100%" stop-color="#ffffff"/>
-      </linearGradient>
-    `;
-  } else if (t === 4) {
-    // Ruby Red (Long Lửa Hồng Ngọc)
-    gradOuter = `
-      <linearGradient id="out_${uid}" x1="0%" y1="100%" x2="0%" y2="0%">
-        <stop offset="0%" stop-color="#80101d"/>
-        <stop offset="40%" stop-color="#c92a2a"/>
-        <stop offset="80%" stop-color="#e03131"/>
-        <stop offset="100%" stop-color="#ff6b6b"/>
-      </linearGradient>
-    `;
-    gradFacetL = `
-      <linearGradient id="fl_${uid}" x1="0%" y1="100%" x2="100%" y2="0%">
-        <stop offset="0%" stop-color="#c92a2a"/>
-        <stop offset="50%" stop-color="#e03131"/>
-        <stop offset="100%" stop-color="#ff8787"/>
-      </linearGradient>
-    `;
-    gradFacetR = `
-      <linearGradient id="fr_${uid}" x1="100%" y1="100%" x2="0%" y2="0%">
-        <stop offset="0%" stop-color="#e03131"/>
-        <stop offset="50%" stop-color="#f76707"/>
-        <stop offset="100%" stop-color="#ffa94d"/>
-      </linearGradient>
-    `;
-    gradCore = `
-      <linearGradient id="core_${uid}" x1="0%" y1="100%" x2="0%" y2="0%">
-        <stop offset="0%" stop-color="#ffa8a8"/>
-        <stop offset="60%" stop-color="#fff0f0"/>
-        <stop offset="100%" stop-color="#ffffff"/>
-      </linearGradient>
-    `;
-  } else if (t === 3) {
-    // Mystic Purple (Tử Tinh Thần Bí)
-    gradOuter = `
-      <linearGradient id="out_${uid}" x1="0%" y1="100%" x2="0%" y2="0%">
-        <stop offset="0%" stop-color="#3b1d75"/>
-        <stop offset="40%" stop-color="#5f3dc4"/>
-        <stop offset="80%" stop-color="#7048e8"/>
-        <stop offset="100%" stop-color="#9775fa"/>
-      </linearGradient>
-    `;
-    gradFacetL = `
-      <linearGradient id="fl_${uid}" x1="0%" y1="100%" x2="100%" y2="0%">
-        <stop offset="0%" stop-color="#5f3dc4"/>
-        <stop offset="50%" stop-color="#7048e8"/>
-        <stop offset="100%" stop-color="#b197fc"/>
-      </linearGradient>
-    `;
-    gradFacetR = `
-      <linearGradient id="fr_${uid}" x1="100%" y1="100%" x2="0%" y2="0%">
-        <stop offset="0%" stop-color="#7048e8"/>
-        <stop offset="50%" stop-color="#845ef7"/>
-        <stop offset="100%" stop-color="#e599f7"/>
-      </linearGradient>
-    `;
-    gradCore = `
-      <linearGradient id="core_${uid}" x1="0%" y1="100%" x2="0%" y2="0%">
-        <stop offset="0%" stop-color="#e599f7"/>
-        <stop offset="70%" stop-color="#f8f0fc"/>
-        <stop offset="100%" stop-color="#ffffff"/>
-      </linearGradient>
-    `;
-  } else if (t === 2) {
-    // Golden Solar Flame (Thái Dương Hoàng Kim)
-    gradOuter = `
-      <linearGradient id="out_${uid}" x1="0%" y1="100%" x2="0%" y2="0%">
-        <stop offset="0%" stop-color="#b23e00"/>
-        <stop offset="40%" stop-color="#d9480f"/>
-        <stop offset="80%" stop-color="#f76707"/>
-        <stop offset="100%" stop-color="#fab005"/>
-      </linearGradient>
-    `;
-    gradFacetL = `
-      <linearGradient id="fl_${uid}" x1="0%" y1="100%" x2="100%" y2="0%">
-        <stop offset="0%" stop-color="#d9480f"/>
-        <stop offset="50%" stop-color="#f76707"/>
-        <stop offset="100%" stop-color="#ffd43b"/>
-      </linearGradient>
-    `;
-    gradFacetR = `
-      <linearGradient id="fr_${uid}" x1="100%" y1="100%" x2="0%" y2="0%">
-        <stop offset="0%" stop-color="#f76707"/>
-        <stop offset="50%" stop-color="#f59f00"/>
-        <stop offset="100%" stop-color="#ffe066"/>
-      </linearGradient>
-    `;
-    gradCore = `
-      <linearGradient id="core_${uid}" x1="0%" y1="100%" x2="0%" y2="0%">
-        <stop offset="0%" stop-color="#ffe066"/>
-        <stop offset="65%" stop-color="#fff9db"/>
-        <stop offset="100%" stop-color="#ffffff"/>
-      </linearGradient>
-    `;
-  } else if (t === 1) {
-    // Ocean Blue Flame (Lam Ngọc Đại Dương)
-    gradOuter = `
-      <linearGradient id="out_${uid}" x1="0%" y1="100%" x2="0%" y2="0%">
-        <stop offset="0%" stop-color="#113f67"/>
-        <stop offset="40%" stop-color="#1864ab"/>
-        <stop offset="80%" stop-color="#228be6"/>
-        <stop offset="100%" stop-color="#4dabf7"/>
-      </linearGradient>
-    `;
-    gradFacetL = `
-      <linearGradient id="fl_${uid}" x1="0%" y1="100%" x2="100%" y2="0%">
-        <stop offset="0%" stop-color="#1864ab"/>
-        <stop offset="50%" stop-color="#228be6"/>
-        <stop offset="100%" stop-color="#74c0fc"/>
-      </linearGradient>
-    `;
-    gradFacetR = `
-      <linearGradient id="fr_${uid}" x1="100%" y1="100%" x2="0%" y2="0%">
-        <stop offset="0%" stop-color="#228be6"/>
-        <stop offset="50%" stop-color="#339af0"/>
-        <stop offset="100%" stop-color="#a5d8ff"/>
-      </linearGradient>
-    `;
-    gradCore = `
-      <linearGradient id="core_${uid}" x1="0%" y1="100%" x2="0%" y2="0%">
-        <stop offset="0%" stop-color="#a5d8ff"/>
-        <stop offset="65%" stop-color="#e7f5ff"/>
-        <stop offset="100%" stop-color="#ffffff"/>
-      </linearGradient>
-    `;
-  } else {
-    // Tier 0: Emerald Forest Jade (Lục Bảo Tinh Hoa)
-    gradOuter = `
-      <linearGradient id="out_${uid}" x1="0%" y1="100%" x2="0%" y2="0%">
-        <stop offset="0%" stop-color="#0e3324"/>
-        <stop offset="40%" stop-color="#194a37"/>
-        <stop offset="80%" stop-color="#246247"/>
-        <stop offset="100%" stop-color="#40916c"/>
-      </linearGradient>
-    `;
-    gradFacetL = `
-      <linearGradient id="fl_${uid}" x1="0%" y1="100%" x2="100%" y2="0%">
-        <stop offset="0%" stop-color="#194a37"/>
-        <stop offset="50%" stop-color="#246247"/>
-        <stop offset="100%" stop-color="#52b788"/>
-      </linearGradient>
-    `;
-    gradFacetR = `
-      <linearGradient id="fr_${uid}" x1="100%" y1="100%" x2="0%" y2="0%">
-        <stop offset="0%" stop-color="#246247"/>
-        <stop offset="50%" stop-color="#2d7a58"/>
-        <stop offset="100%" stop-color="#95d5b2"/>
-      </linearGradient>
-    `;
-    gradCore = `
-      <linearGradient id="core_${uid}" x1="0%" y1="100%" x2="0%" y2="0%">
-        <stop offset="0%" stop-color="#95d5b2"/>
-        <stop offset="65%" stop-color="#d8f3dc"/>
-        <stop offset="100%" stop-color="#ffffff"/>
-      </linearGradient>
-    `;
+  function getFacetSVG(topColor, botColor, highlightColor = '#ffffff') {
+    const fId = `f_${uid}_${topColor.replace('#','')}`;
+    return `<svg viewBox="0 0 40 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="grad_${fId}" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="${topColor}"/>
+          <stop offset="60%" stop-color="${botColor}"/>
+          <stop offset="100%" stop-color="#020617" stop-opacity="0.8"/>
+        </linearGradient>
+        <linearGradient id="ridge_${fId}" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stop-color="${highlightColor}" stop-opacity="0.95"/>
+          <stop offset="45%" stop-color="${topColor}" stop-opacity="0.6"/>
+          <stop offset="100%" stop-color="${botColor}" stop-opacity="0.1"/>
+        </linearGradient>
+      </defs>
+      <path d="M20 2 L38 46 L29 76 L20 80 L11 76 L2 46 Z" fill="url(#grad_${fId})" opacity="0.88"/>
+      <path d="M20 10 L32 46 L26 70 L20 74 L14 70 L8 46 Z" fill="${topColor}" opacity="0.25"/>
+      <path d="M20 2 V80" stroke="url(#ridge_${fId})" stroke-width="1.6" stroke-linecap="round"/>
+      <path d="M20 2 L38 46 L29 76 L20 80 L11 76 L2 46 Z" stroke="${highlightColor}" stroke-width="0.8" stroke-opacity="0.5"/>
+    </svg>`;
   }
 
-  const defs = `
-    <defs>
-      ${gradOuter}
-      ${gradFacetL}
-      ${gradFacetR}
-      ${gradCore}
-    </defs>
-  `;
+  const r = Math.max(4, Math.round(size * 0.26));
 
-  const facetFrontSVG = `
-    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-      ${defs}
-      <path d="M12 23C7.2 23 3.6 19.5 3.6 15.4C3.6 12.8 5 10.8 6.5 9.2C6.2 11.2 7.5 12.5 8.8 12.5C7.8 10.2 8.5 7.6 10.2 5.2C10.2 7 11 8.5 12.2 9.2C11.8 6.8 12.4 3.8 13.8 1.2C15.2 4.2 15 7.2 14.2 9.2C15.6 9.2 17.2 7.8 17.6 6C19.2 8.5 20.4 11.5 20.4 14.8C20.4 19.2 16.8 23 12 23Z" fill="url(#out_${uid})"/>
-      <path d="M12 23C7.2 23 3.6 19.5 3.6 15.4C3.6 12.8 5 10.8 6.5 9.2 L12 13.5 Z" fill="url(#fl_${uid})" opacity="0.9"/>
-      <path d="M12 23 L12 13.5 L17.6 6C19.2 8.5 20.4 11.5 20.4 14.8C20.4 19.2 16.8 23 12 23Z" fill="url(#fr_${uid})" opacity="0.85"/>
-      <path d="M12 6.5 L14.5 12 L12 18 L9.5 12 Z" fill="url(#core_${uid})"/>
-      <path d="M12 9 L13 12 L12 14 L11 12 Z" fill="#ffffff"/>
-    </svg>
-  `;
+  return `<div class="streak-3d-wrap streak-3d-tier-${t} ${extraClass}" style="width: ${size}px; height: ${size}px; --flame-3d-glow: ${tierConfig.glow};" data-streak-tier="${t}" title="Biểu tượng Chuỗi 3D Thể Tích (Bấm để chuyển đổi 2D/3D)">
+    <div class="streak-3d-stage">
+      <div class="streak-3d-tilt">
+        <div class="streak-3d-turntable">
+          <div class="streak-3d-crystal-facet facet-0" style="transform: rotateY(0deg) translateZ(${r}px);">${getFacetSVG(tierConfig.f1_top, tierConfig.f1_bot)}</div>
+          <div class="streak-3d-crystal-facet facet-1" style="transform: rotateY(60deg) translateZ(${r}px);">${getFacetSVG(tierConfig.f2_top, tierConfig.f2_bot)}</div>
+          <div class="streak-3d-crystal-facet facet-2" style="transform: rotateY(120deg) translateZ(${r}px);">${getFacetSVG(tierConfig.f3_top, tierConfig.f3_bot)}</div>
+          <div class="streak-3d-crystal-facet facet-3" style="transform: rotateY(180deg) translateZ(${r}px);">${getFacetSVG(tierConfig.f4_top, tierConfig.f4_bot)}</div>
+          <div class="streak-3d-crystal-facet facet-4" style="transform: rotateY(240deg) translateZ(${r}px);">${getFacetSVG(tierConfig.f5_top, tierConfig.f5_bot)}</div>
+          <div class="streak-3d-crystal-facet facet-5" style="transform: rotateY(300deg) translateZ(${r}px);">${getFacetSVG(tierConfig.f6_top, tierConfig.f6_bot)}</div>
 
-  const facetAngleSVG = `
-    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-      ${defs}
-      <path d="M12 23C7.8 23 4.5 19.5 4.5 15.4C4.5 12.8 5.8 10.8 7.2 9.2C7 11.2 8.2 12.5 9.4 12.5C8.5 10.2 9.2 7.6 10.7 5.2C10.7 7 11.5 8.5 12.5 9.2C12.1 6.8 12.6 3.8 13.8 1.2C15 4.2 14.8 7.2 14.1 9.2C15.4 9.2 16.8 7.8 17.2 6C18.6 8.5 19.6 11.5 19.6 14.8C19.6 19.2 16.2 23 12 23Z" fill="url(#fl_${uid})"/>
-      <path d="M12 8 L14 13 L12 18 L10 13 Z" fill="url(#core_${uid})" opacity="0.85"/>
-    </svg>
-  `;
+          <div class="streak-3d-plasma-core" style="background: radial-gradient(circle, #ffffff 15%, ${tierConfig.core1} 45%, ${tierConfig.core2} 75%, transparent 100%);"></div>
 
-  const facetBackSVG = `
-    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-      ${defs}
-      <path d="M12 23C7.2 23 3.6 19.5 3.6 15.4C3.6 12.8 5 10.8 6.5 9.2C6.2 11.2 7.5 12.5 8.8 12.5C7.8 10.2 8.5 7.6 10.2 5.2C10.2 7 11 8.5 12.2 9.2C11.8 6.8 12.4 3.8 13.8 1.2C15.2 4.2 15 7.2 14.2 9.2C15.6 9.2 17.2 7.8 17.6 6C19.2 8.5 20.4 11.5 20.4 14.8C20.4 19.2 16.8 23 12 23Z" fill="url(#out_${uid})"/>
-      <path d="M12 7 L14 12 L12 17 L10 12 Z" fill="url(#fr_${uid})" opacity="0.7"/>
-    </svg>
-  `;
+          <div class="streak-3d-spiral-tendril tendril-1" style="transform: rotateY(35deg) translateZ(${Math.round(r * 0.4)}px);">
+            <svg viewBox="0 0 20 60" fill="none" style="width:100%; height:100%;">
+              <path d="M10 50 Q16 35 10 20 Q5 10 10 2" stroke="${tierConfig.core1}" stroke-width="2.5" stroke-linecap="round" opacity="0.85"/>
+            </svg>
+          </div>
+          <div class="streak-3d-spiral-tendril tendril-2" style="transform: rotateY(215deg) translateZ(${Math.round(r * 0.4)}px);">
+            <svg viewBox="0 0 20 60" fill="none" style="width:100%; height:100%;">
+              <path d="M10 50 Q4 35 10 20 Q15 10 10 2" stroke="${tierConfig.core2}" stroke-width="2.5" stroke-linecap="round" opacity="0.85"/>
+            </svg>
+          </div>
 
-  return `<div class="streak-3d-wrap streak-3d-tier-${t} ${extraClass}" style="width: ${size}px; height: ${size}px;" data-streak-tier="${t}" title="Chuỗi cấp độ ${t} (3D Xoay 360°)">
-    <div class="streak-3d-scene">
-      <div class="streak-3d-turntable">
-        <div class="streak-3d-facet facet-front">${facetFrontSVG}</div>
-        <div class="streak-3d-facet facet-angle-1">${facetAngleSVG}</div>
-        <div class="streak-3d-facet facet-angle-2">${facetAngleSVG}</div>
-        <div class="streak-3d-facet facet-back">${facetBackSVG}</div>
-        <div class="streak-3d-core"></div>
-        <div class="streak-3d-orbit"></div>
+          <div class="streak-3d-mote mote-1" style="transform: translate3d(${Math.round(r * 1.1)}px, -8px, ${Math.round(r * 0.5)}px); background: ${tierConfig.spark};"></div>
+          <div class="streak-3d-mote mote-2" style="transform: translate3d(-${Math.round(r * 1.0)}px, 5px, -${Math.round(r * 0.6)}px); background: ${tierConfig.core1};"></div>
+          <div class="streak-3d-mote mote-3" style="transform: translate3d(${Math.round(r * 0.5)}px, 14px, -${Math.round(r * 0.9)}px); background: ${tierConfig.core2};"></div>
+
+          <div class="streak-3d-dais-ring" style="transform: rotateX(90deg) translateZ(-${Math.round(r * 1.4)}px); border-color: ${tierConfig.core1};"></div>
+        </div>
       </div>
     </div>
   </div>`;
@@ -1033,164 +915,301 @@ function getFlameSVG(tier = 0, size = 20, extraClass = '', forceMode = null) {
 
 /**
  * Tạo Icon Huy Chương Quán Quân / Á Quân / Quý Quân Đấu Trường Arena
- * Đồ họa vector metallic đa tầng, ruy băng chiến thắng, vòng nguyệt quế và số La Mã
+ * Đồ họa vector metallic cao cấp, dải ruy băng vương giả, vòng nguyệt quế và chữ số La Mã 3D
  */
 function getArenaMedalSVG(rank = 1, size = 34) {
   const r = Number(rank) || 1;
   const uid = `med_${r}_${size}_${Math.floor(Math.random() * 100000)}`;
 
   if (r === 1) {
-    // Top 1 Gold Medal (Huy Chương Vàng Hoàng Gia)
-    return `<svg class="arena-medal-svg medal-gold" width="${size}" height="${size}" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+    // TOP 1 GOLD MEDAL
+    return `<svg class="arena-medal-svg medal-gold" width="${size}" height="${size}" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
       <defs>
-        <linearGradient id="goldRim_${uid}" x1="0%" y1="0%" x2="100%" y2="100%">
+        <linearGradient id="gBezel_${uid}" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#ffffff"/>
+          <stop offset="15%" stop-color="#fef08a"/>
+          <stop offset="40%" stop-color="#f59e0b"/>
+          <stop offset="70%" stop-color="#b45309"/>
+          <stop offset="100%" stop-color="#78350f"/>
+        </linearGradient>
+        <radialGradient id="gPlate_${uid}" cx="35%" cy="30%" r="75%">
           <stop offset="0%" stop-color="#fffbeb"/>
-          <stop offset="25%" stop-color="#fde047"/>
-          <stop offset="50%" stop-color="#eab308"/>
-          <stop offset="75%" stop-color="#ca8a04"/>
-          <stop offset="100%" stop-color="#854d0e"/>
-        </linearGradient>
-        <radialGradient id="goldDisc_${uid}" cx="35%" cy="30%" r="70%">
-          <stop offset="0%" stop-color="#fef08a"/>
-          <stop offset="45%" stop-color="#eab308"/>
-          <stop offset="85%" stop-color="#a16207"/>
-          <stop offset="100%" stop-color="#713f12"/>
+          <stop offset="30%" stop-color="#fef08a"/>
+          <stop offset="65%" stop-color="#eab308"/>
+          <stop offset="88%" stop-color="#a16207"/>
+          <stop offset="100%" stop-color="#451a03"/>
         </radialGradient>
-        <linearGradient id="ribbonLeft_${uid}" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stop-color="#ef4444"/>
-          <stop offset="50%" stop-color="#b91c1c"/>
-          <stop offset="100%" stop-color="#7f1d1d"/>
+        <linearGradient id="gInnerRim_${uid}" x1="0%" y1="100%" x2="100%" y2="0%">
+          <stop offset="0%" stop-color="#ffffff" stop-opacity="0.95"/>
+          <stop offset="50%" stop-color="#ca8a04"/>
+          <stop offset="100%" stop-color="#713f12"/>
         </linearGradient>
-        <linearGradient id="ribbonRight_${uid}" x1="0%" y1="0%" x2="100%" y2="100%">
+        <linearGradient id="ribL_${uid}" x1="0%" y1="0%" x2="100%" y2="100%">
           <stop offset="0%" stop-color="#f87171"/>
-          <stop offset="50%" stop-color="#dc2626"/>
-          <stop offset="100%" stop-color="#991b1b"/>
+          <stop offset="35%" stop-color="#dc2626"/>
+          <stop offset="75%" stop-color="#991b1b"/>
+          <stop offset="100%" stop-color="#450a0a"/>
         </linearGradient>
-        <filter id="goldGlow_${uid}" x="-20%" y="-20%" width="140%" height="140%">
-          <feDropShadow dx="0" dy="2.5" stdDeviation="3" flood-color="#ca8a04" flood-opacity="0.55"/>
+        <linearGradient id="ribR_${uid}" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#ef4444"/>
+          <stop offset="40%" stop-color="#b91c1c"/>
+          <stop offset="80%" stop-color="#7f1d1d"/>
+          <stop offset="100%" stop-color="#450a0a"/>
+        </linearGradient>
+        <linearGradient id="gTrim_${uid}" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" stop-color="#fde047"/>
+          <stop offset="50%" stop-color="#ca8a04"/>
+          <stop offset="100%" stop-color="#fef08a"/>
+        </linearGradient>
+        <filter id="gShadow_${uid}" x="-20%" y="-15%" width="140%" height="140%">
+          <feDropShadow dx="0" dy="3.5" stdDeviation="3.5" flood-color="#78350f" flood-opacity="0.5"/>
         </filter>
       </defs>
-      <!-- Dual Draped Crimson Ribbons -->
-      <path d="M16 2 L24 20 L19 22 L11 4 Z" fill="url(#ribbonLeft_${uid})"/>
-      <path d="M16 2 L19 22 L13 21 Z" fill="#991b1b" opacity="0.65"/>
-      <path d="M32 2 L24 20 L29 22 L37 4 Z" fill="url(#ribbonRight_${uid})"/>
-      <path d="M32 2 L29 22 L35 21 Z" fill="#7f1d1d" opacity="0.65"/>
-      <!-- Embossed Gold Medal Ring with Relief -->
-      <circle cx="24" cy="27" r="17" fill="url(#goldRim_${uid})" filter="url(#goldGlow_${uid})"/>
-      <circle cx="24" cy="27" r="14.5" fill="#713f12"/>
-      <circle cx="24" cy="27" r="13.5" fill="url(#goldDisc_${uid})"/>
-      <!-- Laurel Wreath of Victory -->
-      <path d="M15 27 C15 22 18 18 21 16 C20 18 19 21 20 23 C18 24 16 25 15 27 Z" fill="#fffbeb" opacity="0.8"/>
-      <path d="M33 27 C33 22 30 18 27 16 C28 18 29 21 28 23 C30 24 32 25 33 27 Z" fill="#fffbeb" opacity="0.8"/>
-      <path d="M17 31 C18 34 21 36 24 37 C22 36 20 34 20 32 Z" fill="#fef08a" opacity="0.85"/>
-      <path d="M31 31 C30 34 27 36 24 37 C26 36 28 34 28 32 Z" fill="#fef08a" opacity="0.85"/>
-      <!-- Roman Numeral I -->
-      <path d="M22 21.5 H26 M24 21.5 V32.5 M21.5 32.5 H26.5" stroke="#ffffff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
-      <!-- Sparkle Star Accent -->
-      <path d="M33 15 Q33 18.5 35 18.5 Q33 18.5 33 22 Q33 18.5 31 18.5 Q33 18.5 33 15 Z" fill="#ffffff"/>
-      <circle cx="33" cy="18.5" r="1" fill="#fffbeb"/>
+
+      <!-- Draped Victory Ribbon (Proportional & Elegant) -->
+      <g class="medal-ribbon">
+        <path d="M20 1 L32 18 L26 19 L13 1 Z" fill="url(#ribL_${uid})"/>
+        <path d="M14.5 1 L26 19 L24.5 19 L13 1 Z" fill="url(#gTrim_${uid})"/>
+        <path d="M44 1 L32 18 L38 19 L51 1 Z" fill="url(#ribR_${uid})"/>
+        <path d="M49.5 1 L38 19 L36.5 19 L48 1 Z" fill="url(#gTrim_${uid})"/>
+        <path d="M26 19 L32 18 L38 19 L32 21 Z" fill="#450a0a" opacity="0.6"/>
+      </g>
+
+      <!-- Suspension Loop -->
+      <rect x="27.5" y="14.5" width="9" height="5" rx="2" fill="url(#gBezel_${uid})"/>
+      <rect x="28.5" y="15.5" width="7" height="3" rx="1.5" fill="#713f12" opacity="0.5"/>
+
+      <!-- Large Command Medallion Body (radius 22px) -->
+      <g class="medal-coin" filter="url(#gShadow_${uid})">
+        <circle cx="32" cy="38" r="22" fill="url(#gBezel_${uid})"/>
+        <circle cx="32" cy="38" r="19.5" fill="#713f12"/>
+        <circle cx="32" cy="38" r="18.5" fill="url(#gPlate_${uid})"/>
+
+        <g opacity="0.22" stroke="#ffffff" stroke-width="0.8">
+          <line x1="32" y1="20" x2="32" y2="56"/>
+          <line x1="14" y1="38" x2="50" y2="38"/>
+          <line x1="19.3" y1="25.3" x2="44.7" y2="50.7"/>
+          <line x1="19.3" y1="50.7" x2="44.7" y2="25.3"/>
+          <line x1="23.2" y1="21.5" x2="40.8" y2="54.5"/>
+          <line x1="23.2" y1="54.5" x2="40.8" y2="21.5"/>
+        </g>
+
+        <circle cx="32" cy="38" r="15" fill="none" stroke="url(#gInnerRim_${uid})" stroke-width="1.2"/>
+
+        <!-- Laurel Wreath of Honor -->
+        <path d="M20 40 C19 35 21 29 25 26 C24 29 23 32 25 35 C23 36 21 38 20 40 Z" fill="#fffbeb" opacity="0.9"/>
+        <path d="M22 44 C24 47 27 50 32 51 C28 50 26 48 26 44 Z" fill="#fef08a" opacity="0.9"/>
+        <path d="M44 40 C45 35 43 29 39 26 C40 29 41 32 39 35 C41 36 43 38 44 40 Z" fill="#fffbeb" opacity="0.9"/>
+        <path d="M42 44 C40 47 37 50 32 51 C36 50 38 48 38 44 Z" fill="#fef08a" opacity="0.9"/>
+
+        <!-- Imperial Crown -->
+        <path d="M27 27 L25.5 30.5 L28 30 L32 26 L36 30 L38.5 30.5 L37 27 L39 24.5 L35 25.5 L32 22 L29 25.5 L25 24.5 Z" fill="url(#gBezel_${uid})"/>
+        <circle cx="32" cy="22" r="1" fill="#ffffff"/>
+        <circle cx="25" cy="24.5" r="0.8" fill="#ffffff"/>
+        <circle cx="39" cy="24.5" r="0.8" fill="#ffffff"/>
+
+        <!-- Bold 3D Embossed Roman Numeral I -->
+        <path d="M28.5 31.5 H35.5 M32 31.5 V45.5 M27.5 45.5 H36.5" stroke="#451a03" stroke-width="4.2" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M28.5 31 H35.5 M32 31 V45 M27.5 45 H36.5" stroke="#ffffff" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M29 31 H35 M32 31 V45 M28 45 H36" stroke="#fef08a" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+      </g>
+
+      <!-- Sparkle Highlights -->
+      <path d="M46 22 Q46 26 48 26 Q46 26 46 30 Q46 26 44 26 Q46 26 46 22 Z" fill="#ffffff"/>
+      <circle cx="46" cy="26" r="1.2" fill="#fef08a"/>
+      <path d="M19 47 Q19 49 20.5 49 Q19 49 19 51 Q19 49 17.5 49 Q19 49 19 47 Z" fill="#ffffff" opacity="0.9"/>
     </svg>`;
   } else if (r === 2) {
-    // Top 2 Silver Medal (Huy Chương Bạc Tinh Thể)
-    return `<svg class="arena-medal-svg medal-silver" width="${size}" height="${size}" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+    // TOP 2 SILVER MEDAL
+    return `<svg class="arena-medal-svg medal-silver" width="${size}" height="${size}" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
       <defs>
-        <linearGradient id="silverRim_${uid}" x1="0%" y1="0%" x2="100%" y2="100%">
+        <linearGradient id="sBezel_${uid}" x1="0%" y1="0%" x2="100%" y2="100%">
           <stop offset="0%" stop-color="#ffffff"/>
-          <stop offset="25%" stop-color="#e2e8f0"/>
-          <stop offset="50%" stop-color="#94a3b8"/>
+          <stop offset="20%" stop-color="#f1f5f9"/>
+          <stop offset="45%" stop-color="#cbd5e1"/>
           <stop offset="75%" stop-color="#64748b"/>
           <stop offset="100%" stop-color="#334155"/>
         </linearGradient>
-        <radialGradient id="silverDisc_${uid}" cx="35%" cy="30%" r="70%">
-          <stop offset="0%" stop-color="#f8fafc"/>
-          <stop offset="45%" stop-color="#cbd5e1"/>
-          <stop offset="85%" stop-color="#64748b"/>
-          <stop offset="100%" stop-color="#334155"/>
+        <radialGradient id="sPlate_${uid}" cx="35%" cy="30%" r="75%">
+          <stop offset="0%" stop-color="#ffffff"/>
+          <stop offset="35%" stop-color="#f8fafc"/>
+          <stop offset="70%" stop-color="#cbd5e1"/>
+          <stop offset="90%" stop-color="#64748b"/>
+          <stop offset="100%" stop-color="#1e293b"/>
         </radialGradient>
-        <linearGradient id="ribbonSilvL_${uid}" x1="0%" y1="0%" x2="100%" y2="100%">
+        <linearGradient id="sInnerRim_${uid}" x1="0%" y1="100%" x2="100%" y2="0%">
+          <stop offset="0%" stop-color="#ffffff" stop-opacity="0.95"/>
+          <stop offset="50%" stop-color="#94a3b8"/>
+          <stop offset="100%" stop-color="#334155"/>
+        </linearGradient>
+        <linearGradient id="ribSL_${uid}" x1="0%" y1="0%" x2="100%" y2="100%">
           <stop offset="0%" stop-color="#38bdf8"/>
-          <stop offset="50%" stop-color="#0284c7"/>
-          <stop offset="100%" stop-color="#0369a1"/>
+          <stop offset="35%" stop-color="#0284c7"/>
+          <stop offset="75%" stop-color="#0369a1"/>
+          <stop offset="100%" stop-color="#082f49"/>
         </linearGradient>
-        <linearGradient id="ribbonSilvR_${uid}" x1="0%" y1="0%" x2="100%" y2="100%">
+        <linearGradient id="ribSR_${uid}" x1="0%" y1="0%" x2="100%" y2="100%">
           <stop offset="0%" stop-color="#60a5fa"/>
-          <stop offset="50%" stop-color="#2563eb"/>
-          <stop offset="100%" stop-color="#1d4ed8"/>
+          <stop offset="40%" stop-color="#2563eb"/>
+          <stop offset="80%" stop-color="#1d4ed8"/>
+          <stop offset="100%" stop-color="#0f172a"/>
         </linearGradient>
-        <filter id="silverGlow_${uid}" x="-20%" y="-20%" width="140%" height="140%">
-          <feDropShadow dx="0" dy="2.5" stdDeviation="3" flood-color="#64748b" flood-opacity="0.45"/>
+        <linearGradient id="sTrim_${uid}" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" stop-color="#ffffff"/>
+          <stop offset="50%" stop-color="#cbd5e1"/>
+          <stop offset="100%" stop-color="#ffffff"/>
+        </linearGradient>
+        <filter id="sShadow_${uid}" x="-20%" y="-15%" width="140%" height="140%">
+          <feDropShadow dx="0" dy="3.5" stdDeviation="3.5" flood-color="#1e293b" flood-opacity="0.5"/>
         </filter>
       </defs>
-      <!-- Dual Draped Sapphire Ribbons -->
-      <path d="M16 2 L24 20 L19 22 L11 4 Z" fill="url(#ribbonSilvL_${uid})"/>
-      <path d="M16 2 L19 22 L13 21 Z" fill="#0369a1" opacity="0.65"/>
-      <path d="M32 2 L24 20 L29 22 L37 4 Z" fill="url(#ribbonSilvR_${uid})"/>
-      <path d="M32 2 L29 22 L35 21 Z" fill="#1e3a8a" opacity="0.65"/>
-      <!-- Embossed Silver Medal Ring -->
-      <circle cx="24" cy="27" r="17" fill="url(#silverRim_${uid})" filter="url(#silverGlow_${uid})"/>
-      <circle cx="24" cy="27" r="14.5" fill="#334155"/>
-      <circle cx="24" cy="27" r="13.5" fill="url(#silverDisc_${uid})"/>
-      <!-- Laurel Wreath -->
-      <path d="M15 27 C15 22 18 18 21 16 C20 18 19 21 20 23 C18 24 16 25 15 27 Z" fill="#ffffff" opacity="0.8"/>
-      <path d="M33 27 C33 22 30 18 27 16 C28 18 29 21 28 23 C30 24 32 25 33 27 Z" fill="#ffffff" opacity="0.8"/>
-      <path d="M17 31 C18 34 21 36 24 37 C22 36 20 34 20 32 Z" fill="#e2e8f0" opacity="0.85"/>
-      <path d="M31 31 C30 34 27 36 24 37 C26 36 28 34 28 32 Z" fill="#e2e8f0" opacity="0.85"/>
-      <!-- Roman Numeral II -->
-      <path d="M19 21.5 H22 M20.5 21.5 V32.5 M19 32.5 H22 M26 21.5 H29 M27.5 21.5 V32.5 M26 32.5 H29" stroke="#ffffff" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"/>
-      <!-- Sparkle Star Accent -->
-      <path d="M33 15 Q33 18.5 35 18.5 Q33 18.5 33 22 Q33 18.5 31 18.5 Q33 18.5 33 15 Z" fill="#ffffff"/>
-      <circle cx="33" cy="18.5" r="1" fill="#e0f2fe"/>
+
+      <!-- Draped Sapphire Ribbon -->
+      <g class="medal-ribbon">
+        <path d="M20 1 L32 18 L26 19 L13 1 Z" fill="url(#ribSL_${uid})"/>
+        <path d="M14.5 1 L26 19 L24.5 19 L13 1 Z" fill="url(#sTrim_${uid})"/>
+        <path d="M44 1 L32 18 L38 19 L51 1 Z" fill="url(#ribSR_${uid})"/>
+        <path d="M49.5 1 L38 19 L36.5 19 L48 1 Z" fill="url(#sTrim_${uid})"/>
+        <path d="M26 19 L32 18 L38 19 L32 21 Z" fill="#082f49" opacity="0.6"/>
+      </g>
+
+      <!-- Suspension Loop -->
+      <rect x="27.5" y="14.5" width="9" height="5" rx="2" fill="url(#sBezel_${uid})"/>
+      <rect x="28.5" y="15.5" width="7" height="3" rx="1.5" fill="#334155" opacity="0.5"/>
+
+      <!-- Large Medallion Body -->
+      <g class="medal-coin" filter="url(#sShadow_${uid})">
+        <circle cx="32" cy="38" r="22" fill="url(#sBezel_${uid})"/>
+        <circle cx="32" cy="38" r="19.5" fill="#1e293b"/>
+        <circle cx="32" cy="38" r="18.5" fill="url(#sPlate_${uid})"/>
+
+        <g opacity="0.25" stroke="#ffffff" stroke-width="0.8">
+          <line x1="32" y1="20" x2="32" y2="56"/>
+          <line x1="14" y1="38" x2="50" y2="38"/>
+          <line x1="19.3" y1="25.3" x2="44.7" y2="50.7"/>
+          <line x1="19.3" y1="50.7" x2="44.7" y2="25.3"/>
+          <line x1="23.2" y1="21.5" x2="40.8" y2="54.5"/>
+          <line x1="23.2" y1="54.5" x2="40.8" y2="21.5"/>
+        </g>
+
+        <circle cx="32" cy="38" r="15" fill="none" stroke="url(#sInnerRim_${uid})" stroke-width="1.2"/>
+
+        <!-- Laurel Wreath -->
+        <path d="M20 40 C19 35 21 29 25 26 C24 29 23 32 25 35 C23 36 21 38 20 40 Z" fill="#ffffff" opacity="0.9"/>
+        <path d="M22 44 C24 47 27 50 32 51 C28 50 26 48 26 44 Z" fill="#e2e8f0" opacity="0.9"/>
+        <path d="M44 40 C45 35 43 29 39 26 C40 29 41 32 39 35 C41 36 43 38 44 40 Z" fill="#ffffff" opacity="0.9"/>
+        <path d="M42 44 C40 47 37 50 32 51 C36 50 38 48 38 44 Z" fill="#e2e8f0" opacity="0.9"/>
+
+        <!-- Silver Winged Crest -->
+        <path d="M27 27 C29 28 30.5 29.5 32 30 C33.5 29.5 35 28 37 27 C35 25.5 32 24 32 23 C32 24 29 25.5 27 27 Z" fill="url(#sBezel_${uid})"/>
+        <circle cx="32" cy="25" r="0.9" fill="#ffffff"/>
+
+        <!-- Bold 3D Embossed Roman Numeral II -->
+        <path d="M23.5 32 H28.5 M26 32 V45 M23.5 45 H28.5 M35.5 32 H40.5 M38 32 V45 M35.5 45 H40.5" stroke="#1e293b" stroke-width="3.8" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M23.5 31.5 H28.5 M26 31.5 V44.5 M23.5 44.5 H28.5 M35.5 31.5 H40.5 M38 31.5 V44.5 M35.5 44.5 H40.5" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M24 31.5 H28 M26 31.5 V44.5 M24 44.5 H28 M36 31.5 H40 M38 31.5 V44.5 M36 44.5 H40" stroke="#cbd5e1" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+      </g>
+
+      <!-- Sparkle Highlights -->
+      <path d="M46 22 Q46 26 48 26 Q46 26 46 30 Q46 26 44 26 Q46 26 46 22 Z" fill="#ffffff"/>
+      <circle cx="46" cy="26" r="1.2" fill="#e0f2fe"/>
+      <path d="M19 47 Q19 49 20.5 49 Q19 49 19 51 Q19 49 17.5 49 Q19 49 19 47 Z" fill="#ffffff" opacity="0.9"/>
     </svg>`;
   } else {
-    // Top 3 Bronze Medal (Huy Chương Đồng Quý Quân)
-    return `<svg class="arena-medal-svg medal-bronze" width="${size}" height="${size}" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+    // TOP 3 BRONZE MEDAL
+    return `<svg class="arena-medal-svg medal-bronze" width="${size}" height="${size}" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
       <defs>
-        <linearGradient id="bronzeRim_${uid}" x1="0%" y1="0%" x2="100%" y2="100%">
+        <linearGradient id="bBezel_${uid}" x1="0%" y1="0%" x2="100%" y2="100%">
           <stop offset="0%" stop-color="#ffedd5"/>
-          <stop offset="25%" stop-color="#fdba74"/>
-          <stop offset="50%" stop-color="#ea580c"/>
+          <stop offset="20%" stop-color="#fdba74"/>
+          <stop offset="45%" stop-color="#ea580c"/>
           <stop offset="75%" stop-color="#9a3412"/>
           <stop offset="100%" stop-color="#431407"/>
         </linearGradient>
-        <radialGradient id="bronzeDisc_${uid}" cx="35%" cy="30%" r="70%">
-          <stop offset="0%" stop-color="#fed7aa"/>
-          <stop offset="45%" stop-color="#c2410c"/>
-          <stop offset="85%" stop-color="#7c2d12"/>
-          <stop offset="100%" stop-color="#431407"/>
+        <radialGradient id="bPlate_${uid}" cx="35%" cy="30%" r="75%">
+          <stop offset="0%" stop-color="#ffedd5"/>
+          <stop offset="35%" stop-color="#fdba74"/>
+          <stop offset="70%" stop-color="#c2410c"/>
+          <stop offset="90%" stop-color="#7c2d12"/>
+          <stop offset="100%" stop-color="#2a0800"/>
         </radialGradient>
-        <linearGradient id="ribbonBrzL_${uid}" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stop-color="#10b981"/>
-          <stop offset="50%" stop-color="#047857"/>
-          <stop offset="100%" stop-color="#064e3b"/>
+        <linearGradient id="bInnerRim_${uid}" x1="0%" y1="100%" x2="100%" y2="0%">
+          <stop offset="0%" stop-color="#ffedd5" stop-opacity="0.95"/>
+          <stop offset="50%" stop-color="#c2410c"/>
+          <stop offset="100%" stop-color="#431407"/>
         </linearGradient>
-        <linearGradient id="ribbonBrzR_${uid}" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stop-color="#34d399"/>
-          <stop offset="50%" stop-color="#059669"/>
-          <stop offset="100%" stop-color="#065f46"/>
+        <linearGradient id="ribBL_${uid}" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#c084fc"/>
+          <stop offset="35%" stop-color="#9333ea"/>
+          <stop offset="75%" stop-color="#6b21a8"/>
+          <stop offset="100%" stop-color="#3b0764"/>
         </linearGradient>
-        <filter id="bronzeGlow_${uid}" x="-20%" y="-20%" width="140%" height="140%">
-          <feDropShadow dx="0" dy="2.5" stdDeviation="3" flood-color="#9a3412" flood-opacity="0.45"/>
+        <linearGradient id="ribBR_${uid}" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#a855f7"/>
+          <stop offset="40%" stop-color="#7e22ce"/>
+          <stop offset="80%" stop-color="#581c87"/>
+          <stop offset="100%" stop-color="#2e1065"/>
+        </linearGradient>
+        <linearGradient id="bTrim_${uid}" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" stop-color="#fed7aa"/>
+          <stop offset="50%" stop-color="#ea580c"/>
+          <stop offset="100%" stop-color="#ffedd5"/>
+        </linearGradient>
+        <filter id="bShadow_${uid}" x="-20%" y="-15%" width="140%" height="140%">
+          <feDropShadow dx="0" dy="3.5" stdDeviation="3.5" flood-color="#431407" flood-opacity="0.5"/>
         </filter>
       </defs>
-      <!-- Dual Draped Emerald-Bronze Ribbons -->
-      <path d="M16 2 L24 20 L19 22 L11 4 Z" fill="url(#ribbonBrzL_${uid})"/>
-      <path d="M16 2 L19 22 L13 21 Z" fill="#064e3b" opacity="0.65"/>
-      <path d="M32 2 L24 20 L29 22 L37 4 Z" fill="url(#ribbonBrzR_${uid})"/>
-      <path d="M32 2 L29 22 L35 21 Z" fill="#022c22" opacity="0.65"/>
-      <!-- Embossed Bronze Medal Ring -->
-      <circle cx="24" cy="27" r="17" fill="url(#bronzeRim_${uid})" filter="url(#bronzeGlow_${uid})"/>
-      <circle cx="24" cy="27" r="14.5" fill="#431407"/>
-      <circle cx="24" cy="27" r="13.5" fill="url(#bronzeDisc_${uid})"/>
-      <!-- Laurel Wreath -->
-      <path d="M15 27 C15 22 18 18 21 16 C20 18 19 21 20 23 C18 24 16 25 15 27 Z" fill="#ffedd5" opacity="0.8"/>
-      <path d="M33 27 C33 22 30 18 27 16 C28 18 29 21 28 23 C30 24 32 25 33 27 Z" fill="#ffedd5" opacity="0.8"/>
-      <path d="M17 31 C18 34 21 36 24 37 C22 36 20 34 20 32 Z" fill="#fed7aa" opacity="0.85"/>
-      <path d="M31 31 C30 34 27 36 24 37 C26 36 28 34 28 32 Z" fill="#fed7aa" opacity="0.85"/>
-      <!-- Roman Numeral III -->
-      <path d="M17 21.5 H19.5 M18.2 21.5 V32.5 M17 32.5 H19.5 M22.5 21.5 H25.5 M24 21.5 V32.5 M22.5 32.5 H25.5 M28.5 21.5 H31 M29.8 21.5 V32.5 M28.5 32.5 H31" stroke="#ffffff" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/>
-      <!-- Sparkle Star Accent -->
-      <path d="M33 15 Q33 18.5 35 18.5 Q33 18.5 33 22 Q33 18.5 31 18.5 Q33 18.5 33 15 Z" fill="#ffffff"/>
-      <circle cx="33" cy="18.5" r="1" fill="#fff7ed"/>
+
+      <!-- Draped Violet Ribbon -->
+      <g class="medal-ribbon">
+        <path d="M20 1 L32 18 L26 19 L13 1 Z" fill="url(#ribBL_${uid})"/>
+        <path d="M14.5 1 L26 19 L24.5 19 L13 1 Z" fill="url(#bTrim_${uid})"/>
+        <path d="M44 1 L32 18 L38 19 L51 1 Z" fill="url(#ribBR_${uid})"/>
+        <path d="M49.5 1 L38 19 L36.5 19 L48 1 Z" fill="url(#bTrim_${uid})"/>
+        <path d="M26 19 L32 18 L38 19 L32 21 Z" fill="#3b0764" opacity="0.6"/>
+      </g>
+
+      <!-- Suspension Loop -->
+      <rect x="27.5" y="14.5" width="9" height="5" rx="2" fill="url(#bBezel_${uid})"/>
+      <rect x="28.5" y="15.5" width="7" height="3" rx="1.5" fill="#431407" opacity="0.5"/>
+
+      <!-- Large Medallion Body -->
+      <g class="medal-coin" filter="url(#bShadow_${uid})">
+        <circle cx="32" cy="38" r="22" fill="url(#bBezel_${uid})"/>
+        <circle cx="32" cy="38" r="19.5" fill="#2a0800"/>
+        <circle cx="32" cy="38" r="18.5" fill="url(#bPlate_${uid})"/>
+
+        <g opacity="0.22" stroke="#ffffff" stroke-width="0.8">
+          <line x1="32" y1="20" x2="32" y2="56"/>
+          <line x1="14" y1="38" x2="50" y2="38"/>
+          <line x1="19.3" y1="25.3" x2="44.7" y2="50.7"/>
+          <line x1="19.3" y1="50.7" x2="44.7" y2="25.3"/>
+          <line x1="23.2" y1="21.5" x2="40.8" y2="54.5"/>
+          <line x1="23.2" y1="54.5" x2="40.8" y2="21.5"/>
+        </g>
+
+        <circle cx="32" cy="38" r="15" fill="none" stroke="url(#bInnerRim_${uid})" stroke-width="1.2"/>
+
+        <!-- Laurel Wreath -->
+        <path d="M20 40 C19 35 21 29 25 26 C24 29 23 32 25 35 C23 36 21 38 20 40 Z" fill="#ffedd5" opacity="0.9"/>
+        <path d="M22 44 C24 47 27 50 32 51 C28 50 26 48 26 44 Z" fill="#fdba74" opacity="0.9"/>
+        <path d="M44 40 C45 35 43 29 39 26 C40 29 41 32 39 35 C41 36 43 38 44 40 Z" fill="#ffedd5" opacity="0.9"/>
+        <path d="M42 44 C40 47 37 50 32 51 C36 50 38 48 38 44 Z" fill="#fdba74" opacity="0.9"/>
+
+        <!-- Bronze Laurel Crest Atop III -->
+        <circle cx="32" cy="26" r="2" fill="url(#bBezel_${uid})"/>
+        <circle cx="32" cy="26" r="1" fill="#ffedd5"/>
+
+        <!-- Bold 3D Embossed Roman Numeral III -->
+        <path d="M21.5 32 H25.5 M23.5 32 V45 M21.5 45 H25.5 M30 32 H34 M32 32 V45 M30 45 H34 M38.5 32 H42.5 M40.5 32 V45 M38.5 45 H42.5" stroke="#2a0800" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M21.5 31.5 H25.5 M23.5 31.5 V44.5 M21.5 44.5 H25.5 M30 31.5 H34 M32 31.5 V44.5 M30 44.5 H34 M38.5 31.5 H42.5 M40.5 31.5 V44.5 M38.5 44.5 H42.5" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M22 31.5 H25 M23.5 31.5 V44.5 M22 44.5 H25 M30.5 31.5 H33.5 M32 31.5 V44.5 M30.5 44.5 H33.5 M39 31.5 H42 M40.5 31.5 V44.5 M39 44.5 H42" stroke="#fed7aa" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+      </g>
+
+      <!-- Sparkle Highlights -->
+      <path d="M46 22 Q46 26 48 26 Q46 26 46 30 Q46 26 44 26 Q46 26 46 22 Z" fill="#ffffff"/>
+      <circle cx="46" cy="26" r="1.2" fill="#ffedd5"/>
+      <path d="M19 47 Q19 49 20.5 49 Q19 49 19 51 Q19 49 17.5 49 Q19 49 19 47 Z" fill="#ffffff" opacity="0.9"/>
     </svg>`;
   }
 }
