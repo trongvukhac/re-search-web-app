@@ -669,12 +669,15 @@ function getFlame2DSVG(tier = 0, size = 20, extraClass = '') {
     <defs>
       <linearGradient id="out_${id}" x1="0%" y1="100%" x2="0%" y2="0%">
         ${outerGrad}
+        <animate attributeName="y2" values="0%;-18%;0%" dur="2.4s" repeatCount="indefinite" />
       </linearGradient>
       <linearGradient id="mid_${id}" x1="0%" y1="100%" x2="0%" y2="0%">
         ${midGrad}
+        <animate attributeName="y2" values="0%;-24%;0%" dur="1.8s" repeatCount="indefinite" />
       </linearGradient>
       <linearGradient id="core_${id}" x1="0%" y1="100%" x2="0%" y2="0%">
         ${coreGrad}
+        <animate attributeName="y2" values="0%;-15%;0%" dur="1.3s" repeatCount="indefinite" />
       </linearGradient>
     </defs>
     
@@ -701,213 +704,23 @@ function getFlame2DSVG(tier = 0, size = 20, extraClass = '') {
 }
 
 /* ==========================================================================
-   STREAK ICON PREFERENCE (2D vs 3D) & VOLUMETRIC 3D ROTATING FLAME GENERATOR
+   STREAK ICON GENERATOR (2D DYNAMIC FLAME)
    ========================================================================== */
 
-function getStreakStylePreference() {
-  try {
-    return localStorage.getItem("re_streak_style") || "3d";
-  } catch (e) {
-    return "3d";
-  }
-}
-window.getStreakStylePreference = getStreakStylePreference;
-
-function toggleStreakStyle(event) {
-  if (event) {
-    event.stopPropagation();
-    event.preventDefault();
-  }
-  const current = getStreakStylePreference();
-  const next = (current === "3d") ? "2d" : "3d";
-  setStreakStyle(next, true);
-}
-window.toggleStreakStyle = toggleStreakStyle;
-
-function setStreakStyle(style, showFeedback = false) {
-  const s = (style === "2d") ? "2d" : "3d";
-  try {
-    localStorage.setItem("re_streak_style", s);
-  } catch (e) {}
-
-  // Cập nhật ngọn lửa Streak Hero tại trang tự học
-  const heroEl = document.getElementById("streakFlameHero");
-  if (heroEl) {
-    const currentTier = cachedLeaderboardData?.currentUser?.streak?.streakTier || 0;
-    heroEl.innerHTML = getFlameSVG(currentTier, 46);
-    if (showFeedback) {
-      heroEl.classList.remove("streak-just-toggled");
-      void heroEl.offsetWidth; // trigger reflow
-      heroEl.classList.add("streak-just-toggled");
-      setTimeout(() => heroEl.classList.remove("streak-just-toggled"), 500);
-
-      if (typeof toast === "function") {
-        toast(s === "3d" ? "✦ Đã kích hoạt ngọn lửa 3D (Xoay 360° thể tích)" : "🔥 Đã chuyển về ngọn lửa 2D");
-      }
-    }
-  }
-
-  // Tái render bảng xếp hạng đang hiển thị để cập nhật icon tức thì
-  if (typeof renderLeaderboard === "function") {
-    renderLeaderboard();
-  }
-  if (typeof renderLeaderboardUI === "function" && window.lastArenaLeaderboardData) {
-    renderLeaderboardUI(window.lastArenaLeaderboardData);
-  }
-
-  window.dispatchEvent(new CustomEvent("streakStyleChanged", { detail: { style: s } }));
-}
-window.setStreakStyle = setStreakStyle;
-
 /**
- * Tạo Icon Chuỗi Phong Cách 3D Thể Tích Đa Diện (Volumetric 3D Crystal Flame Spire)
- * Cấu trúc lăng trụ tinh thể 3D đa diện thực thụ xoay 360 độ liên tục chu kỳ 20 giây quanh trục ngang
+ * Hàm điều phối hiển thị Icon Chuỗi tự động (Chỉ dùng chuẩn 2D)
  */
-function getFlame3DSVG(tier = 0, size = 20, extraClass = '') {
-  const t = Number(tier) || 0;
-  const uid = `flm3d_${t}_${size}_${Math.floor(Math.random() * 100000)}`;
-
-  const tierConfig = {
-    0: {
-      core1: '#a7f3d0', core2: '#10b981', glow: 'rgba(16, 185, 129, 0.6)',
-      f1_top: '#6ee7b7', f1_bot: '#047857',
-      f2_top: '#34d399', f2_bot: '#065f46',
-      f3_top: '#a7f3d0', f3_bot: '#059669',
-      f4_top: '#059669', f4_bot: '#064e3b',
-      f5_top: '#10b981', f5_bot: '#022c22',
-      f6_top: '#a7f3d0', f6_bot: '#047857',
-      spark: '#6ee7b7'
-    },
-    1: {
-      core1: '#bae6fd', core2: '#0284c7', glow: 'rgba(2, 132, 199, 0.7)',
-      f1_top: '#7dd3fc', f1_bot: '#0369a1',
-      f2_top: '#38bdf8', f2_bot: '#075985',
-      f3_top: '#bae6fd', f3_bot: '#0284c7',
-      f4_top: '#0284c7', f4_bot: '#0c4a6e',
-      f5_top: '#0ea5e9', f5_bot: '#082f49',
-      f6_top: '#e0f2fe', f6_bot: '#0369a1',
-      spark: '#7dd3fc'
-    },
-    2: {
-      core1: '#fef08a', core2: '#f59e0b', glow: 'rgba(245, 158, 11, 0.75)',
-      f1_top: '#fde047', f1_bot: '#d97706',
-      f2_top: '#facc15', f2_bot: '#b45309',
-      f3_top: '#fef08a', f3_bot: '#f59e0b',
-      f4_top: '#f59e0b', f4_bot: '#78350f',
-      f5_top: '#fbbf24', f5_bot: '#451a03',
-      f6_top: '#fffbeb', f6_bot: '#d97706',
-      spark: '#fde047'
-    },
-    3: {
-      core1: '#f3e8ff', core2: '#a855f7', glow: 'rgba(168, 85, 247, 0.85)',
-      f1_top: '#d8b4fe', f1_bot: '#7e22ce',
-      f2_top: '#c084fc', f2_bot: '#6b21a8',
-      f3_top: '#f3e8ff', f3_bot: '#9333ea',
-      f4_top: '#9333ea', f4_bot: '#581c87',
-      f5_top: '#a855f7', f5_bot: '#2e1065',
-      f6_top: '#faf5ff', f6_bot: '#7e22ce',
-      spark: '#e9d5ff'
-    },
-    4: {
-      core1: '#fee2e2', core2: '#ef4444', glow: 'rgba(239, 68, 68, 0.9)',
-      f1_top: '#fca5a5', f1_bot: '#b91c1c',
-      f2_top: '#f87171', f2_bot: '#991b1b',
-      f3_top: '#fee2e2', f3_bot: '#dc2626',
-      f4_top: '#dc2626', f4_bot: '#7f1d1d',
-      f5_top: '#ef4444', f5_bot: '#450a0a',
-      f6_top: '#fff1f2', f6_bot: '#b91c1c',
-      spark: '#fecaca'
-    },
-    5: {
-      core1: '#ffffff', core2: '#ec4899', glow: 'rgba(236, 72, 153, 0.95)',
-      f1_top: '#f472b6', f1_bot: '#6366f1',
-      f2_top: '#38bdf8', f2_bot: '#a855f7',
-      f3_top: '#fef08a', f3_bot: '#ec4899',
-      f4_top: '#10b981', f4_bot: '#3b82f6',
-      f5_top: '#ec4899', f5_bot: '#4f46e5',
-      f6_top: '#ffffff', f6_bot: '#db2777',
-      spark: '#ffffff'
-    }
-  }[t] || {
-    core1: '#a7f3d0', core2: '#10b981', glow: 'rgba(16, 185, 129, 0.6)',
-    f1_top: '#6ee7b7', f1_bot: '#047857',
-    f2_top: '#34d399', f2_bot: '#065f46',
-    f3_top: '#a7f3d0', f3_bot: '#059669',
-    f4_top: '#059669', f4_bot: '#064e3b',
-    f5_top: '#10b981', f5_bot: '#022c22',
-    f6_top: '#a7f3d0', f6_bot: '#047857',
-    spark: '#6ee7b7'
-  };
-
-  function getFacetSVG(topColor, botColor, highlightColor = '#ffffff') {
-    const fId = `f_${uid}_${topColor.replace('#','')}`;
-    return `<svg viewBox="0 0 40 80" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <defs>
-        <linearGradient id="grad_${fId}" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stop-color="${topColor}"/>
-          <stop offset="60%" stop-color="${botColor}"/>
-          <stop offset="100%" stop-color="#020617" stop-opacity="0.8"/>
-        </linearGradient>
-        <linearGradient id="ridge_${fId}" x1="0%" y1="0%" x2="0%" y2="100%">
-          <stop offset="0%" stop-color="${highlightColor}" stop-opacity="0.95"/>
-          <stop offset="45%" stop-color="${topColor}" stop-opacity="0.6"/>
-          <stop offset="100%" stop-color="${botColor}" stop-opacity="0.1"/>
-        </linearGradient>
-      </defs>
-      <path d="M20 2 L38 46 L29 76 L20 80 L11 76 L2 46 Z" fill="url(#grad_${fId})" opacity="0.88"/>
-      <path d="M20 10 L32 46 L26 70 L20 74 L14 70 L8 46 Z" fill="${topColor}" opacity="0.25"/>
-      <path d="M20 2 V80" stroke="url(#ridge_${fId})" stroke-width="1.6" stroke-linecap="round"/>
-      <path d="M20 2 L38 46 L29 76 L20 80 L11 76 L2 46 Z" stroke="${highlightColor}" stroke-width="0.8" stroke-opacity="0.5"/>
-    </svg>`;
-  }
-
-  const r = Math.max(4, Math.round(size * 0.26));
-
-  return `<div class="streak-3d-wrap streak-3d-tier-${t} ${extraClass}" style="width: ${size}px; height: ${size}px; --flame-3d-glow: ${tierConfig.glow};" data-streak-tier="${t}" title="Biểu tượng Chuỗi 3D Thể Tích (Bấm để chuyển đổi 2D/3D)">
-    <div class="streak-3d-stage">
-      <div class="streak-3d-tilt">
-        <div class="streak-3d-turntable">
-          <div class="streak-3d-crystal-facet facet-0" style="transform: rotateY(0deg) translateZ(${r}px);">${getFacetSVG(tierConfig.f1_top, tierConfig.f1_bot)}</div>
-          <div class="streak-3d-crystal-facet facet-1" style="transform: rotateY(60deg) translateZ(${r}px);">${getFacetSVG(tierConfig.f2_top, tierConfig.f2_bot)}</div>
-          <div class="streak-3d-crystal-facet facet-2" style="transform: rotateY(120deg) translateZ(${r}px);">${getFacetSVG(tierConfig.f3_top, tierConfig.f3_bot)}</div>
-          <div class="streak-3d-crystal-facet facet-3" style="transform: rotateY(180deg) translateZ(${r}px);">${getFacetSVG(tierConfig.f4_top, tierConfig.f4_bot)}</div>
-          <div class="streak-3d-crystal-facet facet-4" style="transform: rotateY(240deg) translateZ(${r}px);">${getFacetSVG(tierConfig.f5_top, tierConfig.f5_bot)}</div>
-          <div class="streak-3d-crystal-facet facet-5" style="transform: rotateY(300deg) translateZ(${r}px);">${getFacetSVG(tierConfig.f6_top, tierConfig.f6_bot)}</div>
-
-          <div class="streak-3d-plasma-core" style="background: radial-gradient(circle, #ffffff 15%, ${tierConfig.core1} 45%, ${tierConfig.core2} 75%, transparent 100%);"></div>
-
-          <div class="streak-3d-spiral-tendril tendril-1" style="transform: rotateY(35deg) translateZ(${Math.round(r * 0.4)}px);">
-            <svg viewBox="0 0 20 60" fill="none" style="width:100%; height:100%;">
-              <path d="M10 50 Q16 35 10 20 Q5 10 10 2" stroke="${tierConfig.core1}" stroke-width="2.5" stroke-linecap="round" opacity="0.85"/>
-            </svg>
-          </div>
-          <div class="streak-3d-spiral-tendril tendril-2" style="transform: rotateY(215deg) translateZ(${Math.round(r * 0.4)}px);">
-            <svg viewBox="0 0 20 60" fill="none" style="width:100%; height:100%;">
-              <path d="M10 50 Q4 35 10 20 Q15 10 10 2" stroke="${tierConfig.core2}" stroke-width="2.5" stroke-linecap="round" opacity="0.85"/>
-            </svg>
-          </div>
-
-          <div class="streak-3d-mote mote-1" style="transform: translate3d(${Math.round(r * 1.1)}px, -8px, ${Math.round(r * 0.5)}px); background: ${tierConfig.spark};"></div>
-          <div class="streak-3d-mote mote-2" style="transform: translate3d(-${Math.round(r * 1.0)}px, 5px, -${Math.round(r * 0.6)}px); background: ${tierConfig.core1};"></div>
-          <div class="streak-3d-mote mote-3" style="transform: translate3d(${Math.round(r * 0.5)}px, 14px, -${Math.round(r * 0.9)}px); background: ${tierConfig.core2};"></div>
-
-          <div class="streak-3d-dais-ring" style="transform: rotateX(90deg) translateZ(-${Math.round(r * 1.4)}px); border-color: ${tierConfig.core1};"></div>
-        </div>
-      </div>
-    </div>
-  </div>`;
-}
-
-/**
- * Hàm điều phối hiển thị Icon Chuỗi tự động theo tùy chọn người dùng (2D hoặc 3D)
- */
-function getFlameSVG(tier = 0, size = 20, extraClass = '', forceMode = null) {
-  const mode = forceMode || getStreakStylePreference();
-  if (mode === '3d') {
-    return getFlame3DSVG(tier, size, extraClass);
-  }
+function getFlameSVG(tier = 0, size = 20, extraClass = '') {
   return getFlame2DSVG(tier, size, extraClass);
 }
+
+// Fallback no-op handlers for backwards compatibility
+function getStreakStylePreference() { return "2d"; }
+function toggleStreakStyle() {}
+function setStreakStyle() {}
+window.getStreakStylePreference = getStreakStylePreference;
+window.toggleStreakStyle = toggleStreakStyle;
+window.setStreakStyle = setStreakStyle;
 
 /* ==========================================================================
    ARENA TOP 3 MEDAL DESIGNER (HUY CHƯƠNG ĐẤU TRƯỜNG CAO CẤP)
@@ -13849,7 +13662,6 @@ if (initialCachedUser) {
   }
 }
 
-setStreakStyle(getStreakStylePreference());
 renderHome();
 renderPosts();
 renderDocuments();

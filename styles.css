@@ -524,9 +524,6 @@ h1 em {
   background: var(--sage-2);
   border-color: #cbd5e1;
 }
-  background: transparent;
-  color: var(--ink);
-}
 .button-dark {
   background: #eef3eb;
   color: var(--ink);
@@ -14497,167 +14494,6 @@ input:disabled {
   }
 }
 
-/* ==========================================================================
-   3D ROTATING VOLUMETRIC STREAK ICON (360 DEGREE HORIZONTAL TURNTABLE - 20S)
-   CẤU TRÚC LĂNG TRỤ TINH THỂ 3D ĐA DIỆN THỂ TÍCH THỰC THỤ
-   ========================================================================== */
-
-.streak-3d-wrap {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  vertical-align: middle;
-  position: relative;
-  overflow: visible;
-  line-height: 1;
-}
-
-.streak-3d-stage {
-  width: 100%;
-  height: 100%;
-  perspective: 700px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.streak-3d-tilt {
-  width: 100%;
-  height: 100%;
-  transform-style: preserve-3d;
-  transform: rotateX(12deg);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-/* 360 Degree Continuous Horizontal Turntable (20s per rotation - 100% Seamless) */
-.streak-3d-turntable {
-  width: 100%;
-  height: 100%;
-  position: relative;
-  transform-style: preserve-3d;
-  animation: streak3dSpinHorizontal 20s linear infinite;
-  will-change: transform;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-@keyframes streak3dSpinHorizontal {
-  from {
-    transform: rotateY(0deg);
-  }
-  to {
-    transform: rotateY(360deg);
-  }
-}
-
-/* 6 Volumetric Crystal Facets */
-.streak-3d-crystal-facet {
-  position: absolute;
-  top: 4%;
-  left: 14%;
-  width: 72%;
-  height: 92%;
-  pointer-events: none;
-  backface-visibility: visible;
-  transform-style: preserve-3d;
-  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.35));
-}
-
-.streak-3d-crystal-facet svg {
-  width: 100%;
-  height: 100%;
-  display: block;
-}
-
-/* Center Luminous 3D Incandescent Plasma Core */
-.streak-3d-plasma-core {
-  position: absolute;
-  width: 34%;
-  height: 34%;
-  border-radius: 50%;
-  transform: translateZ(0);
-  filter: blur(1px);
-  pointer-events: none;
-  animation: streakCorePulse 3s ease-in-out infinite alternate;
-}
-
-@keyframes streakCorePulse {
-  0% { transform: scale(0.85); opacity: 0.8; }
-  100% { transform: scale(1.15); opacity: 1; }
-}
-
-/* Ascending 3D Inner Energy Spiral Ribbons */
-.streak-3d-spiral-tendril {
-  position: absolute;
-  top: 14%;
-  left: 22%;
-  width: 56%;
-  height: 72%;
-  pointer-events: none;
-  transform-style: preserve-3d;
-}
-
-/* Floating Orbiting Energy Crystals / Motes */
-.streak-3d-mote {
-  position: absolute;
-  width: 3.5px;
-  height: 3.5px;
-  border-radius: 50%;
-  box-shadow: 0 0 6px currentColor;
-  pointer-events: none;
-}
-
-/* 3D Base Dais Platform */
-.streak-3d-dais-ring {
-  position: absolute;
-  width: 90%;
-  height: 90%;
-  border-radius: 50%;
-  border: 1.5px dashed;
-  opacity: 0.45;
-  pointer-events: none;
-}
-
-/* 3D Tier-Specific Color Schemes & Luminous Radiance */
-.streak-3d-tier-0 {
-  --flame-3d-glow: rgba(16, 185, 129, 0.55);
-}
-
-.streak-3d-tier-1 {
-  --flame-3d-glow: rgba(34, 139, 230, 0.65);
-}
-
-.streak-3d-tier-2 {
-  --flame-3d-glow: rgba(245, 158, 11, 0.75);
-}
-
-.streak-3d-tier-3 {
-  --flame-3d-glow: rgba(168, 85, 247, 0.85);
-}
-
-.streak-3d-tier-4 {
-  --flame-3d-glow: rgba(239, 68, 68, 0.9);
-}
-
-.streak-3d-tier-5 {
-  --flame-3d-glow: rgba(236, 72, 153, 0.95);
-}
-.streak-3d-tier-5 .streak-3d-turntable {
-  animation: streak3dSpinHorizontal 20s linear infinite, streakPrismAura 4s ease-in-out infinite alternate;
-}
-@keyframes streakPrismAura {
-  0% { filter: drop-shadow(0 0 10px rgba(168, 85, 247, 0.7)) hue-rotate(0deg); }
-  50% { filter: drop-shadow(0 0 16px rgba(236, 72, 153, 0.85)) hue-rotate(180deg); }
-  100% { filter: drop-shadow(0 0 12px rgba(16, 185, 129, 0.7)) hue-rotate(360deg); }
-}
-
-.streak-flame-wrap:hover .streak-3d-turntable {
-  animation-duration: 10s;
-}
-
 /* Arena Podium Stand Highlights for Top 3 Medals */
 .podium-stand.stand-1 {
   background: linear-gradient(180deg, #fbbf24 0%, #d97706 50%, #92400e 100%) !important;
@@ -14673,4 +14509,6 @@ input:disabled {
   background: linear-gradient(180deg, #fdba74 0%, #c2410c 50%, #7c2d12 100%) !important;
   box-shadow: inset 0 2px 4px rgba(255, 255, 255, 0.5), 0 8px 20px rgba(194, 65, 12, 0.3) !important;
 }
+
+
 
