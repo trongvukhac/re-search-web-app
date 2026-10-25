@@ -8168,6 +8168,49 @@ body.study-zen-fullscreen .study-main-col {
   border-color: rgba(244, 114, 182, 0.48) !important;
 }
 
+/* 5. TẠM ĐÓNG: Màu xám (Grey / Slate Theme) */
+.weekly-competition-card.theme-state-paused,
+.comp-gateway-hero.theme-state-paused {
+  background: linear-gradient(135deg, #1e293b 0%, #334155 52%, #1e293b 100%) !important;
+  border-color: rgba(148, 163, 184, 0.35) !important;
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.4) !important;
+}
+.weekly-competition-card.theme-state-paused:hover {
+  border-color: rgba(148, 163, 184, 0.55) !important;
+  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.5), 0 0 0 1px rgba(148, 163, 184, 0.3) !important;
+}
+.weekly-competition-card.theme-state-paused .comp-card-glow {
+  background: radial-gradient(circle, rgba(148, 163, 184, 0.2) 0%, rgba(30, 41, 59, 0.05) 50%, transparent 70%) !important;
+}
+.weekly-competition-card.theme-state-paused p,
+.comp-gateway-hero.theme-state-paused p {
+  color: #cbd5e1 !important;
+}
+.comp-gateway-hero.theme-state-paused .comp-phase-tag {
+  background: rgba(148, 163, 184, 0.2) !important;
+  border-color: rgba(148, 163, 184, 0.35) !important;
+  color: #f1f5f9 !important;
+}
+.comp-gateway-hero.theme-state-paused .gateway-clock-card {
+  border-color: rgba(148, 163, 184, 0.4) !important;
+}
+
+.comp-status-badge.status-paused,
+.comp-status-badge.paused {
+  background: rgba(148, 163, 184, 0.2) !important;
+  color: #cbd5e1 !important;
+  border: 1px solid rgba(148, 163, 184, 0.4) !important;
+}
+.comp-cta-button.cta-paused {
+  background: rgba(148, 163, 184, 0.22) !important;
+  color: #f8fafc !important;
+  border: 1px solid rgba(148, 163, 184, 0.45) !important;
+}
+.comp-cta-button.cta-paused:hover {
+  background: rgba(148, 163, 184, 0.35) !important;
+  border-color: rgba(148, 163, 184, 0.65) !important;
+}
+
 /* ==========================================================================
    RESEARCH ARENA (ĐẤU TRƯỜNG HỌC THUẬT & THI ĐUA NCKH) - MATCHING DEMO HERO
    ========================================================================== */

@@ -10654,11 +10654,14 @@ async function loadWeeklyCompetitionStatus() {
 
 function normalizeCompData(raw) {
   if (!raw) return {};
+  const isArenaPaused = Boolean(raw.isArenaPaused || raw.timeState?.isArenaPaused);
   const isSunday = Boolean(raw.isSunday || raw.timeState?.isSunday);
   const isSaturday = Boolean(raw.isSaturday || raw.timeState?.isSaturday);
   const phase = raw.phase || raw.timeState?.phase || 1;
   let state = raw.state || raw.timeState?.state || "closed";
-  if (state === "upcoming") {
+  if (isArenaPaused) {
+    state = "paused";
+  } else if (state === "upcoming") {
     state = "countdown";
   }
   const stateLabel = raw.stateLabel || raw.timeState?.stateLabel || "Cổng thi đấu";
@@ -10792,8 +10795,10 @@ function renderWeeklyCompetitionCard(raw) {
 
   const cardEl = $("#weeklyCompetitionModule");
   if (cardEl) {
-    cardEl.classList.remove("theme-state-open", "theme-state-summary", "theme-state-upcoming", "theme-state-sunday");
-    if (data.isSunday) {
+    cardEl.classList.remove("theme-state-open", "theme-state-summary", "theme-state-upcoming", "theme-state-sunday", "theme-state-paused");
+    if (data.isArenaPaused || data.state === "paused") {
+      cardEl.classList.add("theme-state-paused");
+    } else if (data.isSunday) {
       cardEl.classList.add("theme-state-sunday");
     } else if (data.state === "open") {
       cardEl.classList.add("theme-state-open");
@@ -10805,7 +10810,19 @@ function renderWeeklyCompetitionCard(raw) {
   }
 
   badgeEl.className = "comp-status-badge";
-  if (data.isSunday) {
+  if (data.isArenaPaused || data.state === "paused") {
+    badgeEl.classList.add("status-paused");
+    if (badgeTextEl) badgeTextEl.textContent = "TẠM ĐÓNG TUẦN NÀY";
+    if (phaseSubtitle) phaseSubtitle.textContent = "Tạm đóng tuần này";
+    if (timerLabel) timerLabel.textContent = "Trạng thái:";
+    if (countdownTicker) countdownTicker.textContent = "Tạm ngưng";
+    if (ctaText) ctaText.textContent = "Xem thông báo";
+    if (ctaBtn) ctaBtn.className = "comp-cta-button cta-paused";
+    if (attemptsTeaser) attemptsTeaser.style.setProperty("display", "none", "important");
+    if (bestScoreTeaser) bestScoreTeaser.style.setProperty("display", "none", "important");
+    if (compState.homeTimerInterval) clearInterval(compState.homeTimerInterval);
+    return;
+  } else if (data.isSunday) {
     badgeEl.classList.add("status-sunday");
     if (badgeTextEl) badgeTextEl.textContent = "TỔNG KẾT TUẦN";
     if (timerLabel) timerLabel.textContent = "Kết thúc tuần sau:";
@@ -10854,8 +10871,20 @@ async function onEnterArena() {
   const isPrivileged = Boolean(user && (user.role === "admin" || user.role === "lecturer" || user.role === "ta"));
   const lockedNotice = $("#arenaLockedNotice");
   const studentIdNotice = $("#arenaStudentIdRequiredNotice");
+  const pausedNotice = $("#arenaPausedNotice");
   const mainContent = $("#arenaMainContent");
   const lbClassSelectorWrap = $("#lbClassSelectorWrap");
+
+  const isPaused = Boolean(compState.status?.isArenaPaused || compState.overview?.isArenaPaused);
+
+  if (isPaused && !isPrivileged) {
+    if (lockedNotice) lockedNotice.style.display = "none";
+    if (studentIdNotice) studentIdNotice.style.display = "none";
+    if (mainContent) mainContent.style.display = "none";
+    if (pausedNotice) pausedNotice.style.display = "block";
+    return;
+  }
+  if (pausedNotice) pausedNotice.style.display = "none";
 
   if (!canAccessArena(user)) {
     if (lockedNotice) lockedNotice.style.display = "block";
@@ -10878,6 +10907,18 @@ async function onEnterArena() {
   if (mainContent) mainContent.style.display = "block";
   const adminBar = $("#arenaAdminBar");
   if (adminBar) adminBar.style.display = isAdmin ? "flex" : "none";
+
+  const adminBadge = $("#arenaAdminBarStatusBadge");
+  const adminQuickBtn = $("#arenaAdminQuickToggleBtn");
+  if (adminBadge) {
+    adminBadge.textContent = isPaused ? "⏸️ Đang tạm đóng tuần này" : "🟢 Đang mở";
+    adminBadge.style.background = isPaused ? "rgba(245, 158, 11, 0.2)" : "rgba(16, 185, 129, 0.2)";
+    adminBadge.style.color = isPaused ? "#f59e0b" : "#10b981";
+    adminBadge.style.borderColor = isPaused ? "rgba(245, 158, 11, 0.4)" : "rgba(16, 185, 129, 0.3)";
+  }
+  if (adminQuickBtn) {
+    adminQuickBtn.textContent = isPaused ? "🟢 Mở hoạt động ngay" : "⏸️ Tạm đóng tuần này";
+  }
 
   // Cấu hình bảng thi cho lớp tương ứng hoặc bộ chọn cho giảng viên/admin
   if (isPrivileged) {
@@ -12990,11 +13031,54 @@ async function loadAdminCompetition(targetCompetitionId) {
       simLabel.textContent = data.simulatedTimeStr || data.serverTimeStr || "Giờ thực tế";
     }
 
+    compState.isArenaPaused = Boolean(data.isArenaPaused);
+    const adminStatusBadge = $("#adminArenaStatusBadge");
+    const adminToggleBtn = $("#adminBtnToggleArena");
+    if (adminStatusBadge) {
+      if (data.isArenaPaused) {
+        adminStatusBadge.textContent = "⏸️ Đang tạm đóng tuần này";
+        adminStatusBadge.style.background = "rgba(245, 158, 11, 0.15)";
+        adminStatusBadge.style.color = "#d97706";
+        adminStatusBadge.style.borderColor = "rgba(245, 158, 11, 0.35)";
+      } else {
+        adminStatusBadge.textContent = "🟢 Đang mở hoạt động";
+        adminStatusBadge.style.background = "rgba(16, 185, 129, 0.15)";
+        adminStatusBadge.style.color = "#10b981";
+        adminStatusBadge.style.borderColor = "rgba(16, 185, 129, 0.3)";
+      }
+    }
+    if (adminToggleBtn) {
+      adminToggleBtn.textContent = data.isArenaPaused ? "🟢 Mở hoạt động tuần" : "⏸️ Tạm đóng tuần này";
+      adminToggleBtn.className = data.isArenaPaused ? "button button-sm button-primary" : "button button-sm button-outline";
+    }
+
     await loadAdminPhaseQuestions(compState.adminSelectedPhase || 1);
   } catch (e) {
     toast("Không thể tải thông tin thi đua quản trị.");
   }
 }
+
+window.adminToggleArenaStatus = async function() {
+  const isCurrentlyPaused = Boolean(compState.isArenaPaused);
+  const newPaused = !isCurrentlyPaused;
+  try {
+    const res = await requestAPI("/api/admin/competition/toggle-status", { paused: newPaused });
+    if (res && res.ok) {
+      compState.isArenaPaused = res.isArenaPaused;
+      if (compState.status) compState.status.isArenaPaused = res.isArenaPaused;
+      if (compState.overview) compState.overview.isArenaPaused = res.isArenaPaused;
+      toast(res.isArenaPaused ? "Đã chuyển Arena sang trạng thái: Tạm đóng tuần này." : "Đã mở lại hoạt động Đấu trường Arena.");
+      await loadWeeklyCompetitionStatus();
+      await loadAdminCompetition(compState.adminSelectedCompetitionId);
+      if (typeof currentActiveRoute !== "undefined" && currentActiveRoute === "arena") {
+        await onEnterArena();
+      }
+    }
+  } catch (e) {
+    toast("Lỗi khi cập nhật trạng thái Arena: " + (e.message || e));
+  }
+};
+window.adminQuickToggleArena = window.adminToggleArenaStatus;
 
 window.onAdminChangeCompetitionWeek = async function(compId) {
   const newCompId = Number(compId);

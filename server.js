@@ -563,6 +563,34 @@ try {
   console.error("[Auto-heal Error]", e);
 }
 
+// System settings (e.g. Arena paused flag)
+db.exec(`
+  CREATE TABLE IF NOT EXISTS system_settings (
+    key TEXT PRIMARY KEY,
+    value TEXT NOT NULL,
+    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+  );
+  INSERT OR IGNORE INTO system_settings (key, value) VALUES ('arena_paused', 'false');
+`);
+
+function isArenaPaused() {
+  try {
+    const row = db.prepare("SELECT value FROM system_settings WHERE key = 'arena_paused'").get();
+    return row?.value === "true";
+  } catch (e) {
+    return false;
+  }
+}
+
+function setArenaPaused(paused) {
+  db.prepare(`
+    INSERT INTO system_settings (key, value, updated_at)
+    VALUES ('arena_paused', ?, CURRENT_TIMESTAMP)
+    ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = CURRENT_TIMESTAMP
+  `).run(paused ? "true" : "false");
+  notifyCompetitionResultsChanged();
+}
+
 const defaultTopics = [
   "Đề tài", "Lý thuyết", "Phương pháp", 
   "Dữ liệu & phân tích", "Viết nghiên cứu", 
@@ -1931,6 +1959,27 @@ function getOrCreateCurrentCompetition(vnDate) {
 }
 
 function getCompetitionTimeState(vnDate, comp) {
+  const paused = isArenaPaused();
+  if (paused) {
+    return {
+      phase: 1,
+      dayOfWeek: vnDate.getDay(),
+      isSaturday: false,
+      isSunday: false,
+      isArenaPaused: true,
+      openScheduleText: "Tạm đóng tuần này",
+      state: "paused",
+      stateLabel: "TẠM ĐÓNG TUẦN NÀY",
+      ctaText: "Xem thông báo",
+      phaseName: "Tạm ngưng hoạt động",
+      phaseTopic: comp ? comp.topic_name : "Đấu trường Arena",
+      secondsUntilNext: 0,
+      nextStateLabel: "Tạm đóng tuần này",
+      isReady: true,
+      visible: true
+    };
+  }
+
   const dayOfWeek = vnDate.getDay(); // 0 = Sun, 1 = Mon, ..., 6 = Sat
   const hours = vnDate.getHours();
   const minutes = vnDate.getMinutes();
@@ -4993,10 +5042,6 @@ async function api(request, response, url) {
 
   if (method === "GET" && pathName === "/api/competition/status") {
     const user = sessionFrom(request);
-    // Feature flag: khoá tạm thời Arena với người dùng không phải là Admin
-    if (!ARENA_ENABLED && (!user || user.role !== "admin")) {
-      return json(response, 200, { ok: true, visible: true, isReady: false, locked: true });
-    }
     const vnNow = getVietnamNow();
     const comp = getOrCreateCurrentCompetition(vnNow);
     const timeState = getCompetitionTimeState(vnNow, comp);
@@ -5067,8 +5112,9 @@ async function api(request, response, url) {
 
   if (method === "GET" && pathName === "/api/competition/overview") {
     const user = sessionFrom(request);
-    if (!ARENA_ENABLED && (!user || user.role !== "admin")) {
-      return json(response, 200, { ok: true, locked: true });
+    const paused = isArenaPaused();
+    if (paused && (!user || user.role !== "admin")) {
+      return json(response, 200, { ok: true, isArenaPaused: true, locked: true });
     }
     const vnNow = getVietnamNow();
     const comp = getOrCreateCurrentCompetition(vnNow);
@@ -5334,7 +5380,8 @@ async function api(request, response, url) {
       userWeeklyReward,
       totalOnTimeBonus: userStatus?.totalOnTimeBonus ?? userSummary?.totalOnTimeBonus ?? 0,
       defaultAvailablePhase,
-      phasesStatus
+      phasesStatus,
+      isArenaPaused: isArenaPaused()
     });
   }
 
@@ -5342,8 +5389,8 @@ async function api(request, response, url) {
     const user = requireUser(request, response);
     if (!user) return;
 
-    if (!ARENA_ENABLED && user.role !== "admin") {
-      return error(response, 403, "Đấu trường Arena đang tạm khoá để thử nghiệm nội bộ.");
+    if (isArenaPaused() && user.role !== "admin") {
+      return error(response, 403, "Đấu trường thi đua tạm ngưng hoạt động trong tuần này. Hãy chờ thông báo mới nhất từ Quản trị viên về các tuần thi đấu tiếp theo nhé!");
     }
 
     if (!isVLUEmail(user)) {
@@ -5629,8 +5676,8 @@ async function api(request, response, url) {
     if (!user) return;
     if (!requireCsrf(request, response, user)) return;
 
-    if (!ARENA_ENABLED && user.role !== "admin") {
-      return error(response, 403, "Đấu trường Arena đang tạm khoá để thử nghiệm nội bộ.");
+    if (isArenaPaused() && user.role !== "admin") {
+      return error(response, 403, "Đấu trường thi đua tạm ngưng hoạt động trong tuần này. Hãy chờ thông báo mới nhất từ Quản trị viên về các tuần thi đấu tiếp theo nhé!");
     }
 
     if (!isVLUEmail(user)) {
@@ -6431,10 +6478,20 @@ async function api(request, response, url) {
       qCounts,
       participantsCount,
       totalSessions,
+      isArenaPaused: isArenaPaused(),
       simulatedTimeOffsetMs,
       serverTime: vnNow.toISOString(),
       allWeeks: availableWeeks
     });
+  }
+
+  if (method === "POST" && pathName === "/api/admin/competition/toggle-status") {
+    const user = requireUser(request, response);
+    if (!user || !isSuperAdmin(user)) return user ? error(response, 403, "Chỉ TA/Admin mới có quyền này.") : undefined;
+    const body = await readJSON(request);
+    const paused = Boolean(body?.paused);
+    setArenaPaused(paused);
+    return json(response, 200, { ok: true, isArenaPaused: paused });
   }
 
   if (method === "GET" && pathName === "/api/admin/competition/questions") {
