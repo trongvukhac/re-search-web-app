@@ -6471,13 +6471,18 @@ async function api(request, response, url) {
     });
   }
 
-  if (method === "POST" && pathName === "/api/admin/competition/toggle-status") {
+  if ((method === "POST" || method === "GET") && pathName === "/api/admin/competition/toggle-status") {
     const user = requireUser(request, response);
     if (!user || !isSuperAdmin(user)) return user ? error(response, 403, "Chỉ TA/Admin mới có quyền này.") : undefined;
-    const body = await readJSON(request);
-    const targetCompId = Number(body?.competitionId);
+    let body = {};
+    if (method === "POST") {
+      try {
+        body = (await readJSON(request)) || {};
+      } catch (e) {}
+    }
+    const targetCompId = Number(body?.competitionId || url.searchParams.get("competitionId"));
     if (!targetCompId) return error(response, 400, "Thiếu competitionId.");
-    const paused = Boolean(body?.paused);
+    const paused = body?.paused !== undefined ? Boolean(body.paused) : (url.searchParams.get("paused") === "true" || url.searchParams.get("paused") === "1");
     db.prepare("UPDATE weekly_competitions SET is_paused = ? WHERE id = ?").run(paused ? 1 : 0, targetCompId);
     notifyCompetitionResultsChanged();
     return json(response, 200, { ok: true, competitionId: targetCompId, is_paused: paused });

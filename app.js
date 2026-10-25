@@ -13060,7 +13060,10 @@ window.adminToggleSelectedWeekStatus = async function() {
   const isCurrentlyPaused = Boolean(compState.adminSelectedCompetitionIsPaused);
   const newPaused = !isCurrentlyPaused;
   try {
-    const res = await requestAPI("/api/admin/competition/toggle-status", { competitionId: compId, paused: newPaused });
+    const res = await requestAPI("/api/admin/competition/toggle-status", {
+      method: "POST",
+      body: JSON.stringify({ competitionId: compId, paused: newPaused })
+    });
     if (res && res.ok) {
       compState.adminSelectedCompetitionIsPaused = res.is_paused;
       toast(res.is_paused ? `Đã tạm đóng tuần thi đấu #${compId}.` : `Đã mở hoạt động tuần thi đấu #${compId}.`);
