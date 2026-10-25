@@ -3797,33 +3797,116 @@ $(".profile-chip").addEventListener("click", () => {
 /* ==========================================================================
    QUICK USER ACTION MENU (Hamburger & Shortcuts Dropdown)
    ========================================================================== */
+function isDarkModeActive() {
+  return document.documentElement.classList.contains("dark-theme") || document.body.classList.contains("dark-theme");
+}
+window.isDarkModeActive = isDarkModeActive;
+
+function updateDarkModeUI(isDark = isDarkModeActive()) {
+  const label = $("#quickMenuThemeLabel");
+  const toggle = $("#quickMenuThemeToggle");
+  const icon = $("#quickMenuThemeIcon");
+
+  if (label) {
+    label.textContent = isDark ? "Chế độ tối: Bật" : "Chế độ tối: Tắt";
+  }
+  if (toggle) {
+    toggle.classList.toggle("active", isDark);
+    toggle.setAttribute("aria-checked", String(isDark));
+  }
+  if (icon) {
+    if (isDark) {
+      icon.innerHTML = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>`;
+    } else {
+      icon.innerHTML = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>`;
+    }
+  }
+}
+window.updateDarkModeUI = updateDarkModeUI;
+
+function applyDarkMode(enable, save = true) {
+  const isDark = Boolean(enable);
+  document.documentElement.classList.toggle("dark-theme", isDark);
+  document.body.classList.toggle("dark-theme", isDark);
+
+  const metaTheme = document.querySelector('meta[name="theme-color"]');
+  if (metaTheme) {
+    metaTheme.setAttribute("content", isDark ? "#11161b" : "#123f31");
+  }
+
+  if (save) {
+    try {
+      localStorage.setItem("re_search_theme", isDark ? "dark" : "light");
+      localStorage.setItem("theme", isDark ? "dark" : "light");
+    } catch (e) {
+      console.warn("Could not save theme:", e);
+    }
+  }
+
+  updateDarkModeUI(isDark);
+}
+window.applyDarkMode = applyDarkMode;
+
+function toggleDarkMode(e) {
+  if (e) {
+    e.preventDefault();
+    e.stopPropagation();
+  }
+  const nextDark = !isDarkModeActive();
+  applyDarkMode(nextDark, true);
+  if (typeof toast === "function") {
+    toast(nextDark ? "🌙 Đã chuyển sang Chế độ tối" : "☀️ Đã chuyển sang Chế độ sáng");
+  }
+}
+window.toggleDarkMode = toggleDarkMode;
+
+function initDarkMode() {
+  try {
+    const saved = localStorage.getItem("re_search_theme") || localStorage.getItem("theme");
+    const prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+    const shouldBeDark = saved === "dark" || (!saved && prefersDark);
+    applyDarkMode(shouldBeDark, false);
+  } catch (e) {
+    applyDarkMode(false, false);
+  }
+}
+window.initDarkMode = initDarkMode;
+initDarkMode();
+
 function updateQuickMenuUser(user = session) {
-  const isAuth = Boolean(user);
+  const isAuth = Boolean(user && user.id);
   const streakTier = Number(user?.streakTier || 0);
   const roleDisplay = typeof getRoleDisplay === "function" ? getRoleDisplay(user?.role) : (user?.role || "Sinh viên");
 
-  const quickAvatar = $("#quickMenuAvatar");
-  if (quickAvatar) {
-    quickAvatar.textContent = user ? user.initials || "🦊" : "🦊";
-    quickAvatar.className = "avatar avatar-sm " + (typeof getAvatarClass === "function" ? getAvatarClass(streakTier, false, user?.role) : "");
+  const guestContent = $("#quickMenuGuestContent");
+  const authContent = $("#quickMenuAuthContent");
+  const authFooter = $("#quickMenuAuthFooter");
+
+  // Đối với tài khoản khách: chỉ hiển thị vùng đăng nhập trong cục hamburger
+  if (guestContent) guestContent.style.display = isAuth ? "none" : "block";
+  if (authContent) authContent.style.display = isAuth ? "block" : "none";
+  if (authFooter) authFooter.style.display = isAuth ? "block" : "none";
+
+  if (isAuth) {
+    const quickAvatar = $("#quickMenuAvatar");
+    if (quickAvatar) {
+      quickAvatar.textContent = user.initials || "🦊";
+      quickAvatar.className = "avatar avatar-sm " + (typeof getAvatarClass === "function" ? getAvatarClass(streakTier, false, user?.role) : "");
+    }
+
+    const quickName = $("#quickMenuName");
+    if (quickName) {
+      quickName.textContent = user.displayName || "Thành viên";
+      quickName.className = "quick-menu-name " + (typeof getNameClass === "function" ? getNameClass(streakTier) : "");
+    }
+
+    const quickRole = $("#quickMenuRole");
+    if (quickRole) {
+      quickRole.textContent = roleDisplay;
+    }
   }
 
-  const quickName = $("#quickMenuName");
-  if (quickName) {
-    quickName.textContent = user ? user.displayName : "Khách";
-    quickName.className = "quick-menu-name " + (user && typeof getNameClass === "function" ? getNameClass(streakTier) : "");
-  }
-
-  const quickRole = $("#quickMenuRole");
-  if (quickRole) {
-    quickRole.textContent = user ? roleDisplay : "Chưa đăng nhập";
-  }
-
-  const logoutBtn = $("#quickMenuLogoutBtn");
-  if (logoutBtn) logoutBtn.style.display = isAuth ? "flex" : "none";
-
-  const loginBtn = $("#quickMenuLoginBtn");
-  if (loginBtn) loginBtn.style.display = isAuth ? "none" : "flex";
+  updateDarkModeUI(isDarkModeActive());
 }
 window.updateQuickMenuUser = updateQuickMenuUser;
 
@@ -3882,7 +3965,7 @@ window.handleQuickMenuAction = function(action) {
       }
       break;
     case "dark-mode":
-      toast("Chờ cập nhật!");
+      toggleDarkMode();
       break;
     case "logout":
       if (typeof openLogoutConfirmModal === "function") {

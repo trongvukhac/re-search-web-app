@@ -16,6 +16,23 @@
   --unbounded: "Unbounded", sans-serif;
   --font-brand: "Unbounded", sans-serif;
 }
+
+html.dark-theme,
+body.dark-theme {
+  --primary: #34d399;
+  --ink: #e2e8f0;
+  --ink-deep: #f8fafc;
+  --green: #4ade80;
+  --sage: #1e293b;
+  --sage-2: #16202c;
+  --paper: #11161b;
+  --cream: #182028;
+  --line: #263341;
+  --muted: #94a3b8;
+  --orange: #fbbf24;
+  --danger: #f87171;
+  color-scheme: dark;
+}
 * {
   box-sizing: border-box;
 }
@@ -543,6 +560,150 @@ select:focus-visible {
 
 .quick-menu-item.quick-menu-primary:hover {
   background: var(--surface, #eff4ec);
+}
+
+/* Quick Menu Guest Section (Chỉ hiển thị khi chưa đăng nhập) */
+.quick-menu-guest-section {
+  padding: 4px 2px 2px;
+}
+.quick-menu-guest-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 10px;
+  background: var(--cream, #f4f1e8);
+  border-radius: 10px;
+  border: 1px solid var(--line, #e2e8f0);
+}
+.quick-menu-guest-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: var(--sage, #dbe7d7);
+  color: var(--primary, #123d30);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.quick-menu-guest-info {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.quick-menu-guest-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink);
+  line-height: 1.3;
+}
+.quick-menu-guest-desc {
+  font-size: 11.5px;
+  color: var(--muted);
+  line-height: 1.35;
+  margin: 0;
+}
+.quick-menu-login-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 12px;
+  background: var(--primary, #123d30);
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 2px 6px rgba(18, 61, 48, 0.2);
+}
+.quick-menu-login-btn:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.08);
+  box-shadow: 0 4px 10px rgba(18, 61, 48, 0.28);
+}
+.quick-menu-login-btn:active {
+  transform: translateY(0);
+}
+
+/* Quick Menu Theme Toggle Row (Chuyển đổi Chế độ tối mượt mà) */
+.quick-menu-theme-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 7px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.16s ease, color 0.16s ease;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink);
+}
+.quick-menu-theme-row:hover {
+  background: var(--surface, #eff4ec);
+}
+.quick-menu-theme-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+}
+.theme-icon-indicator {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted);
+  transition: color 0.2s ease, transform 0.2s ease;
+}
+.quick-menu-theme-row:hover .theme-icon-indicator {
+  color: var(--primary);
+  transform: rotate(-8deg);
+}
+
+/* iOS/macOS Modern Slider Switch */
+.theme-toggle-switch {
+  position: relative;
+  width: 40px;
+  height: 22px;
+  background: #cbd5e1;
+  border-radius: 12px;
+  padding: 2px;
+  border: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  box-sizing: border-box;
+  transition: background 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.theme-switch-slider {
+  display: block;
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+.theme-switch-thumb {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 18px;
+  height: 18px;
+  background: #ffffff;
+  border-radius: 50%;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.28);
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), background 0.2s ease;
+}
+.theme-toggle-switch.active,
+body.dark-theme .theme-toggle-switch {
+  background: #10b981;
+}
+.theme-toggle-switch.active .theme-switch-thumb,
+body.dark-theme .theme-switch-thumb {
+  transform: translateX(18px);
+  background: #f8fafc;
 }
 
 /* ==========================================================================
@@ -14853,6 +15014,452 @@ input:disabled {
 .podium-stand.stand-3 {
   background: linear-gradient(180deg, #fdba74 0%, #c2410c 50%, #7c2d12 100%) !important;
   box-shadow: inset 0 2px 4px rgba(255, 255, 255, 0.5), 0 8px 20px rgba(194, 65, 12, 0.3) !important;
+}
+
+/* ==========================================================================
+   ADVANCED DARK MODE DESIGN SYSTEM (6 NGUYÊN TẮC VÀNG CHUYÊN NGHIỆP)
+   1. Không dùng #000000: Dùng #11161b (rich charcoal slate) và #182028
+   2. Tận dụng Blending modes & hiệu ứng chiều sâu (translucent borders, soft glows)
+   3. Giảm độ bão hòa (desaturate) màu sắc (#34d399, #fbbf24, #f87171)
+   4. Sử dụng chữ trắng với độ mờ (opacity) / #e2e8f0 thay cho #ffffff 100%
+   5. Làm cho trạng thái tương tác rõ nét (glow, hover, active borders)
+   6. Chuyển đổi trực quan với icon Mặt trời / Mặt trăng và lưu LocalStorage
+   ========================================================================== */
+
+/* 1. Global image dimming filter per user's guide */
+html.dark-theme img:not(.brand-logo-img):not(.avatar):not(.user-avatar):not(.emoji):not(.achievement-badge-img):not(.namecard-avatar-img):not(.badge-icon-img),
+body.dark-theme img:not(.brand-logo-img):not(.avatar):not(.user-avatar):not(.emoji):not(.achievement-badge-img):not(.namecard-avatar-img):not(.badge-icon-img) {
+  filter: brightness(0.85) contrast(1.1);
+  transition: filter 0.3s ease;
+}
+html.dark-theme img:not(.brand-logo-img):not(.avatar):not(.user-avatar):not(.emoji):not(.achievement-badge-img):not(.namecard-avatar-img):not(.badge-icon-img):hover,
+body.dark-theme img:not(.brand-logo-img):not(.avatar):not(.user-avatar):not(.emoji):not(.achievement-badge-img):not(.namecard-avatar-img):not(.badge-icon-img):hover {
+  filter: brightness(1) contrast(1);
+}
+
+/* 2. Header & Top Bar */
+body.dark-theme .site-header {
+  background: rgba(17, 22, 27, 0.90) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4) !important;
+}
+body.dark-theme .brand {
+  color: #f1f5f9;
+}
+body.dark-theme .brand-colon {
+  color: #34d399;
+}
+body.dark-theme .nav-link {
+  color: #94a3b8;
+}
+body.dark-theme .nav-link:hover,
+body.dark-theme .nav-link.active {
+  background: rgba(255, 255, 255, 0.06);
+  color: #34d399;
+}
+body.dark-theme .icon-button {
+  color: #94a3b8;
+}
+body.dark-theme .icon-button:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.12);
+  color: #34d399;
+}
+body.dark-theme .profile-chip {
+  background: #182028;
+  border-color: rgba(255, 255, 255, 0.12);
+  color: #e2e8f0;
+}
+body.dark-theme .profile-chip:hover {
+  background: #1e2832;
+  border-color: #34d399;
+  box-shadow: 0 0 12px rgba(52, 211, 153, 0.15);
+}
+body.dark-theme .profile-chip b {
+  background: rgba(52, 211, 153, 0.15);
+  color: #34d399;
+}
+body.dark-theme .quick-menu-btn {
+  background: #182028;
+  border-color: rgba(255, 255, 255, 0.12);
+  color: #94a3b8;
+}
+body.dark-theme .quick-menu-btn:hover {
+  background: #1e2832;
+  border-color: #34d399;
+  box-shadow: 0 0 12px rgba(52, 211, 153, 0.2);
+}
+body.dark-theme .quick-menu-btn .hamburger-line {
+  background-color: #94a3b8;
+}
+body.dark-theme .quick-menu-btn:hover .hamburger-line,
+body.dark-theme .quick-user-menu-wrap.open .hamburger-line {
+  background-color: #34d399;
+}
+
+/* 3. Quick Menu Dropdown */
+body.dark-theme .quick-menu-dropdown {
+  background: #182028;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.65), 0 2px 10px rgba(0, 0, 0, 0.3);
+}
+body.dark-theme .quick-menu-name {
+  color: #f1f5f9;
+}
+body.dark-theme .quick-menu-role {
+  color: #94a3b8;
+}
+body.dark-theme .quick-menu-divider {
+  background: rgba(255, 255, 255, 0.08);
+}
+body.dark-theme .quick-menu-item {
+  color: #cbd5e1;
+}
+body.dark-theme .quick-menu-item:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: #f8fafc;
+}
+body.dark-theme .quick-menu-item:hover .quick-menu-icon {
+  color: #34d399;
+}
+body.dark-theme .quick-menu-item.quick-menu-primary {
+  color: #34d399;
+}
+body.dark-theme .quick-menu-item.quick-menu-primary:hover {
+  background: rgba(52, 211, 153, 0.12);
+}
+body.dark-theme .quick-menu-item.quick-menu-danger {
+  color: #f87171;
+}
+body.dark-theme .quick-menu-item.quick-menu-danger:hover {
+  background: rgba(248, 113, 113, 0.12);
+}
+body.dark-theme .quick-menu-guest-card {
+  background: rgba(255, 255, 255, 0.035);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+body.dark-theme .quick-menu-guest-icon {
+  background: rgba(52, 211, 153, 0.15);
+  color: #34d399;
+}
+body.dark-theme .quick-menu-login-btn {
+  background: #34d399;
+  color: #0b1a13;
+  box-shadow: 0 2px 8px rgba(52, 211, 153, 0.35);
+}
+body.dark-theme .quick-menu-login-btn:hover {
+  box-shadow: 0 4px 12px rgba(52, 211, 153, 0.45);
+}
+body.dark-theme .quick-menu-theme-row {
+  color: #e2e8f0;
+}
+body.dark-theme .quick-menu-theme-row:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+body.dark-theme .theme-icon-indicator {
+  color: #fbbf24;
+}
+
+/* 4. Search Panel & Hero */
+body.dark-theme .search-panel {
+  background: #182028;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.45);
+}
+body.dark-theme .search-glyph {
+  color: #34d399;
+}
+body.dark-theme .search-panel input,
+body.dark-theme .search-inline input {
+  color: #f1f5f9;
+}
+body.dark-theme .search-panel input::placeholder,
+body.dark-theme .search-inline input::placeholder {
+  color: #64748b;
+}
+body.dark-theme .search-panel kbd {
+  border-color: rgba(255, 255, 255, 0.12);
+  color: #94a3b8;
+  background: rgba(255, 255, 255, 0.05);
+}
+body.dark-theme .filter-chip {
+  background: #182028;
+  border-color: rgba(255, 255, 255, 0.1);
+  color: #94a3b8;
+}
+body.dark-theme .filter-chip:hover,
+body.dark-theme .filter-chip.selected {
+  background: rgba(52, 211, 153, 0.15);
+  border-color: #34d399;
+  color: #34d399;
+}
+
+/* 5. Discussion Feed & Post Cards */
+body.dark-theme .post-list {
+  border-top-color: rgba(255, 255, 255, 0.08);
+}
+body.dark-theme .post-card {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+body.dark-theme .post-card:hover {
+  background: rgba(255, 255, 255, 0.035);
+}
+body.dark-theme .post-card.admin-post {
+  background-color: rgba(30, 58, 80, 0.4);
+  border: 1px solid rgba(56, 189, 248, 0.2);
+}
+body.dark-theme .post-card.admin-post:hover {
+  background-color: rgba(30, 58, 80, 0.6);
+}
+body.dark-theme .post-title {
+  color: #f1f5f9;
+}
+body.dark-theme .post-copy-preview {
+  color: #94a3b8;
+}
+body.dark-theme .post-tag,
+body.dark-theme .tag {
+  background: rgba(255, 255, 255, 0.07);
+  color: #94a3b8;
+  border-color: rgba(255, 255, 255, 0.06);
+}
+body.dark-theme .announcement {
+  background: #162620;
+  border-left-color: #34d399;
+  color: #e2e8f0;
+}
+body.dark-theme .announcement-icon {
+  background: rgba(52, 211, 153, 0.15);
+  color: #34d399;
+}
+
+/* 6. Sidebar Mini Cards & Active Cards */
+body.dark-theme .mini-card,
+body.dark-theme .topics-card,
+body.dark-theme .active-card {
+  background: #182028;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+}
+body.dark-theme .topic {
+  background: #1e2936;
+  border-color: rgba(255, 255, 255, 0.1);
+  color: #86efac;
+}
+body.dark-theme .topic:hover {
+  background: #253342;
+  border-color: #34d399;
+}
+
+/* 7. Leaderboard Carousel in Dark Mode */
+body.dark-theme .lb-carousel-header {
+  background: #182028;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+body.dark-theme .lb-nav-btn {
+  background: #1e2832;
+  border-color: rgba(255, 255, 255, 0.12);
+  color: #94a3b8;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+body.dark-theme .lb-nav-btn:hover {
+  background: #253342;
+  color: #34d399;
+  border-color: #34d399;
+}
+body.dark-theme .lb-active-title {
+  color: #34d399;
+}
+body.dark-theme .lb-title-container:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+body.dark-theme .lb-dot {
+  background: #475569;
+}
+body.dark-theme .lb-dot.active {
+  background: #34d399;
+}
+body.dark-theme .lb-tabs {
+  background: #182028;
+}
+body.dark-theme .lb-tab {
+  color: #94a3b8;
+}
+body.dark-theme .lb-tab.active {
+  background: #1e2832;
+  color: #34d399;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+}
+
+/* 8. Modals, Forms & Dialogs in Dark Mode */
+body.dark-theme .modal:not(.quiz-arena-modal):not(.quiz-start-confirm-modal):not(.quiz-exit-confirm-modal):not(.namecard-modal):not(.full-cover-viewer-modal),
+body.dark-theme dialog.modal:not(.quiz-arena-modal):not(.quiz-start-confirm-modal):not(.quiz-exit-confirm-modal):not(.namecard-modal):not(.full-cover-viewer-modal) {
+  background: #182028;
+  color: #e2e8f0;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.7);
+}
+body.dark-theme .admin-modal {
+  background: #182028 !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.7) !important;
+}
+body.dark-theme .modal::backdrop,
+body.dark-theme dialog::backdrop {
+  background: rgba(0, 0, 0, 0.78);
+  backdrop-filter: blur(5px);
+}
+body.dark-theme .modal-head {
+  border-bottom-color: rgba(255, 255, 255, 0.08);
+}
+body.dark-theme .modal input,
+body.dark-theme .modal textarea,
+body.dark-theme .modal select {
+  background: #11161b;
+  border-color: rgba(255, 255, 255, 0.16);
+  color: #f1f5f9;
+}
+body.dark-theme .modal input:focus,
+body.dark-theme .modal textarea:focus,
+body.dark-theme .modal select:focus {
+  border-color: #34d399;
+  box-shadow: 0 0 0 3px rgba(52, 211, 153, 0.2);
+}
+body.dark-theme .button-outline {
+  background: #182028;
+  border-color: rgba(255, 255, 255, 0.14);
+  color: #f1f5f9;
+}
+body.dark-theme .button-outline:hover {
+  background: #1e2832;
+  border-color: #34d399;
+}
+body.dark-theme .button-dark {
+  background: #1e2832;
+  color: #f1f5f9;
+}
+body.dark-theme .button-dark:hover {
+  background: #253342;
+}
+
+/* 9. Quill Editor in Dark Mode */
+body.dark-theme .ql-toolbar.ql-snow {
+  background: #182028;
+  border-color: rgba(255, 255, 255, 0.14);
+}
+body.dark-theme .ql-container.ql-snow {
+  background: #11161b;
+  border-color: rgba(255, 255, 255, 0.14);
+  color: #e2e8f0;
+}
+body.dark-theme .ql-snow .ql-stroke {
+  stroke: #94a3b8;
+}
+body.dark-theme .ql-snow .ql-fill {
+  fill: #94a3b8;
+}
+body.dark-theme .ql-snow .ql-picker {
+  color: #94a3b8;
+}
+body.dark-theme .ql-snow .ql-picker-options {
+  background-color: #182028;
+  border-color: rgba(255, 255, 255, 0.14);
+}
+
+/* 10. Code & Pre Blocks */
+body.dark-theme pre,
+body.dark-theme code {
+  background: #161e27;
+  color: #f1f5f9;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* 11. Mobile Navigation & Bar */
+body.dark-theme .mobile-nav {
+  background: rgba(18, 24, 28, 0.90) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.55), inset 0 1px 1px rgba(255, 255, 255, 0.1) !important;
+}
+body.dark-theme .mobile-link {
+  color: #94a3b8;
+}
+body.dark-theme .mobile-link:hover,
+body.dark-theme .mobile-link.active {
+  color: #34d399;
+}
+
+/* 12. Primary Buttons in Dark Mode */
+body.dark-theme .button-primary,
+body.dark-theme .button.button-primary {
+  background: #34d399 !important;
+  color: #0b1a13 !important;
+  font-weight: 700 !important;
+  box-shadow: 0 2px 10px rgba(52, 211, 153, 0.3) !important;
+}
+body.dark-theme .button-primary:hover,
+body.dark-theme .button.button-primary:hover {
+  background: #4ade80 !important;
+  color: #0b1a13 !important;
+  box-shadow: 0 4px 14px rgba(52, 211, 153, 0.45) !important;
+}
+
+/* 13. Inline Search & Filters in Dark Mode */
+body.dark-theme .search-inline {
+  background: #182028 !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3) !important;
+}
+body.dark-theme .search-inline span,
+body.dark-theme .search-inline .search-inline-icon {
+  color: #34d399 !important;
+}
+body.dark-theme .search-inline input {
+  color: #f1f5f9 !important;
+}
+body.dark-theme .filter-button {
+  background: #182028 !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+  color: #e2e8f0 !important;
+}
+body.dark-theme .filter-button:hover {
+  background: #1e2832 !important;
+  border-color: #34d399 !important;
+}
+body.dark-theme select#topicFilter,
+body.dark-theme .filters select {
+  background: #182028 !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  color: #e2e8f0 !important;
+}
+
+/* 14. Leaderboard Items in Sidebar */
+body.dark-theme .leaderboard-item {
+  background: #1e2832 !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+  color: #e2e8f0 !important;
+}
+body.dark-theme .leaderboard-item:hover {
+  background: #253342 !important;
+  border-color: #34d399 !important;
+}
+body.dark-theme .leaderboard-item .lb-name {
+  color: #f1f5f9 !important;
+}
+body.dark-theme .leaderboard-item .lb-score {
+  color: #34d399 !important;
+}
+body.dark-theme .leaderboard-item.is-me {
+  background: rgba(52, 211, 153, 0.12) !important;
+  border-color: #34d399 !important;
+}
+
+/* 15. Other Document & Study Cards */
+body.dark-theme .document-card,
+body.dark-theme .study-card,
+body.dark-theme .rule-card {
+  background: #182028 !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  color: #e2e8f0 !important;
 }
 
 
