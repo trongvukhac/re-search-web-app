@@ -256,7 +256,7 @@ select:focus-visible {
 .profile-chip {
   border: 1px solid var(--line);
   background: #ffffff;
-  padding: 4px 11px 4px 5px;
+  padding: 4px 12px 4px 5px;
   border-radius: 20px;
   display: flex;
   align-items: center;
@@ -268,6 +268,8 @@ select:focus-visible {
   cursor: pointer;
   transition: all 0.15s ease;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+  height: 36px;
+  box-sizing: border-box;
 }
 .profile-chip:hover {
   background: var(--paper);
@@ -298,6 +300,249 @@ select:focus-visible {
   justify-content: center;
   color: #64748b;
   line-height: 1;
+}
+
+/* ==========================================================================
+   QUICK USER ACTION MENU (Circular Animated Hamburger & Dropdown)
+   ========================================================================== */
+.quick-user-menu-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.quick-menu-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  background: #ffffff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  cursor: pointer;
+  color: var(--ink);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+  position: relative;
+  flex-shrink: 0;
+  box-sizing: border-box;
+}
+
+.quick-menu-btn:hover {
+  background: var(--paper);
+  border-color: #cbd5e1;
+  color: var(--primary);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+}
+
+.quick-user-menu-wrap.open .quick-menu-btn,
+.quick-menu-btn.active {
+  background: var(--surface, #eff4ec);
+  border-color: var(--primary, #2d6a4f);
+  color: var(--primary, #2d6a4f);
+  box-shadow: 0 2px 8px rgba(45, 106, 79, 0.15);
+}
+
+/* Hamburger to X Animation */
+.hamburger-box {
+  width: 14px;
+  height: 11px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  position: relative;
+  pointer-events: none;
+}
+
+.hamburger-line {
+  display: block;
+  width: 14px;
+  height: 1.8px;
+  background-color: var(--ink, #1e293b);
+  border-radius: 2px;
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+              opacity 0.2s ease,
+              background-color 0.2s ease;
+  transform-origin: center;
+}
+
+.quick-menu-btn:hover .hamburger-line {
+  background-color: var(--primary, #2d6a4f);
+}
+
+.quick-user-menu-wrap.open .hamburger-line {
+  background-color: var(--primary, #2d6a4f);
+}
+
+.quick-user-menu-wrap.open .hamburger-line.line-1 {
+  transform: translateY(4.6px) rotate(45deg);
+}
+
+.quick-user-menu-wrap.open .hamburger-line.line-2 {
+  opacity: 0;
+  transform: scaleX(0);
+}
+
+.quick-user-menu-wrap.open .hamburger-line.line-3 {
+  transform: translateY(-4.6px) rotate(-45deg);
+}
+
+/* Dropdown Container */
+.quick-menu-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 230px;
+  background: #ffffff;
+  border: 1px solid var(--line, #e2e8f0);
+  border-radius: 14px;
+  box-shadow: 0 10px 32px rgba(15, 23, 42, 0.14), 0 2px 8px rgba(15, 23, 42, 0.04);
+  padding: 8px 6px;
+  z-index: 1100;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-8px) scale(0.96);
+  transform-origin: top right;
+  transition: opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+              visibility 0.2s;
+  pointer-events: none;
+}
+
+.quick-user-menu-wrap.open .quick-menu-dropdown {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0) scale(1);
+  pointer-events: auto;
+}
+
+/* User header inside dropdown */
+.quick-menu-header {
+  padding: 6px 10px 8px;
+}
+
+.quick-menu-user-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.quick-menu-user-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+
+.quick-menu-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink, #0f172a);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.3;
+}
+
+.quick-menu-role {
+  font-size: 11px;
+  color: var(--muted, #64748b);
+  line-height: 1.2;
+  margin-top: 2px;
+}
+
+.quick-menu-divider {
+  height: 1px;
+  background: var(--line, #f1f5f9);
+  margin: 6px 4px;
+}
+
+/* Menu items */
+.quick-menu-items,
+.quick-menu-footer {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.quick-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 7px 10px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  color: var(--ink, #1e293b);
+  font-size: 13px;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.quick-menu-item:hover {
+  background: var(--surface, #f8fafc);
+  color: var(--primary, #2d6a4f);
+}
+
+.quick-menu-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  color: var(--muted, #64748b);
+  flex-shrink: 0;
+  transition: color 0.15s ease;
+}
+
+.quick-menu-item:hover .quick-menu-icon {
+  color: var(--primary, #2d6a4f);
+}
+
+.quick-menu-label {
+  flex: 1;
+  white-space: nowrap;
+}
+
+.quick-menu-badge {
+  font-size: 9.5px;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 10px;
+  background: #fef3c7;
+  color: #b45309;
+  letter-spacing: -0.1px;
+  margin-left: auto;
+}
+
+.quick-menu-item.quick-menu-danger {
+  color: var(--error, #e03131);
+}
+
+.quick-menu-item.quick-menu-danger .quick-menu-icon {
+  color: var(--error, #e03131);
+}
+
+.quick-menu-item.quick-menu-danger:hover {
+  background: #fff5f5;
+  color: #c92a2a;
+}
+
+.quick-menu-item.quick-menu-primary {
+  color: var(--primary, #2d6a4f);
+  font-weight: 600;
+}
+
+.quick-menu-item.quick-menu-primary:hover {
+  background: var(--surface, #eff4ec);
 }
 
 /* ==========================================================================
@@ -795,6 +1040,29 @@ div.user-name-tier-5,
   background: #fae4e4 !important;
   color: #a61e32 !important;
 }
+[data-user-theme="ruby"] .quick-user-menu-wrap.open .quick-menu-btn {
+  background: #faf0f0;
+  border-color: #c92a2a;
+  color: #c92a2a;
+  box-shadow: 0 2px 8px rgba(201, 42, 42, 0.2);
+}
+[data-user-theme="ruby"] .quick-user-menu-wrap.open .hamburger-line,
+[data-user-theme="ruby"] .quick-menu-btn:hover .hamburger-line {
+  background-color: #c92a2a;
+}
+[data-user-theme="ruby"] .quick-menu-item:hover {
+  background: #faf0f0;
+  color: #8e1526;
+}
+[data-user-theme="ruby"] .quick-menu-item:hover .quick-menu-icon {
+  color: #c92a2a;
+}
+[data-user-theme="ruby"] .quick-menu-item.quick-menu-primary {
+  color: #c92a2a;
+}
+[data-user-theme="ruby"] .quick-menu-item.quick-menu-primary:hover {
+  background: #faf0f0;
+}
 [data-user-theme="ruby"] h1 em {
   color: #c92a2a !important;
 }
@@ -966,6 +1234,29 @@ div.user-name-tier-5,
 [data-user-theme="mythic"] .profile-chip b {
   background: #f2e6fa !important;
   color: #5f3dc4 !important;
+}
+[data-user-theme="mythic"] .quick-user-menu-wrap.open .quick-menu-btn {
+  background: #f8f0fc;
+  border-color: #7048e8;
+  color: #7048e8;
+  box-shadow: 0 2px 8px rgba(112, 72, 232, 0.2);
+}
+[data-user-theme="mythic"] .quick-user-menu-wrap.open .hamburger-line,
+[data-user-theme="mythic"] .quick-menu-btn:hover .hamburger-line {
+  background-color: #7048e8;
+}
+[data-user-theme="mythic"] .quick-menu-item:hover {
+  background: #f8f0fc;
+  color: #5f3dc4;
+}
+[data-user-theme="mythic"] .quick-menu-item:hover .quick-menu-icon {
+  color: #7048e8;
+}
+[data-user-theme="mythic"] .quick-menu-item.quick-menu-primary {
+  color: #7048e8;
+}
+[data-user-theme="mythic"] .quick-menu-item.quick-menu-primary:hover {
+  background: #f8f0fc;
 }
 [data-user-theme="mythic"] h1 em {
   background: linear-gradient(90deg, #7048e8, #f783ac, #ff6b6b);
@@ -3321,6 +3612,17 @@ dialog::backdrop {
   .profile-chip-text,
   .chevron {
     display: none;
+  }
+  .profile-chip {
+    padding: 3px !important;
+    border-radius: 50% !important;
+    width: 36px !important;
+    height: 36px !important;
+    justify-content: center !important;
+  }
+  .quick-menu-btn {
+    width: 36px !important;
+    height: 36px !important;
   }
   .page {
     padding: 39px 20px 92px;

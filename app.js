@@ -1499,6 +1499,7 @@ function applySession(user) {
   setAuthBtn("#accountStudentPromptCard", isAuth && !isStudentProfileCompleted(user), "block");
   setAuthBtn("#accountSecurityCard", false);
   if ($("#adminPanel")) $("#adminPanel").style.display = (isAuth && (user.role === "admin" || user.role === "ta")) ? "" : "none";
+  if (typeof updateQuickMenuUser === "function") updateQuickMenuUser(user);
 
   const badgeDesk = $("#studyNavBadgeDesktop");
   const badgeMob = $("#studyNavBadgeMobile");
@@ -3791,6 +3792,125 @@ $$("[data-route]").forEach((link) =>
 );
 $(".profile-chip").addEventListener("click", () => {
   if (serverMode && !session) openAuth();
+});
+
+/* ==========================================================================
+   QUICK USER ACTION MENU (Hamburger & Shortcuts Dropdown)
+   ========================================================================== */
+function updateQuickMenuUser(user = session) {
+  const isAuth = Boolean(user);
+  const streakTier = Number(user?.streakTier || 0);
+  const roleDisplay = typeof getRoleDisplay === "function" ? getRoleDisplay(user?.role) : (user?.role || "Sinh viên");
+
+  const quickAvatar = $("#quickMenuAvatar");
+  if (quickAvatar) {
+    quickAvatar.textContent = user ? user.initials || "🦊" : "🦊";
+    quickAvatar.className = "avatar avatar-sm " + (typeof getAvatarClass === "function" ? getAvatarClass(streakTier, false, user?.role) : "");
+  }
+
+  const quickName = $("#quickMenuName");
+  if (quickName) {
+    quickName.textContent = user ? user.displayName : "Khách";
+    quickName.className = "quick-menu-name " + (user && typeof getNameClass === "function" ? getNameClass(streakTier) : "");
+  }
+
+  const quickRole = $("#quickMenuRole");
+  if (quickRole) {
+    quickRole.textContent = user ? roleDisplay : "Chưa đăng nhập";
+  }
+
+  const logoutBtn = $("#quickMenuLogoutBtn");
+  if (logoutBtn) logoutBtn.style.display = isAuth ? "flex" : "none";
+
+  const loginBtn = $("#quickMenuLoginBtn");
+  if (loginBtn) loginBtn.style.display = isAuth ? "none" : "flex";
+}
+window.updateQuickMenuUser = updateQuickMenuUser;
+
+window.toggleQuickUserMenu = function(e) {
+  if (e) {
+    e.preventDefault();
+    e.stopPropagation();
+  }
+  const wrap = $("#quickUserMenuWrap");
+  const btn = $("#quickMenuBtn");
+  if (!wrap || !btn) return;
+  const isOpen = wrap.classList.toggle("open");
+  btn.classList.toggle("active", isOpen);
+  btn.setAttribute("aria-expanded", String(isOpen));
+  if (isOpen) {
+    updateQuickMenuUser(session);
+  }
+};
+
+window.closeQuickUserMenu = function() {
+  const wrap = $("#quickUserMenuWrap");
+  const btn = $("#quickMenuBtn");
+  if (wrap) wrap.classList.remove("open");
+  if (btn) {
+    btn.classList.remove("active");
+    btn.setAttribute("aria-expanded", "false");
+  }
+};
+
+window.handleQuickMenuAction = function(action) {
+  closeQuickUserMenu();
+  switch (action) {
+    case "namecard":
+      if (session && session.id) {
+        if (typeof openMyNamecard === "function") openMyNamecard();
+        else if (typeof openNamecard === "function") openNamecard(session.id);
+      } else {
+        toast("Vui lòng đăng nhập để xem thẻ tên của bạn.");
+        if (typeof openAuth === "function") openAuth();
+      }
+      break;
+    case "edit-profile":
+      if (session && session.id) {
+        if (typeof openEditProfileModal === "function") openEditProfileModal();
+      } else {
+        toast("Vui lòng đăng nhập để cập nhật hồ sơ.");
+        if (typeof openAuth === "function") openAuth();
+      }
+      break;
+    case "change-password":
+      if (session && session.id) {
+        if (typeof openChangePasswordModal === "function") openChangePasswordModal();
+      } else {
+        toast("Vui lòng đăng nhập để đổi mật khẩu.");
+        if (typeof openAuth === "function") openAuth();
+      }
+      break;
+    case "dark-mode":
+      toast("Chờ cập nhật!");
+      break;
+    case "logout":
+      if (typeof openLogoutConfirmModal === "function") {
+        openLogoutConfirmModal();
+      }
+      break;
+    case "login":
+      if (typeof openAuth === "function") {
+        openAuth();
+      }
+      break;
+  }
+};
+
+// Đóng menu khi click ra ngoài hoặc bấm Escape
+document.addEventListener("click", (e) => {
+  const wrap = $("#quickUserMenuWrap");
+  if (wrap && wrap.classList.contains("open")) {
+    if (!wrap.contains(e.target)) {
+      closeQuickUserMenu();
+    }
+  }
+});
+
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") {
+    closeQuickUserMenu();
+  }
 });
 $("#askFromHome").onclick = openQuestion;
 $("#askFromForum").onclick = openQuestion;
