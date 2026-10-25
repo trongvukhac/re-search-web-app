@@ -10088,26 +10088,15 @@ initTapToScrollTop();
 // =========================================================================
 const HOME_BANNERS_CONFIG = [
   {
-    id: "women-day",
-    title: "Ngày Phụ Nữ Việt Nam 20/10",
-    image: "public/assets/banner-women-day.jpg?v=20261016_2",
-    // sau 21/11/2026 sẽ không hiển thị nữa
-    expiresAt: new Date("2026-11-21T23:59:59+07:00").getTime(),
-    action: () => {
-      if (typeof openNamecardModal === "function") openNamecardModal();
-      else toast("Sự kiện Ngày Phụ nữ Việt Nam 20/10!");
-    }
-  },
-  {
-    id: "arena-class-league",
-    title: "Cơ chế mới Arena: Phân bảng đấu theo lớp",
-    image: "public/assets/banner-arena-class-league.jpg?v=20261019_1",
-    // thời hạn: từ 19/10/2026 - 1/11/2026
-    startsAt: new Date("2026-10-19T00:00:00+07:00").getTime(),
+    id: "leaderboard-w03",
+    title: "Bảng Vàng Tuần 03 — Phương Pháp Nghiên Cứu Định Lượng",
+    image: "public/assets/banner-leaderboard-w03.jpg?v=20261025_1",
+    // thời gian hiển thị: 25/10 - 1/11/2026
+    startsAt: new Date("2026-10-25T00:00:00+07:00").getTime(),
     expiresAt: new Date("2026-11-01T23:59:59+07:00").getTime(),
     action: () => {
       if (typeof go === "function") go("arena");
-      else toast("Cơ chế mới: Bảng thi đấu Đấu trường Arena theo lớp!");
+      else toast("Bảng xếp hạng thi đua Đấu trường Arena Tuần 03!");
     }
   },
   {
