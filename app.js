@@ -10291,6 +10291,18 @@ initTapToScrollTop();
 // =========================================================================
 const HOME_BANNERS_CONFIG = [
   {
+    id: "dark-mode",
+    title: "Tính năng mới Dark Mode đã có mặt trên RE:SEARCH!",
+    image: "public/assets/banner-dark-mode.jpg?v=20261026_1",
+    // thời gian hiển thị: 26/10 - 3/11/2026
+    startsAt: new Date("2026-10-26T00:00:00+07:00").getTime(),
+    expiresAt: new Date("2026-11-03T23:59:59+07:00").getTime(),
+    action: () => {
+      if (typeof toggleDarkMode === "function") toggleDarkMode();
+      else toast("Trải nghiệm ngay Dark Mode trên RE:SEARCH!");
+    }
+  },
+  {
     id: "leaderboard-w03",
     title: "Bảng Vàng Tuần 03 — Phương Pháp Nghiên Cứu Định Lượng",
     image: "public/assets/banner-leaderboard-w03.jpg?v=20261025_1",
