@@ -563,32 +563,11 @@ try {
   console.error("[Auto-heal Error]", e);
 }
 
-// System settings (e.g. Arena paused flag)
-db.exec(`
-  CREATE TABLE IF NOT EXISTS system_settings (
-    key TEXT PRIMARY KEY,
-    value TEXT NOT NULL,
-    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
-  );
-  INSERT OR IGNORE INTO system_settings (key, value) VALUES ('arena_paused', 'false');
-`);
-
-function isArenaPaused() {
-  try {
-    const row = db.prepare("SELECT value FROM system_settings WHERE key = 'arena_paused'").get();
-    return row?.value === "true";
-  } catch (e) {
-    return false;
-  }
-}
-
-function setArenaPaused(paused) {
-  db.prepare(`
-    INSERT INTO system_settings (key, value, updated_at)
-    VALUES ('arena_paused', ?, CURRENT_TIMESTAMP)
-    ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = CURRENT_TIMESTAMP
-  `).run(paused ? "true" : "false");
-  notifyCompetitionResultsChanged();
+// Migration: Thêm cột is_paused vào weekly_competitions
+try {
+  db.exec("ALTER TABLE weekly_competitions ADD COLUMN is_paused INTEGER NOT NULL DEFAULT 0;");
+} catch (e) {
+  // Cột đã tồn tại
 }
 
 const defaultTopics = [
@@ -1959,8 +1938,8 @@ function getOrCreateCurrentCompetition(vnDate) {
 }
 
 function getCompetitionTimeState(vnDate, comp) {
-  const paused = isArenaPaused();
-  if (paused) {
+  const isPaused = Boolean(comp && comp.is_paused);
+  if (isPaused) {
     return {
       phase: 1,
       dayOfWeek: vnDate.getDay(),
@@ -5112,12 +5091,12 @@ async function api(request, response, url) {
 
   if (method === "GET" && pathName === "/api/competition/overview") {
     const user = sessionFrom(request);
-    const paused = isArenaPaused();
+    const vnNow = getVietnamNow();
+    const comp = getOrCreateCurrentCompetition(vnNow);
+    const paused = Boolean(comp && comp.is_paused);
     if (paused && (!user || user.role !== "admin")) {
       return json(response, 200, { ok: true, isArenaPaused: true, locked: true });
     }
-    const vnNow = getVietnamNow();
-    const comp = getOrCreateCurrentCompetition(vnNow);
     const timeState = getCompetitionTimeState(vnNow, comp);
 
     let userSummary = null;
@@ -5381,7 +5360,7 @@ async function api(request, response, url) {
       totalOnTimeBonus: userStatus?.totalOnTimeBonus ?? userSummary?.totalOnTimeBonus ?? 0,
       defaultAvailablePhase,
       phasesStatus,
-      isArenaPaused: isArenaPaused()
+      isArenaPaused: Boolean(comp && comp.is_paused)
     });
   }
 
@@ -5389,7 +5368,9 @@ async function api(request, response, url) {
     const user = requireUser(request, response);
     if (!user) return;
 
-    if (isArenaPaused() && user.role !== "admin") {
+    const vnNow = getVietnamNow();
+    const comp = getOrCreateCurrentCompetition(vnNow);
+    if (comp && comp.is_paused && user.role !== "admin") {
       return error(response, 403, "Đấu trường thi đua tạm ngưng hoạt động trong tuần này. Hãy chờ thông báo mới nhất từ Quản trị viên về các tuần thi đấu tiếp theo nhé!");
     }
 
@@ -5408,9 +5389,6 @@ async function api(request, response, url) {
         });
       }
     }
-
-    const vnNow = getVietnamNow();
-    const comp = getOrCreateCurrentCompetition(vnNow);
 
     const targetPhase = Math.max(1, Math.min(3, parseInt(url.searchParams.get("phase") || "1", 10)));
     const phaseTopic = comp[`phase${targetPhase}_topic`] || comp.topic_name || "Nội dung câu hỏi chuyên đề";
@@ -5676,7 +5654,9 @@ async function api(request, response, url) {
     if (!user) return;
     if (!requireCsrf(request, response, user)) return;
 
-    if (isArenaPaused() && user.role !== "admin") {
+    const vnNow = getVietnamNow();
+    const curComp = getOrCreateCurrentCompetition(vnNow);
+    if (curComp && curComp.is_paused && user.role !== "admin") {
       return error(response, 403, "Đấu trường thi đua tạm ngưng hoạt động trong tuần này. Hãy chờ thông báo mới nhất từ Quản trị viên về các tuần thi đấu tiếp theo nhé!");
     }
 
@@ -5696,8 +5676,7 @@ async function api(request, response, url) {
       }
     }
 
-    const vnNow = getVietnamNow();
-    const comp = getOrCreateCurrentCompetition(vnNow);
+    const comp = curComp;
     const timeState = getCompetitionTimeState(vnNow, comp);
 
     if (timeState.state !== "open" && !isSuperAdmin(user)) {
@@ -6423,9 +6402,11 @@ async function api(request, response, url) {
 
     const vnNow = getVietnamNow();
     const comp = getOrCreateCurrentCompetition(vnNow);
-    // Pre-initialize next week so TA/Admin can setup questions for next week in advance
+    // Pre-initialize next week and in two weeks so TA/Admin can setup questions and pause state in advance!
     const nextWeekDate = new Date(vnNow.getTime() + 7 * 24 * 3600 * 1000);
     const nextComp = getOrCreateCurrentCompetition(nextWeekDate);
+    const inTwoWeeksDate = new Date(vnNow.getTime() + 14 * 24 * 3600 * 1000);
+    const inTwoWeeksComp = getOrCreateCurrentCompetition(inTwoWeeksDate);
 
     const targetCompId = Number(url.searchParams.get("competitionId")) || comp.id;
     const targetComp = db.prepare("SELECT * FROM weekly_competitions WHERE id = ?").get(targetCompId) || comp;
@@ -6451,19 +6432,24 @@ async function api(request, response, url) {
       const eFormatted = formatDMY(w.end_date);
       const isCurrent = (w.id === comp.id);
       const isNext = (w.id === nextComp.id);
+      const isTwoWeeks = (w.id === inTwoWeeksComp.id);
+      const pausedTag = w.is_paused ? " (⏸️ Tạm đóng)" : "";
+      const weekRelation = isCurrent ? " - [Tuần hiện tại]" : (isNext ? " - [Tuần sau]" : (isTwoWeeks ? " - [2 tuần sau]" : ""));
       return {
         ...w,
         startDateFormatted: sFormatted,
         endDateFormatted: eFormatted,
         dateRangeText: `từ ngày ${sFormatted} đến ngày ${eFormatted}`,
-        label: `Tuần ${w.week_number} (${sFormatted} - ${eFormatted})${isCurrent ? " - [Tuần hiện tại]" : (isNext ? " - [Tuần sau]" : "")}`,
+        label: `Tuần ${w.week_number} (${sFormatted} - ${eFormatted})${weekRelation}${pausedTag}`,
         isCurrent,
-        isNext
+        isNext,
+        is_paused: Boolean(w.is_paused)
       };
     });
 
     const selectedFormatted = {
       ...targetComp,
+      is_paused: Boolean(targetComp.is_paused),
       startDateFormatted: formatDMY(targetComp.start_date),
       endDateFormatted: formatDMY(targetComp.end_date),
       dateRangeText: `từ ngày ${formatDMY(targetComp.start_date)} đến ngày ${formatDMY(targetComp.end_date)}`
@@ -6478,7 +6464,7 @@ async function api(request, response, url) {
       qCounts,
       participantsCount,
       totalSessions,
-      isArenaPaused: isArenaPaused(),
+      isArenaPaused: Boolean(comp && comp.is_paused),
       simulatedTimeOffsetMs,
       serverTime: vnNow.toISOString(),
       allWeeks: availableWeeks
@@ -6489,9 +6475,12 @@ async function api(request, response, url) {
     const user = requireUser(request, response);
     if (!user || !isSuperAdmin(user)) return user ? error(response, 403, "Chỉ TA/Admin mới có quyền này.") : undefined;
     const body = await readJSON(request);
+    const targetCompId = Number(body?.competitionId);
+    if (!targetCompId) return error(response, 400, "Thiếu competitionId.");
     const paused = Boolean(body?.paused);
-    setArenaPaused(paused);
-    return json(response, 200, { ok: true, isArenaPaused: paused });
+    db.prepare("UPDATE weekly_competitions SET is_paused = ? WHERE id = ?").run(paused ? 1 : 0, targetCompId);
+    notifyCompetitionResultsChanged();
+    return json(response, 200, { ok: true, competitionId: targetCompId, is_paused: paused });
   }
 
   if (method === "GET" && pathName === "/api/admin/competition/questions") {

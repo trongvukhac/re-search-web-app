@@ -13031,25 +13031,21 @@ async function loadAdminCompetition(targetCompetitionId) {
       simLabel.textContent = data.simulatedTimeStr || data.serverTimeStr || "Giờ thực tế";
     }
 
-    compState.isArenaPaused = Boolean(data.isArenaPaused);
-    const adminStatusBadge = $("#adminArenaStatusBadge");
-    const adminToggleBtn = $("#adminBtnToggleArena");
-    if (adminStatusBadge) {
-      if (data.isArenaPaused) {
-        adminStatusBadge.textContent = "⏸️ Đang tạm đóng tuần này";
-        adminStatusBadge.style.background = "rgba(245, 158, 11, 0.15)";
-        adminStatusBadge.style.color = "#d97706";
-        adminStatusBadge.style.borderColor = "rgba(245, 158, 11, 0.35)";
+    compState.adminSelectedCompetitionId = selectedComp.id;
+    compState.adminSelectedCompetitionIsPaused = Boolean(selectedComp.is_paused);
+
+    const weekStatusText = $("#adminSelectedWeekStatusText");
+    const weekToggleBtn = $("#adminBtnToggleWeekPaused");
+    if (weekStatusText) {
+      if (selectedComp.is_paused) {
+        weekStatusText.innerHTML = `<span style="color: #d97706; font-weight: 700;">⏸️ Đang TẠM ĐÓNG tuần này</span> <span style="font-size: 11.5px; color: var(--text-muted);">(Sinh viên không thi, banner chuyển xám)</span>`;
       } else {
-        adminStatusBadge.textContent = "🟢 Đang mở hoạt động";
-        adminStatusBadge.style.background = "rgba(16, 185, 129, 0.15)";
-        adminStatusBadge.style.color = "#10b981";
-        adminStatusBadge.style.borderColor = "rgba(16, 185, 129, 0.3)";
+        weekStatusText.innerHTML = `<span style="color: #16a34a; font-weight: 700;">🟢 Đang MỞ hoạt động</span> <span style="font-size: 11.5px; color: var(--text-muted);">(Mở cổng theo lịch bình thường)</span>`;
       }
     }
-    if (adminToggleBtn) {
-      adminToggleBtn.textContent = data.isArenaPaused ? "🟢 Mở hoạt động tuần" : "⏸️ Tạm đóng tuần này";
-      adminToggleBtn.className = data.isArenaPaused ? "button button-sm button-primary" : "button button-sm button-outline";
+    if (weekToggleBtn) {
+      weekToggleBtn.textContent = selectedComp.is_paused ? "🟢 Mở hoạt động tuần này" : "⏸️ Tạm đóng tuần này";
+      weekToggleBtn.className = selectedComp.is_paused ? "button button-sm button-primary" : "button button-sm button-outline";
     }
 
     await loadAdminPhaseQuestions(compState.adminSelectedPhase || 1);
@@ -13058,27 +13054,34 @@ async function loadAdminCompetition(targetCompetitionId) {
   }
 }
 
-window.adminToggleArenaStatus = async function() {
-  const isCurrentlyPaused = Boolean(compState.isArenaPaused);
+window.adminToggleSelectedWeekStatus = async function() {
+  const compId = compState.adminSelectedCompetitionId;
+  if (!compId) return;
+  const isCurrentlyPaused = Boolean(compState.adminSelectedCompetitionIsPaused);
   const newPaused = !isCurrentlyPaused;
   try {
-    const res = await requestAPI("/api/admin/competition/toggle-status", { paused: newPaused });
+    const res = await requestAPI("/api/admin/competition/toggle-status", { competitionId: compId, paused: newPaused });
     if (res && res.ok) {
-      compState.isArenaPaused = res.isArenaPaused;
-      if (compState.status) compState.status.isArenaPaused = res.isArenaPaused;
-      if (compState.overview) compState.overview.isArenaPaused = res.isArenaPaused;
-      toast(res.isArenaPaused ? "Đã chuyển Arena sang trạng thái: Tạm đóng tuần này." : "Đã mở lại hoạt động Đấu trường Arena.");
+      compState.adminSelectedCompetitionIsPaused = res.is_paused;
+      toast(res.is_paused ? `Đã tạm đóng tuần thi đấu #${compId}.` : `Đã mở hoạt động tuần thi đấu #${compId}.`);
       await loadWeeklyCompetitionStatus();
-      await loadAdminCompetition(compState.adminSelectedCompetitionId);
+      await loadAdminCompetition(compId);
       if (typeof currentActiveRoute !== "undefined" && currentActiveRoute === "arena") {
         await onEnterArena();
       }
     }
   } catch (e) {
-    toast("Lỗi khi cập nhật trạng thái Arena: " + (e.message || e));
+    toast("Lỗi khi cập nhật trạng thái tuần: " + (e.message || e));
   }
 };
-window.adminQuickToggleArena = window.adminToggleArenaStatus;
+
+window.adminQuickToggleArena = function() {
+  const curCompId = compState.overview?.week?.id || compState.status?.week?.id;
+  if (!curCompId) return;
+  compState.adminSelectedCompetitionId = curCompId;
+  compState.adminSelectedCompetitionIsPaused = Boolean(compState.overview?.isArenaPaused || compState.status?.isArenaPaused);
+  adminToggleSelectedWeekStatus();
+};
 
 window.onAdminChangeCompetitionWeek = async function(compId) {
   const newCompId = Number(compId);

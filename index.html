@@ -16,7 +16,7 @@
     <script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js" defer></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" defer></script>
-    <link rel="stylesheet" href="styles.css?v=97" />
+    <link rel="stylesheet" href="styles.css?v=98" />
   </head>
   <body>
     <dialog
@@ -2776,23 +2776,6 @@
         class="admin-tab-content"
         style="display: none"
       >
-        <!-- CẤU HÌNH TRẠNG THÁI HOẠT ĐỘNG ARENA -->
-        <div class="admin-card" style="margin-bottom: 16px; padding: 14px 16px; background: #fff; border: 1.5px solid var(--line); border-radius: 8px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
-          <div>
-            <span style="font-size: 11px; text-transform: uppercase; font-weight: 700; color: var(--text-muted); letter-spacing: 0.5px;">CẤU HÌNH HOẠT ĐỘNG ARENA</span>
-            <h4 style="margin: 2px 0 0 0; font-size: 15px;">Trạng thái Đấu trường Thi đua</h4>
-            <p style="margin: 3px 0 0 0; font-size: 12.5px; color: var(--text-muted);">
-              Khi tạm đóng, banner trang chủ chuyển sang màu xám "Tạm đóng tuần này" và sinh viên sẽ thấy thông báo tạm ngưng.
-            </p>
-          </div>
-          <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
-            <span id="adminArenaStatusBadge" style="padding: 5px 12px; border-radius: 20px; font-size: 12px; font-weight: 700; background: rgba(16,185,129,0.15); color: #10b981; border: 1px solid rgba(16,185,129,0.3);">🟢 Đang mở hoạt động</span>
-            <button type="button" id="adminBtnToggleArena" class="button button-sm button-outline" onclick="adminToggleArenaStatus()">
-              ⏸️ Tạm đóng tuần này
-            </button>
-          </div>
-        </div>
-
         <!-- SIMULATOR BAR -->
         <div class="admin-comp-sim-bar" style="background: var(--sage-2); border: 1px solid var(--line); border-radius: 8px; padding: 14px; margin-bottom: 16px;">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 8px;">
@@ -2813,7 +2796,7 @@
           <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
             <div>
               <span style="font-size: 11px; text-transform: uppercase; font-weight: 700; color: #166534; letter-spacing: 0.5px;">CHỌN TUẦN THI ĐẤU QUẢN TRỊ</span>
-              <h4 style="margin: 2px 0 0 0; font-size: 15px; color: #14532d;">Thiết lập câu hỏi &amp; Chủ đề theo Tuần</h4>
+              <h4 style="margin: 2px 0 0 0; font-size: 15px; color: #14532d;">Thiết lập câu hỏi &amp; Trạng thái theo Tuần</h4>
             </div>
             <div id="adminWeekDateRangeBadge" style="background: #dcfce7; color: #15803d; padding: 6px 14px; border-radius: 20px; font-size: 12.5px; font-weight: 700; border: 1px solid #bbf7d0;">
               <svg class="ui-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px;"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg> Khoảng thời gian: từ ngày --/--/---- đến ngày --/--/----
@@ -2827,8 +2810,23 @@
               <!-- Loaded dynamically -->
             </select>
             <p style="font-size: 11.5px; color: #15803d; margin: 6px 0 0 0;">
-              💡 <em>Tránh ghi đè tuần hiện tại: Để chuẩn bị trước câu hỏi cho tuần sau, hãy chọn <strong>[Tuần sau]</strong> ở danh sách trên trước khi nhập câu hỏi và lưu.</em>
+              💡 <em>Để setup câu hỏi hoặc thiết lập Tạm đóng tuần thi đấu trước, hãy chọn <strong>[Tuần sau]</strong> hoặc <strong>[2 tuần sau]</strong> ở danh sách trên.</em>
             </p>
+          </div>
+
+          <!-- TRẠNG THÁI HOẠT ĐỘNG CỦA TUẦN ĐƯỢC CHỌN -->
+          <div style="margin-top: 14px; padding-top: 12px; border-top: 1px dashed #86efac; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+            <div>
+              <span style="font-size: 11px; text-transform: uppercase; font-weight: 700; color: #166534; letter-spacing: 0.5px;">TRẠNG THÁI TUẦN THI ĐANG CHỌN:</span>
+              <div id="adminSelectedWeekStatusText" style="font-size: 13px; font-weight: 600; color: #15803d; margin-top: 2px;">
+                🟢 Đang mở hoạt động bình thường
+              </div>
+            </div>
+            <div>
+              <button type="button" id="adminBtnToggleWeekPaused" class="button button-sm button-outline" onclick="adminToggleSelectedWeekStatus()" style="font-weight: 600;">
+                ⏸️ Tạm đóng tuần này
+              </button>
+            </div>
           </div>
         </div>
 
@@ -3561,6 +3559,6 @@
       </div>
     </dialog>
 
-    <script src="app.js?v=109" defer></script>
+    <script src="app.js?v=110" defer></script>
   </body>
 </html>
