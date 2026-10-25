@@ -3223,6 +3223,70 @@
         color: #718077;
         margin: 14px 0 0;
       }
+
+      /* === ĐỒNG BỘ DARK MODE CHO AUTH & PROFILE MODALS === */
+      html.dark-theme .profile-settings-modal,
+      body.dark-theme .profile-settings-modal,
+      html.dark-theme .auth-modal,
+      body.dark-theme .auth-modal {
+        background: #182028 !important;
+        color: #e2e8f0 !important;
+        border: 1px solid rgba(255, 255, 255, 0.14) !important;
+        box-shadow: 0 25px 70px rgba(0, 0, 0, 0.75) !important;
+      }
+      html.dark-theme .profile-settings-modal .modal-head h2,
+      body.dark-theme .profile-settings-modal .modal-head h2,
+      html.dark-theme #authTitle,
+      body.dark-theme #authTitle {
+        color: #f1f5f9 !important;
+      }
+      html.dark-theme .profile-settings-modal label,
+      body.dark-theme .profile-settings-modal label,
+      html.dark-theme .auth-modal label,
+      body.dark-theme .auth-modal label,
+      html.dark-theme #authForm label,
+      body.dark-theme #authForm label {
+        color: #4ade80 !important;
+      }
+      html.dark-theme .profile-settings-modal input,
+      body.dark-theme .profile-settings-modal input,
+      html.dark-theme #authForm input,
+      body.dark-theme #authForm input,
+      html.dark-theme #forgotForm input,
+      body.dark-theme #forgotForm input {
+        background: #11161b !important;
+        border: 1px solid rgba(255, 255, 255, 0.16) !important;
+        color: #f1f5f9 !important;
+      }
+      html.dark-theme .profile-settings-modal input:focus,
+      body.dark-theme .profile-settings-modal input:focus,
+      html.dark-theme #authForm input:focus,
+      body.dark-theme #authForm input:focus,
+      html.dark-theme #forgotForm input:focus,
+      body.dark-theme #forgotForm input:focus {
+        border-color: #34d399 !important;
+        outline: 2px solid rgba(52, 211, 153, 0.25) !important;
+      }
+      html.dark-theme .auth-tab,
+      body.dark-theme .auth-tab {
+        color: #94a3b8;
+      }
+      html.dark-theme .auth-tab.active,
+      body.dark-theme .auth-tab.active {
+        color: #f1f5f9;
+      }
+      html.dark-theme .auth-tab.active:after,
+      body.dark-theme .auth-tab.active:after {
+        background: #34d399;
+      }
+      html.dark-theme #authForgotPasswordBtn,
+      body.dark-theme #authForgotPasswordBtn {
+        color: #4ade80 !important;
+      }
+      html.dark-theme .auth-note,
+      body.dark-theme .auth-note {
+        color: #94a3b8 !important;
+      }
     </style>
     <dialog id="studySettingsModal" class="modal study-settings-modal">
       <div class="modal-head">

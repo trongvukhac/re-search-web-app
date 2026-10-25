@@ -31,6 +31,8 @@ body.dark-theme {
   --muted: #94a3b8;
   --orange: #fbbf24;
   --danger: #f87171;
+  --surface-bg: #161f28;
+  --text: #e2e8f0;
   color-scheme: dark;
 }
 * {
@@ -15461,6 +15463,818 @@ body.dark-theme .rule-card {
   border: 1px solid rgba(255, 255, 255, 0.08) !important;
   color: #e2e8f0 !important;
 }
+
+/* ==========================================================================
+   16. LÀM SÁNG TEXT XANH LÁ ĐẬM & CẢI THIỆN ĐỘ TƯƠNG PHẢN TOÀN TRANG
+   ========================================================================== */
+body.dark-theme h1 em,
+body.dark-theme h2 em,
+body.dark-theme h3 em {
+  color: #4ade80 !important; /* Luminous emerald mint thay cho xanh lục đậm chìm */
+  font-style: italic;
+}
+body.dark-theme .eyebrow {
+  color: #86efac !important; /* Xanh ngọc sáng tinh tế, dễ đọc */
+  font-weight: 500 !important;
+}
+body.dark-theme .hero-intro {
+  color: #cbd5e1 !important; /* Xám bạc sáng thay cho #587067 đậm chìm */
+}
+body.dark-theme .brand-colon {
+  color: #34d399 !important;
+}
+body.dark-theme .text-link,
+body.dark-theme a.text-link {
+  color: #4ade80 !important;
+}
+body.dark-theme .role-label {
+  color: #a7f3d0 !important;
+}
+body.dark-theme label:not(.theme-switch) {
+  color: #86efac !important;
+}
+body.dark-theme .stat-card .eyebrow,
+body.dark-theme .document-card .eyebrow,
+body.dark-theme .admin-panel .eyebrow {
+  color: #86efac !important;
+}
+body.dark-theme .account-header .eyebrow,
+body.dark-theme .profile-large .eyebrow {
+  color: #86efac !important;
+}
+body.dark-theme .account-stats > div {
+  background: #182028 !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+body.dark-theme .account-stats p {
+  color: #94a3b8 !important;
+}
+body.dark-theme .account-stats strong {
+  color: #f1f5f9 !important;
+}
+body.dark-theme .account-stats small {
+  color: #64748b !important;
+}
+body.dark-theme #accountStudentPromptCard {
+  background: #182028 !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  border-left: 4px solid #34d399 !important;
+}
+body.dark-theme #accountStudentPromptCard strong {
+  color: #f1f5f9 !important;
+}
+body.dark-theme #accountStudentPromptCard span {
+  color: #94a3b8 !important;
+}
+body.dark-theme #accountStudentPromptCard svg {
+  color: #34d399 !important;
+}
+body.dark-theme #accountStudentPromptCard div[style*="background: rgba(30, 93, 70"] {
+  background: rgba(52, 211, 153, 0.15) !important;
+}
+
+/* ==========================================================================
+   17. ĐỒNG BỘ DARK MODE CHO TIER CHUỖI 30 NGÀY (RUBY) & 50 NGÀY (MYTHIC)
+   Loại bỏ hoàn toàn nền trắng/hồng nhạt/tím nhạt khi bật dark mode
+   ========================================================================== */
+/* --- TIER 4: RUBY (CHUỖI >= 30 NGÀY) --- */
+html.dark-theme[data-user-theme="ruby"],
+body.dark-theme[data-user-theme="ruby"] {
+  --primary: #fb7185;
+  --primary-soft: rgba(251, 113, 133, 0.18);
+  --accent: #f43f5e;
+  --green: #fb7185;
+  --ink: #fbebf0;
+  --ink-deep: #ffffff;
+  --paper: #150d10;
+  --cream: #1e1317;
+  --line: #381a24;
+  --sage: #2a141c;
+  --sage-2: #211016;
+  --muted: #b898a3;
+  --surface-bg: #1e1317;
+  --text: #fbebf0;
+}
+html.dark-theme[data-user-theme="ruby"] body,
+body.dark-theme[data-user-theme="ruby"] body,
+[data-user-theme="ruby"] body.dark-theme {
+  background: #150d10 !important;
+  color: #fbebf0 !important;
+}
+[data-user-theme="ruby"] body.dark-theme .site-header {
+  background: rgba(21, 13, 16, 0.92) !important;
+  border-bottom-color: rgba(251, 113, 133, 0.2) !important;
+}
+[data-user-theme="ruby"] body.dark-theme .brand-colon {
+  color: #fb7185 !important;
+}
+[data-user-theme="ruby"] body.dark-theme .search-panel {
+  background: #1e1317 !important;
+  border-color: rgba(251, 113, 133, 0.25) !important;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.55) !important;
+}
+[data-user-theme="ruby"] body.dark-theme .search-panel input,
+[data-user-theme="ruby"] body.dark-theme .search-inline input {
+  color: #fbebf0 !important;
+}
+[data-user-theme="ruby"] body.dark-theme .search-glyph,
+[data-user-theme="ruby"] body.dark-theme .search-inline span {
+  color: #fb7185 !important;
+}
+[data-user-theme="ruby"] body.dark-theme .topics-card,
+[data-user-theme="ruby"] body.dark-theme .mini-card,
+[data-user-theme="ruby"] body.dark-theme .active-card {
+  background: #1e1317 !important;
+  border-color: rgba(251, 113, 133, 0.2) !important;
+}
+[data-user-theme="ruby"] body.dark-theme .active-card-title > span {
+  color: #fb7185 !important;
+}
+[data-user-theme="ruby"] body.dark-theme .topic {
+  background: #27161e !important;
+  border-color: rgba(251, 113, 133, 0.25) !important;
+  color: #fda4af !important;
+}
+[data-user-theme="ruby"] body.dark-theme .topic:hover {
+  background: #341b27 !important;
+  border-color: #fb7185 !important;
+  color: #ffffff !important;
+}
+[data-user-theme="ruby"] body.dark-theme .post-tag {
+  color: #fda4af !important;
+  background: rgba(251, 113, 133, 0.15) !important;
+}
+[data-user-theme="ruby"] body.dark-theme .post-card:hover {
+  background: rgba(251, 113, 133, 0.05) !important;
+}
+[data-user-theme="ruby"] body.dark-theme .button-primary {
+  background: linear-gradient(135deg, #be123c 0%, #e11d48 100%) !important;
+  color: #fff !important;
+  box-shadow: 0 4px 16px rgba(225, 29, 72, 0.45) !important;
+}
+[data-user-theme="ruby"] body.dark-theme .button-dark {
+  background: #2c1620 !important;
+  color: #fecdd3 !important;
+  border: 1px solid rgba(251, 113, 133, 0.2) !important;
+}
+[data-user-theme="ruby"] body.dark-theme .button-dark:hover {
+  background: #3b1c2b !important;
+}
+[data-user-theme="ruby"] body.dark-theme .button-outline {
+  border-color: rgba(251, 113, 133, 0.35) !important;
+  color: #fecdd3 !important;
+  background: rgba(251, 113, 133, 0.06) !important;
+}
+[data-user-theme="ruby"] body.dark-theme .button-outline:hover {
+  background: rgba(251, 113, 133, 0.15) !important;
+  border-color: #fb7185 !important;
+}
+[data-user-theme="ruby"] body.dark-theme .profile-chip {
+  background: #1e1317 !important;
+  border-color: rgba(251, 113, 133, 0.25) !important;
+  color: #fbebf0 !important;
+}
+[data-user-theme="ruby"] body.dark-theme .profile-chip b {
+  background: rgba(251, 113, 133, 0.2) !important;
+  color: #fb7185 !important;
+}
+[data-user-theme="ruby"] body.dark-theme .nav-link {
+  color: #b898a3 !important;
+}
+[data-user-theme="ruby"] body.dark-theme .nav-link:hover,
+[data-user-theme="ruby"] body.dark-theme .nav-link.active {
+  background: rgba(251, 113, 133, 0.12) !important;
+  color: #fb7185 !important;
+}
+[data-user-theme="ruby"] body.dark-theme .icon-button:hover {
+  background: rgba(251, 113, 133, 0.12) !important;
+  color: #fb7185 !important;
+}
+[data-user-theme="ruby"] body.dark-theme .account-stats > div {
+  background: #1e1317 !important;
+  border-color: rgba(251, 113, 133, 0.2) !important;
+  color: #fbebf0 !important;
+}
+[data-user-theme="ruby"] body.dark-theme #accountStudentPromptCard {
+  background: #1e1317 !important;
+  border: 1px solid rgba(251, 113, 133, 0.25) !important;
+  border-left: 4px solid #fb7185 !important;
+}
+[data-user-theme="ruby"] body.dark-theme #accountStudentPromptCard strong {
+  color: #fbebf0 !important;
+}
+[data-user-theme="ruby"] body.dark-theme #accountStudentPromptCard span {
+  color: #b898a3 !important;
+}
+[data-user-theme="ruby"] body.dark-theme #accountStudentPromptCard svg {
+  color: #fb7185 !important;
+}
+[data-user-theme="ruby"] body.dark-theme .quick-menu-dropdown {
+  background: #1e1317 !important;
+  border-color: rgba(251, 113, 133, 0.25) !important;
+}
+[data-user-theme="ruby"] body.dark-theme .quick-menu-item:hover {
+  background: rgba(251, 113, 133, 0.12) !important;
+  color: #ffffff !important;
+}
+[data-user-theme="ruby"] body.dark-theme .quick-menu-item.quick-menu-primary {
+  color: #fb7185 !important;
+}
+[data-user-theme="ruby"] body.dark-theme .lb-carousel-header {
+  background: #1e1317 !important;
+  border-color: rgba(251, 113, 133, 0.2) !important;
+}
+[data-user-theme="ruby"] body.dark-theme .lb-active-title {
+  color: #fb7185 !important;
+}
+[data-user-theme="ruby"] body.dark-theme .lb-tab.active {
+  background: #e11d48 !important;
+  color: #ffffff !important;
+}
+[data-user-theme="ruby"] body.dark-theme .lb-tab {
+  color: #fda4af !important;
+}
+[data-user-theme="ruby"] body.dark-theme .lb-dot.active {
+  background: #fb7185 !important;
+}
+[data-user-theme="ruby"] body.dark-theme h1 em {
+  color: #fb7185 !important;
+}
+[data-user-theme="ruby"] body.dark-theme .hero-copy h1,
+[data-user-theme="ruby"] body.dark-theme h1,
+[data-user-theme="ruby"] body.dark-theme h2,
+[data-user-theme="ruby"] body.dark-theme h3 {
+  color: #ffffff !important;
+}
+[data-user-theme="ruby"] body.dark-theme .hero-intro {
+  color: #cbd5e1 !important;
+}
+[data-user-theme="ruby"] body.dark-theme .admin-panel {
+  background: linear-gradient(135deg, #2b0b14 0%, #400f1c 50%, #541122 100%) !important;
+  border: 1px solid rgba(251, 113, 133, 0.25) !important;
+}
+
+/* --- TIER 5: MYTHIC (CHUỖI >= 50 NGÀY) --- */
+html.dark-theme[data-user-theme="mythic"],
+body.dark-theme[data-user-theme="mythic"] {
+  --primary: #c084fc;
+  --primary-soft: rgba(192, 132, 252, 0.18);
+  --accent: #e879f9;
+  --green: #c084fc;
+  --ink: #f3effb;
+  --ink-deep: #ffffff;
+  --paper: #110d19;
+  --cream: #181224;
+  --line: #2e2040;
+  --sage: #231835;
+  --sage-2: #1b1229;
+  --muted: #a89bc2;
+  --surface-bg: #181224;
+  --text: #f3effb;
+}
+html.dark-theme[data-user-theme="mythic"] body,
+body.dark-theme[data-user-theme="mythic"] body,
+[data-user-theme="mythic"] body.dark-theme {
+  background: #110d19 !important;
+  color: #f3effb !important;
+}
+[data-user-theme="mythic"] body.dark-theme .site-header {
+  background: rgba(17, 13, 25, 0.92) !important;
+  border-bottom-color: rgba(192, 132, 252, 0.2) !important;
+}
+[data-user-theme="mythic"] body.dark-theme .brand-colon {
+  color: #e879f9 !important;
+}
+[data-user-theme="mythic"] body.dark-theme .search-panel {
+  background: #181224 !important;
+  border-color: rgba(192, 132, 252, 0.25) !important;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.55) !important;
+}
+[data-user-theme="mythic"] body.dark-theme .search-panel input,
+[data-user-theme="mythic"] body.dark-theme .search-inline input {
+  color: #f3effb !important;
+}
+[data-user-theme="mythic"] body.dark-theme .search-glyph,
+[data-user-theme="mythic"] body.dark-theme .search-inline span {
+  color: #c084fc !important;
+}
+[data-user-theme="mythic"] body.dark-theme .topics-card,
+[data-user-theme="mythic"] body.dark-theme .mini-card,
+[data-user-theme="mythic"] body.dark-theme .active-card {
+  background: #181224 !important;
+  border-color: rgba(192, 132, 252, 0.2) !important;
+}
+[data-user-theme="mythic"] body.dark-theme .active-card-title > span {
+  color: #c084fc !important;
+}
+[data-user-theme="mythic"] body.dark-theme .topic {
+  background: #231836 !important;
+  border-color: rgba(192, 132, 252, 0.25) !important;
+  color: #d8b4fe !important;
+}
+[data-user-theme="mythic"] body.dark-theme .topic:hover {
+  background: #2e1e47 !important;
+  border-color: #c084fc !important;
+  color: #ffffff !important;
+}
+[data-user-theme="mythic"] body.dark-theme .post-tag {
+  color: #d8b4fe !important;
+  background: rgba(192, 132, 252, 0.15) !important;
+}
+[data-user-theme="mythic"] body.dark-theme .post-card:hover {
+  background: rgba(192, 132, 252, 0.05) !important;
+}
+[data-user-theme="mythic"] body.dark-theme .button-primary {
+  background: linear-gradient(135deg, #7c3aed 0%, #c026d3 50%, #f43f5e 100%) !important;
+  color: #fff !important;
+  box-shadow: 0 4px 18px rgba(168, 85, 247, 0.45) !important;
+}
+[data-user-theme="mythic"] body.dark-theme .button-dark {
+  background: #241738 !important;
+  color: #e9d5ff !important;
+  border: 1px solid rgba(192, 132, 252, 0.2) !important;
+}
+[data-user-theme="mythic"] body.dark-theme .button-dark:hover {
+  background: #311e4d !important;
+}
+[data-user-theme="mythic"] body.dark-theme .button-outline {
+  border-color: rgba(192, 132, 252, 0.35) !important;
+  color: #e9d5ff !important;
+  background: rgba(192, 132, 252, 0.06) !important;
+}
+[data-user-theme="mythic"] body.dark-theme .button-outline:hover {
+  background: rgba(192, 132, 252, 0.15) !important;
+  border-color: #c084fc !important;
+}
+[data-user-theme="mythic"] body.dark-theme .profile-chip {
+  background: #181224 !important;
+  border-color: rgba(192, 132, 252, 0.25) !important;
+  color: #f3effb !important;
+}
+[data-user-theme="mythic"] body.dark-theme .profile-chip b {
+  background: rgba(192, 132, 252, 0.2) !important;
+  color: #e879f9 !important;
+}
+[data-user-theme="mythic"] body.dark-theme .nav-link {
+  color: #a89bc2 !important;
+}
+[data-user-theme="mythic"] body.dark-theme .nav-link:hover,
+[data-user-theme="mythic"] body.dark-theme .nav-link.active {
+  background: rgba(192, 132, 252, 0.12) !important;
+  color: #e879f9 !important;
+}
+[data-user-theme="mythic"] body.dark-theme .icon-button:hover {
+  background: rgba(192, 132, 252, 0.12) !important;
+  color: #e879f9 !important;
+}
+[data-user-theme="mythic"] body.dark-theme .account-stats > div {
+  background: #181224 !important;
+  border-color: rgba(192, 132, 252, 0.2) !important;
+  color: #f3effb !important;
+}
+[data-user-theme="mythic"] body.dark-theme #accountStudentPromptCard {
+  background: #181224 !important;
+  border: 1px solid rgba(192, 132, 252, 0.25) !important;
+  border-left: 4px solid #c084fc !important;
+}
+[data-user-theme="mythic"] body.dark-theme #accountStudentPromptCard strong {
+  color: #f3effb !important;
+}
+[data-user-theme="mythic"] body.dark-theme #accountStudentPromptCard span {
+  color: #a89bc2 !important;
+}
+[data-user-theme="mythic"] body.dark-theme #accountStudentPromptCard svg {
+  color: #c084fc !important;
+}
+[data-user-theme="mythic"] body.dark-theme .quick-menu-dropdown {
+  background: #181224 !important;
+  border-color: rgba(192, 132, 252, 0.25) !important;
+}
+[data-user-theme="mythic"] body.dark-theme .quick-menu-item:hover {
+  background: rgba(192, 132, 252, 0.12) !important;
+  color: #ffffff !important;
+}
+[data-user-theme="mythic"] body.dark-theme .quick-menu-item.quick-menu-primary {
+  color: #c084fc !important;
+}
+[data-user-theme="mythic"] body.dark-theme .lb-carousel-header {
+  background: #181224 !important;
+  border-color: rgba(192, 132, 252, 0.2) !important;
+}
+[data-user-theme="mythic"] body.dark-theme .lb-active-title {
+  color: #c084fc !important;
+}
+[data-user-theme="mythic"] body.dark-theme .lb-tab.active {
+  background: linear-gradient(135deg, #7c3aed 0%, #c026d3 100%) !important;
+  color: #ffffff !important;
+}
+[data-user-theme="mythic"] body.dark-theme .lb-tab {
+  color: #d8b4fe !important;
+}
+[data-user-theme="mythic"] body.dark-theme .lb-dot.active {
+  background: linear-gradient(90deg, #c084fc, #f472b6) !important;
+}
+[data-user-theme="mythic"] body.dark-theme h1 em {
+  background: linear-gradient(90deg, #c084fc, #f472b6, #fb7185) !important;
+  -webkit-background-clip: text !important;
+  background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+}
+[data-user-theme="mythic"] body.dark-theme .hero-copy h1,
+[data-user-theme="mythic"] body.dark-theme h1,
+[data-user-theme="mythic"] body.dark-theme h2,
+[data-user-theme="mythic"] body.dark-theme h3 {
+  color: #ffffff !important;
+}
+[data-user-theme="mythic"] body.dark-theme .hero-intro {
+  color: #cbd5e1 !important;
+}
+[data-user-theme="mythic"] body.dark-theme .admin-panel {
+  background: linear-gradient(135deg, #1c0f2b 0%, #2f103b 50%, #430d2a 100%) !important;
+  border: 1px solid rgba(232, 121, 249, 0.25) !important;
+}
+
+/* ==========================================================================
+   18. PHÒNG TỰ HỌC (#study) TOÀN DIỆN TRONG DARK MODE
+   ========================================================================== */
+body.dark-theme #study .study-heading h1 {
+  color: #f1f5f9 !important;
+}
+body.dark-theme #study .study-heading h1 em {
+  color: #4ade80 !important;
+  font-style: italic;
+}
+body.dark-theme #study .study-panel,
+body.dark-theme #study .study-card,
+body.dark-theme #study .todo-card {
+  background: #182028 !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+body.dark-theme .study-mode-btn:not(.active) {
+  background: #161f28 !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.12) !important;
+  color: #e2e8f0 !important;
+}
+body.dark-theme .study-mode-btn:not(.active) strong {
+  color: #f1f5f9 !important;
+}
+body.dark-theme .study-mode-btn:not(.active) span {
+  color: #94a3b8 !important;
+}
+body.dark-theme .study-mode-btn:hover:not(.active) {
+  background: #1f2b38 !important;
+  border-color: #34d399 !important;
+}
+body.dark-theme .study-mode-btn.active {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+  color: #ffffff !important;
+  border-color: transparent !important;
+  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.35) !important;
+}
+body.dark-theme .study-quote-card {
+  background: #161f28 !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  box-shadow: none !important;
+}
+body.dark-theme .study-quote-card:hover {
+  background: #1c2733 !important;
+  border-color: #34d399 !important;
+}
+body.dark-theme .quote-icon {
+  color: #34d399 !important;
+}
+body.dark-theme .timer-quote-text {
+  color: #cbd5e1 !important;
+}
+body.dark-theme .timer-quote-text .quote-author {
+  color: #34d399 !important;
+}
+body.dark-theme .study-goal-box label {
+  color: #86efac !important;
+}
+body.dark-theme .study-goal-box input {
+  background: #11161b !important;
+  border: 1px solid rgba(255, 255, 255, 0.14) !important;
+  color: #f1f5f9 !important;
+}
+body.dark-theme .study-goal-box input:focus {
+  border-color: #34d399 !important;
+  box-shadow: 0 0 0 3px rgba(52, 211, 153, 0.2) !important;
+}
+body.dark-theme .study-goal-box input::placeholder {
+  color: #64748b !important;
+}
+body.dark-theme .todo-head h3 {
+  color: #f1f5f9 !important;
+}
+body.dark-theme .todo-input-wrap input {
+  background: #11161b !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.14) !important;
+  color: #f1f5f9 !important;
+}
+body.dark-theme .todo-input-wrap input:focus {
+  border-color: #34d399 !important;
+  box-shadow: 0 0 0 3px rgba(52, 211, 153, 0.2) !important;
+}
+body.dark-theme .todo-input-wrap input::placeholder {
+  color: #64748b !important;
+}
+body.dark-theme .todo-item {
+  background: #161f28 !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  color: #e2e8f0 !important;
+}
+body.dark-theme .co-study-empty {
+  background: #161f28 !important;
+  border: 1px dashed rgba(255, 255, 255, 0.12) !important;
+  color: #94a3b8 !important;
+}
+body.dark-theme .co-study-item,
+body.dark-theme .co-study-item.theme-light-card {
+  background: #161f28 !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+body.dark-theme .co-study-item.theme-light-card .co-study-user-title {
+  color: #f1f5f9 !important;
+  text-shadow: none !important;
+}
+body.dark-theme .co-study-item.theme-light-card .co-study-goal {
+  color: #94a3b8 !important;
+}
+body.dark-theme .co-study-item.theme-light-card .co-study-time {
+  background: #11161b !important;
+  border: 1px solid rgba(255, 255, 255, 0.14) !important;
+  color: #34d399 !important;
+}
+body.dark-theme .co-study-item.theme-light-card .co-study-cheers-row {
+  border-top: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+body.dark-theme .co-study-item.theme-light-card .co-study-cheers-label {
+  color: #94a3b8 !important;
+}
+body.dark-theme .co-study-item.theme-light-card .cheer-btn {
+  background: #1e2832 !important;
+  border: 1px solid rgba(255, 255, 255, 0.14) !important;
+  color: #e2e8f0 !important;
+}
+body.dark-theme .co-study-item.theme-light-card .cheer-btn:hover:not(:disabled) {
+  background: #253342 !important;
+  border-color: #34d399 !important;
+}
+body.dark-theme .co-study-item.is-self {
+  background: rgba(52, 211, 153, 0.12) !important;
+  border-color: #34d399 !important;
+}
+body.dark-theme .co-study-item.is-self .self-status-pill {
+  background: rgba(52, 211, 153, 0.2) !important;
+  color: #34d399 !important;
+  border-color: rgba(52, 211, 153, 0.4) !important;
+}
+
+/* Modal Cài đặt chu kỳ Pomodoro */
+body.dark-theme .study-settings-modal {
+  background: #182028 !important;
+  border: 1px solid rgba(255, 255, 255, 0.14) !important;
+  color: #e2e8f0 !important;
+}
+body.dark-theme .study-settings-modal .modal-head h2 {
+  color: #f1f5f9 !important;
+}
+body.dark-theme .study-settings-modal .close-modal {
+  background: #11161b !important;
+  border: 1px solid rgba(255, 255, 255, 0.14) !important;
+  color: #94a3b8 !important;
+}
+body.dark-theme .study-settings-modal .close-modal:hover {
+  background: #1e2832 !important;
+  color: #34d399 !important;
+  border-color: #34d399 !important;
+}
+body.dark-theme .study-settings-modal .settings-group {
+  background: #141c24 !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+body.dark-theme .study-settings-modal .settings-group h3 {
+  color: #4ade80 !important;
+}
+body.dark-theme .study-settings-modal .duration-item label {
+  color: #cbd5e1 !important;
+}
+body.dark-theme .study-settings-modal .stepper-input {
+  background: #11161b !important;
+  border: 1px solid rgba(255, 255, 255, 0.14) !important;
+}
+body.dark-theme .study-settings-modal .stepper-input input {
+  color: #ffffff !important;
+  background: transparent !important;
+}
+body.dark-theme .study-settings-modal .step-btn {
+  background: #1e2832 !important;
+  color: #f1f5f9 !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+body.dark-theme .study-settings-modal .step-btn:hover {
+  background: #253342 !important;
+  color: #34d399 !important;
+}
+body.dark-theme .study-settings-modal .setting-toggle-row {
+  background: #11161b !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+body.dark-theme .study-settings-modal .setting-toggle-row:hover {
+  background: #18222d !important;
+}
+body.dark-theme .study-settings-modal .setting-toggle-row strong {
+  color: #f1f5f9 !important;
+}
+body.dark-theme .study-settings-modal .setting-toggle-row span {
+  color: #94a3b8 !important;
+}
+body.dark-theme .study-settings-modal .alarm-field label {
+  color: #86efac !important;
+}
+body.dark-theme .study-settings-modal .alarm-field select {
+  background: #11161b !important;
+  border: 1px solid rgba(255, 255, 255, 0.14) !important;
+  color: #f1f5f9 !important;
+}
+
+/* ==========================================================================
+   19. GIAO DIỆN XEM CHI TIẾT BÀI ĐĂNG TRONG DARK MODE
+   Sửa triệt để chữ chìm màu xanh đen (#24352b, #425c50) sang chữ sáng rõ
+   ========================================================================== */
+body.dark-theme .post-detail-card {
+  background: #182028 !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4) !important;
+}
+body.dark-theme .post-detail-card .detail-title {
+  color: #f1f5f9 !important;
+}
+body.dark-theme .post-detail-card .detail-copy,
+body.dark-theme .detail-copy,
+body.dark-theme .response-copy {
+  color: #e2e8f0 !important; /* Chữ trắng mờ cao cấp, tương phản chuẩn */
+}
+body.dark-theme .post-detail-card .detail-copy p,
+body.dark-theme .detail-copy p,
+body.dark-theme .response-copy p {
+  color: #e2e8f0 !important;
+}
+body.dark-theme .detail-actions {
+  border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+body.dark-theme .useful-button {
+  background: #1e2832 !important;
+  border: 1px solid rgba(255, 255, 255, 0.14) !important;
+  color: #e2e8f0 !important;
+}
+body.dark-theme .useful-button:hover {
+  background: #253342 !important;
+  border-color: #34d399 !important;
+  color: #34d399 !important;
+}
+body.dark-theme .useful-button.active {
+  background: rgba(52, 211, 153, 0.18) !important;
+  border-color: #34d399 !important;
+  color: #34d399 !important;
+}
+body.dark-theme .post-detail-top-nav button,
+body.dark-theme .post-detail-share-btn,
+body.dark-theme .post-detail-save-btn {
+  background: #1e2832 !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  color: #cbd5e1 !important;
+}
+body.dark-theme .post-detail-top-nav button:hover,
+body.dark-theme .post-detail-share-btn:hover,
+body.dark-theme .post-detail-save-btn:hover {
+  background: #253342 !important;
+  border-color: #34d399 !important;
+  color: #34d399 !important;
+}
+body.dark-theme .detail-response-title {
+  color: #f1f5f9 !important;
+}
+body.dark-theme .response-card {
+  background: #182028 !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+body.dark-theme .response-meta {
+  color: #94a3b8 !important;
+}
+body.dark-theme .chosen-label {
+  background: rgba(52, 211, 153, 0.18) !important;
+  color: #34d399 !important;
+  border: 1px solid rgba(52, 211, 153, 0.3) !important;
+}
+body.dark-theme .post-detail-pinned-reply {
+  background: rgba(24, 32, 40, 0.94) !important;
+  border: 1px solid rgba(255, 255, 255, 0.14) !important;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6) !important;
+}
+body.dark-theme .reply-pill {
+  background: #11161b !important;
+  border: 1px solid rgba(255, 255, 255, 0.14) !important;
+}
+body.dark-theme .reply-bar.collapsed .ql-editor {
+  color: #f1f5f9 !important;
+}
+body.dark-theme .reply-bar .dropdown-menu {
+  background: #182028 !important;
+  border: 1px solid rgba(255, 255, 255, 0.14) !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5) !important;
+}
+body.dark-theme .reply-bar .dropdown-menu div {
+  color: #cbd5e1 !important;
+}
+body.dark-theme .reply-bar .dropdown-menu div:hover {
+  background: rgba(52, 211, 153, 0.14) !important;
+  color: #34d399 !important;
+}
+
+/* ==========================================================================
+   20. ĐỒNG BỘ TOÀN BỘ CỬA SỔ POP-UP (MODAL & DIALOG) TRONG DARK MODE
+   ========================================================================== */
+body.dark-theme .modal,
+body.dark-theme dialog.modal {
+  background: #182028 !important;
+  color: #e2e8f0 !important;
+  border: 1px solid rgba(255, 255, 255, 0.14) !important;
+  box-shadow: 0 25px 70px rgba(0, 0, 0, 0.75) !important;
+}
+body.dark-theme .modal .modal-head h2,
+body.dark-theme dialog.modal .modal-head h2 {
+  color: #f1f5f9 !important;
+}
+body.dark-theme .modal .close-modal,
+body.dark-theme dialog.modal .close-modal {
+  background: #11161b !important;
+  border: 1px solid rgba(255, 255, 255, 0.14) !important;
+  color: #94a3b8 !important;
+}
+body.dark-theme .modal .close-modal:hover,
+body.dark-theme dialog.modal .close-modal:hover {
+  background: #1e2832 !important;
+  border-color: #34d399 !important;
+  color: #34d399 !important;
+}
+body.dark-theme .modal label,
+body.dark-theme dialog.modal label {
+  color: #86efac !important;
+}
+body.dark-theme .modal input,
+body.dark-theme .modal textarea,
+body.dark-theme .modal select,
+body.dark-theme dialog.modal input,
+body.dark-theme dialog.modal textarea,
+body.dark-theme dialog.modal select {
+  background: #11161b !important;
+  border: 1px solid rgba(255, 255, 255, 0.16) !important;
+  color: #f1f5f9 !important;
+}
+body.dark-theme .modal input:focus,
+body.dark-theme .modal textarea:focus,
+body.dark-theme .modal select:focus,
+body.dark-theme dialog.modal input:focus,
+body.dark-theme dialog.modal textarea:focus,
+body.dark-theme dialog.modal select:focus {
+  border-color: #34d399 !important;
+  box-shadow: 0 0 0 3px rgba(52, 211, 153, 0.25) !important;
+}
+
+/* Modal xem tài liệu (.doc-viewer-dialog) */
+body.dark-theme .doc-viewer-container,
+body.dark-theme .doc-viewer-head {
+  background: #182028 !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+}
+body.dark-theme .doc-viewer-title {
+  color: #f1f5f9 !important;
+}
+
+/* Modal Chuỗi hoạt động & Khiên bảo vệ */
+body.dark-theme .streak-journey-modal,
+body.dark-theme .streak-shield-modal {
+  background: #182028 !important;
+  border: 1px solid rgba(255, 255, 255, 0.14) !important;
+}
+body.dark-theme .streak-journey-body,
+body.dark-theme .streak-shield-body {
+  background: #182028 !important;
+  color: #e2e8f0 !important;
+}
+body.dark-theme .streak-tier-card,
+body.dark-theme .streak-shield-rule-card {
+  background: #11161b !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+body.dark-theme .streak-tier-card:hover,
+body.dark-theme .streak-shield-rule-card:hover {
+  border-color: #34d399 !important;
+}
+
 
 
 
