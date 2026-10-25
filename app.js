@@ -7348,6 +7348,37 @@ async function finishStudySession(autoCompleted = false) {
   }
 }
 
+function resumeActiveStudyAudioIfPaused() {
+  try {
+    if (studyState.activeEnvTrack) {
+      const p = studyState.envAudioPlayers[studyState.activeEnvTrack];
+      if (p && p.paused && !p._isExplicitlyStopped) p.play().catch(() => {});
+    }
+    if (studyState.activeMusicTrack) {
+      const p = studyState.musicAudioPlayers[studyState.activeMusicTrack];
+      if (p && p.paused && !p._isExplicitlyStopped) p.play().catch(() => {});
+    }
+    Object.keys(studyState.activeMixSounds || {}).forEach(k => {
+      if (studyState.activeMixSounds[k]) {
+        const p = studyState.mixAudioPlayers[k];
+        if (p && p.paused && !p._isExplicitlyStopped) p.play().catch(() => {});
+      }
+    });
+    if (studyState.activeCustomEnvId && studyState.customEnvAudioPlayer && studyState.customEnvAudioPlayer.paused && !studyState.customEnvAudioPlayer._isExplicitlyStopped) {
+      studyState.customEnvAudioPlayer.play().catch(() => {});
+    }
+    if (studyState.activeCustomMusicId && studyState.customMusicAudioPlayer && studyState.customMusicAudioPlayer.paused && !studyState.customMusicAudioPlayer._isExplicitlyStopped) {
+      studyState.customMusicAudioPlayer.play().catch(() => {});
+    }
+    Object.keys(studyState.activeCustomMixSounds || {}).forEach(k => {
+      if (studyState.activeCustomMixSounds[k]) {
+        const p = studyState.customMixAudioPlayers[k];
+        if (p && p.paused && !p._isExplicitlyStopped) p.play().catch(() => {});
+      }
+    });
+  } catch (e) {}
+}
+
 // Background tab throttling resolution via Page Visibility & Focus APIs
 document.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "visible") {
@@ -7360,6 +7391,7 @@ document.addEventListener("visibilitychange", () => {
       }
     }
     fetchStudyLounge();
+    resumeActiveStudyAudioIfPaused();
   }
 });
 window.addEventListener("focus", () => {
@@ -7369,6 +7401,7 @@ window.addEventListener("focus", () => {
     updateTimerDisplay();
   }
   fetchStudyLounge();
+  resumeActiveStudyAudioIfPaused();
 });
 
 /* --- 5. CO-STUDY LOUNGE (Real-Time Synchronized) --- */
@@ -7856,6 +7889,74 @@ function createStudyAudioPlayer(src) {
   player.playsInline = true;
   player.setAttribute("playsinline", "true");
   player.setAttribute("webkit-playsinline", "true");
+
+  player._isExplicitlyStopped = true;
+  let retryTimer = null;
+
+  const originalPlay = player.play.bind(player);
+  player.play = function() {
+    player._isExplicitlyStopped = false;
+    if (retryTimer) {
+      clearTimeout(retryTimer);
+      retryTimer = null;
+    }
+    return originalPlay();
+  };
+
+  const originalPause = player.pause.bind(player);
+  player.pause = function() {
+    player._isExplicitlyStopped = true;
+    if (retryTimer) {
+      clearTimeout(retryTimer);
+      retryTimer = null;
+    }
+    return originalPause();
+  };
+
+  // Fallback 1: Seamless loop event listener
+  // Certain browsers, low-power modes, or media streaming drops loop attribute at EOF
+  player.addEventListener("ended", () => {
+    if (!player._isExplicitlyStopped) {
+      try {
+        player.currentTime = 0;
+        const p = player.play();
+        if (p !== undefined) {
+          p.catch(err => {
+            console.warn("Audio ended play restart warning:", err);
+            try {
+              player.src = src;
+              player.load();
+              player.currentTime = 0;
+              player.play().catch(() => {});
+            } catch (e) {}
+          });
+        }
+      } catch (e) {
+        console.warn("Ended event restart error:", e);
+      }
+    }
+  });
+
+  // Fallback 2: Auto-reconnect on network interruption / stream drops
+  player.addEventListener("error", () => {
+    if (player._isExplicitlyStopped) return;
+    console.warn("Study audio stream error, auto-reconnecting:", src, player.error);
+    if (retryTimer) clearTimeout(retryTimer);
+    retryTimer = setTimeout(() => {
+      if (!player._isExplicitlyStopped) {
+        try {
+          const prevTime = (player.currentTime && !isNaN(player.currentTime) && isFinite(player.currentTime)) ? player.currentTime : 0;
+          player.src = src;
+          player.load();
+          player.currentTime = prevTime;
+          player.play().catch(err => console.warn("Audio recovery play warning:", err));
+        } catch (recoverErr) {
+          console.warn("Audio recovery failed:", recoverErr);
+        }
+      }
+    }, 1500);
+  });
+
   return player;
 }
 

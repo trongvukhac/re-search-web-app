@@ -1253,6 +1253,12 @@ async function fetchAzureAudioStream(trackId, reqMethod, headers, isRetry = fals
       };
 
       const azureReq = https.request(options, async (azureRes) => {
+        // Clear socket timeout as soon as response headers arrive from Azure.
+        // During media streaming, browser buffering can pause reads for minutes;
+        // an active socket timeout will prematurely destroy the stream!
+        azureReq.setTimeout(0);
+        azureReq.removeAllListeners("timeout");
+
         // If expired SAS token or forbidden, retry once with a fresh URL
         if ((azureRes.statusCode === 403 || azureRes.statusCode === 401) && !isRetry) {
           azureAudioUrlCache.delete(trackId);
@@ -1266,8 +1272,9 @@ async function fetchAzureAudioStream(trackId, reqMethod, headers, isRetry = fals
         resolve({ statusCode: azureRes.statusCode, headers: azureRes.headers, stream: azureRes, req: azureReq });
       });
 
-      azureReq.setTimeout(15000, () => {
-        azureReq.destroy(new Error("Azure audio stream timed out"));
+      // 20-second timeout strictly for the initial connection and header response
+      azureReq.setTimeout(20000, () => {
+        azureReq.destroy(new Error("Azure audio stream connection timed out"));
       });
 
       azureReq.on("error", (err) => {
@@ -1299,6 +1306,16 @@ async function streamAudioTrack(request, response, trackId) {
 
     const { statusCode, headers: azureHeaders, stream, req: azureReq } = result;
 
+    // Disable socket timeouts for audio streaming requests
+    if (request.socket) {
+      request.socket.setTimeout(0);
+      request.socket.setKeepAlive(true, 10000);
+      request.socket.setNoDelay(true);
+    }
+    if (response.socket) {
+      response.socket.setTimeout(0);
+    }
+
     const resHeaders = {
       "Content-Type": "audio/mpeg",
       "Content-Disposition": "inline",
@@ -1323,6 +1340,15 @@ async function streamAudioTrack(request, response, trackId) {
     } else {
       stream.pipe(response);
     }
+
+    stream.on("error", (err) => {
+      console.warn(`Azure audio stream error (${trackId}):`, err.message);
+      try { response.end(); } catch (e) {}
+    });
+
+    response.on("error", (err) => {
+      try { azureReq.destroy(); } catch (e) {}
+    });
 
     request.on("close", () => {
       try { azureReq.destroy(); } catch (e) {}
