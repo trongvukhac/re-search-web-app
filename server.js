@@ -570,6 +570,173 @@ try {
   // Cột đã tồn tại
 }
 
+// Migration: Cập nhật bảng users hỗ trợ role 'member' và quản lý không hoạt động
+try {
+  const usersTableSql = db.prepare("SELECT sql FROM sqlite_master WHERE type='table' AND name='users'").get()?.sql || "";
+  const needsUsersMigration = !usersTableSql.includes("'member'") || !usersTableSql.includes("last_active_at");
+  if (needsUsersMigration) {
+    db.exec("PRAGMA foreign_keys = OFF;");
+    db.exec(`
+      CREATE TABLE users_v2 (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        email TEXT NOT NULL UNIQUE COLLATE NOCASE,
+        password_hash TEXT NOT NULL,
+        display_name TEXT NOT NULL,
+        role TEXT NOT NULL DEFAULT 'student' CHECK(role IN ('student','lecturer','admin','ta','member')),
+        created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        student_id TEXT,
+        real_name TEXT,
+        class_name TEXT,
+        avatar TEXT,
+        avatar_changed INTEGER NOT NULL DEFAULT 0,
+        locked_until TEXT,
+        bio TEXT,
+        cover_image TEXT,
+        namecard_frame TEXT DEFAULT 'default',
+        namecard_theme TEXT DEFAULT 'default',
+        avatar_last_changed INTEGER,
+        email_changed INTEGER NOT NULL DEFAULT 0,
+        last_active_at INTEGER,
+        inactivity_confirmed_at INTEGER
+      );
+    `);
+
+    db.exec(`
+      INSERT INTO users_v2 (
+        id, email, password_hash, display_name, role, created_at, updated_at,
+        student_id, real_name, class_name, avatar, avatar_changed, locked_until,
+        bio, cover_image, namecard_frame, namecard_theme, avatar_last_changed, email_changed
+      )
+      SELECT 
+        id, email, password_hash, display_name, role, created_at, updated_at,
+        student_id, real_name, class_name, avatar, avatar_changed, locked_until,
+        bio, cover_image, namecard_frame, namecard_theme, avatar_last_changed, email_changed
+      FROM users;
+    `);
+
+    db.exec(`
+      DROP TABLE users;
+      ALTER TABLE users_v2 RENAME TO users;
+    `);
+    db.exec("PRAGMA foreign_keys = ON;");
+    console.log("[Migration] users table successfully updated to support 'member' role and inactivity tracking.");
+  }
+
+  // Khởi tạo last_active_at cho người dùng chưa có
+  const uninitializedUsers = db.prepare("SELECT id, created_at FROM users WHERE last_active_at IS NULL").all();
+  for (const u of uninitializedUsers) {
+    const lastAct = db.prepare("SELECT max(activity_date) as maxDate FROM activity_days WHERE user_id=?").get(u.id);
+    let ts = null;
+    if (lastAct && lastAct.maxDate) {
+      ts = Date.parse(lastAct.maxDate + "T12:00:00+07:00");
+    } else if (u.created_at) {
+      ts = Date.parse(u.created_at.includes("T") ? u.created_at : u.created_at.replace(" ", "T") + "Z");
+    }
+    if (!ts || isNaN(ts)) ts = Date.now();
+    db.prepare("UPDATE users SET last_active_at = ? WHERE id = ?").run(ts, u.id);
+  }
+
+  // Chuẩn hóa role = 'member' cho tài khoản không phải Van Lang email và không phải admin/ta/lecturer
+  db.exec(`
+    UPDATE users 
+    SET role = 'member' 
+    WHERE role NOT IN ('admin', 'ta', 'lecturer')
+      AND email NOT LIKE '%@vanlanguni.vn'
+      AND email NOT LIKE '%@vlu.edu.vn';
+  `);
+} catch (e) {
+  console.error("[Migration Error users]", e);
+}
+
+function isVanLangDomain(email) {
+  const e = (email || "").trim().toLowerCase();
+  return e.endsWith("@vanlanguni.vn") || e.endsWith("@vlu.edu.vn");
+}
+
+function recordUserActivity(userId) {
+  if (!userId) return;
+  try {
+    db.prepare("UPDATE users SET last_active_at = ? WHERE id = ?").run(Date.now(), userId);
+  } catch (e) {}
+}
+
+function checkInactivityWarning(user) {
+  if (!user || !user.id || user.role === "admin") return null;
+  const now = Date.now();
+  const lastActive = Number(user.last_active_at) || (user.created_at ? Date.parse(user.created_at) : now) || now;
+  const inactiveDays = Math.floor((now - lastActive) / (24 * 60 * 60 * 1000));
+  if (inactiveDays >= 60 && inactiveDays < 90) {
+    const daysRemaining = Math.max(1, 90 - inactiveDays);
+    return {
+      isWarning: true,
+      inactiveDays,
+      daysRemaining,
+      message: "Tài khoản của bạn đã không hoạt động trong thời gian dài và sắp bị xoá vĩnh viễn. Vui lòng bấm xác nhận để hệ thống duy trì hoạt động"
+    };
+  }
+  return null;
+}
+
+function deleteUserPermanently(userId) {
+  if (!userId) return false;
+  const target = db.prepare("SELECT id, role, email FROM users WHERE id = ?").get(userId);
+  if (!target || target.role === 'admin') return false; // Không bao giờ xóa tài khoản quản trị
+  
+  db.exec("PRAGMA foreign_keys = OFF;");
+  try {
+    db.prepare("DELETE FROM sessions WHERE user_id = ?").run(userId);
+    db.prepare("DELETE FROM activity_days WHERE user_id = ?").run(userId);
+    db.prepare("DELETE FROM user_streak_shields WHERE user_id = ?").run(userId);
+    db.prepare("DELETE FROM streak_shield_logs WHERE user_id = ?").run(userId);
+    db.prepare("DELETE FROM streak_restores WHERE user_id = ?").run(userId);
+    db.prepare("DELETE FROM contribution_events WHERE user_id = ?").run(userId);
+    db.prepare("DELETE FROM saved_posts WHERE user_id = ?").run(userId);
+    db.prepare("DELETE FROM votes WHERE user_id = ?").run(userId);
+    db.prepare("DELETE FROM document_comments WHERE user_id = ?").run(userId);
+    db.prepare("DELETE FROM study_sessions WHERE user_id = ?").run(userId);
+    db.prepare("DELETE FROM study_logs WHERE user_id = ?").run(userId);
+    db.prepare("DELETE FROM user_limited_items WHERE user_id = ?").run(userId);
+    db.prepare("DELETE FROM password_resets WHERE user_id = ?").run(userId);
+    db.prepare("DELETE FROM competition_sessions WHERE user_id = ?").run(userId);
+    db.prepare("DELETE FROM competition_phase_results WHERE user_id = ?").run(userId);
+    db.prepare("DELETE FROM competition_weekly_rewards WHERE user_id = ?").run(userId);
+    db.prepare("DELETE FROM responses WHERE author_id = ?").run(userId);
+    db.prepare("DELETE FROM posts WHERE author_id = ?").run(userId);
+    db.prepare("DELETE FROM documents WHERE submitted_by = ?").run(userId);
+    db.prepare("DELETE FROM users WHERE id = ?").run(userId);
+    console.log(`[CLEANUP] Deleted inactive user permanently: ID ${userId} (${target.email})`);
+    return true;
+  } finally {
+    db.exec("PRAGMA foreign_keys = ON;");
+  }
+}
+
+function cleanupInactiveAccounts() {
+  try {
+    const now = Date.now();
+    const ninetyDaysMs = 90 * 24 * 60 * 60 * 1000;
+    const cutoff = now - ninetyDaysMs;
+    const inactiveUsers = db.prepare(`
+      SELECT id, email, role 
+      FROM users 
+      WHERE role NOT IN ('admin')
+        AND last_active_at IS NOT NULL 
+        AND last_active_at <= ?
+    `).all(cutoff);
+    
+    for (const u of inactiveUsers) {
+      deleteUserPermanently(u.id);
+    }
+  } catch (err) {
+    console.error("Error running inactive account cleanup:", err.message);
+  }
+}
+
+// Chạy dọn dẹp định kỳ 24h một lần
+cleanupInactiveAccounts();
+setInterval(cleanupInactiveAccounts, 24 * 60 * 60 * 1000);
+
 const defaultTopics = [
   "Đề tài", "Lý thuyết", "Phương pháp", 
   "Dữ liệu & phân tích", "Viết nghiên cứu", 
@@ -688,7 +855,7 @@ function sessionFrom(request) {
   if (!token) return null;
   const row = db
     .prepare(
-      `SELECT s.csrf_token, s.expires_at, u.id, u.email, u.email_changed, u.display_name, u.role, u.student_id, u.real_name, u.class_name, u.bio, u.avatar, u.avatar_changed, u.avatar_last_changed, u.cover_image, u.namecard_frame, u.namecard_theme, u.locked_until FROM sessions s JOIN users u ON u.id=s.user_id WHERE s.token_hash=?`,
+      `SELECT s.csrf_token, s.expires_at, u.id, u.email, u.email_changed, u.display_name, u.role, u.student_id, u.real_name, u.class_name, u.bio, u.avatar, u.avatar_changed, u.avatar_last_changed, u.cover_image, u.namecard_frame, u.namecard_theme, u.locked_until, u.last_active_at, u.inactivity_confirmed_at, u.created_at FROM sessions s JOIN users u ON u.id=s.user_id WHERE s.token_hash=?`,
     )
     .get(sha(token));
   if (!row || Date.parse(row.expires_at) < Date.now()) return null;
@@ -956,6 +1123,8 @@ function publicUser(user, streakInfo = null) {
   const remainingCooldownMs = canChangeAvatar ? 0 : Math.max(0, cooldownMs - (now - lastChange));
   const remainingDays = Math.ceil(remainingCooldownMs / (24 * 60 * 60 * 1000));
 
+  const inactivityInfo = checkInactivityWarning(user);
+
   return {
     id: user.id,
     email: user.email,
@@ -966,6 +1135,9 @@ function publicUser(user, streakInfo = null) {
     canChangeAvatar,
     avatarRemainingDays: remainingDays,
     role: user.role,
+    isMember: Boolean(user.role === "member"),
+    isVanLang: isVanLangDomain(user.email),
+    inactivityWarning: inactivityInfo,
     emailChanged: Boolean(user.email_changed),
     canChangeEmail: !user.email_changed,
     studentId: user.student_id || "",
@@ -1026,9 +1198,8 @@ function isSuperAdmin(user) {
 }
 function isVLUEmail(user) {
   if (!user) return false;
-  if (user.role === "admin" || user.role === "ta") return true;
-  const email = (user.email || "").toLowerCase();
-  return email.endsWith("@vanlanguni.vn") || email.endsWith("@vlu.edu.vn");
+  if (user.role === "admin" || user.role === "ta" || user.role === "lecturer") return true;
+  return isVanLangDomain(user.email);
 }
 function recordContribution(
   userId,
@@ -1044,6 +1215,7 @@ function recordContribution(
   db.prepare(
     "INSERT OR IGNORE INTO activity_days(user_id,activity_date) VALUES (?,?)",
   ).run(userId, today);
+  recordUserActivity(userId);
   const limits = { post_created: 5, response_created: 10, document_approved: 5, document_discussion: 20 };
   const maxAllowed = limits[type];
   if (maxAllowed) {
@@ -2235,12 +2407,34 @@ async function api(request, response, url) {
   if (method === "GET" && pathName === "/api/session") {
     const session = sessionFrom(request);
     if (session) {
+      const warning = checkInactivityWarning(session);
+      if (!warning) {
+        recordUserActivity(session.id);
+      }
       checkAndGrantLimitedItems(session.id);
     }
     return json(response, 200, {
       authenticated: Boolean(session),
       user: session ? publicUser(session) : null,
       csrfToken: session?.csrf_token || null,
+    });
+  }
+
+  if (method === "POST" && pathName === "/api/auth/confirm-maintain-account") {
+    const user = requireUser(request, response);
+    if (!user || !requireCsrf(request, response, user)) return;
+
+    const now = Date.now();
+    db.prepare("UPDATE users SET last_active_at = ?, inactivity_confirmed_at = ? WHERE id = ?").run(now, now, user.id);
+
+    const todayVN = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Ho_Chi_Minh" }).format(new Date());
+    db.prepare("INSERT OR IGNORE INTO activity_days(user_id, activity_date) VALUES (?, ?)").run(user.id, todayVN);
+
+    const updatedUser = db.prepare("SELECT * FROM users WHERE id = ?").get(user.id);
+    return json(response, 200, {
+      ok: true,
+      message: "Đã xác nhận duy trì tài khoản thành công. Chu kỳ hoạt động 60 ngày tiếp theo đã được bắt đầu.",
+      user: publicUser(updatedUser)
     });
   }
 
@@ -2305,6 +2499,7 @@ async function api(request, response, url) {
     logShieldTransaction(user.id, 'use', missingDays.length, newShieldCount, `Khôi phục thủ công chuỗi ngày ${missingDays.map(formatDMY).join(', ')}`);
 
     const streakInfo = calculateUserStreak(user.id, todayDate, formatYMD);
+    recordUserActivity(user.id);
     return json(response, 200, {
       success: true,
       shields: newShieldCount,
@@ -2326,8 +2521,9 @@ async function api(request, response, url) {
 
     const todayVN = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Ho_Chi_Minh" }).format(new Date());
 
-    // Luôn ghi nhận ngày hoạt động để tính chuỗi
+    // Luôn ghi nhận ngày hoạt động để tính chuỗi và reset bộ đếm không hoạt động
     db.prepare("INSERT OR IGNORE INTO activity_days(user_id,activity_date) VALUES (?,?)").run(user.id, todayVN);
+    recordUserActivity(user.id);
 
     // Kiểm tra xem đã ghi nhận bất kỳ hoạt động giữ chuỗi nào hôm nay chưa (đọc bài hoặc hoạt động web)
     const alreadyLoggedToday = db.prepare(`
@@ -2375,15 +2571,21 @@ async function api(request, response, url) {
         "Hãy nhập email hợp lệ, tên hiển thị và mật khẩu từ 12 ký tự.",
       );
     try {
+      const cleanEmail = email.trim().toLowerCase();
+      const isVLU = isVanLangDomain(cleanEmail);
+      const role = isVLU ? "student" : "member";
+      const now = Date.now();
+
       const result = db
         .prepare(
-          "INSERT INTO users(email,password_hash,display_name,role) VALUES (?,?,?,?)",
+          "INSERT INTO users(email,password_hash,display_name,role,last_active_at) VALUES (?,?,?,?,?)",
         )
         .run(
-          email.trim().toLowerCase(),
+          cleanEmail,
           hashPassword(password),
           displayName.trim().slice(0, 80),
-          "student",
+          role,
+          now,
         );
       const user = db
         .prepare("SELECT * FROM users WHERE id=?")
@@ -2412,9 +2614,23 @@ async function api(request, response, url) {
       .get((email || "").trim().toLowerCase());
     if (!user || !verifyPassword(password || "", user.password_hash))
       return error(response, 401, "Email hoặc mật khẩu chưa đúng.");
+
+    const now = Date.now();
+    const lastActive = Number(user.last_active_at) || (user.created_at ? Date.parse(user.created_at) : now) || now;
+    const inactiveDays = Math.floor((now - lastActive) / (24 * 60 * 60 * 1000));
+    if (inactiveDays >= 90 && user.role !== "admin") {
+      deleteUserPermanently(user.id);
+      return error(response, 403, "Tài khoản của bạn đã bị xoá vĩnh viễn do không hoạt động trong 90 ngày.");
+    }
+
+    const warning = checkInactivityWarning(user);
+    if (!warning) {
+      recordUserActivity(user.id);
+    }
     checkAndGrantLimitedItems(user.id);
     const csrfToken = createSession(response, user.id, request);
-    return json(response, 200, { user: publicUser(user), csrfToken });
+    const freshUser = db.prepare("SELECT * FROM users WHERE id=?").get(user.id);
+    return json(response, 200, { user: publicUser(freshUser), csrfToken });
   }
   if (method === "POST" && pathName === "/api/auth/logout") {
     const user = requireUser(request, response);
@@ -2825,13 +3041,13 @@ async function api(request, response, url) {
   if (method === "GET" && pathName === "/api/leaderboard") {
     const user = sessionFrom(request);
 
-    // 1. TOP ĐÓNG GÓP
+    // 1. TOP ĐÓNG GÓP (Không bao gồm admin, giảng viên và thành viên ngoài trường)
     const allContribStudents = db
       .prepare(`
         SELECT u.id, u.display_name as displayName, u.avatar, u.role, coalesce(sum(c.points), 0) as totalPoints
         FROM users u
         LEFT JOIN contribution_events c ON u.id = c.user_id
-        WHERE u.role NOT IN ('admin', 'lecturer')
+        WHERE u.role NOT IN ('admin', 'lecturer', 'member')
         GROUP BY u.id
         ORDER BY totalPoints DESC, u.id ASC
       `)
@@ -2848,7 +3064,7 @@ async function api(request, response, url) {
       rank: idx + 1
     }));
 
-    // 2. TOP GIỮ CHUỖI
+    // 2. TOP GIỮ CHUỖI (Bao gồm cả thành viên ngoài trường)
     const todayDate = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Ho_Chi_Minh" }));
     const formatYMD = (d) => {
       const y = d.getFullYear();
@@ -2888,7 +3104,7 @@ async function api(request, response, url) {
       rank: idx + 1
     }));
 
-    // 3. TOP THI ĐUA (ARENA)
+    // 3. TOP THI ĐUA (ARENA) (Không bao gồm admin, giảng viên và thành viên ngoài trường)
     // Xếp theo tổng điểm tất cả các tuần đã chốt gộp chung cả 2 bảng thi (chỉ cập nhật vào ngày Chủ Nhật khi c.status = 'concluded', không lấy tuần đang diễn ra)
     const arenaRows = db.prepare(`
       SELECT 
@@ -2904,7 +3120,7 @@ async function api(request, response, url) {
       FROM users u
       JOIN competition_phase_results r ON u.id = r.user_id
       JOIN weekly_competitions c ON r.competition_id = c.id
-      WHERE c.status = 'concluded' AND u.role NOT IN ('admin', 'lecturer')
+      WHERE c.status = 'concluded' AND u.role NOT IN ('admin', 'lecturer', 'member')
       GROUP BY u.id
       ORDER BY totalScore DESC, firstCompletedAt ASC, u.id ASC
     `).all();
@@ -2923,23 +3139,35 @@ async function api(request, response, url) {
     // 4. THÔNG TIN XẾP HẠNG CỦA NGƯỜI DÙNG HIỆN TẠI
     let currentUserData = null;
     if (user && user.role !== "admin" && user.role !== "lecturer") {
-      const myContribIdx = allContribStudents.findIndex(u => u.id === user.id);
-      const myContribRank = myContribIdx !== -1 ? myContribIdx + 1 : allContribStudents.length + 1;
-      const myContribItem = myContribIdx !== -1 ? allContribStudents[myContribIdx] : null;
+      const isMember = user.role === "member";
+
+      let myContribRank = null;
+      let myContribPoints = 0;
+      if (!isMember) {
+        const myContribIdx = allContribStudents.findIndex(u => u.id === user.id);
+        myContribRank = myContribIdx !== -1 ? myContribIdx + 1 : allContribStudents.length + 1;
+        const myContribItem = myContribIdx !== -1 ? allContribStudents[myContribIdx] : null;
+        myContribPoints = myContribItem ? Number(myContribItem.totalPoints) : 0;
+      } else {
+        const userPointsRow = db.prepare("SELECT coalesce(sum(points), 0) as pts FROM contribution_events WHERE user_id = ?").get(user.id);
+        myContribPoints = Number(userPointsRow?.pts || 0);
+      }
 
       const myStreakIdx = streakList.findIndex(s => s.id === user.id);
       const myStreakRank = myStreakIdx !== -1 ? myStreakIdx + 1 : streakList.length + 1;
       const myStreakItem = myStreakIdx !== -1 ? streakList[myStreakIdx] : null;
 
-      const myArenaIdx = arenaRows.findIndex(r => r.userId === user.id);
       let myArenaRank = null;
       let myArenaScore = 0;
-      if (myArenaIdx !== -1) {
-        myArenaRank = myArenaIdx + 1;
-        myArenaScore = Number(arenaRows[myArenaIdx].totalScore || 0);
-      } else {
-        myArenaRank = arenaRows.length + 1;
-        myArenaScore = 0;
+      if (!isMember) {
+        const myArenaIdx = arenaRows.findIndex(r => r.userId === user.id);
+        if (myArenaIdx !== -1) {
+          myArenaRank = myArenaIdx + 1;
+          myArenaScore = Number(arenaRows[myArenaIdx].totalScore || 0);
+        } else {
+          myArenaRank = arenaRows.length + 1;
+          myArenaScore = 0;
+        }
       }
 
       currentUserData = {
@@ -2948,19 +3176,23 @@ async function api(request, response, url) {
         avatar: user.avatar,
         initials: user.avatar || getAvatarEmoji(user.display_name),
         role: user.role,
+        isMember,
         streakTier: getAuthorStreakTier(user.id),
         contributions: {
           rank: myContribRank,
-          totalPoints: myContribItem ? Number(myContribItem.totalPoints) : 0
+          totalPoints: myContribPoints,
+          isParticipant: !isMember
         },
         streak: {
           rank: myStreakRank,
           streak: myStreakItem ? myStreakItem.streak : 0,
-          streakTier: myStreakItem ? myStreakItem.streakTier : 0
+          streakTier: myStreakItem ? myStreakItem.streakTier : 0,
+          isParticipant: true
         },
         arena: {
           rank: myArenaRank,
-          score: myArenaScore
+          score: myArenaScore,
+          isParticipant: !isMember
         }
       };
     }
@@ -3542,13 +3774,19 @@ async function api(request, response, url) {
       }
     }
 
+    let newRole = currentUser.role;
+    if (currentUser.role !== "admin" && currentUser.role !== "ta" && currentUser.role !== "lecturer") {
+      newRole = isVanLangDomain(newEmail) ? "student" : "member";
+    }
+
     try {
       db.prepare(`
         UPDATE users 
-        SET email=?, email_changed=?, student_id=?, real_name=?, class_name=?, display_name=?, bio=?, avatar=?, avatar_changed=?, avatar_last_changed=?, cover_image=?, namecard_frame=?, namecard_theme=?, updated_at=CURRENT_TIMESTAMP 
+        SET email=?, role=?, email_changed=?, student_id=?, real_name=?, class_name=?, display_name=?, bio=?, avatar=?, avatar_changed=?, avatar_last_changed=?, cover_image=?, namecard_frame=?, namecard_theme=?, updated_at=CURRENT_TIMESTAMP 
         WHERE id=?
       `).run(
         newEmail,
+        newRole,
         emailChanged,
         newStudentId || null,
         newRealName || null,
@@ -3563,6 +3801,7 @@ async function api(request, response, url) {
         newTheme,
         user.id,
       );
+      recordUserActivity(user.id);
     } catch (e) {
       if (e.message && (e.message.includes("UNIQUE") || e.message.includes("student_id"))) {
         return error(response, 400, "Mã số sinh viên đã có người sử dụng");
@@ -5480,9 +5719,10 @@ async function api(request, response, url) {
     const timeState = getCompetitionTimeState(vnNow, comp);
     const user = sessionFrom(request);
     const isPrivileged = Boolean(user && (user.role === "admin" || user.role === "ta" || user.role === "lecturer"));
+    const isMember = Boolean(user && user.role === "member");
 
     let targetClass = "06";
-    if (isPrivileged) {
+    if (isPrivileged || isMember) {
       const qClass = url.searchParams.get("class");
       if (qClass === "07" || qClass === "06") {
         targetClass = qClass;
@@ -5580,7 +5820,7 @@ async function api(request, response, url) {
     const top10 = formatted.slice(0, 10);
     let currentUserEntry = null;
 
-    if (user) {
+    if (user && !isMember) {
       const myIndex = formatted.findIndex(r => r.userId === user.id);
       if (myIndex !== -1) {
         const myRank = myIndex + 1;
@@ -5609,7 +5849,7 @@ async function api(request, response, url) {
     const phaseTitle = `Bảng xếp hạng - ${classTitle}`;
 
     let canShow = false;
-    if (isPrivileged || url.searchParams.get("admin_preview") === "true") {
+    if (isPrivileged || isMember || url.searchParams.get("admin_preview") === "true") {
       canShow = true;
     } else if (isWeekPhase) {
       // Cho phép xem bảng xếp hạng tuần (BXH tích lũy)
@@ -5640,6 +5880,8 @@ async function api(request, response, url) {
       weekNumberStr: weekNumStr,
       canShow,
       isPrivileged,
+      isMember,
+      isSpectator: isMember,
       message: canShow ? null : "Chờ chút nhé",
       totalParticipants: canShow ? formatted.length : 0,
       top10: canShow ? top10 : [],

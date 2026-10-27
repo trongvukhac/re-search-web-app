@@ -215,7 +215,7 @@
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path><polyline points="10 17 15 12 10 7"></polyline><line x1="15" y1="12" x2="3" y2="12"></line></svg>
                 </div>
                 <div class="quick-menu-guest-info">
-                  <span class="quick-menu-guest-title">Chào bạn!</span>
+                  <span class="quick-menu-guest-title">Chào bạn! <span class="quick-menu-role" style="font-size: 11px; padding: 2px 7px; background: rgba(148, 163, 184, 0.15); border-radius: 999px; color: var(--muted); margin-left: 6px; font-weight: 600;">Khách</span></span>
                   <span class="quick-menu-guest-desc">Đăng nhập để trải nghiệm đầy đủ tính năng & xem thẻ tên</span>
                 </div>
                 <button type="button" class="quick-menu-login-btn" onclick="handleQuickMenuAction('login')">
@@ -1536,7 +1536,7 @@
             <div style="cursor: pointer;" onclick="openMyNamecard()" title="Bấm để xem thẻ tên của bạn">
               <p class="eyebrow">TÀI KHOẢN CỦA BẠN</p>
               <h1>Khách</h1>
-              <p class="role-label">Chưa đăng nhập</p>
+              <p class="role-label">Khách</p>
             </div>
           </div>
           <div class="account-actions">
@@ -2585,6 +2585,47 @@
           </button>
         </div>
       </form>
+    </dialog>
+
+    <!-- MODAL CẢNH BÁO TÀI KHOẢN ÍT HOẠT ĐỘNG (60 NGÀY) -->
+    <dialog id="inactivityWarningModal" class="modal" style="max-width: 520px; padding: 28px;">
+      <div class="modal-head" style="align-items: flex-start;">
+        <div style="display: flex; gap: 14px; align-items: flex-start;">
+          <div style="width: 44px; height: 44px; border-radius: 12px; background: rgba(239, 68, 68, 0.12); color: #ef4444; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+          </div>
+          <div>
+            <p class="eyebrow" style="color: #ef4444; font-weight: 700;">CẢNH BÁO TÀI KHOẢN</p>
+            <h2 style="font-size: 20px; margin: 4px 0 0 0; line-height: 1.3;">Tài khoản sắp bị xoá vĩnh viễn</h2>
+          </div>
+        </div>
+        <button class="close-modal" id="closeInactivityWarning" onclick="closeInactivityWarningModal()" aria-label="Đóng"><svg class="ui-icon modal-close-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
+      </div>
+
+      <div style="margin-top: 18px; font-size: 14px; line-height: 1.6; color: var(--text-color);">
+        <p style="margin-bottom: 12px; font-weight: 500;" id="inactivityMainMessage">
+          Tài khoản của bạn đã không hoạt động trong thời gian dài và sắp bị xoá vĩnh viễn. Vui lòng bấm xác nhận để hệ thống duy trì hoạt động.
+        </p>
+        <div style="background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.2); border-radius: 10px; padding: 12px 14px; margin-bottom: 16px;">
+          <div style="font-size: 13px; color: #dc2626; display: flex; align-items: center; gap: 6px;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+            <span id="inactivityCountdownText">Thời gian còn lại: <strong>30 ngày</strong> trước khi bị xoá hoàn toàn</span>
+          </div>
+          <p style="font-size: 12px; color: var(--muted); margin: 6px 0 0 0;">
+            Nếu không bấm xác nhận duy trì tài khoản, trong 30 ngày kế tiếp đó tài khoản sẽ bị xoá vĩnh viễn. Bấm xác nhận sẽ bắt đầu chu kỳ 60 ngày tiếp theo.
+          </p>
+        </div>
+      </div>
+
+      <div class="modal-actions" style="margin-top: 20px; display: flex; gap: 10px; justify-content: flex-end;">
+        <button type="button" class="button button-outline" onclick="closeInactivityWarningModal()">
+          Để sau
+        </button>
+        <button type="button" class="button button-primary" id="confirmMaintainAccountBtn" onclick="confirmMaintainAccount()" style="background: #ef4444; border-color: #ef4444; color: #fff;">
+          <svg class="ui-btn-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+          Xác nhận duy trì tài khoản
+        </button>
+      </div>
     </dialog>
     <dialog id="historyModal" class="modal" style="max-width: 600px; padding: 24px;">
       <div class="modal-head">

@@ -129,7 +129,7 @@ window.getArenaClassByStudentId = getArenaClassByStudentId;
 
 function canAccessArena(user = (session || (typeof window !== "undefined" && window.session))) {
   if (!user) return false;
-  if (user.role === "admin" || user.role === "lecturer" || user.role === "ta") return true;
+  if (user.role === "admin" || user.role === "lecturer" || user.role === "ta" || user.role === "member") return true;
   return isVLUEmail(user);
 }
 window.canAccessArena = canAccessArena;
@@ -1393,7 +1393,9 @@ window.getRoleDisplay = function(role) {
   if (role === "admin") return "Admin";
   if (role === "lecturer") return "Giảng viên";
   if (role === "ta") return "TA";
-  return "Sinh viên";
+  if (role === "member") return "Thành viên";
+  if (role === "student") return "Sinh viên";
+  return "Khách";
 };
 
 function isStudentProfileCompleted(u) {
@@ -1443,7 +1445,16 @@ function applySession(user) {
   if (roleLabel)
     roleLabel.textContent = user
       ? roleDisplay
-      : "Chưa đăng nhập";
+      : "Khách";
+
+  // Cảnh báo tài khoản không hoạt động 60 ngày
+  if (user?.inactivityWarning?.isWarning) {
+    setTimeout(() => {
+      if (typeof showInactivityWarningModal === "function") {
+        showInactivityWarningModal(user.inactivityWarning);
+      }
+    }, 450);
+  }
 
   const headerAvatar = $("#headerAvatar");
   if (headerAvatar) {
@@ -1526,18 +1537,14 @@ function applySession(user) {
   // --- Giới hạn tính năng cho email không phải VLU ---
   const isVLU = isVLUEmail(user);
 
-  // Tab "Top đóng góp": ẩn nếu không phải VLU; tự động chuyển về streak
+  // Tab "Top đóng góp": mọi người dùng (kể cả Thành viên và Khách) đều có thể xem bảng xếp hạng
   const tabContrib = $("#tabTopContrib");
   if (tabContrib) {
-    tabContrib.style.display = isVLU ? "" : "none";
+    tabContrib.style.display = "";
   }
   const dotContrib = document.querySelector(".lb-dot[data-tab='contributions']");
   if (dotContrib) {
-    dotContrib.style.display = isVLU ? "" : "none";
-  }
-  if (!isVLU && currentLeaderboardTab === "contributions") {
-    currentLeaderboardTab = "streak";
-    $("#tabTopStreak")?.classList.add("active");
+    dotContrib.style.display = "";
   }
 
   // Nút "Đề xuất tài liệu": ẩn nếu không phải VLU
@@ -1583,8 +1590,7 @@ const LEADERBOARD_TABS = [
 ];
 
 window.cycleLeaderboardTab = function(direction = 1) {
-  const isVLU = typeof isVLUEmail === "function" ? isVLUEmail() : true;
-  const availableTabs = isVLU ? LEADERBOARD_TABS : LEADERBOARD_TABS.filter(t => t.id !== "contributions");
+  const availableTabs = LEADERBOARD_TABS;
   const currentIdx = availableTabs.findIndex(t => t.id === currentLeaderboardTab);
   let nextIdx = (currentIdx === -1 ? 0 : currentIdx + direction);
   if (nextIdx >= availableTabs.length) nextIdx = 0;
@@ -1593,11 +1599,6 @@ window.cycleLeaderboardTab = function(direction = 1) {
 };
 
 window.switchLeaderboardTab = function(tab) {
-  // Chặn tab "Top đóng góp" với người dùng không phải VLU
-  if (tab === "contributions" && !isVLUEmail()) {
-    toast("⚠️ Tính năng này chỉ dành cho sinh viên Văn Lang (email @vanlanguni.vn hoặc @vlu.edu.vn).");
-    return;
-  }
   currentLeaderboardTab = tab;
 
   // Cập nhật tiêu đề carousel và dots
@@ -1733,8 +1734,79 @@ function renderLeaderboard() {
     `;
   }
 
+  // Chú thích chế độ xem cho Thành viên hoặc Khách khi xem bảng đóng góp hoặc Arena
+  if ((isContrib || isArena) && session?.role === "member") {
+    html += `
+      <div class="lb-spectator-note" style="margin-top: 10px; padding: 7px 10px; background: rgba(59, 130, 246, 0.08); border: 1px solid rgba(59, 130, 246, 0.18); border-radius: 8px; font-size: 11.5px; color: var(--muted); text-align: center; line-height: 1.4;">
+        ℹ️ Bảng xếp hạng dành cho sinh viên Văn Lang. Bạn đang ở chế độ xem (Thành viên không tham gia bảng này).
+      </div>
+    `;
+  } else if ((isContrib || isArena) && !session) {
+    html += `
+      <div class="lb-spectator-note" style="margin-top: 10px; padding: 7px 10px; background: rgba(148, 163, 184, 0.08); border: 1px solid rgba(148, 163, 184, 0.18); border-radius: 8px; font-size: 11.5px; color: var(--muted); text-align: center; line-height: 1.4;">
+        ℹ️ Bảng xếp hạng dành cho sinh viên Văn Lang. Khách đang ở chế độ theo dõi.
+      </div>
+    `;
+  }
+
   lbEl.innerHTML = html;
 }
+
+window.showInactivityWarningModal = function(warningInfo) {
+  const modal = $("#inactivityWarningModal");
+  if (!modal) return;
+  const countdownText = $("#inactivityCountdownText");
+  if (countdownText && warningInfo) {
+    countdownText.innerHTML = `Thời gian còn lại: <strong>${warningInfo.daysRemaining} ngày</strong> (không hoạt động trong ${warningInfo.inactiveDays} ngày) trước khi bị xoá hoàn toàn`;
+  }
+  if (typeof modal.showModal === "function") {
+    if (!modal.open) modal.showModal();
+  } else {
+    modal.style.display = "block";
+  }
+};
+
+window.closeInactivityWarningModal = function() {
+  const modal = $("#inactivityWarningModal");
+  if (!modal) return;
+  if (typeof modal.close === "function") {
+    if (modal.open) modal.close();
+  } else {
+    modal.style.display = "none";
+  }
+};
+
+window.confirmMaintainAccount = async function() {
+  const btn = $("#confirmMaintainAccountBtn");
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = "Đang xử lý...";
+  }
+  try {
+    const res = await requestAPI("/api/auth/confirm-maintain-account", {
+      method: "POST"
+    });
+    if (res && res.ok) {
+      if (session) {
+        session.inactivityWarning = null;
+        if (res.user) {
+          applySession(res.user);
+        }
+      }
+      closeInactivityWarningModal();
+      toast("✅ Đã xác nhận duy trì tài khoản thành công! Chu kỳ 60 ngày tiếp theo đã được bắt đầu.");
+    } else {
+      toast("⚠️ " + (res?.error || "Không thể xác nhận lúc này, vui lòng thử lại sau."));
+    }
+  } catch (err) {
+    toast("⚠️ " + (err.message || "Lỗi kết nối khi xác nhận duy trì tài khoản."));
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = `<svg class="ui-btn-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Xác nhận duy trì tài khoản`;
+    }
+  }
+};
 
 function renderProfileStats(profileData) {
   if (!profileData) return;
@@ -11084,6 +11156,7 @@ async function onEnterArena() {
   const user = session || (typeof window !== "undefined" && window.session);
   const isAdmin = Boolean(user && user.role === "admin");
   const isPrivileged = Boolean(user && (user.role === "admin" || user.role === "lecturer" || user.role === "ta"));
+  const isMember = Boolean(user && user.role === "member");
   const lockedNotice = $("#arenaLockedNotice");
   const studentIdNotice = $("#arenaStudentIdRequiredNotice");
   const pausedNotice = $("#arenaPausedNotice");
@@ -11108,9 +11181,9 @@ async function onEnterArena() {
     return;
   }
 
-  // Đối với sinh viên (không phải admin/giảng viên/ta): kiểm tra mã số sinh viên hợp lệ trong 2 lớp 06 & 07
+  // Đối với sinh viên (không phải admin/giảng viên/ta/thành viên): kiểm tra mã số sinh viên hợp lệ trong 2 lớp 06 & 07
   const studentClass = getArenaClassByStudentId(user?.studentId) || user?.arenaClass;
-  if (!isPrivileged && !studentClass) {
+  if (!isPrivileged && !isMember && !studentClass) {
     if (lockedNotice) lockedNotice.style.display = "none";
     if (mainContent) mainContent.style.display = "none";
     if (studentIdNotice) studentIdNotice.style.display = "block";
@@ -11135,8 +11208,8 @@ async function onEnterArena() {
     adminQuickBtn.textContent = isPaused ? "🟢 Mở hoạt động ngay" : "⏸️ Tạm đóng tuần này";
   }
 
-  // Cấu hình bảng thi cho lớp tương ứng hoặc bộ chọn cho giảng viên/admin
-  if (isPrivileged) {
+  // Cấu hình bảng thi cho lớp tương ứng hoặc bộ chọn cho giảng viên/admin/thành viên
+  if (isPrivileged || isMember) {
     if (lbClassSelectorWrap) lbClassSelectorWrap.style.display = "flex";
     if (!compState.activeLbClass) compState.activeLbClass = "06";
     $$(".lb-class-btn").forEach(btn => {
@@ -11658,6 +11731,10 @@ function renderGatewayTab(raw) {
         actionBtnHTML = `<button type="button" class="pj-action-btn btn-disabled" disabled>${lockLabel}</button>`;
       }
 
+      if (session?.role === "member") {
+        actionBtnHTML = `<button type="button" class="pj-action-btn btn-disabled" disabled>Chế độ xem</button>`;
+      }
+
       gridHTML += `
         <div class="${cardClass}">
           <div class="pj-card-top">
@@ -11677,7 +11754,22 @@ function renderGatewayTab(raw) {
   }
 
   if (blockedMsg) blockedMsg.style.display = "none";
-  if (data.isSunday) {
+  if (session?.role === "member") {
+    if (actionContainer) {
+      actionContainer.style.setProperty("display", "block", "important");
+      actionContainer.classList.remove("hidden");
+    }
+    if (startBtn) startBtn.style.setProperty("display", "none", "important");
+    if (blockedMsg) {
+      blockedMsg.style.display = "block";
+      blockedMsg.style.color = "#38bdf8";
+      blockedMsg.style.background = "rgba(14, 165, 233, 0.12)";
+      blockedMsg.style.border = "1px solid rgba(14, 165, 233, 0.35)";
+      blockedMsg.style.borderRadius = "8px";
+      blockedMsg.style.padding = "10px 14px";
+      blockedMsg.innerHTML = `👀 <strong>Chế độ Khán giả:</strong> Bạn đang đăng nhập với vai trò <strong>Thành viên</strong> (được quyền theo dõi Bảng xếp hạng và Thể lệ thi đua). Thi đấu trực tiếp dành cho sinh viên Văn Lang thuộc lớp 06 &amp; 07.`;
+    }
+  } else if (data.isSunday) {
     if (actionContainer) {
       actionContainer.style.setProperty("display", "none", "important");
       actionContainer.classList.add("hidden");
@@ -12572,6 +12664,10 @@ window.closePracticeQuiz = closePracticeQuiz;
 async function startCompetitionQuiz(targetPhase) {
   if (!session) {
     openAuth();
+    return;
+  }
+  if (session.role === "member") {
+    toast("ℹ️ Tài khoản Thành viên chỉ theo dõi bảng xếp hạng và thể lệ (thi đấu dành cho sinh viên Văn Lang).");
     return;
   }
 

@@ -4824,6 +4824,7 @@ dialog.detail-modal[open] {
 .lb-role-admin { background: #ffebee; color: #c62828; }
 .lb-role-ta { background: #e3f2fd; color: #1565c0; }
 .lb-role-lecturer { background: #f3e5f5; color: #6a1b9a; }
+.lb-role-member { background: #e0f2fe; color: #0284c7; }
 
 .lb-points {
   color: var(--primary);
@@ -16676,6 +16677,11 @@ body.dark-theme .lb-role-lecturer {
   background: rgba(168, 85, 247, 0.2) !important;
   color: #d8b4fe !important;
   border: 1px solid rgba(168, 85, 247, 0.3) !important;
+}
+body.dark-theme .lb-role-member {
+  background: rgba(2, 132, 199, 0.2) !important;
+  color: #7dd3fc !important;
+  border: 1px solid rgba(2, 132, 199, 0.3) !important;
 }
 body.dark-theme .leaderboard-item.is-me {
   background: rgba(36, 98, 71, 0.25) !important;
