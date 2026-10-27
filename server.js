@@ -572,6 +572,14 @@ try {
   // Cột đã tồn tại
 }
 
+// Migration: Thêm các cột Bảng thi Tự do (free track) vào weekly_competitions
+try { db.exec("ALTER TABLE weekly_competitions ADD COLUMN free_week_number INTEGER NOT NULL DEFAULT 1;"); } catch (e) {}
+try { db.exec("ALTER TABLE weekly_competitions ADD COLUMN free_is_paused INTEGER NOT NULL DEFAULT 0;"); } catch (e) {}
+try { db.exec("ALTER TABLE weekly_competitions ADD COLUMN free_topic_name TEXT;"); } catch (e) {}
+try { db.exec("ALTER TABLE weekly_competitions ADD COLUMN free_phase1_topic TEXT;"); } catch (e) {}
+try { db.exec("ALTER TABLE weekly_competitions ADD COLUMN free_phase2_topic TEXT;"); } catch (e) {}
+try { db.exec("ALTER TABLE weekly_competitions ADD COLUMN free_phase3_topic TEXT;"); } catch (e) {}
+
 // Migration: Cập nhật bảng competition_questions hỗ trợ cột track ('main' / 'free')
 try {
   const qTableSql = db.prepare("SELECT sql FROM sqlite_master WHERE type='table' AND name='competition_questions'").get()?.sql || "";
@@ -2126,8 +2134,9 @@ function getOrCreateCurrentCompetition(vnDate) {
   if (!comp) {
     db.prepare(`
       INSERT INTO weekly_competitions (
-        year, week_number, week_key, start_date, end_date, topic_name, phase1_topic, phase2_topic, phase3_topic, status
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'active')
+        year, week_number, week_key, start_date, end_date, topic_name, phase1_topic, phase2_topic, phase3_topic, status,
+        free_week_number, free_is_paused, free_topic_name, free_phase1_topic, free_phase2_topic, free_phase3_topic
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', 1, 0, ?, ?, ?, ?)
     `).run(
       year,
       weekNumber,
@@ -2137,7 +2146,11 @@ function getOrCreateCurrentCompetition(vnDate) {
       "Phương pháp Nghiên cứu & Xử lý Dữ liệu Khoa học",
       "Phương pháp & Thiết kế Nghiên cứu Khoa học",
       "Thu thập & Phân tích Dữ liệu Nghiên cứu",
-      "Viết báo cáo & Trích dẫn Khoa học"
+      "Viết báo cáo & Trích dẫn Khoa học",
+      "Phương pháp Nghiên cứu Khoa học (Bảng Tự do)",
+      "Nhập môn & Đặt vấn đề Nghiên cứu",
+      "Thu thập & Xử lý Dữ liệu",
+      "Viết báo cáo & Đạo đức Khoa học"
     );
     comp = db.prepare("SELECT * FROM weekly_competitions WHERE week_key = ?").get(weekKey);
     seedSampleCompetitionQuestions(comp.id, "main");
@@ -2146,8 +2159,13 @@ function getOrCreateCurrentCompetition(vnDate) {
   return comp;
 }
 
-function getCompetitionTimeState(vnDate, comp) {
-  const isPaused = Boolean(comp && comp.is_paused);
+function getCompetitionTimeState(vnDate, comp, track = "main") {
+  const isFree = (track === "free");
+  const isPaused = Boolean(comp && (isFree ? comp.free_is_paused : comp.is_paused));
+  const weekTopic = comp 
+    ? (isFree ? (comp.free_topic_name || comp.topic_name || "Đấu trường Arena") : comp.topic_name) 
+    : "Đấu trường Arena";
+
   if (isPaused) {
     return {
       phase: 1,
@@ -2160,11 +2178,12 @@ function getCompetitionTimeState(vnDate, comp) {
       stateLabel: "TẠM ĐÓNG TUẦN NÀY",
       ctaText: "Xem thông báo",
       phaseName: "Tạm ngưng hoạt động",
-      phaseTopic: comp ? comp.topic_name : "Đấu trường Arena",
+      phaseTopic: weekTopic,
       secondsUntilNext: 0,
       nextStateLabel: "Tạm đóng tuần này",
       isReady: true,
-      visible: true
+      visible: true,
+      track
     };
   }
 
@@ -2187,21 +2206,24 @@ function getCompetitionTimeState(vnDate, comp) {
       stateLabel: "TỔNG KẾT TUẦN",
       ctaText: "Xem bảng vinh danh",
       phaseName: "Tổng kết tuần thi đấu",
-      phaseTopic: comp.topic_name,
+      phaseTopic: weekTopic,
       secondsUntilNext: Math.max(0, secondsUntilMonday),
       nextStateLabel: "Tuần mới khởi động (Thứ Hai 00:00)",
       isReady: true,
-      visible: true
+      visible: true,
+      track
     };
   }
 
   const phase = getPhaseForDayOfWeek(dayOfWeek);
-  const phaseTopic = phase === 1 ? comp.phase1_topic : phase === 2 ? comp.phase2_topic : comp.phase3_topic;
+  const phaseTopic = isFree
+    ? (phase === 1 ? (comp.free_phase1_topic || comp.phase1_topic) : (phase === 2 ? (comp.free_phase2_topic || comp.phase2_topic) : (comp.free_phase3_topic || comp.phase3_topic)))
+    : (phase === 1 ? comp.phase1_topic : (phase === 2 ? comp.phase2_topic : comp.phase3_topic));
   const phaseDays = phase === 1 ? "Thứ Hai – Thứ Ba" : phase === 2 ? "Thứ Tư – Thứ Năm" : "Thứ Sáu – Thứ Bảy";
   const phaseName = `Chặng ${phase} (${phaseDays})`;
 
-  // Check if phase has 10 questions for main track
-  const qCount = db.prepare("SELECT count(*) as c FROM competition_questions WHERE competition_id = ? AND phase = ? AND track = 'main'").get(comp.id, phase)?.c || 0;
+  // Check if phase has 10 questions for the track
+  const qCount = db.prepare("SELECT count(*) as c FROM competition_questions WHERE competition_id = ? AND phase = ? AND track = ?").get(comp.id, phase, track)?.c || 0;
   const isReady = qCount >= 10;
 
   let state = "reviewing";
@@ -5309,7 +5331,10 @@ async function api(request, response, url) {
     const user = sessionFrom(request);
     const vnNow = getVietnamNow();
     const comp = getOrCreateCurrentCompetition(vnNow);
-    const timeState = getCompetitionTimeState(vnNow, comp);
+    const studentClass = user ? getArenaClassByStudentId(user.student_id) : null;
+    const track = (studentClass === "TD") ? "free" : "main";
+    const isFree = (track === "free");
+    const timeState = getCompetitionTimeState(vnNow, comp, track);
 
     let userStatus = {
       authenticated: false,
@@ -5349,6 +5374,13 @@ async function api(request, response, url) {
     }
 
     const isPrivileged = Boolean(user && (user.role === "admin" || user.role === "ta" || user.role === "lecturer"));
+    const compWeekNumber = isFree ? (comp.free_week_number || 1) : comp.week_number;
+    const compTopicName = isFree ? (comp.free_topic_name || comp.topic_name) : comp.topic_name;
+    const compPhase1 = isFree ? (comp.free_phase1_topic || comp.phase1_topic) : comp.phase1_topic;
+    const compPhase2 = isFree ? (comp.free_phase2_topic || comp.phase2_topic) : comp.phase2_topic;
+    const compPhase3 = isFree ? (comp.free_phase3_topic || comp.phase3_topic) : comp.phase3_topic;
+    const compPaused = isFree ? Boolean(comp.free_is_paused) : Boolean(comp.is_paused);
+
     return json(response, 200, {
       ok: true,
       requiresStudentId: Boolean(user && !isPrivileged && !userStatus.arenaClass),
@@ -5361,16 +5393,20 @@ async function api(request, response, url) {
       week: {
         id: comp.id,
         weekKey: comp.week_key,
-        weekNumber: comp.week_number,
+        weekNumber: compWeekNumber,
         startDate: comp.start_date,
         endDate: comp.end_date,
-        topicName: comp.topic_name,
-        phase1Topic: comp.phase1_topic,
-        phase2Topic: comp.phase2_topic,
-        phase3Topic: comp.phase3_topic,
-        status: comp.status
+        topicName: compTopicName,
+        phase1Topic: compPhase1,
+        phase2Topic: compPhase2,
+        phase3Topic: compPhase3,
+        status: comp.status,
+        isPaused: compPaused,
+        track
       },
       ...timeState,
+      isArenaPaused: compPaused,
+      track,
       userStatus
     });
   }
@@ -5379,11 +5415,18 @@ async function api(request, response, url) {
     const user = sessionFrom(request);
     const vnNow = getVietnamNow();
     const comp = getOrCreateCurrentCompetition(vnNow);
-    const paused = Boolean(comp && comp.is_paused);
+    const studentClass = user ? getArenaClassByStudentId(user.student_id) : null;
+    const track = (studentClass === "TD") ? "free" : "main";
+    const isFree = (track === "free");
+    const paused = isFree ? Boolean(comp && comp.free_is_paused) : Boolean(comp && comp.is_paused);
     if (paused && (!user || user.role !== "admin")) {
-      return json(response, 200, { ok: true, isArenaPaused: true, locked: true });
+      return json(response, 200, { ok: true, isArenaPaused: true, locked: true, track });
     }
-    const timeState = getCompetitionTimeState(vnNow, comp);
+    const timeState = getCompetitionTimeState(vnNow, comp, track);
+
+    const p1Topic = isFree ? (comp.free_phase1_topic || comp.phase1_topic) : comp.phase1_topic;
+    const p2Topic = isFree ? (comp.free_phase2_topic || comp.phase2_topic) : comp.phase2_topic;
+    const p3Topic = isFree ? (comp.free_phase3_topic || comp.phase3_topic) : comp.phase3_topic;
 
     let userSummary = null;
     let userStatus = null;
@@ -5394,7 +5437,7 @@ async function api(request, response, url) {
         phase: 1,
         name: "Chặng 1",
         days: "Thứ Hai – Thứ Ba",
-        topic: comp.phase1_topic,
+        topic: p1Topic,
         isCompleted: false,
         score: 0,
         bestScore: 0,
@@ -5410,7 +5453,7 @@ async function api(request, response, url) {
         phase: 2,
         name: "Chặng 2",
         days: "Thứ Tư – Thứ Năm",
-        topic: comp.phase2_topic,
+        topic: p2Topic,
         isCompleted: false,
         score: 0,
         bestScore: 0,
@@ -5426,7 +5469,7 @@ async function api(request, response, url) {
         phase: 3,
         name: "Chặng 3",
         days: "Thứ Sáu – Thứ Bảy",
-        topic: comp.phase3_topic,
+        topic: p3Topic,
         isCompleted: false,
         score: 0,
         bestScore: 0,
@@ -5544,7 +5587,7 @@ async function api(request, response, url) {
           phase: 1,
           name: "Chặng 1",
           days: "Thứ Hai – Thứ Ba",
-          topic: comp.phase1_topic,
+          topic: p1Topic,
           isCompleted: completedP1 >= 1,
           score: p1,
           bestScore: p1,
@@ -5560,7 +5603,7 @@ async function api(request, response, url) {
           phase: 2,
           name: "Chặng 2",
           days: "Thứ Tư – Thứ Năm",
-          topic: comp.phase2_topic,
+          topic: p2Topic,
           isCompleted: completedP2 >= 1,
           score: p2,
           bestScore: p2,
@@ -5576,7 +5619,7 @@ async function api(request, response, url) {
           phase: 3,
           name: "Chặng 3",
           days: "Thứ Sáu – Thứ Bảy",
-          topic: comp.phase3_topic,
+          topic: p3Topic,
           isCompleted: completedP3 >= 1,
           score: p3,
           bestScore: p3,
@@ -5636,7 +5679,16 @@ async function api(request, response, url) {
       requiresStudentId,
       arenaClass,
       resultsVersion: competitionResultsVersion,
-      week: comp,
+      week: {
+        ...comp,
+        week_number: isFree ? (comp.free_week_number || 1) : comp.week_number,
+        topic_name: isFree ? (comp.free_topic_name || comp.topic_name) : comp.topic_name,
+        phase1_topic: p1Topic,
+        phase2_topic: p2Topic,
+        phase3_topic: p3Topic,
+        is_paused: paused,
+        track
+      },
       phase: timeState.phase,
       isSunday: Boolean(timeState.isSunday),
       timeState,
@@ -5646,7 +5698,8 @@ async function api(request, response, url) {
       totalOnTimeBonus: userStatus?.totalOnTimeBonus ?? userSummary?.totalOnTimeBonus ?? 0,
       defaultAvailablePhase,
       phasesStatus,
-      isArenaPaused: Boolean(comp && comp.is_paused)
+      isArenaPaused: paused,
+      track
     });
   }
 
@@ -5656,7 +5709,10 @@ async function api(request, response, url) {
 
     const vnNow = getVietnamNow();
     const comp = getOrCreateCurrentCompetition(vnNow);
-    if (comp && comp.is_paused && user.role !== "admin") {
+    const studentClass = getArenaClassByStudentId(user.student_id);
+    const track = (studentClass === "TD") ? "free" : "main";
+    const isPaused = (track === "free") ? Boolean(comp && comp.free_is_paused) : Boolean(comp && comp.is_paused);
+    if (comp && isPaused && user.role !== "admin") {
       return error(response, 403, "Đấu trường thi đua tạm ngưng hoạt động trong tuần này. Hãy chờ thông báo mới nhất từ Quản trị viên về các tuần thi đấu tiếp theo nhé!");
     }
 
@@ -5677,10 +5733,10 @@ async function api(request, response, url) {
     }
 
     const targetPhase = Math.max(1, Math.min(3, parseInt(url.searchParams.get("phase") || "1", 10)));
-    const phaseTopic = comp[`phase${targetPhase}_topic`] || comp.topic_name || "Nội dung câu hỏi chuyên đề";
+    const phaseTopic = (track === "free")
+      ? ((targetPhase === 1 ? comp.free_phase1_topic : targetPhase === 2 ? comp.free_phase2_topic : comp.free_phase3_topic) || comp.free_topic_name || comp.topic_name)
+      : (comp[`phase${targetPhase}_topic`] || comp.topic_name || "Nội dung câu hỏi chuyên đề");
 
-    const studentClass = getArenaClassByStudentId(user.student_id);
-    const track = (studentClass === "TD") ? "free" : "main";
     let questions = db.prepare(
       "SELECT id, question_index, question_text, option_a, option_b, option_c, correct_option, explanation FROM competition_questions WHERE competition_id = ? AND phase = ? AND track = ? ORDER BY question_index ASC"
     ).all(comp.id, targetPhase, track);
@@ -5936,8 +5992,8 @@ async function api(request, response, url) {
       classCode: targetClass,
       classTitle,
       phaseTitle,
-      weekNumber: comp.week_number || 1,
-      weekNumberStr: weekNumStr,
+      weekNumber: (targetClass === "TD" ? (comp.free_week_number || 1) : (comp.week_number || 1)),
+      weekNumberStr: String(targetClass === "TD" ? (comp.free_week_number || 1) : (comp.week_number || 1)).padStart(2, "0"),
       canShow,
       isPrivileged,
       isMember,
@@ -5958,7 +6014,10 @@ async function api(request, response, url) {
 
     const vnNow = getVietnamNow();
     const curComp = getOrCreateCurrentCompetition(vnNow);
-    if (curComp && curComp.is_paused && user.role !== "admin") {
+    const studentClass = getArenaClassByStudentId(user.student_id);
+    const track = (studentClass === "TD") ? "free" : "main";
+    const isCompPaused = (track === "free") ? Boolean(curComp && curComp.free_is_paused) : Boolean(curComp && curComp.is_paused);
+    if (curComp && isCompPaused && user.role !== "admin") {
       return error(response, 403, "Đấu trường thi đua tạm ngưng hoạt động trong tuần này. Hãy chờ thông báo mới nhất từ Quản trị viên về các tuần thi đấu tiếp theo nhé!");
     }
 
@@ -5979,7 +6038,7 @@ async function api(request, response, url) {
     }
 
     const comp = curComp;
-    const timeState = getCompetitionTimeState(vnNow, comp);
+    const timeState = getCompetitionTimeState(vnNow, comp, track);
 
     if (timeState.state !== "open" && !isSuperAdmin(user)) {
       return error(response, 403, "Cổng thi đấu hiện không mở. Lịch mở cổng: GĐ 1 (19h T2 – 23h59 T3), GĐ 2 (19h T4 – 23h59 T5), GĐ 3 (19h T6 – 23h59 T7).");
@@ -6026,8 +6085,6 @@ async function api(request, response, url) {
     }
 
     const phase = sessionPhase;
-    const studentClass = getArenaClassByStudentId(user.student_id);
-    const track = (studentClass === "TD") ? "free" : "main";
     let questions = db.prepare(
       "SELECT id, question_index, question_text, option_a, option_b, option_c, explanation FROM competition_questions WHERE competition_id = ? AND phase = ? AND track = ? ORDER BY question_index ASC"
     ).all(comp.id, phase, track);
@@ -6762,23 +6819,31 @@ async function api(request, response, url) {
       const isCurrent = (w.id === comp.id);
       const isNext = (w.id === nextComp.id);
       const isTwoWeeks = (w.id === inTwoWeeksComp.id);
-      const pausedTag = w.is_paused ? " (⏸️ Tạm đóng)" : "";
+      const mainPausedTag = w.is_paused ? " (⏸️ Chính đóng)" : "";
+      const freePausedTag = w.free_is_paused ? " (⏸️ Tự do đóng)" : "";
       const weekRelation = isCurrent ? " - [Tuần hiện tại]" : (isNext ? " - [Tuần sau]" : (isTwoWeeks ? " - [2 tuần sau]" : ""));
       return {
         ...w,
         startDateFormatted: sFormatted,
         endDateFormatted: eFormatted,
         dateRangeText: `từ ngày ${sFormatted} đến ngày ${eFormatted}`,
-        label: `Tuần ${w.week_number} (${sFormatted} - ${eFormatted})${weekRelation}${pausedTag}`,
+        label: `Tuần ${w.week_number} [Tự do: Tuần ${w.free_week_number || 1}] (${sFormatted} - ${eFormatted})${weekRelation}${mainPausedTag}${freePausedTag}`,
         isCurrent,
         isNext,
-        is_paused: Boolean(w.is_paused)
+        is_paused: Boolean(w.is_paused),
+        free_is_paused: Boolean(w.free_is_paused)
       };
     });
 
     const selectedFormatted = {
       ...targetComp,
       is_paused: Boolean(targetComp.is_paused),
+      free_is_paused: Boolean(targetComp.free_is_paused),
+      free_week_number: targetComp.free_week_number || 1,
+      free_topic_name: targetComp.free_topic_name || "",
+      free_phase1_topic: targetComp.free_phase1_topic || "",
+      free_phase2_topic: targetComp.free_phase2_topic || "",
+      free_phase3_topic: targetComp.free_phase3_topic || "",
       startDateFormatted: formatDMY(targetComp.start_date),
       endDateFormatted: formatDMY(targetComp.end_date),
       dateRangeText: `từ ngày ${formatDMY(targetComp.start_date)} đến ngày ${formatDMY(targetComp.end_date)}`
@@ -6794,6 +6859,7 @@ async function api(request, response, url) {
       participantsCount,
       totalSessions,
       isArenaPaused: Boolean(comp && comp.is_paused),
+      isArenaFreePaused: Boolean(comp && comp.free_is_paused),
       simulatedTimeOffsetMs,
       serverTime: vnNow.toISOString(),
       allWeeks: availableWeeks
@@ -6812,9 +6878,15 @@ async function api(request, response, url) {
     const targetCompId = Number(body?.competitionId || url.searchParams.get("competitionId"));
     if (!targetCompId) return error(response, 400, "Thiếu competitionId.");
     const paused = body?.paused !== undefined ? Boolean(body.paused) : (url.searchParams.get("paused") === "true" || url.searchParams.get("paused") === "1");
-    db.prepare("UPDATE weekly_competitions SET is_paused = ? WHERE id = ?").run(paused ? 1 : 0, targetCompId);
+    const track = (body?.track === "free" || url.searchParams.get("track") === "free") ? "free" : "main";
+
+    if (track === "free") {
+      db.prepare("UPDATE weekly_competitions SET free_is_paused = ? WHERE id = ?").run(paused ? 1 : 0, targetCompId);
+    } else {
+      db.prepare("UPDATE weekly_competitions SET is_paused = ? WHERE id = ?").run(paused ? 1 : 0, targetCompId);
+    }
     notifyCompetitionResultsChanged();
-    return json(response, 200, { ok: true, competitionId: targetCompId, is_paused: paused });
+    return json(response, 200, { ok: true, competitionId: targetCompId, is_paused: paused, track });
   }
 
   if (method === "GET" && pathName === "/api/admin/competition/questions") {
@@ -6941,19 +7013,33 @@ async function api(request, response, url) {
       ? parseInt(body.weekNumber, 10) 
       : null;
     const { phase1Topic = null, phase2Topic = null, phase3Topic = null } = body;
+    const track = body.track === "free" ? "free" : "main";
     if (!competitionId) return error(response, 400, "Thiếu competitionId.");
 
-    db.prepare(`
-      UPDATE weekly_competitions 
-      SET week_number = coalesce(?, week_number),
-          topic_name = coalesce(?, topic_name),
-          phase1_topic = coalesce(?, phase1_topic),
-          phase2_topic = coalesce(?, phase2_topic),
-          phase3_topic = coalesce(?, phase3_topic)
-      WHERE id = ?
-    `).run(weekNumber, topicName, phase1Topic, phase2Topic, phase3Topic, competitionId);
+    if (track === "free") {
+      db.prepare(`
+        UPDATE weekly_competitions 
+        SET free_week_number = coalesce(?, free_week_number),
+            free_topic_name = coalesce(?, free_topic_name),
+            free_phase1_topic = coalesce(?, free_phase1_topic),
+            free_phase2_topic = coalesce(?, free_phase2_topic),
+            free_phase3_topic = coalesce(?, free_phase3_topic)
+        WHERE id = ?
+      `).run(weekNumber, topicName, phase1Topic, phase2Topic, phase3Topic, competitionId);
+    } else {
+      db.prepare(`
+        UPDATE weekly_competitions 
+        SET week_number = coalesce(?, week_number),
+            topic_name = coalesce(?, topic_name),
+            phase1_topic = coalesce(?, phase1_topic),
+            phase2_topic = coalesce(?, phase2_topic),
+            phase3_topic = coalesce(?, phase3_topic)
+        WHERE id = ?
+      `).run(weekNumber, topicName, phase1Topic, phase2Topic, phase3Topic, competitionId);
+    }
 
-    return json(response, 200, { ok: true, weekNumber });
+    notifyCompetitionResultsChanged();
+    return json(response, 200, { ok: true, weekNumber, track });
   }
 
   if (method === "POST" && pathName === "/api/admin/competition/seed-samples") {

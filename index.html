@@ -2972,17 +2972,33 @@
             </p>
           </div>
 
-          <!-- TRẠNG THÁI HOẠT ĐỘNG CỦA TUẦN ĐƯỢC CHỌN -->
-          <div style="margin-top: 14px; padding-top: 12px; border-top: 1px dashed #86efac; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+          <!-- CHỌN BẢNG THI ĐỂ THIẾT LẬP (BẢNG CHÍNH VS BẢNG TỰ DO) -->
+          <div style="margin-top: 12px; padding: 10px 14px; background: #f0fdf4; border-radius: 8px; border: 1px solid #86efac; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+            <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+              <span style="font-size: 12px; font-weight: 700; color: #166534;">BẢNG THI CẤU HÌNH:</span>
+              <button type="button" class="button button-sm admin-board-tab-btn active" id="adminBoardTabMain" onclick="switchAdminBoardTab('main')" style="font-weight: 700;">
+                🏫 Bảng chính (Lớp 06 & 07)
+              </button>
+              <button type="button" class="button button-sm admin-board-tab-btn button-outline" id="adminBoardTabFree" onclick="switchAdminBoardTab('free')" style="font-weight: 700;">
+                🌐 Bảng thi Tự do
+              </button>
+            </div>
+            <span id="adminBoardNoticeBadge" style="font-size: 11.5px; color: #15803d; font-weight: 600;">
+              Đang thiết lập cho Bảng chính (Lớp 06 & 07)
+            </span>
+          </div>
+
+          <!-- TRẠNG THÁI HOẠT ĐỘNG CỦA BẢNG ĐƯỢC CHỌN -->
+          <div style="margin-top: 12px; padding-top: 12px; border-top: 1px dashed #86efac; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
             <div>
-              <span style="font-size: 11px; text-transform: uppercase; font-weight: 700; color: #166534; letter-spacing: 0.5px;">TRẠNG THÁI TUẦN THI ĐANG CHỌN:</span>
+              <span id="adminSelectedWeekStatusTitle" style="font-size: 11px; text-transform: uppercase; font-weight: 700; color: #166534; letter-spacing: 0.5px;">TRẠNG THÁI BẢNG CHÍNH (LỚP 06 & 07):</span>
               <div id="adminSelectedWeekStatusText" style="font-size: 13px; font-weight: 600; color: #15803d; margin-top: 2px;">
                 🟢 Đang mở hoạt động bình thường
               </div>
             </div>
             <div>
               <button type="button" id="adminBtnToggleWeekPaused" class="button button-sm button-outline" onclick="adminToggleSelectedWeekStatus()" style="font-weight: 600;">
-                ⏸️ Tạm đóng tuần này
+                ⏸️ Tạm đóng Bảng chính
               </button>
             </div>
           </div>
@@ -2990,7 +3006,7 @@
 
         <!-- TOPIC SETTINGS -->
         <div class="admin-card" style="margin-bottom: 16px; padding: 16px; background: #fff; border: 1px solid var(--line); border-radius: 8px;">
-          <h3 style="margin-top:0; font-size: 14px; margin-bottom: 10px;">1. Thông tin Chủ đề Tuần thi đấu</h3>
+          <h3 id="adminTopicsSectionTitle" style="margin-top:0; font-size: 14px; margin-bottom: 10px;">1. Thông tin Chủ đề Tuần thi đấu (Bảng chính - Lớp 06 & 07)</h3>
             <div style="display: grid; grid-template-columns: 140px 1fr; gap: 10px;">
               <div>
                 <label style="font-size: 12px; font-weight: 600; display: block; margin-bottom: 4px;">Tuần thi đấu số:</label>
@@ -3797,6 +3813,6 @@
       </div>
     </dialog>
 
-    <script src="app.js?v=112" defer></script>
+    <script src="app.js?v=113" defer></script>
   </body>
 </html>

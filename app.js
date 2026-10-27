@@ -13318,6 +13318,75 @@ function closeQuizAndOpenLeaderboard() {
   openCompetitionModal("leaderboard");
 }
 
+function renderAdminBoardModeUI() {
+  const comp = compState.adminSelectedCompRaw || {};
+  const mode = compState.adminBoardMode || "main";
+  const isFree = (mode === "free");
+
+  const tabMain = $("#adminBoardTabMain");
+  const tabFree = $("#adminBoardTabFree");
+  const noticeBadge = $("#adminBoardNoticeBadge");
+  const topicsTitle = $("#adminTopicsSectionTitle");
+  const statusTitle = $("#adminSelectedWeekStatusTitle");
+  const weekStatusText = $("#adminSelectedWeekStatusText");
+  const weekToggleBtn = $("#adminBtnToggleWeekPaused");
+
+  if (tabMain && tabFree) {
+    if (isFree) {
+      tabMain.className = "button button-sm admin-board-tab-btn button-outline";
+      tabFree.className = "button button-sm admin-board-tab-btn active";
+      if (noticeBadge) noticeBadge.textContent = "Đang cấu hình cho Bảng thi Tự do (VLU)";
+      if (topicsTitle) topicsTitle.textContent = "1. Thông tin Chủ đề Tuần thi đấu (Bảng thi Tự do)";
+      if (statusTitle) statusTitle.textContent = "TRẠNG THÁI BẢNG TỰ DO (VLU):";
+    } else {
+      tabMain.className = "button button-sm admin-board-tab-btn active";
+      tabFree.className = "button button-sm admin-board-tab-btn button-outline";
+      if (noticeBadge) noticeBadge.textContent = "Đang cấu hình cho Bảng chính (Lớp 06 & 07)";
+      if (topicsTitle) topicsTitle.textContent = "1. Thông tin Chủ đề Tuần thi đấu (Bảng chính - Lớp 06 & 07)";
+      if (statusTitle) statusTitle.textContent = "TRẠNG THÁI BẢNG CHÍNH (LỚP 06 & 07):";
+    }
+  }
+
+  // Populate inputs based on board mode
+  if (isFree) {
+    if ($("#adminWeekNumber")) $("#adminWeekNumber").value = comp.free_week_number || 1;
+    if ($("#adminWeekTopicName")) $("#adminWeekTopicName").value = comp.free_topic_name || "";
+    if ($("#adminPhase1Topic")) $("#adminPhase1Topic").value = comp.free_phase1_topic || "";
+    if ($("#adminPhase2Topic")) $("#adminPhase2Topic").value = comp.free_phase2_topic || "";
+    if ($("#adminPhase3Topic")) $("#adminPhase3Topic").value = comp.free_phase3_topic || "";
+  } else {
+    if ($("#adminWeekNumber")) $("#adminWeekNumber").value = comp.week_number || 1;
+    if ($("#adminWeekTopicName")) $("#adminWeekTopicName").value = comp.topic_name || "";
+    if ($("#adminPhase1Topic")) $("#adminPhase1Topic").value = comp.phase1_topic || "";
+    if ($("#adminPhase2Topic")) $("#adminPhase2Topic").value = comp.phase2_topic || "";
+    if ($("#adminPhase3Topic")) $("#adminPhase3Topic").value = comp.phase3_topic || "";
+  }
+
+  const isPaused = isFree ? Boolean(comp.free_is_paused) : Boolean(comp.is_paused);
+  compState.adminSelectedCompetitionIsPaused = isPaused;
+
+  const boardName = isFree ? "Bảng Tự do" : "Bảng chính";
+  if (weekStatusText) {
+    if (isPaused) {
+      weekStatusText.innerHTML = `<span style="color: #d97706; font-weight: 700;">⏸️ Đang TẠM ĐÓNG (${boardName})</span> <span style="font-size: 11.5px; color: var(--text-muted);">(Sinh viên thuộc bảng này không thi, banner chuyển xám)</span>`;
+    } else {
+      weekStatusText.innerHTML = `<span style="color: #16a34a; font-weight: 700;">🟢 Đang MỞ hoạt động (${boardName})</span> <span style="font-size: 11.5px; color: var(--text-muted);">(Mở cổng theo lịch bình thường)</span>`;
+    }
+  }
+  if (weekToggleBtn) {
+    weekToggleBtn.textContent = isPaused ? `🟢 Mở hoạt động ${boardName}` : `⏸️ Tạm đóng ${boardName}`;
+    weekToggleBtn.className = isPaused ? "button button-sm button-primary" : "button button-sm button-outline";
+  }
+}
+
+window.switchAdminBoardTab = async function(mode) {
+  compState.adminBoardMode = (mode === "free") ? "free" : "main";
+  renderAdminBoardModeUI();
+  if (typeof switchAdminQuestionTrack === "function") {
+    await switchAdminQuestionTrack(compState.adminBoardMode, false);
+  }
+};
+
 async function loadAdminCompetition(targetCompetitionId) {
   try {
     const targetId = targetCompetitionId || compState.adminSelectedCompetitionId;
@@ -13327,6 +13396,8 @@ async function loadAdminCompetition(targetCompetitionId) {
     const data = await requestAPI(url);
     const selectedComp = data.selectedCompetition || data.currentCompetition || {};
     compState.adminSelectedCompetitionId = selectedComp.id;
+    compState.adminSelectedCompRaw = selectedComp;
+    if (!compState.adminBoardMode) compState.adminBoardMode = "main";
 
     // Populate Week Selector
     const weekSelect = $("#adminSelectCompetitionWeek");
@@ -13342,34 +13413,12 @@ async function loadAdminCompetition(targetCompetitionId) {
       rangeBadge.textContent = `🗓️ Khoảng thời gian: ${selectedComp.dateRangeText || (selectedComp.startDateFormatted + " - " + selectedComp.endDateFormatted)}`;
     }
 
-    if ($("#adminWeekNumber")) $("#adminWeekNumber").value = selectedComp.week_number || data.week_number || 1;
-    if ($("#adminWeekTopicName")) $("#adminWeekTopicName").value = selectedComp.topic_name || data.weekTopic || "";
-    if ($("#adminPhase1Topic")) $("#adminPhase1Topic").value = selectedComp.phase1_topic || data.phase1Topic || "";
-    if ($("#adminPhase2Topic")) $("#adminPhase2Topic").value = selectedComp.phase2_topic || data.phase2Topic || "";
-    if ($("#adminPhase3Topic")) $("#adminPhase3Topic").value = selectedComp.phase3_topic || data.phase3Topic || "";
-
     const simLabel = $("#adminSimCurrentTime");
     if (simLabel) {
       simLabel.textContent = data.simulatedTimeStr || data.serverTimeStr || "Giờ thực tế";
     }
 
-    compState.adminSelectedCompetitionId = selectedComp.id;
-    compState.adminSelectedCompetitionIsPaused = Boolean(selectedComp.is_paused);
-
-    const weekStatusText = $("#adminSelectedWeekStatusText");
-    const weekToggleBtn = $("#adminBtnToggleWeekPaused");
-    if (weekStatusText) {
-      if (selectedComp.is_paused) {
-        weekStatusText.innerHTML = `<span style="color: #d97706; font-weight: 700;">⏸️ Đang TẠM ĐÓNG tuần này</span> <span style="font-size: 11.5px; color: var(--text-muted);">(Sinh viên không thi, banner chuyển xám)</span>`;
-      } else {
-        weekStatusText.innerHTML = `<span style="color: #16a34a; font-weight: 700;">🟢 Đang MỞ hoạt động</span> <span style="font-size: 11.5px; color: var(--text-muted);">(Mở cổng theo lịch bình thường)</span>`;
-      }
-    }
-    if (weekToggleBtn) {
-      weekToggleBtn.textContent = selectedComp.is_paused ? "🟢 Mở hoạt động tuần này" : "⏸️ Tạm đóng tuần này";
-      weekToggleBtn.className = selectedComp.is_paused ? "button button-sm button-primary" : "button button-sm button-outline";
-    }
-
+    renderAdminBoardModeUI();
     await loadAdminPhaseQuestions(compState.adminSelectedPhase || 1);
   } catch (e) {
     toast("Không thể tải thông tin thi đua quản trị.");
@@ -13379,18 +13428,27 @@ async function loadAdminCompetition(targetCompetitionId) {
 window.adminToggleSelectedWeekStatus = async function() {
   const compId = compState.adminSelectedCompetitionId;
   if (!compId) return;
-  const isCurrentlyPaused = Boolean(compState.adminSelectedCompetitionIsPaused);
+  const comp = compState.adminSelectedCompRaw || {};
+  const mode = compState.adminBoardMode || "main";
+  const isFree = (mode === "free");
+  const isCurrentlyPaused = isFree ? Boolean(comp.free_is_paused) : Boolean(comp.is_paused);
   const newPaused = !isCurrentlyPaused;
+  const boardLabel = isFree ? "Bảng Tự do" : "Bảng chính";
   try {
     const res = await requestAPI("/api/admin/competition/toggle-status", {
       method: "POST",
-      body: JSON.stringify({ competitionId: compId, paused: newPaused })
+      body: JSON.stringify({ competitionId: compId, paused: newPaused, track: mode })
     });
     if (res && res.ok) {
+      if (isFree) {
+        comp.free_is_paused = res.is_paused;
+      } else {
+        comp.is_paused = res.is_paused;
+      }
       compState.adminSelectedCompetitionIsPaused = res.is_paused;
-      toast(res.is_paused ? `Đã tạm đóng tuần thi đấu #${compId}.` : `Đã mở hoạt động tuần thi đấu #${compId}.`);
+      toast(res.is_paused ? `Đã tạm đóng ${boardLabel} tuần #${compId}.` : `Đã mở hoạt động ${boardLabel} tuần #${compId}.`);
+      renderAdminBoardModeUI();
       await loadWeeklyCompetitionStatus();
-      await loadAdminCompetition(compId);
       if (typeof currentActiveRoute !== "undefined" && currentActiveRoute === "arena") {
         await onEnterArena();
       }
@@ -13418,19 +13476,37 @@ window.onAdminChangeCompetitionWeek = async function(compId) {
 
 async function saveAdminCompetitionTopics() {
   try {
+    const mode = compState.adminBoardMode || "main";
+    const isFree = (mode === "free");
     const weekNum = parseInt($("#adminWeekNumber")?.value, 10);
+    const comp = compState.adminSelectedCompRaw || {};
+    const payload = {
+      competitionId: compState.adminSelectedCompetitionId,
+      weekNumber: isNaN(weekNum) ? null : weekNum,
+      weekTopic: $("#adminWeekTopicName")?.value || "",
+      phase1Topic: $("#adminPhase1Topic")?.value || "",
+      phase2Topic: $("#adminPhase2Topic")?.value || "",
+      phase3Topic: $("#adminPhase3Topic")?.value || "",
+      track: mode
+    };
     await requestAPI("/api/admin/competition/update-topics", {
       method: "POST",
-      body: JSON.stringify({
-        competitionId: compState.adminSelectedCompetitionId,
-        weekNumber: isNaN(weekNum) ? null : weekNum,
-        weekTopic: $("#adminWeekTopicName")?.value || "",
-        phase1Topic: $("#adminPhase1Topic")?.value || "",
-        phase2Topic: $("#adminPhase2Topic")?.value || "",
-        phase3Topic: $("#adminPhase3Topic")?.value || ""
-      })
+      body: JSON.stringify(payload)
     });
-    toast("✅ Đã lưu thông tin chủ đề thi đua!");
+    if (isFree) {
+      comp.free_week_number = payload.weekNumber || 1;
+      comp.free_topic_name = payload.weekTopic;
+      comp.free_phase1_topic = payload.phase1Topic;
+      comp.free_phase2_topic = payload.phase2Topic;
+      comp.free_phase3_topic = payload.phase3Topic;
+    } else {
+      comp.week_number = payload.weekNumber || 1;
+      comp.topic_name = payload.weekTopic;
+      comp.phase1_topic = payload.phase1Topic;
+      comp.phase2_topic = payload.phase2Topic;
+      comp.phase3_topic = payload.phase3Topic;
+    }
+    toast(`✅ Đã lưu thông tin chủ đề ${isFree ? "Bảng Tự do" : "Bảng chính"}!`);
     loadWeeklyCompetitionStatus();
   } catch (e) {
     toast(e.message || "Lỗi khi lưu chủ đề.");
@@ -13493,8 +13569,12 @@ async function switchAdminPhaseTab(phase) {
   }
 }
 
-window.switchAdminQuestionTrack = async function(track) {
+window.switchAdminQuestionTrack = async function(track, syncBoard = true) {
   compState.adminSelectedTrack = (track === "free") ? "free" : "main";
+  if (syncBoard) {
+    compState.adminBoardMode = compState.adminSelectedTrack;
+    renderAdminBoardModeUI();
+  }
   const btnMain = $("#adminTrackBtnMain");
   const btnFree = $("#adminTrackBtnFree");
   const noticeBadge = $("#adminTrackNoticeBadge");
