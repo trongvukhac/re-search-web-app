@@ -1146,6 +1146,7 @@
                       <span id="gatewayStatusText">ĐANG MỞ CỔNG</span>
                     </span>
                     <span class="comp-phase-tag" id="gatewayPhaseTag">Chặng 1</span>
+                    <span class="comp-class-badge" id="gatewayClassBadge" style="background: rgba(255,255,255,0.18); border: 1px solid rgba(255,255,255,0.3); border-radius: 20px; padding: 4px 10px; font-size: 11px; font-weight: 700; color: #fff;">Bảng thi: Lớp 06</span>
                   </div>
                   <h3 id="gatewayPhaseTitle">Phương pháp &amp; Thiết kế Nghiên cứu Khoa học</h3>
                   <p id="gatewayWeekTitle">Chủ đề tuần: Phương pháp Nghiên cứu &amp; Xử lý Dữ liệu Khoa học</p>
@@ -1275,12 +1276,13 @@
                   <button type="button" class="lb-refresh-btn" id="lbRefreshBtn" onclick="refreshArenaLeaderboard()" title="Làm mới bảng xếp hạng"><svg class="ui-btn-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg> Làm mới</button>
                 </div>
 
-                <!-- BẢNG THI LỚP 06 / 07 (CHO ADMIN & GIẢNG VIÊN) -->
+                <!-- BẢNG THI LỚP 06 / 07 / TỰ DO (CHO ADMIN & GIẢNG VIÊN) -->
                 <div id="lbClassSelectorWrap" class="lb-class-selector-wrap" style="display: none;">
                   <div class="lb-class-selector-inner">
                     <span class="lb-class-label">Bảng thi:</span>
                     <button type="button" class="lb-class-btn active" data-lb-class="06" onclick="switchLbClass('06')">Bảng thi lớp 06</button>
                     <button type="button" class="lb-class-btn" data-lb-class="07" onclick="switchLbClass('07')">Bảng thi lớp 07</button>
+                    <button type="button" class="lb-class-btn" data-lb-class="TD" onclick="switchLbClass('TD')">Bảng thi Tự do</button>
                   </div>
                 </div>
 
@@ -3028,6 +3030,22 @@
               <input type="file" id="adminImportExcelInput" accept=".xlsx, .xls, .csv" style="display: none;" onchange="adminHandleExcelUpload(event)" />
               <button type="button" class="button button-sm button-outline" onclick="adminSeedSampleQuestions()" title="Nạp 30 câu hỏi mẫu NCKH mặc định"><svg class="ui-btn-icon" width="13" height="13" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> 30 câu mẫu NCKH</button>
             </div>
+          </div>
+
+          <!-- CHỌN BẢNG THI ĐỂ SOẠN CÂU HỎI -->
+          <div style="margin-bottom: 12px; padding: 10px 14px; background: var(--sage-2); border-radius: 8px; border: 1px solid var(--line); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+            <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+              <span style="font-size: 12px; font-weight: 700; color: var(--ink);">Bảng thi áp dụng:</span>
+              <button type="button" class="button button-sm admin-track-btn active" id="adminTrackBtnMain" onclick="switchAdminQuestionTrack('main')" style="font-weight: 700;">
+                🏫 Bảng chính (Lớp 06 & 07)
+              </button>
+              <button type="button" class="button button-sm admin-track-btn button-outline" id="adminTrackBtnFree" onclick="switchAdminQuestionTrack('free')" style="font-weight: 700;">
+                🌐 Bảng thi Tự do
+              </button>
+            </div>
+            <span id="adminTrackNoticeBadge" style="font-size: 11.5px; color: var(--text-muted); font-style: italic;">
+              Đang soạn câu hỏi cho Bảng chính (Lớp 06 & 07)
+            </span>
           </div>
 
           <div style="display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; align-items: center;">

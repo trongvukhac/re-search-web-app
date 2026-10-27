@@ -37,9 +37,10 @@ const CLASS_07_STUDENT_IDS = new Set(ARENA_ROSTER["07"].studentIds.map(x => Stri
 function getArenaClassByStudentId(studentId) {
   if (!studentId) return null;
   const cleanId = String(studentId).trim();
+  if (!cleanId) return null;
   if (CLASS_06_STUDENT_IDS.has(cleanId)) return "06";
   if (CLASS_07_STUDENT_IDS.has(cleanId)) return "07";
-  return null;
+  return "TD"; // Bảng thi Tự do cho sinh viên Văn Lang ngoài 2 lớp 06 và 07
 }
 const MIME = {
   ".html": "text/html; charset=utf-8",
@@ -437,8 +438,9 @@ db.exec(`
     option_c TEXT NOT NULL,
     correct_option TEXT NOT NULL CHECK(correct_option IN ('A','B','C')),
     explanation TEXT,
+    track TEXT NOT NULL DEFAULT 'main' CHECK(track IN ('main','free')),
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE(competition_id, phase, question_index)
+    UNIQUE(competition_id, phase, question_index, track)
   );
 
   CREATE TABLE IF NOT EXISTS competition_sessions (
@@ -568,6 +570,39 @@ try {
   db.exec("ALTER TABLE weekly_competitions ADD COLUMN is_paused INTEGER NOT NULL DEFAULT 0;");
 } catch (e) {
   // Cột đã tồn tại
+}
+
+// Migration: Cập nhật bảng competition_questions hỗ trợ cột track ('main' / 'free')
+try {
+  const qTableSql = db.prepare("SELECT sql FROM sqlite_master WHERE type='table' AND name='competition_questions'").get()?.sql || "";
+  if (!qTableSql.includes("track")) {
+    db.exec("PRAGMA foreign_keys = OFF;");
+    db.exec(`
+      CREATE TABLE competition_questions_v2 (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        competition_id INTEGER NOT NULL REFERENCES weekly_competitions(id) ON DELETE CASCADE,
+        phase INTEGER NOT NULL CHECK(phase IN (1, 2, 3)),
+        question_index INTEGER NOT NULL CHECK(question_index BETWEEN 1 AND 10),
+        question_text TEXT NOT NULL,
+        option_a TEXT NOT NULL,
+        option_b TEXT NOT NULL,
+        option_c TEXT NOT NULL,
+        correct_option TEXT NOT NULL CHECK(correct_option IN ('A','B','C')),
+        explanation TEXT,
+        track TEXT NOT NULL DEFAULT 'main' CHECK(track IN ('main','free')),
+        created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(competition_id, phase, question_index, track)
+      );
+      INSERT INTO competition_questions_v2 (id, competition_id, phase, question_index, question_text, option_a, option_b, option_c, correct_option, explanation, track, created_at)
+        SELECT id, competition_id, phase, question_index, question_text, option_a, option_b, option_c, correct_option, explanation, 'main', created_at FROM competition_questions;
+      DROP TABLE competition_questions;
+      ALTER TABLE competition_questions_v2 RENAME TO competition_questions;
+    `);
+    db.exec("PRAGMA foreign_keys = ON;");
+    console.log("[Migration] Đã nâng cấp bảng competition_questions hỗ trợ track 'main' và 'free'");
+  }
+} catch (e) {
+  console.error("[Migration error competition_questions track]", e);
 }
 
 // Migration: Cập nhật bảng users hỗ trợ role 'member' và quản lý không hoạt động
@@ -2059,11 +2094,11 @@ const SAMPLE_COMPETITION_QUESTIONS = {
   ]
 };
 
-function seedSampleCompetitionQuestions(competitionId) {
+function seedSampleCompetitionQuestions(competitionId, track = "main") {
   const insertQuestion = db.prepare(`
     INSERT OR IGNORE INTO competition_questions (
-      competition_id, phase, question_index, question_text, option_a, option_b, option_c, correct_option, explanation
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      competition_id, phase, question_index, question_text, option_a, option_b, option_c, correct_option, explanation, track
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
 
   for (const phase of [1, 2, 3]) {
@@ -2073,12 +2108,13 @@ function seedSampleCompetitionQuestions(competitionId) {
         competitionId,
         phase,
         q.index,
-        q.text,
+        track === "free" ? `[Tự do] ${q.text}` : q.text,
         q.optionA,
         q.optionB,
         q.optionC,
         q.correct,
-        q.explanation
+        q.explanation,
+        track
       );
     }
   }
@@ -2104,7 +2140,8 @@ function getOrCreateCurrentCompetition(vnDate) {
       "Viết báo cáo & Trích dẫn Khoa học"
     );
     comp = db.prepare("SELECT * FROM weekly_competitions WHERE week_key = ?").get(weekKey);
-    seedSampleCompetitionQuestions(comp.id);
+    seedSampleCompetitionQuestions(comp.id, "main");
+    seedSampleCompetitionQuestions(comp.id, "free");
   }
   return comp;
 }
@@ -2163,8 +2200,8 @@ function getCompetitionTimeState(vnDate, comp) {
   const phaseDays = phase === 1 ? "Thứ Hai – Thứ Ba" : phase === 2 ? "Thứ Tư – Thứ Năm" : "Thứ Sáu – Thứ Bảy";
   const phaseName = `Chặng ${phase} (${phaseDays})`;
 
-  // Check if phase has 10 questions
-  const qCount = db.prepare("SELECT count(*) as c FROM competition_questions WHERE competition_id = ? AND phase = ?").get(comp.id, phase)?.c || 0;
+  // Check if phase has 10 questions for main track
+  const qCount = db.prepare("SELECT count(*) as c FROM competition_questions WHERE competition_id = ? AND phase = ? AND track = 'main'").get(comp.id, phase)?.c || 0;
   const isReady = qCount >= 10;
 
   let state = "reviewing";
@@ -2284,18 +2321,28 @@ function awardCompetitionSundayRewards(competitionId) {
     `);
 
     let awardedCount = 0;
-    const classes = ["06", "07"];
+    const classes = ["06", "07", "TD"];
 
     db.exec("BEGIN");
     try {
       for (const cls of classes) {
-        const targetIds = cls === "07" ? CLASS_07_STUDENT_IDS : CLASS_06_STUDENT_IDS;
-        const targetName = cls === "07" ? "261_71RESE30312_07" : "261_71RESE30312_06";
-        const classParts = participants.filter(p => {
-          if (p.studentId && targetIds.has(String(p.studentId).trim())) return true;
-          if (p.className && p.className.trim() === targetName) return true;
-          return false;
-        });
+        let classParts = [];
+        if (cls === "TD") {
+          classParts = participants.filter(p => {
+            const rowClass = getArenaClassByStudentId(p.studentId);
+            return rowClass === "TD";
+          });
+        } else {
+          const targetIds = cls === "07" ? CLASS_07_STUDENT_IDS : CLASS_06_STUDENT_IDS;
+          const targetName = cls === "07" ? "261_71RESE30312_07" : "261_71RESE30312_06";
+          classParts = participants.filter(p => {
+            if (p.studentId && targetIds.has(String(p.studentId).trim())) return true;
+            if (p.className && p.className.trim() === targetName) return true;
+            return false;
+          });
+        }
+
+        const clsLabel = cls === "TD" ? "Bảng thi Tự do" : `Bảng thi lớp ${cls}`;
 
         for (let i = 0; i < classParts.length; i++) {
           const p = classParts[i];
@@ -2337,7 +2384,7 @@ function awardCompetitionSundayRewards(competitionId) {
             rankActivityPoints,
             "competition",
             competitionId,
-            `Thưởng Top ${rank} Hoạt động thi đua tuần (${comp.week_key} - Bảng thi lớp ${cls}): +${rankActivityPoints}đ, +${shields} khiên bảo vệ chuỗi`
+            `Thưởng Top ${rank} Hoạt động thi đua tuần (${comp.week_key} - ${clsLabel}): +${rankActivityPoints}đ, +${shields} khiên bảo vệ chuỗi`
           );
 
           if (partBonus > 0) {
@@ -2347,7 +2394,7 @@ function awardCompetitionSundayRewards(competitionId) {
               partBonus,
               "competition",
               competitionId,
-              `Thưởng tham gia ${p.phasesParticipated}/3 chặng thi đua tuần (${comp.week_key}): +${partBonus}đ hoạt động`
+              `Thưởng tham gia ${p.phasesParticipated}/3 chặng thi đua tuần (${comp.week_key} - ${clsLabel}): +${partBonus}đ hoạt động`
             );
           }
 
@@ -2361,7 +2408,7 @@ function awardCompetitionSundayRewards(competitionId) {
               shields = MIN(3, shields + ?),
               updated_at = CURRENT_TIMESTAMP
           `).run(p.userId, shields, shields);
-          logShieldTransaction(p.userId, 'add', shields, balanceAfter, `Thưởng Top ${rank} Đấu trường Tuần (${comp.week_key} - Bảng thi lớp ${cls})`);
+          logShieldTransaction(p.userId, 'add', shields, balanceAfter, `Thưởng Top ${rank} Đấu trường Tuần (${comp.week_key} - ${clsLabel})`);
 
           insertReward.run(
             competitionId,
@@ -5632,9 +5679,18 @@ async function api(request, response, url) {
     const targetPhase = Math.max(1, Math.min(3, parseInt(url.searchParams.get("phase") || "1", 10)));
     const phaseTopic = comp[`phase${targetPhase}_topic`] || comp.topic_name || "Nội dung câu hỏi chuyên đề";
 
-    const questions = db.prepare(
-      "SELECT id, question_index, question_text, option_a, option_b, option_c, correct_option, explanation FROM competition_questions WHERE competition_id = ? AND phase = ? ORDER BY question_index ASC"
-    ).all(comp.id, targetPhase);
+    const studentClass = getArenaClassByStudentId(user.student_id);
+    const track = (studentClass === "TD") ? "free" : "main";
+    let questions = db.prepare(
+      "SELECT id, question_index, question_text, option_a, option_b, option_c, correct_option, explanation FROM competition_questions WHERE competition_id = ? AND phase = ? AND track = ? ORDER BY question_index ASC"
+    ).all(comp.id, targetPhase, track);
+
+    if (questions.length === 0 && track === "free") {
+      seedSampleCompetitionQuestions(comp.id, "free");
+      questions = db.prepare(
+        "SELECT id, question_index, question_text, option_a, option_b, option_c, correct_option, explanation FROM competition_questions WHERE competition_id = ? AND phase = ? AND track = ? ORDER BY question_index ASC"
+      ).all(comp.id, targetPhase, track);
+    }
 
     return json(response, 200, {
       ok: true,
@@ -5724,7 +5780,7 @@ async function api(request, response, url) {
     let targetClass = "06";
     if (isPrivileged || isMember) {
       const qClass = url.searchParams.get("class");
-      if (qClass === "07" || qClass === "06") {
+      if (qClass === "07" || qClass === "06" || qClass === "TD") {
         targetClass = qClass;
       }
     } else {
@@ -5739,7 +5795,6 @@ async function api(request, response, url) {
           error: "Bạn cần cập nhật mã số sinh viên trước khi tham gia Arena"
         });
       }
-      // Người dùng không thể theo dõi bảng thi của lớp kia
       targetClass = studentClass;
     }
 
@@ -5792,11 +5847,16 @@ async function api(request, response, url) {
       `).all(comp.id, phaseNum);
     }
 
-    // Lọc theo bảng thi lớp tương ứng (06 hoặc 07)
+    // Lọc theo bảng thi lớp tương ứng (06, 07 hoặc TD)
     const filteredResults = results.filter(row => {
-      if (row.studentId && targetClassStudentIds.has(String(row.studentId).trim())) return true;
-      if (row.className && row.className.trim() === targetClassName) return true;
-      return false;
+      const rowClass = getArenaClassByStudentId(row.studentId);
+      if (targetClass === "TD") {
+        return rowClass === "TD";
+      }
+      if (targetClass === "07") {
+        return rowClass === "07" || CLASS_07_STUDENT_IDS.has(String(row.studentId).trim()) || (row.className && row.className.trim() === "261_71RESE30312_07");
+      }
+      return rowClass === "06" || CLASS_06_STUDENT_IDS.has(String(row.studentId).trim()) || (row.className && row.className.trim() === "261_71RESE30312_06");
     });
 
     const todayDate = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Ho_Chi_Minh" }));
@@ -5845,7 +5905,7 @@ async function api(request, response, url) {
     const isSunday = Boolean(timeState.isSunday || timeState.state === "sunday_summary");
     const weekNumStr = String(comp.week_number || 1).padStart(2, "0");
     const isWeekPhase = (phaseParam === "week");
-    const classTitle = `Bảng thi lớp ${targetClass}`;
+    const classTitle = targetClass === "TD" ? "Bảng thi Tự do" : `Bảng thi lớp ${targetClass}`;
     const phaseTitle = `Bảng xếp hạng - ${classTitle}`;
 
     let canShow = false;
@@ -5966,9 +6026,18 @@ async function api(request, response, url) {
     }
 
     const phase = sessionPhase;
-    const questions = db.prepare(
-      "SELECT id, question_index, question_text, option_a, option_b, option_c, explanation FROM competition_questions WHERE competition_id = ? AND phase = ? ORDER BY question_index ASC"
-    ).all(comp.id, phase);
+    const studentClass = getArenaClassByStudentId(user.student_id);
+    const track = (studentClass === "TD") ? "free" : "main";
+    let questions = db.prepare(
+      "SELECT id, question_index, question_text, option_a, option_b, option_c, explanation FROM competition_questions WHERE competition_id = ? AND phase = ? AND track = ? ORDER BY question_index ASC"
+    ).all(comp.id, phase, track);
+
+    if (questions.length < 10 && track === "free") {
+      seedSampleCompetitionQuestions(comp.id, "free");
+      questions = db.prepare(
+        "SELECT id, question_index, question_text, option_a, option_b, option_c, explanation FROM competition_questions WHERE competition_id = ? AND phase = ? AND track = ? ORDER BY question_index ASC"
+      ).all(comp.id, phase, track);
+    }
 
     if (questions.length < 10) {
       return error(response, 400, "Bộ câu hỏi cho chặng này chưa sẵn sàng.");
@@ -6167,9 +6236,17 @@ async function api(request, response, url) {
       });
     }
 
-    const question = db.prepare(
-      "SELECT * FROM competition_questions WHERE competition_id = ? AND phase = ? AND question_index = ?"
-    ).get(session.competition_id, session.phase, questionIndex);
+    const studentClass = getArenaClassByStudentId(user.student_id);
+    const track = (studentClass === "TD") ? "free" : "main";
+    let question = null;
+    if (body.questionId) {
+      question = db.prepare("SELECT * FROM competition_questions WHERE id = ?").get(body.questionId);
+    }
+    if (!question) {
+      question = db.prepare(
+        "SELECT * FROM competition_questions WHERE competition_id = ? AND phase = ? AND question_index = ? AND track = ?"
+      ).get(session.competition_id, session.phase, questionIndex, track);
+    }
 
     if (!question) return error(response, 404, "Không tìm thấy câu hỏi.");
     if (body.questionId && Number(body.questionId) !== question.id) {
@@ -6292,8 +6369,8 @@ async function api(request, response, url) {
         `).run(nextQIndex, newCorrectCount, newFirstTryCount, newCorrectPoints, newFirstTryBonus, effectiveRemaining, nowMs, session.id);
 
         const nextQ = db.prepare(
-          "SELECT id, question_index, question_text, option_a, option_b, option_c, explanation FROM competition_questions WHERE competition_id = ? AND phase = ? AND question_index = ?"
-        ).get(session.competition_id, session.phase, nextQIndex);
+          "SELECT id, question_index, question_text, option_a, option_b, option_c, explanation FROM competition_questions WHERE competition_id = ? AND phase = ? AND question_index = ? AND track = ?"
+        ).get(session.competition_id, session.phase, nextQIndex, track);
 
         return json(response, 200, {
           isCorrect: true,
@@ -6477,8 +6554,8 @@ async function api(request, response, url) {
           `).run(nextQIndex, effectiveRemaining, nowMs, session.id);
 
           const nextQ = db.prepare(
-            "SELECT id, question_index, question_text, option_a, option_b, option_c, explanation FROM competition_questions WHERE competition_id = ? AND phase = ? AND question_index = ?"
-          ).get(session.competition_id, session.phase, nextQIndex);
+            "SELECT id, question_index, question_text, option_a, option_b, option_c, explanation FROM competition_questions WHERE competition_id = ? AND phase = ? AND question_index = ? AND track = ?"
+          ).get(session.competition_id, session.phase, nextQIndex, track);
 
           return json(response, 200, {
             isCorrect: false,
@@ -6655,9 +6732,19 @@ async function api(request, response, url) {
     const timeState = getCompetitionTimeState(vnNow, comp);
 
     const qCounts = {
-      phase1: db.prepare("SELECT count(*) as c FROM competition_questions WHERE competition_id = ? AND phase = 1").get(targetComp.id)?.c || 0,
-      phase2: db.prepare("SELECT count(*) as c FROM competition_questions WHERE competition_id = ? AND phase = 2").get(targetComp.id)?.c || 0,
-      phase3: db.prepare("SELECT count(*) as c FROM competition_questions WHERE competition_id = ? AND phase = 3").get(targetComp.id)?.c || 0
+      main: {
+        phase1: db.prepare("SELECT count(*) as c FROM competition_questions WHERE competition_id = ? AND phase = 1 AND track = 'main'").get(targetComp.id)?.c || 0,
+        phase2: db.prepare("SELECT count(*) as c FROM competition_questions WHERE competition_id = ? AND phase = 2 AND track = 'main'").get(targetComp.id)?.c || 0,
+        phase3: db.prepare("SELECT count(*) as c FROM competition_questions WHERE competition_id = ? AND phase = 3 AND track = 'main'").get(targetComp.id)?.c || 0
+      },
+      free: {
+        phase1: db.prepare("SELECT count(*) as c FROM competition_questions WHERE competition_id = ? AND phase = 1 AND track = 'free'").get(targetComp.id)?.c || 0,
+        phase2: db.prepare("SELECT count(*) as c FROM competition_questions WHERE competition_id = ? AND phase = 2 AND track = 'free'").get(targetComp.id)?.c || 0,
+        phase3: db.prepare("SELECT count(*) as c FROM competition_questions WHERE competition_id = ? AND phase = 3 AND track = 'free'").get(targetComp.id)?.c || 0
+      },
+      phase1: db.prepare("SELECT count(*) as c FROM competition_questions WHERE competition_id = ? AND phase = 1 AND track = 'main'").get(targetComp.id)?.c || 0,
+      phase2: db.prepare("SELECT count(*) as c FROM competition_questions WHERE competition_id = ? AND phase = 2 AND track = 'main'").get(targetComp.id)?.c || 0,
+      phase3: db.prepare("SELECT count(*) as c FROM competition_questions WHERE competition_id = ? AND phase = 3 AND track = 'main'").get(targetComp.id)?.c || 0
     };
 
     const participantsCount = db.prepare(
@@ -6738,10 +6825,18 @@ async function api(request, response, url) {
     const comp = getOrCreateCurrentCompetition(vnNow);
     const compId = Number(url.searchParams.get("competitionId")) || comp.id;
     const phase = Math.min(3, Math.max(1, Number(url.searchParams.get("phase")) || 1));
+    const track = url.searchParams.get("track") === "free" ? "free" : "main";
 
-    const questions = db.prepare(
-      "SELECT id, question_index, question_text, option_a, option_b, option_c, correct_option, explanation FROM competition_questions WHERE competition_id = ? AND phase = ? ORDER BY question_index ASC"
-    ).all(compId, phase);
+    let questions = db.prepare(
+      "SELECT id, question_index, question_text, option_a, option_b, option_c, correct_option, explanation, track FROM competition_questions WHERE competition_id = ? AND phase = ? AND track = ? ORDER BY question_index ASC"
+    ).all(compId, phase, track);
+
+    if (questions.length === 0 && track === "free") {
+      seedSampleCompetitionQuestions(compId, "free");
+      questions = db.prepare(
+        "SELECT id, question_index, question_text, option_a, option_b, option_c, correct_option, explanation, track FROM competition_questions WHERE competition_id = ? AND phase = ? AND track = ? ORDER BY question_index ASC"
+      ).all(compId, phase, track);
+    }
 
     const formatted = questions.map(q => ({
       id: q.id,
@@ -6752,6 +6847,7 @@ async function api(request, response, url) {
       option_c: q.option_c,
       correct_option: q.correct_option,
       explanation: q.explanation || "",
+      track: q.track || track,
       // Aliases for camelCase
       questionNumber: q.question_index,
       questionText: q.question_text,
@@ -6765,6 +6861,7 @@ async function api(request, response, url) {
       ok: true,
       competitionId: compId,
       phase,
+      track,
       questions: formatted
     });
   }
@@ -6776,7 +6873,7 @@ async function api(request, response, url) {
 
     const body = await readJSON(request);
     const { phase, questions } = body;
-    // competitionId optional - auto-resolve from current competition
+    const track = body.track === "free" ? "free" : "main";
     const vnNow = getVietnamNow();
     const currentComp = getOrCreateCurrentCompetition(vnNow);
     const competitionId = body.competitionId || currentComp.id;
@@ -6791,17 +6888,17 @@ async function api(request, response, url) {
       db.prepare(`
         DELETE FROM competition_answers 
         WHERE question_id IN (
-          SELECT id FROM competition_questions WHERE competition_id = ? AND phase = ?
+          SELECT id FROM competition_questions WHERE competition_id = ? AND phase = ? AND track = ?
         )
-      `).run(competitionId, phase);
+      `).run(competitionId, phase, track);
 
-      // 2. Delete old questions for this phase
-      db.prepare("DELETE FROM competition_questions WHERE competition_id = ? AND phase = ?").run(competitionId, phase);
+      // 2. Delete old questions for this phase and track
+      db.prepare("DELETE FROM competition_questions WHERE competition_id = ? AND phase = ? AND track = ?").run(competitionId, phase, track);
 
       const insert = db.prepare(`
         INSERT INTO competition_questions (
-          competition_id, phase, question_index, question_text, option_a, option_b, option_c, correct_option, explanation
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+          competition_id, phase, question_index, question_text, option_a, option_b, option_c, correct_option, explanation, track
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `);
 
       for (let i = 0; i < questions.length; i++) {
@@ -6816,14 +6913,16 @@ async function api(request, response, url) {
           q.option_b || q.optionB || "Đáp án B",
           q.option_c || q.optionC || "Đáp án C",
           q.correct_option || q.correctOption || q.correct || "A",
-          q.explanation || ""
+          q.explanation || "",
+          track
         );
       }
       db.exec("COMMIT");
-      return json(response, 200, { ok: true, count: questions.length });
+      return json(response, 200, { ok: true, count: questions.length, track });
     } catch (e) {
       db.exec("ROLLBACK");
-      return error(response, 500, e.message);
+      console.error("Save questions error:", e);
+      return error(response, 500, "Không thể lưu câu hỏi.");
     }
   }
 
@@ -6862,10 +6961,13 @@ async function api(request, response, url) {
     if (!user || !isSuperAdmin(user)) return user ? error(response, 403, "Chỉ TA/Admin mới có quyền này.") : undefined;
     if (!requireCsrf(request, response, user)) return;
 
+    const body = await readJSON(request).catch(() => ({}));
+    const track = body?.track === "free" ? "free" : "main";
     const vnNow = getVietnamNow();
     const comp = getOrCreateCurrentCompetition(vnNow);
-    seedSampleCompetitionQuestions(comp.id);
-    return json(response, 200, { ok: true, message: "Đã nạp 30 câu hỏi mẫu cho 3 giai đoạn." });
+    const compId = Number(body?.competitionId) || comp.id;
+    seedSampleCompetitionQuestions(compId, track);
+    return json(response, 200, { ok: true, message: `Đã nạp 30 câu hỏi mẫu cho ${track === "free" ? "Bảng Tự do" : "Bảng chính"}.` });
   }
 
   if (method === "POST" && pathName === "/api/admin/competition/simulate-time") {

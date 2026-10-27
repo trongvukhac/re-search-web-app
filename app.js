@@ -123,7 +123,7 @@ function getArenaClassByStudentId(studentId) {
   if (!cleanId) return null;
   if (ARENA_06_SET.has(cleanId)) return "06";
   if (ARENA_07_SET.has(cleanId)) return "07";
-  return null;
+  return "TD"; // Bảng thi Tự do cho sinh viên Văn Lang ngoài 2 lớp 06 và 07
 }
 window.getArenaClassByStudentId = getArenaClassByStudentId;
 
@@ -141,6 +141,7 @@ const compState = {
   activeTab: "gateway",
   activeLbPhase: "1",
   activeLbClass: "06",
+  adminSelectedTrack: "main",
   cachedLeaderboard: {},
   lastResultsVersion: null,
   lbAutoRefreshInterval: null,
@@ -11534,6 +11535,16 @@ function renderGatewayTab(raw) {
   const blockedMsg = $("#gatewayBlockedMsg");
 
   const gatewayHero = $("#compGatewayHero") || $(".comp-gateway-hero");
+  const classBadge = $("#gatewayClassBadge");
+  if (classBadge) {
+    const user = session || (typeof window !== "undefined" && window.session);
+    const userClass = getArenaClassByStudentId(user?.studentId || user?.student_id) || raw?.arenaClass || "06";
+    if (userClass === "TD") {
+      classBadge.textContent = "🌐 Bảng thi Tự do";
+    } else {
+      classBadge.textContent = `🏫 Bảng thi Lớp ${userClass}`;
+    }
+  }
   if (gatewayHero) {
     gatewayHero.classList.remove("theme-state-open", "theme-state-summary", "theme-state-upcoming", "theme-state-sunday");
     if (data.isSunday) {
@@ -11940,7 +11951,7 @@ function renderLeaderboardNotice(noticeEl, phase, data) {
   const isSunday = Boolean(norm.isSunday);
 
   const classCode = data?.classCode || compState.activeLbClass || "06";
-  const baseTitle = `Bảng xếp hạng - Bảng thi lớp ${classCode}`;
+  const baseTitle = classCode === "TD" ? "Bảng xếp hạng - Bảng thi Tự do" : `Bảng xếp hạng - Bảng thi lớp ${classCode}`;
 
   if (isOpen) {
     noticeEl.innerHTML = `<span>${baseTitle}</span> <span class="lb-status-badge live" style="margin-left: 8px; font-size: 11.5px; color: #22c55e; font-weight: 600;"><svg class="ui-icon" width="10" height="10" viewBox="0 0 24 24" fill="#22c55e" style="margin-right:4px; vertical-align:-1px;"><circle cx="12" cy="12" r="10"/></svg>Tự động cập nhật trực tiếp</span>`;
@@ -13467,8 +13478,9 @@ async function switchAdminPhaseTab(phase) {
   });
 
   // Nếu giai đoạn này đang có bản nháp (do vừa nhập Excel hoặc vừa gõ), ưu tiên hiển thị ngay
-  if (compState.adminPhaseDrafts && compState.adminPhaseDrafts[phase] && compState.adminPhaseDrafts[phase].length > 0) {
-    compState.adminQuestions = compState.adminPhaseDrafts[phase];
+  const draftKey = `${compState.adminSelectedTrack || 'main'}_${phase}`;
+  if (compState.adminPhaseDrafts && (compState.adminPhaseDrafts[draftKey] || compState.adminPhaseDrafts[phase])) {
+    compState.adminQuestions = compState.adminPhaseDrafts[draftKey] || compState.adminPhaseDrafts[phase];
     renderAdminQuestionsList();
     const badge = $("#adminPhaseStatusBadge");
     if (badge) {
@@ -13481,6 +13493,26 @@ async function switchAdminPhaseTab(phase) {
   }
 }
 
+window.switchAdminQuestionTrack = async function(track) {
+  compState.adminSelectedTrack = (track === "free") ? "free" : "main";
+  const btnMain = $("#adminTrackBtnMain");
+  const btnFree = $("#adminTrackBtnFree");
+  const noticeBadge = $("#adminTrackNoticeBadge");
+  if (btnMain && btnFree) {
+    if (compState.adminSelectedTrack === "free") {
+      btnMain.className = "button button-sm admin-track-btn button-outline";
+      btnFree.className = "button button-sm admin-track-btn active";
+      if (noticeBadge) noticeBadge.textContent = "Đang soạn câu hỏi riêng cho Bảng thi Tự do (VLU)";
+    } else {
+      btnMain.className = "button button-sm admin-track-btn active";
+      btnFree.className = "button button-sm admin-track-btn button-outline";
+      if (noticeBadge) noticeBadge.textContent = "Đang soạn câu hỏi cho Bảng chính (Lớp 06 & 07)";
+    }
+  }
+  const curPhase = compState.adminSelectedPhase || 1;
+  await loadAdminPhaseQuestions(curPhase);
+};
+
 async function loadAdminPhaseQuestions(phase) {
   const container = $("#adminQuestionsList");
   const badge = $("#adminPhaseStatusBadge");
@@ -13490,7 +13522,8 @@ async function loadAdminPhaseQuestions(phase) {
 
   try {
     const compIdParam = compState.adminSelectedCompetitionId ? `&competitionId=${compState.adminSelectedCompetitionId}` : "";
-    const res = await requestAPI(`/api/admin/competition/questions?phase=${phase}${compIdParam}`);
+    const track = compState.adminSelectedTrack || "main";
+    const res = await requestAPI(`/api/admin/competition/questions?phase=${phase}&track=${track}${compIdParam}`);
     // Chuẩn hóa mọi biến thể thuộc tính từ server để hiển thị trọn vẹn lên giao diện
     compState.adminQuestions = (res.questions || []).map((q, idx) => ({
       id: q.id,
@@ -13615,20 +13648,23 @@ async function adminSaveQuestions() {
   }
 
   const curPhase = compState.adminSelectedPhase || 1;
+  const track = compState.adminSelectedTrack || "main";
   try {
     await requestAPI("/api/admin/competition/questions", {
       method: "POST",
       body: JSON.stringify({
         competitionId: compState.adminSelectedCompetitionId,
         phase: curPhase,
+        track: track,
         questions: questions
       })
     });
     // Xóa bản nháp tạm của giai đoạn này sau khi đã lưu DB thành công
     if (compState.adminPhaseDrafts) {
+      delete compState.adminPhaseDrafts[`${track}_${curPhase}`];
       delete compState.adminPhaseDrafts[curPhase];
     }
-    toast("✅ Đã lưu bộ câu hỏi giai đoạn thành công!");
+    toast(`✅ Đã lưu bộ câu hỏi ${track === 'free' ? 'Bảng Tự do' : 'Bảng chính'} thành công!`);
     await loadAdminPhaseQuestions(curPhase);
     loadWeeklyCompetitionStatus();
   } catch (e) {
@@ -13637,13 +13673,19 @@ async function adminSaveQuestions() {
 }
 
 async function adminSeedSampleQuestions() {
-  if (!confirm("Hành động này sẽ nạp 30 câu hỏi mẫu chuẩn Nghiên cứu Khoa học (10 câu/giai đoạn) vào cơ sở dữ liệu. Bạn có chắc chắn?")) return;
+  const track = compState.adminSelectedTrack || "main";
+  const trackLabel = track === "free" ? "Bảng Tự do" : "Bảng chính (Lớp 06 & 07)";
+  if (!confirm(`Hành động này sẽ nạp 30 câu hỏi mẫu NCKH cho ${trackLabel} vào cơ sở dữ liệu. Bạn có chắc chắn?`)) return;
   try {
     const res = await requestAPI("/api/admin/competition/seed-samples", {
-      method: "POST"
+      method: "POST",
+      body: JSON.stringify({
+        competitionId: compState.adminSelectedCompetitionId,
+        track: track
+      })
     });
-    toast(`⚡ Đã tải thành công ${res.count || 30} câu hỏi mẫu!`);
-    await loadAdminCompetition();
+    toast(`⚡ Đã tải thành công 30 câu hỏi mẫu cho ${trackLabel}!`);
+    await loadAdminPhaseQuestions(compState.adminSelectedPhase || 1);
     loadWeeklyCompetitionStatus();
   } catch (e) {
     toast(e.message || "Lỗi khi nạp câu hỏi mẫu.");
