@@ -5602,7 +5602,15 @@ window.openNamecard = async function(userId) {
     // Role Badge
     const roleText = $("#namecardRoleText");
     const roleBadge = $("#namecardRoleBadge");
-    if (data.user.role === "admin" || data.user.role === "ta") {
+    const isAnonymizedUser = Boolean(data.user.displayName === "Vô danh" || data.user.avatar === "🥷");
+    if (isAnonymizedUser) {
+      if (roleText) roleText.textContent = "Vô danh";
+      if (roleBadge) {
+        roleBadge.style.background = "var(--sage-2)";
+        roleBadge.style.color = "var(--muted)";
+        roleBadge.style.borderColor = "var(--line)";
+      }
+    } else if (data.user.role === "admin" || data.user.role === "ta") {
       if (roleText) roleText.textContent = "Quản trị viên";
       if (roleBadge) {
         roleBadge.style.background = "#fef3c7";
@@ -5627,7 +5635,7 @@ window.openNamecard = async function(userId) {
 
     // User ID
     $("#namecardIdText").textContent = `ID ${data.user.userCode || String(data.user.id).padStart(5, '0')}`;
-    $("#namecardBio").textContent = data.user.bio || "Hỏi, trao đổi, cùng tiến bộ 🌱\nTìm hiểu sâu hơn, mỗi ngày một chút.";
+    $("#namecardBio").textContent = isAnonymizedUser ? "" : (data.user.bio || "Hỏi, trao đổi, cùng tiến bộ 🌱\nTìm hiểu sâu hơn, mỗi ngày một chút.");
 
     // Cover Image
     const coverEl = $("#namecardCover");

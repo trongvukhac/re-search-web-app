@@ -806,28 +806,61 @@ function deleteUserPermanently(userId) {
   
   db.exec("PRAGMA foreign_keys = OFF;");
   try {
+    // 1. Dọn sạch các phiên làm việc, thiết lập bảo mật và bài lưu
     db.prepare("DELETE FROM sessions WHERE user_id = ?").run(userId);
+    db.prepare("DELETE FROM password_resets WHERE user_id = ?").run(userId);
+    db.prepare("DELETE FROM saved_posts WHERE user_id = ?").run(userId);
+
+    // 2. Dọn sạch chuỗi ngày, khiên, sự kiện đóng góp (đưa toàn bộ số liệu về 0)
     db.prepare("DELETE FROM activity_days WHERE user_id = ?").run(userId);
     db.prepare("DELETE FROM user_streak_shields WHERE user_id = ?").run(userId);
     db.prepare("DELETE FROM streak_shield_logs WHERE user_id = ?").run(userId);
     db.prepare("DELETE FROM streak_restores WHERE user_id = ?").run(userId);
     db.prepare("DELETE FROM contribution_events WHERE user_id = ?").run(userId);
-    db.prepare("DELETE FROM saved_posts WHERE user_id = ?").run(userId);
-    db.prepare("DELETE FROM votes WHERE user_id = ?").run(userId);
-    db.prepare("DELETE FROM document_comments WHERE user_id = ?").run(userId);
+    db.prepare("DELETE FROM user_limited_items WHERE user_id = ?").run(userId);
+
+    // 3. Dọn sạch số liệu phòng tự học & thi đua Arena (đưa toàn bộ số liệu về 0)
     db.prepare("DELETE FROM study_sessions WHERE user_id = ?").run(userId);
     db.prepare("DELETE FROM study_logs WHERE user_id = ?").run(userId);
-    db.prepare("DELETE FROM user_limited_items WHERE user_id = ?").run(userId);
-    db.prepare("DELETE FROM password_resets WHERE user_id = ?").run(userId);
     db.prepare("DELETE FROM competition_sessions WHERE user_id = ?").run(userId);
     db.prepare("DELETE FROM competition_phase_results WHERE user_id = ?").run(userId);
     db.prepare("DELETE FROM competition_weekly_rewards WHERE user_id = ?").run(userId);
-    db.prepare("DELETE FROM responses WHERE author_id = ?").run(userId);
-    db.prepare("DELETE FROM posts WHERE author_id = ?").run(userId);
-    db.prepare("DELETE FROM documents WHERE submitted_by = ?").run(userId);
-    db.prepare("DELETE FROM site_reviews WHERE user_id = ?").run(userId);
-    db.prepare("DELETE FROM users WHERE id = ?").run(userId);
-    console.log(`[CLEANUP] Deleted inactive user permanently: ID ${userId} (${target.email})`);
+
+    // BẢO TỒN NỘI DUNG ĐÓNG GÓP HỌC THUẬT:
+    // - Bài đăng diễn đàn (posts) -> BẢO TỒN
+    // - Phản hồi thảo luận (responses) -> BẢO TỒN
+    // - Tài liệu học tập (documents) -> BẢO TỒN
+    // - Bình luận tài liệu (document_comments) -> BẢO TỒN
+    // - Đánh giá website (site_reviews) -> BẢO TỒN
+    // - Lượt bình chọn (votes) -> BẢO TỒN
+
+    // 4. Ẩn danh hóa thông tin cá nhân:
+    // Tên thành "Vô danh", icon thành 🥷, mail đã bị xoá, thông tin sinh viên bị mất, namecard về mặc định
+    const anonymizedEmail = `deleted_${userId}_${Date.now()}@deleted.system`;
+    const scrambledPassword = `ACCOUNT_DELETED_${userId}_${randomToken()}`;
+    db.prepare(`
+      UPDATE users SET
+        display_name = 'Vô danh',
+        avatar = '🥷',
+        email = ?,
+        password_hash = ?,
+        role = 'member',
+        student_id = NULL,
+        real_name = NULL,
+        class_name = NULL,
+        bio = '',
+        cover_image = 'default',
+        namecard_frame = 'default',
+        namecard_theme = 'default',
+        avatar_changed = 0,
+        avatar_last_changed = NULL,
+        email_changed = 0,
+        locked_until = '9999-12-31T23:59:59Z',
+        updated_at = CURRENT_TIMESTAMP
+      WHERE id = ?
+    `).run(anonymizedEmail, scrambledPassword, userId);
+
+    console.log(`[CLEANUP] Anonymized inactive user: ID ${userId} (was ${target.email}) -> 'Vô danh' 🥷`);
     return true;
   } finally {
     db.exec("PRAGMA foreign_keys = ON;");
@@ -843,6 +876,8 @@ function cleanupInactiveAccounts() {
       SELECT id, email, role 
       FROM users 
       WHERE role NOT IN ('admin')
+        AND display_name != 'Vô danh'
+        AND email NOT LIKE '%@deleted.%'
         AND last_active_at IS NOT NULL 
         AND last_active_at <= ?
     `).all(cutoff);
@@ -1237,7 +1272,8 @@ function getAuthorStreakTier(userId) {
 }
 
 function publicUser(user, streakInfo = null) {
-  const info = streakInfo || (user.id ? calculateUserStreak(user.id) : { streak: 0, streakTier: 0, shields: 0 });
+  const isAnonymized = Boolean((user.email && user.email.includes("@deleted.")) || user.display_name === "Vô danh");
+  const info = isAnonymized ? { streak: 0, streakTier: 0, shields: 0 } : (streakInfo || (user.id ? calculateUserStreak(user.id) : { streak: 0, streakTier: 0, shields: 0 }));
   const lastChange = user.avatar_last_changed ? Number(user.avatar_last_changed) : 0;
   const now = Date.now();
   const cooldownMs = 7 * 24 * 60 * 60 * 1000;
@@ -1245,37 +1281,37 @@ function publicUser(user, streakInfo = null) {
   const remainingCooldownMs = canChangeAvatar ? 0 : Math.max(0, cooldownMs - (now - lastChange));
   const remainingDays = Math.ceil(remainingCooldownMs / (24 * 60 * 60 * 1000));
 
-  const inactivityInfo = checkInactivityWarning(user);
+  const inactivityInfo = isAnonymized ? null : checkInactivityWarning(user);
 
   return {
     id: user.id,
-    email: user.email,
-    displayName: user.display_name,
-    initials: user.avatar || getAvatarEmoji(user.display_name),
-    avatarChanged: Boolean(user.avatar_changed),
-    avatarLastChanged: lastChange || null,
-    canChangeAvatar,
-    avatarRemainingDays: remainingDays,
-    role: user.role,
-    isMember: Boolean(user.role === "member"),
-    isVanLang: isVanLangDomain(user.email),
+    email: isAnonymized ? "Đã bị xoá" : user.email,
+    displayName: isAnonymized ? "Vô danh" : user.display_name,
+    initials: isAnonymized ? "🥷" : (user.avatar || getAvatarEmoji(user.display_name)),
+    avatarChanged: isAnonymized ? false : Boolean(user.avatar_changed),
+    avatarLastChanged: isAnonymized ? null : (lastChange || null),
+    canChangeAvatar: isAnonymized ? false : canChangeAvatar,
+    avatarRemainingDays: isAnonymized ? 0 : remainingDays,
+    role: isAnonymized ? "member" : user.role,
+    isMember: isAnonymized ? true : Boolean(user.role === "member"),
+    isVanLang: isAnonymized ? false : isVanLangDomain(user.email),
     inactivityWarning: inactivityInfo,
-    emailChanged: Boolean(user.email_changed),
-    canChangeEmail: !user.email_changed,
-    studentId: user.student_id || "",
-    realName: user.real_name || "",
-    className: user.class_name || "",
-    arenaClass: getArenaClassByStudentId(user.student_id),
-    isPrivilegedArena: Boolean(user.role === "admin" || user.role === "ta" || user.role === "lecturer"),
-    bio: user.bio || "",
-    coverImage: user.cover_image || "default",
-    namecardFrame: (user.namecard_frame && user.namecard_frame !== "default") ? user.namecard_frame : "none",
-    namecardTheme: user.namecard_theme || "default",
-    streak: info.streak || 0,
-    maxStreak: user.id ? getUserMaxStreak(user.id) : 0,
-    streakTier: info.streakTier || 0,
-    shields: info.shields || 0,
-    limitedItems: user.id ? getUserLimitedItemsStatus(user.id) : { frames: {}, covers: {} },
+    emailChanged: isAnonymized ? false : Boolean(user.email_changed),
+    canChangeEmail: false,
+    studentId: isAnonymized ? "" : (user.student_id || ""),
+    realName: isAnonymized ? "" : (user.real_name || ""),
+    className: isAnonymized ? "" : (user.class_name || ""),
+    arenaClass: isAnonymized ? "" : getArenaClassByStudentId(user.student_id),
+    isPrivilegedArena: isAnonymized ? false : Boolean(user.role === "admin" || user.role === "ta" || user.role === "lecturer"),
+    bio: isAnonymized ? "" : (user.bio || ""),
+    coverImage: isAnonymized ? "default" : (user.cover_image || "default"),
+    namecardFrame: isAnonymized ? "none" : ((user.namecard_frame && user.namecard_frame !== "default") ? user.namecard_frame : "none"),
+    namecardTheme: isAnonymized ? "default" : (user.namecard_theme || "default"),
+    streak: isAnonymized ? 0 : (info.streak || 0),
+    maxStreak: isAnonymized ? 0 : (user.id ? getUserMaxStreak(user.id) : 0),
+    streakTier: isAnonymized ? 0 : (info.streakTier || 0),
+    shields: isAnonymized ? 0 : (info.shields || 0),
+    limitedItems: isAnonymized ? { frames: {}, covers: {} } : (user.id ? getUserLimitedItemsStatus(user.id) : { frames: {}, covers: {} }),
   };
 }
 function requireUser(request, response) {
@@ -3709,6 +3745,58 @@ async function api(request, response, url) {
     // Lấy thông tin mở khóa khung/ảnh bìa giới hạn của người dùng
     checkAndGrantLimitedItems(targetUser.id);
     const limitedItems = getUserLimitedItemsStatus(targetUser.id);
+
+    const isAnonymized = Boolean((targetUser.email && targetUser.email.includes("@deleted.")) || targetUser.display_name === "Vô danh");
+    if (isAnonymized) {
+      return json(response, 200, {
+        user: {
+          id: targetUser.id,
+          userCode: String(targetUser.id).padStart(5, '0'),
+          displayName: "Vô danh",
+          avatar: "🥷",
+          role: "member",
+          bio: "",
+          coverImage: "default",
+          namecardFrame: "none",
+          namecardTheme: "default",
+          isSelf: false,
+          canUploadCustomCover: false,
+          limitedItems: { frames: {}, covers: {} },
+          studentId: "Đã bị xoá",
+          realName: "Đã bị xoá",
+          className: "Đã bị xoá",
+          email: "Đã bị xoá",
+          isPrivilegedViewer: isPrivileged,
+        },
+        streakCard: {
+          streak: 0,
+          streakTier: 0,
+          streakTitle: "Vô danh",
+          shields: 0,
+          autoShieldUsed: false,
+          weekDays: weekDays.map((d) => ({ ...d, isActive: false }))
+        },
+        forum: {
+          contributionPoints: 0,
+          postsAndResponsesCount: 0,
+          maxStreak: 0,
+          currentStreak: 0,
+          activeDaysCount: 0
+        },
+        study: {
+          studyDaysCount: 0,
+          totalStudyMinutes: 0
+        },
+        arena: {
+          weeksParticipated: 0,
+          bestWeekScore: 0,
+          lastWeekScore: 0,
+          bestRank: null,
+          perfectCount: 0,
+          fastestSeconds: null
+        }
+      });
+    }
 
     return json(response, 200, {
       user: {
