@@ -273,6 +273,7 @@ try { db.exec("ALTER TABLE study_rooms ADD COLUMN host_user_id INTEGER REFERENCE
 try { db.exec("ALTER TABLE study_rooms ADD COLUMN timer_state_json TEXT;"); } catch (e) {}
 try { db.exec("ALTER TABLE study_rooms ADD COLUMN focus_mins INTEGER;"); } catch (e) {}
 try { db.exec("ALTER TABLE study_rooms ADD COLUMN break_mins INTEGER;"); } catch (e) {}
+try { db.exec("ALTER TABLE study_rooms ADD COLUMN empty_since_ms INTEGER;"); } catch (e) {}
 
 const LIBRARY_ROOMS = [
   {
@@ -368,6 +369,37 @@ try {
 } catch (e) {
   console.warn("Lỗi khởi tạo 3 phòng thư viện:", e.message);
 }
+
+function cleanupEmptyMeetingRooms(nowMs = Date.now()) {
+  try {
+    const activeRows = db.prepare(`
+      SELECT room_id FROM study_sessions
+      WHERE (is_running = 1 AND (last_ping_ms > (? - 300000) OR (last_ping IS NOT NULL AND (strftime('%s', 'now') - strftime('%s', last_ping)) < 300)))
+         OR (last_ping_ms > (? - 180000))
+         OR (last_ping IS NOT NULL AND (strftime('%s', 'now') - strftime('%s', last_ping)) < 180)
+    `).all(nowMs, nowMs);
+
+    const activeRoomSet = new Set(activeRows.map(r => r.room_id).filter(Boolean));
+    const meetingRooms = db.prepare("SELECT id, empty_since_ms, created_at FROM study_rooms WHERE type = 'meeting'").all();
+    for (const room of meetingRooms) {
+      const hasLearners = activeRoomSet.has(room.id);
+      if (!hasLearners) {
+        if (!room.empty_since_ms) {
+          db.prepare("UPDATE study_rooms SET empty_since_ms = ? WHERE id = ?").run(nowMs, room.id);
+        } else if (nowMs - Number(room.empty_since_ms) >= 5 * 60 * 1000) {
+          db.prepare("DELETE FROM study_rooms WHERE id = ?").run(room.id);
+        }
+      } else {
+        if (room.empty_since_ms) {
+          db.prepare("UPDATE study_rooms SET empty_since_ms = NULL WHERE id = ?").run(room.id);
+        }
+      }
+    }
+  } catch (e) {
+    console.warn("Lỗi dọn dẹp phòng họp trống:", e.message);
+  }
+}
+try { setInterval(cleanupEmptyMeetingRooms, 60000); } catch (e) {}
 try { db.exec("ALTER TABLE users ADD COLUMN bio TEXT;"); } catch (e) {}
 try { db.exec("ALTER TABLE users ADD COLUMN cover_image TEXT;"); } catch (e) {}
 try { db.exec("ALTER TABLE users ADD COLUMN namecard_frame TEXT DEFAULT 'default';"); } catch (e) {}
@@ -4638,6 +4670,7 @@ async function api(request, response, url) {
 
   if (method === "GET" && pathName === "/api/study/rooms") {
     const nowMs = Date.now();
+    cleanupEmptyMeetingRooms(nowMs);
     const activeRows = db.prepare(`
       SELECT room_id, user_id FROM study_sessions
       WHERE (is_running = 1 AND (last_ping_ms > (? - 300000) OR (last_ping IS NOT NULL AND (strftime('%s', 'now') - strftime('%s', last_ping)) < 300)))
@@ -4786,8 +4819,18 @@ async function api(request, response, url) {
       if (room.pin_code) {
         const isHostOrAdmin = (user.id === room.host_user_id || user.role === 'admin');
         if (!isHostOrAdmin && pinCode !== room.pin_code) {
-          return error(response, 403, "Mật khẩu phòng họp không chính xác (gồm 4 chữ số).");
+          return json(response, 200, {
+            success: false,
+            requiresPin: true,
+            roomId: room.id,
+            roomName: room.name,
+            error: pinCode ? "Mật khẩu phòng họp không chính xác (gồm 4 chữ số)." : "Phòng họp yêu cầu mật khẩu 4 chữ số."
+          });
         }
+      }
+
+      if (room.empty_since_ms) {
+        try { db.prepare("UPDATE study_rooms SET empty_since_ms = NULL WHERE id = ?").run(room.id); } catch (e) {}
       }
 
       db.prepare(`
@@ -4963,6 +5006,12 @@ async function api(request, response, url) {
 
       target.done = !target.done;
       target.by = target.done ? (user.display_name || user.name || "Thành viên phòng") : null;
+      target.lastEditedBy = {
+        userId: user.id,
+        name: user.display_name || user.name || "Thành viên phòng",
+        avatar: user.avatar || (user.role === 'admin' ? '🛡️' : (user.role === 'ta' ? '🎓' : '🦊')),
+        updatedAt: Date.now()
+      };
 
       db.prepare("UPDATE study_rooms SET shared_tasks_json = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?")
         .run(JSON.stringify(tasks), roomId);
@@ -4988,10 +5037,16 @@ async function api(request, response, url) {
       let tasks = [];
       try { tasks = JSON.parse(room.shared_tasks_json || "[]"); } catch (e) {}
       tasks.push({
-        id: `st_${Date.now()}`,
+        id: `st_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`,
         text,
         done: false,
         by: null,
+        lastEditedBy: {
+          userId: user.id,
+          name: user.display_name || user.name || "Thành viên phòng",
+          avatar: user.avatar || (user.role === 'admin' ? '🛡️' : (user.role === 'ta' ? '🎓' : '🦊')),
+          updatedAt: Date.now()
+        },
         createdAt: Date.now()
       });
 
@@ -5023,6 +5078,12 @@ async function api(request, response, url) {
       if (!target) return error(response, 404, "Nhiệm vụ không tồn tại.");
 
       target.text = text;
+      target.lastEditedBy = {
+        userId: user.id,
+        name: user.display_name || user.name || "Thành viên phòng",
+        avatar: user.avatar || (user.role === 'admin' ? '🛡️' : (user.role === 'ta' ? '🎓' : '🦊')),
+        updatedAt: Date.now()
+      };
       db.prepare("UPDATE study_rooms SET shared_tasks_json = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?")
         .run(JSON.stringify(tasks), roomId);
 

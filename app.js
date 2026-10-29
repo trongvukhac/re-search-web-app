@@ -1593,6 +1593,14 @@ function applySession(user) {
 
   if (user) {
     if (typeof initWebActivityTracker === "function") initWebActivityTracker();
+    if (pendingJoinMeetingId) {
+      const rId = pendingJoinMeetingId;
+      pendingJoinMeetingId = null;
+      if (typeof go === "function") go("study", false);
+      setTimeout(() => {
+        if (typeof joinStudySpace === "function") joinStudySpace(rId);
+      }, 350);
+    }
   } else {
     if (typeof stopWebActivityTracker === "function") stopWebActivityTracker();
   }
@@ -1988,10 +1996,11 @@ async function hydrateServer(force = false) {
     applySession(current.user);
 
     // Only navigate to requested study route ONCE on initial app boot
-    if (!initialStudyRouteHandled && typeof initialRequestedRoute !== "undefined" && initialRequestedRoute === "study") {
+    const initialRouteBase = (typeof initialRequestedRoute !== "undefined" && initialRequestedRoute) ? initialRequestedRoute.split("?")[0].split("&")[0] : "";
+    if (!initialStudyRouteHandled && initialRouteBase === "study") {
       initialStudyRouteHandled = true;
       if (canAccessStudyLounge(current.user)) {
-        go("study", false);
+        go(initialRequestedRoute, false);
       } else {
         toast(STUDY_MAINTENANCE_MSG);
       }
@@ -2562,8 +2571,11 @@ window.addEventListener("resize", updateResponsiveAsidePlacement);
 let currentActiveRoute = null;
 let savedForumScrollY = 0; // Lưu vị trí cuộn của Diễn đàn khi xem bài viết
 
-function go(route, scrollToTop = true) {
-  if (route === "study" && !canAccessStudyLounge()) {
+function go(rawRoute, scrollToTop = true) {
+  const route = (rawRoute || "home").trim();
+  const baseRoute = route.split("?")[0].split("&")[0] || "home";
+
+  if (baseRoute === "study" && !canAccessStudyLounge()) {
     toast(STUDY_MAINTENANCE_MSG);
     const activeEl = document.querySelector(".page.active-page");
     const currentActive = activeEl ? activeEl.dataset.page : null;
@@ -2580,21 +2592,21 @@ function go(route, scrollToTop = true) {
     return;
   }
 
-  if (route.startsWith("post-") || route.startsWith("post/")) {
-    const pId = Number(route.replace(/^post[-/]/, ""));
+  if (baseRoute.startsWith("post-") || baseRoute.startsWith("post/")) {
+    const pId = Number(baseRoute.replace(/^post[-/]/, ""));
     if (pId) {
       openDetail(pId, false);
       return;
     }
   }
 
-  if (route !== "post-detail" && !route.startsWith("post-") && !route.startsWith("post/")) {
+  if (baseRoute !== "post-detail" && !baseRoute.startsWith("post-") && !baseRoute.startsWith("post/")) {
     stopPostReadTracking();
     if (typeof showMobileNav === "function") showMobileNav();
   }
 
-  const isSameRoute = (currentActiveRoute === route);
-  currentActiveRoute = route;
+  const isSameRoute = (currentActiveRoute === baseRoute);
+  currentActiveRoute = baseRoute;
 
   if (!isSameRoute) {
     $$("dialog").forEach((d) => {
@@ -2603,10 +2615,10 @@ function go(route, scrollToTop = true) {
   }
 
   $$(".page").forEach((p) =>
-    p.classList.toggle("active-page", p.dataset.page === route),
+    p.classList.toggle("active-page", p.dataset.page === baseRoute),
   );
   $$("[data-route]").forEach((a) =>
-    a.classList.toggle("active", a.dataset.route === route),
+    a.classList.toggle("active", a.dataset.route === baseRoute),
   );
   if (location.hash !== `#${route}`) {
     history.replaceState(null, "", `#${route}`);
@@ -2617,7 +2629,7 @@ function go(route, scrollToTop = true) {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
-  if (route === "home") {
+  if (baseRoute === "home") {
     renderHome();
     if (!cachedLeaderboardData?.leaderboard?.length && !cachedLeaderboardData?.arenaLeaderboard?.length) {
       requestAPI("/api/leaderboard").then(data => {
@@ -2631,7 +2643,7 @@ function go(route, scrollToTop = true) {
       renderLeaderboard();
     }
   }
-  if (route === "forum") {
+  if (baseRoute === "forum") {
     renderPosts();
     renderLeaderboard();
     // Khôi phục vị trí cuộn khi quay về Diễn đàn từ bài viết bằng nút Quay lại (scrollToTop === false)
@@ -2646,10 +2658,10 @@ function go(route, scrollToTop = true) {
       savedForumScrollY = 0;
     }
   }
-  if (route === "documents") renderDocuments();
-  if (route === "study") onEnterStudyLounge();
+  if (baseRoute === "documents") renderDocuments();
+  if (baseRoute === "study") onEnterStudyLounge();
   else onLeaveStudyLounge();
-  if (route === "arena") onEnterArena();
+  if (baseRoute === "arena") onEnterArena();
   else onLeaveArena();
   updateResponsiveAsidePlacement();
   showMobileNav();
@@ -7487,11 +7499,18 @@ function updateTimerDisplay() {
   const startBtnText = $("#studyStartBtnText");
   const pauseBtn = $("#studyPauseBtn");
   const completeBtn = $("#studyCompleteBtn");
+  const resetBtn = $("#studyResetBtn");
+  const nextBtn = $("#studyNextBtn");
+  const presetsBar = $("#studyPresetsBar");
+  const meetingNotice = $("#meetingGuestTimerNotice");
   const flowtimeBreakBtn = $("#studyFlowtimeBreakBtn");
   const cycleLabel = $("#studyCycleLabel");
   const isFlowtime = (studySettings.timerPreset === 'flowtime');
   const isFlowtimeFocus = (isFlowtime && studyState.mode === 'focus');
   const isEyeRule = (studySettings.timerPreset === 'eye_rule');
+  const isLibraryRoom = Boolean(currentStudyRoomId && currentStudyRoomId.startsWith('lib_'));
+  const isMeetingRoom = Boolean(currentStudyRoomData && currentStudyRoomData.type === 'meeting');
+  const isMeetingGuest = Boolean(isMeetingRoom && !currentStudyRoomData.isHost);
 
   // 1. Clock Display
   if (clock) {
@@ -7574,9 +7593,9 @@ function updateTimerDisplay() {
         btn.classList.toggle("active", btn.dataset.ratio === ratio);
       });
       const elapsed = isFlowtimeFocus ? studyState.elapsedSessionSeconds : (studyState.flowtimeFocusHistorySecs || 0);
-      const breakCalc = Math.max(10, Math.round(elapsed * parseRatio(ratio)));
+      const breakCalc = Math.round(elapsed * parseRatio(ratio));
       if (ftPreview) {
-        ftPreview.textContent = `Nghỉ: ${formatMMSS(breakCalc)}`;
+        ftPreview.textContent = elapsed > 0 ? `Nghỉ: ${formatMMSS(breakCalc)}` : `Tỷ lệ ${ratio}`;
       }
     } else {
       ftRatioBar.style.display = "none";
@@ -7636,10 +7655,89 @@ function updateTimerDisplay() {
     }
   });
 
-  if (startBtn) startBtn.style.display = studyState.isRunning ? "none" : "inline-flex";
-  if (pauseBtn) pauseBtn.style.display = studyState.isRunning ? "inline-flex" : "none";
-  if (completeBtn) {
-    completeBtn.style.display = studyState.isRunning ? "inline-flex" : "none";
+  const modeButtons = $$(".study-mode-btn");
+
+  if (isLibraryRoom) {
+    if (startBtn) startBtn.style.display = "none";
+    if (pauseBtn) pauseBtn.style.display = "none";
+    if (resetBtn) resetBtn.style.display = "none";
+    if (nextBtn) nextBtn.style.display = "none";
+    if (flowtimeBreakBtn) flowtimeBreakBtn.style.display = "none";
+    if (presetsBar) presetsBar.style.display = "none";
+    if (meetingNotice) meetingNotice.style.display = "none";
+
+    if (completeBtn) {
+      completeBtn.style.display = "inline-flex";
+      completeBtn.className = "button button-outline btn-danger-leave study-action-ctrl";
+      completeBtn.innerHTML = `
+        <span class="btn-icon">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+            <polyline points="16 17 21 12 16 7"></polyline>
+            <line x1="21" y1="12" x2="9" y2="12"></line>
+          </svg>
+        </span>
+        <span class="btn-label">Rời phòng</span>
+      `;
+      completeBtn.onclick = () => confirmLeaveCurrentRoom();
+    }
+
+    modeButtons.forEach(btn => {
+      btn.style.pointerEvents = "none";
+      btn.style.opacity = "0.9";
+    });
+  } else if (isMeetingGuest) {
+    if (startBtn) startBtn.style.display = "none";
+    if (pauseBtn) pauseBtn.style.display = "none";
+    if (resetBtn) resetBtn.style.display = "none";
+    if (nextBtn) nextBtn.style.display = "none";
+    if (completeBtn) completeBtn.style.display = "none";
+    if (flowtimeBreakBtn) flowtimeBreakBtn.style.display = "none";
+    if (presetsBar) presetsBar.style.display = "none";
+
+    modeButtons.forEach(btn => {
+      btn.style.pointerEvents = "none";
+      btn.style.opacity = "0.9";
+    });
+
+    if (meetingNotice) {
+      meetingNotice.style.display = "inline-flex";
+      if (studyState.isRunning) {
+        meetingNotice.innerHTML = `
+          <span class="live-pulse-dot" style="background:#10b981;"></span>
+          <span style="font-weight:700; color:#059669; font-size:13px;">Đồng hồ do chủ phòng quản lý</span>
+        `;
+      } else {
+        meetingNotice.innerHTML = `
+          <svg class="ui-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:4px;"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+          <span style="font-weight:700; color:#d97706; font-size:13px;">Chờ chủ phòng bắt đầu</span>
+        `;
+      }
+    }
+  } else {
+    if (presetsBar) presetsBar.style.display = "flex";
+    if (meetingNotice) meetingNotice.style.display = "none";
+
+    modeButtons.forEach(btn => {
+      btn.style.pointerEvents = "auto";
+      btn.style.opacity = "1";
+    });
+
+    if (resetBtn) resetBtn.style.display = "inline-flex";
+    if (nextBtn) nextBtn.style.display = "inline-flex";
+
+    if (startBtn) startBtn.style.display = studyState.isRunning ? "none" : "inline-flex";
+    if (pauseBtn) pauseBtn.style.display = studyState.isRunning ? "inline-flex" : "none";
+
+    if (completeBtn) {
+      completeBtn.style.display = studyState.isRunning ? "inline-flex" : "none";
+      completeBtn.className = "button button-quiet study-action-ctrl";
+      completeBtn.innerHTML = `
+        <span class="btn-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></span>
+        <span class="btn-label">Hoàn tất</span>
+      `;
+      completeBtn.onclick = () => finishStudySession(false);
+    }
   }
 
   $("#btnModeFocus")?.classList.toggle("active", studyState.mode === 'focus');
@@ -7704,20 +7802,24 @@ window.setFlowtimeBreakRatio = function(ratio) {
   studySettings.flowtimeRatio = ratio;
   saveStudySettings(false);
 
-  const elapsed = studyState.flowtimeFocusHistorySecs || studyState.elapsedSessionSeconds || 2904;
+  const elapsed = (studyState.mode === 'shortbreak') ? (studyState.flowtimeFocusHistorySecs || 0) : (studyState.elapsedSessionSeconds || studyState.flowtimeFocusHistorySecs || 0);
   const ratioNum = parseRatio(ratio);
-  const newBreakSecs = Math.max(10, Math.round(elapsed * ratioNum));
+  const newBreakSecs = Math.round(elapsed * ratioNum);
 
   if (studyState.mode === 'shortbreak' && studySettings.timerPreset === 'flowtime') {
-    studyState.remainingSeconds = newBreakSecs;
-    studyState.durationMinutes = Math.max(1, Math.ceil(newBreakSecs / 60));
+    studyState.remainingSeconds = Math.max(10, newBreakSecs);
+    studyState.durationMinutes = Math.max(1, Math.ceil(studyState.remainingSeconds / 60));
     if (studyState.isRunning) {
-      studyState.targetEndMs = Date.now() + newBreakSecs * 1000;
+      studyState.targetEndMs = Date.now() + studyState.remainingSeconds * 1000;
     }
   }
 
   updateTimerDisplay();
-  toast(`Đã chọn tỷ lệ nghỉ Flowtime: ${ratio} (${formatMMSS(newBreakSecs)})`);
+  if (elapsed > 0) {
+    toast(`Đã chọn tỷ lệ nghỉ Flowtime: ${ratio} (${formatMMSS(newBreakSecs)})`);
+  } else {
+    toast(`Đã chọn tỷ lệ nghỉ Flowtime: ${ratio}`);
+  }
 };
 
 window.triggerFlowtimeBreak = function() {
@@ -8551,13 +8653,54 @@ async function fetchStudyLounge() {
 
     renderCoStudyList(lastFetchedLearners);
 
-    // CROSS-DEVICE REAL-TIME SYNC
-    if (res.mySession) {
+    // 1. Đồng bộ đồng hồ Phòng Thư viện 24/7
+    if (currentStudyRoomId && currentStudyRoomId.startsWith('lib_')) {
+      const cfg = LIBRARY_ROOM_CONFIGS.find(c => c.id === currentStudyRoomId) || LIBRARY_ROOM_CONFIGS[0];
+      const live = getLibraryLiveState(cfg.focus, cfg.break);
+      studyState.mode = live.isFocus ? 'focus' : 'shortbreak';
+      studyState.durationMinutes = live.isFocus ? cfg.focus : cfg.break;
+      studyState.remainingSeconds = live.remainingSec;
+      studyState.targetEndMs = live.targetEndMs;
+      studyState.isRunning = true;
+      if (!studyState.timerInterval) {
+        startLocalTimerTick();
+      }
+      updateTimerDisplay();
+    }
+    // 2. Đồng bộ đồng hồ Phòng Họp theo Chủ phòng (dành cho thành viên)
+    else if (currentStudyRoomData && currentStudyRoomData.type === 'meeting' && !currentStudyRoomData.isHost) {
+      const ts = currentStudyRoomData.timerState;
+      if (ts) {
+        studyState.mode = ts.mode || 'focus';
+        studyState.durationMinutes = ts.durationMinutes || 25;
+        studyState.cycleIndex = ts.cycleIndex || 1;
+        if (ts.isRunning && ts.targetEndMs > 0) {
+          const now = Date.now();
+          const rem = Math.max(0, Math.ceil((ts.targetEndMs - now) / 1000));
+          studyState.remainingSeconds = rem;
+          studyState.targetEndMs = ts.targetEndMs;
+          studyState.isRunning = true;
+          if (!studyState.timerInterval) {
+            startLocalTimerTick();
+          }
+        } else {
+          studyState.isRunning = false;
+          studyState.targetEndMs = 0;
+          if (studyState.timerInterval) {
+            clearInterval(studyState.timerInterval);
+            studyState.timerInterval = null;
+          }
+          studyState.remainingSeconds = ts.remainingSeconds !== undefined ? ts.remainingSeconds : (studyState.durationMinutes * 60);
+        }
+        updateTimerDisplay();
+      }
+    }
+    // 3. Đồng bộ cá nhân đa thiết bị
+    else if (res.mySession) {
       const s = res.mySession;
       const now = Date.now();
       if (s.isRunning) {
         const serverRemaining = Math.max(0, Math.ceil((s.targetEndMs - now) / 1000));
-        // Only overwrite local timer if this local tab is NOT running or session targetEndMs belongs to another device session
         if (!studyState.isRunning || (studyState.targetEndMs > 0 && Math.abs(studyState.targetEndMs - s.targetEndMs) > 3000)) {
           studyState.mode = s.mode;
           studyState.durationMinutes = s.durationMinutes;
@@ -8672,13 +8815,23 @@ function renderActiveSpaceBanner(room) {
     seatsEl.textContent = `${occ} người`;
   }
 
+  const personalTasksSection = $("#integratedPersonalTasksSection");
+  const personalHeading = $("#personalTodoHeadingText");
+
   if (room.type === 'meeting') {
     if (shareToolbar) shareToolbar.style.display = 'flex';
     if (codeText) codeText.textContent = room.id || '0000';
     if (tasksBox) tasksBox.style.display = 'block';
+    if (personalTasksSection) personalTasksSection.style.display = 'none';
   } else {
     if (shareToolbar) shareToolbar.style.display = 'none';
     if (tasksBox) tasksBox.style.display = 'none';
+    if (personalTasksSection) {
+      personalTasksSection.style.display = 'block';
+      if (personalHeading) {
+        personalHeading.textContent = currentStudyRoomId ? 'Việc cần làm của bạn' : 'Những việc cần làm';
+      }
+    }
   }
 }
 
@@ -8712,23 +8865,55 @@ function renderSharedCohortTasks(tasks = []) {
 
   listEl.innerHTML = taskList.map(t => {
     const isCompleted = Boolean(t.done || t.completed);
-    const contributor = t.by || t.completed_by_name || '';
     const safeId = escapeHTML(String(t.id));
+    const editor = t.lastEditedBy || {};
+    const editorName = editor.name || t.by || "Thành viên phòng";
+    const editorAvatar = editor.avatar || "🦊";
+    const editorTitle = `Chỉnh sửa gần nhất bởi ${editorName}`;
+
     return `
-      <li class="shared-task-item ${isCompleted ? 'completed' : ''}">
-        <label class="shared-task-label" style="display:flex; align-items:center; gap:8px; width:100%; cursor:pointer;">
+      <li class="shared-task-item ${isCompleted ? 'completed' : ''}" style="display:flex; align-items:center; gap:8px; padding:7px 10px; background:var(--surface-bg, #f7faf8); border:1px solid var(--line); border-radius:8px; margin-bottom:6px;">
+        <label class="shared-task-label" style="display:flex; align-items:center; gap:8px; flex:1; min-width:0; cursor:pointer; margin:0;">
           <input type="checkbox" ${isCompleted ? 'checked' : ''} onchange="toggleSharedRoomTask('${safeId}')" />
-          <span class="shared-task-text" style="flex:1; ${isCompleted ? 'text-decoration:line-through; opacity:0.6;' : ''}">${escapeHTML(t.text)}</span>
+          <span class="shared-task-text" style="flex:1; min-width:0; word-break:break-word; font-size:13px; ${isCompleted ? 'text-decoration:line-through; opacity:0.6;' : ''}">${escapeHTML(t.text)}</span>
         </label>
-        ${isCompleted && contributor ? `
-          <span class="shared-task-contributor" title="Hoàn thành bởi ${escapeHTML(contributor)}">
-            ✓ ${escapeHTML(contributor)}
-          </span>
-        ` : ''}
+        <span class="shared-task-editor-avatar" title="${escapeHTML(editorTitle)}">
+          ${escapeHTML(editorAvatar)}
+        </span>
+        <button type="button" class="todo-del-btn" onclick="deleteSharedRoomTask('${safeId}')" title="Xóa nhiệm vụ" style="background:none; border:none; color:var(--muted); font-size:16px; cursor:pointer; padding:0 4px; line-height:1;">×</button>
       </li>
     `;
   }).join('');
 }
+
+async function deleteSharedRoomTask(taskId) {
+  if (!session) {
+    openAuth();
+    return;
+  }
+  try {
+    const res = await requestAPI("/api/study/rooms/task/delete", {
+      method: "POST",
+      body: JSON.stringify({
+        roomId: currentStudyRoomId,
+        taskId: String(taskId)
+      })
+    });
+    if (res && res.success) {
+      const updatedTasks = res.sharedTasks || res.tasks || [];
+      if (currentStudyRoomData) {
+        currentStudyRoomData.sharedTasks = updatedTasks;
+      }
+      renderSharedCohortTasks(updatedTasks);
+      toast("Đã xóa nhiệm vụ.");
+    } else {
+      toast(res.error || "Không thể xóa nhiệm vụ.");
+    }
+  } catch (e) {
+    console.error("deleteSharedRoomTask error:", e);
+  }
+}
+window.deleteSharedRoomTask = deleteSharedRoomTask;
 
 /* ==========================================================================
    3 FUNCTIONAL STUDY SPACES: LIBRARY (24/7), MEETING ROOMS & PRIVATE PODS
@@ -8812,7 +8997,7 @@ function renderLibraryRoomsGrid() {
           ${isCurrent ? `
             <button type="button" class="button button-xs button-quiet" disabled style="font-weight:700;">✓ Đang ở phòng này</button>
           ` : `
-            <button type="button" class="button button-xs button-primary" onclick="joinStudySpace('${cfg.id}')" style="display:inline-flex; align-items:center; gap:4px;">
+            <button type="button" class="button button-xs button-primary btn-join-library-room" data-room-id="${cfg.id}" onclick="joinStudySpace('${cfg.id}')" style="display:inline-flex; align-items:center; gap:4px;">
               Tham gia →
             </button>
           `}
@@ -8930,6 +9115,7 @@ async function loadAndRenderStudyRooms() {
 
 async function joinStudySpace(roomId, pinCode = null) {
   if (!session) {
+    pendingJoinMeetingId = roomId;
     openAuth();
     return;
   }
@@ -8940,6 +9126,24 @@ async function joinStudySpace(roomId, pinCode = null) {
       method: "POST",
       body: JSON.stringify(payload)
     });
+
+    if (res && res.requiresPin) {
+      pendingJoinMeetingId = roomId;
+      const modal = document.getElementById("studyJoinPinModal");
+      const desc = document.getElementById("joinPinRoomDesc");
+      const input = document.getElementById("inputJoinPinCode");
+      if (desc) desc.textContent = `Phòng họp "${res.roomName || roomId}" được bảo vệ bởi mật khẩu 4 chữ số:`;
+      if (input) input.value = "";
+      if (modal && typeof modal.showModal === 'function') {
+        modal.showModal();
+        if (input) setTimeout(() => input.focus(), 100);
+      }
+      if (pinCode) {
+        toast("Mật khẩu 4 chữ số chưa đúng. Vui lòng thử lại.");
+      }
+      return;
+    }
+
     if (res && res.success) {
       currentStudyRoomId = res.room ? res.room.id : roomId;
       currentStudyRoomData = res.room || null;
@@ -8955,6 +9159,9 @@ async function joinStudySpace(roomId, pinCode = null) {
         studyState.durationMinutes = live.isFocus ? cfg.focus : cfg.break;
         studyState.remainingSeconds = live.remainingSec;
         studyState.isRunning = true;
+        if (!studyState.timerInterval) {
+          startLocalTimerTick();
+        }
         updateTimerDisplay();
       }
 
@@ -8963,7 +9170,7 @@ async function joinStudySpace(roomId, pinCode = null) {
       toast(`Đã vào: ${res.room ? res.room.name : currentStudyRoomId}`);
       fetchStudyLounge();
     } else {
-      toast(res.error || "Không thể vào phòng này.");
+      toast(res?.error || "Không thể vào phòng này.");
     }
   } catch (e) {
     console.error("joinStudySpace error:", e);
@@ -9172,9 +9379,18 @@ function checkUrlStudyRoomParam() {
   }
 
   if (roomId && (!currentStudyRoomId || currentStudyRoomId !== roomId)) {
+    if (typeof currentActiveRoute !== "undefined" && currentActiveRoute !== "study" && typeof go === "function") {
+      go("study", false);
+    }
     setTimeout(() => {
-      prepareJoinMeetingRoom(roomId, false);
-    }, 600);
+      if (!session) {
+        pendingJoinMeetingId = roomId;
+        toast(`Bạn nhận được liên kết tham gia phòng học ${roomId}. Vui lòng đăng nhập để vào phòng!`);
+        openAuth();
+        return;
+      }
+      joinStudySpace(roomId);
+    }, 250);
   }
 }
 
@@ -16654,7 +16870,8 @@ renderPosts();
 renderDocuments();
 loadSiteReviews();
 const initialRequestedRoute = (location.hash.slice(1) || "home");
-if (initialRequestedRoute === "study" && serverMode) {
+const initialRequestedBase = initialRequestedRoute.split("?")[0].split("&")[0];
+if (initialRequestedBase === "study" && serverMode) {
   go("home", false);
 } else {
   go(initialRequestedRoute, false);

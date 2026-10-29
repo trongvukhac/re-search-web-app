@@ -7013,17 +7013,113 @@ dialog.study-confirm-modal::backdrop {
   -webkit-backdrop-filter: blur(4px) !important;
 }
 
-@media (max-width: 767px) {
+@keyframes studySlideUpMobile {
+  from {
+    transform: translateY(100%);
+    opacity: 0.7;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@media (max-width: 768px) {
   dialog.study-popup-left,
   dialog.study-settings-modal,
   dialog.study-method-guide-modal,
-  dialog.study-confirm-modal {
-    left: 14px !important;
-    right: 14px !important;
-    width: calc(100vw - 28px) !important;
-    max-width: none !important;
-    padding: 22px 18px !important;
-    transform: translateY(-50%) !important;
+  dialog.study-confirm-modal,
+  dialog.study-create-meeting-modal,
+  dialog.study-join-pin-modal {
+    position: fixed !important;
+    top: auto !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    transform: none !important;
+    width: 100vw !important;
+    max-width: 100vw !important;
+    max-height: 88vh !important;
+    border-radius: 20px 20px 0 0 !important;
+    padding: 22px 18px 30px 18px !important;
+    box-shadow: 0 -12px 48px rgba(0, 0, 0, 0.45) !important;
+    animation: studySlideUpMobile 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
+    overflow-y: auto !important;
+  }
+
+  .preset-selector-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 8px !important;
+  }
+
+  .study-settings-modal .duration-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 8px !important;
+  }
+
+  .study-settings-tabs {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    padding-bottom: 8px !important;
+    scrollbar-width: none !important;
+  }
+  .study-settings-tabs::-webkit-scrollbar {
+    display: none !important;
+  }
+
+  .settings-tab-btn {
+    padding: 6px 10px !important;
+    font-size: 12px !important;
+  }
+
+  .study-actions {
+    flex-wrap: wrap !important;
+    justify-content: center !important;
+    gap: 8px !important;
+  }
+
+  .study-action-ctrl {
+    flex: 1 1 calc(50% - 8px) !important;
+    min-width: 125px !important;
+    justify-content: center !important;
+    height: 42px !important;
+  }
+
+  .study-layout {
+    flex-direction: column !important;
+    gap: 16px !important;
+  }
+
+  .study-main-col,
+  .study-side-col {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  .library-room-card {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 10px !important;
+  }
+
+  .library-room-card button {
+    width: 100% !important;
+    justify-content: center !important;
+  }
+
+  .active-space-banner {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 12px !important;
+  }
+
+  .active-space-stats {
+    justify-content: space-between !important;
+    width: 100% !important;
+  }
+
+  .active-space-stats .btn-leave-space {
+    width: auto !important;
   }
 }
 
@@ -8698,6 +8794,38 @@ body.dark-theme .shared-task-add-row input {
   border: 1px solid var(--line);
   border-radius: 8px;
 }
+.meeting-guest-timer-notice {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 9px 18px;
+  border-radius: 10px;
+  border: 1.5px solid var(--line);
+  background: var(--surface-bg, #f8fafc);
+  font-size: 13.5px;
+  font-weight: 700;
+  min-height: 42px;
+  box-sizing: border-box;
+  animation: fadeIn 0.2s ease;
+}
+.shared-task-editor-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: rgba(16, 185, 129, 0.14);
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  font-size: 12px;
+  cursor: help;
+  flex-shrink: 0;
+  transition: transform 0.15s;
+}
+.shared-task-editor-avatar:hover {
+  transform: scale(1.15);
+}
 
 /* Dark Theme Additions */
 body.dark-theme dialog.study-popup-left,
@@ -8730,6 +8858,10 @@ body.dark-theme .quick-join-meeting-wrap input {
   background: #0f172a;
   border-color: #334155;
   color: #f1f5f9;
+}
+body.dark-theme .meeting-guest-timer-notice {
+  background: #1e293b;
+  border-color: #334155;
 }
 body.dark-theme .btn-danger-leave {
   background: rgba(239, 68, 68, 0.15);

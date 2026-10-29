@@ -812,6 +812,7 @@
                 <button type="button" class="button button-quiet study-action-ctrl" id="studyCompleteBtn" style="display: none;">
                   <span class="btn-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></span> <span class="btn-label">Hoàn tất</span>
                 </button>
+                <div class="meeting-guest-timer-notice" id="meetingGuestTimerNotice" style="display: none;"></div>
               </div>
             </div>
 
@@ -1041,42 +1042,20 @@
 
           <!-- Side Column: Session Tasks & Co-Study Learners -->
           <div class="study-side-col">
-            <!-- Session To-Do Checklist (Enhanced with Statuses & Categorization Tags) -->
-            <div class="study-card todo-card" id="todoMainCard">
-              <div class="todo-head">
-                <div style="flex: 1; min-width: 0;">
-                  <div class="todo-title-row">
-                    <h3><svg class="ui-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:5px;"><rect x="3" y="5" width="6" height="6" rx="1"></rect><path d="m3 17 2 2 4-4"></path><path d="M13 6h8"></path><path d="M13 12h8"></path><path d="M13 18h8"></path></svg>Những việc cần làm</h3>
-                    <span class="todo-pct-badge" id="todoPctBadge">0%</span>
-                  </div>
-                  <div class="todo-progress-bar-wrap">
-                    <div class="todo-progress-bar" id="todoProgressBar" style="width: 0%;"></div>
-                  </div>
-                </div>
-                <div class="todo-head-actions">
-                  <button type="button" class="todo-tag-mgr-btn" id="btnManageTodoTags" onclick="openStudySettingsModal('tasks')" title="Quản lý và tùy biến nhãn công việc">
-                    <svg class="ui-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:4px;"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7.01" y2="7"></line></svg>
-                    Quản lý nhãn
-                  </button>
-                  <button class="button button-sm button-ghost" id="clearCompletedTodos" title="Dọn dẹp các việc đã xong">Dọn dẹp</button>
-                </div>
-              </div>
-              <div class="todo-input-wrap">
-                <input type="text" id="newTodoInput" placeholder="Thêm việc cần làm..." maxlength="80" />
-                <select id="newTodoTagSelect" class="todo-tag-select" title="Gắn nhãn phân loại">
-                  <option value="">Không gắn nhãn</option>
-                </select>
-                <button class="button button-sm button-primary" id="addTodoBtn" title="Thêm việc"><svg class="ui-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg></button>
-              </div>
-              <ul class="todo-list" id="studyTodoList"></ul>
-            </div>
-
             <!-- Flexible Study Spaces Ecosystem (Hệ thống Không gian Tự học 3 chức năng) -->
             <div class="study-card co-study-card" id="studySpacesMainCard">
               <div class="co-study-head">
                 <div style="min-width: 0; flex: 1;">
                   <div style="display:flex; align-items:center; gap:8px; flex-wrap: wrap;">
                     <h3 style="white-space: nowrap; display: inline-flex; align-items: center; gap: 6px;">
+                      <svg class="ui-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+                      Không gian Tự học
+                    </h3>
+                    <span class="badge" id="coStudyCountBadge">0 đang học</span>
+                  </div>
+                  <p class="co-study-tip" id="studySpaceSubtitle">Thư viện 24/7, Phòng họp nhóm &amp; Buồng riêng tư</p>
+                </div>
+              </div>
                       <svg class="ui-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
                       Không gian Tự học
                     </h3>
@@ -1231,8 +1210,38 @@
                   </ul>
                 </div>
 
+                <!-- NHỮNG VIỆC CẦN LÀM (TÍCH HỢP CHO THƯ VIỆN, BUỒNG RIÊNG TƯ & SẢNH NGOÀI) -->
+                <div class="todo-integrated-section" id="integratedPersonalTasksSection" style="margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--line);">
+                  <div class="todo-head">
+                    <div style="flex: 1; min-width: 0;">
+                      <div class="todo-title-row">
+                        <h3 style="font-size: 13.5px;"><svg class="ui-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:5px;"><rect x="3" y="5" width="6" height="6" rx="1"></rect><path d="m3 17 2 2 4-4"></path><path d="M13 6h8"></path><path d="M13 12h8"></path><path d="M13 18h8"></path></svg><span id="personalTodoHeadingText">Những việc cần làm</span></h3>
+                        <span class="todo-pct-badge" id="todoPctBadge">0%</span>
+                      </div>
+                      <div class="todo-progress-bar-wrap">
+                        <div class="todo-progress-bar" id="todoProgressBar" style="width: 0%;"></div>
+                      </div>
+                    </div>
+                    <div class="todo-head-actions">
+                      <button type="button" class="todo-tag-mgr-btn" id="btnManageTodoTags" onclick="openStudySettingsModal('tasks')" title="Quản lý và tùy biến nhãn công việc">
+                        <svg class="ui-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:4px;"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7.01" y2="7"></line></svg>
+                        Quản lý nhãn
+                      </button>
+                      <button class="button button-sm button-ghost" id="clearCompletedTodos" title="Dọn dẹp các việc đã xong">Dọn dẹp</button>
+                    </div>
+                  </div>
+                  <div class="todo-input-wrap">
+                    <input type="text" id="newTodoInput" placeholder="Thêm việc cần làm..." maxlength="80" />
+                    <select id="newTodoTagSelect" class="todo-tag-select" title="Gắn nhãn phân loại">
+                      <option value="">Không gắn nhãn</option>
+                    </select>
+                    <button class="button button-sm button-primary" id="addTodoBtn" title="Thêm việc"><svg class="ui-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg></button>
+                  </div>
+                  <ul class="todo-list" id="studyTodoList"></ul>
+                </div>
+
                 <!-- Danh sách bạn học trong phòng này -->
-                <div class="co-study-list" id="coStudyList"></div>
+                <div class="co-study-list" id="coStudyList" style="margin-top: 14px;"></div>
               </div>
             </div>
           </div>
