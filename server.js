@@ -62,7 +62,7 @@ const MIME = {
 fs.mkdirSync(DATABASE_DIR, { recursive: true });
 const db = new DatabaseSync(DATABASE_PATH);
 db.exec("PRAGMA foreign_keys = ON; PRAGMA journal_mode = WAL; PRAGMA synchronous = NORMAL; PRAGMA busy_timeout = 5000; PRAGMA cache_size = -64000;");
-try { db.exec("PRAGMA wal_checkpoint(TRUNCATE);"); } catch (e) {}
+try { db.exec("PRAGMA wal_checkpoint(TRUNCATE);"); } catch (e) { }
 db.exec(`
   CREATE TABLE IF NOT EXISTS users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -241,21 +241,25 @@ try { db.exec("ALTER TABLE study_sessions ADD COLUMN started_at_ms INTEGER NOT N
 try { db.exec("ALTER TABLE study_sessions ADD COLUMN cycle_index INTEGER NOT NULL DEFAULT 1;"); } catch (e) {}
 try { db.exec("ALTER TABLE study_sessions ADD COLUMN wallpaper TEXT DEFAULT 'default';"); } catch (e) {}
 try { db.exec("ALTER TABLE study_sessions ADD COLUMN aura TEXT DEFAULT 'emerald';"); } catch (e) {}
-try { db.exec("ALTER TABLE study_sessions ADD COLUMN room_id TEXT DEFAULT 'commons';"); } catch (e) {}
+try { db.exec("ALTER TABLE study_sessions ADD COLUMN room_id TEXT DEFAULT 'none';"); } catch (e) {}
 
-// Flexible Study Spaces & Cohort Rooms Table
+// Flexible Study Spaces (Thư viện, Phòng họp, Buồng riêng tư)
 try {
   db.exec(`
     CREATE TABLE IF NOT EXISTS study_rooms (
       id TEXT PRIMARY KEY,
       name TEXT NOT NULL,
-      type TEXT NOT NULL DEFAULT 'shared_task', -- 'commons', 'shared_task', 'private'
+      type TEXT NOT NULL DEFAULT 'meeting', -- 'library', 'meeting', 'private'
       description TEXT,
       objective TEXT,
-      icon TEXT NOT NULL DEFAULT '📚',
-      max_seats INTEGER NOT NULL DEFAULT 10,
+      icon TEXT NOT NULL DEFAULT 'book',
+      max_seats INTEGER NOT NULL DEFAULT 25,
       pin_code TEXT,
       created_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+      host_user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+      timer_state_json TEXT,
+      focus_mins INTEGER,
+      break_mins INTEGER,
       shared_tasks_json TEXT NOT NULL DEFAULT '[]',
       created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
       updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
@@ -265,77 +269,104 @@ try {
   console.warn("Lỗi khởi tạo bảng study_rooms:", e.message);
 }
 
-const DEFAULT_STUDY_ROOMS = [
+try { db.exec("ALTER TABLE study_rooms ADD COLUMN host_user_id INTEGER REFERENCES users(id) ON DELETE SET NULL;"); } catch (e) {}
+try { db.exec("ALTER TABLE study_rooms ADD COLUMN timer_state_json TEXT;"); } catch (e) {}
+try { db.exec("ALTER TABLE study_rooms ADD COLUMN focus_mins INTEGER;"); } catch (e) {}
+try { db.exec("ALTER TABLE study_rooms ADD COLUMN break_mins INTEGER;"); } catch (e) {}
+
+const LIBRARY_ROOMS = [
   {
-    id: "commons",
-    name: "Đại sảnh Thư viện (Library Commons)",
-    type: "commons",
-    description: "Không gian mở kết nối toàn thể sinh viên và học giả NCKH đang tự học trực tuyến",
-    objective: "Tập trung sâu và duy trì kỷ luật học tập mỗi ngày",
-    icon: "🏛️",
-    max_seats: 100,
-    pin_code: null,
-    shared_tasks_json: JSON.stringify([])
+    id: "lib_study_25_5",
+    name: "Khu vực tự học",
+    type: "library",
+    description: "Theo phương pháp Pomodoro cơ bản, thư giãn học tập",
+    objective: "Duy trì nhịp học Pomodoro 25 phút chuẩn mực",
+    icon: "book",
+    focusMinutes: 25,
+    breakMinutes: 5,
+    maxSeats: 100
   },
   {
-    id: "thesis_sprint",
-    name: "Viết Báo cáo & Khóa luận (Thesis Sprint)",
-    type: "shared_task",
-    description: "Cùng thúc đẩy hoàn thiện đề cương, viết chương tổng quan & thảo luận kết quả nghiên cứu",
-    objective: "Hoàn thiện bản thảo và cấu trúc các chương đề tài",
-    icon: "✍️",
-    max_seats: 12,
-    pin_code: null,
-    shared_tasks_json: JSON.stringify([
-      { id: "st_1", text: "Xác định mục tiêu & câu hỏi nghiên cứu cốt lõi", done: true, by: "Minh Anh" },
-      { id: "st_2", text: "Viết tổng quan các công trình tiền nhiệm (Literature Review)", done: false, by: null },
-      { id: "st_3", text: "Trích dẫn và lập danh mục tài liệu theo chuẩn APA 7th", done: false, by: null },
-      { id: "st_4", text: "Kiểm tra tính mạch lạc & rà soát trùng lặp văn phong", done: false, by: null }
-    ])
+    id: "lib_reading_50_10",
+    name: "Khu vực đọc sách",
+    type: "library",
+    description: "Tập trung sâu hơn, làm nhiều việc hơn",
+    objective: "Tập trung sâu 50 phút đọc hiểu và xử lý tài liệu",
+    icon: "glasses",
+    focusMinutes: 50,
+    breakMinutes: 10,
+    maxSeats: 100
   },
   {
-    id: "data_analysis",
-    name: "Phòng Phân tích Dữ liệu (Data & Stats Lab)",
-    type: "shared_task",
-    description: "Xử lý bảng câu hỏi, làm sạch dữ liệu, chạy mô hình hồi quy, ANOVA, SPSS & R",
-    objective: "Làm sạch số liệu khảo sát, kiểm định thang đo và chạy mô hình tương quan",
-    icon: "📊",
-    max_seats: 10,
-    pin_code: null,
-    shared_tasks_json: JSON.stringify([
-      { id: "sd_1", text: "Mã hóa biến số & kiểm tra dữ liệu khuyết tật (Missing data)", done: true, by: "Hoàng Nam" },
-      { id: "sd_2", text: "Kiểm định độ tin cậy thang đo Cronbach's Alpha (> 0.7)", done: true, by: "Thanh Trúc" },
-      { id: "sd_3", text: "Phân tích nhân tố khám phá (EFA) & Kiểm định giả thuyết", done: false, by: null },
-      { id: "sd_4", text: "Xuất bảng biểu thống kê mô tả chuẩn hóa cho báo cáo", done: false, by: null }
-    ])
-  },
-  {
-    id: "methodology",
-    name: "Phòng Phương pháp NCKH (Methodology Hub)",
-    type: "shared_task",
-    description: "Thảo luận chọn mẫu, thiết kế công cụ đo lường và thẩm định mô hình nghiên cứu",
-    objective: "Hoàn thiện bảng câu hỏi khảo sát và phương pháp chọn mẫu khoa học",
-    icon: "🔬",
-    max_seats: 8,
-    pin_code: null,
-    shared_tasks_json: JSON.stringify([
-      { id: "sm_1", text: "Xác định khung mẫu & cỡ mẫu tối thiểu theo Hair et al.", done: true, by: "Khánh Linh" },
-      { id: "sm_2", text: "Thiết kế thang đo Likert 5 điểm cho các biến nghiên cứu", done: false, by: null },
-      { id: "sm_3", text: "Thử nghiệm bảng hỏi sơ bộ (Pilot test n=30)", done: false, by: null }
-    ])
+    id: "lib_lounge_15_5",
+    name: "Khu vực sảnh",
+    type: "library",
+    description: "Làm việc nhanh, dành cho những ngày nhẹ nhàng",
+    objective: "Làm việc nhanh 15 phút, giải quyết đầu việc gọn gàng",
+    icon: "coffee",
+    focusMinutes: 15,
+    breakMinutes: 5,
+    maxSeats: 100
   }
 ];
 
+function getLibraryRoomLiveClock(roomId, timestampMs = Date.now()) {
+  const room = LIBRARY_ROOMS.find(r => r.id === roomId);
+  if (!room) return null;
+  const focusSec = room.focusMinutes * 60;
+  const breakSec = room.breakMinutes * 60;
+  const cycleSec = focusSec + breakSec;
+
+  const totalSeconds = Math.floor(timestampMs / 1000);
+  const offset = totalSeconds % cycleSec;
+
+  if (offset < focusSec) {
+    const remaining = focusSec - offset;
+    return {
+      status: "focus",
+      statusText: "Đang học",
+      mode: "focus",
+      durationMinutes: room.focusMinutes,
+      remainingSeconds: remaining,
+      totalPhaseSeconds: focusSec,
+      targetEndMs: timestampMs + (remaining * 1000),
+      cycleIndex: Math.floor(totalSeconds / cycleSec) + 1,
+      methodText: `${room.focusMinutes}/${room.breakMinutes}`
+    };
+  } else {
+    const elapsedBreak = offset - focusSec;
+    const remaining = breakSec - elapsedBreak;
+    return {
+      status: "break",
+      statusText: "Đang nghỉ giải lao",
+      mode: "shortbreak",
+      durationMinutes: room.breakMinutes,
+      remainingSeconds: remaining,
+      totalPhaseSeconds: breakSec,
+      targetEndMs: timestampMs + (remaining * 1000),
+      cycleIndex: Math.floor(totalSeconds / cycleSec) + 1,
+      methodText: `${room.focusMinutes}/${room.breakMinutes}`
+    };
+  }
+}
+
 try {
-  const insertRoomStmt = db.prepare(`
-    INSERT OR IGNORE INTO study_rooms (id, name, type, description, objective, icon, max_seats, pin_code, shared_tasks_json)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+  const insertLibStmt = db.prepare(`
+    INSERT INTO study_rooms (id, name, type, description, objective, icon, max_seats, pin_code, shared_tasks_json, focus_mins, break_mins)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ON CONFLICT(id) DO UPDATE SET
+      name=excluded.name,
+      type=excluded.type,
+      description=excluded.description,
+      objective=excluded.objective,
+      focus_mins=excluded.focus_mins,
+      break_mins=excluded.break_mins
   `);
-  DEFAULT_STUDY_ROOMS.forEach(r => {
-    insertRoomStmt.run(r.id, r.name, r.type, r.description, r.objective, r.icon, r.max_seats, r.pin_code, r.shared_tasks_json);
+  LIBRARY_ROOMS.forEach(r => {
+    insertLibStmt.run(r.id, r.name, r.type, r.description, r.objective, r.icon, r.maxSeats, null, "[]", r.focusMinutes, r.breakMinutes);
   });
 } catch (e) {
-  console.warn("Lỗi khởi tạo phòng học mẫu:", e.message);
+  console.warn("Lỗi khởi tạo 3 phòng thư viện:", e.message);
 }
 try { db.exec("ALTER TABLE users ADD COLUMN bio TEXT;"); } catch (e) {}
 try { db.exec("ALTER TABLE users ADD COLUMN cover_image TEXT;"); } catch (e) {}
@@ -386,7 +417,7 @@ try {
       }
     }
   }
-} catch (e) {}
+} catch (e) { }
 
 try {
   // Dọn dẹp các bản ghi giữ chuỗi bị trùng lặp trong cùng một ngày (chỉ giữ lại 1 bản ghi duy nhất)
@@ -399,7 +430,7 @@ try {
         GROUP BY user_id, date(datetime(created_at, '+7 hours'))
       );
   `);
-} catch (e) {}
+} catch (e) { }
 
 try {
   db.exec(`
@@ -412,15 +443,15 @@ try {
       created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
     );
   `);
-} catch (e) {}
-try { db.exec("ALTER TABLE document_comments ADD COLUMN edited_at TEXT;"); } catch (e) {}
+} catch (e) { }
+try { db.exec("ALTER TABLE document_comments ADD COLUMN edited_at TEXT;"); } catch (e) { }
 try {
   db.exec(`
     INSERT INTO user_streak_shields (user_id, shields, last_milestone_rewarded, updated_at)
     SELECT id, 1, 0, CURRENT_TIMESTAMP FROM users
     ON CONFLICT(user_id) DO UPDATE SET shields = CASE WHEN shields = 0 THEN 1 ELSE shields END;
   `);
-} catch (e) {}
+} catch (e) { }
 
 try {
   db.exec(`
@@ -460,8 +491,8 @@ try {
     let curBal = 1;
     for (const r of pastRestores) {
       curBal = Math.max(0, curBal - 1);
-      const dmy = (r.restored_date && r.restored_date.includes('-')) 
-        ? r.restored_date.split('-').reverse().join('/') 
+      const dmy = (r.restored_date && r.restored_date.includes('-'))
+        ? r.restored_date.split('-').reverse().join('/')
         : r.restored_date;
       db.prepare(`
         INSERT INTO streak_shield_logs (user_id, change_type, amount, balance_after, reason, created_at)
@@ -504,7 +535,7 @@ try {
     CREATE INDEX IF NOT EXISTS idx_password_resets_email_status ON password_resets(email, status);
     CREATE INDEX IF NOT EXISTS idx_password_resets_code ON password_resets(code);
   `);
-} catch (e) {}
+} catch (e) { }
 
 // --- BẢNG DỮ LIỆU HOẠT ĐỘNG THI ĐUA HÀNG TUẦN (WEEKLY COMPETITION) ---
 db.exec(`
@@ -604,14 +635,14 @@ db.exec(`
     UNIQUE(competition_id, user_id)
   );
 `);
-try { db.exec("ALTER TABLE competition_sessions ADD COLUMN is_paused INTEGER NOT NULL DEFAULT 0;"); } catch (e) {}
-try { db.exec("ALTER TABLE competition_sessions ADD COLUMN paused_remaining_seconds INTEGER;"); } catch (e) {}
-try { db.exec("ALTER TABLE competition_sessions ADD COLUMN exit_count INTEGER NOT NULL DEFAULT 0;"); } catch (e) {}
-try { db.exec("ALTER TABLE competition_sessions ADD COLUMN is_on_time INTEGER NOT NULL DEFAULT 0;"); } catch (e) {}
-try { db.exec("ALTER TABLE competition_sessions ADD COLUMN on_time_bonus INTEGER NOT NULL DEFAULT 0;"); } catch (e) {}
-try { db.exec("ALTER TABLE competition_phase_results ADD COLUMN on_time_bonus INTEGER NOT NULL DEFAULT 0;"); } catch (e) {}
-try { db.exec("ALTER TABLE posts ADD COLUMN deleted_at TEXT;"); } catch (e) {}
-try { db.exec("ALTER TABLE responses ADD COLUMN deleted_at TEXT;"); } catch (e) {}
+try { db.exec("ALTER TABLE competition_sessions ADD COLUMN is_paused INTEGER NOT NULL DEFAULT 0;"); } catch (e) { }
+try { db.exec("ALTER TABLE competition_sessions ADD COLUMN paused_remaining_seconds INTEGER;"); } catch (e) { }
+try { db.exec("ALTER TABLE competition_sessions ADD COLUMN exit_count INTEGER NOT NULL DEFAULT 0;"); } catch (e) { }
+try { db.exec("ALTER TABLE competition_sessions ADD COLUMN is_on_time INTEGER NOT NULL DEFAULT 0;"); } catch (e) { }
+try { db.exec("ALTER TABLE competition_sessions ADD COLUMN on_time_bonus INTEGER NOT NULL DEFAULT 0;"); } catch (e) { }
+try { db.exec("ALTER TABLE competition_phase_results ADD COLUMN on_time_bonus INTEGER NOT NULL DEFAULT 0;"); } catch (e) { }
+try { db.exec("ALTER TABLE posts ADD COLUMN deleted_at TEXT;"); } catch (e) { }
+try { db.exec("ALTER TABLE responses ADD COLUMN deleted_at TEXT;"); } catch (e) { }
 
 try {
   db.exec(`
@@ -689,12 +720,12 @@ try {
 }
 
 // Migration: Thêm các cột Bảng thi Tự do (free track) vào weekly_competitions
-try { db.exec("ALTER TABLE weekly_competitions ADD COLUMN free_week_number INTEGER NOT NULL DEFAULT 1;"); } catch (e) {}
-try { db.exec("ALTER TABLE weekly_competitions ADD COLUMN free_is_paused INTEGER NOT NULL DEFAULT 0;"); } catch (e) {}
-try { db.exec("ALTER TABLE weekly_competitions ADD COLUMN free_topic_name TEXT;"); } catch (e) {}
-try { db.exec("ALTER TABLE weekly_competitions ADD COLUMN free_phase1_topic TEXT;"); } catch (e) {}
-try { db.exec("ALTER TABLE weekly_competitions ADD COLUMN free_phase2_topic TEXT;"); } catch (e) {}
-try { db.exec("ALTER TABLE weekly_competitions ADD COLUMN free_phase3_topic TEXT;"); } catch (e) {}
+try { db.exec("ALTER TABLE weekly_competitions ADD COLUMN free_week_number INTEGER NOT NULL DEFAULT 1;"); } catch (e) { }
+try { db.exec("ALTER TABLE weekly_competitions ADD COLUMN free_is_paused INTEGER NOT NULL DEFAULT 0;"); } catch (e) { }
+try { db.exec("ALTER TABLE weekly_competitions ADD COLUMN free_topic_name TEXT;"); } catch (e) { }
+try { db.exec("ALTER TABLE weekly_competitions ADD COLUMN free_phase1_topic TEXT;"); } catch (e) { }
+try { db.exec("ALTER TABLE weekly_competitions ADD COLUMN free_phase2_topic TEXT;"); } catch (e) { }
+try { db.exec("ALTER TABLE weekly_competitions ADD COLUMN free_phase3_topic TEXT;"); } catch (e) { }
 
 // Migration: Cập nhật bảng competition_questions hỗ trợ cột track ('main' / 'free')
 try {
@@ -817,7 +848,7 @@ function recordUserActivity(userId) {
   if (!userId) return;
   try {
     db.prepare("UPDATE users SET last_active_at = ? WHERE id = ?").run(Date.now(), userId);
-  } catch (e) {}
+  } catch (e) { }
 }
 
 function checkInactivityWarning(user) {
@@ -841,7 +872,7 @@ function deleteUserPermanently(userId) {
   if (!userId) return false;
   const target = db.prepare("SELECT id, role, email FROM users WHERE id = ?").get(userId);
   if (!target || target.role === 'admin') return false; // Không bao giờ xóa tài khoản quản trị
-  
+
   db.exec("PRAGMA foreign_keys = OFF;");
   try {
     // 1. Dọn sạch các phiên làm việc, thiết lập bảo mật và bài lưu
@@ -919,7 +950,7 @@ function cleanupInactiveAccounts() {
         AND last_active_at IS NOT NULL 
         AND last_active_at <= ?
     `).all(cutoff);
-    
+
     for (const u of inactiveUsers) {
       deleteUserPermanently(u.id);
     }
@@ -933,8 +964,8 @@ cleanupInactiveAccounts();
 setInterval(cleanupInactiveAccounts, 24 * 60 * 60 * 1000);
 
 const defaultTopics = [
-  "Đề tài", "Lý thuyết", "Phương pháp", 
-  "Dữ liệu & phân tích", "Viết nghiên cứu", 
+  "Đề tài", "Lý thuyết", "Phương pháp",
+  "Dữ liệu & phân tích", "Viết nghiên cứu",
   "Tài liệu", "Thảo luận chung"
 ];
 for (const t of defaultTopics) {
@@ -1473,12 +1504,12 @@ function serializePost(row, viewer) {
       row.is_anonymous && !isAdmin(viewer)
         ? { displayName: "Sinh viên ẩn danh", initials: "?", streakTier: 0 }
         : {
-            id: row.author_id,
-            displayName: row.display_name,
-            initials: row.avatar || getAvatarEmoji(row.display_name),
-            role: row.role,
-            streakTier: getAuthorStreakTier(row.author_id),
-          },
+          id: row.author_id,
+          displayName: row.display_name,
+          initials: row.avatar || getAvatarEmoji(row.display_name),
+          role: row.role,
+          streakTier: getAuthorStreakTier(row.author_id),
+        },
     createdAt: row.created_at.replace(' ', 'T') + 'Z',
     updatedAt: row.updated_at.replace(' ', 'T') + 'Z',
     editedAt: row.edited_at ? row.edited_at.replace(' ', 'T') + 'Z' : null,
@@ -1718,15 +1749,15 @@ async function streamAudioTrack(request, response, trackId) {
 
     stream.on("error", (err) => {
       console.warn(`Azure audio stream error (${trackId}):`, err.message);
-      try { response.end(); } catch (e) {}
+      try { response.end(); } catch (e) { }
     });
 
     response.on("error", (err) => {
-      try { azureReq.destroy(); } catch (e) {}
+      try { azureReq.destroy(); } catch (e) { }
     });
 
     request.on("close", () => {
-      try { azureReq.destroy(); } catch (e) {}
+      try { azureReq.destroy(); } catch (e) { }
     });
   } catch (err) {
     console.error(`Audio stream handler error (${trackId}):`, err.message);
@@ -1742,7 +1773,7 @@ async function prewarmAudioUrls() {
     try {
       await getAudioAzureUrl(trackId, false);
       await new Promise(r => setTimeout(r, 250));
-    } catch (e) {}
+    } catch (e) { }
   }
 }
 setTimeout(prewarmAudioUrls, 2000);
@@ -2315,8 +2346,8 @@ function getOrCreateCurrentCompetition(vnDate) {
 function getCompetitionTimeState(vnDate, comp, track = "main") {
   const isFree = (track === "free");
   const isPaused = Boolean(comp && (isFree ? comp.free_is_paused : comp.is_paused));
-  const weekTopic = comp 
-    ? (isFree ? (comp.free_topic_name || comp.topic_name || "Đấu trường Arena") : comp.topic_name) 
+  const weekTopic = comp
+    ? (isFree ? (comp.free_topic_name || comp.topic_name || "Đấu trường Arena") : comp.topic_name)
     : "Đấu trường Arena";
 
   if (isPaused) {
@@ -2389,8 +2420,8 @@ function getCompetitionTimeState(vnDate, comp, track = "main") {
   // - Chặng 1: 19h00 tối Thứ Hai đến 23:59:59 Thứ Ba
   // - Chặng 2: 19h00 tối Thứ Tư đến 23:59:59 Thứ Năm
   // - Chặng 3: 19h00 tối Thứ Sáu đến 23:59:59 Thứ Bảy
-  const openScheduleText = phase === 1 
-    ? "19:00 T2 – 23:59:59 T3" 
+  const openScheduleText = phase === 1
+    ? "19:00 T2 – 23:59:59 T3"
     : (phase === 2 ? "19:00 T4 – 23:59:59 T5" : "19:00 T6 – 23:59:59 T7");
 
   const isPhaseStartDay = (dayOfWeek === 1 || dayOfWeek === 3 || dayOfWeek === 5); // Thứ 2, 4, 6
@@ -2430,8 +2461,8 @@ function getCompetitionTimeState(vnDate, comp, track = "main") {
     stateLabel = "ĐANG MỞ CỔNG";
     ctaText = "Tham gia ngay";
     secondsUntilNext = ((23 - hours) * 3600) + ((59 - minutes) * 60) + (60 - seconds);
-    nextStateLabel = (phase === 3) 
-      ? "Đóng cổng tuần thi đấu (23:59:59)" 
+    nextStateLabel = (phase === 3)
+      ? "Đóng cổng tuần thi đấu (23:59:59)"
       : `Đóng cổng Chặng ${phase} (23:59:59)`;
   }
 
@@ -3047,18 +3078,18 @@ async function api(request, response, url) {
         selected: row.selected_response_id === r.id,
         author: r.is_anonymous && !isAdmin(viewer)
           ? {
-              displayName: "Sinh viên ẩn danh",
-              role: "student",
-              initials: "?",
-              streakTier: 0,
-            }
+            displayName: "Sinh viên ẩn danh",
+            role: "student",
+            initials: "?",
+            streakTier: 0,
+          }
           : {
-              id: r.author_id,
-              displayName: r.display_name,
-              role: r.role,
-              initials: r.avatar || getAvatarEmoji(r.display_name),
-              streakTier: getAuthorStreakTier(r.author_id),
-            },
+            id: r.author_id,
+            displayName: r.display_name,
+            role: r.role,
+            initials: r.avatar || getAvatarEmoji(r.display_name),
+            streakTier: getAuthorStreakTier(r.author_id),
+          },
         anonymous: Boolean(r.is_anonymous),
       }));
     return json(response, 200, { post: serializePost(row, viewer), responses });
@@ -3446,10 +3477,10 @@ async function api(request, response, url) {
 
     const todayDate = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Ho_Chi_Minh" }));
     const formatYMD = (d) => {
-        const y = d.getFullYear();
-        const m = String(d.getMonth()+1).padStart(2, '0');
-        const day = String(d.getDate()).padStart(2, '0');
-        return `${y}-${m}-${day}`;
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${y}-${m}-${day}`;
     };
     const today = formatYMD(todayDate);
     const yesterdayDate = new Date(todayDate); yesterdayDate.setDate(yesterdayDate.getDate() - 1);
@@ -3710,7 +3741,7 @@ async function api(request, response, url) {
       )
     `).get(targetUser.id, targetUser.id);
     const weeksParticipated = weeksParticipatedRow?.c || 0;
-    
+
     const bestWeekRow = db.prepare(`
       SELECT coalesce(max(week_total), 0) as bestWeekScore FROM (
         SELECT sum(best_score) as week_total
@@ -4131,7 +4162,7 @@ async function api(request, response, url) {
     const viewer = sessionFrom(request);
     const rows = db
       .prepare(
-        isAdmin(viewer) 
+        isAdmin(viewer)
           ? `SELECT t.*, u.display_name FROM topics t LEFT JOIN users u ON u.id=t.created_by ORDER BY t.status DESC, t.created_at ASC`
           : `SELECT t.* FROM topics t WHERE t.status='approved' ORDER BY t.created_at ASC`
       )
@@ -4163,7 +4194,7 @@ async function api(request, response, url) {
       const isTaOrAdmin = isAdmin(user);
       db.prepare("INSERT INTO topics (name, status, created_by) VALUES (?, ?, ?)")
         .run(name.trim(), isTaOrAdmin ? 'approved' : 'pending', user.id);
-      
+
       return json(response, 200, { ok: true, status: isTaOrAdmin ? 'approved' : 'pending' });
     } catch (e) {
       return error(response, 500, "Lỗi khi thêm chủ đề: " + e.message);
@@ -4290,7 +4321,7 @@ async function api(request, response, url) {
       if (!existing) {
         try {
           recordContributionEvent(user.id, "review_platform", 10, "site_review", user.id, "Đóng góp đánh giá & phản hồi website");
-        } catch (e) {}
+        } catch (e) { }
       }
 
       return json(response, 200, {
@@ -4447,18 +4478,18 @@ async function api(request, response, url) {
         isAuthor: viewer && viewer.id === c.user_id,
         author: c.is_anonymous && !isAdmin(viewer)
           ? {
-              displayName: "Sinh viên ẩn danh",
-              role: "student",
-              initials: "?",
-              streakTier: 0,
-            }
+            displayName: "Sinh viên ẩn danh",
+            role: "student",
+            initials: "?",
+            streakTier: 0,
+          }
           : {
-              id: c.user_id,
-              displayName: c.display_name,
-              role: c.role,
-              initials: c.avatar || getAvatarEmoji(c.display_name),
-              streakTier: getAuthorStreakTier(c.user_id),
-            },
+            id: c.user_id,
+            displayName: c.display_name,
+            role: c.role,
+            initials: c.avatar || getAvatarEmoji(c.display_name),
+            streakTier: getAuthorStreakTier(c.user_id),
+          },
         anonymous: Boolean(c.is_anonymous),
       }));
     return json(response, 200, { comments });
@@ -4519,18 +4550,18 @@ async function api(request, response, url) {
         isAuthor: true,
         author: inserted.is_anonymous && !isAdmin(user)
           ? {
-              displayName: "Sinh viên ẩn danh",
-              role: "student",
-              initials: "?",
-              streakTier: 0,
-            }
+            displayName: "Sinh viên ẩn danh",
+            role: "student",
+            initials: "?",
+            streakTier: 0,
+          }
           : {
-              id: inserted.user_id,
-              displayName: inserted.display_name,
-              role: inserted.role,
-              initials: inserted.avatar || getAvatarEmoji(inserted.display_name),
-              streakTier: getAuthorStreakTier(inserted.user_id),
-            },
+            id: inserted.user_id,
+            displayName: inserted.display_name,
+            role: inserted.role,
+            initials: inserted.avatar || getAvatarEmoji(inserted.display_name),
+            streakTier: getAuthorStreakTier(inserted.user_id),
+          },
         anonymous: Boolean(inserted.is_anonymous),
       }
     });
@@ -4603,43 +4634,80 @@ async function api(request, response, url) {
     return json(response, 200, { success: true });
   }
 
-  // --- STUDY LOUNGE ENDPOINTS (Open for all users - Beta) ---
+  // --- STUDY LOUNGE & FLEXIBLE SPACES ENDPOINTS ---
 
   if (method === "GET" && pathName === "/api/study/rooms") {
     const nowMs = Date.now();
     const activeRows = db.prepare(`
-      SELECT room_id FROM study_sessions
+      SELECT room_id, user_id FROM study_sessions
       WHERE (is_running = 1 AND (last_ping_ms > (? - 300000) OR (last_ping IS NOT NULL AND (strftime('%s', 'now') - strftime('%s', last_ping)) < 300)))
          OR (last_ping_ms > (? - 180000))
          OR (last_ping IS NOT NULL AND (strftime('%s', 'now') - strftime('%s', last_ping)) < 180)
     `).all(nowMs, nowMs);
 
     const roomOccupancyMap = {};
+    let privatePodsCount = 0;
     activeRows.forEach(r => {
-      const rid = r.room_id || 'commons';
-      roomOccupancyMap[rid] = (roomOccupancyMap[rid] || 0) + 1;
+      const rid = r.room_id || 'none';
+      if (rid.startsWith('private_')) {
+        privatePodsCount++;
+      } else {
+        roomOccupancyMap[rid] = (roomOccupancyMap[rid] || 0) + 1;
+      }
     });
 
-    const rows = db.prepare("SELECT * FROM study_rooms ORDER BY CASE WHEN id='commons' THEN 0 WHEN type='shared_task' THEN 1 ELSE 2 END, created_at ASC").all();
-    const rooms = rows.map(rm => {
-      let tasks = [];
-      try { tasks = JSON.parse(rm.shared_tasks_json || "[]"); } catch (e) {}
+    // 1. Thư viện: 3 phòng tuần hoàn 24/7
+    const libraryRooms = LIBRARY_ROOMS.map(lr => {
+      const liveClock = getLibraryRoomLiveClock(lr.id, nowMs);
       return {
-        id: rm.id,
-        name: rm.name,
-        type: rm.type,
-        description: rm.description,
-        objective: rm.objective,
-        icon: rm.icon,
-        maxSeats: rm.max_seats,
-        hasPin: Boolean(rm.pin_code),
-        occupancy: roomOccupancyMap[rm.id] || 0,
-        tasksCount: tasks.length,
-        tasksDoneCount: tasks.filter(t => t.done).length
+        id: lr.id,
+        name: lr.name,
+        type: 'library',
+        method: `${lr.focusMinutes}/${lr.breakMinutes}`,
+        description: lr.description,
+        objective: lr.objective,
+        icon: lr.icon,
+        maxSeats: lr.maxSeats,
+        occupancy: roomOccupancyMap[lr.id] || 0,
+        liveClock
       };
     });
 
-    return json(response, 200, { rooms });
+    // 2. Phòng họp (Meeting rooms do người dùng tạo)
+    const meetingRows = db.prepare(`
+      SELECT r.*, u.display_name as host_name
+      FROM study_rooms r
+      LEFT JOIN users u ON r.host_user_id = u.id
+      WHERE r.type = 'meeting'
+      ORDER BY r.created_at DESC
+      LIMIT 30
+    `).all();
+
+    const meetingRooms = meetingRows.map(rm => {
+      let tasks = [];
+      try { tasks = JSON.parse(rm.shared_tasks_json || "[]"); } catch (e) {}
+      let timerState = null;
+      try { timerState = JSON.parse(rm.timer_state_json || "null"); } catch (e) {}
+      return {
+        id: rm.id,
+        name: rm.name,
+        type: 'meeting',
+        hasPin: Boolean(rm.pin_code),
+        hostId: rm.host_user_id,
+        hostName: rm.host_name || "Chủ phòng",
+        occupancy: roomOccupancyMap[rm.id] || 0,
+        taskCount: tasks.length,
+        tasksDoneCount: tasks.filter(t => t.done).length,
+        timerState
+      };
+    });
+
+    return json(response, 200, {
+      libraryRooms,
+      meetingRooms,
+      privatePodsCount,
+      totalCampusLearners: activeRows.length
+    });
   }
 
   if (method === "POST" && pathName === "/api/study/rooms/join") {
@@ -4647,33 +4715,79 @@ async function api(request, response, url) {
     if (!user || !requireCsrf(request, response, user)) return;
     try {
       const body = await readJSON(request);
-      const roomId = (body.roomId || 'commons').trim();
-      const pinCode = (body.pinCode || '').trim();
+      const roomId = String(body.roomId || '').trim();
+      const pinCode = String(body.pinCode || '').trim();
+      const nowMs = Date.now();
 
+      if (!roomId) {
+        return error(response, 400, "Vui lòng chỉ định phòng học.");
+      }
+
+      // Trường hợp 1: Vào buồng học riêng tư
+      if (roomId === 'private' || roomId.startsWith('private_')) {
+        const podId = `private_${user.id}`;
+        db.prepare(`
+          INSERT INTO study_sessions (user_id, room_id, started_at_ms, last_ping_ms, started_at, last_ping)
+          VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+          ON CONFLICT(user_id) DO UPDATE SET
+            room_id = excluded.room_id,
+            last_ping_ms = excluded.last_ping_ms,
+            last_ping = CURRENT_TIMESTAMP
+        `).run(user.id, podId, nowMs, nowMs);
+
+        return json(response, 200, {
+          success: true,
+          room: {
+            id: podId,
+            name: "Buồng học riêng tư",
+            type: "private",
+            icon: "lock",
+            description: "Không gian học một mình hoàn toàn riêng tư",
+            occupancy: 1,
+            isHost: true
+          }
+        });
+      }
+
+      // Trường hợp 2: Vào 1 trong 3 phòng Thư viện
+      const libRoom = LIBRARY_ROOMS.find(lr => lr.id === roomId);
+      if (libRoom) {
+        db.prepare(`
+          INSERT INTO study_sessions (user_id, room_id, started_at_ms, last_ping_ms, started_at, last_ping)
+          VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+          ON CONFLICT(user_id) DO UPDATE SET
+            room_id = excluded.room_id,
+            last_ping_ms = excluded.last_ping_ms,
+            last_ping = CURRENT_TIMESTAMP
+        `).run(user.id, libRoom.id, nowMs, nowMs);
+
+        const liveClock = getLibraryRoomLiveClock(libRoom.id, nowMs);
+        return json(response, 200, {
+          success: true,
+          room: {
+            id: libRoom.id,
+            name: libRoom.name,
+            type: "library",
+            method: `${libRoom.focusMinutes}/${libRoom.breakMinutes}`,
+            description: libRoom.description,
+            icon: libRoom.icon,
+            maxSeats: libRoom.maxSeats,
+            liveClock
+          }
+        });
+      }
+
+      // Trường hợp 3: Vào Phòng họp (mã 4 số)
       const room = db.prepare("SELECT * FROM study_rooms WHERE id = ?").get(roomId);
       if (!room) {
-        return error(response, 404, "Không tìm thấy không gian học tập này.");
+        return error(response, 404, "Không tìm thấy phòng họp này. Vui lòng kiểm tra lại mã số 4 chữ số.");
       }
 
-      if (room.type === 'private' && room.pin_code) {
-        const isAdminOrTa = (user.role === 'admin' || user.role === 'ta' || user.id === room.created_by);
-        if (!isAdminOrTa && pinCode !== room.pin_code) {
-          return error(response, 403, "Mã PIN phòng không chính xác.");
+      if (room.pin_code) {
+        const isHostOrAdmin = (user.id === room.host_user_id || user.role === 'admin');
+        if (!isHostOrAdmin && pinCode !== room.pin_code) {
+          return error(response, 403, "Mật khẩu phòng họp không chính xác (gồm 4 chữ số).");
         }
-      }
-
-      const nowMs = Date.now();
-      const count = db.prepare(`
-        SELECT count(*) as c FROM study_sessions
-        WHERE room_id = ? AND user_id != ? AND (
-          (is_running = 1 AND (last_ping_ms > (? - 300000) OR (last_ping IS NOT NULL AND (strftime('%s', 'now') - strftime('%s', last_ping)) < 300)))
-          OR (last_ping_ms > (? - 180000))
-          OR (last_ping IS NOT NULL AND (strftime('%s', 'now') - strftime('%s', last_ping)) < 180)
-        )
-      `).get(roomId, user.id, nowMs, nowMs).c;
-
-      if (count >= room.max_seats) {
-        return error(response, 400, "Phòng học này đã kín chỗ ngồi.");
       }
 
       db.prepare(`
@@ -4687,6 +4801,10 @@ async function api(request, response, url) {
 
       let sharedTasks = [];
       try { sharedTasks = JSON.parse(room.shared_tasks_json || "[]"); } catch (e) {}
+      let timerState = null;
+      try { timerState = JSON.parse(room.timer_state_json || "null"); } catch (e) {}
+
+      const hostUser = room.host_user_id ? db.prepare("SELECT display_name FROM users WHERE id = ?").get(room.host_user_id) : null;
 
       return json(response, 200, {
         success: true,
@@ -4694,12 +4812,12 @@ async function api(request, response, url) {
           id: room.id,
           name: room.name,
           type: room.type,
-          description: room.description,
-          objective: room.objective,
-          icon: room.icon,
-          maxSeats: room.max_seats,
+          icon: room.icon || "users",
           hasPin: Boolean(room.pin_code),
-          pinCode: (user.id === room.created_by || user.role === 'admin') ? room.pin_code : undefined,
+          hostId: room.host_user_id,
+          hostName: hostUser?.display_name || "Chủ phòng",
+          isHost: (user.id === room.host_user_id),
+          timerState,
           sharedTasks
         }
       });
@@ -4712,8 +4830,8 @@ async function api(request, response, url) {
   if (method === "POST" && pathName === "/api/study/rooms/leave") {
     const user = requireUser(request, response);
     if (!user || !requireCsrf(request, response, user)) return;
-    db.prepare("UPDATE study_sessions SET room_id = 'commons', last_ping_ms = ?, last_ping = CURRENT_TIMESTAMP WHERE user_id = ?").run(Date.now(), user.id);
-    return json(response, 200, { success: true, roomId: 'commons' });
+    db.prepare("UPDATE study_sessions SET room_id = 'none', last_ping_ms = ?, last_ping = CURRENT_TIMESTAMP WHERE user_id = ?").run(Date.now(), user.id);
+    return json(response, 200, { success: true, roomId: 'none' });
   }
 
   if (method === "POST" && pathName === "/api/study/rooms/create") {
@@ -4723,39 +4841,44 @@ async function api(request, response, url) {
       const body = await readJSON(request);
       const name = (body.name || '').trim().slice(0, 60);
       if (name.length < 2) {
-        return error(response, 400, "Vui lòng nhập tên phòng (tối thiểu 2 ký tự).");
-      }
-      const type = ['shared_task', 'private'].includes(body.type) ? body.type : 'shared_task';
-      const icon = (body.icon || '📚').slice(0, 10);
-      const maxSeats = Math.max(2, Math.min(25, Number(body.maxSeats) || 8));
-      const pinCode = type === 'private' ? (body.pinCode || '').trim().slice(0, 10) : null;
-      const description = (body.description || '').trim().slice(0, 150);
-      const objective = (body.objective || '').trim().slice(0, 150);
-
-      let sharedTasks = [];
-      if (Array.isArray(body.initialTasks)) {
-        sharedTasks = body.initialTasks
-          .map(t => String(t || '').trim())
-          .filter(t => t.length > 0)
-          .slice(0, 15)
-          .map((text, idx) => ({
-            id: `st_${Date.now()}_${idx}`,
-            text,
-            done: false,
-            by: null,
-            createdAt: Date.now()
-          }));
+        return error(response, 400, "Vui lòng nhập tên phòng họp (từ 2 đến 60 ký tự).");
       }
 
-      const roomId = `room_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
+      let pinCode = (body.pinCode || '').trim();
+      if (pinCode && !/^\d{4}$/.test(pinCode)) {
+        return error(response, 400, "Mật khẩu phòng (nếu có) phải gồm đúng 4 chữ số.");
+      }
+      if (!pinCode) pinCode = null;
+
+      // Sinh mã phòng 4 số ngẫu nhiên không trùng lặp
+      let newId = "";
+      for (let attempt = 0; attempt < 100; attempt++) {
+        const candidate = Math.floor(1000 + Math.random() * 9000).toString();
+        const exists = db.prepare("SELECT id FROM study_rooms WHERE id = ?").get(candidate);
+        if (!exists) {
+          newId = candidate;
+          break;
+        }
+      }
+      if (!newId) newId = Math.floor(1000 + Math.random() * 9000).toString();
+
+      const initialTimer = {
+        mode: "focus",
+        durationMinutes: 25,
+        remainingSeconds: 1500,
+        isRunning: false,
+        targetEndMs: 0,
+        cycleIndex: 1,
+        updatedAt: Date.now()
+      };
+
       const nowMs = Date.now();
-
       db.prepare(`
-        INSERT INTO study_rooms (id, name, type, description, objective, icon, max_seats, pin_code, created_by, shared_tasks_json)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `).run(roomId, name, type, description, objective, icon, maxSeats, pinCode, user.id, JSON.stringify(sharedTasks));
+        INSERT INTO study_rooms (id, name, type, description, icon, max_seats, pin_code, created_by, host_user_id, timer_state_json, shared_tasks_json)
+        VALUES (?, ?, 'meeting', ?, 'users', 30, ?, ?, ?, ?, '[]')
+      `).run(newId, name, `Phòng họp học tập #${newId}`, pinCode, user.id, user.id, JSON.stringify(initialTimer));
 
-      // Move creator into this room
+      // Đưa chủ phòng vào phòng họp ngay
       db.prepare(`
         INSERT INTO study_sessions (user_id, room_id, started_at_ms, last_ping_ms, started_at, last_ping)
         VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
@@ -4763,26 +4886,61 @@ async function api(request, response, url) {
           room_id = excluded.room_id,
           last_ping_ms = excluded.last_ping_ms,
           last_ping = CURRENT_TIMESTAMP
-      `).run(user.id, roomId, nowMs, nowMs);
+      `).run(user.id, newId, nowMs, nowMs);
 
       return json(response, 200, {
         success: true,
         room: {
-          id: roomId,
+          id: newId,
           name,
-          type,
-          description,
-          objective,
-          icon,
-          maxSeats,
+          type: "meeting",
+          icon: "users",
           hasPin: Boolean(pinCode),
           pinCode: pinCode || undefined,
-          sharedTasks
+          hostId: user.id,
+          hostName: user.display_name || user.name || "Bạn",
+          isHost: true,
+          timerState: initialTimer,
+          sharedTasks: []
         }
       });
     } catch (e) {
-      console.error("create room error:", e);
-      return error(response, 400, "Không thể tạo phòng học.");
+      console.error("create meeting room error:", e);
+      return error(response, 400, "Không thể tạo phòng họp.");
+    }
+  }
+
+  // Đồng bộ trạng thái đồng hồ của Phòng họp từ Chủ phòng
+  if (method === "POST" && pathName === "/api/study/rooms/meeting/timer") {
+    const user = requireUser(request, response);
+    if (!user || !requireCsrf(request, response, user)) return;
+    try {
+      const body = await readJSON(request);
+      const roomId = String(body.roomId || '').trim();
+      const room = db.prepare("SELECT * FROM study_rooms WHERE id = ? AND type = 'meeting'").get(roomId);
+      if (!room) return error(response, 404, "Phòng họp không tồn tại.");
+
+      const isHostOrAdmin = (user.id === room.host_user_id || user.role === 'admin');
+      if (!isHostOrAdmin) {
+        return error(response, 403, "Chỉ chủ phòng mới có quyền điều khiển đồng hồ chung.");
+      }
+
+      const timerState = {
+        mode: body.mode || "focus",
+        durationMinutes: Number(body.durationMinutes) || 25,
+        remainingSeconds: Number(body.remainingSeconds) || 0,
+        isRunning: Boolean(body.isRunning),
+        targetEndMs: Number(body.targetEndMs) || 0,
+        cycleIndex: Number(body.cycleIndex) || 1,
+        updatedAt: Date.now()
+      };
+
+      db.prepare("UPDATE study_rooms SET timer_state_json = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?")
+        .run(JSON.stringify(timerState), roomId);
+
+      return json(response, 200, { success: true, timerState });
+    } catch (e) {
+      return error(response, 400, "Không thể cập nhật đồng hồ phòng họp.");
     }
   }
 
@@ -4846,6 +5004,59 @@ async function api(request, response, url) {
     }
   }
 
+  if (method === "POST" && pathName === "/api/study/rooms/task/edit") {
+    const user = requireUser(request, response);
+    if (!user || !requireCsrf(request, response, user)) return;
+    try {
+      const body = await readJSON(request);
+      const roomId = (body.roomId || '').trim();
+      const taskId = String(body.taskId || '').trim();
+      const text = (body.text || '').trim().slice(0, 120);
+      if (!roomId || !taskId || !text) return error(response, 400, "Thiếu thông tin chỉnh sửa.");
+
+      const room = db.prepare("SELECT * FROM study_rooms WHERE id = ?").get(roomId);
+      if (!room) return error(response, 404, "Phòng không tồn tại.");
+
+      let tasks = [];
+      try { tasks = JSON.parse(room.shared_tasks_json || "[]"); } catch (e) {}
+      const target = tasks.find(t => String(t.id) === taskId);
+      if (!target) return error(response, 404, "Nhiệm vụ không tồn tại.");
+
+      target.text = text;
+      db.prepare("UPDATE study_rooms SET shared_tasks_json = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?")
+        .run(JSON.stringify(tasks), roomId);
+
+      return json(response, 200, { success: true, tasks, sharedTasks: tasks });
+    } catch (e) {
+      return error(response, 400, "Không thể sửa nhiệm vụ.");
+    }
+  }
+
+  if (method === "POST" && pathName === "/api/study/rooms/task/delete") {
+    const user = requireUser(request, response);
+    if (!user || !requireCsrf(request, response, user)) return;
+    try {
+      const body = await readJSON(request);
+      const roomId = (body.roomId || '').trim();
+      const taskId = String(body.taskId || '').trim();
+      if (!roomId || !taskId) return error(response, 400, "Thiếu thông tin xóa.");
+
+      const room = db.prepare("SELECT * FROM study_rooms WHERE id = ?").get(roomId);
+      if (!room) return error(response, 404, "Phòng không tồn tại.");
+
+      let tasks = [];
+      try { tasks = JSON.parse(room.shared_tasks_json || "[]"); } catch (e) {}
+      tasks = tasks.filter(t => String(t.id) !== taskId);
+
+      db.prepare("UPDATE study_rooms SET shared_tasks_json = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?")
+        .run(JSON.stringify(tasks), roomId);
+
+      return json(response, 200, { success: true, tasks, sharedTasks: tasks });
+    } catch (e) {
+      return error(response, 400, "Không thể xóa nhiệm vụ.");
+    }
+  }
+
   if (method === "GET" && pathName === "/api/study/lounge") {
     cleanupCheers();
     const user = sessionFrom(request);
@@ -4858,13 +5069,6 @@ async function api(request, response, url) {
       if (myRow && myRow.room_id) {
         targetRoomId = myRow.room_id;
       }
-    }
-    if (!targetRoomId) targetRoomId = 'commons';
-
-    let currentRoomRow = db.prepare("SELECT * FROM study_rooms WHERE id = ?").get(targetRoomId);
-    if (!currentRoomRow) {
-      targetRoomId = 'commons';
-      currentRoomRow = db.prepare("SELECT * FROM study_rooms WHERE id = 'commons'").get();
     }
 
     const allActiveRows = db.prepare(`
@@ -4881,34 +5085,125 @@ async function api(request, response, url) {
     `).all(nowMs, nowMs);
 
     const roomOccupancyMap = {};
+    let privatePodsCount = 0;
     allActiveRows.forEach(r => {
-      const rid = r.room_id || 'commons';
-      roomOccupancyMap[rid] = (roomOccupancyMap[rid] || 0) + 1;
+      const rid = r.room_id || 'none';
+      if (rid.startsWith('private_')) {
+        privatePodsCount++;
+      } else {
+        roomOccupancyMap[rid] = (roomOccupancyMap[rid] || 0) + 1;
+      }
     });
 
-    const allRoomsRows = db.prepare("SELECT * FROM study_rooms ORDER BY CASE WHEN id='commons' THEN 0 WHEN type='shared_task' THEN 1 ELSE 2 END, created_at ASC").all();
-    const rooms = allRoomsRows.map(rm => {
-      let tasks = [];
-      try { tasks = JSON.parse(rm.shared_tasks_json || "[]"); } catch (e) {}
+    // 1. Thư viện 3 phòng
+    const libraryRooms = LIBRARY_ROOMS.map(lr => {
+      const liveClock = getLibraryRoomLiveClock(lr.id, nowMs);
       return {
-        id: rm.id,
-        name: rm.name,
-        type: rm.type,
-        description: rm.description,
-        objective: rm.objective,
-        icon: rm.icon,
-        maxSeats: rm.max_seats,
-        hasPin: Boolean(rm.pin_code),
-        occupancy: roomOccupancyMap[rm.id] || 0,
-        tasksCount: tasks.length,
-        tasksDoneCount: tasks.filter(t => t.done).length
+        id: lr.id,
+        name: lr.name,
+        type: 'library',
+        method: `${lr.focusMinutes}/${lr.breakMinutes}`,
+        description: lr.description,
+        objective: lr.objective,
+        icon: lr.icon,
+        maxSeats: lr.maxSeats,
+        occupancy: roomOccupancyMap[lr.id] || 0,
+        liveClock
       };
     });
 
-    const targetLearnerRows = allActiveRows.filter(r => (r.room_id || 'commons') === targetRoomId);
+    // 2. Phòng họp
+    const meetingRows = db.prepare(`
+      SELECT r.*, u.display_name as host_name
+      FROM study_rooms r
+      LEFT JOIN users u ON r.host_user_id = u.id
+      WHERE r.type = 'meeting'
+      ORDER BY r.created_at DESC
+      LIMIT 30
+    `).all();
+
+    const meetingRooms = meetingRows.map(rm => {
+      let tasks = [];
+      try { tasks = JSON.parse(rm.shared_tasks_json || "[]"); } catch (e) {}
+      let timerState = null;
+      try { timerState = JSON.parse(rm.timer_state_json || "null"); } catch (e) {}
+      return {
+        id: rm.id,
+        name: rm.name,
+        type: 'meeting',
+        hasPin: Boolean(rm.pin_code),
+        hostId: rm.host_user_id,
+        hostName: rm.host_name || "Chủ phòng",
+        occupancy: roomOccupancyMap[rm.id] || 0,
+        taskCount: tasks.length,
+        tasksDoneCount: tasks.filter(t => t.done).length,
+        timerState
+      };
+    });
+
+    // Xác định thông tin currentRoom nếu user đang ở trong 1 phòng
+    let currentRoom = null;
+    let targetLearners = [];
+
+    if (targetRoomId && targetRoomId !== 'none') {
+      if (targetRoomId.startsWith('private_')) {
+        currentRoom = {
+          id: targetRoomId,
+          name: "Buồng học riêng tư",
+          type: "private",
+          icon: "lock",
+          description: "Không gian học một mình hoàn toàn riêng tư",
+          occupancy: 1,
+          isHost: true
+        };
+        // Trong buồng riêng, chỉ hiện chính mình
+        targetLearners = allActiveRows.filter(r => user && r.user_id === user.id);
+      } else {
+        const libRoom = LIBRARY_ROOMS.find(lr => lr.id === targetRoomId);
+        if (libRoom) {
+          const liveClock = getLibraryRoomLiveClock(libRoom.id, nowMs);
+          currentRoom = {
+            id: libRoom.id,
+            name: libRoom.name,
+            type: "library",
+            method: `${libRoom.focusMinutes}/${libRoom.breakMinutes}`,
+            description: libRoom.description,
+            icon: libRoom.icon,
+            maxSeats: libRoom.maxSeats,
+            occupancy: roomOccupancyMap[libRoom.id] || 0,
+            liveClock
+          };
+          targetLearners = allActiveRows.filter(r => r.room_id === targetRoomId);
+        } else {
+          const meetingRoom = db.prepare("SELECT * FROM study_rooms WHERE id = ?").get(targetRoomId);
+          if (meetingRoom) {
+            let sharedTasks = [];
+            try { sharedTasks = JSON.parse(meetingRoom.shared_tasks_json || "[]"); } catch (e) {}
+            let timerState = null;
+            try { timerState = JSON.parse(meetingRoom.timer_state_json || "null"); } catch (e) {}
+            const hostUser = meetingRoom.host_user_id ? db.prepare("SELECT display_name FROM users WHERE id = ?").get(meetingRoom.host_user_id) : null;
+
+            currentRoom = {
+              id: meetingRoom.id,
+              name: meetingRoom.name,
+              type: "meeting",
+              icon: meetingRoom.icon || "users",
+              hasPin: Boolean(meetingRoom.pin_code),
+              hostId: meetingRoom.host_user_id,
+              hostName: hostUser?.display_name || "Chủ phòng",
+              isHost: user ? (user.id === meetingRoom.host_user_id) : false,
+              occupancy: roomOccupancyMap[meetingRoom.id] || 0,
+              timerState,
+              sharedTasks
+            };
+            targetLearners = allActiveRows.filter(r => r.room_id === targetRoomId);
+          }
+        }
+      }
+    }
 
     const todayDate = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Ho_Chi_Minh" }));
-    const learners = targetLearnerRows.map(r => {
+    const learners = targetLearners.map(r => {
       const streakInfo = calculateUserStreak(r.user_id, todayDate);
       let remainingSecs = r.remaining_seconds;
       if (r.is_running && r.target_end_ms > 0) {
@@ -4929,27 +5224,10 @@ async function api(request, response, url) {
         isRunning: Boolean(r.is_running),
         wallpaper: r.wallpaper || 'default',
         aura: r.aura || 'emerald',
-        roomId: r.room_id || 'commons',
+        roomId: r.room_id || 'none',
         isSelf: user ? user.id === r.user_id : false
       };
     });
-
-    let sharedTasks = [];
-    try { sharedTasks = JSON.parse(currentRoomRow.shared_tasks_json || "[]"); } catch (e) {}
-
-    const currentRoom = {
-      id: currentRoomRow.id,
-      name: currentRoomRow.name,
-      type: currentRoomRow.type,
-      description: currentRoomRow.description,
-      objective: currentRoomRow.objective,
-      icon: currentRoomRow.icon,
-      maxSeats: currentRoomRow.max_seats,
-      hasPin: Boolean(currentRoomRow.pin_code),
-      pinCode: (user && (user.id === currentRoomRow.created_by || user.role === 'admin')) ? currentRoomRow.pin_code : undefined,
-      occupancy: targetLearnerRows.length,
-      sharedTasks
-    };
 
     let mySession = null;
     if (user) {
@@ -4969,7 +5247,7 @@ async function api(request, response, url) {
           goal: myRow.goal || '',
           wallpaper: myRow.wallpaper || 'default',
           aura: myRow.aura || 'emerald',
-          roomId: myRow.room_id || 'commons',
+          roomId: myRow.room_id || 'none',
           startedAtMs: myRow.started_at_ms || nowMs,
           lastPingMs: myRow.last_ping_ms || nowMs
         };
@@ -4983,10 +5261,12 @@ async function api(request, response, url) {
 
     return json(response, 200, {
       learners,
-      activeCount: targetLearnerRows.length,
+      activeCount: targetLearners.length,
       totalCampusLearners: allActiveRows.length,
       currentRoom,
-      rooms,
+      libraryRooms,
+      meetingRooms,
+      privatePodsCount,
       mySession,
       myCheers
     });
@@ -5162,7 +5442,7 @@ async function api(request, response, url) {
       if (minutes > 0) {
         try {
           db.prepare("INSERT INTO study_logs (user_id, duration_minutes) VALUES (?, ?)").run(user.id, minutes);
-        } catch (e) {}
+        } catch (e) { }
       }
       db.prepare("DELETE FROM study_sessions WHERE user_id = ?").run(user.id);
 
@@ -5493,14 +5773,14 @@ async function api(request, response, url) {
     const resp = db.prepare("SELECT author_id, status FROM responses WHERE id=?").get(responseId);
     if (!resp) return error(response, 404, "Không tìm thấy bình luận.");
     const oldStatus = resp.status;
-    
+
     if (status !== oldStatus) {
       if (status === "deleted") {
         db.prepare("UPDATE responses SET status=?, deleted_at=CURRENT_TIMESTAMP, updated_at=CURRENT_TIMESTAMP WHERE id=?").run(status, responseId);
       } else {
         db.prepare("UPDATE responses SET status=?, deleted_at=NULL, updated_at=CURRENT_TIMESTAMP WHERE id=?").run(status, responseId);
       }
-        
+
       if ((status === "deleted" || status === "hidden") && oldStatus === "visible") {
         recordContribution(
           resp.author_id,
@@ -5932,7 +6212,7 @@ async function api(request, response, url) {
     } else {
       const resp = db.prepare("SELECT * FROM responses WHERE id = ?").get(targetId);
       if (!resp) return error(response, 404, "Không tìm thấy phản hồi.");
-      
+
       // Kiểm tra xem bài đăng gốc có còn tồn tại không
       const parentPost = db.prepare("SELECT status FROM posts WHERE id = ?").get(resp.post_id);
       if (parentPost && parentPost.status === 'deleted') {
@@ -6167,7 +6447,7 @@ async function api(request, response, url) {
       const p1 = p1Row?.best_score || 0;
       const p2 = p2Row?.best_score || 0;
       const p3 = p3Row?.best_score || 0;
-      
+
       let phasesParticipated = 0;
       if (p1 > 0 || (p1Row && p1Row.attempts_used > 0)) phasesParticipated++;
       if (p2 > 0 || (p2Row && p2Row.attempts_used > 0)) phasesParticipated++;
@@ -6185,7 +6465,7 @@ async function api(request, response, url) {
           p1Bonus = s1.on_time_bonus;
           try {
             db.prepare("UPDATE competition_phase_results SET on_time_bonus = ? WHERE user_id = ? AND competition_id = ? AND phase = 1").run(p1Bonus, user.id, comp.id);
-          } catch (e) {}
+          } catch (e) { }
         }
       }
       let p2Bonus = p2Row?.on_time_bonus || 0;
@@ -6195,7 +6475,7 @@ async function api(request, response, url) {
           p2Bonus = s2.on_time_bonus;
           try {
             db.prepare("UPDATE competition_phase_results SET on_time_bonus = ? WHERE user_id = ? AND competition_id = ? AND phase = 2").run(p2Bonus, user.id, comp.id);
-          } catch (e) {}
+          } catch (e) { }
         }
       }
 
@@ -6334,7 +6614,7 @@ async function api(request, response, url) {
         userWeeklyReward = db.prepare(
           "SELECT * FROM competition_weekly_rewards WHERE competition_id = ? AND user_id = ?"
         ).get(comp.id, user.id) || null;
-      } catch (e) {}
+      } catch (e) { }
     }
 
     const isPrivileged = Boolean(user && (user.role === "admin" || user.role === "ta" || user.role === "lecturer"));
@@ -7314,7 +7594,7 @@ async function api(request, response, url) {
     const { sessionToken } = await readJSON(request);
     const session = db.prepare("SELECT * FROM competition_sessions WHERE session_token = ? AND user_id = ?").get(sessionToken, user.id);
     if (!session) return error(response, 404, "Không tìm thấy phiên.");
-    
+
     const nowMs = getVietnamTimestampMs();
     let remaining = session.remaining_seconds;
     if (!session.is_paused) {
@@ -7540,7 +7820,7 @@ async function api(request, response, url) {
     if (method === "POST") {
       try {
         body = (await readJSON(request)) || {};
-      } catch (e) {}
+      } catch (e) { }
     }
     const targetCompId = Number(body?.competitionId || url.searchParams.get("competitionId"));
     if (!targetCompId) return error(response, 400, "Thiếu competitionId.");
@@ -7676,8 +7956,8 @@ async function api(request, response, url) {
     const currentComp = getOrCreateCurrentCompetition(vnNow);
     const competitionId = body.competitionId || currentComp.id;
     const topicName = body.topicName || body.weekTopic || null;
-    const weekNumber = (body.weekNumber !== undefined && body.weekNumber !== null && !isNaN(parseInt(body.weekNumber, 10))) 
-      ? parseInt(body.weekNumber, 10) 
+    const weekNumber = (body.weekNumber !== undefined && body.weekNumber !== null && !isNaN(parseInt(body.weekNumber, 10)))
+      ? parseInt(body.weekNumber, 10)
       : null;
     const { phase1Topic = null, phase2Topic = null, phase3Topic = null } = body;
     const track = body.track === "free" ? "free" : "main";
@@ -7977,7 +8257,7 @@ function checkAndAwardWeeklyRewards() {
 try {
   db.prepare("DELETE FROM contribution_events WHERE event_type = 'weekly_active_reward' AND (points = 10 OR reason = 'Thưởng điểm hoạt động tích cực tuần vừa rồi')").run();
   db.prepare("DELETE FROM kv_store WHERE key LIKE 'reward_given_%'").run();
-} catch (e) {}
+} catch (e) { }
 
 // Chạy kiểm tra khi khởi động và định kỳ mỗi 1 phút (+5 điểm năng động tuần và tổng kết thi đua Chủ Nhật)
 function checkAndAwardSundayCompetitionRewards() {

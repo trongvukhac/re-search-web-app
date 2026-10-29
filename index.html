@@ -702,13 +702,13 @@
                 <button type="button" class="preset-chip" data-preset="90_20" onclick="applyTimerPreset('90_20')">90 / 20</button>
                 <button type="button" class="preset-chip" data-preset="45_15" onclick="applyTimerPreset('45_15')">45 / 15</button>
                 <button type="button" class="preset-chip" data-preset="flowtime" onclick="applyTimerPreset('flowtime')">
-                  Flowtime <span class="guide-trigger-icon" onclick="event.stopPropagation(); openMethodGuideModal('flowtime')" title="Xem hướng dẫn Flowtime">ℹ️</span>
+                  Flowtime <span class="guide-trigger-icon" onclick="event.stopPropagation(); openMethodGuideModal('flowtime')" title="Xem hướng dẫn Flowtime"><svg class="ui-icon" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg></span>
                 </button>
                 <button type="button" class="preset-chip" data-preset="eye_rule" onclick="applyTimerPreset('eye_rule')">
-                  20-20-20 <span class="guide-trigger-icon" onclick="event.stopPropagation(); openMethodGuideModal('eye_rule')" title="Xem hướng dẫn quy tắc 20-20-20">ℹ️</span>
+                  20-20-20 <span class="guide-trigger-icon" onclick="event.stopPropagation(); openMethodGuideModal('eye_rule')" title="Xem hướng dẫn quy tắc 20-20-20"><svg class="ui-icon" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg></span>
                 </button>
-                <button type="button" class="preset-chip custom-chip" data-preset="custom" onclick="openStudySettingsModal('timer')" title="Tùy chỉnh thời gian cá nhân">
-                  Tùy chỉnh ⚙️
+                <button type="button" class="preset-chip custom-chip" data-preset="custom" onclick="openStudySettingsModal('timer', true)" title="Tùy chỉnh thời gian cá nhân">
+                  <svg class="ui-icon" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"></line><line x1="4" y1="10" x2="4" y2="3"></line><line x1="12" y1="21" x2="12" y2="12"></line><line x1="12" y1="8" x2="12" y2="3"></line><line x1="20" y1="21" x2="20" y2="16"></line><line x1="20" y1="12" x2="20" y2="3"></line><line x1="1" y1="14" x2="7" y2="14"></line><line x1="9" y1="8" x2="15" y2="8"></line><line x1="17" y1="16" x2="23" y2="16"></line></svg> Tùy chỉnh
                 </button>
               </div>
 
@@ -1054,8 +1054,9 @@
                   </div>
                 </div>
                 <div class="todo-head-actions">
-                  <button type="button" class="todo-tag-mgr-btn" id="btnManageTodoTags" onclick="openStudySettingsModal('tasks')" title="Gắn nhãn và tùy chỉnh màu (Mở ở chuỗi 7 ngày)">
-                    🏷️ Nhãn <span class="perk-badge" id="badgeTaskLabelsLock">🔒 7d</span>
+                  <button type="button" class="todo-tag-mgr-btn" id="btnManageTodoTags" onclick="openStudySettingsModal('tasks')" title="Quản lý và tùy biến nhãn công việc">
+                    <svg class="ui-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:4px;"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7.01" y2="7"></line></svg>
+                    Quản lý nhãn
                   </button>
                   <button class="button button-sm button-ghost" id="clearCompletedTodos" title="Dọn dẹp các việc đã xong">Dọn dẹp</button>
                 </div>
@@ -1070,96 +1071,169 @@
               <ul class="todo-list" id="studyTodoList"></ul>
             </div>
 
-            <!-- Flexible Study Spaces & Cohort Desks (Hệ thống Không gian Tự học) -->
+            <!-- Flexible Study Spaces Ecosystem (Hệ thống Không gian Tự học 3 chức năng) -->
             <div class="study-card co-study-card" id="studySpacesMainCard">
               <div class="co-study-head">
-                <div>
-                  <div style="display:flex; align-items:center; gap:8px;">
-                    <h3><svg class="ui-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:4px;"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>Không gian Tự học</h3>
+                <div style="min-width: 0; flex: 1;">
+                  <div style="display:flex; align-items:center; gap:8px; flex-wrap: wrap;">
+                    <h3 style="white-space: nowrap; display: inline-flex; align-items: center; gap: 6px;">
+                      <svg class="ui-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+                      Không gian Tự học
+                    </h3>
                     <span class="badge" id="coStudyCountBadge">0 đang học</span>
                   </div>
-                  <p class="co-study-tip" id="studySpaceSubtitle">Đại sảnh thư viện &amp; Các phòng chuyên đề</p>
+                  <p class="co-study-tip" id="studySpaceSubtitle">Thư viện 24/7, Phòng họp nhóm &amp; Buồng riêng tư</p>
                 </div>
-                <div class="space-head-actions">
-                  <button type="button" class="button button-sm button-outline" id="btnBrowseStudySpaces" onclick="openStudyRoomsModal()" title="Duyệt tất cả không gian học và tạo phòng">
-                    <svg class="ui-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:3px;"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>Đổi phòng
+              </div>
+
+              <!-- TRẠNG THÁI 1: KHI CHƯA VÀO PHÒNG (Duyệt & Chọn Không gian) -->
+              <div id="studySpacesBrowseView">
+                <!-- 3 Functional Category Pills -->
+                <div class="study-spaces-filter-bar" id="studySpacesFilterBar">
+                  <button type="button" class="space-filter-pill active" data-space-tab="library" onclick="switchStudySpaceCategoryTab('library')">
+                    <svg class="ui-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+                    Thư viện
+                  </button>
+                  <button type="button" class="space-filter-pill" data-space-tab="meeting" onclick="switchStudySpaceCategoryTab('meeting')">
+                    <svg class="ui-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+                    Phòng họp (<span id="countMeetingRooms">0</span>)
+                  </button>
+                  <button type="button" class="space-filter-pill" data-space-tab="private" onclick="switchStudySpaceCategoryTab('private')">
+                    <svg class="ui-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                    Phòng học riêng tư
                   </button>
                 </div>
-              </div>
 
-              <!-- Space Categories Switcher Pills -->
-              <div class="study-spaces-filter-bar" id="studySpacesFilterBar">
-                <button type="button" class="space-filter-pill active" data-space-filter="all" onclick="filterStudySpaceCategory('all')">
-                  Tất cả (<span id="countSpacesAll">4</span>)
-                </button>
-                <button type="button" class="space-filter-pill" data-space-filter="commons" onclick="filterStudySpaceCategory('commons')">
-                  🏛️ Đại sảnh
-                </button>
-                <button type="button" class="space-filter-pill" data-space-filter="shared_task" onclick="filterStudySpaceCategory('shared_task')">
-                  🎯 Task chung
-                </button>
-                <button type="button" class="space-filter-pill" data-space-filter="private" onclick="filterStudySpaceCategory('private')">
-                  🔒 Buồng riêng
-                </button>
-                <button type="button" class="space-filter-pill create-pill" onclick="openStudyRoomsModal('create')" title="Tạo không gian học mới">
-                  ➕ Tạo phòng
-                </button>
-              </div>
-
-              <!-- Active Space Info Banner -->
-              <div class="active-space-banner" id="activeSpaceBanner">
-                <div class="active-space-main">
-                  <span class="active-space-icon" id="activeSpaceIcon">🏛️</span>
-                  <div class="active-space-meta">
-                    <div class="active-space-title-row">
-                      <strong class="active-space-title" id="activeSpaceTitle">Đại sảnh Thư viện</strong>
-                      <span class="active-space-badge badge-commons" id="activeSpaceBadge">Đại sảnh mở</span>
-                    </div>
-                    <p class="active-space-desc" id="activeSpaceDesc">Không gian mở kết nối toàn thể sinh viên và học giả NCKH đang tự học</p>
+                <!-- 1. THƯ VIỆN: 3 KHU VỰC VỚI ĐỒNG HỒ CHẠY TUẦN HOÀN 24/7 -->
+                <div class="space-category-pane" id="paneSpaceLibrary">
+                  <div class="library-rooms-grid" id="libraryRoomsGrid">
+                    <!-- Rendered dynamically by JS with live continuous countdown -->
                   </div>
                 </div>
-                <div class="active-space-stats">
-                  <div class="space-seats-indicator" id="spaceSeatsIndicator" title="Sĩ số bàn học">
-                    <span class="seats-label">Ghế ngồi:</span>
-                    <strong id="activeSpaceSeatsCount">0 / 100</strong>
-                    <div class="seat-dots-row" id="activeSpaceSeatDots"></div>
+
+                <!-- 2. PHÒNG HỌP: CHỦ PHÒNG, ĐỒNG BỘ ĐỒNG HỒ & NHIỆM VỤ CHUNG -->
+                <div class="space-category-pane" id="paneSpaceMeeting" style="display: none;">
+                  <div class="meeting-guide-banner">
+                    <div class="meeting-guide-step">
+                      <span class="step-num">1</span>
+                      <p>Tạo phòng họp và gửi liên kết hoặc mã 4 số cho bạn bè, bạn cùng lớp.</p>
+                    </div>
+                    <div class="meeting-guide-step">
+                      <span class="step-num">2</span>
+                      <p>Cùng theo dõi một đồng hồ chung: bắt đầu, tạm dừng hoặc chuyển lượt đồng bộ theo chủ phòng.</p>
+                    </div>
+                    <div class="meeting-guide-step">
+                      <span class="step-num">3</span>
+                      <p>Xem ai đang tập trung vào việc gì và gửi cổ vũ cho nhau.</p>
+                    </div>
                   </div>
-                  <button type="button" class="btn-leave-space" id="btnLeaveSpace" onclick="leaveCurrentSpaceToCommons()" style="display: none;" title="Rời về Đại sảnh chung">
-                    ↩ Về Đại sảnh
+
+                  <div class="meeting-action-bar">
+                    <button type="button" class="button button-sm button-primary" onclick="openCreateMeetingModal()">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                      Tạo phòng họp mới
+                    </button>
+                    <div class="quick-join-meeting-wrap">
+                      <input type="text" id="inputQuickJoinCode" placeholder="Mã 4 số..." maxlength="4" pattern="\d{4}" />
+                      <button type="button" class="button button-sm button-outline" onclick="handleQuickJoinMeetingSubmit()">Vào phòng</button>
+                    </div>
+                  </div>
+
+                  <div class="meeting-rooms-list" id="meetingRoomsList">
+                    <!-- Rendered dynamically by JS -->
+                  </div>
+                </div>
+
+                <!-- 3. PHÒNG HỌC RIÊNG TƯ: 1 NGƯỜI 1 PHÒNG -->
+                <div class="space-category-pane" id="paneSpacePrivate" style="display: none;">
+                  <div class="private-pod-promo-card">
+                    <div class="promo-icon-wrap">
+                      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                    </div>
+                    <h4>Buồng học Cá nhân Riêng tư</h4>
+                    <p>Không gian học một mình hoàn toàn riêng tư. Thông tin và ca học của bạn được bảo mật tuyệt đối, không chia sẻ công khai với người khác.</p>
+                    <div class="private-pods-active-stat" id="privatePodsActiveStat">
+                      <span class="stat-dot-pulse"></span>
+                      <span>Đang có <strong id="activePrivatePodsCount">0</strong> buồng tự học riêng tư đang hoạt động</span>
+                    </div>
+                    <button type="button" class="button button-primary btn-join-private-pod" onclick="joinPrivateStudyPod()">
+                      Vào buồng học riêng tư của bạn →
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- TRẠNG THÁI 2: KHI ĐÃ VÀO PHÒNG (ẨN HẾT KHÔNG GIAN KHÁC, CHỈ HIỆN PHÒNG NÀY & NÚT THOÁT) -->
+              <div id="studyActiveRoomView" style="display: none;">
+                <div class="active-space-banner" id="activeSpaceBanner">
+                  <div class="active-space-main">
+                    <span class="active-space-icon" id="activeSpaceIcon">
+                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+                    </span>
+                    <div class="active-space-meta">
+                      <div class="active-space-title-row">
+                        <strong class="active-space-title" id="activeSpaceTitle">Tên phòng học</strong>
+                        <span class="active-space-badge" id="activeSpaceBadge">Phân loại</span>
+                      </div>
+                      <p class="active-space-desc" id="activeSpaceDesc">Mô tả hoặc trạng thái phòng học</p>
+                    </div>
+                  </div>
+                  <div class="active-space-stats">
+                    <div class="space-seats-indicator" id="spaceSeatsIndicator">
+                      <span class="seats-label">Sĩ số:</span>
+                      <strong id="activeSpaceSeatsCount">0 người</strong>
+                    </div>
+                    <!-- CHỈ HIỆN DUY NHẤT NÚT THOÁT PHÒNG -->
+                    <button type="button" class="btn-leave-space btn-danger-leave" id="btnLeaveSpace" onclick="confirmLeaveCurrentRoom()" title="Thoát khỏi phòng học">
+                      <svg class="ui-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+                      Thoát phòng
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Thanh chia sẻ mã phòng / liên kết (Phòng họp) -->
+                <div class="meeting-share-toolbar" id="meetingShareToolbar" style="display: none;">
+                  <button type="button" class="button button-xs button-outline" onclick="copyMeetingRoomCode()" id="btnCopyMeetingCode">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                    Mã phòng: <strong id="currentMeetingCodeText">0000</strong>
+                  </button>
+                  <button type="button" class="button button-xs button-outline" onclick="copyMeetingRoomLink()">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+                    Sao chép liên kết mời
                   </button>
                 </div>
-              </div>
 
-              <!-- Shared Cohort Tasks Box (Visible if current room is shared_task) -->
-              <div class="shared-cohort-tasks-box" id="sharedCohortTasksBox" style="display: none;">
-                <div class="shared-tasks-head">
-                  <div style="flex: 1; min-width: 0;">
-                    <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
-                      <strong style="font-size: 12.5px; color: var(--ink); display: flex; align-items: center; gap: 4px;">
-                        <span>🎯 Nhiệm vụ chung của phòng:</span>
-                      </strong>
-                      <span class="shared-task-pct" id="sharedTaskPctBadge">0%</span>
+                <!-- Hộp Nhiệm vụ chung (Phòng họp) -->
+                <div class="shared-cohort-tasks-box" id="sharedCohortTasksBox" style="display: none;">
+                  <div class="shared-tasks-head">
+                    <div style="flex: 1; min-width: 0;">
+                      <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+                        <strong style="font-size: 12.5px; color: var(--ink); display: flex; align-items: center; gap: 4px;">
+                          <span>🎯 Nhiệm vụ chung của phòng:</span>
+                        </strong>
+                        <span class="shared-task-pct" id="sharedTaskPctBadge">0%</span>
+                      </div>
+                      <div class="shared-task-progress-track">
+                        <div class="shared-task-progress-fill" id="sharedTaskProgressFill" style="width: 0%;"></div>
+                      </div>
                     </div>
-                    <div class="shared-task-progress-track">
-                      <div class="shared-task-progress-fill" id="sharedTaskProgressFill" style="width: 0%;"></div>
-                    </div>
+                    <button type="button" class="button button-xs button-ghost" id="btnToggleAddSharedTask" onclick="toggleAddSharedTaskInput()" title="Thêm việc cho cả phòng">+</button>
                   </div>
-                  <button type="button" class="button button-xs button-ghost" id="btnToggleAddSharedTask" onclick="toggleAddSharedTaskInput()" title="Thêm việc cho cả phòng">+</button>
+
+                  <!-- Inline Add Shared Task Form -->
+                  <div class="shared-task-add-row" id="sharedTaskAddRow" style="display: none;">
+                    <input type="text" id="newSharedTaskInput" placeholder="Nội dung việc cần làm chung của phòng..." maxlength="100" />
+                    <button type="button" class="button button-xs button-primary" onclick="submitNewSharedTask()">Thêm</button>
+                  </div>
+
+                  <ul class="shared-tasks-list" id="sharedTasksList">
+                    <!-- Rendered dynamically -->
+                  </ul>
                 </div>
 
-                <!-- Inline Add Shared Task Form -->
-                <div class="shared-task-add-row" id="sharedTaskAddRow" style="display: none;">
-                  <input type="text" id="newSharedTaskInput" placeholder="Nội dung nhiệm vụ chung của phòng..." maxlength="100" />
-                  <button type="button" class="button button-xs button-primary" onclick="submitNewSharedTask()">Thêm</button>
-                </div>
-
-                <ul class="shared-tasks-list" id="sharedTasksList">
-                  <!-- Rendered dynamically -->
-                </ul>
+                <!-- Danh sách bạn học trong phòng này -->
+                <div class="co-study-list" id="coStudyList"></div>
               </div>
-
-              <!-- Active Learners List in this Space -->
-              <div class="co-study-list" id="coStudyList"></div>
             </div>
           </div>
         </div>
@@ -3544,7 +3618,7 @@
         color: #94a3b8 !important;
       }
     </style>
-    <dialog id="studySettingsModal" class="modal study-settings-modal">
+    <dialog id="studySettingsModal" class="modal study-settings-modal study-popup-left">
       <div class="modal-head">
         <div>
           <p class="eyebrow">CÀI ĐẶT PHÒNG TỰ HỌC</p>
@@ -3555,11 +3629,21 @@
 
       <!-- Settings Navigation Tabs -->
       <div class="study-settings-tabs">
-        <button type="button" class="settings-tab-btn active" data-settings-tab="timer" onclick="switchStudySettingsTab('timer')">⏱️ Timer</button>
-        <button type="button" class="settings-tab-btn" data-settings-tab="extras" onclick="switchStudySettingsTab('extras')">⚡ Tiện ích</button>
-        <button type="button" class="settings-tab-btn" data-settings-tab="alarms" onclick="switchStudySettingsTab('alarms')">🔔 Chuông báo</button>
+        <button type="button" class="settings-tab-btn active" data-settings-tab="timer" onclick="switchStudySettingsTab('timer')">
+          <svg class="ui-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+          Đồng hồ
+        </button>
+        <button type="button" class="settings-tab-btn" data-settings-tab="extras" onclick="switchStudySettingsTab('extras')">
+          <svg class="ui-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+          Tiện ích
+        </button>
+        <button type="button" class="settings-tab-btn" data-settings-tab="alarms" onclick="switchStudySettingsTab('alarms')">
+          <svg class="ui-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+          Chuông báo
+        </button>
         <button type="button" class="settings-tab-btn" data-settings-tab="tasks" onclick="switchStudySettingsTab('tasks')">
-          🏷️ Nhãn việc <span class="perk-badge" id="badgeModalTaskLock">🔒 7d</span>
+          <svg class="ui-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7.01" y2="7"></line></svg>
+          Quản lý nhãn
         </button>
       </div>
 
@@ -3568,13 +3652,16 @@
         <div class="settings-tab-pane active" id="paneSettingsTimer">
           <div class="settings-group">
             <div class="settings-group-header">
-              <h3>Presets thời gian</h3>
-              <button type="button" class="btn-guide-link" onclick="openMethodGuideModal('all')">ℹ️ Xem hướng dẫn phương pháp</button>
+              <h3>Mẫu thiết lập thời gian</h3>
+              <button type="button" class="btn-guide-link" onclick="openMethodGuideModal('all')">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: -1px; margin-right: 2px;"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                Xem hướng dẫn phương pháp
+              </button>
             </div>
             <div class="preset-selector-grid" id="presetSelectorGrid">
               <div class="preset-card active" data-preset="25_5" onclick="selectModalPreset('25_5')">
                 <span class="preset-card-val">25 / 5</span>
-                <span class="preset-card-desc">Chu kỳ Pomodoro</span>
+                <span class="preset-card-desc">Lượt Pomodoro</span>
               </div>
               <div class="preset-card" data-preset="50_10" onclick="selectModalPreset('50_10')">
                 <span class="preset-card-val">50 / 10</span>
@@ -3594,7 +3681,7 @@
               </div>
               <div class="preset-card" data-preset="flowtime" onclick="selectModalPreset('flowtime')">
                 <span class="preset-card-val">Flowtime</span>
-                <span class="preset-card-desc">Đếm xuôi (count-up)</span>
+                <span class="preset-card-desc">Đếm xuôi linh hoạt</span>
               </div>
               <div class="preset-card" data-preset="eye_rule" onclick="selectModalPreset('eye_rule')">
                 <span class="preset-card-val">20-20-20</span>
@@ -3602,7 +3689,7 @@
               </div>
               <div class="preset-card" data-preset="custom" onclick="selectModalPreset('custom')">
                 <span class="preset-card-val">Tùy chỉnh</span>
-                <span class="preset-card-desc">Cá nhân hóa theo ý bạn</span>
+                <span class="preset-card-desc">Thời lượng tự do</span>
               </div>
             </div>
           </div>
@@ -3610,21 +3697,21 @@
           <!-- Flowtime specific sub-config -->
           <div class="settings-group" id="groupFlowtimeConfig" style="display: none;">
             <h3>Cấu hình Flowtime (Tỷ lệ nghỉ)</h3>
-            <p class="settings-desc">Tỷ lệ mặc định để tính thời gian nghỉ ngắn dựa trên thời gian đã tập trung:</p>
+            <p class="settings-desc">Tỷ lệ tính thời gian nghỉ ngắn dựa trên thời gian tập trung tích lũy:</p>
             <div class="ratio-pill-selector">
-              <label class="ratio-pill"><input type="radio" name="flowtimeRatioModal" value="1/3" onchange="updateFlowtimeRatioSetting(this.value)"> <span>1/3 (Tập trung 3 nghỉ 1)</span></label>
-              <label class="ratio-pill"><input type="radio" name="flowtimeRatioModal" value="1/4" checked onchange="updateFlowtimeRatioSetting(this.value)"> <span>1/4 (Chuẩn: 48p24s ➔ 12p06s)</span></label>
-              <label class="ratio-pill"><input type="radio" name="flowtimeRatioModal" value="1/5" onchange="updateFlowtimeRatioSetting(this.value)"> <span>1/5 (Tập trung 5 nghỉ 1)</span></label>
-              <label class="ratio-pill"><input type="radio" name="flowtimeRatioModal" value="1/6" onchange="updateFlowtimeRatioSetting(this.value)"> <span>1/6 (Nghỉ ngắn nhanh)</span></label>
+              <label class="ratio-pill"><input type="radio" name="flowtimeRatioModal" value="1/3" onchange="updateFlowtimeRatioSetting(this.value)"> <span>1/3 (Tập trung 3, nghỉ 1)</span></label>
+              <label class="ratio-pill"><input type="radio" name="flowtimeRatioModal" value="1/4" checked onchange="updateFlowtimeRatioSetting(this.value)"> <span>1/4 (Tập trung 4, nghỉ 1)</span></label>
+              <label class="ratio-pill"><input type="radio" name="flowtimeRatioModal" value="1/5" onchange="updateFlowtimeRatioSetting(this.value)"> <span>1/5 (Tập trung 5, nghỉ 1)</span></label>
+              <label class="ratio-pill"><input type="radio" name="flowtimeRatioModal" value="1/6" onchange="updateFlowtimeRatioSetting(this.value)"> <span>1/6 (Tập trung 6, nghỉ 1)</span></label>
             </div>
           </div>
 
-          <!-- Custom Timers Steppers -->
-          <div class="settings-group" id="groupCustomDuration">
+          <!-- Custom Timers Steppers - ONLY VISIBLE WHEN "Tùy chỉnh" IS SELECTED -->
+          <div class="settings-group" id="groupCustomDuration" style="display: none;">
             <h3>Thời lượng ca học tùy chỉnh (phút)</h3>
             <div class="duration-grid">
               <div class="duration-item">
-                <label>Tập trung (Focus)</label>
+                <label>Thời gian tập trung</label>
                 <div class="stepper-input">
                   <button type="button" class="step-btn" onclick="stepDuration('focus', -1)">-</button>
                   <input type="number" id="settingFocusMins" min="1" max="180" value="25" oninput="handleCustomDurationChange()" />
@@ -3632,7 +3719,7 @@
                 </div>
               </div>
               <div class="duration-item">
-                <label>Nghỉ ngắn (Break)</label>
+                <label>Nghỉ ngắn</label>
                 <div class="stepper-input">
                   <button type="button" class="step-btn" onclick="stepDuration('shortbreak', -1)">-</button>
                   <input type="number" id="settingShortBreakMins" min="1" max="60" value="5" oninput="handleCustomDurationChange()" />
@@ -3640,7 +3727,7 @@
                 </div>
               </div>
               <div class="duration-item">
-                <label>Nghỉ dài (Long Break)</label>
+                <label>Nghỉ dài</label>
                 <div class="stepper-input">
                   <button type="button" class="step-btn" onclick="stepDuration('longbreak', -1)">-</button>
                   <input type="number" id="settingLongBreakMins" min="1" max="90" value="15" oninput="handleCustomDurationChange()" />
@@ -3658,10 +3745,10 @@
                   <input type="number" id="settingLongBreakInterval" min="1" max="12" value="4" oninput="handleCustomDurationChange()" />
                   <button type="button" class="step-btn" onclick="stepLongBreakInterval(1)">+</button>
                 </div>
-                <span class="unit-text">phiên (hiệp)</span>
+                <span class="unit-text">lượt học</span>
               </div>
               <div class="full-cycle-badge" id="settingFullCycleEstimate">
-                ➔ One full cycle takes 2h 10m
+                ➔ Một chu kỳ học sẽ kéo dài 2g 10p
               </div>
             </div>
           </div>
@@ -3674,15 +3761,15 @@
             <div class="toggle-list">
               <label class="setting-toggle-row">
                 <div>
-                  <strong>Tự động bắt đầu nghỉ giải lao (Auto-start breaks)</strong>
-                  <span>Tự động chuyển ngay sang tính giờ nghỉ khi kết thúc phiên tập trung</span>
+                  <strong>Tự động bắt đầu nghỉ giải lao</strong>
+                  <span>Tự động chuyển ngay sang tính giờ nghỉ khi kết thúc lượt tập trung</span>
                 </div>
                 <input type="checkbox" id="settingAutoStartBreaks" class="toggle-switch" checked />
               </label>
 
               <label class="setting-toggle-row">
                 <div>
-                  <strong>Tự động bắt đầu ca học mới (Auto-start focus sessions)</strong>
+                  <strong>Tự động bắt đầu ca học mới</strong>
                   <span>Tự động đếm giờ học tiếp theo khi hết thời gian nghỉ</span>
                 </div>
                 <input type="checkbox" id="settingAutoStartPomodoros" class="toggle-switch" />
@@ -3690,8 +3777,8 @@
 
               <div class="setting-toggle-row setting-inline-row">
                 <div>
-                  <strong>Mục tiêu hàng ngày (Daily goal)</strong>
-                  <span>Mục tiêu hàng ngày đặt ra bao nhiêu phiên tập trung</span>
+                  <strong>Mục tiêu hàng ngày</strong>
+                  <span>Mục tiêu hàng ngày đặt ra bao nhiêu lượt tập trung</span>
                 </div>
                 <div class="stepper-input stepper-sm">
                   <button type="button" class="step-btn" onclick="stepDailyGoal(-1)">-</button>
@@ -3707,7 +3794,7 @@
             <div class="toggle-list">
               <label class="setting-toggle-row">
                 <div>
-                  <strong>Tạm dừng âm thanh trong thời gian nghỉ (Pause sounds during breaks)</strong>
+                  <strong>Tạm dừng âm thanh trong thời gian nghỉ</strong>
                   <span>Tắt âm thanh trong thời gian nghỉ ngắn và nghỉ dài, bật lại đúng điểm dừng trước đó khi chạy thời gian tập trung</span>
                 </div>
                 <input type="checkbox" id="settingPauseSoundsDuringBreaks" class="toggle-switch" checked />
@@ -3715,7 +3802,7 @@
 
               <label class="setting-toggle-row">
                 <div>
-                  <strong>Tự bật chế độ tối giản khi tập trung (Hide everything while focusing)</strong>
+                  <strong>Tự bật chế độ tối giản khi tập trung</strong>
                   <span>Tự động kích hoạt giao diện tối giản ngắm trọn hình nền khi đang tập trung</span>
                 </div>
                 <input type="checkbox" id="settingHideEverythingWhileFocusing" class="toggle-switch" />
@@ -3735,17 +3822,17 @@
         <!-- TAB 3: ALARMS (CHUÔNG BÁO) -->
         <div class="settings-tab-pane" id="paneSettingsAlarms" style="display: none;">
           <div class="settings-group">
-            <h3>Âm thanh chuông báo (Alarm Sound)</h3>
+            <h3>Âm thanh chuông báo</h3>
             <div class="alarm-settings-row">
               <div class="alarm-field">
                 <label>Âm chuông kết thúc:</label>
                 <select id="settingEndAlarm">
-                  <option value="bell">Tín hiệu (Bell)</option>
-                  <option value="ding">Rộn ràng (Ding)</option>
-                  <option value="servicebell">Báo động (Service Bell)</option>
-                  <option value="singingbowl">Thiền định (Singing Bowl)</option>
-                  <option value="chime">Vui tươi (Chime)</option>
-                  <option value="marimba">Mộc cầm (Marimba)</option>
+                  <option value="bell">Tín hiệu Chuông</option>
+                  <option value="ding">Rộn ràng Ding</option>
+                  <option value="servicebell">Chuông sảnh</option>
+                  <option value="singingbowl">Chuông xoay thiền định</option>
+                  <option value="chime">Chuông gió vui tươi</option>
+                  <option value="marimba">Mộc cầm ngân vang</option>
                 </select>
                 <button type="button" class="button button-sm button-outline" onclick="previewSelectedAlarm()">
                   <svg class="ui-btn-icon" width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg> Nghe thử
@@ -3763,7 +3850,7 @@
 
               <!-- Ring the alarm -->
               <div class="alarm-rings-box" style="margin-top: 14px;">
-                <label style="font-size:12px; font-weight:600; display:block; margin-bottom:6px; color: var(--ink);">Số lần đổ chuông (Ring the alarm):</label>
+                <label style="font-size:12px; font-weight:600; display:block; margin-bottom:6px; color: var(--ink);">Số lần đổ chuông:</label>
                 <div class="ring-multiplier-group" id="ringMultiplierGroup">
                   <button type="button" class="ring-mult-btn active" data-rings="1" onclick="setAlarmRings(1)">×1</button>
                   <button type="button" class="ring-mult-btn" data-rings="2" onclick="setAlarmRings(2)">×2</button>
@@ -3779,27 +3866,27 @@
             <!-- Reminder before the end -->
             <div class="reminder-field-box">
               <div>
-                <strong style="display:block; font-size:13px; color:var(--ink);">Nhắc nhở trước khi kết thúc ca học (Reminder before the end)</strong>
-                <span style="font-size:12px; color:var(--muted); display:block;">A soft chime before a focus session ends</span>
+                <strong style="display:block; font-size:13px; color:var(--ink);">Nhắc nhở trước khi kết thúc ca học</strong>
+                <span style="font-size:12px; color:var(--muted); display:block;">Chuông dịu nhẹ báo trước khi kết thúc lượt tập trung</span>
               </div>
               <div class="reminder-pill-group" id="reminderPillGroup" style="margin-top: 8px;">
-                <button type="button" class="remind-pill-btn active" data-remind="0" onclick="setReminderBeforeEnd(0)">Tắt (Off)</button>
-                <button type="button" class="remind-pill-btn" data-remind="1" onclick="setReminderBeforeEnd(1)">1 min</button>
-                <button type="button" class="remind-pill-btn" data-remind="2" onclick="setReminderBeforeEnd(2)">2 min</button>
-                <button type="button" class="remind-pill-btn" data-remind="5" onclick="setReminderBeforeEnd(5)">5 min</button>
+                <button type="button" class="remind-pill-btn active" data-remind="0" onclick="setReminderBeforeEnd(0)">Tắt</button>
+                <button type="button" class="remind-pill-btn" data-remind="1" onclick="setReminderBeforeEnd(1)">1 phút</button>
+                <button type="button" class="remind-pill-btn" data-remind="2" onclick="setReminderBeforeEnd(2)">2 phút</button>
+                <button type="button" class="remind-pill-btn" data-remind="5" onclick="setReminderBeforeEnd(5)">5 phút</button>
               </div>
             </div>
 
             <!-- Ticking sound -->
             <div class="ticking-field-box" style="margin-top: 14px; padding-top: 12px; border-top: 1px dashed var(--line);">
               <div>
-                <strong style="display:block; font-size:13px; color:var(--ink);">Tiếng tích tắc khi tập trung (Ticking sound)</strong>
-                <span style="font-size:12px; color:var(--muted); display:block;">A soft tick-tock while you focus</span>
+                <strong style="display:block; font-size:13px; color:var(--ink);">Tiếng tích tắc khi tập trung</strong>
+                <span style="font-size:12px; color:var(--muted); display:block;">Âm thanh tích tắc nhẹ nhàng giúp bạn tập trung</span>
               </div>
               <select id="settingTickingSound" onchange="previewTickingSound(this.value)" style="margin-top: 8px; width: 100%; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); color: var(--ink);">
-                <option value="off">Tắt (Off)</option>
-                <option value="mechanical">Đồng hồ cơ nhẹ nhàng (Mechanical tick)</option>
-                <option value="digital">Nhịp xung điện tử êm dịu (Digital pulse)</option>
+                <option value="off">Tắt</option>
+                <option value="mechanical">Đồng hồ cơ nhẹ nhàng</option>
+                <option value="digital">Nhịp xung điện tử êm dịu</option>
               </select>
             </div>
 
@@ -3807,7 +3894,7 @@
             <div style="margin-top: 14px; padding-top: 12px; border-top: 1px dashed var(--line);">
               <label class="setting-toggle-row" style="padding: 0; background: transparent; border: none;">
                 <div>
-                  <strong>Thông báo màn hình (Desktop notifications)</strong>
+                  <strong>Thông báo trên máy tính</strong>
                   <span>Báo chuông và hiện thông báo khi hết giờ ngay cả khi đang chuyển tab khác</span>
                 </div>
                 <input type="checkbox" id="settingBrowserNotifications" class="toggle-switch" />
@@ -3816,24 +3903,26 @@
           </div>
         </div>
 
-        <!-- TAB 4: TASKS (NHÃN CÔNG VIỆC - 7D STREAK) -->
+        <!-- TAB 4: TASKS (QUẢN LÝ NHÃN CÔNG VIỆC) -->
         <div class="settings-tab-pane" id="paneSettingsTasks" style="display: none;">
-          <div class="perk-locked-banner" id="bannerTasksLocked" style="display: none;">
-            <span class="lock-icon">🔒</span>
-            <div>
-              <strong>Mở khóa ở chuỗi 7 ngày (Học giả bền bỉ)</strong>
-              <p>Tính năng phân loại nhãn và tuỳ chỉnh màu sắc cho những việc cần làm giúp bạn sắp xếp công việc nghiên cứu khoa học.</p>
-            </div>
-          </div>
-
           <div class="settings-group" id="groupTaskLabelsSettings">
             <div class="settings-group-header">
               <div>
-                <h3>Phân loại &amp; Màu nhãn công việc</h3>
+                <h3>Quản lý nhãn công việc</h3>
                 <span style="font-size:12px; color:var(--muted);">Gắn nhãn và tùy biến màu sắc nhận diện cho các đầu việc</span>
               </div>
-              <button type="button" class="button button-sm button-outline" id="btnAddNewTaskLabel" onclick="promptAddNewTaskLabel()">➕ Thêm nhãn mới</button>
             </div>
+
+            <!-- Inline New Label Form (Direct creation, no blockers) -->
+            <div class="create-label-inline-form" style="display: flex; gap: 8px; margin-bottom: 14px; align-items: center; background: var(--surface); padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px;">
+              <input type="color" id="newLabelColorInput" value="#3b82f6" title="Chọn màu nhãn" style="width: 34px; height: 34px; border: none; border-radius: 8px; cursor: pointer; padding: 0; background: transparent; flex-shrink: 0;" />
+              <input type="text" id="newLabelNameInput" placeholder="Tên nhãn mới (VD: Báo cáo, Khóa luận, SPSS)..." maxlength="30" style="flex: 1; min-width: 0; height: 34px; padding: 0 10px; font-size: 13px; border: 1px solid var(--line); border-radius: 8px; background: #fff; color: var(--ink);" onkeydown="if(event.key==='Enter'){event.preventDefault();handleCreateTaskLabel();}" />
+              <button type="button" class="button button-sm button-primary" onclick="handleCreateTaskLabel()" style="display: inline-flex; align-items: center; gap: 4px; height: 34px; padding: 0 12px; white-space: nowrap; flex-shrink: 0;">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                Thêm nhãn
+              </button>
+            </div>
+
             <div class="task-labels-mgr-list" id="taskLabelsMgrList">
               <!-- Rendered by JS -->
             </div>
@@ -3848,7 +3937,7 @@
     </dialog>
 
     <!-- HƯỚNG DẪN CÁC PHƯƠNG PHÁP TẬP TRUNG & QUY TẮC MẮT 20-20-20 -->
-    <dialog id="studyMethodGuideModal" class="modal study-method-guide-modal" style="max-width: 680px; width: 95vw;">
+    <dialog id="studyMethodGuideModal" class="modal study-method-guide-modal study-popup-left">
       <div class="modal-head">
         <div>
           <p class="eyebrow">HƯỚNG DẪN KHOA HỌC TẬP TRUNG</p>
@@ -3861,18 +3950,20 @@
         <!-- Card 1: Flowtime -->
         <div class="method-card">
           <div class="method-card-title">
-            <span class="method-icon">🌊</span>
-            <strong>Phương pháp Flowtime (Count-up / Đếm xuôi)</strong>
+            <span class="method-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12h20M2 12a10 10 0 0 1 10-10v20A10 10 0 0 1 2 12z"></path></svg>
+            </span>
+            <strong>Phương pháp Flowtime (Đếm xuôi)</strong>
           </div>
           <p class="method-card-desc">
-            <strong>Đếm xuôi, không đếm ngược:</strong> Thay vì đặt một khung thời gian cố định gây áp lực, người dùng tự do tập trung và chủ động tắt đến khi muốn nghỉ. Bộ đếm sẽ đếm xuôi từ 00:00 giúp bạn đắm chìm vào dòng chảy tư duy (Flow State) mà không bị ngắt mạch ý tưởng.
+            <strong>Đếm xuôi, không đếm ngược:</strong> Thay vì áp đặt thời gian cố định gây căng thẳng, bạn chủ động tập trung và tắt đồng hồ khi muốn nghỉ ngơi. Bộ đếm đếm xuôi từ 00:00 giúp bạn duy trì dòng chảy tư duy tập trung cao độ mà không bị ngắt quãng.
           </p>
           <div class="method-formula-box">
-            <strong>Thời gian nghỉ ngắn theo tỷ lệ vàng thời gian tập trung:</strong>
-            <p style="margin: 4px 0 8px 0;">Hệ thống cung cấp 4 công thức tỷ lệ nghỉ: <code>1/3</code>, <code>1/4</code>, <code>1/5</code>, <code>1/6</code>.</p>
+            <strong>Thời gian nghỉ ngắn theo tỷ lệ thời gian tập trung:</strong>
+            <p style="margin: 4px 0 8px 0;">Hệ thống hỗ trợ 4 tỷ lệ nghỉ linh hoạt: <code>1/3</code>, <code>1/4</code>, <code>1/5</code>, <code>1/6</code>.</p>
             <div class="method-example-box">
-              <span class="example-tag">Ví dụ thực tế</span>
-              <p>Một người bật Flowtime và chọn tỷ lệ <strong>1/4</strong>. Trong hiệp 1 người đó học được <strong>48 phút 24 giây</strong>, thì thời gian nghỉ sẽ là <strong>12 phút 6 giây</strong> (đúng bằng 1/4 thời gian đếm tập trung). Người dùng có thể tự do chuyển đổi giữa 4 công thức nghỉ để chọn thời gian thư giãn thích hợp nhất.</p>
+              <span class="example-tag">Cách thức tính</span>
+              <p>Khi chọn tỷ lệ <strong>1/4</strong>, thời gian nghỉ ngắn sẽ bằng đúng 1/4 tổng thời gian bạn vừa tập trung. Bạn có thể tự do chuyển đổi giữa 4 công thức để chọn khoảng thời gian thư giãn phù hợp nhất.</p>
             </div>
           </div>
         </div>
@@ -3880,31 +3971,32 @@
         <!-- Card 2: 20-20-20 Eye Rule -->
         <div class="method-card">
           <div class="method-card-title">
-            <span class="method-icon">👀</span>
-            <strong>Quy tắc nghỉ mắt 20-20-20 (Eye Rest Rule)</strong>
+            <span class="method-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+            </span>
+            <strong>Quy tắc nghỉ mắt 20-20-20</strong>
           </div>
-          <p class="method-card-desc" style="font-style: italic; color: var(--muted); margin-bottom: 6px;">
-            “Every 20 minutes, look at something 20 feet away for 20 seconds. This eye rest timer follows the 20-20-20 rule so long screen sessions are easier on your eyes.”
-          </p>
           <p class="method-card-desc">
-            <strong>Cơ chế khoa học:</strong> Cứ sau <strong>20 phút</strong> nhìn màn hình, hãy phóng tầm mắt nhìn vào một vật thể ở khoảng cách xa ít nhất <strong>20 feet (~6 mét)</strong> trong vòng <strong>20 giây</strong>.
+            <strong>Cơ chế bảo vệ thị lực:</strong> Cứ sau <strong>20 phút</strong> nhìn vào màn hình máy tính, hãy nhìn ra xa khoảng <strong>6 mét (20 feet)</strong> trong vòng <strong>20 giây</strong>.
           </p>
           <div class="method-benefit-box">
-            <p>Quy tắc này được <em>Hiệp hội Nhãn khoa Hoa Kỳ (AAO)</em> khuyên dùng nhằm giúp các cơ mi của mắt thư giãn tối đa, chống mỏi mắt, khô mắt và bảo vệ thị lực khi phải nghiên cứu tài liệu trên máy tính trong nhiều giờ liên tục.</p>
+            <p>Quy tắc này giúp cơ điều tiết của mắt được thả lỏng, giảm mỏi mắt, khô mắt và bảo vệ thị lực tối ưu cho các phiên nghiên cứu tài liệu kéo dài.</p>
           </div>
         </div>
 
         <!-- Card 3: Presets Pomodoro khoa học -->
         <div class="method-card">
           <div class="method-card-title">
-            <span class="method-icon">⏱️</span>
-            <strong>Bộ Preset Pomodoro tiêu chuẩn</strong>
+            <span class="method-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+            </span>
+            <strong>Bộ mẫu thiết lập thời gian tiêu chuẩn</strong>
           </div>
           <ul class="method-presets-list" style="margin: 6px 0 0 18px; padding: 0; line-height: 1.6; font-size: 13.5px;">
-            <li><strong>25 / 5:</strong> 25 phút tập trung, 5 phút nghỉ ngắn (Pomodoro truyền thống kinh điển).</li>
-            <li><strong>50 / 10:</strong> 50 phút học, 10 phút nghỉ (Thích hợp cho giải quyết bài tập hoặc phân tích dữ liệu sâu).</li>
-            <li><strong>52 / 17:</strong> 52 phút tập trung, 17 phút nghỉ ngắn (Công thức năng suất cao nhất theo nghiên cứu thực nghiệm DeskTime).</li>
-            <li><strong>90 / 20:</strong> Làm việc (90/20): 90 phút tập trung, 20 phút nghỉ (Theo nhịp sinh học não bộ Ultradian Rhythm &amp; Deep Work).</li>
+            <li><strong>25 / 5:</strong> 25 phút tập trung, 5 phút nghỉ ngắn (Phương pháp Pomodoro kinh điển).</li>
+            <li><strong>50 / 10:</strong> 50 phút học, 10 phút nghỉ (Phù hợp giải quyết khối lượng bài tập hoặc phân tích sâu).</li>
+            <li><strong>52 / 17:</strong> 52 phút tập trung, 17 phút nghỉ ngắn (Công thức năng suất cao nhất theo thống kê DeskTime).</li>
+            <li><strong>90 / 20:</strong> 90 phút tập trung, 20 phút nghỉ (Theo chu kỳ nhịp sinh học tự nhiên của não bộ).</li>
             <li><strong>45 / 15:</strong> 45 phút tập trung, 15 phút nghỉ (Tương đương nhịp một tiết học đại học).</li>
           </ul>
         </div>
@@ -3913,6 +4005,93 @@
       <div class="modal-actions" style="margin-top: 16px;">
         <button type="button" class="button button-primary" onclick="this.closest('dialog').close()">Đã hiểu</button>
       </div>
+    </dialog>
+
+    <!-- MODAL XÁC NHẬN THOÁT PHÒNG HỌC -->
+    <dialog id="studyExitConfirmModal" class="modal study-popup-left study-confirm-modal" style="max-width: 440px;">
+      <div class="modal-head">
+        <div>
+          <p class="eyebrow" style="color: #ef4444;">XÁC NHẬN RỜI PHÒNG</p>
+          <h2 style="font-size: 18px;">Rời khỏi không gian học?</h2>
+        </div>
+        <button class="close-modal" type="button" onclick="this.closest('dialog').close()" aria-label="Đóng">
+          <svg class="ui-icon modal-close-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+      </div>
+      <div class="confirm-modal-body" style="padding: 10px 0 18px 0; font-size: 13.5px; line-height: 1.5; color: var(--ink);">
+        <p>Bạn có chắc chắn muốn rời khỏi phòng học hiện tại không? Tiến độ và ca học cá nhân của bạn vẫn được lưu lại an toàn.</p>
+      </div>
+      <div class="modal-actions" style="display: flex; justify-content: flex-end; gap: 10px;">
+        <button type="button" class="button button-quiet" onclick="this.closest('dialog').close()">Ở lại học tiếp</button>
+        <button type="button" class="button button-danger" onclick="executeLeaveCurrentRoom()" style="background: #ef4444; color: #fff; border-color: #ef4444; display: inline-flex; align-items: center; gap: 6px;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+          Thoát phòng
+        </button>
+      </div>
+    </dialog>
+
+    <!-- MODAL TẠO PHÒNG HỌP MỚI -->
+    <dialog id="studyCreateMeetingModal" class="modal study-popup-left" style="max-width: 520px;">
+      <div class="modal-head">
+        <div>
+          <p class="eyebrow">PHÒNG HỌP TỰ HỌC</p>
+          <h2 style="font-size: 19px;">Tạo phòng họp học nhóm mới</h2>
+        </div>
+        <button class="close-modal" type="button" onclick="this.closest('dialog').close()" aria-label="Đóng">
+          <svg class="ui-icon modal-close-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+      </div>
+      <form id="createMeetingRoomForm" onsubmit="event.preventDefault(); handleCreateMeetingSubmit();">
+        <div class="settings-body" style="padding: 4px 0 16px 0; display: flex; flex-direction: column; gap: 14px;">
+          <div class="form-group">
+            <label for="inputMeetingName" style="font-weight: 700; font-size: 13px; margin-bottom: 6px; display: block; color: var(--ink);">Tên phòng họp <span style="color: #ef4444;">*</span></label>
+            <input type="text" id="inputMeetingName" placeholder="VD: Nhóm Khóa luận K28, Ôn thi Cao học..." maxlength="60" required style="width: 100%; height: 38px; padding: 0 12px; font-size: 13px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--ink);" />
+          </div>
+
+          <div class="form-group">
+            <label for="inputMeetingPin" style="font-weight: 700; font-size: 13px; margin-bottom: 6px; display: block; color: var(--ink);">Mật khẩu vào phòng (Tùy chọn - 4 số)</label>
+            <input type="text" id="inputMeetingPin" placeholder="VD: 1234 (để trống nếu phòng mở)" maxlength="4" pattern="\d{4}" style="width: 100%; height: 38px; padding: 0 12px; font-size: 13px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--ink);" />
+            <span style="font-size: 11.5px; color: var(--muted); margin-top: 4px; display: block;">Nếu đặt mật khẩu, người khác phải nhập đúng 4 số này mới vào được.</span>
+          </div>
+
+          <div class="form-group">
+            <label for="inputMeetingTasks" style="font-weight: 700; font-size: 13px; margin-bottom: 6px; display: block; color: var(--ink);">Nhiệm vụ chung ban đầu (Mỗi việc 1 dòng)</label>
+            <textarea id="inputMeetingTasks" rows="3" placeholder="Đọc xong tài liệu chương 1&#10;Viết xong phần phương pháp&#10;Kiểm tra số liệu khảo sát" style="width: 100%; padding: 8px 12px; font-size: 13px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--ink); font-family: inherit; resize: vertical;"></textarea>
+          </div>
+        </div>
+        <div class="modal-actions" style="display: flex; justify-content: flex-end; gap: 10px;">
+          <button type="button" class="button button-quiet" onclick="this.closest('dialog').close()">Hủy</button>
+          <button type="submit" class="button button-primary" style="display: inline-flex; align-items: center; gap: 6px;">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            Tạo phòng &amp; Tham gia ngay
+          </button>
+        </div>
+      </form>
+    </dialog>
+
+    <!-- MODAL NHẬP MÃ PIN PHÒNG HỌP -->
+    <dialog id="studyJoinPinModal" class="modal study-popup-left" style="max-width: 420px;">
+      <div class="modal-head">
+        <div>
+          <p class="eyebrow">BẢO MẬT PHÒNG HỌP</p>
+          <h2 style="font-size: 18px;">Nhập mật khẩu phòng họp</h2>
+        </div>
+        <button class="close-modal" type="button" onclick="this.closest('dialog').close()" aria-label="Đóng">
+          <svg class="ui-icon modal-close-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+      </div>
+      <form id="joinPinRoomForm" onsubmit="event.preventDefault(); submitJoinPinRoom();">
+        <div class="settings-body" style="padding: 6px 0 16px 0;">
+          <p style="font-size: 13px; color: var(--muted); margin-bottom: 12px;" id="joinPinRoomDesc">Phòng họp này được bảo vệ bởi mật khẩu 4 chữ số:</p>
+          <div style="display: flex; justify-content: center;">
+            <input type="password" id="inputJoinPinCode" placeholder="••••" maxlength="4" pattern="\d{4}" required autofocus style="width: 140px; height: 46px; text-align: center; font-size: 24px; letter-spacing: 6px; font-weight: 700; border: 1.5px solid var(--line); border-radius: 10px; background: var(--surface); color: var(--ink);" />
+          </div>
+        </div>
+        <div class="modal-actions" style="display: flex; justify-content: flex-end; gap: 10px;">
+          <button type="button" class="button button-quiet" onclick="this.closest('dialog').close()">Hủy</button>
+          <button type="submit" class="button button-primary">Xác nhận vào phòng</button>
+        </div>
+      </form>
     </dialog>
 
     <!-- DUYỆT & TẠO KHÔNG GIAN HỌC (STUDY ROOMS BROWSER & CREATOR) -->

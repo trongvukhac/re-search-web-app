@@ -7876,6 +7876,26 @@ async function syncStudyToServer() {
   }
 }
 
+function syncMeetingRoomTimerIfHost() {
+  if (currentStudyRoomId && currentStudyRoomData && currentStudyRoomData.type === 'meeting' && currentStudyRoomData.isHost) {
+    requestAPI("/api/study/rooms/meeting/timer", {
+      method: "POST",
+      body: JSON.stringify({
+        roomId: currentStudyRoomId,
+        timerState: {
+          mode: studyState.mode,
+          durationMinutes: studyState.durationMinutes,
+          remainingSeconds: studyState.remainingSeconds,
+          isRunning: studyState.isRunning,
+          targetEndMs: studyState.targetEndMs,
+          cycleIndex: studyState.cycleIndex || 1,
+          timestamp: Date.now()
+        }
+      })
+    }).catch(() => {});
+  }
+}
+
 function startLocalTimerTick() {
   studyState.isRunning = true;
   if (studyState.timerInterval) {
@@ -7890,6 +7910,23 @@ function startLocalTimerTick() {
 
   studyState.timerInterval = setInterval(() => {
     const curNow = Date.now();
+
+    // 24/7 continuous library rooms live synchronization
+    if (currentStudyRoomId && currentStudyRoomId.startsWith('lib_')) {
+      const cfg = LIBRARY_ROOM_CONFIGS.find(c => c.id === currentStudyRoomId);
+      if (cfg) {
+        const live = getLibraryLiveState(cfg.focus, cfg.break, curNow);
+        studyState.mode = live.isFocus ? 'focus' : 'shortbreak';
+        studyState.durationMinutes = live.isFocus ? cfg.focus : cfg.break;
+        studyState.remainingSeconds = live.remainingSec;
+        updateTimerDisplay();
+        if (typeof updateAllCoStudyCards === 'function') {
+          updateAllCoStudyCards(lastFetchedLearners);
+        }
+        return;
+      }
+    }
+
     const isFlowtimeFocus = (studySettings.timerPreset === 'flowtime' && studyState.mode === 'focus');
 
     if (isFlowtimeFocus) {
@@ -7983,6 +8020,7 @@ async function startStudyTimer() {
 
   startLocalTimerTick();
   updateTimerDisplay();
+  syncMeetingRoomTimerIfHost();
   await syncStudyToServer();
   await fetchStudyLounge();
 }
@@ -8010,6 +8048,7 @@ async function pauseStudyTimer(sync = true) {
   if (typeof updateAllCoStudyCards === 'function') {
     updateAllCoStudyCards(lastFetchedLearners);
   }
+  syncMeetingRoomTimerIfHost();
   if (sync) {
     await syncStudyToServer();
     await fetchStudyLounge();
@@ -8035,6 +8074,8 @@ async function resetStudyTimer() {
   studyState.startedAtMs = 0;
   studyState.elapsedSessionSeconds = 0;
   studyState.flowtimeFocusHistorySecs = 0;
+
+  syncMeetingRoomTimerIfHost();
 
   if (session) {
     try {
@@ -8559,8 +8600,8 @@ async function fetchStudyLounge() {
 function renderActiveSpaceBanner(room) {
   if (!room) {
     room = {
-      id: currentStudyRoomId || 'commons',
-      name: 'Đại sảnh Thư viện',
+      id: currentStudyRoomId || null,
+      name: 'Thư viện Tự học',
       type: 'commons',
       description: 'Không gian mở kết nối toàn thể sinh viên và học giả NCKH đang tự học',
       icon: '🏛️',
@@ -8569,64 +8610,75 @@ function renderActiveSpaceBanner(room) {
     };
   }
 
+  const browseView = $("#studySpacesBrowseView");
+  const activeView = $("#studyActiveRoomView");
+
+  if (!currentStudyRoomId || currentStudyRoomId === 'commons') {
+    if (browseView) browseView.style.display = 'block';
+    if (activeView) activeView.style.display = 'none';
+    return;
+  }
+
+  // Inside a room: hide all other room cards, show ONLY active room view with Exit button
+  if (browseView) browseView.style.display = 'none';
+  if (activeView) activeView.style.display = 'block';
+
   const iconEl = $("#activeSpaceIcon");
   const titleEl = $("#activeSpaceTitle");
   const badgeEl = $("#activeSpaceBadge");
   const descEl = $("#activeSpaceDesc");
   const seatsEl = $("#activeSpaceSeatsCount");
-  const dotsEl = $("#activeSpaceSeatDots");
-  const leaveBtn = $("#btnLeaveSpace");
-  const subtitleEl = $("#studySpaceSubtitle");
+  const shareToolbar = $("#meetingShareToolbar");
+  const tasksBox = $("#sharedCohortTasksBox");
+  const codeText = $("#currentMeetingCodeText");
 
-  if (iconEl) iconEl.textContent = room.icon || '🏛️';
-  if (titleEl) titleEl.textContent = room.name || 'Đại sảnh Thư viện';
+  if (iconEl) {
+    let iconSvg = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>';
+    if (room.type === 'meeting') {
+      iconSvg = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>';
+    } else if (room.type === 'private' || (room.id && room.id.startsWith('private_'))) {
+      iconSvg = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>';
+    }
+    iconEl.innerHTML = iconSvg;
+  }
+
+  if (titleEl) titleEl.textContent = room.name || 'Phòng học';
 
   if (badgeEl) {
-    if (room.type === 'commons') {
-      badgeEl.className = 'active-space-badge badge-commons';
-      badgeEl.textContent = 'Đại sảnh mở';
-    } else if (room.type === 'shared_task') {
+    if (room.type === 'meeting') {
       badgeEl.className = 'active-space-badge badge-shared';
-      badgeEl.textContent = '🎯 Task nhóm';
-    } else if (room.type === 'private') {
+      badgeEl.textContent = 'Phòng họp';
+    } else if (room.type === 'private' || (room.id && room.id.startsWith('private_'))) {
       badgeEl.className = 'active-space-badge badge-private';
-      badgeEl.textContent = '🔒 Buồng riêng';
+      badgeEl.textContent = 'Buồng riêng';
     } else {
       badgeEl.className = 'active-space-badge badge-commons';
-      badgeEl.textContent = 'Chuyên đề';
+      badgeEl.textContent = 'Thư viện 24/7';
     }
   }
 
   if (descEl) {
-    descEl.textContent = room.description || (room.objective ? `Mục tiêu: ${room.objective}` : 'Không gian tự học tập trung');
+    if (room.type === 'meeting') {
+      descEl.textContent = room.hostName ? `Chủ phòng: ${room.hostName}` : 'Phòng họp nhóm đồng bộ';
+    } else if (room.type === 'private' || (room.id && room.id.startsWith('private_'))) {
+      descEl.textContent = 'Không gian học cá nhân bảo mật tuyệt đối';
+    } else {
+      descEl.textContent = room.description || 'Đồng hồ tuần hoàn tự động 24/7';
+    }
   }
 
   const occ = room.occupancy !== undefined ? room.occupancy : (lastFetchedLearners.length || 1);
-  const maxSeats = room.max_seats || 100;
   if (seatsEl) {
-    seatsEl.textContent = `${occ} / ${maxSeats}`;
+    seatsEl.textContent = `${occ} người`;
   }
 
-  if (dotsEl) {
-    const dotsCount = Math.min(maxSeats, 10);
-    const activeDots = Math.min(occ, dotsCount);
-    let dotsHtml = '';
-    for (let i = 0; i < dotsCount; i++) {
-      dotsHtml += `<span class="seat-dot ${i < activeDots ? 'active' : ''}"></span>`;
-    }
-    dotsEl.innerHTML = dotsHtml;
-  }
-
-  if (leaveBtn) {
-    leaveBtn.style.display = (room.id !== 'commons') ? 'inline-flex' : 'none';
-  }
-
-  if (subtitleEl) {
-    if (room.id === 'commons') {
-      subtitleEl.textContent = 'Đại sảnh thư viện & Các phòng chuyên đề';
-    } else {
-      subtitleEl.textContent = `${room.name} · ${room.type === 'shared_task' ? 'Phòng Nhiệm vụ chung' : 'Buồng riêng tư'}`;
-    }
+  if (room.type === 'meeting') {
+    if (shareToolbar) shareToolbar.style.display = 'flex';
+    if (codeText) codeText.textContent = room.id || '0000';
+    if (tasksBox) tasksBox.style.display = 'block';
+  } else {
+    if (shareToolbar) shareToolbar.style.display = 'none';
+    if (tasksBox) tasksBox.style.display = 'none';
   }
 }
 
@@ -8634,7 +8686,7 @@ function renderSharedCohortTasks(tasks = []) {
   const box = $("#sharedCohortTasksBox");
   if (!box) return;
 
-  if (!currentStudyRoomData || currentStudyRoomData.type !== 'shared_task') {
+  if (!currentStudyRoomData || currentStudyRoomData.type !== 'meeting') {
     box.style.display = 'none';
     return;
   }
@@ -8654,7 +8706,7 @@ function renderSharedCohortTasks(tasks = []) {
   if (!listEl) return;
 
   if (total === 0) {
-    listEl.innerHTML = `<li style="font-size:12.5px; color:var(--muted); text-align:center; padding:10px 0;">Chưa có nhiệm vụ nhóm nào. Bấm [+] để thêm mục tiêu cho phòng!</li>`;
+    listEl.innerHTML = `<li style="font-size:12.5px; color:var(--muted); text-align:center; padding:10px 0;">Chưa có nhiệm vụ chung nào. Bấm [+] để thêm việc cho cả phòng!</li>`;
     return;
   }
 
@@ -8664,9 +8716,9 @@ function renderSharedCohortTasks(tasks = []) {
     const safeId = escapeHTML(String(t.id));
     return `
       <li class="shared-task-item ${isCompleted ? 'completed' : ''}">
-        <label class="shared-task-label">
+        <label class="shared-task-label" style="display:flex; align-items:center; gap:8px; width:100%; cursor:pointer;">
           <input type="checkbox" ${isCompleted ? 'checked' : ''} onchange="toggleSharedRoomTask('${safeId}')" />
-          <span class="shared-task-text">${escapeHTML(t.text)}</span>
+          <span class="shared-task-text" style="flex:1; ${isCompleted ? 'text-decoration:line-through; opacity:0.6;' : ''}">${escapeHTML(t.text)}</span>
         </label>
         ${isCompleted && contributor ? `
           <span class="shared-task-contributor" title="Hoàn thành bởi ${escapeHTML(contributor)}">
@@ -8678,161 +8730,202 @@ function renderSharedCohortTasks(tasks = []) {
   }).join('');
 }
 
-function updateSpaceFilterCounts(rooms = []) {
-  const countAll = $("#countSpacesAll");
-  if (countAll) {
-    countAll.textContent = (Array.isArray(rooms) && rooms.length) ? rooms.length : 4;
+/* ==========================================================================
+   3 FUNCTIONAL STUDY SPACES: LIBRARY (24/7), MEETING ROOMS & PRIVATE PODS
+   ========================================================================== */
+const LIBRARY_ROOM_CONFIGS = [
+  {
+    id: 'lib_study_25_5',
+    name: 'Khu vực tự học',
+    preset: '25/5',
+    desc: 'Theo phương pháp Pomodoro cơ bản, thư giãn học tập',
+    focus: 25,
+    break: 5,
+    icon: '📖'
+  },
+  {
+    id: 'lib_reading_50_10',
+    name: 'Khu vực đọc sách',
+    preset: '50/10',
+    desc: 'Tập trung sâu hơn, làm nhiều việc hơn',
+    focus: 50,
+    break: 10,
+    icon: '📚'
+  },
+  {
+    id: 'lib_lounge_15_5',
+    name: 'Khu vực sảnh',
+    preset: '15/5',
+    desc: 'Làm việc nhanh, dành cho những ngày nhẹ nhàng',
+    focus: 15,
+    break: 5,
+    icon: '☕'
   }
-  document.querySelectorAll(".space-filter-pill").forEach(pill => {
-    const f = pill.dataset.spaceFilter;
-    if (f) {
-      if (f === activeSpaceFilter) {
-        pill.classList.add("active");
-      } else {
-        pill.classList.remove("active");
-      }
-    }
-  });
+];
+
+function getLibraryLiveState(focusMins, breakMins, nowMs = Date.now()) {
+  const cycleSec = (focusMins + breakMins) * 60;
+  const secInCycle = Math.floor(nowMs / 1000) % cycleSec;
+  const focusSec = focusMins * 60;
+  const isFocus = secInCycle < focusSec;
+  const remainingSec = isFocus ? (focusSec - secInCycle) : (cycleSec - secInCycle);
+  const m = Math.floor(remainingSec / 60);
+  const s = remainingSec % 60;
+  return {
+    isFocus,
+    remainingSec,
+    timeText: `${m}:${s < 10 ? '0' : ''}${s}`,
+    minsLeft: Math.ceil(remainingSec / 60)
+  };
 }
 
-function filterStudySpaceCategory(cat) {
-  activeSpaceFilter = cat;
-  updateSpaceFilterCounts(cachedStudyRooms);
+let cachedLibraryOccupancies = {};
+let cachedMeetingRooms = [];
+let activeStudySpaceTab = 'library';
 
-  if (cat === 'commons') {
-    if (currentStudyRoomId !== 'commons') {
-      joinStudySpace('commons');
-    }
+function renderLibraryRoomsGrid() {
+  const container = $("#libraryRoomsGrid");
+  if (!container) return;
+
+  const html = LIBRARY_ROOM_CONFIGS.map(cfg => {
+    const live = getLibraryLiveState(cfg.focus, cfg.break);
+    const isCurrent = (currentStudyRoomId === cfg.id);
+    const occ = cachedLibraryOccupancies[cfg.id] || (isCurrent ? 1 : 0);
+
+    return `
+      <div class="library-room-card ${isCurrent ? 'is-current' : ''}">
+        <div class="library-room-info">
+          <div class="library-room-title-row">
+            <h4 class="library-room-title">${escapeHTML(cfg.name)}</h4>
+            <span class="library-preset-pill">${cfg.preset}</span>
+          </div>
+          <p class="library-room-desc">${escapeHTML(cfg.desc)}</p>
+          <div class="library-room-meta-row">
+            <span class="library-live-status-pill ${live.isFocus ? 'mode-focus' : 'mode-break'}">
+              <span class="live-pulse-dot"></span>
+              ${live.isFocus ? 'Đang học' : 'Đang nghỉ giải lao'} · Còn ${live.timeText}
+            </span>
+            <span class="library-occupancy-text">${occ} người trong phòng</span>
+          </div>
+        </div>
+        <div>
+          ${isCurrent ? `
+            <button type="button" class="button button-xs button-quiet" disabled style="font-weight:700;">✓ Đang ở phòng này</button>
+          ` : `
+            <button type="button" class="button button-xs button-primary" onclick="joinStudySpace('${cfg.id}')" style="display:inline-flex; align-items:center; gap:4px;">
+              Tham gia →
+            </button>
+          `}
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  container.innerHTML = html;
+}
+
+function renderMeetingRoomsList() {
+  const container = $("#meetingRoomsList");
+  if (!container) return;
+
+  if (cachedMeetingRooms.length === 0) {
+    container.innerHTML = `
+      <div style="text-align: center; padding: 24px 12px; color: var(--muted); background: var(--surface-bg); border-radius: 10px; border: 1px dashed var(--line);">
+        <p style="font-size: 13px; margin-bottom: 8px;">Chưa có phòng họp nào đang mở. Hãy tạo phòng họp đầu tiên!</p>
+        <button type="button" class="button button-xs button-primary" onclick="openCreateMeetingModal()">+ Tạo phòng họp ngay</button>
+      </div>
+    `;
     return;
   }
 
-  openStudyRoomsModal('browse', cat);
+  container.innerHTML = cachedMeetingRooms.map(r => {
+    const isCurrent = (currentStudyRoomId === r.id);
+    const occ = r.occupancy || 0;
+    const taskCount = r.taskCount || (Array.isArray(r.sharedTasks) ? r.sharedTasks.length : 0);
+    const hasPin = Boolean(r.requiresPin || r.has_pin);
+
+    return `
+      <div class="meeting-room-card ${isCurrent ? 'is-current' : ''}">
+        <div style="flex: 1; min-width: 0;">
+          <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 3px;">
+            <strong style="font-size: 13.5px; color: var(--ink);">${escapeHTML(r.name)}</strong>
+            <span class="meeting-code-pill">
+              ${hasPin ? `<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>` : ''}
+              Mã: ${escapeHTML(r.id)}
+            </span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 10px; font-size: 11.5px; color: var(--muted); flex-wrap: wrap;">
+            <span>Chủ phòng: <b style="color: var(--ink);">${escapeHTML(r.hostName || 'Thành viên')}</b></span>
+            ${taskCount > 0 ? `<span style="color: var(--primary); font-weight: 600;">🎯 ${taskCount} nhiệm vụ</span>` : ''}
+            <span>👥 ${occ} người</span>
+          </div>
+        </div>
+        <div>
+          ${isCurrent ? `
+            <button type="button" class="button button-xs button-quiet" disabled style="font-weight:700;">✓ Đang ở phòng</button>
+          ` : `
+            <button type="button" class="button button-xs button-primary" onclick="prepareJoinMeetingRoom('${escapeHTML(r.id)}', ${hasPin})">
+              Vào phòng →
+            </button>
+          `}
+        </div>
+      </div>
+    `;
+  }).join('');
 }
 
-function openStudyRoomsModal(initialTab = 'browse', categoryFilter = null) {
-  const modal = document.getElementById("studyRoomsModal");
-  if (!modal) return;
-  if (categoryFilter) {
-    activeSpaceFilter = categoryFilter;
-  }
-  switchStudyRoomModalTab(initialTab);
-  loadAndRenderStudyRooms();
-  if (typeof modal.showModal === 'function') {
-    modal.showModal();
-  } else {
-    modal.setAttribute('open', '');
-  }
-}
-
-function switchStudyRoomModalTab(tab) {
-  const browsePane = document.getElementById("paneBrowseStudyRooms");
-  const createPane = document.getElementById("paneCreateStudyRoom");
-  const tabs = document.querySelectorAll(".room-modal-tab-btn");
-
-  tabs.forEach(btn => {
-    if (btn.dataset.roomTab === tab) {
-      btn.classList.add("active");
-    } else {
-      btn.classList.remove("active");
-    }
+function switchStudySpaceCategoryTab(tab) {
+  activeStudySpaceTab = tab;
+  $$(".space-filter-pill").forEach(p => {
+    p.classList.toggle("active", p.dataset.spaceTab === tab);
   });
+  const paneLib = $("#paneSpaceLibrary");
+  const paneMeet = $("#paneSpaceMeeting");
+  const panePriv = $("#paneSpacePrivate");
 
-  if (tab === 'browse') {
-    if (browsePane) browsePane.style.display = 'block';
-    if (createPane) createPane.style.display = 'none';
-  } else {
-    if (browsePane) browsePane.style.display = 'none';
-    if (createPane) createPane.style.display = 'block';
+  if (paneLib) paneLib.style.display = (tab === 'library') ? 'block' : 'none';
+  if (paneMeet) paneMeet.style.display = (tab === 'meeting') ? 'block' : 'none';
+  if (panePriv) panePriv.style.display = (tab === 'private') ? 'block' : 'none';
+
+  if (tab === 'library') {
+    renderLibraryRoomsGrid();
+  } else if (tab === 'meeting') {
+    renderMeetingRoomsList();
   }
 }
 
 async function loadAndRenderStudyRooms() {
   try {
     const res = await requestAPI("/api/study/rooms");
-    if (res && res.rooms) {
-      cachedStudyRooms = res.rooms;
-      renderBrowseRoomsGrid(cachedStudyRooms);
-      updateSpaceFilterCounts(cachedStudyRooms);
+    if (!res) return;
+
+    if (res.libraryRooms) {
+      res.libraryRooms.forEach(lr => {
+        cachedLibraryOccupancies[lr.id] = lr.occupancy;
+      });
+      renderLibraryRoomsGrid();
+    }
+
+    if (res.meetingRooms) {
+      cachedMeetingRooms = res.meetingRooms;
+      const cntEl = $("#countMeetingRooms");
+      if (cntEl) cntEl.textContent = cachedMeetingRooms.length;
+      renderMeetingRoomsList();
+    }
+
+    if (res.privatePodsCount !== undefined) {
+      const privEl = $("#activePrivatePodsCount");
+      if (privEl) privEl.textContent = res.privatePodsCount;
+    }
+
+    if (res.totalCampusLearners !== undefined) {
+      const badge = $("#coStudyCountBadge");
+      if (badge) badge.textContent = `${res.totalCampusLearners} đang học`;
     }
   } catch (e) {
     console.error("loadAndRenderStudyRooms error:", e);
-    renderBrowseRoomsGrid(cachedStudyRooms);
+    renderLibraryRoomsGrid();
   }
-}
-
-function renderBrowseRoomsGrid(rooms = []) {
-  const grid = document.getElementById("browseRoomsGrid");
-  if (!grid) return;
-
-  const roomList = Array.isArray(rooms) ? rooms : [];
-  let displayRooms = roomList;
-  if (activeSpaceFilter && activeSpaceFilter !== 'all') {
-    displayRooms = roomList.filter(r => r.type === activeSpaceFilter);
-  }
-
-  if (displayRooms.length === 0) {
-    grid.innerHTML = `
-      <div style="grid-column: 1 / -1; text-align: center; padding: 36px 16px; color: var(--muted);">
-        <p style="font-size: 15px; margin-bottom: 8px;">Không có không gian nào trong danh mục này.</p>
-        <button type="button" class="button button-sm button-primary" onclick="switchStudyRoomModalTab('create')">➕ Tạo phòng học mới</button>
-      </div>
-    `;
-    return;
-  }
-
-  grid.innerHTML = displayRooms.map(r => {
-    const isCurrent = (r.id === currentStudyRoomId);
-    let typeBadge = '';
-    if (r.type === 'commons') {
-      typeBadge = `<span class="active-space-badge badge-commons">🏛️ Đại sảnh</span>`;
-    } else if (r.type === 'shared_task') {
-      typeBadge = `<span class="active-space-badge badge-shared">🎯 Task nhóm</span>`;
-    } else if (r.type === 'private') {
-      typeBadge = `<span class="active-space-badge badge-private">🔒 Buồng riêng</span>`;
-    }
-
-    const occ = r.occupancy || 0;
-    const maxS = r.max_seats || 100;
-    const isFull = occ >= maxS && !isCurrent;
-
-    let actionBtnHtml = '';
-    if (isCurrent) {
-      actionBtnHtml = `<button type="button" class="button button-xs button-quiet" disabled style="opacity: 0.85; font-weight: 600;">✓ Đang ở phòng này</button>`;
-    } else if (isFull) {
-      actionBtnHtml = `<button type="button" class="button button-xs button-quiet" disabled>Hết chỗ (${occ}/${maxS})</button>`;
-    } else if (r.type === 'private') {
-      actionBtnHtml = `<button type="button" class="button button-xs button-primary" onclick="promptJoinPrivateRoom('${escapeHTML(r.id)}')">🔒 Vào phòng (Mã PIN)</button>`;
-    } else {
-      actionBtnHtml = `<button type="button" class="button button-xs button-primary" onclick="joinStudySpace('${escapeHTML(r.id)}')">Vào bàn học →</button>`;
-    }
-
-    const taskCountBadge = (r.type === 'shared_task' && r.task_count) ? `<span style="font-size: 11px; color: var(--primary); background: rgba(52, 117, 83, 0.1); padding: 2px 7px; border-radius: 999px; margin-left: auto;">${r.task_count} nhiệm vụ</span>` : '';
-
-    return `
-      <div class="room-card ${isCurrent ? 'is-current' : ''}" data-room-id="${escapeHTML(r.id)}">
-        <div class="room-card-head">
-          <span class="room-card-icon">${escapeHTML(r.icon || '📖')}</span>
-          <div class="room-card-title-col">
-            <h4 class="room-card-title">${escapeHTML(r.name)}</h4>
-            <div style="display: flex; align-items: center; gap: 6px; margin-top: 2px;">
-              ${typeBadge}
-              ${taskCountBadge}
-            </div>
-          </div>
-        </div>
-        <p class="room-card-desc">${escapeHTML(r.description || r.objective || 'Không gian tự học tập trung')}</p>
-        <div class="room-card-footer">
-          <div class="room-card-occupancy">
-            <span class="occupancy-dot"></span>
-            <strong>${occ}</strong> / ${maxS} ghế
-          </div>
-          <div class="room-card-action">
-            ${actionBtnHtml}
-          </div>
-        </div>
-      </div>
-    `;
-  }).join('');
 }
 
 async function joinStudySpace(roomId, pinCode = null) {
@@ -8848,21 +8941,26 @@ async function joinStudySpace(roomId, pinCode = null) {
       body: JSON.stringify(payload)
     });
     if (res && res.success) {
-      currentStudyRoomId = roomId;
+      currentStudyRoomId = res.room ? res.room.id : roomId;
+      currentStudyRoomData = res.room || null;
       try {
-        localStorage.setItem("research_study_room_id", roomId);
+        localStorage.setItem("research_study_room_id", currentStudyRoomId);
       } catch (e) {}
 
-      if (res.room) {
-        currentStudyRoomData = res.room;
-        renderActiveSpaceBanner(res.room);
-        renderSharedCohortTasks(res.room.sharedTasks || []);
+      // If this is a continuous library room, synchronize timer immediately
+      if (currentStudyRoomId.startsWith('lib_')) {
+        const cfg = LIBRARY_ROOM_CONFIGS.find(c => c.id === currentStudyRoomId) || LIBRARY_ROOM_CONFIGS[0];
+        const live = getLibraryLiveState(cfg.focus, cfg.break);
+        studyState.mode = live.isFocus ? 'focus' : 'shortbreak';
+        studyState.durationMinutes = live.isFocus ? cfg.focus : cfg.break;
+        studyState.remainingSeconds = live.remainingSec;
+        studyState.isRunning = true;
+        updateTimerDisplay();
       }
-      toast(`Đã vào không gian: ${res.room ? res.room.name : roomId}`);
-      const modal = document.getElementById("studyRoomsModal");
-      if (modal && typeof modal.close === 'function' && modal.open) {
-        modal.close();
-      }
+
+      renderActiveSpaceBanner(res.room);
+      renderSharedCohortTasks(res.room ? (res.room.sharedTasks || []) : []);
+      toast(`Đã vào: ${res.room ? res.room.name : currentStudyRoomId}`);
       fetchStudyLounge();
     } else {
       toast(res.error || "Không thể vào phòng này.");
@@ -8873,55 +8971,128 @@ async function joinStudySpace(roomId, pinCode = null) {
   }
 }
 
-function leaveCurrentSpaceToCommons() {
-  joinStudySpace('commons');
-}
-
-function promptJoinPrivateRoom(roomId) {
-  const pin = prompt("Nhập mã PIN bảo mật để vào buồng tự học riêng tư:");
-  if (pin === null) return;
-  if (!pin.trim()) {
-    toast("Vui lòng nhập mã PIN.");
-    return;
-  }
-  joinStudySpace(roomId, pin.trim());
-}
-
-function handleNewRoomTypeChange(type) {
-  const pinGroup = document.getElementById("groupNewRoomPin");
-  const taskGroup = document.getElementById("groupInitialTasks");
-  if (pinGroup) {
-    pinGroup.style.display = (type === 'private') ? 'block' : 'none';
-  }
-  if (taskGroup) {
-    taskGroup.style.display = (type === 'shared_task') ? 'block' : 'none';
+function confirmLeaveCurrentRoom() {
+  const modal = document.getElementById("studyExitConfirmModal");
+  if (modal && typeof modal.showModal === 'function') {
+    modal.showModal();
+  } else if (confirm("Bạn có chắc chắn muốn rời khỏi phòng học hiện tại?")) {
+    executeLeaveCurrentRoom();
   }
 }
 
-async function handleCreateStudyRoomSubmit() {
+async function executeLeaveCurrentRoom() {
+  const modal = document.getElementById("studyExitConfirmModal");
+  if (modal && typeof modal.close === 'function' && modal.open) {
+    modal.close();
+  }
+  try {
+    await requestAPI("/api/study/rooms/leave", {
+      method: "POST",
+      body: JSON.stringify({ roomId: currentStudyRoomId })
+    });
+  } catch (e) {}
+
+  currentStudyRoomId = null;
+  currentStudyRoomData = null;
+  try {
+    localStorage.removeItem("research_study_room_id");
+  } catch (e) {}
+
+  const browseView = $("#studySpacesBrowseView");
+  const activeView = $("#studyActiveRoomView");
+  if (browseView) browseView.style.display = "block";
+  if (activeView) activeView.style.display = "none";
+
+  toast("Đã rời khỏi phòng học.");
+  fetchStudyLounge();
+  loadAndRenderStudyRooms();
+}
+
+let pendingJoinMeetingId = null;
+
+function prepareJoinMeetingRoom(roomId, requiresPin) {
   if (!session) {
     openAuth();
     return;
   }
-  const nameEl = document.getElementById("newRoomName");
-  const iconEl = document.getElementById("newRoomIcon");
-  const typeEl = document.getElementById("newRoomType");
-  const seatsEl = document.getElementById("newRoomSeats");
-  const pinEl = document.getElementById("newRoomPin");
-  const objEl = document.getElementById("newRoomObjective");
-  const tasksEl = document.getElementById("newRoomInitialTasks");
+  if (requiresPin) {
+    pendingJoinMeetingId = roomId;
+    const modal = document.getElementById("studyJoinPinModal");
+    const input = document.getElementById("inputJoinPinCode");
+    if (input) input.value = "";
+    if (modal && typeof modal.showModal === 'function') {
+      modal.showModal();
+      if (input) setTimeout(() => input.focus(), 100);
+    }
+  } else {
+    joinStudySpace(roomId);
+  }
+}
+
+function submitJoinPinRoom() {
+  const input = document.getElementById("inputJoinPinCode");
+  const pin = input ? input.value.trim() : "";
+  if (!pin || pin.length < 4) {
+    toast("Vui lòng nhập đúng mã PIN 4 số.");
+    return;
+  }
+  const modal = document.getElementById("studyJoinPinModal");
+  if (modal && typeof modal.close === 'function') {
+    modal.close();
+  }
+  if (pendingJoinMeetingId) {
+    joinStudySpace(pendingJoinMeetingId, pin);
+    pendingJoinMeetingId = null;
+  }
+}
+
+function handleQuickJoinMeetingSubmit() {
+  const input = document.getElementById("inputQuickJoinCode");
+  const code = input ? input.value.trim() : "";
+  if (!code || code.length !== 4) {
+    toast("Vui lòng nhập mã phòng gồm 4 chữ số.");
+    if (input) input.focus();
+    return;
+  }
+  const found = cachedMeetingRooms.find(r => r.id === code);
+  const hasPin = found ? Boolean(found.requiresPin || found.has_pin) : false;
+  prepareJoinMeetingRoom(code, hasPin);
+}
+
+function openCreateMeetingModal() {
+  if (!session) {
+    openAuth();
+    return;
+  }
+  const modal = document.getElementById("studyCreateMeetingModal");
+  if (modal && typeof modal.showModal === 'function') {
+    modal.showModal();
+    const nameInput = document.getElementById("inputMeetingName");
+    if (nameInput) {
+      nameInput.value = "";
+      setTimeout(() => nameInput.focus(), 100);
+    }
+  }
+}
+
+async function handleCreateMeetingSubmit() {
+  if (!session) {
+    openAuth();
+    return;
+  }
+  const nameEl = document.getElementById("inputMeetingName");
+  const pinEl = document.getElementById("inputMeetingPin");
+  const tasksEl = document.getElementById("inputMeetingTasks");
 
   const name = nameEl ? nameEl.value.trim() : "";
   if (!name) {
-    toast("Vui lòng nhập tên phòng học.");
+    toast("Vui lòng nhập tên phòng họp.");
     if (nameEl) nameEl.focus();
     return;
   }
-
-  const type = typeEl ? typeEl.value : "shared_task";
-  const pinCode = (pinEl && type === 'private') ? pinEl.value.trim() : null;
-  if (type === 'private' && (!pinCode || pinCode.length < 4)) {
-    toast("Mã PIN buồng riêng phải có tối thiểu 4 ký tự.");
+  const pinCode = pinEl ? pinEl.value.trim() : "";
+  if (pinCode && pinCode.length !== 4) {
+    toast("Mật khẩu phòng họp phải gồm đúng 4 chữ số hoặc để trống.");
     if (pinEl) pinEl.focus();
     return;
   }
@@ -8933,41 +9104,77 @@ async function handleCreateStudyRoomSubmit() {
       method: "POST",
       body: JSON.stringify({
         name,
-        icon: iconEl ? iconEl.value : "📖",
-        type,
-        maxSeats: seatsEl ? parseInt(seatsEl.value, 10) : 8,
-        pinCode,
-        objective: objEl ? objEl.value.trim() : "",
+        type: 'meeting',
+        pinCode: pinCode || null,
         initialTasks
       })
     });
-
     if (res && res.success && res.room) {
-      toast(`Đã tạo phòng "${res.room.name}" thành công!`);
+      toast(`Đã tạo phòng họp "${res.room.name}" (Mã: ${res.room.id})!`);
+      const modal = document.getElementById("studyCreateMeetingModal");
+      if (modal && typeof modal.close === 'function') {
+        modal.close();
+      }
       currentStudyRoomId = res.room.id;
       currentStudyRoomData = res.room;
       try {
         localStorage.setItem("research_study_room_id", currentStudyRoomId);
       } catch (e) {}
-
-      // Reset form
-      if (nameEl) nameEl.value = "";
-      if (objEl) objEl.value = "";
-      if (tasksEl) tasksEl.value = "";
-      if (pinEl) pinEl.value = "";
-
-      const modal = document.getElementById("studyRoomsModal");
-      if (modal && typeof modal.close === 'function' && modal.open) {
-        modal.close();
-      }
-
+      renderActiveSpaceBanner(res.room);
+      renderSharedCohortTasks(res.room.sharedTasks || []);
       fetchStudyLounge();
     } else {
-      toast(res.error || "Không thể tạo phòng học.");
+      toast(res.error || "Không thể tạo phòng họp.");
     }
   } catch (e) {
-    console.error("handleCreateStudyRoomSubmit error:", e);
-    toast("Lỗi khi tạo không gian học.");
+    console.error("handleCreateMeetingSubmit error:", e);
+    toast("Lỗi khi tạo phòng họp.");
+  }
+}
+
+async function joinPrivateStudyPod() {
+  if (!session) {
+    openAuth();
+    return;
+  }
+  await joinStudySpace('private');
+}
+
+function copyMeetingRoomCode() {
+  if (!currentStudyRoomId) return;
+  navigator.clipboard.writeText(currentStudyRoomId).then(() => {
+    toast(`Đã sao chép mã phòng: ${currentStudyRoomId}`);
+  }).catch(() => {
+    toast(`Mã phòng: ${currentStudyRoomId}`);
+  });
+}
+
+function copyMeetingRoomLink() {
+  if (!currentStudyRoomId) return;
+  const url = `${window.location.origin}${window.location.pathname}#study?room=${encodeURIComponent(currentStudyRoomId)}`;
+  navigator.clipboard.writeText(url).then(() => {
+    toast("Đã sao chép liên kết mời vào phòng!");
+  }).catch(() => {
+    toast(`Liên kết: ${url}`);
+  });
+}
+
+function checkUrlStudyRoomParam() {
+  const hash = window.location.hash || '';
+  const search = window.location.search || '';
+  let roomId = null;
+  const hashMatch = hash.match(/[?&]room=([^&]+)/);
+  if (hashMatch) {
+    roomId = decodeURIComponent(hashMatch[1]);
+  } else {
+    const searchMatch = search.match(/[?&]room=([^&]+)/);
+    if (searchMatch) roomId = decodeURIComponent(searchMatch[1]);
+  }
+
+  if (roomId && (!currentStudyRoomId || currentStudyRoomId !== roomId)) {
+    setTimeout(() => {
+      prepareJoinMeetingRoom(roomId, false);
+    }, 600);
   }
 }
 
@@ -8980,7 +9187,7 @@ async function toggleSharedRoomTask(taskId) {
     const res = await requestAPI("/api/study/rooms/task/toggle", {
       method: "POST",
       body: JSON.stringify({
-        roomId: currentStudyRoomId || 'commons',
+        roomId: currentStudyRoomId,
         taskId: String(taskId)
       })
     });
@@ -9030,7 +9237,7 @@ async function submitNewSharedTask() {
     const res = await requestAPI("/api/study/rooms/task/add", {
       method: "POST",
       body: JSON.stringify({
-        roomId: currentStudyRoomId || 'commons',
+        roomId: currentStudyRoomId,
         text: text,
         taskText: text
       })
@@ -9053,17 +9260,22 @@ async function submitNewSharedTask() {
 }
 
 // Window bindings for modal and room interactions
-window.openStudyRoomsModal = openStudyRoomsModal;
-window.switchStudyRoomModalTab = switchStudyRoomModalTab;
-window.filterStudySpaceCategory = filterStudySpaceCategory;
+window.switchStudySpaceCategoryTab = switchStudySpaceCategoryTab;
 window.joinStudySpace = joinStudySpace;
-window.leaveCurrentSpaceToCommons = leaveCurrentSpaceToCommons;
-window.promptJoinPrivateRoom = promptJoinPrivateRoom;
-window.handleNewRoomTypeChange = handleNewRoomTypeChange;
-window.handleCreateStudyRoomSubmit = handleCreateStudyRoomSubmit;
+window.confirmLeaveCurrentRoom = confirmLeaveCurrentRoom;
+window.executeLeaveCurrentRoom = executeLeaveCurrentRoom;
+window.prepareJoinMeetingRoom = prepareJoinMeetingRoom;
+window.submitJoinPinRoom = submitJoinPinRoom;
+window.handleQuickJoinMeetingSubmit = handleQuickJoinMeetingSubmit;
+window.openCreateMeetingModal = openCreateMeetingModal;
+window.handleCreateMeetingSubmit = handleCreateMeetingSubmit;
+window.joinPrivateStudyPod = joinPrivateStudyPod;
+window.copyMeetingRoomCode = copyMeetingRoomCode;
+window.copyMeetingRoomLink = copyMeetingRoomLink;
 window.toggleSharedRoomTask = toggleSharedRoomTask;
 window.toggleAddSharedTaskInput = toggleAddSharedTaskInput;
 window.submitNewSharedTask = submitNewSharedTask;
+window.leaveCurrentSpaceToCommons = confirmLeaveCurrentRoom;
 
 const seenCheerIds = new Set();
 
@@ -11096,6 +11308,11 @@ window.selectModalPreset = function(presetId) {
     ftGroup.style.display = (presetId === "flowtime") ? "block" : "none";
   }
 
+  const customGroup = $("#groupCustomDuration");
+  if (customGroup) {
+    customGroup.style.display = (presetId === "custom") ? "block" : "none";
+  }
+
   const cfg = STUDY_PRESET_CONFIGS[presetId];
   if (cfg && presetId !== "flowtime" && presetId !== "custom") {
     const fInput = $("#settingFocusMins");
@@ -11162,10 +11379,10 @@ window.handleCustomDurationChange = function() {
   const totalMins = (interval * focus) + (Math.max(0, interval - 1) * sBreak) + lBreak;
   const hours = Math.floor(totalMins / 60);
   const mins = totalMins % 60;
-  const timeStr = `${hours > 0 ? hours + 'h ' : ''}${mins}m`;
+  const timeStr = `${hours > 0 ? hours + 'g ' : ''}${mins}p`;
 
   if (estEl) {
-    estEl.textContent = `➔ One full cycle takes ${timeStr}`;
+    estEl.textContent = `➔ Một chu kỳ học sẽ kéo dài ${timeStr}`;
   }
 };
 
@@ -11209,11 +11426,15 @@ window.openMethodGuideModal = function(method = 'all') {
   }
 };
 
-window.openStudySettingsModal = function(initialTab = 'timer') {
+window.openStudySettingsModal = function(initialTab = 'timer', showCustom = false) {
   const modal = $("#studySettingsModal");
   if (!modal) return;
 
   switchStudySettingsTab(initialTab);
+
+  if (showCustom) {
+    studySettings.timerPreset = "custom";
+  }
 
   const activePreset = studySettings.timerPreset || "25_5";
   $$("#presetSelectorGrid .preset-card").forEach(c => {
@@ -11222,6 +11443,10 @@ window.openStudySettingsModal = function(initialTab = 'timer') {
   const ftGroup = $("#groupFlowtimeConfig");
   if (ftGroup) {
     ftGroup.style.display = (activePreset === "flowtime") ? "block" : "none";
+  }
+  const customGroup = $("#groupCustomDuration");
+  if (customGroup) {
+    customGroup.style.display = (activePreset === "custom" || showCustom) ? "block" : "none";
   }
   const ratioInputs = $$("input[name='flowtimeRatioModal']");
   ratioInputs.forEach(r => {
@@ -11534,17 +11759,11 @@ function clearCompletedTodos() {
   toast("Đã dọn dẹp các việc đã xong / hủy!");
 }
 
-/* --- Task Category Labels (Unlocked at 7d streak) --- */
+/* --- Task Category Labels (Quản lý nhãn công việc) --- */
 function renderTaskTagSelect() {
   const sel = $("#newTodoTagSelect");
   if (!sel) return;
-  const streak = getUserStudyStreak();
-  const unlocked = streak >= 7;
-  sel.disabled = !unlocked;
-  if (!unlocked) {
-    sel.innerHTML = `<option value="">🔒 Nhãn (7d)</option>`;
-    return;
-  }
+  sel.disabled = false;
   const labels = studySettings.taskLabels || [];
   let html = `<option value="">Không gắn nhãn</option>`;
   labels.forEach(l => {
@@ -11558,35 +11777,48 @@ function renderTaskLabelsManagerList() {
   if (!listEl) return;
   const labels = studySettings.taskLabels || [];
   if (labels.length === 0) {
-    listEl.innerHTML = `<p style="font-size:12px; color:var(--muted); text-align:center; padding:10px;">Chưa có nhãn công việc nào. Bấm '➕ Thêm nhãn mới' để tạo!</p>`;
+    listEl.innerHTML = `<p style="font-size:12px; color:var(--muted); text-align:center; padding:10px;">Chưa có nhãn công việc nào. Nhập tên nhãn ở trên để tạo nhãn mới!</p>`;
     return;
   }
   listEl.innerHTML = labels.map(l => `
     <div class="task-label-mgr-row" data-tag-id="${l.id}">
       <input type="color" class="task-label-color-input" value="${l.color}" onchange="updateTaskLabelColor('${l.id}', this.value)" title="Chọn màu nhãn" />
       <input type="text" class="task-label-mgr-name" value="${escapeHTML(l.name)}" onchange="updateTaskLabelName('${l.id}', this.value)" maxlength="30" />
-      <button type="button" class="task-label-del-btn" onclick="deleteTaskLabel('${l.id}')" title="Xóa nhãn">🗑️</button>
+      <button type="button" class="task-label-del-btn" onclick="deleteTaskLabel('${l.id}')" title="Xóa nhãn">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+      </button>
     </div>
   `).join("");
 }
 
-window.promptAddNewTaskLabel = function() {
-  const name = prompt("Nhập tên nhãn công việc mới (Ví dụ: Báo cáo, Code, Tổng quan tài liệu):");
-  if (!name || !name.trim()) return;
-  const colors = ["#3b82f6", "#10b981", "#f59e0b", "#ec4899", "#8b5cf6", "#06b6d4", "#f97316"];
-  const randomColor = colors[Math.floor(Math.random() * colors.length)];
+window.handleCreateTaskLabel = function() {
+  const nameInput = $("#newLabelNameInput");
+  const colorInput = $("#newLabelColorInput");
+  if (!nameInput) return;
+  const name = nameInput.value.trim();
+  if (!name) {
+    toast("Vui lòng nhập tên nhãn công việc.");
+    nameInput.focus();
+    return;
+  }
+  const color = colorInput ? colorInput.value : "#3b82f6";
   const newTag = {
     id: "tag_" + Date.now(),
-    name: name.trim(),
-    color: randomColor
+    name: name,
+    color: color
   };
   if (!studySettings.taskLabels) studySettings.taskLabels = [];
   studySettings.taskLabels.push(newTag);
+  nameInput.value = "";
   saveStudySettings(false);
   renderTaskLabelsManagerList();
   renderTaskTagSelect();
   loadStudyTodos();
   toast(`Đã thêm nhãn: "${newTag.name}"`);
+};
+
+window.promptAddNewTaskLabel = function() {
+  window.handleCreateTaskLabel();
 };
 
 window.updateTaskLabelColor = function(id, color) {
@@ -11681,12 +11913,27 @@ function onEnterStudyLounge() {
   }
   applyColorAura(studySettings.activeAura || 'emerald');
 
+  loadAndRenderStudyRooms();
+  checkUrlStudyRoomParam();
+
+  if (!window._studySpacesTicker) {
+    window._studySpacesTicker = setInterval(() => {
+      if (!currentStudyRoomId && activeStudySpaceTab === 'library') {
+        renderLibraryRoomsGrid();
+      }
+    }, 1000);
+  }
+
   if (!studyState.pollingInterval) {
     studyState.pollingInterval = setInterval(fetchStudyLounge, 3500);
   }
 }
 
 function onLeaveStudyLounge() {
+  if (window._studySpacesTicker) {
+    clearInterval(window._studySpacesTicker);
+    window._studySpacesTicker = null;
+  }
   if (studyState.pollingInterval) {
     clearInterval(studyState.pollingInterval);
     studyState.pollingInterval = null;
