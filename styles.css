@@ -5543,7 +5543,8 @@ body.dark-theme .timer-bg-circle {
   stroke: #ffffff;
   stroke-width: 2.5;
   filter: drop-shadow(0 2px 5px rgba(240, 84, 84, 0.45));
-  transition: cx 0.8s ease, cy 0.8s ease;
+  transform-origin: 140px 140px;
+  transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
 }
 html.dark-theme .timer-progress-knob,
 body.dark-theme .timer-progress-knob {
@@ -5758,6 +5759,14 @@ body.dark-theme .study-quick-task-prompt:hover {
   letter-spacing: 1px;
   font-size: 11px;
   color: #f05454;
+  display: inline-flex;
+  align-items: center;
+}
+.meta-dots .meta-dot.filled {
+  color: #f05454;
+}
+.meta-dots .meta-dot.empty {
+  color: rgba(240, 84, 84, 0.3);
 }
 .study-meta-pill.streak-pill {
   cursor: pointer;
@@ -5878,19 +5887,27 @@ body.dark-theme .dock-btn:hover {
 
 @media (max-width: 768px) {
   .study-actions {
-    gap: 10px;
+    gap: 12px;
     flex-wrap: nowrap;
     width: 100%;
     max-width: 360px;
     justify-content: center;
     margin: 10px auto 14px;
   }
+  .study-actions .btn-label {
+    display: none !important;
+  }
   .study-btn-pill {
-    height: 48px;
-    padding: 0 20px;
-    font-size: 14.5px;
-    flex: 1;
-    max-width: 200px;
+    height: 48px !important;
+    width: 48px !important;
+    min-width: 48px !important;
+    max-width: 48px !important;
+    padding: 0 !important;
+    border-radius: 50% !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    flex: 0 0 48px !important;
   }
   .study-btn-circle {
     width: 44px;
@@ -7144,28 +7161,34 @@ body.dark-theme .dock-btn:hover {
     flex-wrap: nowrap;
     align-items: center;
     justify-content: center;
-    gap: 10px;
+    gap: 12px;
     width: 100%;
     max-width: 360px;
     margin: 8px auto 12px;
   }
+  .study-actions .btn-label {
+    display: none !important;
+  }
   .study-actions .study-btn-circle {
-    flex: 0 0 42px;
-    width: 42px;
-    height: 42px;
-    min-width: 42px;
-    max-width: 42px;
+    flex: 0 0 44px;
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    max-width: 44px;
     border-radius: 50%;
     padding: 0;
   }
   .study-actions .study-btn-pill {
-    flex: 1 1 auto;
-    min-width: 130px;
-    max-width: 200px;
-    height: 46px;
-    padding: 0 16px;
-    font-size: 14px;
-    border-radius: 9999px;
+    flex: 0 0 48px !important;
+    min-width: 48px !important;
+    max-width: 48px !important;
+    width: 48px !important;
+    height: 48px !important;
+    padding: 0 !important;
+    border-radius: 50% !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
   }
   .ambient-grid {
     grid-template-columns: 1fr;
@@ -7422,6 +7445,10 @@ dialog#studyCreateMeetingModal::backdrop {
     margin: 10px auto 14px !important;
   }
 
+  .study-actions .btn-label {
+    display: none !important;
+  }
+
   .study-actions .study-btn-circle {
     flex: 0 0 44px !important;
     width: 44px !important;
@@ -7433,12 +7460,16 @@ dialog#studyCreateMeetingModal::backdrop {
   }
 
   .study-actions .study-btn-pill {
-    flex: 1 1 auto !important;
-    min-width: 140px !important;
-    max-width: 220px !important;
+    flex: 0 0 48px !important;
+    min-width: 48px !important;
+    max-width: 48px !important;
+    width: 48px !important;
     height: 48px !important;
-    padding: 0 20px !important;
-    border-radius: 9999px !important;
+    padding: 0 !important;
+    border-radius: 50% !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
   }
 
   .study-layout {

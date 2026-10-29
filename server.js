@@ -4810,10 +4810,10 @@ async function api(request, response, url) {
         });
       }
 
-      // Trường hợp 3: Vào Phòng họp (mã 4 số)
+      // Trường hợp 3: Vào Phòng học nhóm (mã 4 số)
       const room = db.prepare("SELECT * FROM study_rooms WHERE id = ?").get(roomId);
       if (!room) {
-        return error(response, 404, "Không tìm thấy phòng họp này. Vui lòng kiểm tra lại mã số 4 chữ số.");
+        return error(response, 404, "Không tìm thấy phòng học nhóm này. Vui lòng kiểm tra lại mã số 4 chữ số.");
       }
 
       if (room.pin_code) {
@@ -4824,7 +4824,7 @@ async function api(request, response, url) {
             requiresPin: true,
             roomId: room.id,
             roomName: room.name,
-            error: pinCode ? "Mật khẩu phòng họp không chính xác (gồm 4 chữ số)." : "Phòng họp yêu cầu mật khẩu 4 chữ số."
+            error: pinCode ? "Mật khẩu phòng học nhóm không chính xác (gồm 4 chữ số)." : "Phòng học nhóm yêu cầu mật khẩu 4 chữ số."
           });
         }
       }
@@ -4884,7 +4884,7 @@ async function api(request, response, url) {
       const body = await readJSON(request);
       const name = (body.name || '').trim().slice(0, 60);
       if (name.length < 2) {
-        return error(response, 400, "Vui lòng nhập tên phòng họp (từ 2 đến 60 ký tự).");
+        return error(response, 400, "Vui lòng nhập tên phòng học nhóm (từ 2 đến 60 ký tự).");
       }
 
       let pinCode = (body.pinCode || '').trim();
@@ -4968,11 +4968,11 @@ async function api(request, response, url) {
       });
     } catch (e) {
       console.error("create meeting room error:", e);
-      return error(response, 400, "Không thể tạo phòng họp.");
+      return error(response, 400, "Không thể tạo phòng học nhóm.");
     }
   }
 
-  // Đồng bộ trạng thái đồng hồ của Phòng họp từ Chủ phòng
+  // Đồng bộ trạng thái đồng hồ của Phòng học nhóm từ Chủ phòng
   if (method === "POST" && pathName === "/api/study/rooms/meeting/timer") {
     const user = requireUser(request, response);
     if (!user || !requireCsrf(request, response, user)) return;
@@ -4980,7 +4980,7 @@ async function api(request, response, url) {
       const body = await readJSON(request);
       const roomId = String(body.roomId || '').trim();
       const room = db.prepare("SELECT * FROM study_rooms WHERE id = ? AND type = 'meeting'").get(roomId);
-      if (!room) return error(response, 404, "Phòng họp không tồn tại.");
+      if (!room) return error(response, 404, "Phòng học nhóm không tồn tại.");
 
       const isHostOrAdmin = (user.id === room.host_user_id || user.role === 'admin');
       if (!isHostOrAdmin) {
@@ -5002,7 +5002,7 @@ async function api(request, response, url) {
 
       return json(response, 200, { success: true, timerState });
     } catch (e) {
-      return error(response, 400, "Không thể cập nhật đồng hồ phòng họp.");
+      return error(response, 400, "Không thể cập nhật đồng hồ phòng học nhóm.");
     }
   }
 

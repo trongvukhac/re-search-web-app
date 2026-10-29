@@ -7343,13 +7343,27 @@ function updateDailyGoalUI() {
   const countEl = $("#dailyGoalCount");
   const pctEl = $("#dailyGoalPct");
   const fillEl = $("#dailyGoalFill");
-  if (!countEl) return;
+  const dotsEl = $("#dailyGoalMiniDots");
 
   const completed = getTodayCompletedPomodoros();
   const goal = Math.max(1, Number(studySettings.dailyGoalPomodoros) || 8);
   const pct = Math.min(100, Math.round((completed / goal) * 100));
 
-  countEl.textContent = `${completed} / ${goal} Pomodoro`;
+  if (countEl) {
+    countEl.textContent = `${completed} / ${goal} Pomodoro`;
+  }
+  if (dotsEl) {
+    let dotsHtml = "";
+    const displayTotal = Math.min(12, Math.max(goal, completed));
+    for (let d = 1; d <= displayTotal; d++) {
+      if (d <= completed) {
+        dotsHtml += '<span class="meta-dot filled" style="color: #f05454; margin-right: 2px;">●</span>';
+      } else {
+        dotsHtml += '<span class="meta-dot empty" style="color: rgba(240, 84, 84, 0.3); margin-right: 2px;">○</span>';
+      }
+    }
+    dotsEl.innerHTML = dotsHtml;
+  }
   if (pctEl) {
     pctEl.textContent = `(${pct}%)`;
     pctEl.style.color = (pct >= 100) ? "#10b981" : "var(--primary)";
@@ -7643,12 +7657,10 @@ function updateTimerDisplay() {
   const knob = $("#timerProgressKnob");
   if (knob) {
     // Đếm ngược thì quay theo ngược chiều kim đồng hồ, đếm xuôi thì quay thuận chiều
-    const angleDeg = isFlowtimeFocus ? (-90 + progressRatio * 360) : (-90 - progressRatio * 360);
-    const rad = (angleDeg * Math.PI) / 180;
-    const knobX = (140 + 114 * Math.cos(rad)).toFixed(2);
-    const knobY = (140 + 114 * Math.sin(rad)).toFixed(2);
-    knob.setAttribute("cx", knobX);
-    knob.setAttribute("cy", knobY);
+    // Giữ nguyên cx="140" cy="26" và xoay transform để chấm tròn di chuyển chính xác theo đường cong vòng tròn
+    const rotDeg = isFlowtimeFocus ? (progressRatio * 360) : (-progressRatio * 360);
+    knob.style.transform = `rotate(${rotDeg.toFixed(2)}deg)`;
+    knob.style.transformOrigin = "140px 140px";
   }
 
   // Sub label
@@ -7696,22 +7708,19 @@ function updateTimerDisplay() {
     }
   }
 
-  // Meta pills: Dots, Daily Goal, Preset Badge
-  const dotsEl = $("#dailyGoalMiniDots");
-  const goalCountEl = $("#dailyGoalCount");
-  const targetGoal = Math.max(1, Number(studySettings.dailyGoalPomodoros) || 8);
-  const doneGoal = Number(studyState.completedFocusCycles) || 0;
-  if (dotsEl) {
-    let dotsHtml = "";
-    const displayTotal = Math.min(12, targetGoal);
-    for (let d = 1; d <= displayTotal; d++) {
-      dotsHtml += (d <= doneGoal) ? "●" : "○";
-    }
-    dotsEl.textContent = dotsHtml;
+  // Trong phòng học nhóm hoặc thư viện: ẩn lượt chu kỳ và chọn preset, chỉ để lại mục tiêu hôm nay
+  const cyclePill = $("#studyCyclePill");
+  const presetPill = $("#studyPresetPickerPill");
+  if (isLibraryRoom || isMeetingRoom) {
+    if (cyclePill) cyclePill.style.display = "none";
+    if (presetPill) presetPill.style.display = "none";
+  } else {
+    if (cyclePill) cyclePill.style.display = "inline-flex";
+    if (presetPill) presetPill.style.display = "inline-flex";
   }
-  if (goalCountEl) {
-    goalCountEl.textContent = `${doneGoal} / ${targetGoal} hôm nay`;
-  }
+
+  // Meta pills: Cập nhật mục tiêu và chấm màu Pomodoro đồng bộ
+  updateDailyGoalUI();
 
   const presetBadge = $("#activePresetBadgeName");
   if (presetBadge) {
@@ -8322,6 +8331,16 @@ async function startStudyTimer() {
     enterAutoZenMode();
   }
 
+  // Khi ở trong phòng cá nhân mà bật đồng hồ thì tự động hiển thị những việc cần làm
+  const isPersonalRoom = (!currentStudyRoomId || currentStudyRoomId === 'commons' || currentStudyRoomId === 'private');
+  if (isPersonalRoom) {
+    const personalTasksEl = $("#integratedPersonalTasksSection");
+    if (personalTasksEl) {
+      personalTasksEl.style.display = "block";
+      togglePersonalTasksCollapse(true);
+    }
+  }
+
   startLocalTimerTick();
   updateTimerDisplay();
   syncMeetingRoomTimerIfHost();
@@ -8403,14 +8422,12 @@ async function finishStudySession(autoCompleted = false) {
   const isFocus = (studyState.mode === 'focus' || studyState.mode === 'pomodoro');
 
   if (isFocus) {
-    recordTodayCompletedPomodoro();
+    // Chỉ khi hoàn thành 100% thời gian một lượt tập trung (autoCompleted === true) mới tính cộng 1 lượt vào mục tiêu hàng ngày
     if (autoCompleted) {
+      recordTodayCompletedPomodoro();
       studyState.completedFocusCycles = (studyState.completedFocusCycles || 0) + 1;
       studyState.accumulatedFocusMinutes = (studyState.accumulatedFocusMinutes || 0) + studyState.durationMinutes;
     } else {
-      if (totalElapsedMins >= 20) {
-        studyState.completedFocusCycles = (studyState.completedFocusCycles || 0) + 1;
-      }
       studyState.accumulatedFocusMinutes = (studyState.accumulatedFocusMinutes || 0) + totalElapsedMins;
     }
   }
@@ -8986,7 +9003,7 @@ function renderActiveSpaceBanner(room) {
   if (badgeEl) {
     if (room.type === 'meeting') {
       badgeEl.className = 'active-space-badge badge-shared';
-      badgeEl.textContent = 'Phòng họp';
+      badgeEl.textContent = 'Phòng học nhóm';
     } else if (room.type === 'private' || (room.id && room.id.startsWith('private_'))) {
       badgeEl.className = 'active-space-badge badge-private';
       badgeEl.textContent = 'Phòng học cá nhân';
@@ -8998,7 +9015,7 @@ function renderActiveSpaceBanner(room) {
 
   if (descEl) {
     if (room.type === 'meeting') {
-      descEl.textContent = room.hostName ? `Chủ phòng: ${room.hostName}` : 'Phòng họp nhóm đồng bộ';
+      descEl.textContent = room.hostName ? `Chủ phòng: ${room.hostName}` : 'Phòng học nhóm đồng bộ';
     } else if (room.type === 'private' || (room.id && room.id.startsWith('private_'))) {
       descEl.textContent = 'Không gian học cá nhân bảo mật tuyệt đối';
     } else {
@@ -9030,6 +9047,23 @@ function renderActiveSpaceBanner(room) {
     }
   }
 }
+
+function togglePersonalTasksCollapse(forceState) {
+  const body = $("#personalTasksBodyWrap");
+  const lbl = $("#lblTogglePersonalTasks");
+  const icon = $("#iconTogglePersonalTasks");
+  if (!body) return;
+  const isCurrentlyHidden = (body.style.display === "none");
+  const willShow = (forceState !== undefined) ? forceState : isCurrentlyHidden;
+  body.style.display = willShow ? "block" : "none";
+  if (lbl) lbl.textContent = willShow ? "Đóng" : "Mở";
+  if (icon) {
+    icon.innerHTML = willShow 
+      ? '<polyline points="18 15 12 9 6 15"></polyline>' 
+      : '<polyline points="6 9 12 15 18 9"></polyline>';
+  }
+}
+window.togglePersonalTasksCollapse = togglePersonalTasksCollapse;
 
 function renderSharedCohortTasks(tasks = []) {
   const box = $("#sharedCohortTasksBox");
@@ -9263,8 +9297,8 @@ function renderMeetingRoomsList() {
   if (cachedMeetingRooms.length === 0) {
     container.innerHTML = `
       <div style="text-align: center; padding: 24px 12px; color: var(--muted); background: var(--surface-bg); border-radius: 10px; border: 1px dashed var(--line);">
-        <p style="font-size: 13px; margin-bottom: 8px;">Chưa có phòng họp nào đang mở. Hãy tạo phòng họp đầu tiên!</p>
-        <button type="button" class="button button-xs button-primary" onclick="openCreateMeetingModal()">+ Tạo phòng họp ngay</button>
+        <p style="font-size: 13px; margin-bottom: 8px;">Chưa có phòng học nhóm nào đang mở. Hãy tạo phòng học nhóm đầu tiên!</p>
+        <button type="button" class="button button-xs button-primary" onclick="openCreateMeetingModal()">+ Tạo phòng học nhóm ngay</button>
       </div>
     `;
     return;
@@ -9318,6 +9352,15 @@ function switchStudySpaceCategoryTab(tab) {
   if (paneLib) paneLib.style.display = (tab === 'library') ? 'block' : 'none';
   if (paneMeet) paneMeet.style.display = (tab === 'meeting') ? 'block' : 'none';
   if (panePriv) panePriv.style.display = (tab === 'private') ? 'block' : 'none';
+
+  const personalTasksEl = $("#integratedPersonalTasksSection");
+  if (personalTasksEl) {
+    if (tab === 'private') {
+      personalTasksEl.style.display = 'block';
+    } else {
+      personalTasksEl.style.display = 'none';
+    }
+  }
 
   if (tab === 'library') {
     renderLibraryRoomsGrid();
@@ -9379,7 +9422,7 @@ async function joinStudySpace(roomId, pinCode = null) {
       const modal = document.getElementById("studyJoinPinModal");
       const desc = document.getElementById("joinPinRoomDesc");
       const input = document.getElementById("inputJoinPinCode");
-      if (desc) desc.textContent = `Phòng họp "${res.roomName || roomId}" được bảo vệ bởi mật khẩu 4 chữ số:`;
+      if (desc) desc.textContent = `Phòng học nhóm "${res.roomName || roomId}" được bảo vệ bởi mật khẩu 4 chữ số:`;
       if (input) input.value = "";
       if (modal && typeof modal.showModal === 'function') {
         modal.showModal();
@@ -9471,6 +9514,11 @@ async function executeLeaveCurrentRoom() {
   if (browseView) browseView.style.display = "block";
   if (activeView) activeView.style.display = "none";
 
+  const personalTasksEl = $("#integratedPersonalTasksSection");
+  if (personalTasksEl) {
+    personalTasksEl.style.display = (activeStudySpaceTab === 'private') ? "block" : "none";
+  }
+
   toast("Đã rời khỏi phòng học.");
   fetchStudyLounge();
   loadAndRenderStudyRooms();
@@ -9554,13 +9602,13 @@ async function handleCreateMeetingSubmit() {
 
   const name = nameEl ? nameEl.value.trim() : "";
   if (!name) {
-    toast("Vui lòng nhập tên phòng họp.");
+    toast("Vui lòng nhập tên phòng học nhóm.");
     if (nameEl) nameEl.focus();
     return;
   }
   const pinCode = pinEl ? pinEl.value.trim() : "";
   if (pinCode && pinCode.length !== 4) {
-    toast("Mật khẩu phòng họp phải gồm đúng 4 chữ số hoặc để trống.");
+    toast("Mật khẩu phòng học nhóm phải gồm đúng 4 chữ số hoặc để trống.");
     if (pinEl) pinEl.focus();
     return;
   }
@@ -9578,7 +9626,7 @@ async function handleCreateMeetingSubmit() {
       })
     });
     if (res && res.success && res.room) {
-      toast(`Đã tạo phòng họp "${res.room.name}" (Mã: ${res.room.id})!`);
+      toast(`Đã tạo phòng học nhóm "${res.room.name}" (Mã: ${res.room.id})!`);
       const modal = document.getElementById("studyCreateMeetingModal");
       if (modal && typeof modal.close === 'function') {
         modal.close();
@@ -9592,11 +9640,11 @@ async function handleCreateMeetingSubmit() {
       renderSharedCohortTasks(res.room.sharedTasks || []);
       fetchStudyLounge();
     } else {
-      toast(res.error || "Không thể tạo phòng họp.");
+      toast(res.error || "Không thể tạo phòng học nhóm.");
     }
   } catch (e) {
     console.error("handleCreateMeetingSubmit error:", e);
-    toast("Lỗi khi tạo phòng họp.");
+    toast("Lỗi khi tạo phòng học nhóm.");
   }
 }
 

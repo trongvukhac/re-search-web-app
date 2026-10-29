@@ -782,14 +782,11 @@
                 </div>
               </div>
 
-              <!-- Meta Progress Row (Dots, Streak, Cycle, Preset) -->
+              <!-- Meta Progress Row (Dots, Goal, Cycle, Preset) -->
               <div class="study-meta-row" id="studyMetaRow">
-                <span class="study-meta-pill goal-pill" title="Mục tiêu hôm nay">
+                <span class="study-meta-pill goal-pill" id="studyGoalPill" title="Mục tiêu hôm nay">
                   <span class="meta-dots" id="dailyGoalMiniDots"></span>
-                  <span id="dailyGoalCount">0 / 8 hôm nay</span>
-                </span>
-                <span class="study-meta-pill streak-pill" title="Chuỗi ngày học liên tục" onclick="openStreakJourneyModal()">
-                  🔥 <span id="studyUserStreakVal">0</span> ngày
+                  <span id="dailyGoalCount">0 / 8 Pomodoro</span>
                 </span>
                 <span class="study-meta-pill cycle-pill" id="studyCyclePill" title="Lượt trong chu kỳ">
                   ⭕ <span id="studyCycleLabel">Ca 1/4</span>
@@ -848,7 +845,7 @@
                     </h3>
                     <span class="badge" id="coStudyCountBadge">0 đang học</span>
                   </div>
-                  <p class="co-study-tip" id="studySpaceSubtitle">Phòng học cá nhân, Thư viện 24/7 &amp; Phòng họp nhóm</p>
+                  <p class="co-study-tip" id="studySpaceSubtitle">Phòng học cá nhân, Thư viện 24/7 &amp; Phòng học nhóm</p>
                 </div>
               </div>
 
@@ -866,7 +863,7 @@
                   </button>
                   <button type="button" class="space-filter-pill" data-space-tab="meeting" onclick="switchStudySpaceCategoryTab('meeting')">
                     <svg class="ui-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
-                    Phòng họp (<span id="countMeetingRooms">0</span>)
+                    Phòng học nhóm (<span id="countMeetingRooms">0</span>)
                   </button>
                 </div>
 
@@ -904,7 +901,7 @@
                   <div class="meeting-guide-banner">
                     <div class="meeting-guide-step">
                       <span class="step-num">1</span>
-                      <p>Tạo phòng họp và gửi liên kết hoặc mã 4 số cho bạn bè, bạn cùng lớp.</p>
+                      <p>Tạo phòng học nhóm và gửi liên kết hoặc mã 4 số cho bạn bè, bạn cùng lớp.</p>
                     </div>
                     <div class="meeting-guide-step">
                       <span class="step-num">2</span>
@@ -919,7 +916,7 @@
                   <div class="meeting-action-bar">
                     <button type="button" class="button button-sm button-primary" onclick="openCreateMeetingModal()">
                       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-                      Tạo phòng họp mới
+                      Tạo phòng học nhóm mới
                     </button>
                     <div class="quick-join-meeting-wrap">
                       <input type="text" id="inputQuickJoinCode" placeholder="Mã 4 số..." maxlength="4" pattern="\d{4}" />
@@ -963,7 +960,7 @@
                   </div>
                 </div>
 
-                <!-- Thanh chia sẻ mã phòng / liên kết (Phòng họp) -->
+                <!-- Thanh chia sẻ mã phòng / liên kết (Phòng học nhóm) -->
                 <div class="meeting-share-toolbar" id="meetingShareToolbar" style="display: none;">
                   <button type="button" class="button button-xs button-outline" onclick="copyMeetingRoomCode()" id="btnCopyMeetingCode">
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
@@ -975,7 +972,7 @@
                   </button>
                 </div>
 
-                <!-- Hộp Nhiệm vụ chung (Phòng họp) -->
+                <!-- Hộp Nhiệm vụ chung (Phòng học nhóm) -->
                 <div class="shared-cohort-tasks-box" id="sharedCohortTasksBox" style="display: none;">
                   <div class="shared-tasks-head">
                     <div style="flex: 1; min-width: 0;">
@@ -1006,26 +1003,35 @@
                   </ul>
                 </div>
 
-                <!-- NHỮNG VIỆC CẦN LÀM (TÍCH HỢP CHO THƯ VIỆN, PHÒNG HỌC CÁ NHÂN & SẢNH NGOÀI) -->
-                <div class="todo-integrated-section" id="integratedPersonalTasksSection" style="margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--line);">
-                  <div class="todo-head">
-                    <div style="flex: 1; min-width: 0;">
-                      <div class="todo-title-row">
-                        <h3 style="font-size: 13.5px;"><svg class="ui-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:5px;"><rect x="3" y="5" width="6" height="6" rx="1"></rect><path d="m3 17 2 2 4-4"></path><path d="M13 6h8"></path><path d="M13 12h8"></path><path d="M13 18h8"></path></svg><span id="personalTodoHeadingText">Những việc cần làm</span></h3>
-                        <span class="todo-pct-badge" id="todoPctBadge">0%</span>
-                      </div>
-                      <div class="todo-progress-bar-wrap">
-                        <div class="todo-progress-bar" id="todoProgressBar" style="width: 0%;"></div>
-                      </div>
+                <!-- Danh sách bạn học trong phòng này -->
+                <div class="co-study-list" id="coStudyList" style="margin-top: 14px;"></div>
+              </div> <!-- /#studyActiveRoomView -->
+
+              <!-- NHỮNG VIỆC CẦN LÀM (TÍCH HỢP CHO PHÒNG CÁ NHÂN & THƯ VIỆN) -->
+              <div class="todo-integrated-section" id="integratedPersonalTasksSection" style="margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--line);">
+                <div class="todo-head">
+                  <div style="flex: 1; min-width: 0;">
+                    <div class="todo-title-row">
+                      <h3 style="font-size: 13.5px;"><svg class="ui-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:5px;"><rect x="3" y="5" width="6" height="6" rx="1"></rect><path d="m3 17 2 2 4-4"></path><path d="M13 6h8"></path><path d="M13 12h8"></path><path d="M13 18h8"></path></svg><span id="personalTodoHeadingText">Những việc cần làm</span></h3>
+                      <span class="todo-pct-badge" id="todoPctBadge">0%</span>
                     </div>
-                    <div class="todo-head-actions">
-                      <button type="button" class="todo-tag-mgr-btn" id="btnManageTodoTags" onclick="openStudySettingsModal('tasks')" title="Quản lý và tùy biến nhãn công việc">
-                        <svg class="ui-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:4px;"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7.01" y2="7"></line></svg>
-                        Quản lý nhãn
-                      </button>
-                      <button class="button button-sm button-ghost" id="clearCompletedTodos" title="Dọn dẹp các việc đã xong">Dọn dẹp</button>
+                    <div class="todo-progress-bar-wrap">
+                      <div class="todo-progress-bar" id="todoProgressBar" style="width: 0%;"></div>
                     </div>
                   </div>
+                  <div class="todo-head-actions">
+                    <button type="button" class="button button-xs button-ghost btn-toggle-personal-tasks" id="btnTogglePersonalTasks" onclick="togglePersonalTasksCollapse()" title="Đóng hoặc Mở danh sách việc cần làm" style="display: inline-flex; align-items: center; gap: 4px; font-weight: 600;">
+                      <svg class="ui-icon" id="iconTogglePersonalTasks" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="18 15 12 9 6 15"></polyline></svg>
+                      <span id="lblTogglePersonalTasks">Đóng</span>
+                    </button>
+                    <button type="button" class="todo-tag-mgr-btn" id="btnManageTodoTags" onclick="openStudySettingsModal('tasks')" title="Quản lý và tùy biến nhãn công việc">
+                      <svg class="ui-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:4px;"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7.01" y2="7"></line></svg>
+                      Quản lý nhãn
+                    </button>
+                    <button class="button button-sm button-ghost" id="clearCompletedTodos" title="Dọn dẹp các việc đã xong">Dọn dẹp</button>
+                  </div>
+                </div>
+                <div class="personal-tasks-body" id="personalTasksBodyWrap">
                   <div class="todo-input-wrap">
                     <input type="text" id="newTodoInput" placeholder="Thêm việc cần làm..." maxlength="80" />
                     <select id="newTodoTagSelect" class="todo-tag-select" title="Gắn nhãn phân loại">
@@ -1035,9 +1041,6 @@
                   </div>
                   <ul class="todo-list" id="studyTodoList"></ul>
                 </div>
-
-                <!-- Danh sách bạn học trong phòng này -->
-                <div class="co-study-list" id="coStudyList" style="margin-top: 14px;"></div>
               </div>
             </div>
           </div>
@@ -4037,12 +4040,12 @@
       </div>
     </dialog>
 
-    <!-- MODAL TẠO PHÒNG HỌP MỚI -->
+    <!-- MODAL TẠO PHÒNG HỌC NHÓM MỚI -->
     <dialog id="studyCreateMeetingModal" class="modal study-confirm-modal" style="max-width: 520px;">
       <div class="modal-head">
         <div>
-          <p class="eyebrow">PHÒNG HỌP TỰ HỌC</p>
-          <h2 style="font-size: 19px;">Tạo phòng họp học nhóm mới</h2>
+          <p class="eyebrow">PHÒNG HỌC NHÓM</p>
+          <h2 style="font-size: 19px;">Tạo phòng học nhóm mới</h2>
         </div>
         <button class="close-modal" type="button" onclick="this.closest('dialog').close()" aria-label="Đóng">
           <svg class="ui-icon modal-close-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
@@ -4051,7 +4054,7 @@
       <form id="createMeetingRoomForm" onsubmit="event.preventDefault(); handleCreateMeetingSubmit();">
         <div class="settings-body" style="padding: 4px 0 16px 0; display: flex; flex-direction: column; gap: 14px;">
           <div class="form-group">
-            <label for="inputMeetingName" style="font-weight: 700; font-size: 13px; margin-bottom: 6px; display: block; color: var(--ink);">Tên phòng họp <span style="color: #ef4444;">*</span></label>
+            <label for="inputMeetingName" style="font-weight: 700; font-size: 13px; margin-bottom: 6px; display: block; color: var(--ink);">Tên phòng học nhóm <span style="color: #ef4444;">*</span></label>
             <input type="text" id="inputMeetingName" placeholder="VD: Nhóm Khóa luận K28, Ôn thi Cao học..." maxlength="60" required style="width: 100%; height: 38px; padding: 0 12px; font-size: 13px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--ink);" />
           </div>
 
@@ -4076,12 +4079,12 @@
       </form>
     </dialog>
 
-    <!-- MODAL NHẬP MÃ PIN PHÒNG HỌP -->
+    <!-- MODAL NHẬP MÃ PIN PHÒNG HỌC NHÓM -->
     <dialog id="studyJoinPinModal" class="modal study-confirm-modal" style="max-width: 420px;">
       <div class="modal-head">
         <div>
-          <p class="eyebrow">BẢO MẬT PHÒNG HỌP</p>
-          <h2 style="font-size: 18px;">Nhập mật khẩu phòng họp</h2>
+          <p class="eyebrow">BẢO MẬT PHÒNG HỌC NHÓM</p>
+          <h2 style="font-size: 18px;">Nhập mật khẩu phòng học nhóm</h2>
         </div>
         <button class="close-modal" type="button" onclick="this.closest('dialog').close()" aria-label="Đóng">
           <svg class="ui-icon modal-close-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
@@ -4089,7 +4092,7 @@
       </div>
       <form id="joinPinRoomForm" onsubmit="event.preventDefault(); submitJoinPinRoom();">
         <div class="settings-body" style="padding: 6px 0 16px 0;">
-          <p style="font-size: 13px; color: var(--muted); margin-bottom: 12px;" id="joinPinRoomDesc">Phòng họp này được bảo vệ bởi mật khẩu 4 chữ số:</p>
+          <p style="font-size: 13px; color: var(--muted); margin-bottom: 12px;" id="joinPinRoomDesc">Phòng học nhóm này được bảo vệ bởi mật khẩu 4 chữ số:</p>
           <div style="display: flex; justify-content: center;">
             <input type="password" id="inputJoinPinCode" placeholder="••••" maxlength="4" pattern="\d{4}" required autofocus style="width: 140px; height: 46px; text-align: center; font-size: 24px; letter-spacing: 6px; font-weight: 700; border: 1.5px solid var(--line); border-radius: 10px; background: var(--surface); color: var(--ink);" />
           </div>
