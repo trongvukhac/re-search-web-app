@@ -993,12 +993,15 @@
                   </div>
 
                   <!-- Inline Add Shared Task Form -->
-                  <div class="shared-task-add-row" id="sharedTaskAddRow" style="display: none;">
-                    <input type="text" id="newSharedTaskInput" placeholder="Nội dung việc cần làm chung của phòng..." maxlength="100" />
+                  <div class="shared-task-add-row" id="sharedTaskAddRow" style="display: none; gap: 6px; margin: 8px 0; align-items: center;">
+                    <input type="text" id="newSharedTaskInput" placeholder="Nội dung việc cần làm chung của phòng..." maxlength="100" style="flex: 1; min-width: 0;" />
+                    <select id="newSharedTaskTagSelect" class="todo-tag-select" title="Gắn nhãn phân loại" style="max-width: 130px;">
+                      <option value="">Không gắn nhãn</option>
+                    </select>
                     <button type="button" class="button button-xs button-primary" onclick="submitNewSharedTask()">Thêm</button>
                   </div>
 
-                  <ul class="shared-tasks-list" id="sharedTasksList">
+                  <ul class="todo-list shared-tasks-list" id="sharedTasksList">
                     <!-- Rendered dynamically -->
                   </ul>
                 </div>
@@ -3420,7 +3423,7 @@
         color: #94a3b8 !important;
       }
     </style>
-    <dialog id="studySettingsModal" class="modal study-settings-modal study-popup-left">
+    <dialog id="studySettingsModal" class="modal study-settings-modal study-popup-right">
       <div class="modal-head">
         <div>
           <p class="eyebrow">CÀI ĐẶT PHÒNG TỰ HỌC</p>
@@ -3941,7 +3944,7 @@
     </dialog>
 
     <!-- HƯỚNG DẪN CÁC PHƯƠNG PHÁP TẬP TRUNG & QUY TẮC MẮT 20-20-20 -->
-    <dialog id="studyMethodGuideModal" class="modal study-method-guide-modal study-popup-left">
+    <dialog id="studyMethodGuideModal" class="modal study-method-guide-modal study-popup-right">
       <div class="modal-head">
         <div>
           <p class="eyebrow">HƯỚNG DẪN KHOA HỌC TẬP TRUNG</p>
@@ -4012,7 +4015,7 @@
     </dialog>
 
     <!-- MODAL XÁC NHẬN THOÁT PHÒNG HỌC -->
-    <dialog id="studyExitConfirmModal" class="modal study-popup-left study-confirm-modal" style="max-width: 440px;">
+    <dialog id="studyExitConfirmModal" class="modal study-confirm-modal" style="max-width: 440px;">
       <div class="modal-head">
         <div>
           <p class="eyebrow" style="color: #ef4444;">XÁC NHẬN RỜI PHÒNG</p>
@@ -4035,7 +4038,7 @@
     </dialog>
 
     <!-- MODAL TẠO PHÒNG HỌP MỚI -->
-    <dialog id="studyCreateMeetingModal" class="modal study-popup-left" style="max-width: 520px;">
+    <dialog id="studyCreateMeetingModal" class="modal study-confirm-modal" style="max-width: 520px;">
       <div class="modal-head">
         <div>
           <p class="eyebrow">PHÒNG HỌP TỰ HỌC</p>
@@ -4074,7 +4077,7 @@
     </dialog>
 
     <!-- MODAL NHẬP MÃ PIN PHÒNG HỌP -->
-    <dialog id="studyJoinPinModal" class="modal study-popup-left" style="max-width: 420px;">
+    <dialog id="studyJoinPinModal" class="modal study-confirm-modal" style="max-width: 420px;">
       <div class="modal-head">
         <div>
           <p class="eyebrow">BẢO MẬT PHÒNG HỌP</p>

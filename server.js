@@ -4916,10 +4916,29 @@ async function api(request, response, url) {
       };
 
       const nowMs = Date.now();
+      const rawInitialTasks = Array.isArray(body.initialTasks) ? body.initialTasks : [];
+      const userAvatar = user.avatar || (user.role === 'admin' ? '🛡️' : (user.role === 'ta' ? '🎓' : '👑'));
+      const userName = user.display_name || user.name || "Chủ phòng";
+      const initialTasks = rawInitialTasks.map((tText, idx) => ({
+        id: `st_${nowMs}_${idx}_${Math.random().toString(36).substr(2, 4)}`,
+        text: String(tText).trim().slice(0, 120),
+        status: "chuan_bi",
+        tagId: "",
+        done: false,
+        by: null,
+        lastEditedBy: {
+          userId: user.id,
+          name: userName,
+          avatar: userAvatar,
+          updatedAt: nowMs
+        },
+        createdAt: nowMs + idx
+      })).filter(t => t.text.length > 0);
+
       db.prepare(`
         INSERT INTO study_rooms (id, name, type, description, icon, max_seats, pin_code, created_by, host_user_id, timer_state_json, shared_tasks_json)
-        VALUES (?, ?, 'meeting', ?, 'users', 30, ?, ?, ?, ?, '[]')
-      `).run(newId, name, `Phòng họp học tập #${newId}`, pinCode, user.id, user.id, JSON.stringify(initialTimer));
+        VALUES (?, ?, 'meeting', ?, 'users', 30, ?, ?, ?, ?, ?)
+      `).run(newId, name, `Phòng họp học tập #${newId}`, pinCode, user.id, user.id, JSON.stringify(initialTimer), JSON.stringify(initialTasks));
 
       // Đưa chủ phòng vào phòng họp ngay
       db.prepare(`
@@ -4944,7 +4963,7 @@ async function api(request, response, url) {
           hostName: user.display_name || user.name || "Bạn",
           isHost: true,
           timerState: initialTimer,
-          sharedTasks: []
+          sharedTasks: initialTasks
         }
       });
     } catch (e) {
@@ -4987,6 +5006,46 @@ async function api(request, response, url) {
     }
   }
 
+  if (method === "POST" && pathName === "/api/study/rooms/task/cycle-status") {
+    const user = requireUser(request, response);
+    if (!user || !requireCsrf(request, response, user)) return;
+    try {
+      const body = await readJSON(request);
+      const roomId = (body.roomId || '').trim();
+      const taskId = String(body.taskId || '').trim();
+      if (!roomId || !taskId) return error(response, 400, "Thiếu thông tin.");
+
+      const room = db.prepare("SELECT * FROM study_rooms WHERE id = ?").get(roomId);
+      if (!room) return error(response, 404, "Phòng không tồn tại.");
+
+      let tasks = [];
+      try { tasks = JSON.parse(room.shared_tasks_json || "[]"); } catch (e) {}
+      const target = tasks.find(t => String(t.id) === taskId);
+      if (!target) return error(response, 404, "Nhiệm vụ không tồn tại.");
+
+      const statuses = ["chua_lam", "chuan_bi", "dang_thuc_hien", "pct_25", "pct_50", "pct_75", "pct_99", "hoan_thanh", "hoan", "huy"];
+      const currentStatus = target.status || (target.done ? "hoan_thanh" : "chua_lam");
+      const curIdx = statuses.indexOf(currentStatus);
+      const nextStatus = statuses[(curIdx + 1) % statuses.length];
+
+      target.status = nextStatus;
+      target.done = (nextStatus === "hoan_thanh");
+      target.lastEditedBy = {
+        userId: user.id,
+        name: user.display_name || user.name || "Thành viên phòng",
+        avatar: user.avatar || (user.role === 'admin' ? '🛡️' : (user.role === 'ta' ? '🎓' : '🦊')),
+        updatedAt: Date.now()
+      };
+
+      db.prepare("UPDATE study_rooms SET shared_tasks_json = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?")
+        .run(JSON.stringify(tasks), roomId);
+
+      return json(response, 200, { success: true, tasks, sharedTasks: tasks });
+    } catch (e) {
+      return error(response, 400, "Không thể cập nhật trạng thái nhiệm vụ.");
+    }
+  }
+
   if (method === "POST" && pathName === "/api/study/rooms/task/toggle") {
     const user = requireUser(request, response);
     if (!user || !requireCsrf(request, response, user)) return;
@@ -5005,6 +5064,7 @@ async function api(request, response, url) {
       if (!target) return error(response, 404, "Nhiệm vụ không tồn tại.");
 
       target.done = !target.done;
+      target.status = target.done ? "hoan_thanh" : "chua_lam";
       target.by = target.done ? (user.display_name || user.name || "Thành viên phòng") : null;
       target.lastEditedBy = {
         userId: user.id,
@@ -5039,6 +5099,8 @@ async function api(request, response, url) {
       tasks.push({
         id: `st_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`,
         text,
+        status: body.status || "chuan_bi",
+        tagId: body.tagId || "",
         done: false,
         by: null,
         lastEditedBy: {

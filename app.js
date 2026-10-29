@@ -7621,7 +7621,7 @@ function updateTimerDisplay() {
   if (isFlowtimeFocus) {
     progressRatio = ((studyState.elapsedSessionSeconds % 3600) / 3600);
   } else {
-    const totalSecs = (studyState.durationMinutes > 0 ? studyState.durationMinutes * 60 : 1500);
+    const totalSecs = (studyState.durationMinutes > 0 ? studyState.durationMinutes * 60 : 0);
     progressRatio = totalSecs > 0 ? (1 - Math.max(0, studyState.remainingSeconds) / totalSecs) : 0;
   }
   progressRatio = Math.max(0, Math.min(1, progressRatio));
@@ -7629,11 +7629,21 @@ function updateTimerDisplay() {
   if (progressCircle) {
     const circum = 716.28;
     progressCircle.style.strokeDashoffset = (circum * (1 - progressRatio)).toFixed(2);
+    if (isFlowtimeFocus) {
+      // Đếm xuôi: quay thuận chiều kim đồng hồ
+      progressCircle.style.transform = "rotate(-90deg)";
+      progressCircle.style.transformOrigin = "140px 140px";
+    } else {
+      // Đếm ngược: quay ngược chiều kim đồng hồ
+      progressCircle.style.transform = "rotate(-90deg) scale(-1, 1)";
+      progressCircle.style.transformOrigin = "140px 140px";
+    }
   }
 
   const knob = $("#timerProgressKnob");
   if (knob) {
-    const angleDeg = -90 + progressRatio * 360;
+    // Đếm ngược thì quay theo ngược chiều kim đồng hồ, đếm xuôi thì quay thuận chiều
+    const angleDeg = isFlowtimeFocus ? (-90 + progressRatio * 360) : (-90 - progressRatio * 360);
     const rad = (angleDeg * Math.PI) / 180;
     const knobX = (140 + 114 * Math.cos(rad)).toFixed(2);
     const knobY = (140 + 114 * Math.sin(rad)).toFixed(2);
@@ -8283,6 +8293,17 @@ async function startStudyTimer() {
   studyState._reminderFiredThisSession = false;
 
   const isFlowtimeFocus = (studySettings.timerPreset === 'flowtime' && studyState.mode === 'focus');
+
+  if (!isFlowtimeFocus && studyState.remainingSeconds <= 0) {
+    if (studyState.mode === 'shortbreak') {
+      studyState.durationMinutes = studySettings.shortBreakMins || 5;
+    } else if (studyState.mode === 'longbreak') {
+      studyState.durationMinutes = studySettings.longBreakMins || 15;
+    } else {
+      studyState.durationMinutes = studySettings.focusMins || 25;
+    }
+    studyState.remainingSeconds = studyState.durationMinutes * 60;
+  }
 
   studyState.startedAtMs = now - (studyState.elapsedSessionSeconds || 0) * 1000;
   studyState.targetEndMs = isFlowtimeFocus ? 0 : (now + studyState.remainingSeconds * 1000);
@@ -9022,44 +9043,95 @@ function renderSharedCohortTasks(tasks = []) {
 
   const taskList = Array.isArray(tasks) ? tasks : [];
   const total = taskList.length;
-  const done = taskList.filter(t => Boolean(t.done || t.completed)).length;
-  const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+
+  let totalWeight = 0;
+  taskList.forEach(t => {
+    if (t.done || t.status === "hoan_thanh") {
+      totalWeight += 1.0;
+    } else {
+      const st = (typeof STUDY_TASK_STATUSES !== 'undefined' ? STUDY_TASK_STATUSES : []).find(s => s.id === t.status);
+      totalWeight += st ? (st.weight || 0) : 0;
+    }
+  });
+  const pct = total > 0 ? Math.min(100, Math.round((totalWeight / total) * 100)) : 0;
+  const doneCount = taskList.filter(t => t.done || t.status === "hoan_thanh").length;
 
   const pctBadge = $("#sharedTaskPctBadge");
   const progressFill = $("#sharedTaskProgressFill");
-  if (pctBadge) pctBadge.textContent = `${pct}% (${done}/${total})`;
+  if (pctBadge) pctBadge.textContent = `${pct}% (${doneCount}/${total})`;
   if (progressFill) progressFill.style.width = `${pct}%`;
 
   const listEl = $("#sharedTasksList");
   if (!listEl) return;
 
   if (total === 0) {
-    listEl.innerHTML = `<li style="font-size:12.5px; color:var(--muted); text-align:center; padding:10px 0;">Chưa có nhiệm vụ chung nào. Bấm [+] để thêm việc cho cả phòng!</li>`;
+    listEl.innerHTML = `<li class="todo-item" style="color:var(--muted); font-size:12px; justify-content:center;">Chưa có nhiệm vụ chung nào. Bấm [+] để thêm việc cho cả phòng!</li>`;
     return;
   }
 
   listEl.innerHTML = taskList.map(t => {
-    const isCompleted = Boolean(t.done || t.completed);
+    const isDone = Boolean(t.done || t.status === "hoan_thanh");
+    const statusId = t.status || (isDone ? "hoan_thanh" : "chua_lam");
+    const statusObj = (typeof STUDY_TASK_STATUSES !== 'undefined' ? STUDY_TASK_STATUSES : []).find(s => s.id === statusId) || { label: "Chưa làm", color: "#94a3b8" };
     const safeId = escapeHTML(String(t.id));
+
+    let tagHtml = "";
+    if (t.tagId && studySettings.taskLabels) {
+      const tag = studySettings.taskLabels.find(l => l.id === t.tagId);
+      if (tag) {
+        tagHtml = `<span class="todo-tag-pill" style="background-color: ${tag.color};">${escapeHTML(tag.name)}</span>`;
+      }
+    }
+
     const editor = t.lastEditedBy || {};
     const editorName = editor.name || t.by || "Thành viên phòng";
     const editorAvatar = editor.avatar || "🦊";
     const editorTitle = `Chỉnh sửa gần nhất bởi ${editorName}`;
 
     return `
-      <li class="shared-task-item ${isCompleted ? 'completed' : ''}" style="display:flex; align-items:center; gap:8px; padding:7px 10px; background:var(--surface-bg, #f7faf8); border:1px solid var(--line); border-radius:8px; margin-bottom:6px;">
-        <label class="shared-task-label" style="display:flex; align-items:center; gap:8px; flex:1; min-width:0; cursor:pointer; margin:0;">
-          <input type="checkbox" ${isCompleted ? 'checked' : ''} onchange="toggleSharedRoomTask('${safeId}')" />
-          <span class="shared-task-text" style="flex:1; min-width:0; word-break:break-word; font-size:13px; ${isCompleted ? 'text-decoration:line-through; opacity:0.6;' : ''}">${escapeHTML(t.text)}</span>
-        </label>
-        <span class="shared-task-editor-avatar" title="${escapeHTML(editorTitle)}">
+      <li class="todo-item ${isDone ? 'done' : ''}">
+        <input type="checkbox" ${isDone ? 'checked' : ''} onchange="toggleSharedRoomTask('${safeId}')" title="Đánh dấu hoàn thành" />
+        <button type="button" class="todo-status-badge" style="background: ${statusObj.color}20; color: ${statusObj.color}; border-color: ${statusObj.color}66;" onclick="cycleSharedTaskStatus('${safeId}')" title="Nhấp để chuyển trạng thái (${statusObj.label})">
+          <span style="display:inline-block; width:6px; height:6px; border-radius:50%; background:${statusObj.color}; margin-right:4px;"></span>${statusObj.label}
+        </button>
+        <span class="todo-item-text">${escapeHTML(t.text)}</span>
+        ${tagHtml}
+        <span class="shared-task-editor-avatar" title="${escapeHTML(editorTitle)}" style="font-size:13px; margin-left:auto; display:inline-flex; align-items:center; justify-content:center; width:22px; height:22px; border-radius:50%; background:rgba(0,0,0,0.06); cursor:help; flex-shrink:0;">
           ${escapeHTML(editorAvatar)}
         </span>
-        <button type="button" class="todo-del-btn" onclick="deleteSharedRoomTask('${safeId}')" title="Xóa nhiệm vụ" style="background:none; border:none; color:var(--muted); font-size:16px; cursor:pointer; padding:0 4px; line-height:1;">×</button>
+        <button type="button" class="todo-del-btn" onclick="deleteSharedRoomTask('${safeId}')" title="Xóa việc">×</button>
       </li>
     `;
   }).join('');
 }
+
+async function cycleSharedTaskStatus(taskId) {
+  if (!session) {
+    openAuth();
+    return;
+  }
+  try {
+    const res = await requestAPI("/api/study/rooms/task/cycle-status", {
+      method: "POST",
+      body: JSON.stringify({
+        roomId: currentStudyRoomId,
+        taskId: String(taskId)
+      })
+    });
+    if (res && res.success) {
+      const updatedTasks = res.sharedTasks || res.tasks || [];
+      if (currentStudyRoomData) {
+        currentStudyRoomData.sharedTasks = updatedTasks;
+      }
+      renderSharedCohortTasks(updatedTasks);
+    } else {
+      toast(res.error || "Không thể cập nhật trạng thái nhiệm vụ.");
+    }
+  } catch (e) {
+    console.error("cycleSharedTaskStatus error:", e);
+  }
+}
+window.cycleSharedTaskStatus = cycleSharedTaskStatus;
 
 async function deleteSharedRoomTask(taskId) {
   if (!session) {
@@ -9380,6 +9452,20 @@ async function executeLeaveCurrentRoom() {
     localStorage.removeItem("research_study_room_id");
   } catch (e) {}
 
+  // Reset timer to 0 on leaving room
+  studyState.isRunning = false;
+  studyState.remainingSeconds = 0;
+  studyState.durationMinutes = 0;
+  studyState.targetEndMs = 0;
+  studyState.flowtimeElapsedSeconds = 0;
+  studyState.elapsedSessionSeconds = 0;
+  if (studyState.timerInterval) {
+    clearInterval(studyState.timerInterval);
+    studyState.timerInterval = null;
+  }
+  updateTimerDisplay();
+  syncStudyToServer();
+
   const browseView = $("#studySpacesBrowseView");
   const activeView = $("#studyActiveRoomView");
   if (browseView) browseView.style.display = "block";
@@ -9617,12 +9703,14 @@ async function submitNewSharedTask() {
     return;
   }
   const input = document.getElementById("newSharedTaskInput");
+  const tagSelect = document.getElementById("newSharedTaskTagSelect");
   if (!input) return;
   const text = input.value.trim();
   if (!text) {
     input.focus();
     return;
   }
+  const tagId = tagSelect ? tagSelect.value : "";
 
   try {
     const res = await requestAPI("/api/study/rooms/task/add", {
@@ -9630,7 +9718,9 @@ async function submitNewSharedTask() {
       body: JSON.stringify({
         roomId: currentStudyRoomId,
         text: text,
-        taskText: text
+        taskText: text,
+        tagId: tagId,
+        status: "chuan_bi"
       })
     });
     if (res && res.success) {
@@ -9664,6 +9754,7 @@ window.joinPrivateStudyPod = joinPrivateStudyPod;
 window.copyMeetingRoomCode = copyMeetingRoomCode;
 window.copyMeetingRoomLink = copyMeetingRoomLink;
 window.toggleSharedRoomTask = toggleSharedRoomTask;
+window.cycleSharedTaskStatus = cycleSharedTaskStatus;
 window.toggleAddSharedTaskInput = toggleAddSharedTaskInput;
 window.submitNewSharedTask = submitNewSharedTask;
 window.leaveCurrentSpaceToCommons = confirmLeaveCurrentRoom;
@@ -12164,15 +12255,21 @@ function clearCompletedTodos() {
 
 /* --- Task Category Labels (Quản lý nhãn công việc) --- */
 function renderTaskTagSelect() {
-  const sel = $("#newTodoTagSelect");
-  if (!sel) return;
-  sel.disabled = false;
   const labels = studySettings.taskLabels || [];
   let html = `<option value="">Không gắn nhãn</option>`;
   labels.forEach(l => {
     html += `<option value="${l.id}">🏷️ ${escapeHTML(l.name)}</option>`;
   });
-  sel.innerHTML = html;
+  const sel = $("#newTodoTagSelect");
+  if (sel) {
+    sel.disabled = false;
+    sel.innerHTML = html;
+  }
+  const sharedSel = $("#newSharedTaskTagSelect");
+  if (sharedSel) {
+    sharedSel.disabled = false;
+    sharedSel.innerHTML = html;
+  }
 }
 
 function renderTaskLabelsManagerList() {
