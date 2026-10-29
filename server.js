@@ -517,6 +517,84 @@ try { db.exec("ALTER TABLE competition_phase_results ADD COLUMN on_time_bonus IN
 try { db.exec("ALTER TABLE posts ADD COLUMN deleted_at TEXT;"); } catch (e) {}
 try { db.exec("ALTER TABLE responses ADD COLUMN deleted_at TEXT;"); } catch (e) {}
 
+try {
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS site_reviews (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL UNIQUE REFERENCES users(id) ON DELETE CASCADE,
+      rating INTEGER NOT NULL CHECK (rating >= 1 AND rating <= 5),
+      content TEXT NOT NULL,
+      tags TEXT NOT NULL DEFAULT '[]',
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    );
+    CREATE INDEX IF NOT EXISTS idx_site_reviews_created_at ON site_reviews(created_at DESC);
+    CREATE INDEX IF NOT EXISTS idx_site_reviews_rating ON site_reviews(rating DESC);
+  `);
+} catch (e) {
+  console.error("[DB Schema site_reviews]", e);
+}
+
+function seedSiteReviewsIfEmpty() {
+  try {
+    const count = db.prepare("SELECT COUNT(*) as c FROM site_reviews").get()?.c || 0;
+    if (count === 0) {
+      const seedReviews = [
+        {
+          userId: 51,
+          rating: 5,
+          content: "Nền tảng giúp mình theo dõi và rèn luyện phương pháp nghiên cứu mỗi ngày cực kỳ hiệu quả. Chuỗi ngày học tập và phòng tự học với âm thanh lofi giúp mình tập trung làm đồ án hơn hẳn!",
+          tags: ["🌱 Giữ chuỗi tạo động lực", "🎧 Âm thanh tự học thư giãn", "📚 Kho tài liệu chất lượng"],
+          createdAt: "2026-10-25 14:30:00"
+        },
+        {
+          userId: 52,
+          rating: 5,
+          content: "Các câu hỏi trong Đấu trường Arena rất sát với thực tế đề tài NCKH, vừa kịch tính vừa giúp củng cố kiến thức vững vàng. Rất thích giao diện tối mới được cập nhật, nhìn dịu mắt và thẩm mỹ.",
+          tags: ["🔥 Đấu trường Arena kịch tính", "🌙 Chế độ tối hoàn thiện", "🎯 Ôn tập kiến thức NCKH"],
+          createdAt: "2026-10-26 09:15:00"
+        },
+        {
+          userId: 53,
+          rating: 5,
+          content: "Kho tài liệu tổng hợp rất phong phú từ đề cương nghiên cứu đến phương pháp định lượng và định tính. Thẻ tên Namecard với các khung huy hiệu chuỗi cũng rất kích thích động lực học tập.",
+          tags: ["📚 Kho tài liệu chất lượng", "✨ Thẻ tên Namecard độc đáo", "⚡ Giao diện mượt mà"],
+          createdAt: "2026-10-27 19:40:00"
+        },
+        {
+          userId: 2,
+          rating: 5,
+          content: "Một không gian học thuật trực tuyến chỉn chu hiếm thấy dành cho sinh viên Văn Lang. Diễn đàn phản hồi nhanh và giải đáp thắc mắc chuyên môn rất tận tình.",
+          tags: ["💬 Thảo luận học thuật bổ ích", "🤝 Kết nối thầy cô & bạn bè", "💡 Hỗ trợ bài tập & đề tài"],
+          createdAt: "2026-10-28 11:05:00"
+        },
+        {
+          userId: 3,
+          rating: 5,
+          content: "Hệ thống khiên bảo vệ chuỗi cứu cánh những ngày ôn thi bận rộn. Tìm kiếm tài liệu bằng phím tắt ⌘K cũng siêu tiện lợi và nhanh chóng!",
+          tags: ["🛡️ Khiên bảo vệ chuỗi thiết thực", "🔍 Tìm kiếm tài liệu thông minh", "🚀 Truy cập nhanh & ổn định"],
+          createdAt: "2026-10-29 08:20:00"
+        }
+      ];
+
+      const stmt = db.prepare(`
+        INSERT OR IGNORE INTO site_reviews (user_id, rating, content, tags, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?)
+      `);
+
+      for (const r of seedReviews) {
+        const userExists = db.prepare("SELECT id FROM users WHERE id = ?").get(r.userId);
+        if (userExists) {
+          stmt.run(r.userId, r.rating, r.content, JSON.stringify(r.tags), r.createdAt, r.createdAt);
+        }
+      }
+    }
+  } catch (e) {
+    console.error("[Seed site_reviews error]", e);
+  }
+}
+seedSiteReviewsIfEmpty();
+
 function cleanupExpiredTrash() {
   try {
     // Xóa vĩnh viễn các bài đăng trong thùng rác đã quá 7 ngày cùng toàn bộ nội dung liên quan
@@ -3964,6 +4042,159 @@ async function api(request, response, url) {
       return error(response, 500, "Lỗi khi thêm chủ đề: " + e.message);
     }
   }
+  if (method === "GET" && pathName === "/api/site-reviews") {
+    try {
+      const viewer = sessionFrom(request);
+      const rows = db
+        .prepare(`
+          SELECT r.*, u.display_name, u.email, u.role, u.avatar, u.real_name, u.class_name, u.namecard_frame, u.namecard_theme
+          FROM site_reviews r
+          JOIN users u ON u.id = r.user_id
+          ORDER BY r.created_at DESC
+        `)
+        .all();
+
+      const enrichedReviews = rows.map((r) => {
+        const streakInfo = calculateUserStreak(r.user_id);
+        let parsedTags = [];
+        try {
+          parsedTags = JSON.parse(r.tags || "[]");
+        } catch (e) {
+          parsedTags = [];
+        }
+        return {
+          id: r.id,
+          userId: r.user_id,
+          rating: r.rating,
+          content: r.content,
+          tags: parsedTags,
+          createdAt: (r.created_at || "").replace(" ", "T") + "Z",
+          updatedAt: (r.updated_at || "").replace(" ", "T") + "Z",
+          user: {
+            id: r.user_id,
+            displayName: r.display_name,
+            initials: r.avatar || getAvatarEmoji(r.display_name),
+            role: r.role,
+            streak: streakInfo.streak || 0,
+            streakTier: streakInfo.streakTier || 0,
+            namecardFrame: r.namecard_frame || "none",
+            className: r.class_name || "",
+          },
+        };
+      });
+
+      const totalCount = enrichedReviews.length;
+      const sumRatings = enrichedReviews.reduce((sum, r) => sum + r.rating, 0);
+      const avgRating = totalCount > 0 ? (sumRatings / totalCount).toFixed(1) : "5.0";
+
+      const distribution = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+      const tagCounts = {};
+      enrichedReviews.forEach((r) => {
+        if (distribution[r.rating] !== undefined) distribution[r.rating]++;
+        r.tags.forEach((tag) => {
+          tagCounts[tag] = (tagCounts[tag] || 0) + 1;
+        });
+      });
+
+      let myReview = null;
+      if (viewer) {
+        myReview = enrichedReviews.find((r) => r.userId === viewer.id) || null;
+      }
+
+      return json(response, 200, {
+        ok: true,
+        stats: {
+          averageRating: Number(avgRating),
+          totalReviews: totalCount,
+          distribution,
+          topTags: Object.entries(tagCounts)
+            .sort((a, b) => b[1] - a[1])
+            .map(([tag, count]) => ({ tag, count })),
+        },
+        reviews: enrichedReviews,
+        myReview,
+      });
+    } catch (e) {
+      console.error("[Site Reviews GET Error]", e);
+      return error(response, 500, "Không thể tải đánh giá website.");
+    }
+  }
+
+  if (method === "POST" && pathName === "/api/site-reviews") {
+    const user = requireUser(request, response);
+    if (!user || !requireCsrf(request, response, user)) return;
+
+    try {
+      const body = await readJSON(request);
+      let rating = parseInt(body.rating, 10);
+      if (isNaN(rating) || rating < 1 || rating > 5) {
+        return error(response, 400, "Số sao đánh giá phải từ 1 đến 5 sao.");
+      }
+
+      const content = typeof body.content === "string" ? body.content.trim() : "";
+      if (content.length < 6) {
+        return error(response, 400, "Nội dung đánh giá cần có ít nhất 6 ký tự.");
+      }
+      if (content.length > 1000) {
+        return error(response, 400, "Nội dung đánh giá không được vượt quá 1000 ký tự.");
+      }
+
+      let tags = [];
+      if (Array.isArray(body.tags)) {
+        tags = body.tags
+          .filter((t) => typeof t === "string" && t.trim().length > 0)
+          .map((t) => t.trim().slice(0, 50))
+          .slice(0, 8);
+      }
+      const tagsJson = JSON.stringify(tags);
+
+      const existing = db.prepare("SELECT id FROM site_reviews WHERE user_id = ?").get(user.id);
+
+      db.prepare(`
+        INSERT INTO site_reviews (user_id, rating, content, tags, created_at, updated_at)
+        VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+        ON CONFLICT(user_id) DO UPDATE SET
+          rating = excluded.rating,
+          content = excluded.content,
+          tags = excluded.tags,
+          updated_at = CURRENT_TIMESTAMP
+      `).run(user.id, rating, content, tagsJson);
+
+      if (!existing) {
+        try {
+          recordContributionEvent(user.id, "review_platform", 10, "site_review", user.id, "Đóng góp đánh giá & phản hồi website");
+        } catch (e) {}
+      }
+
+      return json(response, 200, {
+        ok: true,
+        message: existing ? "Đã cập nhật đánh giá của bạn thành công!" : "Cảm ơn bạn đã gửi đánh giá quý báu cho nền tảng!",
+        isNew: !existing,
+      });
+    } catch (e) {
+      console.error("[Site Reviews POST Error]", e);
+      return error(response, 500, "Không thể lưu đánh giá: " + e.message);
+    }
+  }
+
+  if (method === "DELETE" && pathName.startsWith("/api/site-reviews/")) {
+    const user = requireUser(request, response);
+    if (!user || !requireCsrf(request, response, user)) return;
+
+    const reviewId = parseInt(pathName.replace("/api/site-reviews/", ""), 10);
+    if (!reviewId) return error(response, 400, "Mã đánh giá không hợp lệ.");
+
+    const review = db.prepare("SELECT * FROM site_reviews WHERE id = ?").get(reviewId);
+    if (!review) return error(response, 404, "Không tìm thấy đánh giá.");
+
+    if (review.user_id !== user.id && user.role !== "admin") {
+      return error(response, 403, "Bạn không có quyền xóa đánh giá này.");
+    }
+
+    db.prepare("DELETE FROM site_reviews WHERE id = ?").run(reviewId);
+    return json(response, 200, { ok: true, message: "Đã xóa đánh giá thành công." });
+  }
+
   if (method === "GET" && pathName === "/api/documents") {
     const viewer = sessionFrom(request);
     const rows = db

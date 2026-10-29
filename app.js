@@ -2137,8 +2137,9 @@ async function hydrateServer(force = false) {
       if ($("#adminPanel")) $("#adminPanel").style.display = "none";
     }
 
-    // Tải trạng thái module thi đua tuần
+    // Tải trạng thái module thi đua tuần & đánh giá website
     loadWeeklyCompetitionStatus();
+    loadSiteReviews();
   } catch {
     toast("Không thể tải dữ liệu máy chủ.");
   }
@@ -14264,6 +14265,535 @@ window.addEventListener("beforeunload", () => {
 });
 
 /* ==========================================================================
+   EDITORIAL SITE REVIEWS MODULE
+   Horizontal Feedback Strip & Review Management
+   ========================================================================== */
+
+const SITE_REVIEW_AVAILABLE_TAGS = [
+  "📚 Kho tài liệu chất lượng",
+  "🔥 Đấu trường Arena kịch tính",
+  "🌱 Giữ chuỗi tạo động lực",
+  "⚡ Giao diện mượt mà",
+  "🌙 Chế độ tối hoàn thiện",
+  "💬 Thảo luận học thuật bổ ích",
+  "🎯 Ôn tập kiến thức NCKH",
+  "🎧 Âm thanh tự học thư giãn",
+  "🏆 Bảng vinh danh thú vị",
+  "💡 Hỗ trợ bài tập & đề tài",
+  "🤝 Kết nối thầy cô & bạn bè",
+  "✨ Thẻ tên Namecard độc đáo",
+  "🛡️ Khiên bảo vệ chuỗi thiết thực",
+  "🔍 Tìm kiếm tài liệu thông minh",
+  "🚀 Truy cập nhanh & ổn định"
+];
+
+const STAR_SENTIMENT_MAP = {
+  1: "Cần cải thiện nhiều — Hãy cho chúng tôi biết bạn gặp khó khăn ở đâu nhé",
+  2: "Tạm ổn — Nền tảng còn một số điểm cần tiếp tục hoàn thiện",
+  3: "Khá tốt — Nền tảng hữu ích cho việc học tập & nghiên cứu",
+  4: "Rất giá trị — Trợ thủ đắc lực cho phương pháp nghiên cứu khoa học",
+  5: "Xuất sắc & truyền cảm hứng! — Đồng hành tuyệt vời cùng sinh viên Văn Lang"
+};
+
+let siteReviewsData = {
+  stats: { averageRating: 5.0, totalReviews: 0, distribution: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 }, topTags: [] },
+  reviews: [],
+  myReview: null
+};
+
+let currentReviewSelectedRating = 5;
+let currentReviewSelectedTags = new Set();
+let allReviewsCurrentFilter = "all";
+
+async function loadSiteReviews() {
+  try {
+    const res = await requestAPI("/api/site-reviews");
+    if (!res || !res.ok) return;
+
+    siteReviewsData = {
+      stats: res.stats || { averageRating: 5.0, totalReviews: 0, distribution: {}, topTags: [] },
+      reviews: res.reviews || [],
+      myReview: res.myReview || null
+    };
+
+    renderSiteReviewsStrip();
+  } catch (e) {
+    console.error("[SiteReviews Error]", e);
+  }
+}
+
+function renderSiteReviewsStrip() {
+  const { stats, reviews, myReview } = siteReviewsData;
+
+  const avgScoreEl = $("#stripAverageScore");
+  if (avgScoreEl) {
+    avgScoreEl.textContent = Number(stats.averageRating).toFixed(1);
+  }
+
+  const avgStarsEl = $("#stripAverageStars");
+  if (avgStarsEl) {
+    const rounded = Math.round(Number(stats.averageRating) || 5);
+    avgStarsEl.textContent = "★".repeat(Math.max(1, Math.min(5, rounded)));
+  }
+
+  const totalMetaEl = $("#stripTotalReviews");
+  if (totalMetaEl) {
+    totalMetaEl.innerHTML = `Dựa trên <strong>${stats.totalReviews || reviews.length}</strong> đánh giá`;
+  }
+
+  const writeBtnText = $("#stripWriteReviewBtnText");
+  if (writeBtnText) {
+    writeBtnText.textContent = myReview ? "Sửa đánh giá của bạn" : "Viết đánh giá";
+  }
+
+  const track = $("#stripReviewsTrack");
+  if (!track) return;
+
+  if (reviews.length === 0) {
+    track.innerHTML = `
+      <div style="display: flex; align-items: center; justify-content: center; width: 100%; color: var(--muted); font-size: 13px; font-style: italic;">
+        Chưa có đánh giá nào. Hãy là người đầu tiên chia sẻ cảm nhận!
+      </div>
+    `;
+    return;
+  }
+
+  track.innerHTML = reviews.map(r => {
+    const streakTier = Number(r.user?.streakTier) || 0;
+    const authorRole = r.user?.role || "student";
+    const initials = escapeHTML(r.user?.initials || "?");
+    const displayName = escapeHTML(r.user?.displayName || "Học viên");
+    const nameCls = getNameClass(streakTier);
+    const avatarCls = getAvatarClass(streakTier, false, authorRole);
+    const starsStr = "★".repeat(Math.max(1, Math.min(5, r.rating)));
+    const dateFormatted = formatTime(r.createdAt);
+    const tags = Array.isArray(r.tags) ? r.tags : [];
+    const firstTwoTags = tags.slice(0, 2);
+    const remainingCount = tags.length - 2;
+
+    const roleBadge = authorRole === "admin" 
+      ? `<span class="badge" style="background:#fee2e2;color:#991b1b;font-size:10px;padding:1px 6px;">Admin</span>`
+      : authorRole === "ta"
+      ? `<span class="badge" style="background:#dbeafe;color:#1e40af;font-size:10px;padding:1px 6px;">TA</span>`
+      : streakTier > 0
+      ? `<span class="badge" style="background:var(--sage-2);color:var(--ink);font-size:10px;padding:1px 6px;">🔥 ${r.user?.streak || 0} ngày</span>`
+      : "";
+
+    return `
+      <div class="review-strip-card" onclick="openAllReviewsModal()" title="Nhấn để xem chi tiết tất cả đánh giá">
+        <div class="review-card-head">
+          <div class="review-card-author-info">
+            <span class="avatar avatar-xs ${avatarCls}" data-namecard-user-id="${r.userId}">${initials}</span>
+            <div class="review-card-author-text">
+              <span class="review-card-author-name ${nameCls}">${displayName}</span>
+              <div class="review-card-meta">${roleBadge || "Học viên"}</div>
+            </div>
+          </div>
+          <div class="review-card-stars" aria-label="${r.rating} trên 5 sao">${starsStr}</div>
+        </div>
+        <p class="review-card-content">“${escapeHTML(r.content)}”</p>
+        <div class="review-card-footer">
+          <div class="review-card-tags">
+            ${firstTwoTags.map(t => `<span class="review-micro-tag">${escapeHTML(t)}</span>`).join("")}
+            ${remainingCount > 0 ? `<span class="review-micro-tag-more">+${remainingCount}</span>` : ""}
+          </div>
+          <span class="review-card-date">${dateFormatted}</span>
+        </div>
+      </div>
+    `;
+  }).join("");
+}
+
+function slideSiteReviews(direction) {
+  const track = $("#stripReviewsTrack");
+  if (!track) return;
+  const cardWidth = 324;
+  track.scrollBy({
+    left: direction * cardWidth,
+    behavior: "smooth"
+  });
+}
+
+function openSiteReviewModal() {
+  if (!session) {
+    const authModal = $("#authModal");
+    if (authModal && typeof authModal.showModal === "function") {
+      authModal.showModal();
+    } else {
+      toast("Vui lòng đăng nhập để gửi đánh giá.");
+    }
+    return;
+  }
+
+  const { myReview } = siteReviewsData;
+  const isEditing = Boolean(myReview);
+
+  $("#siteReviewModalEyebrow").textContent = isEditing ? "CHỈNH SỬA ĐÁNH GIÁ" : "TRẢI NGHIỆM CỦA BẠN";
+  $("#siteReviewModalTitle").textContent = isEditing ? "Cập nhật đánh giá của bạn" : "Đánh giá nền tảng Nghiên Cứu";
+  $("#siteReviewSubmitText").textContent = isEditing ? "Cập nhật đánh giá" : "Gửi đánh giá (+10 điểm)";
+
+  const delBtn = $("#siteReviewDeleteBtn");
+  if (delBtn) {
+    delBtn.style.display = isEditing ? "inline-flex" : "none";
+  }
+
+  currentReviewSelectedRating = isEditing ? (myReview.rating || 5) : 5;
+  currentReviewSelectedTags = new Set(isEditing && Array.isArray(myReview.tags) ? myReview.tags : []);
+
+  const contentInput = $("#siteReviewContentInput");
+  if (contentInput) {
+    contentInput.value = isEditing ? (myReview.content || "") : "";
+  }
+
+  updateStarPickerUI(currentReviewSelectedRating);
+  renderModalTagCloud();
+  updateSiteReviewCharCounter();
+
+  const modal = $("#siteReviewModal");
+  if (modal && typeof modal.showModal === "function") {
+    modal.showModal();
+  }
+}
+
+function updateStarPickerUI(rating) {
+  currentReviewSelectedRating = rating;
+  const starBtns = $$("#starRatingPicker .star-btn");
+  starBtns.forEach(btn => {
+    const val = parseInt(btn.dataset.value, 10);
+    btn.classList.toggle("active", val <= rating);
+  });
+
+  const label = $("#starSentimentLabel");
+  if (label) {
+    label.textContent = STAR_SENTIMENT_MAP[rating] || "";
+  }
+}
+
+function renderModalTagCloud() {
+  const cloud = $("#siteReviewTagCloud");
+  if (!cloud) return;
+
+  cloud.innerHTML = SITE_REVIEW_AVAILABLE_TAGS.map(tag => {
+    const isSelected = currentReviewSelectedTags.has(tag);
+    return `
+      <button
+        type="button"
+        class="site-review-tag-pill ${isSelected ? 'active' : ''}"
+        data-tag="${escapeHTML(tag)}"
+        onclick="toggleSiteReviewTag(this)"
+      >
+        <span>${isSelected ? '✓ ' : ''}${escapeHTML(tag)}</span>
+      </button>
+    `;
+  }).join("");
+
+  const countBadge = $("#tagsSelectedCount");
+  if (countBadge) {
+    countBadge.textContent = `${currentReviewSelectedTags.size} đã chọn`;
+  }
+}
+
+function toggleSiteReviewTag(btn) {
+  const tag = btn.dataset.tag;
+  if (!tag) return;
+
+  if (currentReviewSelectedTags.has(tag)) {
+    currentReviewSelectedTags.delete(tag);
+  } else {
+    if (currentReviewSelectedTags.size >= 8) {
+      toast("Bạn có thể chọn tối đa 8 thẻ phù hợp nhất.");
+      return;
+    }
+    currentReviewSelectedTags.add(tag);
+  }
+
+  renderModalTagCloud();
+}
+
+function updateSiteReviewCharCounter() {
+  const input = $("#siteReviewContentInput");
+  const counter = $("#siteReviewCharCounter");
+  if (!input || !counter) return;
+
+  const len = input.value.trim().length;
+  counter.textContent = `${len} / 800`;
+  counter.style.color = len >= 6 ? "var(--muted)" : "var(--danger)";
+}
+
+async function handleSiteReviewSubmit(e) {
+  if (e) e.preventDefault();
+
+  if (!session) {
+    toast("Vui lòng đăng nhập trước khi gửi đánh giá.");
+    return;
+  }
+
+  const contentInput = $("#siteReviewContentInput");
+  const content = contentInput ? contentInput.value.trim() : "";
+
+  if (content.length < 6) {
+    toast("Nội dung đánh giá cần có ít nhất 6 ký tự.");
+    if (contentInput) contentInput.focus();
+    return;
+  }
+
+  const submitBtn = $("#siteReviewSubmitBtn");
+  if (submitBtn) submitBtn.disabled = true;
+
+  try {
+    const res = await requestAPI("/api/site-reviews", {
+      method: "POST",
+      body: JSON.stringify({
+        rating: currentReviewSelectedRating,
+        content,
+        tags: Array.from(currentReviewSelectedTags)
+      })
+    });
+
+    toast(res.message || "Đã gửi đánh giá thành công!");
+
+    const modal = $("#siteReviewModal");
+    if (modal && typeof modal.close === "function") {
+      modal.close();
+    }
+
+    await loadSiteReviews();
+  } catch (err) {
+    toast(err.message || "Không thể gửi đánh giá.");
+  } finally {
+    if (submitBtn) submitBtn.disabled = false;
+  }
+}
+
+async function handleSiteReviewDelete() {
+  if (!siteReviewsData.myReview) return;
+
+  const confirmed = confirm("Bạn có chắc chắn muốn xóa bài đánh giá của mình không?");
+  if (!confirmed) return;
+
+  try {
+    await requestAPI(`/api/site-reviews/${siteReviewsData.myReview.id}`, {
+      method: "DELETE"
+    });
+
+    toast("Đã xóa đánh giá thành công.");
+
+    const modal = $("#siteReviewModal");
+    if (modal && typeof modal.close === "function") {
+      modal.close();
+    }
+
+    await loadSiteReviews();
+  } catch (err) {
+    toast(err.message || "Không thể xóa đánh giá.");
+  }
+}
+
+function openAllReviewsModal(filter = "all") {
+  allReviewsCurrentFilter = filter;
+  const { stats, reviews } = siteReviewsData;
+
+  const avgScoreEl = $("#allReviewsAvgScore");
+  if (avgScoreEl) avgScoreEl.textContent = Number(stats.averageRating).toFixed(1);
+
+  const avgStarsEl = $("#allReviewsAvgStars");
+  if (avgStarsEl) {
+    const rounded = Math.round(Number(stats.averageRating) || 5);
+    avgStarsEl.textContent = "★".repeat(Math.max(1, Math.min(5, rounded)));
+  }
+
+  const totalEl = $("#allReviewsTotalCount");
+  if (totalEl) totalEl.textContent = `Tổng cộng ${stats.totalReviews || reviews.length} đánh giá`;
+
+  const distContainer = $("#allReviewsDistributionBars");
+  if (distContainer) {
+    const total = stats.totalReviews || reviews.length || 1;
+    const dist = stats.distribution || { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+
+    let distHtml = "";
+    for (let s = 5; s >= 1; s--) {
+      const count = dist[s] || 0;
+      const pct = Math.round((count / total) * 100);
+      distHtml += `
+        <div class="distribution-bar-row">
+          <span class="dist-star-label">${s} ★</span>
+          <div class="dist-bar-track">
+            <div class="dist-bar-fill" style="width: ${pct}%"></div>
+          </div>
+          <span class="dist-count-label">${count}</span>
+        </div>
+      `;
+    }
+    distContainer.innerHTML = distHtml;
+  }
+
+  const dist = stats.distribution || {};
+  const filterAll = $("#filterCountAll");
+  if (filterAll) filterAll.textContent = stats.totalReviews || reviews.length;
+  for (let s = 1; s <= 5; s++) {
+    const el = $(`#filterCount${s}`);
+    if (el) el.textContent = dist[s] || 0;
+  }
+
+  renderAllReviewsGrid();
+
+  const modal = $("#allReviewsModal");
+  if (modal && typeof modal.showModal === "function") {
+    modal.showModal();
+  }
+}
+
+function renderAllReviewsGrid() {
+  const grid = $("#allReviewsGrid");
+  if (!grid) return;
+
+  const { reviews } = siteReviewsData;
+  const filtered = allReviewsCurrentFilter === "all"
+    ? reviews
+    : reviews.filter(r => r.rating === parseInt(allReviewsCurrentFilter, 10));
+
+  $$("#allReviewsFilterPills .filter-pill").forEach(p => {
+    p.classList.toggle("active", p.dataset.filter === allReviewsCurrentFilter);
+  });
+
+  if (filtered.length === 0) {
+    grid.innerHTML = `
+      <div style="grid-column: 1 / -1; padding: 40px 20px; text-align: center; color: var(--muted); font-size: 14px; font-style: italic;">
+        Không có đánh giá nào cho bộ lọc này.
+      </div>
+    `;
+    return;
+  }
+
+  grid.innerHTML = filtered.map(r => {
+    const streakTier = Number(r.user?.streakTier) || 0;
+    const authorRole = r.user?.role || "student";
+    const initials = escapeHTML(r.user?.initials || "?");
+    const displayName = escapeHTML(r.user?.displayName || "Học viên");
+    const nameCls = getNameClass(streakTier);
+    const avatarCls = getAvatarClass(streakTier, false, authorRole);
+    const starsStr = "★".repeat(Math.max(1, Math.min(5, r.rating)));
+    const dateFormatted = formatTime(r.createdAt);
+    const tags = Array.isArray(r.tags) ? r.tags : [];
+
+    const roleBadge = authorRole === "admin" 
+      ? `<span class="badge" style="background:#fee2e2;color:#991b1b;font-size:10.5px;padding:2px 7px;">Admin</span>`
+      : authorRole === "ta"
+      ? `<span class="badge" style="background:#dbeafe;color:#1e40af;font-size:10.5px;padding:2px 7px;">TA</span>`
+      : streakTier > 0
+      ? `<span class="badge" style="background:var(--sage-2);color:var(--ink);font-size:10.5px;padding:2px 7px;">🔥 ${r.user?.streak || 0} ngày</span>`
+      : "";
+
+    return `
+      <div class="all-review-card">
+        <div>
+          <div class="all-review-card-head">
+            <div class="review-card-author-info">
+              <span class="avatar avatar-sm ${avatarCls}" data-namecard-user-id="${r.userId}">${initials}</span>
+              <div class="review-card-author-text">
+                <span class="review-card-author-name ${nameCls}">${displayName}</span>
+                <div class="review-card-meta">${roleBadge || "Học viên"}</div>
+              </div>
+            </div>
+            <div class="review-card-stars">${starsStr}</div>
+          </div>
+          <div class="all-review-card-body">${escapeHTML(r.content)}</div>
+        </div>
+        <div>
+          ${tags.length > 0 ? `
+            <div class="all-review-card-tags">
+              ${tags.map(t => `<span class="review-micro-tag">${escapeHTML(t)}</span>`).join("")}
+            </div>
+          ` : ""}
+          <div class="all-review-card-footer">
+            <span>Đã gửi lúc:</span>
+            <span>${dateFormatted}</span>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join("");
+}
+
+function initSiteReviewsListeners() {
+  const writeBtn = $("#stripWriteReviewBtn");
+  if (writeBtn) writeBtn.addEventListener("click", openSiteReviewModal);
+
+  const seeAllBtn = $("#stripSeeAllReviewsBtn");
+  if (seeAllBtn) seeAllBtn.addEventListener("click", () => openAllReviewsModal("all"));
+
+  const prevBtn = $("#stripReviewsPrevBtn");
+  if (prevBtn) prevBtn.addEventListener("click", () => slideSiteReviews(-1));
+
+  const nextBtn = $("#stripReviewsNextBtn");
+  if (nextBtn) nextBtn.addEventListener("click", () => slideSiteReviews(1));
+
+  const form = $("#siteReviewForm");
+  if (form) form.addEventListener("submit", handleSiteReviewSubmit);
+
+  const delBtn = $("#siteReviewDeleteBtn");
+  if (delBtn) delBtn.addEventListener("click", handleSiteReviewDelete);
+
+  const contentInput = $("#siteReviewContentInput");
+  if (contentInput) {
+    contentInput.addEventListener("input", updateSiteReviewCharCounter);
+  }
+
+  const allReviewsWriteBtn = $("#allReviewsWriteCta");
+  if (allReviewsWriteBtn) {
+    allReviewsWriteBtn.addEventListener("click", () => {
+      const allModal = $("#allReviewsModal");
+      if (allModal && typeof allModal.close === "function") allModal.close();
+      openSiteReviewModal();
+    });
+  }
+
+  const starBtns = $$("#starRatingPicker .star-btn");
+  starBtns.forEach(btn => {
+    const val = parseInt(btn.dataset.value, 10);
+    btn.addEventListener("mouseenter", () => {
+      starBtns.forEach(b => {
+        const bVal = parseInt(b.dataset.value, 10);
+        b.classList.toggle("hover-active", bVal <= val);
+      });
+      const label = $("#starSentimentLabel");
+      if (label) label.textContent = STAR_SENTIMENT_MAP[val] || "";
+    });
+
+    btn.addEventListener("mouseleave", () => {
+      starBtns.forEach(b => b.classList.remove("hover-active"));
+      const label = $("#starSentimentLabel");
+      if (label) label.textContent = STAR_SENTIMENT_MAP[currentReviewSelectedRating] || "";
+    });
+
+    btn.addEventListener("click", () => {
+      updateStarPickerUI(val);
+    });
+  });
+
+  const filterPills = $$("#allReviewsFilterPills .filter-pill");
+  filterPills.forEach(pill => {
+    pill.addEventListener("click", () => {
+      const f = pill.dataset.filter || "all";
+      allReviewsCurrentFilter = f;
+      renderAllReviewsGrid();
+    });
+  });
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  initSiteReviewsListeners();
+});
+
+window.openSiteReviewModal = openSiteReviewModal;
+window.slideSiteReviews = slideSiteReviews;
+window.toggleSiteReviewTag = toggleSiteReviewTag;
+window.handleSiteReviewSubmit = handleSiteReviewSubmit;
+window.handleSiteReviewDelete = handleSiteReviewDelete;
+window.openAllReviewsModal = openAllReviewsModal;
+window.loadSiteReviews = loadSiteReviews;
+
+/* ==========================================================================
    APPLICATION BOOTSTRAP & INITIAL HYDRATION
    ========================================================================== */
 const initialCachedUser = getCachedUser();
@@ -14278,6 +14808,7 @@ if (initialCachedUser) {
 renderHome();
 renderPosts();
 renderDocuments();
+loadSiteReviews();
 const initialRequestedRoute = (location.hash.slice(1) || "home");
 if (initialRequestedRoute === "study" && serverMode) {
   go("home", false);

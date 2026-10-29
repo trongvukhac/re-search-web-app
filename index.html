@@ -29,7 +29,7 @@
     <script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js" defer></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" defer></script>
-    <link rel="stylesheet" href="styles.css?v=99" />
+    <link rel="stylesheet" href="styles.css?v=100" />
   </head>
   <body>
     <dialog
@@ -473,6 +473,52 @@
             <div id="homeCommunityAsideSlot"></div>
           </aside>
         </div>
+
+        <!-- ĐÁNH GIÁ & TRẢI NGHIỆM CỘNG ĐỒNG (Site Reviews Strip) -->
+        <section class="site-reviews-strip" id="siteReviewsStrip" aria-label="Đánh giá từ cộng đồng">
+          <div class="reviews-strip-inner">
+            <!-- Cột tổng quan đánh giá (Score & Action) -->
+            <div class="reviews-strip-summary">
+              <div class="reviews-summary-badge">
+                <span class="reviews-summary-icon">✦</span>
+                <span class="reviews-summary-label">TRẢI NGHIỆM HỌC VIÊN</span>
+              </div>
+              <div class="reviews-score-cluster">
+                <div class="reviews-score-big" id="stripAverageScore">5.0</div>
+                <div class="reviews-stars-wrap">
+                  <div class="reviews-stars-visual" id="stripAverageStars" aria-label="5 trên 5 sao">
+                    ★★★★★
+                  </div>
+                  <div class="reviews-count-meta" id="stripTotalReviews">
+                    Dựa trên <strong>5</strong> đánh giá
+                  </div>
+                </div>
+              </div>
+              <div class="reviews-summary-actions">
+                <button type="button" class="button button-sm button-primary reviews-write-cta" id="stripWriteReviewBtn">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                  <span id="stripWriteReviewBtnText">Viết đánh giá</span>
+                </button>
+                <button type="button" class="text-link reviews-see-all-cta" id="stripSeeAllReviewsBtn">
+                  Xem tất cả →
+                </button>
+              </div>
+            </div>
+
+            <!-- Vùng cuộn ngang thẻ đánh giá (Horizontal Cards Carousel) -->
+            <div class="reviews-strip-carousel-container">
+              <button type="button" class="reviews-nav-btn reviews-nav-prev" id="stripReviewsPrevBtn" aria-label="Đánh giá trước đó" title="Cuộn trước">
+                ‹
+              </button>
+              <div class="reviews-strip-track" id="stripReviewsTrack" role="region" aria-label="Danh sách đánh giá gần đây">
+                <!-- Nội dung card sẽ được nạp qua app.js -->
+              </div>
+              <button type="button" class="reviews-nav-btn reviews-nav-next" id="stripReviewsNextBtn" aria-label="Đánh giá kế tiếp" title="Cuộn tiếp">
+                ›
+              </button>
+            </div>
+          </div>
+        </section>
       </section>
 
       <section id="forum" class="page" data-page="forum">
@@ -3813,6 +3859,135 @@
       </div>
     </dialog>
 
-    <script src="app.js?v=113" defer></script>
+    <!-- MODAL VIẾT / CHỈNH SỬA ĐÁNH GIÁ WEBSITE -->
+    <dialog id="siteReviewModal" class="modal site-review-modal" aria-labelledby="siteReviewModalTitle">
+      <form method="dialog" id="siteReviewForm" class="site-review-form">
+        <div class="modal-head">
+          <div>
+            <p class="eyebrow" id="siteReviewModalEyebrow">TRẢI NGHIỆM CỦA BẠN</p>
+            <h2 id="siteReviewModalTitle">Đánh giá nền tảng Nghiên Cứu</h2>
+          </div>
+          <button
+            class="close-modal"
+            type="button"
+            onclick="this.closest('dialog').close()"
+            aria-label="Đóng"
+          ><svg class="ui-icon modal-close-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
+        </div>
+
+        <div class="site-review-modal-body">
+          <!-- Chọn số sao (Star Rating Picker) -->
+          <div class="star-picker-section">
+            <label class="site-review-label">Mức độ hài lòng của bạn</label>
+            <div class="star-rating-picker" id="starRatingPicker" role="radiogroup" aria-label="Chọn số sao đánh giá">
+              <button type="button" class="star-btn" data-value="1" aria-label="1 sao" role="radio">★</button>
+              <button type="button" class="star-btn" data-value="2" aria-label="2 sao" role="radio">★</button>
+              <button type="button" class="star-btn" data-value="3" aria-label="3 sao" role="radio">★</button>
+              <button type="button" class="star-btn" data-value="4" aria-label="4 sao" role="radio">★</button>
+              <button type="button" class="star-btn active" data-value="5" aria-label="5 sao" role="radio">★</button>
+            </div>
+            <div class="star-sentiment-label" id="starSentimentLabel">
+              Xuất sắc & truyền cảm hứng! — Đồng hành tuyệt vời cùng sinh viên Văn Lang
+            </div>
+          </div>
+
+          <!-- Lựa chọn tags (Rich tags selector - Yêu cầu "nhiều tag hơn") -->
+          <div class="site-review-tags-section">
+            <div class="site-review-tags-header">
+              <label class="site-review-label">Điểm bạn tâm đắc nhất <span class="sub-label">(Chọn các thẻ mô tả trải nghiệm)</span></label>
+              <span class="tags-selected-count" id="tagsSelectedCount">0 đã chọn</span>
+            </div>
+            <div class="site-review-tag-cloud" id="siteReviewTagCloud">
+              <!-- Sẽ được điền 15 rich tags bởi app.js -->
+            </div>
+          </div>
+
+          <!-- Nhập nội dung đánh giá -->
+          <div class="site-review-content-section">
+            <div class="site-review-tags-header">
+              <label class="site-review-label" for="siteReviewContentInput">Cảm nhận và góp ý của bạn</label>
+              <span class="char-counter" id="siteReviewCharCounter">0 / 800</span>
+            </div>
+            <textarea
+              id="siteReviewContentInput"
+              class="site-review-textarea"
+              rows="4"
+              maxlength="800"
+              placeholder="Bạn cảm nhận thế nào khi học tập và nghiên cứu trên nền tảng? Những góc học tập, tài liệu hay tính năng nào giúp ích cho bạn nhiều nhất? (Tối thiểu 6 ký tự)"
+              required
+            ></textarea>
+            <p class="form-hint">Đánh giá chân thành của bạn giúp đội ngũ liên tục cải tiến và nâng cao chất lượng học thuật cho cộng đồng sinh viên.</p>
+          </div>
+        </div>
+
+        <div class="modal-footer site-review-footer">
+          <div class="footer-left">
+            <button type="button" class="button button-ghost button-danger" id="siteReviewDeleteBtn" style="display: none;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+              Xóa đánh giá
+            </button>
+          </div>
+          <div class="footer-right">
+            <button type="button" class="button button-ghost" onclick="this.closest('dialog').close()">Đóng</button>
+            <button type="submit" class="button button-primary" id="siteReviewSubmitBtn">
+              <span id="siteReviewSubmitText">Gửi đánh giá (+10 điểm)</span>
+            </button>
+          </div>
+        </div>
+      </form>
+    </dialog>
+
+    <!-- MODAL XEM TẤT CẢ ĐÁNH GIÁ (All Reviews Explorer Modal) -->
+    <dialog id="allReviewsModal" class="modal all-reviews-modal" aria-labelledby="allReviewsModalTitle">
+      <div class="modal-head">
+        <div>
+          <p class="eyebrow">TIẾNG NÓI HỌC VIÊN</p>
+          <h2 id="allReviewsModalTitle">Tất cả đánh giá nền tảng</h2>
+        </div>
+        <button
+          class="close-modal"
+          type="button"
+          onclick="this.closest('dialog').close()"
+          aria-label="Đóng"
+        ><svg class="ui-icon modal-close-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
+      </div>
+
+      <div class="all-reviews-body">
+        <!-- Header thống kê chi tiết & Filter -->
+        <div class="all-reviews-overview">
+          <div class="overview-score-box">
+            <div class="overview-score-num" id="allReviewsAvgScore">5.0</div>
+            <div class="overview-score-stars" id="allReviewsAvgStars">★★★★★</div>
+            <div class="overview-score-total" id="allReviewsTotalCount">Tổng cộng 5 đánh giá</div>
+          </div>
+          <div class="overview-distribution-bars" id="allReviewsDistributionBars">
+            <!-- Thanh phân bố sao -->
+          </div>
+        </div>
+
+        <!-- Star Filter Tabs & Action -->
+        <div class="all-reviews-filter-bar">
+          <div class="filter-pills" id="allReviewsFilterPills">
+            <button type="button" class="filter-pill active" data-filter="all">Tất cả (<span id="filterCountAll">0</span>)</button>
+            <button type="button" class="filter-pill" data-filter="5">5 sao (<span id="filterCount5">0</span>)</button>
+            <button type="button" class="filter-pill" data-filter="4">4 sao (<span id="filterCount4">0</span>)</button>
+            <button type="button" class="filter-pill" data-filter="3">3 sao (<span id="filterCount3">0</span>)</button>
+            <button type="button" class="filter-pill" data-filter="2">2 sao (<span id="filterCount2">0</span>)</button>
+            <button type="button" class="filter-pill" data-filter="1">1 sao (<span id="filterCount1">0</span>)</button>
+          </div>
+          <button type="button" class="button button-sm button-primary" id="allReviewsWriteCta">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+            Viết đánh giá
+          </button>
+        </div>
+
+        <!-- Danh sách card đánh giá dạng Grid -->
+        <div class="all-reviews-grid" id="allReviewsGrid">
+          <!-- Rendered by JS -->
+        </div>
+      </div>
+    </dialog>
+
+    <script src="app.js?v=114" defer></script>
   </body>
 </html>
