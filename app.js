@@ -14332,21 +14332,28 @@ async function loadSiteReviews() {
 
 function renderSiteReviewsStrip() {
   const { stats, reviews, myReview } = siteReviewsData;
+  const totalCount = stats.totalReviews || reviews.length || 0;
 
   const avgScoreEl = $("#stripAverageScore");
   if (avgScoreEl) {
-    avgScoreEl.textContent = Number(stats.averageRating).toFixed(1);
+    avgScoreEl.textContent = totalCount > 0 ? Number(stats.averageRating).toFixed(1) : "—";
   }
 
   const avgStarsEl = $("#stripAverageStars");
   if (avgStarsEl) {
-    const rounded = Math.round(Number(stats.averageRating) || 5);
-    avgStarsEl.textContent = "★".repeat(Math.max(1, Math.min(5, rounded)));
+    if (totalCount > 0) {
+      const rounded = Math.round(Number(stats.averageRating) || 5);
+      avgStarsEl.textContent = "★".repeat(Math.max(1, Math.min(5, rounded)));
+    } else {
+      avgStarsEl.textContent = "☆☆☆☆☆";
+    }
   }
 
   const totalMetaEl = $("#stripTotalReviews");
   if (totalMetaEl) {
-    totalMetaEl.innerHTML = `Dựa trên <strong>${stats.totalReviews || reviews.length}</strong> đánh giá`;
+    totalMetaEl.innerHTML = totalCount > 0
+      ? `Dựa trên <strong>${totalCount}</strong> đánh giá`
+      : `Chưa có đánh giá nào`;
   }
 
   const writeBtnText = $("#stripWriteReviewBtnText");
@@ -14359,7 +14366,7 @@ function renderSiteReviewsStrip() {
 
   if (reviews.length === 0) {
     track.innerHTML = `
-      <div style="display: flex; align-items: center; justify-content: center; width: 100%; color: var(--muted); font-size: 13px; font-style: italic;">
+      <div style="display: flex; align-items: center; justify-content: center; width: 100%; color: var(--muted); font-size: 13px; font-style: italic; padding: 20px 0;">
         Chưa có đánh giá nào. Hãy là người đầu tiên chia sẻ cảm nhận!
       </div>
     `;
@@ -14600,28 +14607,33 @@ async function handleSiteReviewDelete() {
 function openAllReviewsModal(filter = "all") {
   allReviewsCurrentFilter = filter;
   const { stats, reviews } = siteReviewsData;
+  const total = stats.totalReviews || reviews.length || 0;
 
   const avgScoreEl = $("#allReviewsAvgScore");
-  if (avgScoreEl) avgScoreEl.textContent = Number(stats.averageRating).toFixed(1);
+  if (avgScoreEl) avgScoreEl.textContent = total > 0 ? Number(stats.averageRating).toFixed(1) : "—";
 
   const avgStarsEl = $("#allReviewsAvgStars");
   if (avgStarsEl) {
-    const rounded = Math.round(Number(stats.averageRating) || 5);
-    avgStarsEl.textContent = "★".repeat(Math.max(1, Math.min(5, rounded)));
+    if (total > 0) {
+      const rounded = Math.round(Number(stats.averageRating) || 5);
+      avgStarsEl.textContent = "★".repeat(Math.max(1, Math.min(5, rounded)));
+    } else {
+      avgStarsEl.textContent = "☆☆☆☆☆";
+    }
   }
 
   const totalEl = $("#allReviewsTotalCount");
-  if (totalEl) totalEl.textContent = `Tổng cộng ${stats.totalReviews || reviews.length} đánh giá`;
+  if (totalEl) totalEl.textContent = total > 0 ? `Tổng cộng ${total} đánh giá` : `Chưa có đánh giá nào`;
 
   const distContainer = $("#allReviewsDistributionBars");
   if (distContainer) {
-    const total = stats.totalReviews || reviews.length || 1;
+    const totalDiv = total || 1;
     const dist = stats.distribution || { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
 
     let distHtml = "";
     for (let s = 5; s >= 1; s--) {
       const count = dist[s] || 0;
-      const pct = Math.round((count / total) * 100);
+      const pct = total > 0 ? Math.round((count / totalDiv) * 100) : 0;
       distHtml += `
         <div class="distribution-bar-row">
           <span class="dist-star-label">${s} ★</span>

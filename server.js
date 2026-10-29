@@ -535,65 +535,7 @@ try {
   console.error("[DB Schema site_reviews]", e);
 }
 
-function seedSiteReviewsIfEmpty() {
-  try {
-    const count = db.prepare("SELECT COUNT(*) as c FROM site_reviews").get()?.c || 0;
-    if (count === 0) {
-      const seedReviews = [
-        {
-          userId: 51,
-          rating: 5,
-          content: "Nền tảng giúp mình theo dõi và rèn luyện phương pháp nghiên cứu mỗi ngày cực kỳ hiệu quả. Chuỗi ngày học tập và phòng tự học với âm thanh lofi giúp mình tập trung làm đồ án hơn hẳn!",
-          tags: ["🌱 Giữ chuỗi tạo động lực", "🎧 Âm thanh tự học thư giãn", "📚 Kho tài liệu chất lượng"],
-          createdAt: "2026-10-25 14:30:00"
-        },
-        {
-          userId: 52,
-          rating: 5,
-          content: "Các câu hỏi trong Đấu trường Arena rất sát với thực tế đề tài NCKH, vừa kịch tính vừa giúp củng cố kiến thức vững vàng. Rất thích giao diện tối mới được cập nhật, nhìn dịu mắt và thẩm mỹ.",
-          tags: ["🔥 Đấu trường Arena kịch tính", "🌙 Chế độ tối hoàn thiện", "🎯 Ôn tập kiến thức NCKH"],
-          createdAt: "2026-10-26 09:15:00"
-        },
-        {
-          userId: 53,
-          rating: 5,
-          content: "Kho tài liệu tổng hợp rất phong phú từ đề cương nghiên cứu đến phương pháp định lượng và định tính. Thẻ tên Namecard với các khung huy hiệu chuỗi cũng rất kích thích động lực học tập.",
-          tags: ["📚 Kho tài liệu chất lượng", "✨ Thẻ tên Namecard độc đáo", "⚡ Giao diện mượt mà"],
-          createdAt: "2026-10-27 19:40:00"
-        },
-        {
-          userId: 2,
-          rating: 5,
-          content: "Một không gian học thuật trực tuyến chỉn chu hiếm thấy dành cho sinh viên Văn Lang. Diễn đàn phản hồi nhanh và giải đáp thắc mắc chuyên môn rất tận tình.",
-          tags: ["💬 Thảo luận học thuật bổ ích", "🤝 Kết nối thầy cô & bạn bè", "💡 Hỗ trợ bài tập & đề tài"],
-          createdAt: "2026-10-28 11:05:00"
-        },
-        {
-          userId: 3,
-          rating: 5,
-          content: "Hệ thống khiên bảo vệ chuỗi cứu cánh những ngày ôn thi bận rộn. Tìm kiếm tài liệu bằng phím tắt ⌘K cũng siêu tiện lợi và nhanh chóng!",
-          tags: ["🛡️ Khiên bảo vệ chuỗi thiết thực", "🔍 Tìm kiếm tài liệu thông minh", "🚀 Truy cập nhanh & ổn định"],
-          createdAt: "2026-10-29 08:20:00"
-        }
-      ];
 
-      const stmt = db.prepare(`
-        INSERT OR IGNORE INTO site_reviews (user_id, rating, content, tags, created_at, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?)
-      `);
-
-      for (const r of seedReviews) {
-        const userExists = db.prepare("SELECT id FROM users WHERE id = ?").get(r.userId);
-        if (userExists) {
-          stmt.run(r.userId, r.rating, r.content, JSON.stringify(r.tags), r.createdAt, r.createdAt);
-        }
-      }
-    }
-  } catch (e) {
-    console.error("[Seed site_reviews error]", e);
-  }
-}
-seedSiteReviewsIfEmpty();
 
 function cleanupExpiredTrash() {
   try {
@@ -4174,7 +4116,7 @@ async function api(request, response, url) {
 
       const totalCount = enrichedReviews.length;
       const sumRatings = enrichedReviews.reduce((sum, r) => sum + r.rating, 0);
-      const avgRating = totalCount > 0 ? (sumRatings / totalCount).toFixed(1) : "5.0";
+      const avgRating = totalCount > 0 ? (sumRatings / totalCount).toFixed(1) : 0;
 
       const distribution = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
       const tagCounts = {};
