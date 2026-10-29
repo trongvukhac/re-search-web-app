@@ -14288,11 +14288,11 @@ const SITE_REVIEW_AVAILABLE_TAGS = [
 ];
 
 const STAR_SENTIMENT_MAP = {
-  1: "Cần cải thiện nhiều — Hãy cho chúng tôi biết bạn gặp khó khăn ở đâu nhé",
-  2: "Tạm ổn — Nền tảng còn một số điểm cần tiếp tục hoàn thiện",
-  3: "Khá tốt — Nền tảng hữu ích cho việc học tập & nghiên cứu",
-  4: "Rất giá trị — Trợ thủ đắc lực cho phương pháp nghiên cứu khoa học",
-  5: "Xuất sắc & truyền cảm hứng! — Đồng hành tuyệt vời cùng sinh viên Văn Lang"
+  1: "Cần cải thiện nhiều. Góp ý chân thành nhưng đừng buông lời cay đắng nhé!",
+  2: "Tạm ổn. Cứ thẳng thắn góp ý nhé!",
+  3: "Khá tốt. Nền tảng hữu ích cho việc học tập, giao lưu và nghiên cứu.",
+  4: "Rất giá trị. Hãy chia sẻ trải nghiệm của bạn nhé!",
+  5: "Xuất sắc. Cảm ơn bạn đã là bạn đồng hành của RE:SEARCH"
 };
 
 let siteReviewsData = {

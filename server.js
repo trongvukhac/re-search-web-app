@@ -825,6 +825,7 @@ function deleteUserPermanently(userId) {
     db.prepare("DELETE FROM responses WHERE author_id = ?").run(userId);
     db.prepare("DELETE FROM posts WHERE author_id = ?").run(userId);
     db.prepare("DELETE FROM documents WHERE submitted_by = ?").run(userId);
+    db.prepare("DELETE FROM site_reviews WHERE user_id = ?").run(userId);
     db.prepare("DELETE FROM users WHERE id = ?").run(userId);
     console.log(`[CLEANUP] Deleted inactive user permanently: ID ${userId} (${target.email})`);
     return true;
