@@ -29,7 +29,7 @@
     <script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js" defer></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" defer></script>
-    <link rel="stylesheet" href="styles.css?v=102" />
+    <link rel="stylesheet" href="styles.css?v=103" />
   </head>
   <body>
     <dialog
@@ -481,7 +481,7 @@
             <div class="reviews-strip-summary">
               <div class="reviews-summary-badge">
                 <span class="reviews-summary-icon">✦</span>
-                <span class="reviews-summary-label">TRẢI NGHIỆM HỌC VIÊN</span>
+                <span class="reviews-summary-label">ĐÁNH GIÁ NỀN TẢNG</span>
               </div>
               <div class="reviews-score-cluster">
                 <div class="reviews-score-big" id="stripAverageScore">—</div>
@@ -505,17 +505,11 @@
               </div>
             </div>
 
-            <!-- Vùng cuộn ngang thẻ đánh giá (Horizontal Cards Carousel) -->
-            <div class="reviews-strip-carousel-container">
-              <button type="button" class="reviews-nav-btn reviews-nav-prev" id="stripReviewsPrevBtn" aria-label="Đánh giá trước đó" title="Cuộn trước">
-                ‹
-              </button>
-              <div class="reviews-strip-track" id="stripReviewsTrack" role="region" aria-label="Danh sách đánh giá gần đây">
-                <!-- Nội dung card sẽ được nạp qua app.js -->
+            <!-- Vùng chạy ngang thẻ đánh giá luân hồi không ngừng (Infinite Marquee) -->
+            <div class="reviews-strip-carousel-container" id="stripCarouselContainer">
+              <div class="reviews-strip-track" id="stripReviewsTrack" role="region" aria-label="Dải đánh giá tự động chạy ngang">
+                <!-- Nội dung card chạy luân hồi sẽ được nạp qua app.js -->
               </div>
-              <button type="button" class="reviews-nav-btn reviews-nav-next" id="stripReviewsNextBtn" aria-label="Đánh giá kế tiếp" title="Cuộn tiếp">
-                ›
-              </button>
             </div>
           </div>
         </section>
@@ -3941,7 +3935,7 @@
     <dialog id="allReviewsModal" class="modal all-reviews-modal" aria-labelledby="allReviewsModalTitle">
       <div class="modal-head">
         <div>
-          <p class="eyebrow">TIẾNG NÓI HỌC VIÊN</p>
+          <p class="eyebrow">ĐÁNH GIÁ CỘNG ĐỒNG</p>
           <h2 id="allReviewsModalTitle">Tất cả đánh giá nền tảng</h2>
         </div>
         <button
@@ -3988,6 +3982,6 @@
       </div>
     </dialog>
 
-    <script src="app.js?v=117" defer></script>
+    <script src="app.js?v=118" defer></script>
   </body>
 </html>

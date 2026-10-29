@@ -14330,6 +14330,38 @@ async function loadSiteReviews() {
   }
 }
 
+function getSystemRoleLabel(role) {
+  if (role === "admin") return "Quản trị viên";
+  if (role === "lecturer") return "Giảng viên";
+  if (role === "student") return "Sinh viên";
+  return "Thành viên";
+}
+
+function getReviewCardRoleBadge(role) {
+  const label = getSystemRoleLabel(role);
+  let bg = "var(--sage-2)";
+  let color = "var(--ink)";
+  let border = "var(--line)";
+  if (role === "admin") {
+    bg = "rgba(239, 68, 68, 0.12)";
+    color = "#dc2626";
+    border = "rgba(239, 68, 68, 0.25)";
+  } else if (role === "lecturer") {
+    bg = "rgba(245, 158, 11, 0.12)";
+    color = "#d97706";
+    border = "rgba(245, 158, 11, 0.25)";
+  } else if (role === "student") {
+    bg = "rgba(16, 185, 129, 0.12)";
+    color = "var(--green)";
+    border = "rgba(16, 185, 129, 0.25)";
+  } else {
+    bg = "var(--sage-2)";
+    color = "var(--muted)";
+    border = "var(--line)";
+  }
+  return `<span class="badge" style="background:${bg};color:${color};border:1px solid ${border};font-size:10px;padding:1px 6px;border-radius:6px;font-weight:600;">${label}</span>`;
+}
+
 function renderSiteReviewsStrip() {
   const { stats, reviews, myReview } = siteReviewsData;
   const totalCount = stats.totalReviews || reviews.length || 0;
@@ -14373,26 +14405,17 @@ function renderSiteReviewsStrip() {
     return;
   }
 
-  track.innerHTML = reviews.map(r => {
-    const streakTier = Number(r.user?.streakTier) || 0;
+  const buildCardHTML = (r) => {
     const authorRole = r.user?.role || "student";
     const initials = escapeHTML(r.user?.initials || "?");
-    const displayName = escapeHTML(r.user?.displayName || "Học viên");
-    const nameCls = getNameClass(streakTier);
-    const avatarCls = getAvatarClass(streakTier, false, authorRole);
+    const displayName = escapeHTML(r.user?.displayName || getSystemRoleLabel(authorRole));
+    const avatarCls = getAvatarClass(0, false, authorRole);
     const starsStr = "★".repeat(Math.max(1, Math.min(5, r.rating)));
     const dateFormatted = formatTime(r.createdAt);
     const tags = Array.isArray(r.tags) ? r.tags : [];
     const firstTwoTags = tags.slice(0, 2);
     const remainingCount = tags.length - 2;
-
-    const roleBadge = authorRole === "admin" 
-      ? `<span class="badge" style="background:#fee2e2;color:#991b1b;font-size:10px;padding:1px 6px;">Admin</span>`
-      : authorRole === "ta"
-      ? `<span class="badge" style="background:#dbeafe;color:#1e40af;font-size:10px;padding:1px 6px;">TA</span>`
-      : streakTier > 0
-      ? `<span class="badge" style="background:var(--sage-2);color:var(--ink);font-size:10px;padding:1px 6px;">🔥 ${r.user?.streak || 0} ngày</span>`
-      : "";
+    const roleBadge = getReviewCardRoleBadge(authorRole);
 
     return `
       <div class="review-strip-card" onclick="openAllReviewsModal()" title="Nhấn để xem chi tiết tất cả đánh giá">
@@ -14400,8 +14423,8 @@ function renderSiteReviewsStrip() {
           <div class="review-card-author-info">
             <span class="avatar avatar-xs ${avatarCls}" data-namecard-user-id="${r.userId}">${initials}</span>
             <div class="review-card-author-text">
-              <span class="review-card-author-name ${nameCls}">${displayName}</span>
-              <div class="review-card-meta">${roleBadge || "Học viên"}</div>
+              <span class="review-card-author-name">${displayName}</span>
+              <div class="review-card-meta">${roleBadge}</div>
             </div>
           </div>
           <div class="review-card-stars" aria-label="${r.rating} trên 5 sao">${starsStr}</div>
@@ -14416,7 +14439,26 @@ function renderSiteReviewsStrip() {
         </div>
       </div>
     `;
-  }).join("");
+  };
+
+  let groupReviews = [...reviews];
+  while (groupReviews.length < 5) {
+    groupReviews = groupReviews.concat(reviews);
+  }
+
+  const groupHtml = groupReviews.map(buildCardHTML).join("");
+  const groupWidth = groupReviews.length * (310 + 14);
+  const duration = Math.max(25, Math.round(groupWidth / 35));
+
+  track.style.setProperty("--marquee-duration", `${duration}s`);
+  track.innerHTML = `
+    <div class="reviews-marquee-group">
+      ${groupHtml}
+    </div>
+    <div class="reviews-marquee-group" aria-hidden="true">
+      ${groupHtml}
+    </div>
+  `;
 }
 
 function slideSiteReviews(direction) {
@@ -14686,23 +14728,14 @@ function renderAllReviewsGrid() {
   }
 
   grid.innerHTML = filtered.map(r => {
-    const streakTier = Number(r.user?.streakTier) || 0;
     const authorRole = r.user?.role || "student";
     const initials = escapeHTML(r.user?.initials || "?");
-    const displayName = escapeHTML(r.user?.displayName || "Học viên");
-    const nameCls = getNameClass(streakTier);
-    const avatarCls = getAvatarClass(streakTier, false, authorRole);
+    const displayName = escapeHTML(r.user?.displayName || getSystemRoleLabel(authorRole));
+    const avatarCls = getAvatarClass(0, false, authorRole);
     const starsStr = "★".repeat(Math.max(1, Math.min(5, r.rating)));
     const dateFormatted = formatTime(r.createdAt);
     const tags = Array.isArray(r.tags) ? r.tags : [];
-
-    const roleBadge = authorRole === "admin" 
-      ? `<span class="badge" style="background:#fee2e2;color:#991b1b;font-size:10.5px;padding:2px 7px;">Admin</span>`
-      : authorRole === "ta"
-      ? `<span class="badge" style="background:#dbeafe;color:#1e40af;font-size:10.5px;padding:2px 7px;">TA</span>`
-      : streakTier > 0
-      ? `<span class="badge" style="background:var(--sage-2);color:var(--ink);font-size:10.5px;padding:2px 7px;">🔥 ${r.user?.streak || 0} ngày</span>`
-      : "";
+    const roleBadge = getReviewCardRoleBadge(authorRole);
 
     return `
       <div class="all-review-card">
@@ -14711,8 +14744,8 @@ function renderAllReviewsGrid() {
             <div class="review-card-author-info">
               <span class="avatar avatar-sm ${avatarCls}" data-namecard-user-id="${r.userId}">${initials}</span>
               <div class="review-card-author-text">
-                <span class="review-card-author-name ${nameCls}">${displayName}</span>
-                <div class="review-card-meta">${roleBadge || "Học viên"}</div>
+                <span class="review-card-author-name">${displayName}</span>
+                <div class="review-card-meta">${roleBadge}</div>
               </div>
             </div>
             <div class="review-card-stars">${starsStr}</div>

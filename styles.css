@@ -16837,69 +16837,54 @@ body.dark-theme .lb-rank-badge.rank-me {
   color: var(--green);
 }
 
-/* Vùng Carousel cuộn ngang */
+/* Vùng Carousel cuộn ngang luân hồi không ngừng (Infinite Marquee) */
 .reviews-strip-carousel-container {
   flex: 1;
   min-width: 0;
   position: relative;
   display: flex;
   align-items: center;
-  padding: 0 16px;
+  padding: 0 4px;
+  overflow: hidden;
+  mask-image: linear-gradient(to right, transparent 0%, black 24px, black calc(100% - 24px), transparent 100%);
+  -webkit-mask-image: linear-gradient(to right, transparent 0%, black 24px, black calc(100% - 24px), transparent 100%);
 }
 
 .reviews-strip-track {
   display: flex;
   gap: 14px;
-  overflow-x: auto;
-  scroll-snap-type: x mandatory;
-  scroll-behavior: smooth;
-  scrollbar-width: none;
-  -webkit-overflow-scrolling: touch;
+  overflow: hidden;
   width: 100%;
   height: 100%;
   padding: 4px 2px;
   align-items: stretch;
 }
 
-.reviews-strip-track::-webkit-scrollbar {
-  display: none;
+.reviews-marquee-group {
+  display: flex;
+  gap: 14px;
+  flex-shrink: 0;
+  align-items: stretch;
+  animation: reviewMarqueeScroll var(--marquee-duration, 40s) linear infinite;
+  will-change: transform;
+}
+
+/* Tự động tạm dừng êm ái khi di chuột vào để người dùng dễ đọc và bấm xem */
+.reviews-strip-carousel-container:hover .reviews-marquee-group {
+  animation-play-state: paused;
+}
+
+@keyframes reviewMarqueeScroll {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(calc(-100% - 14px));
+  }
 }
 
 .reviews-nav-btn {
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  background: var(--paper);
-  border: 1px solid var(--line);
-  color: var(--ink);
-  font-size: 18px;
-  line-height: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  z-index: 5;
-  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
-  transition: all 0.2s ease;
-  opacity: 0.92;
-}
-
-.reviews-nav-btn:hover {
-  opacity: 1;
-  transform: translateY(-50%) scale(1.08);
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.14);
-  background: var(--cream);
-}
-
-.reviews-nav-prev {
-  left: -4px;
-}
-
-.reviews-nav-next {
-  right: -4px;
+  display: none !important;
 }
 
 /* Thẻ đánh giá trong dải cuộn ngang */
