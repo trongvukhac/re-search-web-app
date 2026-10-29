@@ -8918,20 +8918,20 @@ async function fetchStudyLounge() {
 function renderActiveSpaceBanner(room) {
   if (!room) {
     room = {
-      id: currentStudyRoomId || null,
-      name: 'Thư viện Tự học',
-      type: 'commons',
-      description: 'Không gian mở kết nối toàn thể sinh viên và học giả NCKH đang tự học',
-      icon: '🏛️',
-      max_seats: 100,
-      occupancy: lastFetchedLearners.length || 0
+      id: currentStudyRoomId || 'private',
+      name: 'Phòng học cá nhân',
+      type: 'private',
+      description: 'Không gian học một mình hoàn toàn riêng tư, tự do tập trung và quản lý ca học của bạn',
+      icon: '🔒',
+      max_seats: 1,
+      occupancy: 1
     };
   }
 
   const browseView = $("#studySpacesBrowseView");
   const activeView = $("#studyActiveRoomView");
 
-  if (!currentStudyRoomId || currentStudyRoomId === 'commons') {
+  if (!currentStudyRoomId || currentStudyRoomId === 'commons' || currentStudyRoomId === 'private') {
     if (browseView) browseView.style.display = 'block';
     if (activeView) activeView.style.display = 'none';
     return;
@@ -8960,7 +8960,7 @@ function renderActiveSpaceBanner(room) {
     iconEl.innerHTML = iconSvg;
   }
 
-  if (titleEl) titleEl.textContent = room.name || 'Phòng học';
+  if (titleEl) titleEl.textContent = room.name || 'Phòng học cá nhân';
 
   if (badgeEl) {
     if (room.type === 'meeting') {
@@ -8968,7 +8968,7 @@ function renderActiveSpaceBanner(room) {
       badgeEl.textContent = 'Phòng họp';
     } else if (room.type === 'private' || (room.id && room.id.startsWith('private_'))) {
       badgeEl.className = 'active-space-badge badge-private';
-      badgeEl.textContent = 'Buồng riêng';
+      badgeEl.textContent = 'Phòng học cá nhân';
     } else {
       badgeEl.className = 'active-space-badge badge-commons';
       badgeEl.textContent = 'Thư viện 24/7';
@@ -9141,7 +9141,7 @@ function getLibraryLiveState(focusMins, breakMins, nowMs = Date.now()) {
 
 let cachedLibraryOccupancies = {};
 let cachedMeetingRooms = [];
-let activeStudySpaceTab = 'library';
+let activeStudySpaceTab = 'private';
 
 function renderLibraryRoomsGrid() {
   const container = $("#libraryRoomsGrid");
@@ -12280,6 +12280,8 @@ function onEnterStudyLounge() {
     const focusM = studySettings.focusMins || 25;
     studyState.durationMinutes = focusM;
     studyState.remainingSeconds = focusM * 60;
+    activeStudySpaceTab = 'private';
+    switchStudySpaceCategoryTab('private');
   }
 
   renderClockTicks();

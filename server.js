@@ -4682,7 +4682,7 @@ async function api(request, response, url) {
     let privatePodsCount = 0;
     activeRows.forEach(r => {
       const rid = r.room_id || 'none';
-      if (rid.startsWith('private_')) {
+      if (rid.startsWith('private_') || rid === 'commons' || rid === 'none' || !rid) {
         privatePodsCount++;
       } else {
         roomOccupancyMap[rid] = (roomOccupancyMap[rid] || 0) + 1;
@@ -5146,7 +5146,7 @@ async function api(request, response, url) {
     let privatePodsCount = 0;
     allActiveRows.forEach(r => {
       const rid = r.room_id || 'none';
-      if (rid.startsWith('private_')) {
+      if (rid.startsWith('private_') || rid === 'commons' || rid === 'none' || !rid) {
         privatePodsCount++;
       } else {
         roomOccupancyMap[rid] = (roomOccupancyMap[rid] || 0) + 1;

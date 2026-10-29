@@ -848,15 +848,19 @@
                     </h3>
                     <span class="badge" id="coStudyCountBadge">0 đang học</span>
                   </div>
-                  <p class="co-study-tip" id="studySpaceSubtitle">Thư viện 24/7, Phòng họp nhóm &amp; Phòng học cá nhân</p>
+                  <p class="co-study-tip" id="studySpaceSubtitle">Phòng học cá nhân, Thư viện 24/7 &amp; Phòng họp nhóm</p>
                 </div>
               </div>
 
               <!-- TRẠNG THÁI 1: KHI CHƯA VÀO PHÒNG (Duyệt & Chọn Không gian) -->
               <div id="studySpacesBrowseView">
-                <!-- 3 Functional Category Pills -->
+                <!-- 3 Functional Category Pills (Phòng học cá nhân hiện ở đầu làm mặc định) -->
                 <div class="study-spaces-filter-bar" id="studySpacesFilterBar">
-                  <button type="button" class="space-filter-pill active" data-space-tab="library" onclick="switchStudySpaceCategoryTab('library')">
+                  <button type="button" class="space-filter-pill active" data-space-tab="private" onclick="switchStudySpaceCategoryTab('private')">
+                    <svg class="ui-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                    Phòng học cá nhân
+                  </button>
+                  <button type="button" class="space-filter-pill" data-space-tab="library" onclick="switchStudySpaceCategoryTab('library')">
                     <svg class="ui-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
                     Thư viện
                   </button>
@@ -864,20 +868,38 @@
                     <svg class="ui-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
                     Phòng họp (<span id="countMeetingRooms">0</span>)
                   </button>
-                  <button type="button" class="space-filter-pill" data-space-tab="private" onclick="switchStudySpaceCategoryTab('private')">
-                    <svg class="ui-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
-                    Phòng học cá nhân
-                  </button>
                 </div>
 
-                <!-- 1. THƯ VIỆN: 3 KHU VỰC VỚI ĐỒNG HỒ CHẠY TUẦN HOÀN 24/7 -->
-                <div class="space-category-pane" id="paneSpaceLibrary">
+                <!-- 1. PHÒNG HỌC CÁ NHÂN: MẶC ĐỊNH & HIỆN Ở ĐẦU -->
+                <div class="space-category-pane" id="paneSpacePrivate">
+                  <div class="private-pod-promo-card">
+                    <div class="promo-icon-wrap">
+                      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                    </div>
+                    <div style="display:flex; align-items:center; justify-content:center; gap:8px; margin-bottom:2px;">
+                      <h4 style="margin:0;">Phòng học cá nhân</h4>
+                      <span class="active-space-badge badge-private" style="font-size:10.5px; padding:2px 8px; font-weight:700;">Mặc định</span>
+                    </div>
+                    <p>Không gian tự học độc lập, hoàn toàn riêng tư. Thời lượng đồng hồ, mục tiêu và việc cần làm do bạn toàn quyền quản lý, bảo mật tuyệt đối.</p>
+                    <div class="private-pods-active-stat" id="privatePodsActiveStat">
+                      <span class="stat-dot-pulse"></span>
+                      <span>Đang có <strong id="activePrivatePodsCount">0</strong> phòng tự học riêng tư hoạt động</span>
+                    </div>
+                    <div style="display:inline-flex; align-items:center; gap:6px; color:#059669; background:rgba(16, 185, 129, 0.08); border:1px solid rgba(16, 185, 129, 0.22); padding:6px 16px; border-radius:999px; font-size:12.5px; font-weight:600; margin-top:4px;">
+                      <span class="live-pulse-dot" style="background:#10b981;"></span>
+                      <span>Bạn đang ở trong phòng học cá nhân của mình</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 2. THƯ VIỆN: 3 KHU VỰC VỚI ĐỒNG HỒ CHẠY TUẦN HOÀN 24/7 -->
+                <div class="space-category-pane" id="paneSpaceLibrary" style="display: none;">
                   <div class="library-rooms-grid" id="libraryRoomsGrid">
                     <!-- Rendered dynamically by JS with live continuous countdown -->
                   </div>
                 </div>
 
-                <!-- 2. PHÒNG HỌP: CHỦ PHÒNG, ĐỒNG BỘ ĐỒNG HỒ & NHIỆM VỤ CHUNG -->
+                <!-- 3. PHÒNG HỌP: CHỦ PHÒNG, ĐỒNG BỘ ĐỒNG HỒ & NHIỆM VỤ CHUNG -->
                 <div class="space-category-pane" id="paneSpaceMeeting" style="display: none;">
                   <div class="meeting-guide-banner">
                     <div class="meeting-guide-step">
@@ -910,23 +932,7 @@
                   </div>
                 </div>
 
-                <!-- 3. PHÒNG HỌC CÁ NHÂN: 1 NGƯỜI 1 PHÒNG -->
-                <div class="space-category-pane" id="paneSpacePrivate" style="display: none;">
-                  <div class="private-pod-promo-card">
-                    <div class="promo-icon-wrap">
-                      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
-                    </div>
-                    <h4>Phòng học cá nhân</h4>
-                    <p>Không gian học một mình hoàn toàn riêng tư. Thông tin và ca học của bạn được bảo mật tuyệt đối, không chia sẻ công khai với người khác.</p>
-                    <div class="private-pods-active-stat" id="privatePodsActiveStat">
-                      <span class="stat-dot-pulse"></span>
-                      <span>Đang có <strong id="activePrivatePodsCount">0</strong> phòng tự học riêng tư hoạt động</span>
-                    </div>
-                    <button type="button" class="button button-primary btn-join-private-pod" onclick="joinPrivateStudyPod()">
-                      Vào phòng học cá nhân của bạn →
-                    </button>
-                  </div>
-                </div>
+
               </div>
 
               <!-- TRẠNG THÁI 2: KHI ĐÃ VÀO PHÒNG (ẨN HẾT KHÔNG GIAN KHÁC, CHỈ HIỆN PHÒNG NÀY & NÚT THOÁT) -->
