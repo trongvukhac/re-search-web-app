@@ -206,7 +206,7 @@ function getInitialStudySettings() {
     activeWallpaper: "default",
     wallpaperDim: 35,
     cardGlassOpacity: 50,
-    activeAura: "emerald",
+    activeAura: "pomodoro",
     clockColor: "default",
     // Task Category Labels (Unlocked at 7d streak)
     taskLabels: [
@@ -7648,8 +7648,8 @@ function updateTimerDisplay() {
       progressCircle.style.transform = "rotate(-90deg)";
       progressCircle.style.transformOrigin = "140px 140px";
     } else {
-      // Đếm ngược: quay ngược chiều kim đồng hồ
-      progressCircle.style.transform = "rotate(-90deg) scale(-1, 1)";
+      // Đếm ngược: quay ngược chiều kim đồng hồ từ đỉnh 12h
+      progressCircle.style.transform = "scaleX(-1) rotate(-90deg)";
       progressCircle.style.transformOrigin = "140px 140px";
     }
   }
@@ -9050,13 +9050,13 @@ function renderActiveSpaceBanner(room) {
 
 function togglePersonalTasksCollapse(forceState) {
   const body = $("#personalTasksBodyWrap");
-  const lbl = $("#lblTogglePersonalTasks");
+  const btn = $("#btnTogglePersonalTasks");
   const icon = $("#iconTogglePersonalTasks");
   if (!body) return;
   const isCurrentlyHidden = (body.style.display === "none");
   const willShow = (forceState !== undefined) ? forceState : isCurrentlyHidden;
   body.style.display = willShow ? "block" : "none";
-  if (lbl) lbl.textContent = willShow ? "Đóng" : "Mở";
+  if (btn) btn.title = willShow ? "Thu gọn danh sách việc" : "Mở rộng danh sách việc";
   if (icon) {
     icon.innerHTML = willShow 
       ? '<polyline points="18 15 12 9 6 15"></polyline>' 
@@ -11283,7 +11283,11 @@ function applyClockColor(colorId) {
 
   const clock = $("#timerClock");
   if (clock) {
-    clock.style.color = (c.id === 'default' ? '' : c.color);
+    if (c.id === 'default') {
+      clock.style.removeProperty("color");
+    } else {
+      clock.style.color = c.color;
+    }
   }
   renderClockColorPicker();
   toast(`Đã đổi màu số đồng hồ: ${c.name}`);
@@ -11533,6 +11537,14 @@ function toggleStudyZenView() {
 /* --- HÀO QUANG & MÀU SẮC GRADIENT ĐỘC QUYỀN (Streak >= 30: 5 đầu; Streak >= 50: cả 10) --- */
 const COLOR_AURAS = [
   { 
+    id: 'pomodoro', 
+    name: 'San Hô Pomodoro (Mặc định)', 
+    gradient: 'linear-gradient(135deg, #f05454 0%, #e23e57 50%, #ff758c 100%)', 
+    primary: '#f05454', 
+    glow: 'rgba(240, 84, 84, 0.45)',
+    stops: ['#f05454', '#e23e57']
+  },
+  { 
     id: 'emerald', 
     name: 'Ngọc Lục Bảo Tinh Hoa', 
     gradient: 'linear-gradient(135deg, #10b981 0%, #059669 50%, #34d399 100%)', 
@@ -11696,6 +11708,10 @@ function applyColorAura(auraId) {
     stop1.setAttribute("stop-color", c.stops[0]);
     stop2.setAttribute("stop-color", c.stops[1]);
   }
+  const knob = $("#timerProgressKnob");
+  if (knob) {
+    knob.style.fill = c.primary;
+  }
   const progCircle = $("#timerProgressCircle");
   if (progCircle) {
     progCircle.style.stroke = "url(#timerGrad)";
@@ -11711,7 +11727,7 @@ function applyColorAura(auraId) {
 
 function resetStudyTheme() {
   studySettings.activeWallpaper = 'default';
-  studySettings.activeAura = 'emerald';
+  studySettings.activeAura = 'pomodoro';
   studySettings.clockColor = 'default';
   studySettings.wallpaperDim = 35;
   studySettings.cardGlassOpacity = 50;
@@ -12483,7 +12499,7 @@ function onEnterStudyLounge() {
   } else {
     if (studyEl) studyEl.classList.remove("has-custom-bg");
   }
-  applyColorAura(studySettings.activeAura || 'emerald');
+  applyColorAura(studySettings.activeAura || 'pomodoro');
 
   loadAndRenderStudyRooms();
   checkUrlStudyRoomParam();
