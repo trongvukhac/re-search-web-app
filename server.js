@@ -241,6 +241,102 @@ try { db.exec("ALTER TABLE study_sessions ADD COLUMN started_at_ms INTEGER NOT N
 try { db.exec("ALTER TABLE study_sessions ADD COLUMN cycle_index INTEGER NOT NULL DEFAULT 1;"); } catch (e) {}
 try { db.exec("ALTER TABLE study_sessions ADD COLUMN wallpaper TEXT DEFAULT 'default';"); } catch (e) {}
 try { db.exec("ALTER TABLE study_sessions ADD COLUMN aura TEXT DEFAULT 'emerald';"); } catch (e) {}
+try { db.exec("ALTER TABLE study_sessions ADD COLUMN room_id TEXT DEFAULT 'commons';"); } catch (e) {}
+
+// Flexible Study Spaces & Cohort Rooms Table
+try {
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS study_rooms (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      type TEXT NOT NULL DEFAULT 'shared_task', -- 'commons', 'shared_task', 'private'
+      description TEXT,
+      objective TEXT,
+      icon TEXT NOT NULL DEFAULT '📚',
+      max_seats INTEGER NOT NULL DEFAULT 10,
+      pin_code TEXT,
+      created_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+      shared_tasks_json TEXT NOT NULL DEFAULT '[]',
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    );
+  `);
+} catch (e) {
+  console.warn("Lỗi khởi tạo bảng study_rooms:", e.message);
+}
+
+const DEFAULT_STUDY_ROOMS = [
+  {
+    id: "commons",
+    name: "Đại sảnh Thư viện (Library Commons)",
+    type: "commons",
+    description: "Không gian mở kết nối toàn thể sinh viên và học giả NCKH đang tự học trực tuyến",
+    objective: "Tập trung sâu và duy trì kỷ luật học tập mỗi ngày",
+    icon: "🏛️",
+    max_seats: 100,
+    pin_code: null,
+    shared_tasks_json: JSON.stringify([])
+  },
+  {
+    id: "thesis_sprint",
+    name: "Viết Báo cáo & Khóa luận (Thesis Sprint)",
+    type: "shared_task",
+    description: "Cùng thúc đẩy hoàn thiện đề cương, viết chương tổng quan & thảo luận kết quả nghiên cứu",
+    objective: "Hoàn thiện bản thảo và cấu trúc các chương đề tài",
+    icon: "✍️",
+    max_seats: 12,
+    pin_code: null,
+    shared_tasks_json: JSON.stringify([
+      { id: "st_1", text: "Xác định mục tiêu & câu hỏi nghiên cứu cốt lõi", done: true, by: "Minh Anh" },
+      { id: "st_2", text: "Viết tổng quan các công trình tiền nhiệm (Literature Review)", done: false, by: null },
+      { id: "st_3", text: "Trích dẫn và lập danh mục tài liệu theo chuẩn APA 7th", done: false, by: null },
+      { id: "st_4", text: "Kiểm tra tính mạch lạc & rà soát trùng lặp văn phong", done: false, by: null }
+    ])
+  },
+  {
+    id: "data_analysis",
+    name: "Phòng Phân tích Dữ liệu (Data & Stats Lab)",
+    type: "shared_task",
+    description: "Xử lý bảng câu hỏi, làm sạch dữ liệu, chạy mô hình hồi quy, ANOVA, SPSS & R",
+    objective: "Làm sạch số liệu khảo sát, kiểm định thang đo và chạy mô hình tương quan",
+    icon: "📊",
+    max_seats: 10,
+    pin_code: null,
+    shared_tasks_json: JSON.stringify([
+      { id: "sd_1", text: "Mã hóa biến số & kiểm tra dữ liệu khuyết tật (Missing data)", done: true, by: "Hoàng Nam" },
+      { id: "sd_2", text: "Kiểm định độ tin cậy thang đo Cronbach's Alpha (> 0.7)", done: true, by: "Thanh Trúc" },
+      { id: "sd_3", text: "Phân tích nhân tố khám phá (EFA) & Kiểm định giả thuyết", done: false, by: null },
+      { id: "sd_4", text: "Xuất bảng biểu thống kê mô tả chuẩn hóa cho báo cáo", done: false, by: null }
+    ])
+  },
+  {
+    id: "methodology",
+    name: "Phòng Phương pháp NCKH (Methodology Hub)",
+    type: "shared_task",
+    description: "Thảo luận chọn mẫu, thiết kế công cụ đo lường và thẩm định mô hình nghiên cứu",
+    objective: "Hoàn thiện bảng câu hỏi khảo sát và phương pháp chọn mẫu khoa học",
+    icon: "🔬",
+    max_seats: 8,
+    pin_code: null,
+    shared_tasks_json: JSON.stringify([
+      { id: "sm_1", text: "Xác định khung mẫu & cỡ mẫu tối thiểu theo Hair et al.", done: true, by: "Khánh Linh" },
+      { id: "sm_2", text: "Thiết kế thang đo Likert 5 điểm cho các biến nghiên cứu", done: false, by: null },
+      { id: "sm_3", text: "Thử nghiệm bảng hỏi sơ bộ (Pilot test n=30)", done: false, by: null }
+    ])
+  }
+];
+
+try {
+  const insertRoomStmt = db.prepare(`
+    INSERT OR IGNORE INTO study_rooms (id, name, type, description, objective, icon, max_seats, pin_code, shared_tasks_json)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `);
+  DEFAULT_STUDY_ROOMS.forEach(r => {
+    insertRoomStmt.run(r.id, r.name, r.type, r.description, r.objective, r.icon, r.max_seats, r.pin_code, r.shared_tasks_json);
+  });
+} catch (e) {
+  console.warn("Lỗi khởi tạo phòng học mẫu:", e.message);
+}
 try { db.exec("ALTER TABLE users ADD COLUMN bio TEXT;"); } catch (e) {}
 try { db.exec("ALTER TABLE users ADD COLUMN cover_image TEXT;"); } catch (e) {}
 try { db.exec("ALTER TABLE users ADD COLUMN namecard_frame TEXT DEFAULT 'default';"); } catch (e) {}
@@ -4509,13 +4605,270 @@ async function api(request, response, url) {
 
   // --- STUDY LOUNGE ENDPOINTS (Open for all users - Beta) ---
 
+  if (method === "GET" && pathName === "/api/study/rooms") {
+    const nowMs = Date.now();
+    const activeRows = db.prepare(`
+      SELECT room_id FROM study_sessions
+      WHERE (is_running = 1 AND (last_ping_ms > (? - 300000) OR (last_ping IS NOT NULL AND (strftime('%s', 'now') - strftime('%s', last_ping)) < 300)))
+         OR (last_ping_ms > (? - 180000))
+         OR (last_ping IS NOT NULL AND (strftime('%s', 'now') - strftime('%s', last_ping)) < 180)
+    `).all(nowMs, nowMs);
+
+    const roomOccupancyMap = {};
+    activeRows.forEach(r => {
+      const rid = r.room_id || 'commons';
+      roomOccupancyMap[rid] = (roomOccupancyMap[rid] || 0) + 1;
+    });
+
+    const rows = db.prepare("SELECT * FROM study_rooms ORDER BY CASE WHEN id='commons' THEN 0 WHEN type='shared_task' THEN 1 ELSE 2 END, created_at ASC").all();
+    const rooms = rows.map(rm => {
+      let tasks = [];
+      try { tasks = JSON.parse(rm.shared_tasks_json || "[]"); } catch (e) {}
+      return {
+        id: rm.id,
+        name: rm.name,
+        type: rm.type,
+        description: rm.description,
+        objective: rm.objective,
+        icon: rm.icon,
+        maxSeats: rm.max_seats,
+        hasPin: Boolean(rm.pin_code),
+        occupancy: roomOccupancyMap[rm.id] || 0,
+        tasksCount: tasks.length,
+        tasksDoneCount: tasks.filter(t => t.done).length
+      };
+    });
+
+    return json(response, 200, { rooms });
+  }
+
+  if (method === "POST" && pathName === "/api/study/rooms/join") {
+    const user = requireUser(request, response);
+    if (!user || !requireCsrf(request, response, user)) return;
+    try {
+      const body = await readJSON(request);
+      const roomId = (body.roomId || 'commons').trim();
+      const pinCode = (body.pinCode || '').trim();
+
+      const room = db.prepare("SELECT * FROM study_rooms WHERE id = ?").get(roomId);
+      if (!room) {
+        return error(response, 404, "Không tìm thấy không gian học tập này.");
+      }
+
+      if (room.type === 'private' && room.pin_code) {
+        const isAdminOrTa = (user.role === 'admin' || user.role === 'ta' || user.id === room.created_by);
+        if (!isAdminOrTa && pinCode !== room.pin_code) {
+          return error(response, 403, "Mã PIN phòng không chính xác.");
+        }
+      }
+
+      const nowMs = Date.now();
+      const count = db.prepare(`
+        SELECT count(*) as c FROM study_sessions
+        WHERE room_id = ? AND user_id != ? AND (
+          (is_running = 1 AND (last_ping_ms > (? - 300000) OR (last_ping IS NOT NULL AND (strftime('%s', 'now') - strftime('%s', last_ping)) < 300)))
+          OR (last_ping_ms > (? - 180000))
+          OR (last_ping IS NOT NULL AND (strftime('%s', 'now') - strftime('%s', last_ping)) < 180)
+        )
+      `).get(roomId, user.id, nowMs, nowMs).c;
+
+      if (count >= room.max_seats) {
+        return error(response, 400, "Phòng học này đã kín chỗ ngồi.");
+      }
+
+      db.prepare(`
+        INSERT INTO study_sessions (user_id, room_id, started_at_ms, last_ping_ms, started_at, last_ping)
+        VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+        ON CONFLICT(user_id) DO UPDATE SET
+          room_id = excluded.room_id,
+          last_ping_ms = excluded.last_ping_ms,
+          last_ping = CURRENT_TIMESTAMP
+      `).run(user.id, roomId, nowMs, nowMs);
+
+      let sharedTasks = [];
+      try { sharedTasks = JSON.parse(room.shared_tasks_json || "[]"); } catch (e) {}
+
+      return json(response, 200, {
+        success: true,
+        room: {
+          id: room.id,
+          name: room.name,
+          type: room.type,
+          description: room.description,
+          objective: room.objective,
+          icon: room.icon,
+          maxSeats: room.max_seats,
+          hasPin: Boolean(room.pin_code),
+          pinCode: (user.id === room.created_by || user.role === 'admin') ? room.pin_code : undefined,
+          sharedTasks
+        }
+      });
+    } catch (e) {
+      console.error("join room error:", e);
+      return error(response, 400, "Không thể tham gia không gian học.");
+    }
+  }
+
+  if (method === "POST" && pathName === "/api/study/rooms/leave") {
+    const user = requireUser(request, response);
+    if (!user || !requireCsrf(request, response, user)) return;
+    db.prepare("UPDATE study_sessions SET room_id = 'commons', last_ping_ms = ?, last_ping = CURRENT_TIMESTAMP WHERE user_id = ?").run(Date.now(), user.id);
+    return json(response, 200, { success: true, roomId: 'commons' });
+  }
+
+  if (method === "POST" && pathName === "/api/study/rooms/create") {
+    const user = requireUser(request, response);
+    if (!user || !requireCsrf(request, response, user)) return;
+    try {
+      const body = await readJSON(request);
+      const name = (body.name || '').trim().slice(0, 60);
+      if (name.length < 2) {
+        return error(response, 400, "Vui lòng nhập tên phòng (tối thiểu 2 ký tự).");
+      }
+      const type = ['shared_task', 'private'].includes(body.type) ? body.type : 'shared_task';
+      const icon = (body.icon || '📚').slice(0, 10);
+      const maxSeats = Math.max(2, Math.min(25, Number(body.maxSeats) || 8));
+      const pinCode = type === 'private' ? (body.pinCode || '').trim().slice(0, 10) : null;
+      const description = (body.description || '').trim().slice(0, 150);
+      const objective = (body.objective || '').trim().slice(0, 150);
+
+      let sharedTasks = [];
+      if (Array.isArray(body.initialTasks)) {
+        sharedTasks = body.initialTasks
+          .map(t => String(t || '').trim())
+          .filter(t => t.length > 0)
+          .slice(0, 15)
+          .map((text, idx) => ({
+            id: `st_${Date.now()}_${idx}`,
+            text,
+            done: false,
+            by: null,
+            createdAt: Date.now()
+          }));
+      }
+
+      const roomId = `room_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
+      const nowMs = Date.now();
+
+      db.prepare(`
+        INSERT INTO study_rooms (id, name, type, description, objective, icon, max_seats, pin_code, created_by, shared_tasks_json)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(roomId, name, type, description, objective, icon, maxSeats, pinCode, user.id, JSON.stringify(sharedTasks));
+
+      // Move creator into this room
+      db.prepare(`
+        INSERT INTO study_sessions (user_id, room_id, started_at_ms, last_ping_ms, started_at, last_ping)
+        VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+        ON CONFLICT(user_id) DO UPDATE SET
+          room_id = excluded.room_id,
+          last_ping_ms = excluded.last_ping_ms,
+          last_ping = CURRENT_TIMESTAMP
+      `).run(user.id, roomId, nowMs, nowMs);
+
+      return json(response, 200, {
+        success: true,
+        room: {
+          id: roomId,
+          name,
+          type,
+          description,
+          objective,
+          icon,
+          maxSeats,
+          hasPin: Boolean(pinCode),
+          pinCode: pinCode || undefined,
+          sharedTasks
+        }
+      });
+    } catch (e) {
+      console.error("create room error:", e);
+      return error(response, 400, "Không thể tạo phòng học.");
+    }
+  }
+
+  if (method === "POST" && pathName === "/api/study/rooms/task/toggle") {
+    const user = requireUser(request, response);
+    if (!user || !requireCsrf(request, response, user)) return;
+    try {
+      const body = await readJSON(request);
+      const roomId = (body.roomId || '').trim();
+      const taskId = String(body.taskId || '').trim();
+      if (!roomId || !taskId) return error(response, 400, "Thiếu thông tin.");
+
+      const room = db.prepare("SELECT * FROM study_rooms WHERE id = ?").get(roomId);
+      if (!room) return error(response, 404, "Phòng không tồn tại.");
+
+      let tasks = [];
+      try { tasks = JSON.parse(room.shared_tasks_json || "[]"); } catch (e) {}
+      const target = tasks.find(t => String(t.id) === taskId);
+      if (!target) return error(response, 404, "Nhiệm vụ không tồn tại.");
+
+      target.done = !target.done;
+      target.by = target.done ? (user.display_name || user.name || "Thành viên phòng") : null;
+
+      db.prepare("UPDATE study_rooms SET shared_tasks_json = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?")
+        .run(JSON.stringify(tasks), roomId);
+
+      return json(response, 200, { success: true, tasks, sharedTasks: tasks, completed: target.done });
+    } catch (e) {
+      return error(response, 400, "Không thể cập nhật nhiệm vụ chung.");
+    }
+  }
+
+  if (method === "POST" && pathName === "/api/study/rooms/task/add") {
+    const user = requireUser(request, response);
+    if (!user || !requireCsrf(request, response, user)) return;
+    try {
+      const body = await readJSON(request);
+      const roomId = (body.roomId || '').trim();
+      const text = (body.text || body.taskText || '').trim().slice(0, 120);
+      if (!roomId || !text) return error(response, 400, "Vui lòng nhập nội dung nhiệm vụ.");
+
+      const room = db.prepare("SELECT * FROM study_rooms WHERE id = ?").get(roomId);
+      if (!room) return error(response, 404, "Phòng không tồn tại.");
+
+      let tasks = [];
+      try { tasks = JSON.parse(room.shared_tasks_json || "[]"); } catch (e) {}
+      tasks.push({
+        id: `st_${Date.now()}`,
+        text,
+        done: false,
+        by: null,
+        createdAt: Date.now()
+      });
+
+      db.prepare("UPDATE study_rooms SET shared_tasks_json = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?")
+        .run(JSON.stringify(tasks), roomId);
+
+      return json(response, 200, { success: true, tasks, sharedTasks: tasks });
+    } catch (e) {
+      return error(response, 400, "Không thể thêm nhiệm vụ.");
+    }
+  }
+
   if (method === "GET" && pathName === "/api/study/lounge") {
     cleanupCheers();
     const user = sessionFrom(request);
     const nowMs = Date.now();
+    const query = new URL(request.url, `http://${request.headers.host}`).searchParams;
+    let targetRoomId = query.get("roomId");
 
-    const activeRows = db.prepare(`
-      SELECT s.user_id, s.goal, s.mode, s.duration_minutes, s.remaining_seconds,
+    if (!targetRoomId && user) {
+      const myRow = db.prepare("SELECT room_id FROM study_sessions WHERE user_id = ?").get(user.id);
+      if (myRow && myRow.room_id) {
+        targetRoomId = myRow.room_id;
+      }
+    }
+    if (!targetRoomId) targetRoomId = 'commons';
+
+    let currentRoomRow = db.prepare("SELECT * FROM study_rooms WHERE id = ?").get(targetRoomId);
+    if (!currentRoomRow) {
+      targetRoomId = 'commons';
+      currentRoomRow = db.prepare("SELECT * FROM study_rooms WHERE id = 'commons'").get();
+    }
+
+    const allActiveRows = db.prepare(`
+      SELECT s.user_id, s.room_id, s.goal, s.mode, s.duration_minutes, s.remaining_seconds,
              s.target_end_ms, s.is_running, s.started_at_ms, s.last_ping_ms,
              s.cycle_index, s.started_at, s.last_ping, s.wallpaper, s.aura,
              u.display_name, u.role, u.avatar
@@ -4527,8 +4880,35 @@ async function api(request, response, url) {
       ORDER BY s.is_running DESC, s.last_ping_ms DESC
     `).all(nowMs, nowMs);
 
+    const roomOccupancyMap = {};
+    allActiveRows.forEach(r => {
+      const rid = r.room_id || 'commons';
+      roomOccupancyMap[rid] = (roomOccupancyMap[rid] || 0) + 1;
+    });
+
+    const allRoomsRows = db.prepare("SELECT * FROM study_rooms ORDER BY CASE WHEN id='commons' THEN 0 WHEN type='shared_task' THEN 1 ELSE 2 END, created_at ASC").all();
+    const rooms = allRoomsRows.map(rm => {
+      let tasks = [];
+      try { tasks = JSON.parse(rm.shared_tasks_json || "[]"); } catch (e) {}
+      return {
+        id: rm.id,
+        name: rm.name,
+        type: rm.type,
+        description: rm.description,
+        objective: rm.objective,
+        icon: rm.icon,
+        maxSeats: rm.max_seats,
+        hasPin: Boolean(rm.pin_code),
+        occupancy: roomOccupancyMap[rm.id] || 0,
+        tasksCount: tasks.length,
+        tasksDoneCount: tasks.filter(t => t.done).length
+      };
+    });
+
+    const targetLearnerRows = allActiveRows.filter(r => (r.room_id || 'commons') === targetRoomId);
+
     const todayDate = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Ho_Chi_Minh" }));
-    const learners = activeRows.map(r => {
+    const learners = targetLearnerRows.map(r => {
       const streakInfo = calculateUserStreak(r.user_id, todayDate);
       let remainingSecs = r.remaining_seconds;
       if (r.is_running && r.target_end_ms > 0) {
@@ -4549,9 +4929,27 @@ async function api(request, response, url) {
         isRunning: Boolean(r.is_running),
         wallpaper: r.wallpaper || 'default',
         aura: r.aura || 'emerald',
+        roomId: r.room_id || 'commons',
         isSelf: user ? user.id === r.user_id : false
       };
     });
+
+    let sharedTasks = [];
+    try { sharedTasks = JSON.parse(currentRoomRow.shared_tasks_json || "[]"); } catch (e) {}
+
+    const currentRoom = {
+      id: currentRoomRow.id,
+      name: currentRoomRow.name,
+      type: currentRoomRow.type,
+      description: currentRoomRow.description,
+      objective: currentRoomRow.objective,
+      icon: currentRoomRow.icon,
+      maxSeats: currentRoomRow.max_seats,
+      hasPin: Boolean(currentRoomRow.pin_code),
+      pinCode: (user && (user.id === currentRoomRow.created_by || user.role === 'admin')) ? currentRoomRow.pin_code : undefined,
+      occupancy: targetLearnerRows.length,
+      sharedTasks
+    };
 
     let mySession = null;
     if (user) {
@@ -4571,6 +4969,7 @@ async function api(request, response, url) {
           goal: myRow.goal || '',
           wallpaper: myRow.wallpaper || 'default',
           aura: myRow.aura || 'emerald',
+          roomId: myRow.room_id || 'commons',
           startedAtMs: myRow.started_at_ms || nowMs,
           lastPingMs: myRow.last_ping_ms || nowMs
         };
@@ -4584,7 +4983,10 @@ async function api(request, response, url) {
 
     return json(response, 200, {
       learners,
-      activeCount: learners.length,
+      activeCount: targetLearnerRows.length,
+      totalCampusLearners: allActiveRows.length,
+      currentRoom,
+      rooms,
       mySession,
       myCheers
     });
@@ -4595,7 +4997,7 @@ async function api(request, response, url) {
     if (!user || !requireCsrf(request, response, user)) return;
     try {
       const body = await readJSON(request);
-      const validModes = ['focus', 'pomodoro', 'deep', 'shortbreak', 'longbreak'];
+      const validModes = ['focus', 'pomodoro', 'deep', 'shortbreak', 'longbreak', 'flowtime'];
       const mode = validModes.includes(body.mode) ? body.mode : 'focus';
       const durationMinutes = Math.max(1, Math.min(720, Number(body.durationMinutes) || 25));
       const cycleIndex = Math.max(1, Math.min(4, Number(body.cycleIndex) || 1));
@@ -4603,6 +5005,7 @@ async function api(request, response, url) {
       const goal = (body.goal || "").trim().slice(0, 100);
       const wallpaper = typeof body.wallpaper === 'string' ? body.wallpaper.slice(0, 50) : 'default';
       const aura = typeof body.aura === 'string' ? body.aura.slice(0, 50) : 'emerald';
+      const roomId = typeof body.roomId === 'string' ? body.roomId.slice(0, 50) : 'commons';
       const nowMs = Date.now();
       let remainingSeconds = Math.max(0, Math.min(durationMinutes * 60, Number(body.remainingSeconds) || (durationMinutes * 60)));
       let targetEndMs = Number(body.targetEndMs) || 0;
@@ -4622,9 +5025,9 @@ async function api(request, response, url) {
 
       db.prepare(`
         INSERT INTO study_sessions (
-          user_id, goal, mode, duration_minutes, remaining_seconds, target_end_ms, is_running, started_at_ms, last_ping_ms, cycle_index, wallpaper, aura, started_at, last_ping
+          user_id, goal, mode, duration_minutes, remaining_seconds, target_end_ms, is_running, started_at_ms, last_ping_ms, cycle_index, wallpaper, aura, room_id, started_at, last_ping
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
         ON CONFLICT(user_id) DO UPDATE SET
           goal = excluded.goal,
           mode = excluded.mode,
@@ -4636,8 +5039,9 @@ async function api(request, response, url) {
           cycle_index = excluded.cycle_index,
           wallpaper = excluded.wallpaper,
           aura = excluded.aura,
+          room_id = COALESCE(excluded.room_id, study_sessions.room_id, 'commons'),
           last_ping = CURRENT_TIMESTAMP
-      `).run(user.id, goal, mode, durationMinutes, remainingSeconds, targetEndMs, isRunning, startedAtMs, nowMs, cycleIndex, wallpaper, aura);
+      `).run(user.id, goal, mode, durationMinutes, remainingSeconds, targetEndMs, isRunning, startedAtMs, nowMs, cycleIndex, wallpaper, aura, roomId);
 
       return json(response, 200, {
         success: true,
@@ -4651,6 +5055,7 @@ async function api(request, response, url) {
           goal,
           wallpaper,
           aura,
+          roomId,
           startedAtMs,
           lastPingMs: nowMs
         }

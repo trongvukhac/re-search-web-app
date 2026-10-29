@@ -186,15 +186,36 @@ function getInitialStudySettings() {
     focusMins: 25,
     shortBreakMins: 5,
     longBreakMins: 15,
+    longBreakInterval: 4,
+    timerPreset: "25_5", // '25_5', '50_10', '52_17', '90_20', '45_15', 'flowtime', 'eye_rule', 'custom'
+    flowtimeRatio: "1/4", // '1/3', '1/4', '1/5', '1/6'
     autoStartBreaks: true,
     autoStartPomodoros: false,
-    browserNotifications: false,
+    dailyGoalPomodoros: 8,
+    pauseSoundsDuringBreaks: true,
+    hideEverythingWhileFocusing: false,
+    showSeconds: true,
+    // Alarm & Sound Settings
     alarmSound: "bell",
+    alarmVolume: 80,
+    alarmRings: 1, // 1, 2, 3, 5
+    reminderBeforeEnd: 0, // 0 (Off), 1, 2, 5 mins
+    tickingSound: "off", // 'off', 'mechanical', 'digital'
+    browserNotifications: false,
+    // Wallpaper & Theme
     activeWallpaper: "default",
     wallpaperDim: 35,
     cardGlassOpacity: 50,
     activeAura: "emerald",
-    clockColor: "default"
+    clockColor: "default",
+    // Task Category Labels (Unlocked at 7d streak)
+    taskLabels: [
+      { id: "thesis", name: "Đề cương", color: "#6366f1" },
+      { id: "docs", name: "Tài liệu", color: "#14b8a6" },
+      { id: "data", name: "Dữ liệu", color: "#10b981" },
+      { id: "writing", name: "Viết bài", color: "#f59e0b" },
+      { id: "review", name: "Phản biện", color: "#f43f5e" }
+    ]
   };
   try {
     const saved = localStorage.getItem(STUDY_SETTINGS_KEY);
@@ -219,9 +240,15 @@ let studyState = {
   syncHeartbeatInterval: null,
   pollingInterval: null,
   elapsedSessionSeconds: 0,
+  flowtimeElapsedSeconds: 0,
+  flowtimeFocusHistorySecs: 0,
+  isFlowtimeBreak: false,
   goal: '',
   lastSyncMs: 0,
   audioCtx: null,
+  _autoZenActive: false,
+  _reminderFiredThisSession: false,
+  _breakPausedSounds: null,
   // 1. Ambient Environment Audio (4 Tracks + Custom)
   activeEnvTrack: null, // string trackId or null
   envAudioPlayers: {},  // trackId -> Audio element
@@ -1058,7 +1085,7 @@ const STREAK_MILESTONES = [
     title: "Học giả bền bỉ",
     color: "Vàng ánh kim",
     forumDesc: "Mở khoá viền avatar đặc sắc",
-    studyDesc: "Mở khoá toàn bộ âm thanh phối âm cơ bản, cho phép bạn tự tạo âm thanh theo ý thích"
+    studyDesc: "Mở khoá âm thanh phối hợp & âm nhạc, phân loại nhãn màu sắc công việc tự học"
   },
   {
     days: 14,
@@ -7118,6 +7145,30 @@ window.updateStudyStreakPerks = function() {
     bannerMusicLocked.style.display = musicUnlocked ? "none" : "block";
   }
 
+  // Streak 7: Task Labels Categorization & Custom Colors
+  const taskLabelsUnlocked = streak >= 7;
+  const badgeTaskLabelsLock = $("#badgeTaskLabelsLock");
+  const badgeModalTaskLock = $("#badgeModalTaskLock");
+  const bannerTasksLocked = $("#bannerTasksLocked");
+  const groupTaskLabelsSettings = $("#groupTaskLabelsSettings");
+  if (badgeTaskLabelsLock) {
+    badgeTaskLabelsLock.className = `perk-badge ${taskLabelsUnlocked ? 'unlocked' : ''}`;
+    badgeTaskLabelsLock.textContent = taskLabelsUnlocked ? "" : "🔒 7d";
+    badgeTaskLabelsLock.style.display = taskLabelsUnlocked ? "none" : "inline-flex";
+  }
+  if (badgeModalTaskLock) {
+    badgeModalTaskLock.className = `perk-badge ${taskLabelsUnlocked ? 'unlocked' : ''}`;
+    badgeModalTaskLock.textContent = taskLabelsUnlocked ? "" : "🔒 7d";
+    badgeModalTaskLock.style.display = taskLabelsUnlocked ? "none" : "inline-flex";
+  }
+  if (bannerTasksLocked) {
+    bannerTasksLocked.style.display = taskLabelsUnlocked ? "none" : "block";
+  }
+  if (groupTaskLabelsSettings) {
+    groupTaskLabelsSettings.style.opacity = taskLabelsUnlocked ? "1" : "0.6";
+    groupTaskLabelsSettings.style.pointerEvents = taskLabelsUnlocked ? "auto" : "none";
+  }
+
   // Streak 14: Preset Wallpapers (7 System Wallpapers) & Clock Color Customization (5 Colors)
   const wallPresetUnlocked = streak >= 14;
   const badgeWallPresetLock = $("#badgeWallPresetLock");
@@ -7242,7 +7293,192 @@ window.updateStudyStreakPerks = function() {
   loadCustomAudioFromDB();
 };
 
-/* --- 4. TIMER DISPLAY & POMODORO CYCLE --- */
+/* --- 4. TIMER DISPLAY, PRESETS & POMODORO CYCLE --- */
+const STUDY_PRESET_CONFIGS = {
+  "25_5": { focus: 25, shortBreak: 5, longBreak: 15, sessions: 4, label: "25 / 5" },
+  "50_10": { focus: 50, shortBreak: 10, longBreak: 20, sessions: 4, label: "50 / 10" },
+  "52_17": { focus: 52, shortBreak: 17, longBreak: 30, sessions: 4, label: "52 / 17" },
+  "90_20": { focus: 90, shortBreak: 20, longBreak: 30, sessions: 4, label: "90 / 20" },
+  "45_15": { focus: 45, shortBreak: 15, longBreak: 25, sessions: 4, label: "45 / 15" },
+  "flowtime": { focus: 0, shortBreak: 0, longBreak: 0, sessions: 4, label: "Flowtime" },
+  "eye_rule": { focus: 20, shortBreak: 20 / 60, longBreak: 15, sessions: 4, label: "20-20-20" },
+  "custom": { focus: 25, shortBreak: 5, longBreak: 15, sessions: 4, label: "Tùy chỉnh" }
+};
+
+function parseRatio(r) {
+  if (r === "1/3") return 1 / 3;
+  if (r === "1/5") return 1 / 5;
+  if (r === "1/6") return 1 / 6;
+  return 1 / 4;
+}
+
+function formatTimerClock(seconds, isCountUp = false) {
+  if (studySettings.showSeconds) {
+    return formatMMSS(seconds);
+  }
+  if (isCountUp) {
+    const m = Math.floor(seconds / 60);
+    return `${m}m`;
+  }
+  if (seconds < 60) {
+    return `${seconds}s`;
+  }
+  const m = Math.ceil(seconds / 60);
+  return `${m}m`;
+}
+
+function updateDailyGoalUI() {
+  const countEl = $("#dailyGoalCount");
+  const pctEl = $("#dailyGoalPct");
+  const fillEl = $("#dailyGoalFill");
+  if (!countEl) return;
+
+  const completed = getTodayCompletedPomodoros();
+  const goal = Math.max(1, Number(studySettings.dailyGoalPomodoros) || 8);
+  const pct = Math.min(100, Math.round((completed / goal) * 100));
+
+  countEl.textContent = `${completed} / ${goal} Pomodoro`;
+  if (pctEl) {
+    pctEl.textContent = `(${pct}%)`;
+    pctEl.style.color = (pct >= 100) ? "#10b981" : "var(--primary)";
+  }
+  if (fillEl) {
+    fillEl.style.width = `${pct}%`;
+    if (pct >= 100) {
+      fillEl.style.background = "linear-gradient(90deg, #10b981, #34d399, #f59e0b)";
+    } else {
+      fillEl.style.background = "linear-gradient(90deg, #10b981, #059669)";
+    }
+  }
+}
+
+const STUDY_DAILY_GOAL_KEY = "research_study_daily_goal_v1";
+
+function getTodayKey() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+function getTodayCompletedPomodoros() {
+  try {
+    const raw = localStorage.getItem(STUDY_DAILY_GOAL_KEY);
+    if (!raw) return 0;
+    const data = JSON.parse(raw);
+    if (data && data.date === getTodayKey()) {
+      return Number(data.count) || 0;
+    }
+  } catch (e) {}
+  return 0;
+}
+
+function recordTodayCompletedPomodoro() {
+  const current = getTodayCompletedPomodoros();
+  const next = current + 1;
+  try {
+    localStorage.setItem(STUDY_DAILY_GOAL_KEY, JSON.stringify({
+      date: getTodayKey(),
+      count: next
+    }));
+  } catch (e) {}
+  updateDailyGoalUI();
+}
+
+function enterAutoZenMode() {
+  const studyEl = $("#study");
+  if (studyEl && !studyEl.classList.contains("study-zen-view")) {
+    studyEl.classList.add("study-zen-view");
+    studyState._autoZenActive = true;
+    const icon = $("#studyZenIcon");
+    const text = $("#studyZenText");
+    const btn = $("#studyZenToggleBtn");
+    if (icon) icon.textContent = "📊";
+    if (text) text.textContent = "Đầy đủ";
+    if (btn) btn.classList.add("active");
+  }
+}
+
+function exitAutoZenMode() {
+  if (!studyState._autoZenActive) return;
+  const studyEl = $("#study");
+  if (studyEl) {
+    studyEl.classList.remove("study-zen-view");
+    const icon = $("#studyZenIcon");
+    const text = $("#studyZenText");
+    const btn = $("#studyZenToggleBtn");
+    if (icon) icon.textContent = "🖼️";
+    if (text) text.textContent = "Tối giản";
+    if (btn) btn.classList.remove("active");
+  }
+  studyState._autoZenActive = false;
+}
+
+function pauseActiveStudyAudioForBreak() {
+  const activeMix = [];
+  Object.keys(studyState.activeMixSounds || {}).forEach(k => {
+    if (studyState.activeMixSounds[k]) activeMix.push(k);
+  });
+  const activeCustomMix = [];
+  Object.keys(studyState.activeCustomMixSounds || {}).forEach(k => {
+    if (studyState.activeCustomMixSounds[k]) activeCustomMix.push(k);
+  });
+
+  studyState._breakPausedSounds = {
+    envTrack: studyState.activeEnvTrack,
+    musicTrack: studyState.activeMusicTrack,
+    mixTracks: activeMix,
+    customEnv: studyState.activeCustomEnvId,
+    customMusic: studyState.activeCustomMusicId,
+    customMix: activeCustomMix
+  };
+
+  try {
+    if (studyState.activeEnvTrack && studyState.envAudioPlayers[studyState.activeEnvTrack]) {
+      studyState.envAudioPlayers[studyState.activeEnvTrack].pause();
+    }
+    if (studyState.activeMusicTrack && studyState.musicAudioPlayers[studyState.activeMusicTrack]) {
+      studyState.musicAudioPlayers[studyState.activeMusicTrack].pause();
+    }
+    activeMix.forEach(k => {
+      if (studyState.mixAudioPlayers[k]) studyState.mixAudioPlayers[k].pause();
+    });
+    if (studyState.activeCustomEnvId && studyState.customEnvAudioPlayer) {
+      studyState.customEnvAudioPlayer.pause();
+    }
+    if (studyState.activeCustomMusicId && studyState.customMusicAudioPlayer) {
+      studyState.customMusicAudioPlayer.pause();
+    }
+    activeCustomMix.forEach(k => {
+      if (studyState.customMixAudioPlayers[k]) studyState.customMixAudioPlayers[k].pause();
+    });
+  } catch (e) {}
+}
+
+function resumeActiveStudyAudioAfterBreak() {
+  if (!studyState._breakPausedSounds) return;
+  const snap = studyState._breakPausedSounds;
+  try {
+    if (snap.envTrack && studyState.envAudioPlayers[snap.envTrack]) {
+      studyState.envAudioPlayers[snap.envTrack].play().catch(() => {});
+    }
+    if (snap.musicTrack && studyState.musicAudioPlayers[snap.musicTrack]) {
+      studyState.musicAudioPlayers[snap.musicTrack].play().catch(() => {});
+    }
+    (snap.mixTracks || []).forEach(k => {
+      if (studyState.mixAudioPlayers[k]) studyState.mixAudioPlayers[k].play().catch(() => {});
+    });
+    if (snap.customEnv && studyState.customEnvAudioPlayer) {
+      studyState.customEnvAudioPlayer.play().catch(() => {});
+    }
+    if (snap.customMusic && studyState.customMusicAudioPlayer) {
+      studyState.customMusicAudioPlayer.play().catch(() => {});
+    }
+    (snap.customMix || []).forEach(k => {
+      if (studyState.customMixAudioPlayers[k]) studyState.customMixAudioPlayers[k].play().catch(() => {});
+    });
+  } catch (e) {}
+  studyState._breakPausedSounds = null;
+}
+
 function updateTimerDisplay() {
   const clock = $("#timerClock");
   const progressCircle = $("#timerProgressCircle");
@@ -7251,24 +7487,50 @@ function updateTimerDisplay() {
   const startBtnText = $("#studyStartBtnText");
   const pauseBtn = $("#studyPauseBtn");
   const completeBtn = $("#studyCompleteBtn");
+  const flowtimeBreakBtn = $("#studyFlowtimeBreakBtn");
   const cycleLabel = $("#studyCycleLabel");
+  const isFlowtime = (studySettings.timerPreset === 'flowtime');
+  const isFlowtimeFocus = (isFlowtime && studyState.mode === 'focus');
+  const isEyeRule = (studySettings.timerPreset === 'eye_rule');
 
+  // 1. Clock Display
   if (clock) {
-    clock.textContent = formatMMSS(studyState.remainingSeconds);
+    if (isFlowtimeFocus) {
+      clock.textContent = formatTimerClock(studyState.elapsedSessionSeconds, true);
+    } else {
+      clock.textContent = formatTimerClock(studyState.remainingSeconds, false);
+    }
   }
 
-  const totalSecs = studyState.durationMinutes * 60;
-  const progress = totalSecs > 0 ? (1 - Math.max(0, studyState.remainingSeconds) / totalSecs) : 0;
-  const offset = 660 * progress;
+  // 2. Circular Progress
   if (progressCircle) {
-    progressCircle.style.strokeDashoffset = offset;
+    if (isFlowtimeFocus) {
+      const progress = ((studyState.elapsedSessionSeconds % 3600) / 3600);
+      progressCircle.style.strokeDashoffset = 660 * progress;
+    } else {
+      const totalSecs = (studyState.durationMinutes > 0 ? studyState.durationMinutes * 60 : 1500);
+      const progress = totalSecs > 0 ? (1 - Math.max(0, studyState.remainingSeconds) / totalSecs) : 0;
+      progressCircle.style.strokeDashoffset = 660 * progress;
+    }
   }
 
+  // 3. Status Label
   if (label) {
     if (studyState.isRunning) {
-      if (studyState.mode === 'shortbreak') {
-        label.textContent = '☕ Đang nghỉ ngắn phục hồi';
-        label.style.color = '#38bdf8';
+      if (isFlowtimeFocus) {
+        label.textContent = '🌊 Dòng chảy tập trung (Đếm xuôi)';
+        label.style.color = '#0284c7';
+      } else if (studyState.mode === 'shortbreak') {
+        if (isFlowtime) {
+          label.textContent = `☕ Nghỉ giải lao Flowtime (${studySettings.flowtimeRatio || '1/4'})`;
+          label.style.color = '#38bdf8';
+        } else if (isEyeRule) {
+          label.textContent = '👀 Nhìn xa 20 feet trong 20s (20-20-20)';
+          label.style.color = '#38bdf8';
+        } else {
+          label.textContent = '☕ Đang nghỉ ngắn phục hồi';
+          label.style.color = '#38bdf8';
+        }
       } else if (studyState.mode === 'longbreak') {
         label.textContent = '🌿 Đang nghỉ dài nạp năng lượng';
         label.style.color = '#4ade80';
@@ -7276,17 +7538,23 @@ function updateTimerDisplay() {
         label.textContent = '🔥 Đang tập trung cao độ';
         label.style.color = 'var(--primary)';
       }
-    } else if (studyState.remainingSeconds < totalSecs) {
+    } else if (isFlowtimeFocus && studyState.elapsedSessionSeconds > 0) {
+      label.textContent = '⏸ Tạm dừng dòng chảy Flowtime';
+      label.style.color = 'var(--muted)';
+    } else if (!isFlowtimeFocus && studyState.remainingSeconds < (studyState.durationMinutes * 60)) {
       label.textContent = '⏸ Đang tạm dừng';
       label.style.color = 'var(--muted)';
     } else {
-      label.textContent = 'Sẵn sàng ca học';
+      label.textContent = isFlowtime ? 'Sẵn sàng đắm chìm dòng chảy' : 'Sẵn sàng ca học';
       label.style.color = 'var(--muted)';
     }
   }
 
+  // 4. Start / Resume / Break Button Text
   if (startBtnText) {
-    if (studyState.remainingSeconds < totalSecs && !studyState.isRunning) {
+    if (isFlowtimeFocus) {
+      startBtnText.textContent = studyState.elapsedSessionSeconds > 0 ? "Tiếp tục dòng chảy" : "Bắt đầu tập trung";
+    } else if (studyState.remainingSeconds < (studyState.durationMinutes * 60) && !studyState.isRunning) {
       startBtnText.textContent = "Tiếp tục";
     } else if (studyState.mode === 'shortbreak' || studyState.mode === 'longbreak') {
       startBtnText.textContent = "Bắt đầu nghỉ";
@@ -7295,31 +7563,70 @@ function updateTimerDisplay() {
     }
   }
 
-  if (cycleLabel) {
-    if (studyState.cycleIndex === 0) {
-      cycleLabel.textContent = "Lượt 0/4 (Chưa bắt đầu)";
-    } else if (studyState.mode === 'focus') {
-      cycleLabel.textContent = `Lượt ${studyState.cycleIndex}/4 (Tập trung)`;
-    } else if (studyState.mode === 'shortbreak') {
-      cycleLabel.textContent = `Nghỉ ngắn (${studySettings.shortBreakMins}m) - Sau lượt ${studyState.cycleIndex > 1 ? studyState.cycleIndex - 1 : 1}`;
-    } else if (studyState.mode === 'longbreak') {
-      cycleLabel.textContent = `Nghỉ dài (${studySettings.longBreakMins}m) - Hoàn tất chu kỳ 4 lượt!`;
+  // 5. Flowtime Controls & Ratio Bar
+  const ftRatioBar = $("#flowtimeRatioBar");
+  const ftPreview = $("#flowtimeCalcPreview");
+  if (ftRatioBar) {
+    if (isFlowtime) {
+      ftRatioBar.style.display = "flex";
+      const ratio = studySettings.flowtimeRatio || "1/4";
+      $$("#flowtimeRatioButtons .ft-ratio-btn").forEach(btn => {
+        btn.classList.toggle("active", btn.dataset.ratio === ratio);
+      });
+      const elapsed = isFlowtimeFocus ? studyState.elapsedSessionSeconds : (studyState.flowtimeFocusHistorySecs || 0);
+      const breakCalc = Math.max(10, Math.round(elapsed * parseRatio(ratio)));
+      if (ftPreview) {
+        ftPreview.textContent = `Nghỉ: ${formatMMSS(breakCalc)}`;
+      }
+    } else {
+      ftRatioBar.style.display = "none";
     }
   }
 
-  // Update dynamic mode button labels
+  if (flowtimeBreakBtn) {
+    if (isFlowtimeFocus && studyState.isRunning && studyState.elapsedSessionSeconds >= 5) {
+      flowtimeBreakBtn.style.display = "inline-flex";
+    } else {
+      flowtimeBreakBtn.style.display = "none";
+    }
+  }
+
+  // 6. Preset Navigation Bar Active State
+  $$("#studyPresetsBar .preset-chip").forEach(chip => {
+    chip.classList.toggle("active", chip.dataset.preset === (studySettings.timerPreset || '25_5'));
+  });
+
+  // 7. Cycle Label & Dots
+  const maxCycles = Math.max(1, Number(studySettings.longBreakInterval) || 4);
+  if (cycleLabel) {
+    if (isFlowtime) {
+      cycleLabel.textContent = `Flowtime (Tự do đếm xuôi)`;
+    } else if (isEyeRule) {
+      cycleLabel.textContent = `Quy tắc 20-20-20 (Lượt ${studyState.cycleIndex || 1}/${maxCycles})`;
+    } else if (studyState.cycleIndex === 0) {
+      cycleLabel.textContent = `Lượt 0/${maxCycles} (Chưa bắt đầu)`;
+    } else if (studyState.mode === 'focus') {
+      cycleLabel.textContent = `Lượt ${studyState.cycleIndex}/${maxCycles} (Tập trung)`;
+    } else if (studyState.mode === 'shortbreak') {
+      cycleLabel.textContent = `Nghỉ ngắn (${studySettings.shortBreakMins}m) - Sau lượt ${studyState.cycleIndex > 1 ? studyState.cycleIndex - 1 : 1}`;
+    } else if (studyState.mode === 'longbreak') {
+      cycleLabel.textContent = `Nghỉ dài (${studySettings.longBreakMins}m) - Hoàn tất chu kỳ ${maxCycles} lượt!`;
+    }
+  }
+
+  // Dynamic mode button labels
   const labelFocus = $("#labelModeFocus");
   const labelShortBreak = $("#labelModeShortBreak");
   const labelLongBreak = $("#labelModeLongBreak");
-  if (labelFocus) labelFocus.textContent = `⏱️ ${studySettings.focusMins} phút`;
-  if (labelShortBreak) labelShortBreak.textContent = `☕ ${studySettings.shortBreakMins} phút`;
+  if (labelFocus) labelFocus.textContent = isFlowtime ? `🌊 Đếm xuôi` : `⏱️ ${studySettings.focusMins} phút`;
+  if (labelShortBreak) labelShortBreak.textContent = isEyeRule ? `👀 20 giây` : `☕ ${studySettings.shortBreakMins} phút`;
   if (labelLongBreak) labelLongBreak.textContent = `🌿 ${studySettings.longBreakMins} phút`;
 
   $$("#studyCycleDots .cycle-dot").forEach((dot) => {
     const c = Number(dot.dataset.cycle);
     dot.classList.remove("active", "completed");
     if (studyState.cycleIndex === 0) {
-      // Chưa bắt đầu: không sáng dot nào
+      // not started
     } else if (studyState.mode === 'longbreak') {
       dot.classList.add("completed");
     } else if (c < studyState.cycleIndex) {
@@ -7332,7 +7639,6 @@ function updateTimerDisplay() {
   if (startBtn) startBtn.style.display = studyState.isRunning ? "none" : "inline-flex";
   if (pauseBtn) pauseBtn.style.display = studyState.isRunning ? "inline-flex" : "none";
   if (completeBtn) {
-    // Nút hoàn thành xuất hiện khi đồng hồ chạy
     completeBtn.style.display = studyState.isRunning ? "inline-flex" : "none";
   }
 
@@ -7340,11 +7646,108 @@ function updateTimerDisplay() {
   $("#btnModeShortBreak")?.classList.toggle("active", studyState.mode === 'shortbreak');
   $("#btnModeLongBreak")?.classList.toggle("active", studyState.mode === 'longbreak');
 
+  updateDailyGoalUI();
   updateTabTitle();
   if (typeof updateSelfCoStudyCard === 'function') {
     updateSelfCoStudyCard();
   }
 }
+
+window.applyTimerPreset = function(presetId) {
+  const cfg = STUDY_PRESET_CONFIGS[presetId];
+  if (!cfg) return;
+
+  pauseStudyTimer(false);
+  studySettings.timerPreset = presetId;
+
+  if (presetId === 'custom') {
+    openStudySettingsModal('timer');
+    return;
+  }
+
+  if (presetId === 'flowtime') {
+    studyState.mode = 'focus';
+    studyState.durationMinutes = 0;
+    studyState.remainingSeconds = 0;
+    studyState.elapsedSessionSeconds = 0;
+    studyState.flowtimeElapsedSeconds = 0;
+    studyState.targetEndMs = 0;
+    toast("🌊 Đã chuyển sang Flowtime (Đếm xuôi). Bạn tự do tập trung và nghỉ giải lao theo tỷ lệ vàng!");
+  } else if (presetId === 'eye_rule') {
+    studySettings.focusMins = 20;
+    studySettings.shortBreakMins = 20 / 60; // 20s
+    studySettings.longBreakMins = 15;
+    studyState.mode = 'focus';
+    studyState.durationMinutes = 20;
+    studyState.remainingSeconds = 20 * 60;
+    studyState.targetEndMs = 0;
+    studyState.elapsedSessionSeconds = 0;
+    toast("👀 Đã chọn Quy tắc 20-20-20: Mỗi 20 phút nhìn xa 20 feet trong 20 giây!");
+  } else {
+    studySettings.focusMins = cfg.focus;
+    studySettings.shortBreakMins = cfg.shortBreak;
+    studySettings.longBreakMins = cfg.longBreak;
+    studyState.mode = 'focus';
+    studyState.durationMinutes = cfg.focus;
+    studyState.remainingSeconds = cfg.focus * 60;
+    studyState.targetEndMs = 0;
+    studyState.elapsedSessionSeconds = 0;
+    toast(`⏱️ Đã chọn preset ${cfg.label}!`);
+  }
+
+  saveStudySettings(false);
+  updateTimerDisplay();
+  syncStudyToServer();
+};
+
+window.setFlowtimeBreakRatio = function(ratio) {
+  studySettings.flowtimeRatio = ratio;
+  saveStudySettings(false);
+
+  const elapsed = studyState.flowtimeFocusHistorySecs || studyState.elapsedSessionSeconds || 2904;
+  const ratioNum = parseRatio(ratio);
+  const newBreakSecs = Math.max(10, Math.round(elapsed * ratioNum));
+
+  if (studyState.mode === 'shortbreak' && studySettings.timerPreset === 'flowtime') {
+    studyState.remainingSeconds = newBreakSecs;
+    studyState.durationMinutes = Math.max(1, Math.ceil(newBreakSecs / 60));
+    if (studyState.isRunning) {
+      studyState.targetEndMs = Date.now() + newBreakSecs * 1000;
+    }
+  }
+
+  updateTimerDisplay();
+  toast(`Đã chọn tỷ lệ nghỉ Flowtime: ${ratio} (${formatMMSS(newBreakSecs)})`);
+};
+
+window.triggerFlowtimeBreak = function() {
+  if (studyState.elapsedSessionSeconds < 5) {
+    toast("Hãy tập trung ít nhất vài phút trước khi bắt đầu nghỉ giải lao nhé!");
+    return;
+  }
+  pauseStudyTimer(false);
+  const elapsed = studyState.elapsedSessionSeconds;
+  studyState.flowtimeFocusHistorySecs = elapsed;
+  const ratioNum = parseRatio(studySettings.flowtimeRatio || "1/4");
+  const breakSecs = Math.max(10, Math.round(elapsed * ratioNum));
+
+  studyState.mode = 'shortbreak';
+  studyState.durationMinutes = Math.max(1, Math.ceil(breakSecs / 60));
+  studyState.remainingSeconds = breakSecs;
+  studyState.targetEndMs = Date.now() + breakSecs * 1000;
+  studyState.elapsedSessionSeconds = 0;
+
+  if (studySettings.pauseSoundsDuringBreaks) {
+    pauseActiveStudyAudioForBreak();
+  }
+  if (studyState._autoZenActive) {
+    exitAutoZenMode();
+  }
+
+  toast(`☕ Bắt đầu nghỉ giải lao Flowtime (${studySettings.flowtimeRatio || '1/4'}): ${formatMMSS(breakSecs)}`);
+  startStudyTimer();
+  updateTimerDisplay();
+};
 
 function setStudyMode(mode, duration) {
   let standardMode = mode;
@@ -7359,14 +7762,15 @@ function setStudyMode(mode, duration) {
   }
 
   studyState.mode = standardMode;
+  const isEye = (studySettings.timerPreset === 'eye_rule');
   const finalDuration = duration || (
     standardMode === 'focus' ? studySettings.focusMins :
-    standardMode === 'shortbreak' ? studySettings.shortBreakMins :
+    standardMode === 'shortbreak' ? (isEye ? (20 / 60) : studySettings.shortBreakMins) :
     studySettings.longBreakMins
   );
 
   studyState.durationMinutes = finalDuration;
-  studyState.remainingSeconds = finalDuration * 60;
+  studyState.remainingSeconds = Math.round(finalDuration * 60);
   studyState.targetEndMs = 0;
   studyState.elapsedSessionSeconds = 0;
 
@@ -7376,39 +7780,63 @@ function setStudyMode(mode, duration) {
 
 function advanceStudyCycle(manualSkip = false) {
   pauseStudyTimer(false);
+  const maxCycles = Math.max(1, Number(studySettings.longBreakInterval) || 4);
 
   if (studyState.mode === 'focus') {
     if (studyState.cycleIndex === 0) {
       studyState.cycleIndex = 1;
     }
-    if (studyState.cycleIndex < 4) {
+    if (studyState.cycleIndex < maxCycles) {
       studyState.cycleIndex++;
       studyState.mode = 'shortbreak';
-      studyState.durationMinutes = studySettings.shortBreakMins;
-      studyState.remainingSeconds = studySettings.shortBreakMins * 60;
-      toast(`☕ Hoàn thành lượt tập trung! Nghỉ giải lao ${studySettings.shortBreakMins} phút.`);
+      const isEye = (studySettings.timerPreset === 'eye_rule');
+      const breakSecs = isEye ? 20 : (studySettings.shortBreakMins * 60);
+      studyState.durationMinutes = isEye ? (20 / 60) : studySettings.shortBreakMins;
+      studyState.remainingSeconds = breakSecs;
+
+      if (studySettings.pauseSoundsDuringBreaks) {
+        pauseActiveStudyAudioForBreak();
+      }
+      if (studyState._autoZenActive) {
+        exitAutoZenMode();
+      }
+
+      toast(isEye ? "👀 Nghỉ mắt 20 giây: Nhìn xa 20 feet (6m) nhé!" : `☕ Hoàn thành lượt tập trung! Nghỉ giải lao ${studySettings.shortBreakMins} phút.`);
       if (studySettings.autoStartBreaks) {
         startStudyTimer();
       }
     } else {
-      studyState.cycleIndex = 4;
+      studyState.cycleIndex = maxCycles;
       studyState.mode = 'longbreak';
       studyState.durationMinutes = studySettings.longBreakMins;
       studyState.remainingSeconds = studySettings.longBreakMins * 60;
-      toast(`🏆 Hoàn thành trọn vẹn 4 lượt Pomodoro! Nghỉ dài ${studySettings.longBreakMins} phút.`);
+
+      if (studySettings.pauseSoundsDuringBreaks) {
+        pauseActiveStudyAudioForBreak();
+      }
+      if (studyState._autoZenActive) {
+        exitAutoZenMode();
+      }
+
+      toast(`🏆 Hoàn thành trọn vẹn ${maxCycles} lượt Pomodoro! Nghỉ dài ${studySettings.longBreakMins} phút.`);
       if (studySettings.autoStartBreaks) {
         startStudyTimer();
       }
     }
   } else {
-    // Was in break (shortbreak or longbreak) -> Advance to Focus
+    // Was in break -> Advance to Focus
     if (studyState.mode === 'longbreak') {
       studyState.cycleIndex = 1;
     }
     studyState.mode = 'focus';
     studyState.durationMinutes = studySettings.focusMins;
     studyState.remainingSeconds = studySettings.focusMins * 60;
-    toast(`⏱️ Bắt đầu lượt tập trung ${studyState.cycleIndex}/4! Hãy giữ nhịp độ.`);
+
+    if (studySettings.pauseSoundsDuringBreaks) {
+      resumeActiveStudyAudioAfterBreak();
+    }
+
+    toast(`⏱️ Bắt đầu lượt tập trung ${studyState.cycleIndex}/${maxCycles}! Hãy giữ nhịp độ.`);
     if (studySettings.autoStartPomodoros) {
       startStudyTimer();
     }
@@ -7425,18 +7853,20 @@ async function syncStudyToServer() {
   if (!canAccessStudyLounge()) return;
   if (!session) return;
   try {
+    const isFlowtimeFocus = (studySettings.timerPreset === 'flowtime' && studyState.mode === 'focus');
     const res = await requestAPI("/api/study/sync", {
       method: "POST",
       body: JSON.stringify({
-        mode: studyState.mode,
-        durationMinutes: studyState.durationMinutes,
-        remainingSeconds: studyState.remainingSeconds,
+        mode: isFlowtimeFocus ? 'flowtime' : studyState.mode,
+        durationMinutes: isFlowtimeFocus ? Math.max(1, Math.round(studyState.elapsedSessionSeconds / 60)) : studyState.durationMinutes,
+        remainingSeconds: isFlowtimeFocus ? studyState.elapsedSessionSeconds : studyState.remainingSeconds,
         targetEndMs: studyState.targetEndMs,
         isRunning: studyState.isRunning,
         cycleIndex: studyState.cycleIndex,
         goal: studyState.goal,
         wallpaper: studySettings.activeWallpaper || 'default',
-        aura: studySettings.activeAura || 'emerald'
+        aura: studySettings.activeAura || 'emerald',
+        roomId: currentStudyRoomId || 'commons'
       })
     });
     studyState.lastSyncMs = Date.now();
@@ -7460,10 +7890,41 @@ function startLocalTimerTick() {
 
   studyState.timerInterval = setInterval(() => {
     const curNow = Date.now();
+    const isFlowtimeFocus = (studySettings.timerPreset === 'flowtime' && studyState.mode === 'focus');
+
+    if (isFlowtimeFocus) {
+      studyState.elapsedSessionSeconds = Math.max(0, Math.floor((curNow - studyState.startedAtMs) / 1000));
+      studyState.remainingSeconds = studyState.elapsedSessionSeconds;
+      if (studySettings.tickingSound && studySettings.tickingSound !== 'off') {
+        playTickSound();
+      }
+      updateTimerDisplay();
+      if (typeof updateAllCoStudyCards === 'function') {
+        updateAllCoStudyCards(lastFetchedLearners);
+      }
+      return;
+    }
+
     if (studyState.targetEndMs > 0) {
       const remaining = Math.max(0, Math.ceil((studyState.targetEndMs - curNow) / 1000));
       studyState.remainingSeconds = remaining;
       studyState.elapsedSessionSeconds = Math.max(0, Math.floor((curNow - studyState.startedAtMs) / 1000));
+
+      // Ticking sound during focus
+      if (studyState.mode === 'focus' && studySettings.tickingSound && studySettings.tickingSound !== 'off') {
+        playTickSound();
+      }
+
+      // Pre-end reminder chime
+      if (studyState.mode === 'focus' && studySettings.reminderBeforeEnd > 0) {
+        const remindSecs = Number(studySettings.reminderBeforeEnd) * 60;
+        if (remaining === remindSecs && !studyState._reminderFiredThisSession) {
+          studyState._reminderFiredThisSession = true;
+          playSoftReminderChime();
+          toast(`⏳ Còn ${studySettings.reminderBeforeEnd} phút nữa là kết thúc ca học!`);
+        }
+      }
+
       updateTimerDisplay();
       if (typeof updateAllCoStudyCards === 'function') {
         updateAllCoStudyCards(lastFetchedLearners);
@@ -7499,11 +7960,25 @@ async function startStudyTimer() {
   }
   studyState.goal = ($("#studyGoalInput") ? $("#studyGoalInput").value : "").trim();
   const now = Date.now();
+  studyState._reminderFiredThisSession = false;
+
+  const isFlowtimeFocus = (studySettings.timerPreset === 'flowtime' && studyState.mode === 'focus');
+
   studyState.startedAtMs = now - (studyState.elapsedSessionSeconds || 0) * 1000;
-  studyState.targetEndMs = now + studyState.remainingSeconds * 1000;
+  studyState.targetEndMs = isFlowtimeFocus ? 0 : (now + studyState.remainingSeconds * 1000);
 
   if (studyState.audioCtx && studyState.audioCtx.state === 'suspended') {
     studyState.audioCtx.resume();
+  }
+
+  // Resume paused audio if returning to focus
+  if (studyState.mode === 'focus' && studySettings.pauseSoundsDuringBreaks && studyState._breakPausedSounds) {
+    resumeActiveStudyAudioAfterBreak();
+  }
+
+  // Auto Zen View while focusing
+  if (studyState.mode === 'focus' && studySettings.hideEverythingWhileFocusing) {
+    enterAutoZenMode();
   }
 
   startLocalTimerTick();
@@ -7526,6 +8001,11 @@ async function pauseStudyTimer(sync = true) {
     studyState.remainingSeconds = Math.max(0, Math.ceil((studyState.targetEndMs - Date.now()) / 1000));
     studyState.targetEndMs = 0;
   }
+
+  if (studyState._autoZenActive) {
+    exitAutoZenMode();
+  }
+
   updateTimerDisplay();
   if (typeof updateAllCoStudyCards === 'function') {
     updateAllCoStudyCards(lastFetchedLearners);
@@ -7540,10 +8020,22 @@ async function resetStudyTimer() {
   await pauseStudyTimer(false);
   studyState.completedFocusCycles = 0;
   studyState.accumulatedFocusMinutes = 0;
-  studyState.remainingSeconds = studyState.durationMinutes * 60;
+
+  if (studySettings.timerPreset === 'flowtime') {
+    studyState.remainingSeconds = 0;
+    studyState.durationMinutes = 0;
+  } else if (studySettings.timerPreset === 'eye_rule') {
+    studyState.durationMinutes = 20;
+    studyState.remainingSeconds = 20 * 60;
+  } else {
+    studyState.remainingSeconds = studyState.durationMinutes * 60;
+  }
+
   studyState.targetEndMs = 0;
   studyState.startedAtMs = 0;
   studyState.elapsedSessionSeconds = 0;
+  studyState.flowtimeFocusHistorySecs = 0;
+
   if (session) {
     try {
       await requestAPI("/api/study/leave", { method: "POST" });
@@ -7559,13 +8051,14 @@ async function resetStudyTimer() {
 
 async function finishStudySession(autoCompleted = false) {
   await pauseStudyTimer(false);
-  playAlarmSound(studySettings.alarmSound);
+  triggerSessionAlarm();
   sendStudyNotification();
 
   const totalElapsedMins = Math.round(studyState.elapsedSessionSeconds / 60);
   const isFocus = (studyState.mode === 'focus' || studyState.mode === 'pomodoro');
 
   if (isFocus) {
+    recordTodayCompletedPomodoro();
     if (autoCompleted) {
       studyState.completedFocusCycles = (studyState.completedFocusCycles || 0) + 1;
       studyState.accumulatedFocusMinutes = (studyState.accumulatedFocusMinutes || 0) + studyState.durationMinutes;
@@ -7610,13 +8103,12 @@ async function finishStudySession(autoCompleted = false) {
   }
 
   if (!autoCompleted) {
-    // Khi bấm hoàn thành: reset thời gian về lượt 0 và thoát khu vực bàn tròn
     studyState.completedFocusCycles = 0;
     studyState.accumulatedFocusMinutes = 0;
     studyState.cycleIndex = 0;
     studyState.mode = 'focus';
     studyState.durationMinutes = studySettings.focusMins;
-    studyState.remainingSeconds = studySettings.focusMins * 60;
+    studyState.remainingSeconds = (studySettings.timerPreset === 'flowtime' ? 0 : studySettings.focusMins * 60);
     studyState.targetEndMs = 0;
     studyState.elapsedSessionSeconds = 0;
 
@@ -7689,8 +8181,19 @@ window.addEventListener("focus", () => {
   resumeActiveStudyAudioIfPaused();
 });
 
-/* --- 5. CO-STUDY LOUNGE (Real-Time Synchronized) --- */
+/* --- 5. CO-STUDY LOUNGE & FLEXIBLE SPACES (Real-Time Synchronized) --- */
 let lastFetchedLearners = [];
+let currentStudyRoomId = (function() {
+  try {
+    return localStorage.getItem("research_study_room_id") || "commons";
+  } catch (e) {
+    return "commons";
+  }
+})();
+let currentStudyRoomData = null;
+let cachedStudyRooms = [];
+let activeSpaceFilter = 'all';
+let totalCampusLearnersCount = 0;
 
 const WALLPAPER_CARD_GRADIENTS = {
   default_light: 'linear-gradient(135deg, #ffffff 0%, #f0f8f4 100%)',
@@ -7865,7 +8368,7 @@ function updateAllCoStudyCards(rawLearners = []) {
   const totalCount = learners.length;
   const badge1 = $("#studyLiveCount");
   const badge2 = $("#coStudyCountBadge");
-  if (badge1) badge1.textContent = activeCount;
+  if (badge1) badge1.textContent = totalCampusLearnersCount > 0 ? totalCampusLearnersCount : activeCount;
   if (badge2) badge2.textContent = `${totalCount} người trong phòng`;
 }
 
@@ -7892,7 +8395,7 @@ function renderCoStudyList(rawLearners = [], force = false) {
   const totalCount = learners.length;
   const badge1 = $("#studyLiveCount");
   const badge2 = $("#coStudyCountBadge");
-  if (badge1) badge1.textContent = activeCount;
+  if (badge1) badge1.textContent = totalCampusLearnersCount > 0 ? totalCampusLearnersCount : activeCount;
   if (badge2) badge2.textContent = `${totalCount} người trong phòng`;
 
   const list = $("#coStudyList");
@@ -7980,10 +8483,31 @@ function renderCoStudyList(rawLearners = [], force = false) {
 async function fetchStudyLounge() {
   if (!canAccessStudyLounge()) return;
   try {
-    const res = await requestAPI("/api/study/lounge");
+    const qRoom = encodeURIComponent(currentStudyRoomId || 'commons');
+    const res = await requestAPI(`/api/study/lounge?roomId=${qRoom}`);
     if (!res) return;
 
     lastFetchedLearners = res.learners || [];
+    if (res.totalCampusLearners !== undefined) {
+      totalCampusLearnersCount = res.totalCampusLearners;
+    }
+    if (res.currentRoom) {
+      currentStudyRoomData = res.currentRoom;
+      currentStudyRoomId = res.currentRoom.id;
+    }
+    if (res.rooms) {
+      cachedStudyRooms = res.rooms;
+      updateSpaceFilterCounts(cachedStudyRooms);
+    }
+
+    renderActiveSpaceBanner(currentStudyRoomData);
+    renderSharedCohortTasks(currentStudyRoomData ? currentStudyRoomData.sharedTasks : []);
+
+    const liveHeaderBadge = $("#studyLiveCount");
+    if (liveHeaderBadge) {
+      liveHeaderBadge.textContent = totalCampusLearnersCount > 0 ? totalCampusLearnersCount : lastFetchedLearners.filter(l => Boolean(l.isRunning)).length;
+    }
+
     renderCoStudyList(lastFetchedLearners);
 
     // CROSS-DEVICE REAL-TIME SYNC
@@ -8030,6 +8554,516 @@ async function fetchStudyLounge() {
     renderCoStudyList(lastFetchedLearners);
   }
 }
+
+/* --- FLEXIBLE STUDY SPACES & COHORT DESKS HANDLERS --- */
+function renderActiveSpaceBanner(room) {
+  if (!room) {
+    room = {
+      id: currentStudyRoomId || 'commons',
+      name: 'Đại sảnh Thư viện',
+      type: 'commons',
+      description: 'Không gian mở kết nối toàn thể sinh viên và học giả NCKH đang tự học',
+      icon: '🏛️',
+      max_seats: 100,
+      occupancy: lastFetchedLearners.length || 0
+    };
+  }
+
+  const iconEl = $("#activeSpaceIcon");
+  const titleEl = $("#activeSpaceTitle");
+  const badgeEl = $("#activeSpaceBadge");
+  const descEl = $("#activeSpaceDesc");
+  const seatsEl = $("#activeSpaceSeatsCount");
+  const dotsEl = $("#activeSpaceSeatDots");
+  const leaveBtn = $("#btnLeaveSpace");
+  const subtitleEl = $("#studySpaceSubtitle");
+
+  if (iconEl) iconEl.textContent = room.icon || '🏛️';
+  if (titleEl) titleEl.textContent = room.name || 'Đại sảnh Thư viện';
+
+  if (badgeEl) {
+    if (room.type === 'commons') {
+      badgeEl.className = 'active-space-badge badge-commons';
+      badgeEl.textContent = 'Đại sảnh mở';
+    } else if (room.type === 'shared_task') {
+      badgeEl.className = 'active-space-badge badge-shared';
+      badgeEl.textContent = '🎯 Task nhóm';
+    } else if (room.type === 'private') {
+      badgeEl.className = 'active-space-badge badge-private';
+      badgeEl.textContent = '🔒 Buồng riêng';
+    } else {
+      badgeEl.className = 'active-space-badge badge-commons';
+      badgeEl.textContent = 'Chuyên đề';
+    }
+  }
+
+  if (descEl) {
+    descEl.textContent = room.description || (room.objective ? `Mục tiêu: ${room.objective}` : 'Không gian tự học tập trung');
+  }
+
+  const occ = room.occupancy !== undefined ? room.occupancy : (lastFetchedLearners.length || 1);
+  const maxSeats = room.max_seats || 100;
+  if (seatsEl) {
+    seatsEl.textContent = `${occ} / ${maxSeats}`;
+  }
+
+  if (dotsEl) {
+    const dotsCount = Math.min(maxSeats, 10);
+    const activeDots = Math.min(occ, dotsCount);
+    let dotsHtml = '';
+    for (let i = 0; i < dotsCount; i++) {
+      dotsHtml += `<span class="seat-dot ${i < activeDots ? 'active' : ''}"></span>`;
+    }
+    dotsEl.innerHTML = dotsHtml;
+  }
+
+  if (leaveBtn) {
+    leaveBtn.style.display = (room.id !== 'commons') ? 'inline-flex' : 'none';
+  }
+
+  if (subtitleEl) {
+    if (room.id === 'commons') {
+      subtitleEl.textContent = 'Đại sảnh thư viện & Các phòng chuyên đề';
+    } else {
+      subtitleEl.textContent = `${room.name} · ${room.type === 'shared_task' ? 'Phòng Nhiệm vụ chung' : 'Buồng riêng tư'}`;
+    }
+  }
+}
+
+function renderSharedCohortTasks(tasks = []) {
+  const box = $("#sharedCohortTasksBox");
+  if (!box) return;
+
+  if (!currentStudyRoomData || currentStudyRoomData.type !== 'shared_task') {
+    box.style.display = 'none';
+    return;
+  }
+  box.style.display = 'block';
+
+  const taskList = Array.isArray(tasks) ? tasks : [];
+  const total = taskList.length;
+  const done = taskList.filter(t => Boolean(t.done || t.completed)).length;
+  const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+
+  const pctBadge = $("#sharedTaskPctBadge");
+  const progressFill = $("#sharedTaskProgressFill");
+  if (pctBadge) pctBadge.textContent = `${pct}% (${done}/${total})`;
+  if (progressFill) progressFill.style.width = `${pct}%`;
+
+  const listEl = $("#sharedTasksList");
+  if (!listEl) return;
+
+  if (total === 0) {
+    listEl.innerHTML = `<li style="font-size:12.5px; color:var(--muted); text-align:center; padding:10px 0;">Chưa có nhiệm vụ nhóm nào. Bấm [+] để thêm mục tiêu cho phòng!</li>`;
+    return;
+  }
+
+  listEl.innerHTML = taskList.map(t => {
+    const isCompleted = Boolean(t.done || t.completed);
+    const contributor = t.by || t.completed_by_name || '';
+    const safeId = escapeHTML(String(t.id));
+    return `
+      <li class="shared-task-item ${isCompleted ? 'completed' : ''}">
+        <label class="shared-task-label">
+          <input type="checkbox" ${isCompleted ? 'checked' : ''} onchange="toggleSharedRoomTask('${safeId}')" />
+          <span class="shared-task-text">${escapeHTML(t.text)}</span>
+        </label>
+        ${isCompleted && contributor ? `
+          <span class="shared-task-contributor" title="Hoàn thành bởi ${escapeHTML(contributor)}">
+            ✓ ${escapeHTML(contributor)}
+          </span>
+        ` : ''}
+      </li>
+    `;
+  }).join('');
+}
+
+function updateSpaceFilterCounts(rooms = []) {
+  const countAll = $("#countSpacesAll");
+  if (countAll) {
+    countAll.textContent = (Array.isArray(rooms) && rooms.length) ? rooms.length : 4;
+  }
+  document.querySelectorAll(".space-filter-pill").forEach(pill => {
+    const f = pill.dataset.spaceFilter;
+    if (f) {
+      if (f === activeSpaceFilter) {
+        pill.classList.add("active");
+      } else {
+        pill.classList.remove("active");
+      }
+    }
+  });
+}
+
+function filterStudySpaceCategory(cat) {
+  activeSpaceFilter = cat;
+  updateSpaceFilterCounts(cachedStudyRooms);
+
+  if (cat === 'commons') {
+    if (currentStudyRoomId !== 'commons') {
+      joinStudySpace('commons');
+    }
+    return;
+  }
+
+  openStudyRoomsModal('browse', cat);
+}
+
+function openStudyRoomsModal(initialTab = 'browse', categoryFilter = null) {
+  const modal = document.getElementById("studyRoomsModal");
+  if (!modal) return;
+  if (categoryFilter) {
+    activeSpaceFilter = categoryFilter;
+  }
+  switchStudyRoomModalTab(initialTab);
+  loadAndRenderStudyRooms();
+  if (typeof modal.showModal === 'function') {
+    modal.showModal();
+  } else {
+    modal.setAttribute('open', '');
+  }
+}
+
+function switchStudyRoomModalTab(tab) {
+  const browsePane = document.getElementById("paneBrowseStudyRooms");
+  const createPane = document.getElementById("paneCreateStudyRoom");
+  const tabs = document.querySelectorAll(".room-modal-tab-btn");
+
+  tabs.forEach(btn => {
+    if (btn.dataset.roomTab === tab) {
+      btn.classList.add("active");
+    } else {
+      btn.classList.remove("active");
+    }
+  });
+
+  if (tab === 'browse') {
+    if (browsePane) browsePane.style.display = 'block';
+    if (createPane) createPane.style.display = 'none';
+  } else {
+    if (browsePane) browsePane.style.display = 'none';
+    if (createPane) createPane.style.display = 'block';
+  }
+}
+
+async function loadAndRenderStudyRooms() {
+  try {
+    const res = await requestAPI("/api/study/rooms");
+    if (res && res.rooms) {
+      cachedStudyRooms = res.rooms;
+      renderBrowseRoomsGrid(cachedStudyRooms);
+      updateSpaceFilterCounts(cachedStudyRooms);
+    }
+  } catch (e) {
+    console.error("loadAndRenderStudyRooms error:", e);
+    renderBrowseRoomsGrid(cachedStudyRooms);
+  }
+}
+
+function renderBrowseRoomsGrid(rooms = []) {
+  const grid = document.getElementById("browseRoomsGrid");
+  if (!grid) return;
+
+  const roomList = Array.isArray(rooms) ? rooms : [];
+  let displayRooms = roomList;
+  if (activeSpaceFilter && activeSpaceFilter !== 'all') {
+    displayRooms = roomList.filter(r => r.type === activeSpaceFilter);
+  }
+
+  if (displayRooms.length === 0) {
+    grid.innerHTML = `
+      <div style="grid-column: 1 / -1; text-align: center; padding: 36px 16px; color: var(--muted);">
+        <p style="font-size: 15px; margin-bottom: 8px;">Không có không gian nào trong danh mục này.</p>
+        <button type="button" class="button button-sm button-primary" onclick="switchStudyRoomModalTab('create')">➕ Tạo phòng học mới</button>
+      </div>
+    `;
+    return;
+  }
+
+  grid.innerHTML = displayRooms.map(r => {
+    const isCurrent = (r.id === currentStudyRoomId);
+    let typeBadge = '';
+    if (r.type === 'commons') {
+      typeBadge = `<span class="active-space-badge badge-commons">🏛️ Đại sảnh</span>`;
+    } else if (r.type === 'shared_task') {
+      typeBadge = `<span class="active-space-badge badge-shared">🎯 Task nhóm</span>`;
+    } else if (r.type === 'private') {
+      typeBadge = `<span class="active-space-badge badge-private">🔒 Buồng riêng</span>`;
+    }
+
+    const occ = r.occupancy || 0;
+    const maxS = r.max_seats || 100;
+    const isFull = occ >= maxS && !isCurrent;
+
+    let actionBtnHtml = '';
+    if (isCurrent) {
+      actionBtnHtml = `<button type="button" class="button button-xs button-quiet" disabled style="opacity: 0.85; font-weight: 600;">✓ Đang ở phòng này</button>`;
+    } else if (isFull) {
+      actionBtnHtml = `<button type="button" class="button button-xs button-quiet" disabled>Hết chỗ (${occ}/${maxS})</button>`;
+    } else if (r.type === 'private') {
+      actionBtnHtml = `<button type="button" class="button button-xs button-primary" onclick="promptJoinPrivateRoom('${escapeHTML(r.id)}')">🔒 Vào phòng (Mã PIN)</button>`;
+    } else {
+      actionBtnHtml = `<button type="button" class="button button-xs button-primary" onclick="joinStudySpace('${escapeHTML(r.id)}')">Vào bàn học →</button>`;
+    }
+
+    const taskCountBadge = (r.type === 'shared_task' && r.task_count) ? `<span style="font-size: 11px; color: var(--primary); background: rgba(52, 117, 83, 0.1); padding: 2px 7px; border-radius: 999px; margin-left: auto;">${r.task_count} nhiệm vụ</span>` : '';
+
+    return `
+      <div class="room-card ${isCurrent ? 'is-current' : ''}" data-room-id="${escapeHTML(r.id)}">
+        <div class="room-card-head">
+          <span class="room-card-icon">${escapeHTML(r.icon || '📖')}</span>
+          <div class="room-card-title-col">
+            <h4 class="room-card-title">${escapeHTML(r.name)}</h4>
+            <div style="display: flex; align-items: center; gap: 6px; margin-top: 2px;">
+              ${typeBadge}
+              ${taskCountBadge}
+            </div>
+          </div>
+        </div>
+        <p class="room-card-desc">${escapeHTML(r.description || r.objective || 'Không gian tự học tập trung')}</p>
+        <div class="room-card-footer">
+          <div class="room-card-occupancy">
+            <span class="occupancy-dot"></span>
+            <strong>${occ}</strong> / ${maxS} ghế
+          </div>
+          <div class="room-card-action">
+            ${actionBtnHtml}
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+async function joinStudySpace(roomId, pinCode = null) {
+  if (!session) {
+    openAuth();
+    return;
+  }
+  try {
+    const payload = { roomId };
+    if (pinCode) payload.pinCode = pinCode;
+    const res = await requestAPI("/api/study/rooms/join", {
+      method: "POST",
+      body: JSON.stringify(payload)
+    });
+    if (res && res.success) {
+      currentStudyRoomId = roomId;
+      try {
+        localStorage.setItem("research_study_room_id", roomId);
+      } catch (e) {}
+
+      if (res.room) {
+        currentStudyRoomData = res.room;
+        renderActiveSpaceBanner(res.room);
+        renderSharedCohortTasks(res.room.sharedTasks || []);
+      }
+      toast(`Đã vào không gian: ${res.room ? res.room.name : roomId}`);
+      const modal = document.getElementById("studyRoomsModal");
+      if (modal && typeof modal.close === 'function' && modal.open) {
+        modal.close();
+      }
+      fetchStudyLounge();
+    } else {
+      toast(res.error || "Không thể vào phòng này.");
+    }
+  } catch (e) {
+    console.error("joinStudySpace error:", e);
+    toast("Lỗi khi tham gia không gian học.");
+  }
+}
+
+function leaveCurrentSpaceToCommons() {
+  joinStudySpace('commons');
+}
+
+function promptJoinPrivateRoom(roomId) {
+  const pin = prompt("Nhập mã PIN bảo mật để vào buồng tự học riêng tư:");
+  if (pin === null) return;
+  if (!pin.trim()) {
+    toast("Vui lòng nhập mã PIN.");
+    return;
+  }
+  joinStudySpace(roomId, pin.trim());
+}
+
+function handleNewRoomTypeChange(type) {
+  const pinGroup = document.getElementById("groupNewRoomPin");
+  const taskGroup = document.getElementById("groupInitialTasks");
+  if (pinGroup) {
+    pinGroup.style.display = (type === 'private') ? 'block' : 'none';
+  }
+  if (taskGroup) {
+    taskGroup.style.display = (type === 'shared_task') ? 'block' : 'none';
+  }
+}
+
+async function handleCreateStudyRoomSubmit() {
+  if (!session) {
+    openAuth();
+    return;
+  }
+  const nameEl = document.getElementById("newRoomName");
+  const iconEl = document.getElementById("newRoomIcon");
+  const typeEl = document.getElementById("newRoomType");
+  const seatsEl = document.getElementById("newRoomSeats");
+  const pinEl = document.getElementById("newRoomPin");
+  const objEl = document.getElementById("newRoomObjective");
+  const tasksEl = document.getElementById("newRoomInitialTasks");
+
+  const name = nameEl ? nameEl.value.trim() : "";
+  if (!name) {
+    toast("Vui lòng nhập tên phòng học.");
+    if (nameEl) nameEl.focus();
+    return;
+  }
+
+  const type = typeEl ? typeEl.value : "shared_task";
+  const pinCode = (pinEl && type === 'private') ? pinEl.value.trim() : null;
+  if (type === 'private' && (!pinCode || pinCode.length < 4)) {
+    toast("Mã PIN buồng riêng phải có tối thiểu 4 ký tự.");
+    if (pinEl) pinEl.focus();
+    return;
+  }
+
+  const initialTasks = tasksEl ? tasksEl.value.split('\n').map(s => s.trim()).filter(Boolean) : [];
+
+  try {
+    const res = await requestAPI("/api/study/rooms/create", {
+      method: "POST",
+      body: JSON.stringify({
+        name,
+        icon: iconEl ? iconEl.value : "📖",
+        type,
+        maxSeats: seatsEl ? parseInt(seatsEl.value, 10) : 8,
+        pinCode,
+        objective: objEl ? objEl.value.trim() : "",
+        initialTasks
+      })
+    });
+
+    if (res && res.success && res.room) {
+      toast(`Đã tạo phòng "${res.room.name}" thành công!`);
+      currentStudyRoomId = res.room.id;
+      currentStudyRoomData = res.room;
+      try {
+        localStorage.setItem("research_study_room_id", currentStudyRoomId);
+      } catch (e) {}
+
+      // Reset form
+      if (nameEl) nameEl.value = "";
+      if (objEl) objEl.value = "";
+      if (tasksEl) tasksEl.value = "";
+      if (pinEl) pinEl.value = "";
+
+      const modal = document.getElementById("studyRoomsModal");
+      if (modal && typeof modal.close === 'function' && modal.open) {
+        modal.close();
+      }
+
+      fetchStudyLounge();
+    } else {
+      toast(res.error || "Không thể tạo phòng học.");
+    }
+  } catch (e) {
+    console.error("handleCreateStudyRoomSubmit error:", e);
+    toast("Lỗi khi tạo không gian học.");
+  }
+}
+
+async function toggleSharedRoomTask(taskId) {
+  if (!session) {
+    openAuth();
+    return;
+  }
+  try {
+    const res = await requestAPI("/api/study/rooms/task/toggle", {
+      method: "POST",
+      body: JSON.stringify({
+        roomId: currentStudyRoomId || 'commons',
+        taskId: String(taskId)
+      })
+    });
+    if (res && res.success) {
+      const updatedTasks = res.sharedTasks || res.tasks || [];
+      if (currentStudyRoomData) {
+        currentStudyRoomData.sharedTasks = updatedTasks;
+      }
+      renderSharedCohortTasks(updatedTasks);
+      if (res.completed) {
+        toast(`🎉 Đã hoàn thành nhiệm vụ chung!`);
+      }
+    } else {
+      toast(res.error || "Không thể cập nhật nhiệm vụ.");
+      fetchStudyLounge();
+    }
+  } catch (e) {
+    console.error("toggleSharedRoomTask error:", e);
+  }
+}
+
+function toggleAddSharedTaskInput() {
+  const row = document.getElementById("sharedTaskAddRow");
+  const input = document.getElementById("newSharedTaskInput");
+  if (!row) return;
+  const isHidden = (row.style.display === 'none' || !row.style.display);
+  row.style.display = isHidden ? 'flex' : 'none';
+  if (isHidden && input) {
+    input.focus();
+  }
+}
+
+async function submitNewSharedTask() {
+  if (!session) {
+    openAuth();
+    return;
+  }
+  const input = document.getElementById("newSharedTaskInput");
+  if (!input) return;
+  const text = input.value.trim();
+  if (!text) {
+    input.focus();
+    return;
+  }
+
+  try {
+    const res = await requestAPI("/api/study/rooms/task/add", {
+      method: "POST",
+      body: JSON.stringify({
+        roomId: currentStudyRoomId || 'commons',
+        text: text,
+        taskText: text
+      })
+    });
+    if (res && res.success) {
+      input.value = "";
+      toggleAddSharedTaskInput();
+      const updatedTasks = res.sharedTasks || res.tasks || [];
+      if (currentStudyRoomData) {
+        currentStudyRoomData.sharedTasks = updatedTasks;
+      }
+      renderSharedCohortTasks(updatedTasks);
+      toast("Đã thêm nhiệm vụ chung vào phòng!");
+    } else {
+      toast(res.error || "Không thể thêm nhiệm vụ.");
+    }
+  } catch (e) {
+    console.error("submitNewSharedTask error:", e);
+  }
+}
+
+// Window bindings for modal and room interactions
+window.openStudyRoomsModal = openStudyRoomsModal;
+window.switchStudyRoomModalTab = switchStudyRoomModalTab;
+window.filterStudySpaceCategory = filterStudySpaceCategory;
+window.joinStudySpace = joinStudySpace;
+window.leaveCurrentSpaceToCommons = leaveCurrentSpaceToCommons;
+window.promptJoinPrivateRoom = promptJoinPrivateRoom;
+window.handleNewRoomTypeChange = handleNewRoomTypeChange;
+window.handleCreateStudyRoomSubmit = handleCreateStudyRoomSubmit;
+window.toggleSharedRoomTask = toggleSharedRoomTask;
+window.toggleAddSharedTaskInput = toggleAddSharedTaskInput;
+window.submitNewSharedTask = submitNewSharedTask;
 
 const seenCheerIds = new Set();
 
@@ -8672,11 +9706,13 @@ function updateMasterAmbientButtonState() {
 }
 
 /* --- 7. ALARM CHIMES (Synthesized Offline Web Audio) --- */
-function playAlarmSound(alarmType = "bell") {
+function playAlarmSound(alarmType = "bell", customVol = null) {
   try {
     const ctx = getAudioContext();
     if (!ctx) return;
     const now = ctx.currentTime;
+    const baseVol = (customVol !== null ? Number(customVol) : (studySettings.alarmVolume ?? 80)) / 100;
+    if (baseVol <= 0) return;
 
     if (alarmType === "ding") {
       const osc = ctx.createOscillator();
@@ -8684,7 +9720,7 @@ function playAlarmSound(alarmType = "bell") {
       osc.type = "sine";
       osc.frequency.setValueAtTime(1567.98, now);
       osc.frequency.exponentialRampToValueAtTime(2093.00, now + 0.05);
-      gain.gain.setValueAtTime(0.3, now);
+      gain.gain.setValueAtTime(0.3 * baseVol, now);
       gain.gain.exponentialRampToValueAtTime(0.0001, now + 1.2);
       osc.connect(gain);
       gain.connect(ctx.destination);
@@ -8696,7 +9732,7 @@ function playAlarmSound(alarmType = "bell") {
         const gain = ctx.createGain();
         osc.type = "triangle";
         osc.frequency.setValueAtTime(2400, now + offset);
-        gain.gain.setValueAtTime(0.25, now + offset);
+        gain.gain.setValueAtTime(0.25 * baseVol, now + offset);
         gain.gain.exponentialRampToValueAtTime(0.0001, now + offset + 0.45);
         osc.connect(gain);
         gain.connect(ctx.destination);
@@ -8709,7 +9745,7 @@ function playAlarmSound(alarmType = "bell") {
         const gain = ctx.createGain();
         osc.type = "sine";
         osc.frequency.setValueAtTime(freq, now);
-        const initialGain = idx === 2 ? 0.08 : 0.25;
+        const initialGain = (idx === 2 ? 0.08 : 0.25) * baseVol;
         gain.gain.setValueAtTime(initialGain, now);
         gain.gain.exponentialRampToValueAtTime(0.0001, now + 3.8);
         osc.connect(gain);
@@ -8725,12 +9761,27 @@ function playAlarmSound(alarmType = "bell") {
         const start = now + (i * 0.18);
         osc.type = "sine";
         osc.frequency.setValueAtTime(freq, start);
-        gain.gain.setValueAtTime(0.22, start);
+        gain.gain.setValueAtTime(0.22 * baseVol, start);
         gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.9);
         osc.connect(gain);
         gain.connect(ctx.destination);
         osc.start(start);
         osc.stop(start + 0.95);
+      });
+    } else if (alarmType === "marimba") {
+      const notes = [523.25, 659.25, 783.99, 1046.50];
+      notes.forEach((freq, i) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        const start = now + (i * 0.12);
+        osc.type = "sine";
+        osc.frequency.setValueAtTime(freq, start);
+        gain.gain.setValueAtTime(0.3 * baseVol, start);
+        gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.6);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(start);
+        osc.stop(start + 0.65);
       });
     } else {
       [587.33, 1174.66, 1761.99].forEach((freq, i) => {
@@ -8738,7 +9789,7 @@ function playAlarmSound(alarmType = "bell") {
         const gain = ctx.createGain();
         osc.type = "sine";
         osc.frequency.setValueAtTime(freq, now);
-        const initialGain = 0.25 / (i + 1);
+        const initialGain = (0.25 / (i + 1)) * baseVol;
         gain.gain.setValueAtTime(initialGain, now);
         gain.gain.exponentialRampToValueAtTime(0.0001, now + 2.0);
         osc.connect(gain);
@@ -8752,6 +9803,84 @@ function playAlarmSound(alarmType = "bell") {
   }
 }
 
+function triggerSessionAlarm() {
+  const sound = studySettings.alarmSound || "bell";
+  const rings = Math.max(1, Math.min(5, Number(studySettings.alarmRings) || 1));
+  const vol = Number(studySettings.alarmVolume ?? 80);
+
+  for (let i = 0; i < rings; i++) {
+    setTimeout(() => {
+      playAlarmSound(sound, vol);
+    }, i * 1400);
+  }
+}
+
+function playSoftReminderChime() {
+  try {
+    const ctx = getAudioContext();
+    if (!ctx) return;
+    const now = ctx.currentTime;
+    const vol = ((studySettings.alarmVolume ?? 80) / 100) * 0.35;
+    if (vol <= 0) return;
+
+    const osc1 = ctx.createOscillator();
+    const osc2 = ctx.createOscillator();
+    const gain = ctx.createGain();
+
+    osc1.type = "sine";
+    osc2.type = "sine";
+    osc1.frequency.setValueAtTime(880, now); // A5
+    osc2.frequency.setValueAtTime(1318.51, now + 0.12); // E6
+
+    gain.gain.setValueAtTime(vol, now);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 1.4);
+
+    osc1.connect(gain);
+    osc2.connect(gain);
+    gain.connect(ctx.destination);
+
+    osc1.start(now);
+    osc1.stop(now + 0.7);
+    osc2.start(now + 0.12);
+    osc2.stop(now + 1.45);
+  } catch (e) {}
+}
+
+let tickSoundToggle = false;
+function playTickSound() {
+  if (!studySettings.tickingSound || studySettings.tickingSound === "off") return;
+  if (!studyState.isRunning || studyState.mode !== "focus") return;
+  try {
+    const ctx = getAudioContext();
+    if (!ctx) return;
+    const now = ctx.currentTime;
+    const baseVol = ((studySettings.alarmVolume ?? 80) / 100);
+    const vol = baseVol * 0.08;
+    if (vol <= 0) return;
+
+    tickSoundToggle = !tickSoundToggle;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+
+    if (studySettings.tickingSound === "digital") {
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(tickSoundToggle ? 1046.5 : 880, now);
+    } else {
+      osc.type = "triangle";
+      osc.frequency.setValueAtTime(tickSoundToggle ? 800 : 600, now);
+    }
+
+    gain.gain.setValueAtTime(vol, now);
+    gain.gain.exponentialRampToValueAtTime(0.00001, now + 0.025);
+
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+
+    osc.start(now);
+    osc.stop(now + 0.03);
+  } catch (e) {}
+}
+
 function playChimeSound() {
   playAlarmSound(studySettings.alarmSound || "bell");
 }
@@ -8759,7 +9888,27 @@ function playChimeSound() {
 function previewSelectedAlarm() {
   const sel = $("#settingEndAlarm");
   const val = sel ? sel.value : "bell";
-  playAlarmSound(val);
+  const vol = Number($("#settingAlarmVolume")?.value ?? studySettings.alarmVolume ?? 80);
+  playAlarmSound(val, vol);
+}
+
+function previewTickingSound(type) {
+  if (!type || type === "off") return;
+  try {
+    const ctx = getAudioContext();
+    if (!ctx) return;
+    const now = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = (type === "digital") ? "sine" : "triangle";
+    osc.frequency.setValueAtTime((type === "digital") ? 1046.5 : 800, now);
+    gain.gain.setValueAtTime(0.12, now);
+    gain.gain.exponentialRampToValueAtTime(0.00001, now + 0.03);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(now);
+    osc.stop(now + 0.035);
+  } catch (e) {}
 }
 
 /* --- 8. CUSTOM AUDIO UPLOAD, PERSISTENT STORAGE & PLAYBACK --- */
@@ -9918,75 +11067,267 @@ function sendStudyNotification() {
 }
 
 /* --- 13. SETTINGS MODAL HANDLERS --- */
-window.openStudySettingsModal = function() {
+window.switchStudySettingsTab = function(tabName) {
+  $$(".settings-tab-btn").forEach(btn => {
+    btn.classList.toggle("active", btn.dataset.settingsTab === tabName);
+  });
+  const tabMap = {
+    timer: "paneSettingsTimer",
+    extras: "paneSettingsExtras",
+    alarms: "paneSettingsAlarms",
+    tasks: "paneSettingsTasks"
+  };
+  Object.keys(tabMap).forEach(key => {
+    const pane = $("#" + tabMap[key]);
+    if (pane) pane.style.display = (key === tabName) ? "block" : "none";
+  });
+  if (tabName === "tasks") {
+    renderTaskLabelsManagerList();
+  }
+};
+
+window.selectModalPreset = function(presetId) {
+  $$("#presetSelectorGrid .preset-card").forEach(c => {
+    c.classList.toggle("active", c.dataset.preset === presetId);
+  });
+
+  const ftGroup = $("#groupFlowtimeConfig");
+  if (ftGroup) {
+    ftGroup.style.display = (presetId === "flowtime") ? "block" : "none";
+  }
+
+  const cfg = STUDY_PRESET_CONFIGS[presetId];
+  if (cfg && presetId !== "flowtime" && presetId !== "custom") {
+    const fInput = $("#settingFocusMins");
+    const sInput = $("#settingShortBreakMins");
+    const lInput = $("#settingLongBreakMins");
+    const intInput = $("#settingLongBreakInterval");
+    if (fInput) fInput.value = cfg.focus;
+    if (sInput) sInput.value = (cfg.shortBreak >= 1) ? cfg.shortBreak : 1;
+    if (lInput) lInput.value = cfg.longBreak;
+    if (intInput) intInput.value = cfg.sessions || 4;
+  }
+  handleCustomDurationChange();
+};
+
+window.stepDuration = function(type, delta) {
+  let input = null;
+  let min = 1, max = 180;
+  if (type === 'focus') {
+    input = $("#settingFocusMins");
+    min = 1; max = 180;
+  } else if (type === 'shortbreak') {
+    input = $("#settingShortBreakMins");
+    min = 1; max = 60;
+  } else if (type === 'longbreak') {
+    input = $("#settingLongBreakMins");
+    min = 1; max = 90;
+  }
+  if (!input) return;
+  const current = Number(input.value) || min;
+  const next = Math.max(min, Math.min(max, current + delta));
+  input.value = next;
+  handleCustomDurationChange();
+};
+
+window.stepLongBreakInterval = function(delta) {
+  const input = $("#settingLongBreakInterval");
+  if (!input) return;
+  const current = Number(input.value) || 4;
+  const next = Math.max(1, Math.min(12, current + delta));
+  input.value = next;
+  handleCustomDurationChange();
+};
+
+window.stepDailyGoal = function(delta) {
+  const input = $("#settingDailyGoal");
+  if (!input) return;
+  const current = Number(input.value) || 8;
+  const next = Math.max(1, Math.min(30, current + delta));
+  input.value = next;
+};
+
+window.handleCustomDurationChange = function() {
+  const fInput = $("#settingFocusMins");
+  const sInput = $("#settingShortBreakMins");
+  const lInput = $("#settingLongBreakMins");
+  const intInput = $("#settingLongBreakInterval");
+  const estEl = $("#settingFullCycleEstimate");
+
+  const focus = Number(fInput?.value) || 25;
+  const sBreak = Number(sInput?.value) || 5;
+  const lBreak = Number(lInput?.value) || 15;
+  const interval = Number(intInput?.value) || 4;
+
+  const totalMins = (interval * focus) + (Math.max(0, interval - 1) * sBreak) + lBreak;
+  const hours = Math.floor(totalMins / 60);
+  const mins = totalMins % 60;
+  const timeStr = `${hours > 0 ? hours + 'h ' : ''}${mins}m`;
+
+  if (estEl) {
+    estEl.textContent = `➔ One full cycle takes ${timeStr}`;
+  }
+};
+
+window.handleAlarmVolumeChange = function(val) {
+  const num = Math.max(0, Math.min(100, Number(val) || 0));
+  const textEl = $("#alarmVolumeVal");
+  if (textEl) textEl.textContent = `${num}%`;
+  studySettings.alarmVolume = num;
+};
+
+window.setAlarmRings = function(rings) {
+  const num = Number(rings) || 1;
+  studySettings.alarmRings = num;
+  $$("#ringMultiplierGroup .ring-mult-btn").forEach(btn => {
+    btn.classList.toggle("active", Number(btn.dataset.rings) === num);
+  });
+};
+
+window.setReminderBeforeEnd = function(mins) {
+  const num = Number(mins) || 0;
+  studySettings.reminderBeforeEnd = num;
+  $$("#reminderPillGroup .remind-pill-btn").forEach(btn => {
+    btn.classList.toggle("active", Number(btn.dataset.remind) === num);
+  });
+};
+
+window.updateFlowtimeRatioSetting = function(val) {
+  studySettings.flowtimeRatio = val;
+};
+
+window.openMethodGuideModal = function(method = 'all') {
+  const modal = $("#studyMethodGuideModal");
+  if (!modal) return;
+  modal.showModal();
+  if (method === 'flowtime') {
+    const card = modal.querySelector(".method-card:first-child");
+    if (card) card.scrollIntoView({ behavior: 'smooth' });
+  } else if (method === 'eye_rule') {
+    const cards = modal.querySelectorAll(".method-card");
+    if (cards[1]) cards[1].scrollIntoView({ behavior: 'smooth' });
+  }
+};
+
+window.openStudySettingsModal = function(initialTab = 'timer') {
   const modal = $("#studySettingsModal");
   if (!modal) return;
+
+  switchStudySettingsTab(initialTab);
+
+  const activePreset = studySettings.timerPreset || "25_5";
+  $$("#presetSelectorGrid .preset-card").forEach(c => {
+    c.classList.toggle("active", c.dataset.preset === activePreset);
+  });
+  const ftGroup = $("#groupFlowtimeConfig");
+  if (ftGroup) {
+    ftGroup.style.display = (activePreset === "flowtime") ? "block" : "none";
+  }
+  const ratioInputs = $$("input[name='flowtimeRatioModal']");
+  ratioInputs.forEach(r => {
+    r.checked = (r.value === (studySettings.flowtimeRatio || "1/4"));
+  });
 
   const fInput = $("#settingFocusMins");
   const sInput = $("#settingShortBreakMins");
   const lInput = $("#settingLongBreakMins");
+  const intInput = $("#settingLongBreakInterval");
+
+  if (fInput) fInput.value = studySettings.focusMins || 25;
+  if (sInput) sInput.value = studySettings.shortBreakMins || 5;
+  if (lInput) lInput.value = studySettings.longBreakMins || 15;
+  if (intInput) intInput.value = studySettings.longBreakInterval || 4;
+  handleCustomDurationChange();
+
   const aBreaks = $("#settingAutoStartBreaks");
   const aPoms = $("#settingAutoStartPomodoros");
-  const bNotifs = $("#settingBrowserNotifications");
-  const selAlarm = $("#settingEndAlarm");
+  const dGoal = $("#settingDailyGoal");
+  const pSounds = $("#settingPauseSoundsDuringBreaks");
+  const hFocus = $("#settingHideEverythingWhileFocusing");
+  const sSecs = $("#settingShowSeconds");
 
-  if (fInput) fInput.value = studySettings.focusMins;
-  if (sInput) sInput.value = studySettings.shortBreakMins;
-  if (lInput) lInput.value = studySettings.longBreakMins;
-  if (aBreaks) aBreaks.checked = studySettings.autoStartBreaks;
-  if (aPoms) aPoms.checked = studySettings.autoStartPomodoros;
+  if (aBreaks) aBreaks.checked = studySettings.autoStartBreaks ?? true;
+  if (aPoms) aPoms.checked = studySettings.autoStartPomodoros ?? false;
+  if (dGoal) dGoal.value = studySettings.dailyGoalPomodoros || 8;
+  if (pSounds) pSounds.checked = studySettings.pauseSoundsDuringBreaks ?? true;
+  if (hFocus) hFocus.checked = studySettings.hideEverythingWhileFocusing ?? false;
+  if (sSecs) sSecs.checked = studySettings.showSeconds ?? true;
+
+  const selAlarm = $("#settingEndAlarm");
+  const volRange = $("#settingAlarmVolume");
+  const volVal = $("#alarmVolumeVal");
+  const selTick = $("#settingTickingSound");
+  const bNotifs = $("#settingBrowserNotifications");
+
+  if (selAlarm) selAlarm.value = studySettings.alarmSound || "bell";
+  if (volRange) volRange.value = studySettings.alarmVolume ?? 80;
+  if (volVal) volVal.textContent = `${studySettings.alarmVolume ?? 80}%`;
+  setAlarmRings(studySettings.alarmRings || 1);
+  setReminderBeforeEnd(studySettings.reminderBeforeEnd || 0);
+  if (selTick) selTick.value = studySettings.tickingSound || "off";
+
   if (bNotifs) {
-    bNotifs.checked = studySettings.browserNotifications;
+    bNotifs.checked = studySettings.browserNotifications ?? false;
     bNotifs.onchange = () => {
       if (bNotifs.checked && "Notification" in window && Notification.permission !== "granted") {
         Notification.requestPermission();
       }
     };
   }
-  if (selAlarm) selAlarm.value = studySettings.alarmSound;
+
+  const streak = getUserStudyStreak();
+  const taskUnlocked = streak >= 7;
+  const bannerLock = $("#bannerTasksLocked");
+  if (bannerLock) bannerLock.style.display = taskUnlocked ? "none" : "flex";
+  renderTaskLabelsManagerList();
 
   modal.showModal();
 };
 
-window.stepDuration = function(type, delta) {
-  let input = null;
-  let min = 1, max = 120;
-  if (type === 'focus') {
-    input = $("#settingFocusMins");
-    min = 1; max = 120;
-  } else if (type === 'shortbreak') {
-    input = $("#settingShortBreakMins");
-    min = 1; max = 30;
-  } else if (type === 'longbreak') {
-    input = $("#settingLongBreakMins");
-    min = 5; max = 60;
-  }
-  if (!input) return;
-  const current = Number(input.value) || min;
-  const next = Math.max(min, Math.min(max, current + delta));
-  input.value = next;
-};
-
 window.saveStudySettings = function(closeModal = true) {
-  const fInput = $("#settingFocusMins");
-  const sInput = $("#settingShortBreakMins");
-  const lInput = $("#settingLongBreakMins");
-  const aBreaks = $("#settingAutoStartBreaks");
-  const aPoms = $("#settingAutoStartPomodoros");
-  const bNotifs = $("#settingBrowserNotifications");
-  const selAlarm = $("#settingEndAlarm");
+  const modal = $("#studySettingsModal");
+  if (closeModal || (modal && modal.open)) {
+    const fInput = $("#settingFocusMins");
+    const sInput = $("#settingShortBreakMins");
+    const lInput = $("#settingLongBreakMins");
+    const intInput = $("#settingLongBreakInterval");
+    const aBreaks = $("#settingAutoStartBreaks");
+    const aPoms = $("#settingAutoStartPomodoros");
+    const dGoal = $("#settingDailyGoal");
+    const pSounds = $("#settingPauseSoundsDuringBreaks");
+    const hFocus = $("#settingHideEverythingWhileFocusing");
+    const sSecs = $("#settingShowSeconds");
+    const selAlarm = $("#settingEndAlarm");
+    const volRange = $("#settingAlarmVolume");
+    const selTick = $("#settingTickingSound");
+    const bNotifs = $("#settingBrowserNotifications");
 
-  if (fInput) studySettings.focusMins = Math.max(1, Math.min(120, Number(fInput.value) || 25));
-  if (sInput) studySettings.shortBreakMins = Math.max(1, Math.min(30, Number(sInput.value) || 5));
-  if (lInput) studySettings.longBreakMins = Math.max(5, Math.min(60, Number(lInput.value) || 15));
-  if (aBreaks) studySettings.autoStartBreaks = aBreaks.checked;
-  if (aPoms) studySettings.autoStartPomodoros = aPoms.checked;
-  if (selAlarm) studySettings.alarmSound = selAlarm.value;
+    const activeCard = $("#presetSelectorGrid .preset-card.active");
+    if (activeCard && activeCard.dataset.preset) {
+      studySettings.timerPreset = activeCard.dataset.preset;
+    }
 
-  if (bNotifs) {
-    studySettings.browserNotifications = bNotifs.checked;
-    if (bNotifs.checked && "Notification" in window && Notification.permission !== "granted") {
-      Notification.requestPermission();
+    if (fInput) studySettings.focusMins = Math.max(1, Math.min(180, Number(fInput.value) || 25));
+    if (sInput) studySettings.shortBreakMins = Math.max(1, Math.min(60, Number(sInput.value) || 5));
+    if (lInput) studySettings.longBreakMins = Math.max(1, Math.min(90, Number(lInput.value) || 15));
+    if (intInput) studySettings.longBreakInterval = Math.max(1, Math.min(12, Number(intInput.value) || 4));
+
+    if (aBreaks) studySettings.autoStartBreaks = aBreaks.checked;
+    if (aPoms) studySettings.autoStartPomodoros = aPoms.checked;
+    if (dGoal) studySettings.dailyGoalPomodoros = Math.max(1, Math.min(30, Number(dGoal.value) || 8));
+    if (pSounds) studySettings.pauseSoundsDuringBreaks = pSounds.checked;
+    if (hFocus) studySettings.hideEverythingWhileFocusing = hFocus.checked;
+    if (sSecs) studySettings.showSeconds = sSecs.checked;
+
+    if (selAlarm) studySettings.alarmSound = selAlarm.value;
+    if (volRange) studySettings.alarmVolume = Number(volRange.value);
+    if (selTick) studySettings.tickingSound = selTick.value;
+
+    if (bNotifs) {
+      studySettings.browserNotifications = bNotifs.checked;
+      if (bNotifs.checked && "Notification" in window && Notification.permission !== "granted") {
+        Notification.requestPermission();
+      }
     }
   }
 
@@ -9995,7 +11336,10 @@ window.saveStudySettings = function(closeModal = true) {
   } catch (e) {}
 
   if (!studyState.isRunning) {
-    if (studyState.mode === 'focus') {
+    if (studySettings.timerPreset === 'flowtime') {
+      studyState.durationMinutes = 0;
+      studyState.remainingSeconds = 0;
+    } else if (studyState.mode === 'focus') {
       studyState.durationMinutes = studySettings.focusMins;
       studyState.remainingSeconds = studySettings.focusMins * 60;
     } else if (studyState.mode === 'shortbreak') {
@@ -10005,35 +11349,63 @@ window.saveStudySettings = function(closeModal = true) {
       studyState.durationMinutes = studySettings.longBreakMins;
       studyState.remainingSeconds = studySettings.longBreakMins * 60;
     }
-    updateTimerDisplay();
   }
+
+  updateTimerDisplay();
+  updateDailyGoalUI();
 
   if (closeModal) {
     const modal = $("#studySettingsModal");
     if (modal) modal.close();
-    toast("Đã lưu cấu hình Pomodoro!");
+    toast("Đã lưu cài đặt phòng tự học & Pomodoro!");
   }
 };
 
-/* --- 14. TO-DO CHECKLIST MANAGER (localStorage) --- */
+/* --- 14. TASK CATEGORIES & TO-DO CHECKLIST MANAGER --- */
 const STUDY_TODO_STORAGE_KEY = "research_study_todos_v1";
+
+const STUDY_TASK_STATUSES = [
+  { id: "chua_lam", label: "Chưa làm", color: "#94a3b8", weight: 0 },
+  { id: "chuan_bi", label: "Chuẩn bị", color: "#64748b", weight: 0.1 },
+  { id: "dang_thuc_hien", label: "Đang thực hiện", color: "#3b82f6", weight: 0.2 },
+  { id: "pct_25", label: "25%", color: "#06b6d4", weight: 0.25 },
+  { id: "pct_50", label: "50%", color: "#f59e0b", weight: 0.5 },
+  { id: "pct_75", label: "75%", color: "#8b5cf6", weight: 0.75 },
+  { id: "pct_99", label: "99%", color: "#ec4899", weight: 0.99 },
+  { id: "hoan_thanh", label: "Hoàn thành", color: "#10b981", weight: 1.0 },
+  { id: "hoan", label: "Hoãn", color: "#f97316", weight: 0 },
+  { id: "huy", label: "Huỷ", color: "#ef4444", weight: 0 }
+];
 
 function updateTodoProgressBar() {
   const bar = $("#todoProgressBar");
-  if (!bar) return;
+  const pctBadge = $("#todoPctBadge");
   let todos = [];
   try {
     todos = JSON.parse(localStorage.getItem(STUDY_TODO_STORAGE_KEY) || "[]");
   } catch (e) {
     todos = [];
   }
+  if (!bar) return;
   if (todos.length === 0) {
     bar.style.width = "0%";
+    if (pctBadge) pctBadge.textContent = "0%";
     return;
   }
-  const done = todos.filter(t => t.done).length;
-  const pct = Math.round((done / todos.length) * 100);
+
+  let totalWeight = 0;
+  todos.forEach(t => {
+    if (t.done || t.status === "hoan_thanh") {
+      totalWeight += 1.0;
+    } else {
+      const st = STUDY_TASK_STATUSES.find(s => s.id === t.status);
+      totalWeight += st ? (st.weight || 0) : 0;
+    }
+  });
+
+  const pct = Math.min(100, Math.round((totalWeight / todos.length) * 100));
   bar.style.width = `${pct}%`;
+  if (pctBadge) pctBadge.textContent = `${pct}%`;
 }
 
 function loadStudyTodos() {
@@ -10047,18 +11419,36 @@ function loadStudyTodos() {
   }
 
   if (todos.length === 0) {
-    listEl.innerHTML = `<li class="todo-item" style="color:var(--muted); font-size:12px; justify-content:center;">Chưa có ghi chú nào.</li>`;
+    listEl.innerHTML = `<li class="todo-item" style="color:var(--muted); font-size:12px; justify-content:center;">Chưa có việc cần làm nào. Hãy thêm việc ở trên!</li>`;
     updateTodoProgressBar();
     return;
   }
 
-  listEl.innerHTML = todos.map((t, idx) => `
-    <li class="todo-item ${t.done ? 'done' : ''}">
-      <input type="checkbox" ${t.done ? 'checked' : ''} onchange="toggleStudyTodo(${idx})" />
-      <span>${escapeHTML(t.text)}</span>
-      <button class="todo-del-btn" onclick="deleteStudyTodo(${idx})" title="Xoá">×</button>
-    </li>
-  `).join("");
+  listEl.innerHTML = todos.map((t, idx) => {
+    const isDone = Boolean(t.done || t.status === "hoan_thanh");
+    const statusId = t.status || (isDone ? "hoan_thanh" : "chua_lam");
+    const statusObj = STUDY_TASK_STATUSES.find(s => s.id === statusId) || STUDY_TASK_STATUSES[0];
+
+    let tagHtml = "";
+    if (t.tagId && studySettings.taskLabels) {
+      const tag = studySettings.taskLabels.find(l => l.id === t.tagId);
+      if (tag) {
+        tagHtml = `<span class="todo-tag-pill" style="background-color: ${tag.color};">${escapeHTML(tag.name)}</span>`;
+      }
+    }
+
+    return `
+      <li class="todo-item ${isDone ? 'done' : ''}">
+        <input type="checkbox" ${isDone ? 'checked' : ''} onchange="toggleStudyTodo(${idx})" title="Đánh dấu hoàn thành" />
+        <button type="button" class="todo-status-badge" style="background: ${statusObj.color}20; color: ${statusObj.color}; border-color: ${statusObj.color}66;" onclick="cycleTaskStatus(${idx})" title="Nhấp để chuyển trạng thái (${statusObj.label})">
+          <span style="display:inline-block; width:6px; height:6px; border-radius:50%; background:${statusObj.color}; margin-right:4px;"></span>${statusObj.label}
+        </button>
+        <span class="todo-item-text">${escapeHTML(t.text)}</span>
+        ${tagHtml}
+        <button class="todo-del-btn" onclick="deleteStudyTodo(${idx})" title="Xoá việc">×</button>
+      </li>
+    `;
+  }).join("");
 
   updateTodoProgressBar();
 }
@@ -10072,19 +11462,45 @@ function saveStudyTodos(todos) {
 
 function addStudyTodo() {
   const input = $("#newTodoInput");
+  const tagSelect = $("#newTodoTagSelect");
   if (!input) return;
   const text = input.value.trim();
   if (!text) return;
+  const tagId = tagSelect ? tagSelect.value : "";
   let todos = [];
   try {
     todos = JSON.parse(localStorage.getItem(STUDY_TODO_STORAGE_KEY) || "[]");
   } catch (e) {
     todos = [];
   }
-  todos.push({ text, done: false });
+  todos.push({
+    id: "task_" + Date.now(),
+    text,
+    status: "chuan_bi",
+    tagId,
+    done: false,
+    createdAt: Date.now()
+  });
   input.value = "";
   saveStudyTodos(todos);
 }
+
+window.cycleTaskStatus = function(idx) {
+  let todos = [];
+  try {
+    todos = JSON.parse(localStorage.getItem(STUDY_TODO_STORAGE_KEY) || "[]");
+  } catch (e) {}
+  if (!todos[idx]) return;
+
+  const currentStatusId = todos[idx].status || (todos[idx].done ? "hoan_thanh" : "chua_lam");
+  const currentIndex = STUDY_TASK_STATUSES.findIndex(s => s.id === currentStatusId);
+  const nextIndex = (currentIndex + 1) % STUDY_TASK_STATUSES.length;
+  const nextStatus = STUDY_TASK_STATUSES[nextIndex];
+
+  todos[idx].status = nextStatus.id;
+  todos[idx].done = (nextStatus.id === "hoan_thanh");
+  saveStudyTodos(todos);
+};
 
 window.toggleStudyTodo = function(idx) {
   let todos = [];
@@ -10092,7 +11508,9 @@ window.toggleStudyTodo = function(idx) {
     todos = JSON.parse(localStorage.getItem(STUDY_TODO_STORAGE_KEY) || "[]");
   } catch (e) {}
   if (todos[idx]) {
-    todos[idx].done = !todos[idx].done;
+    const nextDone = !todos[idx].done;
+    todos[idx].done = nextDone;
+    todos[idx].status = nextDone ? "hoan_thanh" : "chua_lam";
     saveStudyTodos(todos);
   }
 };
@@ -10111,9 +11529,95 @@ function clearCompletedTodos() {
   try {
     todos = JSON.parse(localStorage.getItem(STUDY_TODO_STORAGE_KEY) || "[]");
   } catch (e) {}
-  todos = todos.filter(t => !t.done);
+  todos = todos.filter(t => !t.done && t.status !== "hoan_thanh" && t.status !== "huy");
   saveStudyTodos(todos);
+  toast("Đã dọn dẹp các việc đã xong / hủy!");
 }
+
+/* --- Task Category Labels (Unlocked at 7d streak) --- */
+function renderTaskTagSelect() {
+  const sel = $("#newTodoTagSelect");
+  if (!sel) return;
+  const streak = getUserStudyStreak();
+  const unlocked = streak >= 7;
+  sel.disabled = !unlocked;
+  if (!unlocked) {
+    sel.innerHTML = `<option value="">🔒 Nhãn (7d)</option>`;
+    return;
+  }
+  const labels = studySettings.taskLabels || [];
+  let html = `<option value="">Không gắn nhãn</option>`;
+  labels.forEach(l => {
+    html += `<option value="${l.id}">🏷️ ${escapeHTML(l.name)}</option>`;
+  });
+  sel.innerHTML = html;
+}
+
+function renderTaskLabelsManagerList() {
+  const listEl = $("#taskLabelsMgrList");
+  if (!listEl) return;
+  const labels = studySettings.taskLabels || [];
+  if (labels.length === 0) {
+    listEl.innerHTML = `<p style="font-size:12px; color:var(--muted); text-align:center; padding:10px;">Chưa có nhãn công việc nào. Bấm '➕ Thêm nhãn mới' để tạo!</p>`;
+    return;
+  }
+  listEl.innerHTML = labels.map(l => `
+    <div class="task-label-mgr-row" data-tag-id="${l.id}">
+      <input type="color" class="task-label-color-input" value="${l.color}" onchange="updateTaskLabelColor('${l.id}', this.value)" title="Chọn màu nhãn" />
+      <input type="text" class="task-label-mgr-name" value="${escapeHTML(l.name)}" onchange="updateTaskLabelName('${l.id}', this.value)" maxlength="30" />
+      <button type="button" class="task-label-del-btn" onclick="deleteTaskLabel('${l.id}')" title="Xóa nhãn">🗑️</button>
+    </div>
+  `).join("");
+}
+
+window.promptAddNewTaskLabel = function() {
+  const name = prompt("Nhập tên nhãn công việc mới (Ví dụ: Báo cáo, Code, Tổng quan tài liệu):");
+  if (!name || !name.trim()) return;
+  const colors = ["#3b82f6", "#10b981", "#f59e0b", "#ec4899", "#8b5cf6", "#06b6d4", "#f97316"];
+  const randomColor = colors[Math.floor(Math.random() * colors.length)];
+  const newTag = {
+    id: "tag_" + Date.now(),
+    name: name.trim(),
+    color: randomColor
+  };
+  if (!studySettings.taskLabels) studySettings.taskLabels = [];
+  studySettings.taskLabels.push(newTag);
+  saveStudySettings(false);
+  renderTaskLabelsManagerList();
+  renderTaskTagSelect();
+  loadStudyTodos();
+  toast(`Đã thêm nhãn: "${newTag.name}"`);
+};
+
+window.updateTaskLabelColor = function(id, color) {
+  const target = (studySettings.taskLabels || []).find(l => l.id === id);
+  if (target) {
+    target.color = color;
+    saveStudySettings(false);
+    renderTaskTagSelect();
+    loadStudyTodos();
+  }
+};
+
+window.updateTaskLabelName = function(id, name) {
+  const target = (studySettings.taskLabels || []).find(l => l.id === id);
+  if (target && name.trim()) {
+    target.name = name.trim();
+    saveStudySettings(false);
+    renderTaskTagSelect();
+    loadStudyTodos();
+  }
+};
+
+window.deleteTaskLabel = function(id) {
+  if (!confirm("Bạn có chắc muốn xóa nhãn này không?")) return;
+  studySettings.taskLabels = (studySettings.taskLabels || []).filter(l => l.id !== id);
+  saveStudySettings(false);
+  renderTaskLabelsManagerList();
+  renderTaskTagSelect();
+  loadStudyTodos();
+  toast("Đã xóa nhãn!");
+};
 
 /* --- 15. ROUTE LIFECYCLE & EVENT INITIALIZATION --- */
 function onEnterStudyLounge() {
@@ -10125,7 +11629,9 @@ function onEnterStudyLounge() {
   updateStudyStreakPerks();
   renderCoStudyList(lastFetchedLearners);
   fetchStudyLounge();
+  renderTaskTagSelect();
   loadStudyTodos();
+  updateDailyGoalUI();
   renderEnvironmentAudioGrid();
   renderMixAudioGrid();
   renderMusicAudioGrid();
@@ -10319,6 +11825,13 @@ function initStudyLoungeEvents() {
   }
   rotateStudyQuote(false);
 
+  const flowtimeBreakBtn = $("#studyFlowtimeBreakBtn");
+  if (flowtimeBreakBtn) flowtimeBreakBtn.onclick = triggerFlowtimeBreak;
+
+  renderTaskTagSelect();
+  loadStudyTodos();
+  updateDailyGoalUI();
+
   // Initialize UI components
   renderEnvironmentAudioGrid();
   renderMixAudioGrid();
@@ -10356,6 +11869,37 @@ window.applyColorAura = applyColorAura;
 window.resetStudyTheme = resetStudyTheme;
 window.STUDY_QUOTES = STUDY_QUOTES;
 window.rotateStudyQuote = rotateStudyQuote;
+
+// Pomodoro & Study lounge exports
+window.openStudySettingsModal = openStudySettingsModal;
+window.switchStudySettingsTab = switchStudySettingsTab;
+window.selectModalPreset = selectModalPreset;
+window.stepDuration = stepDuration;
+window.stepLongBreakInterval = stepLongBreakInterval;
+window.stepDailyGoal = stepDailyGoal;
+window.handleCustomDurationChange = handleCustomDurationChange;
+window.handleAlarmVolumeChange = handleAlarmVolumeChange;
+window.setAlarmRings = setAlarmRings;
+window.setReminderBeforeEnd = setReminderBeforeEnd;
+window.updateFlowtimeRatioSetting = updateFlowtimeRatioSetting;
+window.previewSelectedAlarm = previewSelectedAlarm;
+window.saveStudySettings = saveStudySettings;
+window.openMethodGuideModal = openMethodGuideModal;
+window.cycleTaskStatus = cycleTaskStatus;
+window.toggleStudyTodo = toggleStudyTodo;
+window.deleteStudyTodo = deleteStudyTodo;
+window.clearCompletedTodos = clearCompletedTodos;
+window.addStudyTodo = addStudyTodo;
+window.renderTaskTagSelect = renderTaskTagSelect;
+window.renderTaskLabelsManagerList = renderTaskLabelsManagerList;
+window.promptAddNewTaskLabel = promptAddNewTaskLabel;
+window.updateTaskLabelColor = updateTaskLabelColor;
+window.updateTaskLabelName = updateTaskLabelName;
+window.deleteTaskLabel = deleteTaskLabel;
+window.triggerFlowtimeBreak = triggerFlowtimeBreak;
+window.setFlowtimeBreakRatio = setFlowtimeBreakRatio;
+window.applyTimerPreset = applyTimerPreset;
+window.STUDY_TASK_STATUSES = STUDY_TASK_STATUSES;
 
 document.addEventListener("click", () => {
   if (studyState.audioCtx && studyState.audioCtx.state === "suspended") {
