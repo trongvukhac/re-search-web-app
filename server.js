@@ -4756,7 +4756,7 @@ async function api(request, response, url) {
         return error(response, 400, "Vui lòng chỉ định phòng học.");
       }
 
-      // Trường hợp 1: Vào buồng học riêng tư
+      // Trường hợp 1: Vào phòng học cá nhân
       if (roomId === 'private' || roomId.startsWith('private_')) {
         const podId = `private_${user.id}`;
         db.prepare(`
@@ -4772,7 +4772,7 @@ async function api(request, response, url) {
           success: true,
           room: {
             id: podId,
-            name: "Buồng học riêng tư",
+            name: "Phòng học cá nhân",
             type: "private",
             icon: "lock",
             description: "Không gian học một mình hoàn toàn riêng tư",
@@ -4873,8 +4873,8 @@ async function api(request, response, url) {
   if (method === "POST" && pathName === "/api/study/rooms/leave") {
     const user = requireUser(request, response);
     if (!user || !requireCsrf(request, response, user)) return;
-    db.prepare("UPDATE study_sessions SET room_id = 'none', last_ping_ms = ?, last_ping = CURRENT_TIMESTAMP WHERE user_id = ?").run(Date.now(), user.id);
-    return json(response, 200, { success: true, roomId: 'none' });
+    db.prepare("UPDATE study_sessions SET room_id = 'commons', last_ping_ms = ?, last_ping = CURRENT_TIMESTAMP WHERE user_id = ?").run(Date.now(), user.id);
+    return json(response, 200, { success: true, roomId: 'commons' });
   }
 
   if (method === "POST" && pathName === "/api/study/rooms/create") {
@@ -5125,11 +5125,8 @@ async function api(request, response, url) {
     const query = new URL(request.url, `http://${request.headers.host}`).searchParams;
     let targetRoomId = query.get("roomId");
 
-    if (!targetRoomId && user) {
-      const myRow = db.prepare("SELECT room_id FROM study_sessions WHERE user_id = ?").get(user.id);
-      if (myRow && myRow.room_id) {
-        targetRoomId = myRow.room_id;
-      }
+    if (!targetRoomId || targetRoomId === 'commons' || targetRoomId === 'none') {
+      targetRoomId = 'commons';
     }
 
     const allActiveRows = db.prepare(`
@@ -5206,18 +5203,18 @@ async function api(request, response, url) {
     let currentRoom = null;
     let targetLearners = [];
 
-    if (targetRoomId && targetRoomId !== 'none') {
+    if (targetRoomId && targetRoomId !== 'none' && targetRoomId !== 'commons') {
       if (targetRoomId.startsWith('private_')) {
         currentRoom = {
           id: targetRoomId,
-          name: "Buồng học riêng tư",
+          name: "Phòng học cá nhân",
           type: "private",
           icon: "lock",
           description: "Không gian học một mình hoàn toàn riêng tư",
           occupancy: 1,
           isHost: true
         };
-        // Trong buồng riêng, chỉ hiện chính mình
+        // Trong phòng học cá nhân, chỉ hiện chính mình
         targetLearners = allActiveRows.filter(r => user && r.user_id === user.id);
       } else {
         const libRoom = LIBRARY_ROOMS.find(lr => lr.id === targetRoomId);
@@ -5261,6 +5258,9 @@ async function api(request, response, url) {
           }
         }
       }
+    } else {
+      // Khi ở sảnh chung / chưa vào phòng riêng, hiển thị danh sách người học chung ở sảnh
+      targetLearners = allActiveRows.filter(r => !r.room_id || r.room_id === 'commons' || r.room_id === 'none');
     }
 
     const todayDate = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Ho_Chi_Minh" }));

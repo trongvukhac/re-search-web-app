@@ -7491,6 +7491,99 @@ function resumeActiveStudyAudioAfterBreak() {
   studyState._breakPausedSounds = null;
 }
 
+function renderClockTicks() {
+  const g = document.getElementById("timerDialTicks");
+  if (!g) return;
+  if (g.children.length >= 60) return;
+  g.innerHTML = "";
+  const cx = 140;
+  const cy = 140;
+  const outerR = 127;
+  for (let i = 0; i < 60; i++) {
+    const isFiveMin = (i % 5 === 0);
+    const innerR = isFiveMin ? 115 : 121;
+    const angleDeg = i * 6 - 90;
+    const rad = (angleDeg * Math.PI) / 180;
+    const x1 = (cx + innerR * Math.cos(rad)).toFixed(2);
+    const y1 = (cy + innerR * Math.sin(rad)).toFixed(2);
+    const x2 = (cx + outerR * Math.cos(rad)).toFixed(2);
+    const y2 = (cy + outerR * Math.sin(rad)).toFixed(2);
+
+    const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+    line.setAttribute("x1", x1);
+    line.setAttribute("y1", y1);
+    line.setAttribute("x2", x2);
+    line.setAttribute("y2", y2);
+    if (isFiveMin) {
+      line.setAttribute("stroke-width", "2");
+      line.setAttribute("stroke", "currentColor");
+      line.setAttribute("opacity", "0.65");
+    } else {
+      line.setAttribute("stroke-width", "1");
+      line.setAttribute("stroke", "currentColor");
+      line.setAttribute("opacity", "0.28");
+    }
+    g.appendChild(line);
+  }
+}
+
+window.focusStudyGoalInput = function() {
+  const prompt = $("#studyQuickTaskPrompt");
+  const box = $("#studyGoalBox");
+  const input = $("#studyGoalInput");
+  if (!box || !input) return;
+  box.style.display = "block";
+  if (prompt) prompt.style.display = "none";
+  input.value = studyState.goal || "";
+  input.focus();
+  input.select();
+};
+
+window.handleStudyGoalSubmit = function() {
+  const input = $("#studyGoalInput");
+  if (input) {
+    studyState.goal = input.value.trim();
+    syncStudyToServer();
+  }
+  finishStudyGoalEdit();
+};
+
+window.handleStudyGoalBlur = function() {
+  const input = $("#studyGoalInput");
+  if (input) {
+    studyState.goal = input.value.trim();
+  }
+  finishStudyGoalEdit();
+};
+
+function finishStudyGoalEdit() {
+  const prompt = $("#studyQuickTaskPrompt");
+  const box = $("#studyGoalBox");
+  const text = $("#studyQuickTaskText");
+  const clearBtn = $("#studyGoalClearBtn");
+  if (box) box.style.display = "none";
+  if (prompt) prompt.style.display = "flex";
+  if (text) {
+    if (studyState.goal) {
+      text.textContent = studyState.goal;
+      text.classList.add("has-goal");
+      if (clearBtn) clearBtn.style.display = "inline-flex";
+    } else {
+      text.textContent = "Bạn đang tập trung vào việc gì?";
+      text.classList.remove("has-goal");
+      if (clearBtn) clearBtn.style.display = "none";
+    }
+  }
+}
+
+window.clearStudyGoal = function() {
+  studyState.goal = "";
+  const input = $("#studyGoalInput");
+  if (input) input.value = "";
+  finishStudyGoalEdit();
+  syncStudyToServer();
+};
+
 function updateTimerDisplay() {
   const clock = $("#timerClock");
   const progressCircle = $("#timerProgressCircle");
@@ -7512,6 +7605,8 @@ function updateTimerDisplay() {
   const isMeetingRoom = Boolean(currentStudyRoomData && currentStudyRoomData.type === 'meeting');
   const isMeetingGuest = Boolean(isMeetingRoom && !currentStudyRoomData.isHost);
 
+  renderClockTicks();
+
   // 1. Clock Display
   if (clock) {
     if (isFlowtimeFocus) {
@@ -7521,15 +7616,105 @@ function updateTimerDisplay() {
     }
   }
 
-  // 2. Circular Progress
+  // 2. Circular Progress & Knob
+  let progressRatio = 0;
+  if (isFlowtimeFocus) {
+    progressRatio = ((studyState.elapsedSessionSeconds % 3600) / 3600);
+  } else {
+    const totalSecs = (studyState.durationMinutes > 0 ? studyState.durationMinutes * 60 : 1500);
+    progressRatio = totalSecs > 0 ? (1 - Math.max(0, studyState.remainingSeconds) / totalSecs) : 0;
+  }
+  progressRatio = Math.max(0, Math.min(1, progressRatio));
+
   if (progressCircle) {
+    const circum = 716.28;
+    progressCircle.style.strokeDashoffset = (circum * (1 - progressRatio)).toFixed(2);
+  }
+
+  const knob = $("#timerProgressKnob");
+  if (knob) {
+    const angleDeg = -90 + progressRatio * 360;
+    const rad = (angleDeg * Math.PI) / 180;
+    const knobX = (140 + 114 * Math.cos(rad)).toFixed(2);
+    const knobY = (140 + 114 * Math.sin(rad)).toFixed(2);
+    knob.setAttribute("cx", knobX);
+    knob.setAttribute("cy", knobY);
+  }
+
+  // Sub label
+  const centerSub = $("#timerCenterSub");
+  if (centerSub) {
     if (isFlowtimeFocus) {
-      const progress = ((studyState.elapsedSessionSeconds % 3600) / 3600);
-      progressCircle.style.strokeDashoffset = 660 * progress;
+      centerSub.textContent = "DÒNG CHẢY";
+    } else if (studyState.mode === 'shortbreak') {
+      centerSub.textContent = "NGHỈ NGẮN";
+    } else if (studyState.mode === 'longbreak') {
+      centerSub.textContent = "NGHỈ DÀI";
     } else {
-      const totalSecs = (studyState.durationMinutes > 0 ? studyState.durationMinutes * 60 : 1500);
-      const progress = totalSecs > 0 ? (1 - Math.max(0, studyState.remainingSeconds) / totalSecs) : 0;
-      progressCircle.style.strokeDashoffset = 660 * progress;
+      centerSub.textContent = "TẬP TRUNG";
+    }
+  }
+
+  // Top banner
+  const topBanner = $("#timerTopBanner");
+  if (topBanner) {
+    if (isEyeRule) {
+      topBanner.textContent = "Quy tắc 20-20-20: Cho đôi mắt được nghỉ ngơi";
+    } else if (isFlowtime) {
+      topBanner.textContent = "Dòng chảy Flowtime: Tự do đắm chìm vào công việc";
+    } else if (studyState.mode === 'shortbreak') {
+      topBanner.textContent = "Ca nghỉ ngắn: Thư giãn và nạp lại năng lượng";
+    } else if (studyState.mode === 'longbreak') {
+      topBanner.textContent = "Ca nghỉ dài: Hoàn thành xuất sắc một chu kỳ!";
+    } else {
+      topBanner.textContent = "Ca học Pomodoro: Giữ vững sự tập trung cao độ";
+    }
+  }
+
+  // Quick task prompt
+  const quickText = $("#studyQuickTaskText");
+  const clearBtn = $("#studyGoalClearBtn");
+  if (quickText) {
+    if (studyState.goal) {
+      quickText.textContent = studyState.goal;
+      quickText.classList.add("has-goal");
+      if (clearBtn) clearBtn.style.display = "inline-flex";
+    } else {
+      quickText.textContent = "Bạn đang tập trung vào việc gì?";
+      quickText.classList.remove("has-goal");
+      if (clearBtn) clearBtn.style.display = "none";
+    }
+  }
+
+  // Meta pills: Dots, Daily Goal, Preset Badge
+  const dotsEl = $("#dailyGoalMiniDots");
+  const goalCountEl = $("#dailyGoalCount");
+  const targetGoal = Math.max(1, Number(studySettings.dailyGoalPomodoros) || 8);
+  const doneGoal = Number(studyState.completedFocusCycles) || 0;
+  if (dotsEl) {
+    let dotsHtml = "";
+    const displayTotal = Math.min(12, targetGoal);
+    for (let d = 1; d <= displayTotal; d++) {
+      dotsHtml += (d <= doneGoal) ? "●" : "○";
+    }
+    dotsEl.textContent = dotsHtml;
+  }
+  if (goalCountEl) {
+    goalCountEl.textContent = `${doneGoal} / ${targetGoal} hôm nay`;
+  }
+
+  const presetBadge = $("#activePresetBadgeName");
+  if (presetBadge) {
+    const curPreset = studySettings.timerPreset || '25_5';
+    if (curPreset === 'flowtime') {
+      presetBadge.textContent = "# Flowtime";
+    } else if (curPreset === 'eye_rule') {
+      presetBadge.textContent = "# 20-20-20";
+    } else if (curPreset === 'custom') {
+      presetBadge.textContent = `# ${studySettings.focusMins || 25} / ${studySettings.shortBreakMins || 5}`;
+    } else {
+      const cfg = STUDY_PRESET_CONFIGS[curPreset];
+      presetBadge.textContent = `# ${cfg ? cfg.label : '25 / 5'}`;
     }
   }
 
@@ -7619,17 +7804,13 @@ function updateTimerDisplay() {
   const maxCycles = Math.max(1, Number(studySettings.longBreakInterval) || 4);
   if (cycleLabel) {
     if (isFlowtime) {
-      cycleLabel.textContent = `Flowtime (Tự do đếm xuôi)`;
+      cycleLabel.textContent = `Flowtime`;
     } else if (isEyeRule) {
-      cycleLabel.textContent = `Quy tắc 20-20-20 (Lượt ${studyState.cycleIndex || 1}/${maxCycles})`;
+      cycleLabel.textContent = `Lượt ${studyState.cycleIndex || 1}/${maxCycles}`;
     } else if (studyState.cycleIndex === 0) {
-      cycleLabel.textContent = `Lượt 0/${maxCycles} (Chưa bắt đầu)`;
-    } else if (studyState.mode === 'focus') {
-      cycleLabel.textContent = `Lượt ${studyState.cycleIndex}/${maxCycles} (Tập trung)`;
-    } else if (studyState.mode === 'shortbreak') {
-      cycleLabel.textContent = `Nghỉ ngắn (${studySettings.shortBreakMins}m) - Sau lượt ${studyState.cycleIndex > 1 ? studyState.cycleIndex - 1 : 1}`;
-    } else if (studyState.mode === 'longbreak') {
-      cycleLabel.textContent = `Nghỉ dài (${studySettings.longBreakMins}m) - Hoàn tất chu kỳ ${maxCycles} lượt!`;
+      cycleLabel.textContent = `Lượt 0/${maxCycles}`;
+    } else {
+      cycleLabel.textContent = `Lượt ${studyState.cycleIndex || 1}/${maxCycles}`;
     }
   }
 
@@ -7655,7 +7836,7 @@ function updateTimerDisplay() {
     }
   });
 
-  const modeButtons = $$(".study-mode-btn");
+  const modeButtons = $$(".study-mode-btn, .mode-capsule-btn");
 
   if (isLibraryRoom) {
     if (startBtn) startBtn.style.display = "none";
@@ -7668,10 +7849,10 @@ function updateTimerDisplay() {
 
     if (completeBtn) {
       completeBtn.style.display = "inline-flex";
-      completeBtn.className = "button button-outline btn-danger-leave study-action-ctrl";
+      completeBtn.className = "study-btn-pill study-btn-leave study-action-ctrl";
       completeBtn.innerHTML = `
         <span class="btn-icon">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
             <polyline points="16 17 21 12 16 7"></polyline>
             <line x1="21" y1="12" x2="9" y2="12"></line>
@@ -7731,9 +7912,9 @@ function updateTimerDisplay() {
 
     if (completeBtn) {
       completeBtn.style.display = studyState.isRunning ? "inline-flex" : "none";
-      completeBtn.className = "button button-quiet study-action-ctrl";
+      completeBtn.className = "study-btn-pill study-btn-leave study-action-ctrl";
       completeBtn.innerHTML = `
-        <span class="btn-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></span>
+        <span class="btn-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></span>
         <span class="btn-label">Hoàn tất</span>
       `;
       completeBtn.onclick = () => finishStudySession(false);
@@ -8326,13 +8507,7 @@ window.addEventListener("focus", () => {
 
 /* --- 5. CO-STUDY LOUNGE & FLEXIBLE SPACES (Real-Time Synchronized) --- */
 let lastFetchedLearners = [];
-let currentStudyRoomId = (function() {
-  try {
-    return localStorage.getItem("research_study_room_id") || "commons";
-  } catch (e) {
-    return "commons";
-  }
-})();
+let currentStudyRoomId = "commons";
 let currentStudyRoomData = null;
 let cachedStudyRooms = [];
 let activeSpaceFilter = 'all';
@@ -11503,7 +11678,9 @@ window.switchStudySettingsTab = function(tabName) {
     timer: "paneSettingsTimer",
     extras: "paneSettingsExtras",
     alarms: "paneSettingsAlarms",
-    tasks: "paneSettingsTasks"
+    tasks: "paneSettingsTasks",
+    audio: "paneSettingsAudio",
+    theme: "paneSettingsTheme"
   };
   Object.keys(tabMap).forEach(key => {
     const pane = $("#" + tabMap[key]);
@@ -11511,6 +11688,16 @@ window.switchStudySettingsTab = function(tabName) {
   });
   if (tabName === "tasks") {
     renderTaskLabelsManagerList();
+  } else if (tabName === "audio") {
+    renderEnvironmentAudioGrid();
+    renderMixAudioGrid();
+    renderMusicAudioGrid();
+    if (typeof loadCustomAudioFromDB === "function") loadCustomAudioFromDB();
+  } else if (tabName === "theme") {
+    renderWallpaperPresets();
+    if (typeof renderCustomWallpapersList === "function") renderCustomWallpapersList();
+    renderClockColorPicker();
+    renderColorPalette();
   }
 };
 
@@ -12074,6 +12261,28 @@ function onEnterStudyLounge() {
     go("home");
     return;
   }
+  const hash = window.location.hash || '';
+  const search = window.location.search || '';
+  const hasRoomParam = hash.includes('room=') || search.includes('room=');
+  if (!hasRoomParam) {
+    currentStudyRoomId = "commons";
+    currentStudyRoomData = null;
+    try {
+      localStorage.removeItem("research_study_room_id");
+    } catch (e) {}
+    // Mặc định khi vào là đồng hồ CHƯA bật
+    studyState.isRunning = false;
+    studyState.targetEndMs = 0;
+    if (studyState.timerInterval) {
+      clearInterval(studyState.timerInterval);
+      studyState.timerInterval = null;
+    }
+    const focusM = studySettings.focusMins || 25;
+    studyState.durationMinutes = focusM;
+    studyState.remainingSeconds = focusM * 60;
+  }
+
+  renderClockTicks();
   updateStudyStreakPerks();
   renderCoStudyList(lastFetchedLearners);
   fetchStudyLounge();
@@ -12175,7 +12384,7 @@ function initStudyLoungeEvents() {
     });
   }
 
-  $$(".study-mode-btn").forEach(btn => {
+  $$(".study-mode-btn, .mode-capsule-btn").forEach(btn => {
     btn.onclick = () => {
       const mode = btn.dataset.studyMode;
       setStudyMode(mode);

@@ -694,37 +694,68 @@
           <!-- Main Timer & Focus Panel -->
           <div class="study-main-col">
             <div class="study-card study-timer-card" id="timerMainCard">
-              <!-- Timer Presets Navigation (Quick Presets) -->
-              <div class="study-presets-bar" id="studyPresetsBar">
-                <button type="button" class="preset-chip active" data-preset="25_5" onclick="applyTimerPreset('25_5')">25 / 5</button>
-                <button type="button" class="preset-chip" data-preset="50_10" onclick="applyTimerPreset('50_10')">50 / 10</button>
-                <button type="button" class="preset-chip" data-preset="52_17" onclick="applyTimerPreset('52_17')">52 / 17</button>
-                <button type="button" class="preset-chip" data-preset="90_20" onclick="applyTimerPreset('90_20')">90 / 20</button>
-                <button type="button" class="preset-chip" data-preset="45_15" onclick="applyTimerPreset('45_15')">45 / 15</button>
-                <button type="button" class="preset-chip" data-preset="flowtime" onclick="applyTimerPreset('flowtime')">
-                  Flowtime <span class="guide-trigger-icon" onclick="event.stopPropagation(); openMethodGuideModal('flowtime')" title="Xem hướng dẫn Flowtime"><svg class="ui-icon" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg></span>
-                </button>
-                <button type="button" class="preset-chip" data-preset="eye_rule" onclick="applyTimerPreset('eye_rule')">
-                  20-20-20 <span class="guide-trigger-icon" onclick="event.stopPropagation(); openMethodGuideModal('eye_rule')" title="Xem hướng dẫn quy tắc 20-20-20"><svg class="ui-icon" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg></span>
-                </button>
-                <button type="button" class="preset-chip custom-chip" data-preset="custom" onclick="openStudySettingsModal('timer', true)" title="Tùy chỉnh thời gian cá nhân">
-                  <svg class="ui-icon" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"></line><line x1="4" y1="10" x2="4" y2="3"></line><line x1="12" y1="21" x2="12" y2="12"></line><line x1="12" y1="8" x2="12" y2="3"></line><line x1="20" y1="21" x2="20" y2="16"></line><line x1="20" y1="12" x2="20" y2="3"></line><line x1="1" y1="14" x2="7" y2="14"></line><line x1="9" y1="8" x2="15" y2="8"></line><line x1="17" y1="16" x2="23" y2="16"></line></svg> Tùy chỉnh
-                </button>
+              <!-- Top Preset / Mode Motto Banner -->
+              <div class="timer-top-banner" id="timerTopBanner">Ca học Pomodoro: Giữ vững sự tập trung</div>
+
+              <!-- Capsule Mode Selector (Floating Pill) -->
+              <div class="timer-mode-selector-capsule" id="timerModeSelector">
+                <button type="button" class="mode-capsule-btn active" id="btnModeFocus" data-study-mode="focus">Pomodoro</button>
+                <button type="button" class="mode-capsule-btn" id="btnModeShortBreak" data-study-mode="shortbreak">Nghỉ ngắn</button>
+                <button type="button" class="mode-capsule-btn" id="btnModeLongBreak" data-study-mode="longbreak">Nghỉ dài</button>
               </div>
 
-              <div class="timer-mode-selector">
-                <button type="button" class="study-mode-btn active" id="btnModeFocus" data-study-mode="focus">
-                  <strong id="labelModeFocus"><svg class="ui-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:3px;"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg> 25 phút</strong>
-                  <span>Tập trung</span>
+              <!-- Circular Watch Face Dial with Minute Ticks & Progress Knob -->
+              <div class="timer-visual-wrap">
+                <div class="timer-circle">
+                  <svg class="timer-svg" viewBox="0 0 280 280">
+                    <defs>
+                      <linearGradient id="timerGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stop-color="#f05454" />
+                        <stop offset="100%" stop-color="#e23e57" />
+                      </linearGradient>
+                    </defs>
+                    <!-- 60 Minute Analog Dial Ticks -->
+                    <g class="timer-dial-ticks" id="timerDialTicks"></g>
+                    <!-- Track Circle -->
+                    <circle class="timer-bg-circle" cx="140" cy="140" r="114" />
+                    <!-- Progress Arc -->
+                    <circle class="timer-progress-circle" id="timerProgressCircle" cx="140" cy="140" r="114" stroke="url(#timerGrad)" />
+                    <!-- Progress Head Knob -->
+                    <circle class="timer-progress-knob" id="timerProgressKnob" cx="140" cy="26" r="6" />
+                  </svg>
+                  <div class="timer-center-content">
+                    <span class="timer-center-sub" id="timerCenterSub">TẬP TRUNG</span>
+                    <div class="timer-clock" id="timerClock">25:00</div>
+                    <div class="timer-status-label" id="timerStatusLabel" style="display: none;">Sẵn sàng ca học</div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Primary Action Controls: Reset (Circular), Start (Pill Coral), Next (Circular) -->
+              <div class="study-actions" id="studyActions">
+                <button type="button" class="study-btn-circle study-action-ctrl" id="studyResetBtn" title="Đặt lại ca học (↺)">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M1 4v6h6"></path><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path></svg>
                 </button>
-                <button type="button" class="study-mode-btn" id="btnModeShortBreak" data-study-mode="shortbreak">
-                  <strong id="labelModeShortBreak"><svg class="ui-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:3px;"><path d="M18 8h1a4 4 0 0 1 0 8h-1"></path><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"></path><line x1="6" y1="1" x2="6" y2="4"></line><line x1="10" y1="1" x2="10" y2="4"></line><line x1="14" y1="1" x2="14" y2="4"></line></svg> 5 phút</strong>
-                  <span>Nghỉ ngắn</span>
+                <button type="button" class="study-btn-pill study-action-ctrl" id="studyStartBtn">
+                  <span class="btn-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg></span>
+                  <span class="btn-label" id="studyStartBtnText">Bắt đầu học</span>
                 </button>
-                <button type="button" class="study-mode-btn" id="btnModeLongBreak" data-study-mode="longbreak">
-                  <strong id="labelModeLongBreak"><svg class="ui-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:3px;"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"></path><path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"></path></svg> 15 phút</strong>
-                  <span>Nghỉ dài</span>
+                <button type="button" class="study-btn-pill study-btn-pause study-action-ctrl" id="studyPauseBtn" style="display: none;">
+                  <span class="btn-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg></span>
+                  <span class="btn-label">Tạm dừng</span>
                 </button>
+                <button type="button" class="study-btn-pill study-btn-break study-action-ctrl" id="studyFlowtimeBreakBtn" style="display: none;" title="Nghỉ giải lao theo tỷ lệ vàng Flowtime">
+                  <span class="btn-icon">☕</span>
+                  <span class="btn-label">Nghỉ giải lao</span>
+                </button>
+                <button type="button" class="study-btn-circle study-action-ctrl" id="studyNextBtn" title="Bỏ qua / Qua lượt kế tiếp (⏭)">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 4 15 12 5 20 5 4"></polygon><line x1="19" y1="5" x2="19" y2="19"></line></svg>
+                </button>
+                <button type="button" class="study-btn-pill study-btn-leave study-action-ctrl" id="studyCompleteBtn" style="display: none;">
+                  <span class="btn-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></span>
+                  <span class="btn-label">Rời phòng</span>
+                </button>
+                <div class="meeting-guest-timer-notice" id="meetingGuestTimerNotice" style="display: none;"></div>
               </div>
 
               <!-- Flowtime Break Ratio Selector (Active when Flowtime mode is used) -->
@@ -739,47 +770,33 @@
                 <span class="flowtime-calc-preview" id="flowtimeCalcPreview">Nghỉ: 00:00</span>
               </div>
 
-              <!-- Pomodoro Cycle Indicator (1/4 -> 4/4) -->
-              <div class="study-cycle-container">
-                <span class="study-cycle-label" id="studyCycleLabel">Lượt 1/4 (Pomodoro)</span>
-                <div class="study-cycle-dots" id="studyCycleDots">
-                  <span class="cycle-dot active" data-cycle="1" title="Lượt 1"></span>
-                  <span class="cycle-dot" data-cycle="2" title="Lượt 2"></span>
-                  <span class="cycle-dot" data-cycle="3" title="Lượt 3"></span>
-                  <span class="cycle-dot" data-cycle="4" title="Lượt 4"></span>
+              <!-- Focus Task Prompt ("+ Bạn đang tập trung vào việc gì?") -->
+              <div class="study-quick-task-wrap">
+                <div class="study-quick-task-prompt" id="studyQuickTaskPrompt" onclick="focusStudyGoalInput()">
+                  <span class="prompt-icon">+</span>
+                  <span class="prompt-text" id="studyQuickTaskText">Bạn đang tập trung vào việc gì?</span>
+                  <button type="button" class="prompt-clear-btn" id="studyGoalClearBtn" style="display: none;" onclick="event.stopPropagation(); clearStudyGoal();" title="Xóa mục tiêu">×</button>
+                </div>
+                <div class="study-goal-input-box" id="studyGoalBox" style="display: none;">
+                  <input type="text" id="studyGoalInput" maxlength="80" placeholder="Nhập mục tiêu ca học này..." onkeydown="if(event.key==='Enter'){handleStudyGoalSubmit();}" onblur="handleStudyGoalBlur()" />
                 </div>
               </div>
 
-              <!-- Daily Goal Pomodoro Bar -->
-              <div class="study-daily-goal-bar" id="studyDailyGoalBar">
-                <div class="daily-goal-label-wrap">
-                  <span class="daily-goal-title">🎯 Mục tiêu hôm nay:</span>
-                  <strong class="daily-goal-count" id="dailyGoalCount">0 / 8 Pomodoro</strong>
-                  <span class="daily-goal-pct" id="dailyGoalPct">(0%)</span>
-                </div>
-                <div class="daily-goal-track">
-                  <div class="daily-goal-fill" id="dailyGoalFill" style="width: 0%;"></div>
-                </div>
-              </div>
-
-              <!-- Circular Progress & Timer -->
-              <div class="timer-visual-wrap">
-                <div class="timer-circle">
-                  <svg class="timer-svg" viewBox="0 0 240 240">
-                    <defs>
-                      <linearGradient id="timerGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" id="timerGradStop1" stop-color="#10b981" />
-                        <stop offset="100%" id="timerGradStop2" stop-color="#34d399" />
-                      </linearGradient>
-                    </defs>
-                    <circle class="timer-bg-circle" cx="120" cy="120" r="105" />
-                    <circle class="timer-progress-circle" id="timerProgressCircle" cx="120" cy="120" r="105" stroke="url(#timerGrad)" />
-                  </svg>
-                  <div class="timer-center-content">
-                    <div class="timer-clock" id="timerClock">25:00</div>
-                    <div class="timer-status-label" id="timerStatusLabel">Sẵn sàng ca học</div>
-                  </div>
-                </div>
+              <!-- Meta Progress Row (Dots, Streak, Cycle, Preset) -->
+              <div class="study-meta-row" id="studyMetaRow">
+                <span class="study-meta-pill goal-pill" title="Mục tiêu hôm nay">
+                  <span class="meta-dots" id="dailyGoalMiniDots"></span>
+                  <span id="dailyGoalCount">0 / 8 hôm nay</span>
+                </span>
+                <span class="study-meta-pill streak-pill" title="Chuỗi ngày học liên tục" onclick="openStreakJourneyModal()">
+                  🔥 <span id="studyUserStreakVal">0</span> ngày
+                </span>
+                <span class="study-meta-pill cycle-pill" id="studyCyclePill" title="Lượt trong chu kỳ">
+                  ⭕ <span id="studyCycleLabel">Ca 1/4</span>
+                </span>
+                <button type="button" class="study-meta-pill preset-pill" id="studyPresetPickerPill" onclick="openStudySettingsModal('timer')" title="Mẫu thời gian (Nhấp để đổi)">
+                  <span id="activePresetBadgeName"># 25 / 5</span> ▾
+                </button>
               </div>
 
               <!-- Dedicated Study Quote Card -->
@@ -788,254 +805,32 @@
                 <span class="timer-quote-text" id="timerQuoteText">“Từng bước nhỏ tạo nên bước tiến lớn.”</span>
               </div>
 
-              <div class="study-goal-box">
-                <label for="studyGoalInput"><svg class="ui-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:4px;"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="6"></circle><circle cx="12" cy="12" r="2"></circle></svg> Mục tiêu ca học này:</label>
-                <input type="text" id="studyGoalInput" maxlength="80" placeholder="Ví dụ: Đọc tổng quan tài liệu, xử lý dữ liệu SPSS, hoàn thiện đề cương..." />
-              </div>
-
-              <div class="study-actions">
-                <button type="button" class="button button-outline study-action-ctrl" id="studyResetBtn" title="Đặt lại lượt này">
-                  <span class="btn-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 4v6h6"></path><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path></svg></span> <span class="btn-label">Đặt lại</span>
+              <!-- THE UNIFIED 6-BUTTON DOCK TOOLBAR (UNDER THE CLOCK) -->
+              <div class="study-dock-toolbar" id="studyDockToolbar">
+                <button type="button" class="dock-btn" data-dock="timer" onclick="openStudySettingsModal('timer')" title="Cài đặt Đồng hồ &amp; Ca học">
+                  <span class="dock-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg></span>
+                  <span class="dock-label">Đồng hồ</span>
                 </button>
-                <button type="button" class="button button-primary study-btn-pulse study-action-ctrl" id="studyStartBtn">
-                  <span class="btn-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg></span> <span class="btn-label" id="studyStartBtnText">Bắt đầu học</span>
+                <button type="button" class="dock-btn" data-dock="extras" onclick="openStudySettingsModal('extras')" title="Tiện ích &amp; Tự động hóa">
+                  <span class="dock-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg></span>
+                  <span class="dock-label">Tiện ích</span>
                 </button>
-                <button type="button" class="button button-outline study-action-ctrl" id="studyPauseBtn" style="display: none;">
-                  <span class="btn-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg></span> <span class="btn-label">Tạm dừng</span>
+                <button type="button" class="dock-btn" data-dock="alarms" onclick="openStudySettingsModal('alarms')" title="Chuông báo &amp; Âm lượng">
+                  <span class="dock-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg></span>
+                  <span class="dock-label">Chuông báo</span>
                 </button>
-                <button type="button" class="button button-outline study-action-ctrl" id="studyFlowtimeBreakBtn" style="display: none;" title="Nghỉ giải lao theo tỷ lệ vàng Flowtime">
-                  <span class="btn-icon">☕</span> <span class="btn-label">Nghỉ giải lao</span>
+                <button type="button" class="dock-btn" data-dock="tasks" onclick="openStudySettingsModal('tasks')" title="Quản lý Nhãn công việc">
+                  <span class="dock-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7.01" y2="7"></line></svg></span>
+                  <span class="dock-label">Quản lý nhãn</span>
                 </button>
-                <button type="button" class="button button-outline study-action-ctrl" id="studyNextBtn" title="Bỏ qua / Sang lượt kế tiếp">
-                  <span class="btn-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 4 15 12 5 20 5 4"></polygon><line x1="19" y1="5" x2="19" y2="19" stroke="currentColor" stroke-width="2"></line></svg></span> <span class="btn-label">Qua lượt kế tiếp</span>
+                <button type="button" class="dock-btn" data-dock="audio" onclick="openStudySettingsModal('audio')" title="Âm thanh Môi trường &amp; Nhạc">
+                  <span class="dock-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18v-6a9 9 0 0 1 18 0v6"></path><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"></path></svg></span>
+                  <span class="dock-label">Âm thanh</span>
                 </button>
-                <button type="button" class="button button-quiet study-action-ctrl" id="studyCompleteBtn" style="display: none;">
-                  <span class="btn-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></span> <span class="btn-label">Hoàn tất</span>
+                <button type="button" class="dock-btn" data-dock="theme" onclick="openStudySettingsModal('theme')" title="Hình nền &amp; Aura">
+                  <span class="dock-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg></span>
+                  <span class="dock-label">Hình nền</span>
                 </button>
-                <div class="meeting-guest-timer-notice" id="meetingGuestTimerNotice" style="display: none;"></div>
-              </div>
-            </div>
-
-            <!-- Audio & Ambiance Arena (2 Loại: Môi trường & Phối hợp) -->
-            <div class="study-card ambient-card" id="soundArenaCard">
-              <div class="ambient-header">
-                <div class="sound-tabs">
-                  <button type="button" class="sound-tab active" data-sound-tab="env" id="tabEnvAudioBtn">
-                    🎧 Âm thanh môi trường <span class="perk-badge" id="badgeEnvLock">🔒 3d</span>
-                  </button>
-                  <button type="button" class="sound-tab" data-sound-tab="mix" id="tabMixAudioBtn">
-                    🎛️ Âm thanh phối hợp <span class="perk-badge" id="badgeMixLock">🔒 7d</span>
-                  </button>
-                  <button type="button" class="sound-tab" data-sound-tab="music" id="tabMusicAudioBtn">
-                    🎵 Âm nhạc <span class="perk-badge" id="badgeMusicLock">🔒 7d</span>
-                  </button>
-                </div>
-                <div class="sound-master-controls">
-                  <button type="button" class="button button-sm button-outline" id="toggleAmbientMaster">Tắt tất cả</button>
-                </div>
-              </div>
-
-              <!-- Tab Content: Âm thanh môi trường (4 âm thanh hỗn hợp sẵn, dài ~1 tiếng + Upload cá nhân) -->
-              <div class="sound-tab-pane active" id="paneEnvAudio">
-                <div class="perk-locked-banner" id="bannerEnvLocked" style="display: none;">
-                  <span class="lock-icon">🔒</span>
-                  <div>
-                    <strong>Mở khóa ở chuỗi 3 ngày (Sinh viên năng động)</strong>
-                    <p>Kho 4 âm thanh môi trường tĩnh lặng độ dài 1 tiếng, phát vòng lặp giúp bạn tập trung cao độ.</p>
-                  </div>
-                </div>
-
-                <div class="ambient-sub-bar">
-                  <span class="ambient-sub">Âm thanh môi trường hỗn hợp. Có thể phát cùng âm thanh phối hợp.</span>
-                </div>
-
-                <!-- 4 Environment Sounds Grid -->
-                <div class="ambient-grid" id="envAudioGrid">
-                  <!-- Rendered dynamically by JS -->
-                </div>
-
-                <!-- Custom Environment Audio Upload (Streak >= 30, max 3 tracks, Streak 50 unlimited) -->
-                <div class="custom-audio-section" id="customEnvSection">
-                  <div class="custom-audio-head">
-                    <div>
-                      <h4>🌿 Âm thanh môi trường của bạn</h4>
-                      <p class="custom-audio-sub">Tự tải lên các âm thanh ưa thích của bạn (không đồng bộ với thiết bị khác)</p>
-                    </div>
-                    <div class="custom-audio-head-right">
-                      <span class="perk-badge" id="badgeCustomEnvLock">🔒 30d</span>
-                      <span class="custom-audio-limit-badge" id="badgeCustomEnvLimit">Tối đa 3 tệp</span>
-                      <button type="button" class="button button-sm button-outline" id="btnUploadEnvAudio" onclick="triggerUploadEnvAudio()">
-                        ➕ Tải lên
-                      </button>
-                    </div>
-                  </div>
-                  <input type="file" id="customEnvAudioInput" accept="audio/*,.mp3,.m4a,.wav,.ogg" style="display: none;" />
-                  <div id="customEnvAudioList" class="custom-audio-list"></div>
-                </div>
-              </div>
-
-              <!-- Tab Content: Âm thanh phối hợp (9 âm thanh đơn lẻ, tự do phối hợp cùng lúc + Upload cá nhân) -->
-              <div class="sound-tab-pane" id="paneMixAudio" style="display: none;">
-                <div class="perk-locked-banner" id="bannerMixLocked" style="display: none;">
-                  <span class="lock-icon">🔒</span>
-                  <div>
-                    <strong>Mở khóa ở chuỗi 7 ngày (Học giả bền bỉ)</strong>
-                    <p>Kho 9 âm thanh phối hợp đơn lẻ, cho phép bạn tự do phối nhiều âm thanh cùng lúc theo sở thích.</p>
-                  </div>
-                </div>
-
-                <div class="ambient-sub-bar">
-                  <span class="ambient-sub">Tự phối âm thanh tập trung cho riêng bạn.</span>
-                </div>
-
-                <!-- 9 Mixer Sounds Grid -->
-                <div class="ambient-grid" id="mixAudioGrid">
-                  <!-- Rendered dynamically by JS -->
-                </div>
-
-                <!-- Custom Mix Audio Upload (Streak >= 30, max 5 tracks, Streak 50 unlimited) -->
-                <div class="custom-audio-section" id="customMixSection">
-                  <div class="custom-audio-head">
-                    <div>
-                      <h4>🎛️ Âm thanh phối hợp của bạn</h4>
-                      <p class="custom-audio-sub">Tự tải lên hiệu ứng âm thanh để mix chung vào dàn âm thanh.</p>
-                    </div>
-                    <div class="custom-audio-head-right">
-                      <span class="perk-badge" id="badgeCustomMixLock">🔒 30d</span>
-                      <span class="custom-audio-limit-badge" id="badgeCustomMixLimit">Tối đa 5 tệp</span>
-                      <button type="button" class="button button-sm button-outline" id="btnUploadMixAudio" onclick="triggerUploadMixAudio()">
-                        ➕ Tải lên
-                      </button>
-                    </div>
-                  </div>
-                  <input type="file" id="customMixAudioInput" accept="audio/*,.mp3,.m4a,.wav,.ogg" style="display: none;" />
-                  <div id="customMixAudioList" class="custom-audio-list"></div>
-                </div>
-              </div>
-
-              <!-- Tab Content: Âm nhạc (4 bản nhạc nhẹ nhàng tập trung, vòng lặp, mở ở Chuỗi 7 ngày) -->
-              <div class="sound-tab-pane" id="paneMusicAudio" style="display: none;">
-                <div class="perk-locked-banner" id="bannerMusicLocked" style="display: none;">
-                  <span class="lock-icon">🔒</span>
-                  <div>
-                    <strong>Mở khóa ở chuỗi 7 ngày (Học giả bền bỉ)</strong>
-                    <p>Kho 4 bản nhạc êm dịu, giúp tinh thần tập trung và sáng tạo khi học tập.</p>
-                  </div>
-                </div>
-
-                <div class="ambient-sub-bar">
-                  <span class="ambient-sub">Playlist nhạc theo gu khác nhau. Có thể phát cùng âm thanh phối hợp.</span>
-                </div>
-
-                <!-- 4 Music Tracks Grid -->
-                <div class="ambient-grid" id="musicAudioGrid">
-                  <!-- Rendered dynamically by JS -->
-                </div>
-
-                <!-- Custom Music Audio Upload (Streak >= 30, max 3 tracks, Streak 50 unlimited) -->
-                <div class="custom-audio-section" id="customMusicSection">
-                  <div class="custom-audio-head">
-                    <div>
-                      <h4>🎵 Âm nhạc của bạn</h4>
-                      <p class="custom-audio-sub">Tải lên các bản nhạc ưa thích của bạn (không đồng bộ với thiết bị khác).</p>
-                    </div>
-                    <div class="custom-audio-head-right">
-                      <span class="perk-badge" id="badgeCustomMusicLock">🔒 30d</span>
-                      <span class="custom-audio-limit-badge" id="badgeCustomMusicLimit">Tối đa 3 tệp</span>
-                      <button type="button" class="button button-sm button-outline" id="btnUploadMusicAudio" onclick="triggerUploadMusicAudio()">
-                        ➕ Tải lên
-                      </button>
-                    </div>
-                  </div>
-                  <input type="file" id="customMusicAudioInput" accept="audio/*,.mp3,.m4a,.wav,.ogg" style="display: none;" />
-                  <div id="customMusicAudioList" class="custom-audio-list"></div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Theme & Wallpaper Arena (Streak Perks) -->
-            <div class="study-card theme-card" id="themeArenaCard">
-              <div class="theme-card-header">
-                <div>
-                  <h3>Hình nền</h3>
-                  <p class="theme-card-sub">Cá nhân hóa góc học tập theo phong cách của bạn.</p>
-                </div>
-                <div class="theme-actions">
-                  <button type="button" class="button button-sm button-ghost" id="resetThemeBtn" onclick="resetStudyTheme()">Mặc định</button>
-                </div>
-              </div>
-
-              <div class="theme-selection-grid">
-                <!-- Wallpaper Presets (Streak >= 14) -->
-                <div class="wallpaper-presets-wrap">
-                  <div class="theme-tier-title">
-                    <span>Kho hình nền</span>
-                    <span class="perk-badge" id="badgeWallPresetLock">🔒 14d</span>
-                  </div>
-                  <div class="preset-thumbs" id="wallpaperPresetsList">
-                    <!-- Presets rendered by JS -->
-                  </div>
-                </div>
-
-                <!-- Clock Color Customization (Streak >= 14) -->
-                <div class="clock-color-wrap">
-                  <div class="theme-tier-title">
-                    <span>Màu sắc đồng hồ số</span>
-                    <span class="perk-badge" id="badgeClockColorLock">🔒 14d</span>
-                  </div>
-                  <div class="clock-color-picker" id="clockColorPicker">
-                    <!-- Clock colors rendered by JS -->
-                  </div>
-                </div>
-
-                <!-- Custom Wallpaper Upload & Gallery (Streak >= 50) -->
-                <div class="wallpaper-upload-wrap">
-                  <div class="theme-tier-title">
-                    <span>Tải ảnh nền cá nhân</span>
-                    <div style="display: flex; gap: 6px; align-items: center;">
-                      <span class="custom-wall-limit-badge" id="badgeCustomWallLimit">Không giới hạn (50d)</span>
-                      <span class="perk-badge" id="badgeWallUploadLock">🔒 50d</span>
-                    </div>
-                  </div>
-                  <div class="custom-wall-box" id="customWallBox">
-                    <input type="file" id="customWallInput" accept="image/*,.jpg,.jpeg,.png,.webp" style="display: none;" />
-                    <button type="button" class="button button-sm button-outline" id="btnUploadWall" onclick="triggerWallpaperUpload()">
-                      📷 Tải ảnh mới từ máy tính
-                    </button>
-                    <span class="custom-wall-info" id="customWallName">Chưa chọn ảnh</span>
-                  </div>
-                  <div id="customWallpapersList" class="custom-wallpapers-grid">
-                    <!-- Uploaded wallpapers rendered by JS -->
-                  </div>
-                </div>
-
-                <!-- Wallpaper Overlay & Dimming Control -->
-                <div class="wallpaper-dim-wrap" id="wallpaperDimControl">
-                  <div class="theme-tier-title" style="margin-bottom: 6px;">
-                    <span>Tùy chỉnh Hiển thị & Độ trong suốt</span>
-                  </div>
-                  <div class="wallpaper-dim-slider-box">
-                    <span style="font-size: 13px; color: var(--ink); min-width: 90px;">Độ mờ nền:</span>
-                    <input type="range" id="wallpaperDimSlider" min="0" max="80" step="5" value="35" oninput="handleWallpaperDimChange(this.value)" style="flex: 1; cursor: pointer;" />
-                    <span id="wallpaperDimVal" style="font-size: 12px; font-weight: 700; width: 36px; text-align: right; color: var(--ink);">35%</span>
-                  </div>
-                  <div class="wallpaper-dim-slider-box" style="margin-top: 8px;">
-                    <span style="font-size: 13px; color: var(--ink); min-width: 90px;">Độ mờ giao diện:</span>
-                    <input type="range" id="studyCardGlassSlider" min="15" max="90" step="5" value="50" oninput="handleCardGlassChange(this.value)" style="flex: 1; cursor: pointer;" />
-                    <span id="studyCardGlassVal" style="font-size: 12px; font-weight: 700; width: 36px; text-align: right; color: var(--ink);">50%</span>
-                  </div>
-                </div>
-
-                <!-- Full Master Customization & Gradient Palettes (Streak >= 50) -->
-                <div class="theme-master-wrap">
-                  <div class="theme-tier-title">
-                    <span>Phối màu</span>
-                    <span class="perk-badge" id="badgeMasterCustomLock">🔒 50d</span>
-                  </div>
-                  <div class="color-palette-picker" id="colorPalettePicker">
-                    <!-- Color & gradient swatches rendered by JS -->
-                  </div>
-                </div>
               </div>
             </div>
           </div>
@@ -1053,15 +848,7 @@
                     </h3>
                     <span class="badge" id="coStudyCountBadge">0 đang học</span>
                   </div>
-                  <p class="co-study-tip" id="studySpaceSubtitle">Thư viện 24/7, Phòng họp nhóm &amp; Buồng riêng tư</p>
-                </div>
-              </div>
-                      <svg class="ui-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
-                      Không gian Tự học
-                    </h3>
-                    <span class="badge" id="coStudyCountBadge">0 đang học</span>
-                  </div>
-                  <p class="co-study-tip" id="studySpaceSubtitle">Thư viện 24/7, Phòng họp nhóm &amp; Buồng riêng tư</p>
+                  <p class="co-study-tip" id="studySpaceSubtitle">Thư viện 24/7, Phòng họp nhóm &amp; Phòng học cá nhân</p>
                 </div>
               </div>
 
@@ -1079,7 +866,7 @@
                   </button>
                   <button type="button" class="space-filter-pill" data-space-tab="private" onclick="switchStudySpaceCategoryTab('private')">
                     <svg class="ui-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
-                    Phòng học riêng tư
+                    Phòng học cá nhân
                   </button>
                 </div>
 
@@ -1123,20 +910,20 @@
                   </div>
                 </div>
 
-                <!-- 3. PHÒNG HỌC RIÊNG TƯ: 1 NGƯỜI 1 PHÒNG -->
+                <!-- 3. PHÒNG HỌC CÁ NHÂN: 1 NGƯỜI 1 PHÒNG -->
                 <div class="space-category-pane" id="paneSpacePrivate" style="display: none;">
                   <div class="private-pod-promo-card">
                     <div class="promo-icon-wrap">
                       <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
                     </div>
-                    <h4>Buồng học Cá nhân Riêng tư</h4>
+                    <h4>Phòng học cá nhân</h4>
                     <p>Không gian học một mình hoàn toàn riêng tư. Thông tin và ca học của bạn được bảo mật tuyệt đối, không chia sẻ công khai với người khác.</p>
                     <div class="private-pods-active-stat" id="privatePodsActiveStat">
                       <span class="stat-dot-pulse"></span>
-                      <span>Đang có <strong id="activePrivatePodsCount">0</strong> buồng tự học riêng tư đang hoạt động</span>
+                      <span>Đang có <strong id="activePrivatePodsCount">0</strong> phòng tự học riêng tư hoạt động</span>
                     </div>
                     <button type="button" class="button button-primary btn-join-private-pod" onclick="joinPrivateStudyPod()">
-                      Vào buồng học riêng tư của bạn →
+                      Vào phòng học cá nhân của bạn →
                     </button>
                   </div>
                 </div>
@@ -1210,7 +997,7 @@
                   </ul>
                 </div>
 
-                <!-- NHỮNG VIỆC CẦN LÀM (TÍCH HỢP CHO THƯ VIỆN, BUỒNG RIÊNG TƯ & SẢNH NGOÀI) -->
+                <!-- NHỮNG VIỆC CẦN LÀM (TÍCH HỢP CHO THƯ VIỆN, PHÒNG HỌC CÁ NHÂN & SẢNH NGOÀI) -->
                 <div class="todo-integrated-section" id="integratedPersonalTasksSection" style="margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--line);">
                   <div class="todo-head">
                     <div style="flex: 1; min-width: 0;">
@@ -3636,7 +3423,7 @@
         <button class="close-modal" type="button" onclick="this.closest('dialog').close()" aria-label="Đóng"><svg class="ui-icon modal-close-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
       </div>
 
-      <!-- Settings Navigation Tabs -->
+      <!-- Settings Navigation Tabs (6 Buttons Total) -->
       <div class="study-settings-tabs">
         <button type="button" class="settings-tab-btn active" data-settings-tab="timer" onclick="switchStudySettingsTab('timer')">
           <svg class="ui-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
@@ -3653,6 +3440,14 @@
         <button type="button" class="settings-tab-btn" data-settings-tab="tasks" onclick="switchStudySettingsTab('tasks')">
           <svg class="ui-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7.01" y2="7"></line></svg>
           Quản lý nhãn
+        </button>
+        <button type="button" class="settings-tab-btn" data-settings-tab="audio" onclick="switchStudySettingsTab('audio')">
+          <svg class="ui-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 18v-6a9 9 0 0 1 18 0v6"></path><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"></path></svg>
+          Âm thanh
+        </button>
+        <button type="button" class="settings-tab-btn" data-settings-tab="theme" onclick="switchStudySettingsTab('theme')">
+          <svg class="ui-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+          Hình nền
         </button>
       </div>
 
@@ -3937,6 +3732,200 @@
             </div>
           </div>
         </div>
+
+        <!-- TAB 5: AUDIO (ÂM THANH MÔI TRƯỜNG & PHỐI HỢP & NHẠC) -->
+        <div class="settings-tab-pane" id="paneSettingsAudio" style="display: none;">
+          <div class="settings-group">
+            <div class="ambient-header" style="margin-bottom: 14px;">
+              <div class="sound-tabs">
+                <button type="button" class="sound-tab active" data-sound-tab="env" id="tabEnvAudioBtn">
+                  🎧 Âm thanh môi trường <span class="perk-badge" id="badgeEnvLock">🔒 3d</span>
+                </button>
+                <button type="button" class="sound-tab" data-sound-tab="mix" id="tabMixAudioBtn">
+                  🎛️ Âm thanh phối hợp <span class="perk-badge" id="badgeMixLock">🔒 7d</span>
+                </button>
+                <button type="button" class="sound-tab" data-sound-tab="music" id="tabMusicAudioBtn">
+                  🎵 Âm nhạc <span class="perk-badge" id="badgeMusicLock">🔒 7d</span>
+                </button>
+              </div>
+              <div class="sound-master-controls">
+                <button type="button" class="button button-sm button-outline" id="toggleAmbientMaster">Tắt tất cả</button>
+              </div>
+            </div>
+
+            <!-- Tab Content: Âm thanh môi trường -->
+            <div class="sound-tab-pane active" id="paneEnvAudio">
+              <div class="perk-locked-banner" id="bannerEnvLocked" style="display: none;">
+                <span class="lock-icon">🔒</span>
+                <div>
+                  <strong>Mở khóa ở chuỗi 3 ngày (Sinh viên năng động)</strong>
+                  <p>Kho 4 âm thanh môi trường tĩnh lặng độ dài 1 tiếng, phát vòng lặp giúp bạn tập trung cao độ.</p>
+                </div>
+              </div>
+              <div class="ambient-sub-bar">
+                <span class="ambient-sub">Âm thanh môi trường hỗn hợp. Có thể phát cùng âm thanh phối hợp.</span>
+              </div>
+              <div class="ambient-grid" id="envAudioGrid"></div>
+              <div class="custom-audio-section" id="customEnvSection">
+                <div class="custom-audio-head">
+                  <div>
+                    <h4>🌿 Âm thanh môi trường của bạn</h4>
+                    <p class="custom-audio-sub">Tự tải lên các âm thanh ưa thích của bạn (không đồng bộ với thiết bị khác)</p>
+                  </div>
+                  <div class="custom-audio-head-right">
+                    <span class="perk-badge" id="badgeCustomEnvLock">🔒 30d</span>
+                    <span class="custom-audio-limit-badge" id="badgeCustomEnvLimit">Tối đa 3 tệp</span>
+                    <button type="button" class="button button-sm button-outline" id="btnUploadEnvAudio" onclick="triggerUploadEnvAudio()">
+                      ➕ Tải lên
+                    </button>
+                  </div>
+                </div>
+                <input type="file" id="customEnvAudioInput" accept="audio/*,.mp3,.m4a,.wav,.ogg" style="display: none;" />
+                <div id="customEnvAudioList" class="custom-audio-list"></div>
+              </div>
+            </div>
+
+            <!-- Tab Content: Âm thanh phối hợp -->
+            <div class="sound-tab-pane" id="paneMixAudio" style="display: none;">
+              <div class="perk-locked-banner" id="bannerMixLocked" style="display: none;">
+                <span class="lock-icon">🔒</span>
+                <div>
+                  <strong>Mở khóa ở chuỗi 7 ngày (Học giả bền bỉ)</strong>
+                  <p>Kho 9 âm thanh phối hợp đơn lẻ, cho phép bạn tự do phối nhiều âm thanh cùng lúc theo sở thích.</p>
+                </div>
+              </div>
+              <div class="ambient-sub-bar">
+                <span class="ambient-sub">Tự phối âm thanh tập trung cho riêng bạn.</span>
+              </div>
+              <div class="ambient-grid" id="mixAudioGrid"></div>
+              <div class="custom-audio-section" id="customMixSection">
+                <div class="custom-audio-head">
+                  <div>
+                    <h4>🎛️ Âm thanh phối hợp của bạn</h4>
+                    <p class="custom-audio-sub">Tự tải lên hiệu ứng âm thanh để mix chung vào dàn âm thanh.</p>
+                  </div>
+                  <div class="custom-audio-head-right">
+                    <span class="perk-badge" id="badgeCustomMixLock">🔒 30d</span>
+                    <span class="custom-audio-limit-badge" id="badgeCustomMixLimit">Tối đa 5 tệp</span>
+                    <button type="button" class="button button-sm button-outline" id="btnUploadMixAudio" onclick="triggerUploadMixAudio()">
+                      ➕ Tải lên
+                    </button>
+                  </div>
+                </div>
+                <input type="file" id="customMixAudioInput" accept="audio/*,.mp3,.m4a,.wav,.ogg" style="display: none;" />
+                <div id="customMixAudioList" class="custom-audio-list"></div>
+              </div>
+            </div>
+
+            <!-- Tab Content: Âm nhạc -->
+            <div class="sound-tab-pane" id="paneMusicAudio" style="display: none;">
+              <div class="perk-locked-banner" id="bannerMusicLocked" style="display: none;">
+                <span class="lock-icon">🔒</span>
+                <div>
+                  <strong>Mở khóa ở chuỗi 7 ngày (Học giả bền bỉ)</strong>
+                  <p>Kho 4 bản nhạc êm dịu, giúp tinh thần tập trung và sáng tạo khi học tập.</p>
+                </div>
+              </div>
+              <div class="ambient-sub-bar">
+                <span class="ambient-sub">Playlist nhạc theo gu khác nhau. Có thể phát cùng âm thanh phối hợp.</span>
+              </div>
+              <div class="ambient-grid" id="musicAudioGrid"></div>
+              <div class="custom-audio-section" id="customMusicSection">
+                <div class="custom-audio-head">
+                  <div>
+                    <h4>🎵 Âm nhạc của bạn</h4>
+                    <p class="custom-audio-sub">Tải lên các bản nhạc ưa thích của bạn (không đồng bộ với thiết bị khác).</p>
+                  </div>
+                  <div class="custom-audio-head-right">
+                    <span class="perk-badge" id="badgeCustomMusicLock">🔒 30d</span>
+                    <span class="custom-audio-limit-badge" id="badgeCustomMusicLimit">Tối đa 3 tệp</span>
+                    <button type="button" class="button button-sm button-outline" id="btnUploadMusicAudio" onclick="triggerUploadMusicAudio()">
+                      ➕ Tải lên
+                    </button>
+                  </div>
+                </div>
+                <input type="file" id="customMusicAudioInput" accept="audio/*,.mp3,.m4a,.wav,.ogg" style="display: none;" />
+                <div id="customMusicAudioList" class="custom-audio-list"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB 6: THEME (HÌNH NỀN, AURA & ĐỘ MỜ GIAO DIỆN) -->
+        <div class="settings-tab-pane" id="paneSettingsTheme" style="display: none;">
+          <div class="settings-group">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+              <div>
+                <h3 style="margin: 0;">Góc học tập &amp; Hình nền</h3>
+                <span style="font-size: 12px; color: var(--muted);">Cá nhân hóa góc học tập theo phong cách của bạn</span>
+              </div>
+              <button type="button" class="button button-sm button-ghost" id="resetThemeBtn" onclick="resetStudyTheme()">Mặc định</button>
+            </div>
+
+            <!-- Wallpaper Presets -->
+            <div class="wallpaper-presets-wrap" style="margin-bottom: 16px;">
+              <div class="theme-tier-title">
+                <span>Kho hình nền</span>
+                <span class="perk-badge" id="badgeWallPresetLock">🔒 14d</span>
+              </div>
+              <div class="preset-thumbs" id="wallpaperPresetsList"></div>
+            </div>
+
+            <!-- Clock Color Customization -->
+            <div class="clock-color-wrap" style="margin-bottom: 16px;">
+              <div class="theme-tier-title">
+                <span>Màu sắc đồng hồ số</span>
+                <span class="perk-badge" id="badgeClockColorLock">🔒 14d</span>
+              </div>
+              <div class="clock-color-picker" id="clockColorPicker"></div>
+            </div>
+
+            <!-- Custom Wallpaper Upload -->
+            <div class="wallpaper-upload-wrap" style="margin-bottom: 16px;">
+              <div class="theme-tier-title">
+                <span>Tải ảnh nền cá nhân</span>
+                <div style="display: flex; gap: 6px; align-items: center;">
+                  <span class="custom-wall-limit-badge" id="badgeCustomWallLimit">Không giới hạn (50d)</span>
+                  <span class="perk-badge" id="badgeWallUploadLock">🔒 50d</span>
+                </div>
+              </div>
+              <div class="custom-wall-box" id="customWallBox">
+                <input type="file" id="customWallInput" accept="image/*,.jpg,.jpeg,.png,.webp" style="display: none;" />
+                <button type="button" class="button button-sm button-outline" id="btnUploadWall" onclick="triggerWallpaperUpload()">
+                  📷 Tải ảnh mới từ máy tính
+                </button>
+                <span class="custom-wall-info" id="customWallName">Chưa chọn ảnh</span>
+              </div>
+              <div id="customWallpapersList" class="custom-wallpapers-grid"></div>
+            </div>
+
+            <!-- Wallpaper Dimming & Glass Controls -->
+            <div class="wallpaper-dim-wrap" id="wallpaperDimControl" style="margin-bottom: 16px;">
+              <div class="theme-tier-title" style="margin-bottom: 6px;">
+                <span>Tùy chỉnh Hiển thị &amp; Độ trong suốt</span>
+              </div>
+              <div class="wallpaper-dim-slider-box">
+                <span style="font-size: 13px; color: var(--ink); min-width: 90px;">Độ mờ nền:</span>
+                <input type="range" id="wallpaperDimSlider" min="0" max="80" step="5" value="35" oninput="handleWallpaperDimChange(this.value)" style="flex: 1; cursor: pointer;" />
+                <span id="wallpaperDimVal" style="font-size: 12px; font-weight: 700; width: 36px; text-align: right; color: var(--ink);">35%</span>
+              </div>
+              <div class="wallpaper-dim-slider-box" style="margin-top: 8px;">
+                <span style="font-size: 13px; color: var(--ink); min-width: 90px;">Độ mờ giao diện:</span>
+                <input type="range" id="studyCardGlassSlider" min="15" max="90" step="5" value="50" oninput="handleCardGlassChange(this.value)" style="flex: 1; cursor: pointer;" />
+                <span id="studyCardGlassVal" style="font-size: 12px; font-weight: 700; width: 36px; text-align: right; color: var(--ink);">50%</span>
+              </div>
+            </div>
+
+            <!-- Aura Palette Picker -->
+            <div class="theme-master-wrap">
+              <div class="theme-tier-title">
+                <span>Phối màu hào quang Aura</span>
+                <span class="perk-badge" id="badgeMasterCustomLock">🔒 50d</span>
+              </div>
+              <div class="color-palette-picker" id="colorPalettePicker"></div>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div class="modal-actions" style="margin-top: 16px;">
@@ -4108,7 +4097,7 @@
       <div class="modal-head">
         <div>
           <p class="eyebrow">HỆ THỐNG KHÔNG GIAN TỰ HỌC</p>
-          <h2>Bàn học Chuyên đề &amp; Buồng riêng tư</h2>
+          <h2>Bàn học Chuyên đề &amp; Phòng học cá nhân</h2>
         </div>
         <button class="close-modal" type="button" onclick="this.closest('dialog').close()" aria-label="Đóng"><svg class="ui-icon modal-close-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
       </div>
@@ -4154,7 +4143,7 @@
                 <label for="newRoomType">Loại không gian</label>
                 <select id="newRoomType" onchange="handleNewRoomTypeChange(this.value)">
                   <option value="shared_task">🎯 Phòng Task chung (Nhóm đề tài)</option>
-                  <option value="private">🔒 Buồng riêng tư (Có mã PIN)</option>
+                  <option value="private">🔒 Phòng học cá nhân (Có mã PIN)</option>
                 </select>
               </div>
               <div class="form-group" style="flex: 1;">

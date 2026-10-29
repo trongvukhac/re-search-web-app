@@ -5437,151 +5437,126 @@ form .ql-editor,
   box-sizing: border-box;
 }
 
-/* Timer Card & Mode Selector */
+/* Timer Card & Mode Selector (Modern Zen Clock) */
 .study-timer-card {
   text-align: center;
   position: relative;
   overflow: hidden;
+  padding: 24px 20px 20px;
+  background: var(--surface-card, #ffffff);
+  border-radius: 20px;
+  border: 1px solid var(--line);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.04);
 }
-.timer-mode-selector {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 10px;
-  max-width: 460px;
-  margin: 0 auto 16px;
-  width: 100%;
-  box-sizing: border-box;
-  min-width: 0;
+
+.timer-top-banner {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--muted);
+  margin-bottom: 14px;
+  text-align: center;
+  letter-spacing: 0.1px;
 }
-.study-mode-btn {
-  background: var(--surface-bg, #f4f7f5);
-  border: 1.5px solid var(--line);
-  color: var(--ink);
-  padding: 10px 6px;
-  border-radius: 12px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  display: flex;
-  flex-direction: column;
+
+.timer-mode-selector-capsule {
+  display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 4px;
-  min-height: 56px;
-  box-sizing: border-box;
-  text-align: center;
-  min-width: 0;
-  overflow: hidden;
+  padding: 4px;
+  background: var(--surface-bg, #f1f5f3);
+  border: 1px solid var(--line);
+  border-radius: 9999px;
+  margin: 0 auto 14px;
+  max-width: 100%;
 }
-.study-mode-btn strong {
+.mode-capsule-btn {
+  padding: 8px 22px;
+  border-radius: 9999px;
+  border: none;
+  background: transparent;
   font-size: 13px;
-  font-weight: 700;
-  display: block;
-  line-height: 1.2;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 100%;
-}
-.study-mode-btn span {
-  font-size: 11px;
-  opacity: 0.8;
-  font-weight: 500;
-  display: block;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 100%;
-}
-.study-mode-btn:hover {
-  background: #e9f0ec;
-  border-color: var(--primary);
-}
-.study-mode-btn.active {
-  background: var(--primary-gradient, linear-gradient(135deg, #10b981 0%, #059669 100%));
-  color: #fff;
-  border-color: transparent;
-  box-shadow: 0 4px 14px var(--primary-glow, rgba(16, 185, 129, 0.35));
-}
-.study-mode-btn.active strong { color: #fff; }
-.study-mode-btn.active span { color: rgba(255, 255, 255, 0.9); }
-
-#study #studyStartBtn {
-  background: var(--primary-gradient, linear-gradient(135deg, #10b981 0%, #059669 100%)) !important;
-  box-shadow: 0 4px 14px var(--primary-glow, rgba(16, 185, 129, 0.35)) !important;
-  color: #fff !important;
-}
-
-/* Pomodoro Cycle Indicator (1/4 -> 4/4) */
-.study-cycle-container {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  margin-bottom: 12px;
-}
-.study-cycle-label {
-  font-size: 12px;
-  font-weight: 700;
+  font-weight: 600;
   color: var(--muted);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+  white-space: nowrap;
 }
-.study-cycle-dots {
-  display: flex;
-  align-items: center;
-  gap: 6px;
+.mode-capsule-btn:hover {
+  color: var(--ink);
 }
-.cycle-dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background: var(--line);
-  transition: all 0.3s ease;
+.mode-capsule-btn.active {
+  background: #ffffff;
+  color: var(--ink);
+  font-weight: 700;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
 }
-.cycle-dot.active {
-  background: var(--primary-gradient, var(--primary, #10b981)) !important;
-  transform: scale(1.25);
-  box-shadow: 0 0 10px var(--primary-glow, rgba(16, 185, 129, 0.5)) !important;
-}
-.cycle-dot.completed {
-  background: var(--primary-gradient, var(--primary, #10b981)) !important;
-  box-shadow: 0 0 6px var(--primary-glow, rgba(16, 185, 129, 0.4)) !important;
+html.dark-theme .mode-capsule-btn.active,
+body.dark-theme .mode-capsule-btn.active {
+  background: #334155;
+  color: #f8fafc;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
 }
 
-/* Circular Timer Visual */
+/* Circular Watch Face Dial with Minute Ticks & Progress Knob */
 .timer-visual-wrap {
   display: flex;
   justify-content: center;
   align-items: center;
-  margin: 8px 0 12px;
+  margin: 6px 0 10px;
 }
 .timer-circle {
   display: grid;
   place-items: center;
-  width: 240px;
-  height: 240px;
+  width: 280px;
+  height: 280px;
   flex-shrink: 0;
+  position: relative;
 }
 .timer-svg {
   grid-area: 1 / 1;
-  width: 240px;
-  height: 240px;
-  transform: rotate(-90deg);
-  transform-origin: center center;
+  width: 280px;
+  height: 280px;
 }
 .timer-bg-circle {
   fill: none;
-  stroke: var(--surface-bg, #e5ebe7);
-  stroke-width: 8;
+  stroke: rgba(0, 0, 0, 0.04);
+  stroke-width: 6;
+}
+html.dark-theme .timer-bg-circle,
+body.dark-theme .timer-bg-circle {
+  stroke: rgba(255, 255, 255, 0.08);
 }
 .timer-progress-circle {
   fill: none;
-  stroke: var(--primary);
-  stroke-width: 8;
+  stroke: #f05454;
+  stroke-width: 6;
   stroke-linecap: round;
-  stroke-dasharray: 660;
+  stroke-dasharray: 716.28; /* 2 * PI * 114 */
   stroke-dashoffset: 0;
+  transform: rotate(-90deg);
+  transform-origin: 140px 140px;
   transition: stroke-dashoffset 0.8s ease, stroke 0.3s ease;
+}
+.timer-progress-knob {
+  fill: #f05454;
+  stroke: #ffffff;
+  stroke-width: 2.5;
+  filter: drop-shadow(0 2px 5px rgba(240, 84, 84, 0.45));
+  transition: cx 0.8s ease, cy 0.8s ease;
+}
+html.dark-theme .timer-progress-knob,
+body.dark-theme .timer-progress-knob {
+  stroke: #1e293b;
+}
+.timer-dial-ticks line {
+  stroke: var(--ink);
+  opacity: 0.16;
+  stroke-linecap: round;
+}
+.timer-dial-ticks line.major {
+  opacity: 0.45;
+  stroke-width: 2;
 }
 .timer-center-content {
   grid-area: 1 / 1;
@@ -5594,19 +5569,27 @@ form .ql-editor,
   pointer-events: none;
   z-index: 1;
 }
+.timer-center-sub,
+.timer-mode-eyebrow {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 3px;
+}
 .timer-clock {
-  font-family: 'Unbounded', sans-serif;
-  font-size: 48px;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  font-size: 56px;
   font-weight: 800;
   color: var(--ink);
-  letter-spacing: -1.5px;
+  letter-spacing: -2px;
   line-height: 1;
   white-space: nowrap !important;
   word-break: keep-all;
   font-variant-numeric: tabular-nums;
   text-align: center;
   margin: 0;
-  padding: 0;
 }
 .timer-status-label {
   font-size: 12px;
@@ -5619,6 +5602,179 @@ form .ql-editor,
   white-space: nowrap;
 }
 
+/* Primary Action Controls: Reset (Circular), Start (Coral Pill), Next (Circular) */
+.study-actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  margin: 12px auto 14px;
+  flex-wrap: wrap;
+}
+.study-btn-circle {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  background: var(--surface, #ffffff);
+  color: var(--ink);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  flex-shrink: 0;
+  padding: 0;
+}
+.study-btn-circle:hover {
+  transform: scale(1.08);
+  border-color: #f05454;
+  color: #f05454;
+  box-shadow: 0 4px 12px rgba(240, 84, 84, 0.18);
+}
+.study-btn-circle:active {
+  transform: scale(0.95);
+}
+html.dark-theme .study-btn-circle,
+body.dark-theme .study-btn-circle {
+  background: #1e293b;
+  border-color: rgba(255, 255, 255, 0.1);
+  color: #f8fafc;
+}
+.study-btn-pill {
+  height: 52px;
+  padding: 0 36px;
+  border-radius: 9999px;
+  background: linear-gradient(135deg, #f05454 0%, #e23e57 100%) !important;
+  color: #ffffff !important;
+  font-size: 16px;
+  font-weight: 700;
+  border: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  cursor: pointer;
+  box-shadow: 0 4px 18px rgba(240, 84, 84, 0.38) !important;
+  transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.study-btn-pill:hover {
+  transform: scale(1.03);
+  box-shadow: 0 6px 24px rgba(240, 84, 84, 0.48) !important;
+}
+.study-btn-pill:active {
+  transform: scale(0.98);
+}
+.study-btn-pause {
+  background: linear-gradient(135deg, #eab308 0%, #ca8a04 100%) !important;
+  box-shadow: 0 4px 18px rgba(234, 179, 8, 0.35) !important;
+}
+.study-btn-break {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%) !important;
+  box-shadow: 0 4px 18px rgba(59, 130, 246, 0.35) !important;
+}
+.study-btn-leave {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%) !important;
+  box-shadow: 0 4px 18px rgba(239, 68, 68, 0.35) !important;
+}
+
+/* Quick Task Prompt ("+ Bạn đang tập trung vào việc gì?") */
+.study-quick-task-wrap {
+  margin: 0 auto 10px;
+  max-width: 420px;
+  text-align: center;
+}
+.study-quick-task-prompt {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 6px 14px;
+  border-radius: 9999px;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+.study-quick-task-prompt:hover {
+  color: var(--ink);
+  background: rgba(0, 0, 0, 0.04);
+}
+html.dark-theme .study-quick-task-prompt:hover,
+body.dark-theme .study-quick-task-prompt:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+.study-goal-input-box input {
+  width: 100%;
+  height: 38px;
+  border-radius: 9999px;
+  border: 1.5px solid #f05454;
+  padding: 0 16px;
+  font-size: 13px;
+  text-align: center;
+  outline: none;
+  background: var(--surface, #ffffff);
+  color: var(--ink);
+  box-sizing: border-box;
+}
+.prompt-clear-btn {
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-size: 16px;
+  cursor: pointer;
+  padding: 0 4px;
+  line-height: 1;
+}
+.prompt-clear-btn:hover {
+  color: #ef4444;
+}
+
+/* Meta Progress Row */
+.study-meta-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 0 auto 16px;
+}
+.study-meta-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: 9999px;
+  background: var(--surface-bg, #f4f7f5);
+  border: 1px solid var(--line);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink);
+  text-decoration: none;
+}
+.meta-dots {
+  letter-spacing: 1px;
+  font-size: 11px;
+  color: #f05454;
+}
+.study-meta-pill.streak-pill {
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+.study-meta-pill.streak-pill:hover {
+  transform: scale(1.05);
+}
+.study-meta-pill.preset-pill {
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.study-meta-pill.preset-pill:hover {
+  border-color: #f05454;
+  color: #f05454;
+}
+
 /* Dedicated Study Quote Card */
 .study-quote-card {
   display: flex;
@@ -5628,8 +5784,8 @@ form .ql-editor,
   background: var(--surface-bg, #f4f7f5);
   border: 1px solid var(--line);
   border-radius: 12px;
-  padding: 10px 18px;
-  margin: 6px auto 14px;
+  padding: 8px 16px;
+  margin: 4px auto 14px;
   max-width: 520px;
   cursor: pointer;
   user-select: none;
@@ -5638,39 +5794,130 @@ form .ql-editor,
 .study-quote-card:hover {
   transform: translateY(-1.5px);
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06);
-  border-color: var(--primary, #059669);
-}
-.study-quote-card:active {
-  transform: scale(0.99);
+  border-color: #f05454;
 }
 .quote-icon {
-  font-size: 15px;
+  font-size: 14px;
   flex-shrink: 0;
-  color: var(--primary, #059669);
-  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-.study-quote-card:hover .quote-icon {
-  transform: rotate(20deg) scale(1.15);
+  color: #f05454;
 }
 .timer-quote-text {
-  font-size: 12.5px;
+  font-size: 12px;
   color: var(--text, #1e293b);
-  line-height: 1.45;
+  line-height: 1.4;
   text-align: center;
-  transition: opacity 0.2s ease, transform 0.2s ease;
 }
-.timer-quote-text .quote-vi {
-  font-style: italic;
-  font-weight: 500;
+
+/* THE UNIFIED 6-BUTTON FLOATING DOCK TOOLBAR (UNDER THE CLOCK) */
+.study-dock-toolbar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 6px 14px;
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--line);
+  border-radius: 9999px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.06);
+  margin: 6px auto 0;
+  max-width: 100%;
+  box-sizing: border-box;
 }
-.timer-quote-text .quote-author {
-  display: inline-block;
-  font-style: normal;
-  font-weight: 700;
-  font-size: 11.5px;
-  margin-left: 6px;
-  color: var(--primary, #059669);
+html.dark-theme .study-dock-toolbar,
+body.dark-theme .study-dock-toolbar {
+  background: rgba(30, 41, 59, 0.88);
+  border-color: rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+}
+.dock-btn {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  width: 64px;
+  height: 50px;
+  border-radius: 14px;
+  border: none;
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+  padding: 0;
+  flex-shrink: 0;
+}
+.dock-btn:hover {
+  background: rgba(0, 0, 0, 0.05);
+  transform: translateY(-2px);
+  color: #f05454;
+}
+html.dark-theme .dock-btn:hover,
+body.dark-theme .dock-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #f87171;
+}
+.dock-btn:active {
+  transform: scale(0.94);
+}
+.dock-btn .dock-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+}
+.dock-btn .dock-label {
+  font-size: 10px;
+  font-weight: 600;
   white-space: nowrap;
+  line-height: 1;
+  opacity: 0.85;
+}
+
+@media (max-width: 768px) {
+  .study-actions {
+    gap: 10px;
+    flex-wrap: nowrap;
+    width: 100%;
+    max-width: 360px;
+    justify-content: center;
+    margin: 10px auto 14px;
+  }
+  .study-btn-pill {
+    height: 48px;
+    padding: 0 20px;
+    font-size: 14.5px;
+    flex: 1;
+    max-width: 200px;
+  }
+  .study-btn-circle {
+    width: 44px;
+    height: 44px;
+    flex-shrink: 0;
+  }
+  .study-meta-row {
+    gap: 6px;
+    margin: 0 auto 12px;
+  }
+  .study-meta-pill {
+    padding: 4px 9px;
+    font-size: 11.5px;
+  }
+  .study-dock-toolbar {
+    gap: 2px;
+    padding: 4px 6px;
+    width: 100%;
+    justify-content: space-around;
+  }
+  .dock-btn {
+    width: 48px;
+    height: 46px;
+  }
+  .dock-btn .dock-label {
+    font-size: 9px;
+  }
 }
 
 /* Goal input */
@@ -6830,7 +7077,7 @@ form .ql-editor,
 
 @media (max-width: 600px) {
   #study.page {
-    padding: 14px 10px 90px;
+    padding: 68px 12px 100px;
     width: 100%;
     max-width: 100vw;
     box-sizing: border-box;
@@ -6892,17 +7139,33 @@ form .ql-editor,
     font-size: 38px !important;
   }
   .study-actions {
-    gap: 8px;
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
     width: 100%;
-    max-width: 100%;
-    box-sizing: border-box;
+    max-width: 360px;
+    margin: 8px auto 12px;
   }
-  .study-action-ctrl {
-    flex: 1 1 calc(50% - 6px);
-    min-width: 0 !important;
-    max-width: 100%;
-    padding: 0 10px;
-    font-size: 13px;
+  .study-actions .study-btn-circle {
+    flex: 0 0 42px;
+    width: 42px;
+    height: 42px;
+    min-width: 42px;
+    max-width: 42px;
+    border-radius: 50%;
+    padding: 0;
+  }
+  .study-actions .study-btn-pill {
+    flex: 1 1 auto;
+    min-width: 130px;
+    max-width: 200px;
+    height: 46px;
+    padding: 0 16px;
+    font-size: 14px;
+    border-radius: 9999px;
   }
   .ambient-grid {
     grid-template-columns: 1fr;
@@ -7073,16 +7336,34 @@ dialog.study-confirm-modal::backdrop {
   }
 
   .study-actions {
-    flex-wrap: wrap !important;
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    align-items: center !important;
     justify-content: center !important;
-    gap: 8px !important;
+    gap: 12px !important;
+    width: 100% !important;
+    max-width: 360px !important;
+    margin: 10px auto 14px !important;
   }
 
-  .study-action-ctrl {
-    flex: 1 1 calc(50% - 8px) !important;
-    min-width: 125px !important;
-    justify-content: center !important;
-    height: 42px !important;
+  .study-actions .study-btn-circle {
+    flex: 0 0 44px !important;
+    width: 44px !important;
+    height: 44px !important;
+    min-width: 44px !important;
+    max-width: 44px !important;
+    border-radius: 50% !important;
+    padding: 0 !important;
+  }
+
+  .study-actions .study-btn-pill {
+    flex: 1 1 auto !important;
+    min-width: 140px !important;
+    max-width: 220px !important;
+    height: 48px !important;
+    padding: 0 20px !important;
+    border-radius: 9999px !important;
   }
 
   .study-layout {
