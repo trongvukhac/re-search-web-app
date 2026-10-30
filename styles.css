@@ -6246,12 +6246,20 @@ body.dark-theme .meta-goal-dot.empty {
   border-color: var(--study-color-accessory, #10b981);
   opacity: 0.55;
 }
-.study-meta-pill.streak-pill {
-  cursor: pointer;
-  transition: transform 0.2s ease;
+.cycle-pill-indicator {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  border: 2px solid var(--study-color-secondary, #10b981);
+  display: inline-block;
+  flex-shrink: 0;
+  box-sizing: border-box;
+  margin-right: 2px;
+  transition: all 0.25s ease;
 }
-.study-meta-pill.streak-pill:hover {
-  transform: scale(1.05);
+.cycle-pill-indicator.active {
+  background-color: var(--study-color-secondary, #10b981);
+  box-shadow: 0 0 6px color-mix(in srgb, var(--study-color-secondary, #10b981) 50%, transparent);
 }
 .study-meta-pill.preset-pill {
   cursor: pointer;
@@ -6334,14 +6342,14 @@ body.dark-theme .study-dock-toolbar {
   flex-shrink: 0;
 }
 .dock-btn:hover {
-  background: rgba(240, 84, 84, 0.1);
+  background: color-mix(in srgb, var(--study-color-accessory, #10b981) 12%, transparent);
   transform: translateY(-2px);
-  color: #f05454;
+  color: var(--study-color-accessory, #10b981);
 }
 html.dark-theme .dock-btn:hover,
 body.dark-theme .dock-btn:hover {
   background: rgba(255, 255, 255, 0.12);
-  color: #f87171;
+  color: var(--study-color-accessory, #34d399);
 }
 .dock-btn:active {
   transform: scale(0.92);

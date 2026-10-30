@@ -206,7 +206,7 @@ function getInitialStudySettings() {
     activeWallpaper: "default",
     wallpaperDim: 35,
     cardGlassOpacity: 50,
-    activeAura: "pomodoro",
+    activeAura: "emerald",
     clockColor: "default",
     // 6 Clock Styles & 3 Independent Color Roles
     clockStyle: "dial", // 'dial', 'flip', 'minimal', 'kitchen', 'digital', 'hourglass'
@@ -224,7 +224,11 @@ function getInitialStudySettings() {
   };
   try {
     const saved = localStorage.getItem(STUDY_SETTINGS_KEY);
-    return saved ? Object.assign(defaults, JSON.parse(saved)) : defaults;
+    const parsed = saved ? Object.assign(defaults, JSON.parse(saved)) : defaults;
+    if (parsed.activeAura === 'pomodoro') {
+      parsed.activeAura = 'emerald';
+    }
+    return parsed;
   } catch (e) {
     return defaults;
   }
@@ -7712,6 +7716,7 @@ window.updateStudyColorRole = function(role, colorHex) {
 
   saveStudySettings(false);
   applyStudyColorRoles();
+  updateStaticStudyControlsUI();
   updateTimerDisplay();
   updateDailyGoalUI();
 };
@@ -7722,6 +7727,7 @@ window.resetStudyColorRoles = function() {
   studySettings.accessoryColor = "#10b981";
   saveStudySettings(false);
   applyStudyColorRoles();
+  updateStaticStudyControlsUI();
   updateTimerDisplay();
   updateDailyGoalUI();
   toast("Đã khôi phục 3 bộ màu mặc định: Xanh lá!");
@@ -7924,6 +7930,8 @@ const DIGIT_MAP = {
 
 function update7SegmentDigit(digitEl, char) {
   if (!digitEl) return;
+  if (digitEl._lastChar === char && digitEl.children && digitEl.children.length === 7) return;
+  digitEl._lastChar = char;
   if (!digitEl.children || digitEl.children.length !== 7) {
     digitEl.innerHTML = "";
     ['a', 'b', 'c', 'd', 'e', 'f', 'g'].forEach(seg => {
@@ -7947,6 +7955,8 @@ function renderDigitalBlocks(progressRatio) {
   if (!bar) return;
   const total = 24;
   const filled = Math.round(Math.min(1, Math.max(0, progressRatio)) * total);
+  if (bar._lastFilled === filled && bar.children.length === total) return;
+  bar._lastFilled = filled;
   if (bar.children.length !== total) {
     bar.innerHTML = "";
     for (let i = 0; i < total; i++) {
@@ -7956,8 +7966,69 @@ function renderDigitalBlocks(progressRatio) {
     }
   } else {
     for (let i = 0; i < total; i++) {
-      bar.children[i].className = `led-block ${i < filled ? 'active' : ''}`;
+      const shouldBeActive = (i < filled);
+      if (bar.children[i].classList.contains("active") !== shouldBeActive) {
+        bar.children[i].classList.toggle("active", shouldBeActive);
+      }
     }
+  }
+}
+
+function updateStaticStudyControlsUI() {
+  const isFlowtime = (studySettings.timerPreset === 'flowtime');
+  const isEyeRule = (studySettings.timerPreset === 'eye_rule');
+  const maxCycles = Math.max(1, Number(studySettings.longBreakInterval) || 4);
+
+  // 1. Preset Navigation Bar Active State
+  $$("#studyPresetsBar .preset-chip").forEach(chip => {
+    chip.classList.toggle("active", chip.dataset.preset === (studySettings.timerPreset || '25_5'));
+  });
+
+  // 2. Preset Pill Badge in Meta Row
+  const presetBadge = $("#activePresetBadgeName");
+  if (presetBadge) {
+    const curPreset = studySettings.timerPreset || '25_5';
+    if (curPreset === 'flowtime') {
+      presetBadge.textContent = "# Flowtime";
+    } else if (curPreset === 'eye_rule') {
+      presetBadge.textContent = "# 20-20-20";
+    } else if (curPreset === 'custom') {
+      presetBadge.textContent = `# ${studySettings.focusMins || 25} / ${studySettings.shortBreakMins || 5}`;
+    } else {
+      const cfg = STUDY_PRESET_CONFIGS[curPreset];
+      presetBadge.textContent = `# ${cfg ? cfg.label : '25 / 5'}`;
+    }
+  }
+
+  // 3. Dynamic Mode Button Labels
+  const labelFocus = $("#labelModeFocus");
+  const labelShortBreak = $("#labelModeShortBreak");
+  const labelLongBreak = $("#labelModeLongBreak");
+  if (labelFocus) labelFocus.textContent = isFlowtime ? `🌊 Đếm xuôi` : `⏱️ ${studySettings.focusMins} phút`;
+  if (labelShortBreak) labelShortBreak.textContent = isEyeRule ? `👀 20 giây` : `☕ ${studySettings.shortBreakMins} phút`;
+  if (labelLongBreak) labelLongBreak.textContent = `🌿 ${studySettings.longBreakMins} phút`;
+
+  // 4. Cycle Dots
+  $$("#studyCycleDots .cycle-dot").forEach((dot) => {
+    const c = Number(dot.dataset.cycle);
+    dot.classList.remove("active", "completed");
+    if (studyState.cycleIndex === 0) {
+      // not started
+    } else if (studyState.mode === 'longbreak') {
+      dot.classList.add("completed");
+    } else if (c < studyState.cycleIndex) {
+      dot.classList.add("completed");
+    } else if (c === studyState.cycleIndex) {
+      dot.classList.add("active");
+    }
+  });
+
+  // 5. Flowtime ratio buttons
+  if (isFlowtime) {
+    const ratio = studySettings.flowtimeRatio || "1/4";
+    $$("#flowtimeRatioButtons .ft-ratio-btn").forEach(btn => {
+      btn.classList.toggle("active", btn.dataset.ratio === ratio);
+    });
   }
 }
 
@@ -8196,9 +8267,6 @@ function updateTimerDisplay() {
     if (presetPill) presetPill.style.display = "inline-flex";
   }
 
-  // Meta pills: Cập nhật mục tiêu và chấm màu Pomodoro đồng bộ
-  updateDailyGoalUI();
-
   const presetBadge = $("#activePresetBadgeName");
   if (presetBadge) {
     const curPreset = studySettings.timerPreset || '25_5';
@@ -8291,12 +8359,7 @@ function updateTimerDisplay() {
     }
   }
 
-  // 6. Preset Navigation Bar Active State
-  $$("#studyPresetsBar .preset-chip").forEach(chip => {
-    chip.classList.toggle("active", chip.dataset.preset === (studySettings.timerPreset || '25_5'));
-  });
-
-  // 7. Cycle Label & Dots
+  // 6. Cycle Indicator & Label
   const maxCycles = Math.max(1, Number(studySettings.longBreakInterval) || 4);
   if (cycleLabel) {
     if (isFlowtime) {
@@ -8309,28 +8372,10 @@ function updateTimerDisplay() {
       cycleLabel.textContent = `Lượt ${studyState.cycleIndex || 1}/${maxCycles}`;
     }
   }
-
-  // Dynamic mode button labels
-  const labelFocus = $("#labelModeFocus");
-  const labelShortBreak = $("#labelModeShortBreak");
-  const labelLongBreak = $("#labelModeLongBreak");
-  if (labelFocus) labelFocus.textContent = isFlowtime ? `🌊 Đếm xuôi` : `⏱️ ${studySettings.focusMins} phút`;
-  if (labelShortBreak) labelShortBreak.textContent = isEyeRule ? `👀 20 giây` : `☕ ${studySettings.shortBreakMins} phút`;
-  if (labelLongBreak) labelLongBreak.textContent = `🌿 ${studySettings.longBreakMins} phút`;
-
-  $$("#studyCycleDots .cycle-dot").forEach((dot) => {
-    const c = Number(dot.dataset.cycle);
-    dot.classList.remove("active", "completed");
-    if (studyState.cycleIndex === 0) {
-      // not started
-    } else if (studyState.mode === 'longbreak') {
-      dot.classList.add("completed");
-    } else if (c < studyState.cycleIndex) {
-      dot.classList.add("completed");
-    } else if (c === studyState.cycleIndex) {
-      dot.classList.add("active");
-    }
-  });
+  const cycleIndicator = $("#cyclePillIndicator");
+  if (cycleIndicator) {
+    cycleIndicator.classList.toggle("active", Boolean(studyState.isRunning && studyState.mode === 'focus'));
+  }
 
   const modeButtons = $$(".study-mode-btn, .mode-capsule-btn");
 
@@ -8421,7 +8466,6 @@ function updateTimerDisplay() {
   $("#btnModeShortBreak")?.classList.toggle("active", studyState.mode === 'shortbreak');
   $("#btnModeLongBreak")?.classList.toggle("active", studyState.mode === 'longbreak');
 
-  updateDailyGoalUI();
   updateTabTitle();
   if (typeof updateSelfCoStudyCard === 'function') {
     updateSelfCoStudyCard();
@@ -8471,6 +8515,7 @@ window.applyTimerPreset = async function(presetId) {
   }
 
   saveStudySettings(false);
+  updateStaticStudyControlsUI();
   updateTimerDisplay();
   await syncMeetingRoomTimerIfHost();
   await syncStudyToServer();
@@ -8479,6 +8524,7 @@ window.applyTimerPreset = async function(presetId) {
 window.setFlowtimeBreakRatio = function(ratio) {
   studySettings.flowtimeRatio = ratio;
   saveStudySettings(false);
+  updateStaticStudyControlsUI();
 
   const elapsed = (studyState.mode === 'shortbreak') ? (studyState.flowtimeFocusHistorySecs || 0) : (studyState.elapsedSessionSeconds || studyState.flowtimeFocusHistorySecs || 0);
   const ratioNum = parseRatio(ratio);
@@ -8554,6 +8600,7 @@ function setStudyMode(mode, duration) {
   studyState.targetEndMs = 0;
   studyState.elapsedSessionSeconds = 0;
 
+  updateStaticStudyControlsUI();
   updateTimerDisplay();
   syncMeetingRoomTimerIfHost();
   syncStudyToServer();
@@ -8629,6 +8676,7 @@ function advanceStudyCycle(manualSkip = false) {
   if (studySettings.clockStyle === 'hourglass') {
     triggerHourglassFlipAnimation();
   }
+  updateStaticStudyControlsUI();
   updateTimerDisplay();
   syncMeetingRoomTimerIfHost();
   syncStudyToServer();
@@ -9460,25 +9508,25 @@ async function fetchStudyLounge() {
       const live = getLibraryLiveState(cfg.focus, cfg.break);
       studyState.mode = live.isFocus ? 'focus' : 'shortbreak';
       studyState.durationMinutes = live.isFocus ? cfg.focus : cfg.break;
-      studyState.remainingSeconds = live.remainingSec;
       studyState.targetEndMs = live.targetEndMs;
       studyState.isRunning = true;
       if (!studyState.timerInterval) {
+        studyState.remainingSeconds = live.remainingSec;
         startLocalTimerTick();
+        updateTimerDisplay();
       }
-      updateTimerDisplay();
     }
     // 2. Đồng bộ đồng hồ Phòng Học Nhóm theo Chủ phòng (dành cho thành viên)
     else if (currentStudyRoomData && currentStudyRoomData.type === 'meeting' && !currentStudyRoomData.isHost) {
       applyMeetingRoomTimerState(currentStudyRoomData.timerState);
     }
-    // 3. Đồng bộ cá nhân đa thiết bị
+    // 3. Đồng bộ cá nhân đa thiết bị (chỉ áp dụng khi máy hiện tại chưa chạy timer)
     else if (res.mySession) {
       const s = res.mySession;
       const now = Date.now();
       if (s.isRunning) {
         const serverRemaining = Math.max(0, Math.ceil((s.targetEndMs - now) / 1000));
-        if (!studyState.isRunning || (studyState.targetEndMs > 0 && Math.abs(studyState.targetEndMs - s.targetEndMs) > 3000)) {
+        if (!studyState.isRunning) {
           studyState.mode = s.mode;
           studyState.durationMinutes = s.durationMinutes;
           studyState.remainingSeconds = serverRemaining;
@@ -9491,9 +9539,7 @@ async function fetchStudyLounge() {
             goalInput.value = studyState.goal;
           }
 
-          if (!studyState.isRunning) {
-            startLocalTimerTick();
-          }
+          startLocalTimerTick();
           updateTimerDisplay();
         }
       } else {
@@ -12212,20 +12258,20 @@ function toggleStudyZenView() {
 /* --- HÀO QUANG & MÀU SẮC GRADIENT ĐỘC QUYỀN (Streak >= 30: 5 đầu; Streak >= 50: cả 10) --- */
 const COLOR_AURAS = [
   { 
-    id: 'pomodoro', 
-    name: 'San Hô Pomodoro (Mặc định)', 
-    gradient: 'linear-gradient(135deg, #f05454 0%, #e23e57 50%, #ff758c 100%)', 
-    primary: '#f05454', 
-    glow: 'rgba(240, 84, 84, 0.45)',
-    stops: ['#f05454', '#e23e57']
-  },
-  { 
     id: 'emerald', 
-    name: 'Ngọc Lục Bảo Tinh Hoa', 
+    name: 'Ngọc Lục Bảo (Mặc định)', 
     gradient: 'linear-gradient(135deg, #10b981 0%, #059669 50%, #34d399 100%)', 
     primary: '#10b981', 
     glow: 'rgba(16, 185, 129, 0.45)',
     stops: ['#10b981', '#34d399']
+  },
+  { 
+    id: 'pomodoro', 
+    name: 'San Hô Pomodoro', 
+    gradient: 'linear-gradient(135deg, #f05454 0%, #e23e57 50%, #ff758c 100%)', 
+    primary: '#f05454', 
+    glow: 'rgba(240, 84, 84, 0.45)',
+    stops: ['#f05454', '#e23e57']
   },
   { 
     id: 'cyan', 
@@ -12373,7 +12419,7 @@ function applyColorAura(auraId) {
 
 function resetStudyTheme() {
   studySettings.activeWallpaper = 'default';
-  studySettings.activeAura = 'pomodoro';
+  studySettings.activeAura = 'emerald';
   studySettings.clockColor = 'default';
   studySettings.wallpaperDim = 35;
   studySettings.cardGlassOpacity = 50;
@@ -12794,6 +12840,7 @@ window.saveStudySettings = function(closeModal = true) {
   }
 
   applyStudyColorRoles();
+  updateStaticStudyControlsUI();
   updateTimerDisplay();
   updateDailyGoalUI();
   syncMeetingRoomTimerIfHost();
@@ -13133,6 +13180,7 @@ function onEnterStudyLounge() {
   applyStudyColorRoles();
   renderStudyColorRoleSwatches();
   updateClockStyleGridUI();
+  updateStaticStudyControlsUI();
   updateDailyGoalUI();
   renderEnvironmentAudioGrid();
   renderMixAudioGrid();
