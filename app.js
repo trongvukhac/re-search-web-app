@@ -178,7 +178,7 @@ let sundayCeremonySoundPlayed = false;
 let sundayInteractionCleanup = null;
 
 window.notifyPerkLocked = function(days, featureName) {
-  toast(`🔒 Tính năng "${featureName}" mở khóa ở Chuỗi ${days} ngày! Bền bỉ học tập mỗi ngày để mở khóa nhé 🔥`);
+  toast(`🔒 ${featureName} mở khóa ở Chuỗi ${days} ngày!`);
 };
 
 function getInitialStudySettings() {
@@ -7660,12 +7660,18 @@ function applyStudyColorRoles() {
 }
 
 function renderStudyColorRoleSwatches() {
+  const streak = getUserStudyStreak();
   const renderRow = (contId, role, activeVal) => {
     const cont = document.getElementById(contId);
     if (!cont) return;
     cont.innerHTML = STUDY_SWATCH_PRESETS.map(s => {
       const isActive = (String(activeVal).toLowerCase() === s.color.toLowerCase());
-      return `<button type="button" class="color-role-swatch ${isActive ? 'active' : ''}" style="background:${s.color};" title="${s.name}" onclick="updateStudyColorRole('${role}', '${s.color}')"></button>`;
+      const isDefault = (s.color.toLowerCase() === '#10b981');
+      const isUnlocked = (isDefault || streak >= 7);
+      const clickAction = isUnlocked
+        ? `updateStudyColorRole('${role}', '${s.color}')`
+        : `notifyPerkLocked(7, 'Bộ phối màu đồng hồ')`;
+      return `<button type="button" class="color-role-swatch ${isActive ? 'active' : ''} ${!isUnlocked ? 'locked' : ''}" style="background:${s.color};" title="${escapeHTML(s.name)}${!isUnlocked ? ' (Mở khóa ở Chuỗi 7 ngày)' : ''}" onclick="${clickAction}"></button>`;
     }).join("");
   };
 
@@ -7675,6 +7681,11 @@ function renderStudyColorRoleSwatches() {
 }
 
 window.updateStudyColorRole = function(role, colorHex) {
+  const streak = getUserStudyStreak();
+  if (colorHex.toLowerCase() !== '#10b981' && streak < 7) {
+    notifyPerkLocked(7, "Bộ phối màu đồng hồ");
+    return;
+  }
   if (role === 'primary') studySettings.primaryColor = colorHex;
   else if (role === 'secondary') studySettings.secondaryColor = colorHex;
   else if (role === 'accessory') studySettings.accessoryColor = colorHex;
@@ -7695,6 +7706,56 @@ window.resetStudyColorRoles = function() {
   updateDailyGoalUI();
   toast("Đã khôi phục 3 bộ màu mặc định: Xanh lá!");
 };
+
+// Hoạt ảnh lật lá cơ học (Split-flap leaf flip animation)
+function triggerFlipLeafAnimation(cardEl, oldVal) {
+  if (!cardEl || oldVal === undefined || oldVal === null || oldVal === "") return;
+  if (studySettings.clockStyle !== 'flip') return;
+
+  // Hiệu ứng nảy cơ học của hộp đồng hồ
+  cardEl.classList.remove("leaf-flipping");
+  void cardEl.offsetWidth;
+  cardEl.classList.add("leaf-flipping");
+
+  // Xóa lá cũ nếu có
+  const existingLeaves = cardEl.querySelectorAll(".flip-flap-leaf");
+  existingLeaves.forEach(l => l.remove());
+
+  // Tạo nửa lá trên mang số cũ lật úp xuống phía dưới
+  const leaf = document.createElement("div");
+  leaf.className = "flip-flap-leaf";
+  const digitSpan = document.createElement("span");
+  digitSpan.className = "flip-digit-number";
+  digitSpan.textContent = oldVal;
+  leaf.appendChild(digitSpan);
+  cardEl.appendChild(leaf);
+
+  leaf.addEventListener("animationend", () => {
+    leaf.remove();
+  }, { once: true });
+}
+
+// Hoạt ảnh xoay lật ngược đồng hồ cát (180deg flip animation)
+function triggerHourglassFlipAnimation(onMidpoint) {
+  const wrap = document.getElementById("hourglassAssemblyWrap") || document.querySelector(".hourglass-assembly-wrap");
+  if (!wrap) {
+    if (typeof onMidpoint === 'function') onMidpoint();
+    return;
+  }
+  wrap.classList.remove("hourglass-turn-over");
+  void wrap.offsetWidth;
+  wrap.classList.add("hourglass-turn-over");
+
+  // Tại góc 90deg lơ lửng (~420ms), thực hiện reset hoặc đảo cát
+  setTimeout(() => {
+    if (typeof onMidpoint === 'function') onMidpoint();
+  }, 420);
+
+  // Kết thúc vòng quay 180deg
+  setTimeout(() => {
+    wrap.classList.remove("hourglass-turn-over");
+  }, 860);
+}
 
 /* ====================================================
    6 KIỂU DÁNG ĐỒNG HỒ (CLOCK STYLES)
@@ -7964,8 +8025,20 @@ function updateTimerDisplay() {
   // 2. Flip Clock (Chuẩn Ảnh Mẫu 1)
   const flipMinNum = $("#flipMinNum");
   const flipSecNum = $("#flipSecNum");
-  if (flipMinNum) flipMinNum.textContent = strM;
-  if (flipSecNum) flipSecNum.textContent = strS;
+  if (flipMinNum) {
+    const oldM = flipMinNum.textContent;
+    if (oldM !== strM) {
+      if (oldM) triggerFlipLeafAnimation($("#flipCardMin"), oldM);
+      flipMinNum.textContent = strM;
+    }
+  }
+  if (flipSecNum) {
+    const oldS = flipSecNum.textContent;
+    if (oldS !== strS) {
+      if (oldS) triggerFlipLeafAnimation($("#flipCardSec"), oldS);
+      flipSecNum.textContent = strS;
+    }
+  }
   const flipShelfProg = $("#flipShelfProgress");
   if (flipShelfProg) {
     flipShelfProg.style.width = `${(progressRatio * 100).toFixed(1)}%`;
@@ -8129,13 +8202,13 @@ function updateTimerDisplay() {
   // 4. Start / Resume / Break Button Text
   if (startBtnText) {
     if (isFlowtimeFocus) {
-      startBtnText.textContent = studyState.elapsedSessionSeconds > 0 ? "Tiếp tục dòng chảy" : "Bắt đầu tập trung";
+      startBtnText.textContent = studyState.elapsedSessionSeconds > 0 ? "Tiếp tục" : "Bắt đầu";
     } else if (studyState.remainingSeconds < (studyState.durationMinutes * 60) && !studyState.isRunning) {
       startBtnText.textContent = "Tiếp tục";
     } else if (studyState.mode === 'shortbreak' || studyState.mode === 'longbreak') {
-      startBtnText.textContent = "Bắt đầu nghỉ";
+      startBtnText.textContent = "Nghỉ";
     } else {
-      startBtnText.textContent = "Bắt đầu học";
+      startBtnText.textContent = "Bắt đầu";
     }
   }
 
@@ -8502,6 +8575,9 @@ function advanceStudyCycle(manualSkip = false) {
   studyState.targetEndMs = studyState.isRunning ? Date.now() + studyState.remainingSeconds * 1000 : 0;
   studyState.elapsedSessionSeconds = 0;
   rotateStudyQuote();
+  if (studySettings.clockStyle === 'hourglass') {
+    triggerHourglassFlipAnimation();
+  }
   updateTimerDisplay();
   syncMeetingRoomTimerIfHost();
   syncStudyToServer();
@@ -8641,6 +8717,7 @@ function startLocalTimerTick() {
   if (!studyState.startedAtMs) {
     studyState.startedAtMs = now - (studyState.elapsedSessionSeconds || 0) * 1000;
   }
+  studyState._lastTickedSec = null;
 
   studyState.timerInterval = setInterval(() => {
     const curNow = Date.now();
@@ -8650,12 +8727,15 @@ function startLocalTimerTick() {
       const cfg = LIBRARY_ROOM_CONFIGS.find(c => c.id === currentStudyRoomId);
       if (cfg) {
         const live = getLibraryLiveState(cfg.focus, cfg.break, curNow);
-        studyState.mode = live.isFocus ? 'focus' : 'shortbreak';
-        studyState.durationMinutes = live.isFocus ? cfg.focus : cfg.break;
-        studyState.remainingSeconds = live.remainingSec;
-        updateTimerDisplay();
-        if (typeof updateAllCoStudyCards === 'function') {
-          updateAllCoStudyCards(lastFetchedLearners);
+        if (live.remainingSec !== studyState._lastTickedSec) {
+          studyState._lastTickedSec = live.remainingSec;
+          studyState.mode = live.isFocus ? 'focus' : 'shortbreak';
+          studyState.durationMinutes = live.isFocus ? cfg.focus : cfg.break;
+          studyState.remainingSeconds = live.remainingSec;
+          updateTimerDisplay();
+          if (typeof updateAllCoStudyCards === 'function') {
+            updateAllCoStudyCards(lastFetchedLearners);
+          }
         }
         return;
       }
@@ -8664,58 +8744,62 @@ function startLocalTimerTick() {
     const isFlowtimeFocus = (studySettings.timerPreset === 'flowtime' && studyState.mode === 'focus');
 
     if (isFlowtimeFocus) {
-      studyState.elapsedSessionSeconds = Math.max(0, Math.floor((curNow - studyState.startedAtMs) / 1000));
-      studyState.remainingSeconds = studyState.elapsedSessionSeconds;
-      if (studySettings.tickingSound && studySettings.tickingSound !== 'off') {
-        playTickSound();
-      }
-      updateTimerDisplay();
-      if (typeof updateAllCoStudyCards === 'function') {
-        updateAllCoStudyCards(lastFetchedLearners);
-      }
-      return;
-    }
-
-    if (studyState.targetEndMs > 0) {
-      const remaining = Math.max(0, Math.ceil((studyState.targetEndMs - curNow) / 1000));
-      studyState.remainingSeconds = remaining;
-      studyState.elapsedSessionSeconds = Math.max(0, Math.floor((curNow - studyState.startedAtMs) / 1000));
-
-      // Ticking sound during focus
-      if (studyState.mode === 'focus' && studySettings.tickingSound && studySettings.tickingSound !== 'off') {
-        playTickSound();
-      }
-
-      // Pre-end reminder chime
-      if (studyState.mode === 'focus' && studySettings.reminderBeforeEnd > 0) {
-        const remindSecs = Number(studySettings.reminderBeforeEnd) * 60;
-        if (remaining === remindSecs && !studyState._reminderFiredThisSession) {
-          studyState._reminderFiredThisSession = true;
-          playSoftReminderChime();
-          toast(`⏳ Còn ${studySettings.reminderBeforeEnd} phút nữa là kết thúc ca học!`);
+      const elapsed = Math.max(0, Math.floor((curNow - studyState.startedAtMs) / 1000));
+      if (elapsed !== studyState._lastTickedSec) {
+        studyState._lastTickedSec = elapsed;
+        studyState.elapsedSessionSeconds = elapsed;
+        studyState.remainingSeconds = elapsed;
+        if (studySettings.tickingSound && studySettings.tickingSound !== 'off') {
+          playTickSound();
         }
-      }
-
-      updateTimerDisplay();
-      if (typeof updateAllCoStudyCards === 'function') {
-        updateAllCoStudyCards(lastFetchedLearners);
-      }
-      if (remaining <= 0) {
-        finishStudySession(true);
-      }
-    } else {
-      if (studyState.remainingSeconds > 0) {
-        studyState.remainingSeconds--;
-        studyState.elapsedSessionSeconds++;
         updateTimerDisplay();
         if (typeof updateAllCoStudyCards === 'function') {
           updateAllCoStudyCards(lastFetchedLearners);
         }
-      } else {
+      }
+      return;
+    }
+
+    if (!isFlowtimeFocus && studyState.targetEndMs <= 0 && studyState.remainingSeconds > 0) {
+      studyState.targetEndMs = curNow + studyState.remainingSeconds * 1000;
+    }
+
+    if (studyState.targetEndMs > 0) {
+      const remaining = Math.max(0, Math.ceil((studyState.targetEndMs - curNow) / 1000));
+      if (remaining !== studyState._lastTickedSec) {
+        studyState._lastTickedSec = remaining;
+        studyState.remainingSeconds = remaining;
+        studyState.elapsedSessionSeconds = Math.max(0, Math.floor((curNow - studyState.startedAtMs) / 1000));
+
+        // Ticking sound during focus
+        if (studyState.mode === 'focus' && studySettings.tickingSound && studySettings.tickingSound !== 'off') {
+          playTickSound();
+        }
+
+        // Pre-end reminder chime
+        if (studyState.mode === 'focus' && studySettings.reminderBeforeEnd > 0) {
+          const remindSecs = Number(studySettings.reminderBeforeEnd) * 60;
+          if (remaining === remindSecs && !studyState._reminderFiredThisSession) {
+            studyState._reminderFiredThisSession = true;
+            playSoftReminderChime();
+            toast(`⏳ Còn ${studySettings.reminderBeforeEnd} phút nữa là kết thúc ca học!`);
+          }
+        }
+
+        updateTimerDisplay();
+        if (typeof updateAllCoStudyCards === 'function') {
+          updateAllCoStudyCards(lastFetchedLearners);
+        }
+        if (remaining <= 0) {
+          finishStudySession(true);
+        }
+      }
+    } else {
+      if (studyState.remainingSeconds <= 0) {
         finishStudySession(true);
       }
     }
-  }, 1000);
+  }, 100);
 
   if (studyState.syncHeartbeatInterval) {
     clearInterval(studyState.syncHeartbeatInterval);
@@ -8836,6 +8920,9 @@ async function resetStudyTimer() {
     try {
       await requestAPI("/api/study/leave", { method: "POST" });
     } catch (e) {}
+  }
+  if (studySettings.clockStyle === 'hourglass') {
+    triggerHourglassFlipAnimation();
   }
   updateTimerDisplay();
   if (typeof updateAllCoStudyCards === 'function') {
@@ -11776,12 +11863,12 @@ function renderClockColorPicker() {
       const c = CLOCK_COLORS[idx];
       if (!c) return;
       const isSelected = (studySettings.clockColor || 'default') === c.id;
-      const isUnlocked = (c.id === 'default' || streak >= 14);
+      const isUnlocked = (c.id === 'default' || streak >= 7);
       btn.classList.toggle("active", isSelected);
       btn.classList.toggle("locked", !isUnlocked);
       const clickAction = isUnlocked
         ? `applyClockColor('${c.id}')`
-        : `notifyPerkLocked(14, 'Tinh chỉnh màu sắc đồng hồ số')`;
+        : `notifyPerkLocked(7, 'Màu sắc đồng hồ')`;
       btn.setAttribute("onclick", clickAction);
     });
     return;
@@ -11789,13 +11876,13 @@ function renderClockColorPicker() {
 
   cont.innerHTML = CLOCK_COLORS.map(c => {
     const isSelected = (studySettings.clockColor || 'default') === c.id;
-    const isUnlocked = (c.id === 'default' || streak >= 14);
+    const isUnlocked = (c.id === 'default' || streak >= 7);
     const clickAction = isUnlocked
       ? `applyClockColor('${c.id}')`
-      : `notifyPerkLocked(14, 'Tinh chỉnh màu sắc đồng hồ số')`;
+      : `notifyPerkLocked(7, 'Màu sắc đồng hồ')`;
 
     return `
-      <button type="button" class="clock-color-swatch ${isSelected ? 'active' : ''} ${!isUnlocked ? 'locked' : ''}" style="background:${c.color};" title="${escapeHTML(c.name)}${!isUnlocked ? ' (Mở khóa ở Chuỗi 14 ngày)' : ''}" onclick="${clickAction}"></button>
+      <button type="button" class="clock-color-swatch ${isSelected ? 'active' : ''} ${!isUnlocked ? 'locked' : ''}" style="background:${c.color};" title="${escapeHTML(c.name)}${!isUnlocked ? ' (Mở khóa ở Chuỗi 7 ngày)' : ''}" onclick="${clickAction}"></button>
     `;
   }).join("");
 }
@@ -11804,8 +11891,8 @@ function applyClockColor(colorId) {
   const c = CLOCK_COLORS.find(x => x.id === colorId);
   if (!c) return;
   const streak = getUserStudyStreak();
-  if (c.id !== 'default' && streak < 14) {
-    notifyPerkLocked(14, "Tinh chỉnh màu sắc đồng hồ số");
+  if (c.id !== 'default' && streak < 7) {
+    notifyPerkLocked(7, "Màu sắc đồng hồ");
     return;
   }
 
@@ -12168,15 +12255,8 @@ function renderColorPalette() {
       const c = COLOR_AURAS[idx];
       if (!c) return;
       const isSelected = (studySettings.activeAura === c.id);
-      let isUnlocked = true;
-      let reqDays = 0;
-      if (idx >= 1 && idx <= 4) {
-        isUnlocked = streak >= 30;
-        reqDays = 30;
-      } else if (idx >= 5) {
-        isUnlocked = streak >= 50;
-        reqDays = 50;
-      }
+      const isUnlocked = (idx === 0 || streak >= 7);
+      const reqDays = 7;
 
       btn.classList.toggle("active", isSelected);
       btn.classList.toggle("locked", !isUnlocked);
@@ -12190,15 +12270,8 @@ function renderColorPalette() {
 
   cont.innerHTML = COLOR_AURAS.map((c, idx) => {
     const isSelected = (studySettings.activeAura === c.id);
-    let isUnlocked = true;
-    let reqDays = 0;
-    if (idx >= 1 && idx <= 4) {
-      isUnlocked = streak >= 30;
-      reqDays = 30;
-    } else if (idx >= 5) {
-      isUnlocked = streak >= 50;
-      reqDays = 50;
-    }
+    const isUnlocked = (idx === 0 || streak >= 7);
+    const reqDays = 7;
 
     const clickAction = isUnlocked
       ? `applyColorAura('${c.id}')`
@@ -12215,12 +12288,8 @@ function applyColorAura(auraId) {
   const c = idx !== -1 ? COLOR_AURAS[idx] : COLOR_AURAS[0];
   const streak = getUserStudyStreak();
 
-  if (idx >= 1 && idx <= 4 && streak < 30) {
-    notifyPerkLocked(30, `Phối màu ${c.name}`);
-    return;
-  }
-  if (idx >= 5 && streak < 50) {
-    notifyPerkLocked(50, `Phối màu ${c.name}`);
+  if (idx !== 0 && streak < 7) {
+    notifyPerkLocked(7, `Phối màu ${c.name}`);
     return;
   }
 
