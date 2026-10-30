@@ -5985,7 +5985,6 @@ body.dark-theme .led-block,
   justify-content: center;
   margin: 4px 0 0;
   transform-origin: 50% 50%;
-  transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
 }
 .hourglass-assembly-wrap.hourglass-turn-over {
   animation: hourglassFlip180 0.85s cubic-bezier(0.45, 0.05, 0.55, 0.95) forwards;
@@ -6233,13 +6232,14 @@ body.dark-theme .study-quick-task-prompt:hover {
   flex-shrink: 0;
 }
 .meta-goal-dot.filled {
-  background-color: var(--study-color-accessory, #10b981);
+  background-color: var(--study-color-accessory, #10b981) !important;
+  border: 1.5px solid var(--study-color-accessory, #10b981) !important;
   box-shadow: 0 0 5px var(--study-accessory-glow, rgba(16, 185, 129, 0.45));
 }
 .meta-goal-dot.empty {
-  border: 1.5px solid var(--study-color-accessory, #10b981);
+  border: 1.5px solid var(--study-color-accessory, #10b981) !important;
   opacity: 0.45;
-  background-color: transparent;
+  background-color: transparent !important;
 }
 html.dark-theme .meta-goal-dot.empty,
 body.dark-theme .meta-goal-dot.empty {
@@ -8577,6 +8577,7 @@ dialog#studySwitchSpaceConfirmModal::backdrop {
   font-weight: 800;
   color: var(--study-color-accessory, #10b981);
   background: color-mix(in srgb, var(--study-color-accessory, #10b981) 15%, transparent);
+  border: 1px solid color-mix(in srgb, var(--study-color-accessory, #10b981) 30%, transparent);
   padding: 3px 8px;
   border-radius: 999px;
   display: inline-flex;
@@ -8584,8 +8585,13 @@ dialog#studySwitchSpaceConfirmModal::backdrop {
   justify-content: center;
   line-height: 1;
 }
-  padding: 2px 7px;
-  border-radius: 999px;
+.todo-title-row h3 {
+  white-space: nowrap !important;
+  word-break: keep-all !important;
+  display: inline-flex;
+  align-items: center;
+  margin: 0;
+  line-height: 1;
 }
 .todo-head-actions {
   display: flex;

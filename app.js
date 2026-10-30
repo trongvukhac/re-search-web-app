@@ -7632,7 +7632,7 @@ function applyStudyColorRoles() {
     studyEl.style.setProperty('--study-color-accessory', acc);
   }
 
-  // SVG Dial stops & knob
+  // 1. Dial SVG stops & knob
   const stop1 = $("#timerGradStop1");
   const stop2 = $("#timerGradStop2");
   if (stop1 && stop2) {
@@ -7648,7 +7648,27 @@ function applyStudyColorRoles() {
     progCircle.style.stroke = sec;
   }
 
-  // Update input color pickers if present
+  // 2. Kitchen timer mechanical wedge & center dot
+  const wedge = $("#kitchenTimerWedge");
+  if (wedge) {
+    wedge.setAttribute("fill", sec);
+  }
+  const kDot = $("#kitchenCenterDot");
+  if (kDot) {
+    kDot.setAttribute("fill", sec);
+  }
+
+  // 3. Hourglass sand pattern & stream
+  const sandRect = document.querySelector("#sandTexturePattern rect");
+  if (sandRect) {
+    sandRect.setAttribute("fill", sec);
+  }
+  const hgStream = $("#hourglassStream");
+  if (hgStream) {
+    hgStream.setAttribute("stroke", sec);
+  }
+
+  // 4. Update input color pickers if present
   const priPicker = $("#studyColorPrimaryPicker");
   const secPicker = $("#studyColorSecondaryPicker");
   const accPicker = $("#studyColorAccessoryPicker");
@@ -7803,14 +7823,17 @@ function describePieSlice(cx, cy, r, angleDeg) {
 
 function renderKitchenDialMarks() {
   const g = document.getElementById("kitchenDialMarks");
-  if (!g || g.children.length >= 72) return;
+  if (!g) return;
+  if (g.children.length >= 84) return;
   g.innerHTML = "";
   const cx = 150;
   const cy = 150;
+
+  // 1. Render 60 Minute Tick Marks on white plate (r=98 to r=108)
   for (let i = 0; i < 60; i++) {
     const isFive = (i % 5 === 0);
-    const innerR = isFive ? 122 : 130;
-    const outerR = 138;
+    const innerR = isFive ? 96 : 102;
+    const outerR = 108;
     const angleDeg = i * 6 - 90;
     const rad = (angleDeg * Math.PI) / 180;
     const x1 = (cx + innerR * Math.cos(rad)).toFixed(2);
@@ -7823,28 +7846,56 @@ function renderKitchenDialMarks() {
     line.setAttribute("y1", y1);
     line.setAttribute("x2", x2);
     line.setAttribute("y2", y2);
-    line.setAttribute("stroke", isFive ? "#1e293b" : "#64748b");
+    line.setAttribute("stroke", isFive ? "#0f172a" : "#334155");
     line.setAttribute("stroke-width", isFive ? "2.2" : "1.2");
-    line.setAttribute("opacity", isFive ? "0.85" : "0.35");
+    line.setAttribute("opacity", isFive ? "0.9" : "0.4");
     line.setAttribute("stroke-linecap", "round");
     g.appendChild(line);
 
+    // 2. Render 12 Bold Numbers (0, 5, 10, ... 55) aligned radially around the perimeter (r=124)
     if (isFive) {
-      const textR = 108;
+      const textR = 124;
       const tx = (cx + textR * Math.cos(rad)).toFixed(2);
-      const ty = (cy + textR * Math.sin(rad) + 4.5).toFixed(2);
+      const ty = (cy + textR * Math.sin(rad)).toFixed(2);
       const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
       text.setAttribute("x", tx);
       text.setAttribute("y", ty);
-      text.setAttribute("font-size", "13");
-      text.setAttribute("font-weight", "800");
-      text.setAttribute("font-family", "'Inter', system-ui, sans-serif");
       text.setAttribute("text-anchor", "middle");
+      text.setAttribute("dominant-baseline", "central");
+      text.setAttribute("font-family", "'Inter', system-ui, -apple-system, sans-serif");
+      text.setAttribute("font-size", "15");
+      text.setAttribute("font-weight", "800");
       text.setAttribute("fill", "#0f172a");
+      // Tangent rotation around center of number so text bottom points towards center
+      text.setAttribute("transform", `rotate(${angleDeg + 90}, ${tx}, ${ty})`);
       text.textContent = String(i);
       g.appendChild(text);
     }
   }
+
+  // 3. Inner radial spokes (r=28 to r=98) across the colored wedge
+  const spokesG = document.createElementNS("http://www.w3.org/2000/svg", "g");
+  spokesG.setAttribute("id", "kitchenWedgeSpokesGroup");
+  for (let i = 0; i < 60; i += 5) {
+    const angleDeg = i * 6 - 90;
+    const rad = (angleDeg * Math.PI) / 180;
+    const x1 = (cx + 28 * Math.cos(rad)).toFixed(2);
+    const y1 = (cy + 28 * Math.sin(rad)).toFixed(2);
+    const x2 = (cx + 98 * Math.cos(rad)).toFixed(2);
+    const y2 = (cy + 98 * Math.sin(rad)).toFixed(2);
+    const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+    line.setAttribute("x1", x1);
+    line.setAttribute("y1", y1);
+    line.setAttribute("x2", x2);
+    line.setAttribute("y2", y2);
+    line.setAttribute("stroke", "#0f172a");
+    line.setAttribute("stroke-width", "1.5");
+    line.setAttribute("opacity", "0.35");
+    line.setAttribute("stroke-linecap", "round");
+    line.setAttribute("data-minute", String(i));
+    spokesG.appendChild(line);
+  }
+  g.appendChild(spokesG);
 }
 
 // 7-Segment SVG Geometry for Digital Alarm Clock (Ảnh Mẫu 3)
@@ -9446,10 +9497,13 @@ async function fetchStudyLounge() {
           updateTimerDisplay();
         }
       } else {
-        if (studyState.isRunning && (now - studyState.lastSyncMs > 8000) && (!s.targetEndMs || s.targetEndMs < now)) {
-          pauseStudyTimer(false);
-          studyState.remainingSeconds = s.remainingSeconds;
-          updateTimerDisplay();
+        if (studyState.isRunning && (now - studyState.lastSyncMs > 15000) && (!s.targetEndMs || s.targetEndMs < now)) {
+          // Chỉ pause khi session server thực sự hết hạn hoặc dừng từ thiết bị khác
+          if (Date.now() - studyState.startedAtMs > 20000) {
+            pauseStudyTimer(false);
+            studyState.remainingSeconds = s.remainingSeconds;
+            updateTimerDisplay();
+          }
         }
       }
     }
@@ -9468,13 +9522,16 @@ async function fetchStudyLounge() {
 /* --- FLEXIBLE STUDY SPACES & COHORT DESKS HANDLERS --- */
 function renderActiveSpaceBanner(room) {
   if (!room) {
+    const isLib = Boolean(currentStudyRoomId && currentStudyRoomId.startsWith('lib_'));
+    const cfg = isLib ? (typeof LIBRARY_ROOM_CONFIGS !== 'undefined' ? LIBRARY_ROOM_CONFIGS.find(c => c.id === currentStudyRoomId) : null) : null;
+    const isMeeting = Boolean(currentStudyRoomId && currentStudyRoomId !== 'commons' && currentStudyRoomId !== 'private');
     room = {
       id: currentStudyRoomId || 'private',
-      name: 'Phòng học cá nhân',
-      type: 'private',
-      description: 'Không gian học một mình hoàn toàn riêng tư, tự do tập trung và quản lý ca học của bạn',
-      icon: '🔒',
-      max_seats: 1,
+      name: cfg ? cfg.name : (isMeeting ? 'Phòng học nhóm' : 'Phòng học cá nhân'),
+      type: isLib ? 'library' : (isMeeting ? 'meeting' : 'private'),
+      description: cfg ? cfg.desc : (isMeeting ? 'Phòng học nhóm đang hoạt động' : 'Không gian học một mình hoàn toàn riêng tư, tự do tập trung và quản lý ca học của bạn'),
+      icon: isLib ? '📖' : (isMeeting ? '👥' : '🔒'),
+      max_seats: cfg ? cfg.max_seats : 1,
       occupancy: 1
     };
   }
@@ -12302,20 +12359,9 @@ function applyColorAura(auraId) {
     studyEl.style.setProperty("--primary-gradient", c.gradient);
     studyEl.style.setProperty("--primary-glow", c.glow);
   }
-  const stop1 = $("#timerGradStop1");
-  const stop2 = $("#timerGradStop2");
-  if (stop1 && stop2) {
-    stop1.setAttribute("stop-color", c.stops[0]);
-    stop2.setAttribute("stop-color", c.stops[1]);
-  }
-  const knob = $("#timerProgressKnob");
-  if (knob) {
-    knob.style.fill = c.primary;
-  }
-  const progCircle = $("#timerProgressCircle");
-  if (progCircle) {
-    progCircle.style.stroke = "url(#timerGrad)";
-  }
+
+  // Tái áp dụng 3 bộ màu độc lập (Chính, Phụ, Phụ kiện) để đảm bảo đồng hồ và nút không bị đè màu
+  applyStudyColorRoles();
 
   renderColorPalette();
   syncStudyToServer();
@@ -12731,7 +12777,7 @@ window.saveStudySettings = function(closeModal = true) {
     localStorage.setItem(STUDY_SETTINGS_KEY, JSON.stringify(studySettings));
   } catch (e) {}
 
-  if (!studyState.isRunning) {
+  if (closeModal && !studyState.isRunning) {
     if (studySettings.timerPreset === 'flowtime') {
       studyState.durationMinutes = 0;
       studyState.remainingSeconds = 0;
@@ -13037,33 +13083,51 @@ function onEnterStudyLounge() {
     go("home");
     return;
   }
-  const hash = window.location.hash || '';
-  const search = window.location.search || '';
-  const hasRoomParam = hash.includes('room=') || search.includes('room=');
-  if (!hasRoomParam) {
-    currentStudyRoomId = "commons";
-    currentStudyRoomData = null;
-    try {
-      localStorage.removeItem("research_study_room_id");
-    } catch (e) {}
-    // Mặc định khi vào là đồng hồ CHƯA bật
-    studyState.isRunning = false;
-    studyState.targetEndMs = 0;
-    if (studyState.timerInterval) {
-      clearInterval(studyState.timerInterval);
-      studyState.timerInterval = null;
+
+  // 1. Chỉ khởi tạo phòng mặc định & bộ đếm ở lần đầu tiên mở ứng dụng
+  // Khi người dùng chuyển qua lại giữa các tính năng (Trang chủ, Arena, Diễn đàn, Tài liệu...),
+  // TUYỆT ĐỐI GIỮ NGUYÊN phòng đang học và tiến độ ca học hiện tại.
+  if (!window._studyLoungeInitialized) {
+    window._studyLoungeInitialized = true;
+    const hash = window.location.hash || '';
+    const search = window.location.search || '';
+    const hasRoomParam = hash.includes('room=') || search.includes('room=');
+    if (!hasRoomParam) {
+      let savedRoomId = null;
+      try {
+        savedRoomId = localStorage.getItem("research_study_room_id");
+      } catch (e) {}
+
+      if (savedRoomId && savedRoomId !== 'commons' && savedRoomId !== 'private') {
+        currentStudyRoomId = savedRoomId;
+      } else {
+        currentStudyRoomId = "commons";
+        currentStudyRoomData = null;
+      }
+
+      studyState.isRunning = false;
+      studyState.targetEndMs = 0;
+      if (studyState.timerInterval) {
+        clearInterval(studyState.timerInterval);
+        studyState.timerInterval = null;
+      }
+      const focusM = studySettings.focusMins || 25;
+      studyState.durationMinutes = focusM;
+      studyState.remainingSeconds = (studySettings.timerPreset === 'flowtime' ? 0 : focusM * 60);
+      activeStudySpaceTab = (currentStudyRoomId && currentStudyRoomId.startsWith('lib_')) ? 'library' : 'private';
+      switchStudySpaceCategoryTab(activeStudySpaceTab);
     }
-    const focusM = studySettings.focusMins || 25;
-    studyState.durationMinutes = focusM;
-    studyState.remainingSeconds = focusM * 60;
-    activeStudySpaceTab = 'private';
-    switchStudySpaceCategoryTab('private');
   }
 
+  // 2. Đồng bộ & hiển thị đúng không gian phòng và tiến độ hiện tại
+  renderActiveSpaceBanner(currentStudyRoomData);
   renderClockTicks();
   updateStudyStreakPerks();
   renderCoStudyList(lastFetchedLearners);
   fetchStudyLounge();
+  if (studyState.isRunning && session) {
+    syncStudyToServer();
+  }
   renderTaskTagSelect();
   loadStudyTodos();
   applyStudyColorRoles();
@@ -13144,9 +13208,8 @@ function onLeaveStudyLounge() {
     clearInterval(studyState.pollingInterval);
     studyState.pollingInterval = null;
   }
-  if (!studyState.isRunning && session) {
-    requestAPI("/api/study/leave", { method: "POST" }).catch(() => {});
-  }
+  // Lưu ý: Không gửi /api/study/leave khi chỉ chuyển tab trang web!
+  // Tiến độ học và phòng vẫn tiếp tục chạy trong nền hoặc được giữ nguyên khi quay lại.
 }
 
 function initStudyLoungeEvents() {

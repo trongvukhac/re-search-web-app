@@ -769,20 +769,41 @@
                   </div>
                 </div>
 
-                <!-- 4. Kitchen Timer (Đồng hồ cơ học - Chuẩn Ảnh Mẫu 2) -->
+                <!-- 4. Kitchen Timer (Đồng hồ cơ học - Chuẩn Ảnh Mẫu 2 & 5) -->
                 <div class="clock-view clock-view-kitchen" id="clockViewKitchen" style="display: none;">
                   <div class="kitchen-dial-wrap">
                     <svg class="kitchen-svg" viewBox="0 0 300 300" id="kitchenTimerSvg">
-                      <!-- Dial Background Face -->
-                      <circle cx="150" cy="150" r="142" fill="#ffffff" stroke="#e2e8f0" stroke-width="2" filter="drop-shadow(0 10px 24px rgba(0,0,0,0.06))" />
-                      <circle cx="150" cy="150" r="140" fill="none" stroke="#f1f5f9" stroke-width="1" />
-                      <!-- Dynamic Pie Wedge (Quét xuôi chiều kim đồng hồ từ 12h/0 tới mốc phút) -->
-                      <path id="kitchenTimerWedge" fill="var(--study-color-secondary, #10b981)" opacity="0.9" d="" />
-                      <!-- 60 vạch và 12 mốc số 0, 5, 10... 55 -->
+                      <defs>
+                        <!-- Stainless Steel Housing Bezel Gradient -->
+                        <linearGradient id="kitchenSteelBezel" x1="0%" y1="0%" x2="100%" y2="100%">
+                          <stop offset="0%" stop-color="#cbd5e1" />
+                          <stop offset="20%" stop-color="#f8fafc" />
+                          <stop offset="45%" stop-color="#94a3b8" />
+                          <stop offset="75%" stop-color="#f1f5f9" />
+                          <stop offset="100%" stop-color="#475569" />
+                        </linearGradient>
+                        <!-- Brushed Metal Center Knob Gradient -->
+                        <radialGradient id="kitchenKnobMetal" cx="45%" cy="38%" r="55%">
+                          <stop offset="0%" stop-color="#ffffff" />
+                          <stop offset="35%" stop-color="#e2e8f0" />
+                          <stop offset="70%" stop-color="#94a3b8" />
+                          <stop offset="100%" stop-color="#64748b" />
+                        </radialGradient>
+                      </defs>
+                      <!-- 1. Outer Stainless Steel Rim Casing -->
+                      <circle cx="150" cy="150" r="148" fill="url(#kitchenSteelBezel)" filter="drop-shadow(0 12px 32px rgba(0,0,0,0.18))" />
+                      <!-- 2. Dark Rubber Gasket Rim -->
+                      <circle cx="150" cy="150" r="141" fill="none" stroke="#1e293b" stroke-width="2.5" />
+                      <!-- 3. White Dial Face Plate -->
+                      <circle cx="150" cy="150" r="139.5" fill="#ffffff" />
+                      <!-- 4. Dynamic Pie Wedge (Quét xuôi chiều kim đồng hồ từ 12h/0 tới mốc phút) -->
+                      <path id="kitchenTimerWedge" fill="var(--study-color-secondary, #10b981)" opacity="0.95" d="" />
+                      <!-- 5. 60 Minute Ticks, 12 Numbers & Inner Wedge Spokes -->
                       <g id="kitchenDialMarks"></g>
-                      <!-- Center White Knob with Secondary Center Dot -->
-                      <circle cx="150" cy="150" r="16" fill="#ffffff" stroke="#cbd5e1" stroke-width="2" filter="drop-shadow(0 2px 5px rgba(0,0,0,0.12))" />
-                      <circle cx="150" cy="150" r="6" fill="var(--study-color-secondary, #10b981)" id="kitchenCenterDot" />
+                      <!-- 6. Brushed Aluminum Center Knob with Secondary Center Indicator -->
+                      <circle cx="150" cy="150" r="28" fill="url(#kitchenKnobMetal)" stroke="#cbd5e1" stroke-width="1.5" filter="drop-shadow(0 3px 8px rgba(0,0,0,0.25))" />
+                      <circle cx="150" cy="150" r="20" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="1" />
+                      <circle cx="150" cy="150" r="4.5" fill="var(--study-color-secondary, #10b981)" id="kitchenCenterDot" />
                     </svg>
                   </div>
                   <div class="kitchen-digital-readout" id="kitchenDigitalText">25:00</div>
@@ -3623,10 +3644,11 @@
               <div class="clock-style-card" data-clock-style="kitchen" onclick="selectClockStyle('kitchen')">
                 <div class="style-preview-icon style-preview-kitchen">
                   <svg width="44" height="44" viewBox="0 0 44 44">
-                    <circle cx="22" cy="22" r="19" fill="#f8fafc" stroke="#cbd5e1" stroke-width="2"/>
-                    <circle cx="22" cy="22" r="16.5" fill="#ffffff" stroke="#e2e8f0" stroke-width="1"/>
-                    <path d="M 22 22 L 22 5.5 A 16.5 16.5 0 0 1 37 28 Z" fill="currentColor" opacity="0.85"/>
-                    <circle cx="22" cy="22" r="4.5" fill="#94a3b8"/>
+                    <circle cx="22" cy="22" r="21" fill="#cbd5e1" stroke="#94a3b8" stroke-width="1"/>
+                    <circle cx="22" cy="22" r="19.5" fill="#ffffff" stroke="#1e293b" stroke-width="0.8"/>
+                    <path d="M 22 22 L 22 6.5 A 15.5 15.5 0 0 1 36 29 Z" fill="currentColor" opacity="0.95"/>
+                    <circle cx="22" cy="22" r="5" fill="#94a3b8" stroke="#cbd5e1" stroke-width="0.5"/>
+                    <circle cx="22" cy="22" r="1.5" fill="currentColor"/>
                   </svg>
                 </div>
                 <span class="clock-style-name">Đồng hồ cơ học</span>
