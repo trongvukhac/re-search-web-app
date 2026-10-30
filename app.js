@@ -13481,6 +13481,30 @@ initTapToScrollTop();
 // =========================================================================
 const HOME_BANNERS_CONFIG = [
   {
+    id: "streak-30-first",
+    title: "Vinh danh thành viên đầu tiên đạt chuỗi 30 ngày — Lương Bích Khuê",
+    image: "public/assets/banner-streak-30.jpg?v=20261030_1",
+    // thời hạn: 30/10 - 3/11/2026
+    startsAt: new Date("2026-10-30T00:00:00+07:00").getTime(),
+    expiresAt: new Date("2026-11-03T23:59:59+07:00").getTime(),
+    action: () => {
+      if (typeof openStreakJourneyModal === "function") openStreakJourneyModal();
+      else toast("Chúc mừng thành viên Lương Bích Khuê đạt chuỗi 30 ngày!");
+    }
+  },
+  {
+    id: "study-update",
+    title: "Cập nhật mới: Phòng tự học phiên bản mới",
+    image: "public/assets/banner-study-update.jpg?v=20261030_1",
+    // thời hạn: 30/10 - 10/11/2026
+    startsAt: new Date("2026-10-30T00:00:00+07:00").getTime(),
+    expiresAt: new Date("2026-11-10T23:59:59+07:00").getTime(),
+    action: () => {
+      if (typeof go === "function") go("study");
+      else toast("Khám phá ngay Phòng tự học phiên bản mới!");
+    }
+  },
+  {
     id: "dark-mode",
     title: "Tính năng mới Dark Mode đã có mặt trên RE:SEARCH!",
     image: "public/assets/banner-dark-mode.jpg?v=20261026_1",
