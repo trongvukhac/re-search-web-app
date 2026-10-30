@@ -208,6 +208,11 @@ function getInitialStudySettings() {
     cardGlassOpacity: 50,
     activeAura: "pomodoro",
     clockColor: "default",
+    // 6 Clock Styles & 3 Independent Color Roles
+    clockStyle: "dial", // 'dial', 'flip', 'minimal', 'kitchen', 'digital', 'hourglass'
+    primaryColor: "#10b981",    // Màu chính: thời gian (bộ đếm giờ / số phút & giây)
+    secondaryColor: "#10b981",  // Màu phụ: màu đi kèm (vòng tròn, chấm knob, kệ, vạch cơ học, cát, ô LED)
+    accessoryColor: "#10b981",  // Màu phụ kiện: bộ màu nút bấm (bắt đầu, rời phòng, dấu +, icon câu nói, mục tiêu ngày)
     // Task Category Labels (Unlocked at 7d streak)
     taskLabels: [
       { id: "thesis", name: "Đề cương", color: "#6366f1" },
@@ -7598,6 +7603,199 @@ window.clearStudyGoal = function() {
   syncStudyToServer();
 };
 
+/* ====================================================
+   3 BỘ PHỐI MÀU: MÀU CHÍNH, MÀU PHỤ, MÀU PHỤ KIỆN
+   ==================================================== */
+const STUDY_SWATCH_PRESETS = [
+  { name: 'Xanh Lục Bảo (Mặc định)', color: '#10b981' },
+  { name: 'Xanh Dương', color: '#0ea5e9' },
+  { name: 'Tím Indigo', color: '#6366f1' },
+  { name: 'Đỏ San Hô', color: '#f05454' },
+  { name: 'Cam Hổ Phách', color: '#f59e0b' },
+  { name: 'Hồng Rose', color: '#f43f5e' },
+  { name: 'Đen Than', color: '#1e293b' }
+];
+
+function applyStudyColorRoles() {
+  const pri = studySettings.primaryColor || '#10b981';
+  const sec = studySettings.secondaryColor || '#10b981';
+  const acc = studySettings.accessoryColor || '#10b981';
+
+  document.documentElement.style.setProperty('--study-color-primary', pri);
+  document.documentElement.style.setProperty('--study-color-secondary', sec);
+  document.documentElement.style.setProperty('--study-color-accessory', acc);
+
+  // SVG Dial stops & knob
+  const stop1 = $("#timerGradStop1");
+  const stop2 = $("#timerGradStop2");
+  if (stop1 && stop2) {
+    stop1.setAttribute("stop-color", sec);
+    stop2.setAttribute("stop-color", sec);
+  }
+  const knob = $("#timerProgressKnob");
+  if (knob) {
+    knob.style.fill = sec;
+  }
+  const progCircle = $("#timerProgressCircle");
+  if (progCircle) {
+    progCircle.style.stroke = sec;
+  }
+
+  // Update input color pickers if present
+  const priPicker = $("#studyColorPrimaryPicker");
+  const secPicker = $("#studyColorSecondaryPicker");
+  const accPicker = $("#studyColorAccessoryPicker");
+  if (priPicker && priPicker.value !== pri) priPicker.value = pri;
+  if (secPicker && secPicker.value !== sec) secPicker.value = sec;
+  if (accPicker && accPicker.value !== acc) accPicker.value = acc;
+
+  renderStudyColorRoleSwatches();
+}
+
+function renderStudyColorRoleSwatches() {
+  const renderRow = (contId, role, activeVal) => {
+    const cont = document.getElementById(contId);
+    if (!cont) return;
+    cont.innerHTML = STUDY_SWATCH_PRESETS.map(s => {
+      const isActive = (String(activeVal).toLowerCase() === s.color.toLowerCase());
+      return `<button type="button" class="color-role-swatch ${isActive ? 'active' : ''}" style="background:${s.color};" title="${s.name}" onclick="updateStudyColorRole('${role}', '${s.color}')"></button>`;
+    }).join("");
+  };
+
+  renderRow("swatchesPrimary", "primary", studySettings.primaryColor || '#10b981');
+  renderRow("swatchesSecondary", "secondary", studySettings.secondaryColor || '#10b981');
+  renderRow("swatchesAccessory", "accessory", studySettings.accessoryColor || '#10b981');
+}
+
+window.updateStudyColorRole = function(role, colorHex) {
+  if (role === 'primary') studySettings.primaryColor = colorHex;
+  else if (role === 'secondary') studySettings.secondaryColor = colorHex;
+  else if (role === 'accessory') studySettings.accessoryColor = colorHex;
+
+  saveStudySettings(false);
+  applyStudyColorRoles();
+  updateTimerDisplay();
+  updateDailyGoalUI();
+};
+
+window.resetStudyColorRoles = function() {
+  studySettings.primaryColor = "#10b981";
+  studySettings.secondaryColor = "#10b981";
+  studySettings.accessoryColor = "#10b981";
+  saveStudySettings(false);
+  applyStudyColorRoles();
+  updateTimerDisplay();
+  updateDailyGoalUI();
+  toast("Đã khôi phục 3 bộ màu mặc định: Xanh lá!");
+};
+
+/* ====================================================
+   6 KIỂU DÁNG ĐỒNG HỒ (CLOCK STYLES)
+   ==================================================== */
+function getClockStyleLabel(styleId) {
+  switch (styleId) {
+    case 'flip': return 'Đồng hồ lá lật';
+    case 'minimal': return 'Đồng hồ tối giản';
+    case 'kitchen': return 'Đồng hồ cơ học';
+    case 'digital': return 'Đồng hồ kỹ thuật số';
+    case 'hourglass': return 'Đồng hồ cát';
+    default: return 'Đồng hồ mặt số';
+  }
+}
+
+window.selectClockStyle = function(styleId) {
+  studySettings.clockStyle = styleId;
+  saveStudySettings(false);
+  updateClockStyleGridUI();
+  updateTimerDisplay();
+  toast(`Đã chọn: ${getClockStyleLabel(styleId)}`);
+};
+
+function updateClockStyleGridUI() {
+  const current = studySettings.clockStyle || 'dial';
+  const grid = document.getElementById("clockStyleGrid");
+  if (!grid) return;
+  grid.querySelectorAll(".clock-style-card").forEach(c => {
+    const st = c.getAttribute("data-clock-style");
+    c.classList.toggle("active", st === current);
+  });
+}
+
+function describePieSlice(cx, cy, r, angleDeg) {
+  if (angleDeg <= 0.05) return "";
+  if (angleDeg >= 359.9) {
+    return `M ${cx} ${cy - r} A ${r} ${r} 0 1 1 ${cx - 0.01} ${cy - r} Z`;
+  }
+  const rad = (angleDeg - 90) * Math.PI / 180;
+  const x = (cx + r * Math.cos(rad)).toFixed(2);
+  const y = (cy + r * Math.sin(rad)).toFixed(2);
+  const largeArc = angleDeg > 180 ? 1 : 0;
+  return `M ${cx} ${cy} L ${cx} ${cy - r} A ${r} ${r} 0 ${largeArc} 1 ${x} ${y} Z`;
+}
+
+function renderKitchenDialMarks() {
+  const g = document.getElementById("kitchenDialMarks");
+  if (!g || g.children.length >= 60) return;
+  g.innerHTML = "";
+  const cx = 120;
+  const cy = 120;
+  for (let i = 0; i < 60; i++) {
+    const isFive = (i % 5 === 0);
+    const innerR = isFive ? 86 : 94;
+    const outerR = 100;
+    const angleDeg = i * 6 - 90;
+    const rad = (angleDeg * Math.PI) / 180;
+    const x1 = (cx + innerR * Math.cos(rad)).toFixed(2);
+    const y1 = (cy + innerR * Math.sin(rad)).toFixed(2);
+    const x2 = (cx + outerR * Math.cos(rad)).toFixed(2);
+    const y2 = (cy + outerR * Math.sin(rad)).toFixed(2);
+
+    const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+    line.setAttribute("x1", x1);
+    line.setAttribute("y1", y1);
+    line.setAttribute("x2", x2);
+    line.setAttribute("y2", y2);
+    line.setAttribute("stroke", "#1e293b");
+    line.setAttribute("stroke-width", isFive ? "2" : "1");
+    line.setAttribute("opacity", isFive ? "0.8" : "0.3");
+    g.appendChild(line);
+
+    if (isFive) {
+      const textR = 74;
+      const tx = (cx + textR * Math.cos(rad)).toFixed(2);
+      const ty = (cy + textR * Math.sin(rad) + 4).toFixed(2);
+      const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+      text.setAttribute("x", tx);
+      text.setAttribute("y", ty);
+      text.setAttribute("font-size", "11");
+      text.setAttribute("font-weight", "800");
+      text.setAttribute("text-anchor", "middle");
+      text.setAttribute("fill", "#0f172a");
+      text.textContent = String(i === 0 ? 0 : i);
+      g.appendChild(text);
+    }
+  }
+}
+
+function renderDigitalBlocks(progressRatio) {
+  const bar = document.getElementById("digitalBlocksBar");
+  if (!bar) return;
+  const total = 24;
+  const filled = Math.round(progressRatio * total);
+  if (bar.children.length !== total) {
+    bar.innerHTML = "";
+    for (let i = 0; i < total; i++) {
+      const blk = document.createElement("span");
+      blk.className = `digital-block ${i < filled ? 'filled' : ''}`;
+      bar.appendChild(blk);
+    }
+  } else {
+    for (let i = 0; i < total; i++) {
+      bar.children[i].className = `digital-block ${i < filled ? 'filled' : ''}`;
+    }
+  }
+}
+
 function updateTimerDisplay() {
   const clock = $("#timerClock");
   const progressCircle = $("#timerProgressCircle");
@@ -7621,13 +7819,13 @@ function updateTimerDisplay() {
 
   renderClockTicks();
 
-  // 1. Clock Display
+  // 1. Clock Display (Định dạng chuẩn không giật số)
+  const formattedClock = isFlowtimeFocus
+    ? formatTimerClock(studyState.elapsedSessionSeconds, true)
+    : formatTimerClock(studyState.remainingSeconds, false);
+
   if (clock) {
-    if (isFlowtimeFocus) {
-      clock.textContent = formatTimerClock(studyState.elapsedSessionSeconds, true);
-    } else {
-      clock.textContent = formatTimerClock(studyState.remainingSeconds, false);
-    }
+    clock.textContent = formattedClock;
   }
 
   // 2. Circular Progress & Knob
@@ -7666,19 +7864,117 @@ function updateTimerDisplay() {
     knob.setAttribute("transform", `rotate(${rotDeg.toFixed(2)}, 140, 140)`);
   }
 
-  // Sub label
-  const centerSub = $("#timerCenterSub");
-  if (centerSub) {
-    if (isFlowtimeFocus) {
-      centerSub.textContent = "DÒNG CHẢY";
-    } else if (studyState.mode === 'shortbreak') {
-      centerSub.textContent = "NGHỈ NGẮN";
-    } else if (studyState.mode === 'longbreak') {
-      centerSub.textContent = "NGHỈ DÀI";
-    } else {
-      centerSub.textContent = "TẬP TRUNG";
+  // 3. Render 6 Active Clock Styles
+  const activeStyle = studySettings.clockStyle || 'dial';
+  const views = {
+    dial: $("#clockViewDial"),
+    flip: $("#clockViewFlip"),
+    minimal: $("#clockViewMinimal"),
+    kitchen: $("#clockViewKitchen"),
+    digital: $("#clockViewDigital"),
+    hourglass: $("#clockViewHourglass")
+  };
+  Object.keys(views).forEach(st => {
+    if (views[st]) {
+      views[st].style.display = (st === activeStyle) ? "flex" : "none";
     }
+  });
+
+  const safeTotalSecs = isFlowtimeFocus ? studyState.elapsedSessionSeconds : Math.max(0, studyState.remainingSeconds);
+  const dispM = Math.floor(safeTotalSecs / 60);
+  const dispS = safeTotalSecs % 60;
+  const strM = String(dispM).padStart(2, '0');
+  const strS = String(dispS).padStart(2, '0');
+
+  // Flip Clock
+  const flipMinTop = $("#flipMinTop");
+  const flipMinBot = $("#flipMinBot");
+  const flipSecTop = $("#flipSecTop");
+  const flipSecBot = $("#flipSecBot");
+  if (flipMinTop) flipMinTop.textContent = strM;
+  if (flipMinBot) flipMinBot.textContent = strM;
+  if (flipSecTop) flipSecTop.textContent = strS;
+  if (flipSecBot) flipSecBot.textContent = strS;
+  const flipShelfProg = $("#flipShelfProgress");
+  if (flipShelfProg) {
+    flipShelfProg.style.width = `${(progressRatio * 100).toFixed(1)}%`;
   }
+
+  // Minimal Clock
+  const minClock = $("#minimalClockText");
+  if (minClock) minClock.textContent = formattedClock;
+  const minProgFill = $("#minimalProgFill");
+  if (minProgFill) {
+    minProgFill.style.width = `${(progressRatio * 100).toFixed(1)}%`;
+  }
+
+  // Kitchen Timer (Đồng hồ cơ học đếm ngược từ 60 phút trở về)
+  if (activeStyle === 'kitchen') {
+    renderKitchenDialMarks();
+    const remMins = Math.max(0, safeTotalSecs / 60);
+    const angleDeg = Math.min(60, remMins) * 6; // 6 độ mỗi phút trên mặt 60 phút
+    const wedgePath = $("#kitchenTimerWedge");
+    if (wedgePath) {
+      wedgePath.setAttribute("d", describePieSlice(120, 120, 85, angleDeg));
+    }
+    const kitchenDigital = $("#kitchenDigitalText");
+    if (kitchenDigital) kitchenDigital.textContent = formattedClock;
+  }
+
+  // Digital LCD Clock
+  const digActive = $("#digitalLcdActive");
+  if (digActive) digActive.textContent = formattedClock;
+  const digBar = $("#digitalBlocksBar");
+  if (digBar && activeStyle === 'digital') {
+    renderDigitalBlocks(progressRatio);
+  }
+
+  // Hourglass (Đồng hồ cát tự nhiên)
+  if (activeStyle === 'hourglass') {
+    const remRatio = 1 - progressRatio;
+    const topSand = $("#hourglassTopSand");
+    const botSand = $("#hourglassBottomSand");
+    const stream = $("#hourglassStream");
+    if (topSand) {
+      const topY = 20 + (1 - remRatio) * 80;
+      topSand.setAttribute("d", `M 45 ${topY.toFixed(1)} Q 80 ${(topY + 4).toFixed(1)} 115 ${topY.toFixed(1)} L 84 105 L 76 105 Z`);
+    }
+    if (botSand) {
+      const botPeak = 190 - (1 - remRatio) * 55;
+      botSand.setAttribute("d", `M 45 190 Q 80 ${botPeak.toFixed(1)} 115 190 Z`);
+    }
+    if (stream) {
+      if (studyState.isRunning && remRatio > 0.005) {
+        stream.classList.add("hourglass-stream-active");
+        stream.style.opacity = "1";
+      } else {
+        stream.classList.remove("hourglass-stream-active");
+        stream.style.opacity = "0.2";
+      }
+    }
+    const hgDigital = $("#hourglassDigitalText");
+    if (hgDigital) hgDigital.textContent = formattedClock;
+  }
+
+  // Sub label
+  const subLabels = [
+    $("#timerCenterSub"),
+    $("#flipCenterSub"),
+    $("#minCenterSub"),
+    $("#digitalCenterSub"),
+    $("#hourglassCenterSub")
+  ];
+  let subText = "TẬP TRUNG";
+  if (isFlowtimeFocus) {
+    subText = "DÒNG CHẢY";
+  } else if (studyState.mode === 'shortbreak') {
+    subText = "NGHỈ NGẮN";
+  } else if (studyState.mode === 'longbreak') {
+    subText = "NGHỈ DÀI";
+  }
+  subLabels.forEach(el => {
+    if (el) el.textContent = subText;
+  });
 
   // Top banner
   const topBanner = $("#timerTopBanner");
@@ -11931,12 +12227,12 @@ function resetStudyTheme() {
   const stop1 = $("#timerGradStop1");
   const stop2 = $("#timerGradStop2");
   if (stop1 && stop2) {
-    stop1.setAttribute("stop-color", "#f05454");
-    stop2.setAttribute("stop-color", "#e23e57");
+    stop1.setAttribute("stop-color", "#10b981");
+    stop2.setAttribute("stop-color", "#059669");
   }
   const knob = $("#timerProgressKnob");
   if (knob) {
-    knob.style.fill = "#f05454";
+    knob.style.fill = "#10b981";
   }
   const progCircle = $("#timerProgressCircle");
   if (progCircle) {
@@ -11946,6 +12242,10 @@ function resetStudyTheme() {
   if (clock) {
     clock.style.removeProperty("color");
   }
+  studySettings.primaryColor = "#10b981";
+  studySettings.secondaryColor = "#10b981";
+  studySettings.accessoryColor = "#10b981";
+  applyStudyColorRoles();
   const nameEl = $("#customWallName");
   if (nameEl) nameEl.textContent = "Chưa chọn ảnh";
 
@@ -12026,7 +12326,9 @@ window.switchStudySettingsTab = function(tabName) {
     const pane = $("#" + tabMap[key]);
     if (pane) pane.style.display = (key === tabName) ? "block" : "none";
   });
-  if (tabName === "tasks") {
+  if (tabName === "timer") {
+    updateClockStyleGridUI();
+  } else if (tabName === "tasks") {
     renderTaskLabelsManagerList();
   } else if (tabName === "audio") {
     renderEnvironmentAudioGrid();
@@ -12036,6 +12338,7 @@ window.switchStudySettingsTab = function(tabName) {
   } else if (tabName === "theme") {
     renderWallpaperPresets();
     if (typeof renderCustomWallpapersList === "function") renderCustomWallpapersList();
+    renderStudyColorRoleSwatches();
     renderClockColorPicker();
     renderColorPalette();
   }
@@ -12174,6 +12477,8 @@ window.openStudySettingsModal = function(initialTab = 'timer', showCustom = fals
   if (!modal) return;
 
   switchStudySettingsTab(initialTab);
+  updateClockStyleGridUI();
+  renderStudyColorRoleSwatches();
 
   if (showCustom) {
     studySettings.timerPreset = "custom";
@@ -12319,6 +12624,7 @@ window.saveStudySettings = function(closeModal = true) {
     }
   }
 
+  applyStudyColorRoles();
   updateTimerDisplay();
   updateDailyGoalUI();
   syncMeetingRoomTimerIfHost();
@@ -12637,6 +12943,9 @@ function onEnterStudyLounge() {
   fetchStudyLounge();
   renderTaskTagSelect();
   loadStudyTodos();
+  applyStudyColorRoles();
+  renderStudyColorRoleSwatches();
+  updateClockStyleGridUI();
   updateDailyGoalUI();
   renderEnvironmentAudioGrid();
   renderMixAudioGrid();

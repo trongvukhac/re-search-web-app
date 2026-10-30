@@ -704,30 +704,152 @@
                 <button type="button" class="mode-capsule-btn" id="btnModeLongBreak" data-study-mode="longbreak">Nghỉ dài</button>
               </div>
 
-              <!-- Circular Watch Face Dial with Minute Ticks & Progress Knob -->
-              <div class="timer-visual-wrap">
-                <div class="timer-circle">
-                  <svg class="timer-svg" viewBox="0 0 280 280">
-                    <defs>
-                      <linearGradient id="timerGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop id="timerGradStop1" offset="0%" stop-color="#f05454" />
-                        <stop id="timerGradStop2" offset="100%" stop-color="#e23e57" />
-                      </linearGradient>
-                    </defs>
-                    <!-- 60 Minute Analog Dial Ticks -->
-                    <g class="timer-dial-ticks" id="timerDialTicks"></g>
-                    <!-- Track Circle -->
-                    <circle class="timer-bg-circle" cx="140" cy="140" r="114" />
-                    <!-- Progress Arc -->
-                    <circle class="timer-progress-circle" id="timerProgressCircle" cx="140" cy="140" r="114" stroke="url(#timerGrad)" />
-                    <!-- Progress Head Knob -->
-                    <circle class="timer-progress-knob" id="timerProgressKnob" cx="140" cy="26" r="6" />
-                  </svg>
-                  <div class="timer-center-content">
-                    <span class="timer-center-sub" id="timerCenterSub">TẬP TRUNG</span>
-                    <div class="timer-clock" id="timerClock">25:00</div>
-                    <div class="timer-status-label" id="timerStatusLabel" style="display: none;">Sẵn sàng ca học</div>
+              <!-- Flexible Clock Visual Display (6 Clock Styles: Dial, Flip, Minimal, Kitchen, Digital, Hourglass) -->
+              <div class="timer-visual-wrap" id="timerVisualWrap">
+                <!-- 1. Dial Watch Face (Mặc định) -->
+                <div class="clock-view clock-view-dial" id="clockViewDial">
+                  <div class="timer-circle">
+                    <svg class="timer-svg" viewBox="0 0 280 280">
+                      <defs>
+                        <linearGradient id="timerGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                          <stop id="timerGradStop1" offset="0%" stop-color="#10b981" />
+                          <stop id="timerGradStop2" offset="100%" stop-color="#059669" />
+                        </linearGradient>
+                      </defs>
+                      <!-- 60 Minute Analog Dial Ticks -->
+                      <g class="timer-dial-ticks" id="timerDialTicks"></g>
+                      <!-- Track Circle -->
+                      <circle class="timer-bg-circle" cx="140" cy="140" r="114" />
+                      <!-- Progress Arc -->
+                      <circle class="timer-progress-circle" id="timerProgressCircle" cx="140" cy="140" r="114" stroke="url(#timerGrad)" />
+                      <!-- Progress Head Knob -->
+                      <circle class="timer-progress-knob" id="timerProgressKnob" cx="140" cy="26" r="6" />
+                    </svg>
+                    <div class="timer-center-content">
+                      <span class="timer-center-sub" id="timerCenterSub">TẬP TRUNG</span>
+                      <div class="timer-clock" id="timerClock">25:00</div>
+                      <div class="timer-status-label" id="timerStatusLabel" style="display: none;">Sẵn sàng ca học</div>
+                    </div>
                   </div>
+                </div>
+
+                <!-- 2. Flip Clock (Đồng hồ lá lật) -->
+                <div class="clock-view clock-view-flip" id="clockViewFlip" style="display: none;">
+                  <div class="timer-center-sub" id="flipCenterSub">TẬP TRUNG</div>
+                  <div class="flip-clock-display">
+                    <div class="flip-card-wrap">
+                      <div class="flip-card" id="flipCardMin">
+                        <span class="flip-digit-top" id="flipMinTop">25</span>
+                        <span class="flip-digit-bot" id="flipMinBot">25</span>
+                        <div class="flip-seam"></div>
+                      </div>
+                    </div>
+                    <div class="flip-colon">:</div>
+                    <div class="flip-card-wrap">
+                      <div class="flip-card" id="flipCardSec">
+                        <span class="flip-digit-top" id="flipSecTop">00</span>
+                        <span class="flip-digit-bot" id="flipSecBot">00</span>
+                        <div class="flip-seam"></div>
+                      </div>
+                    </div>
+                  </div>
+                  <!-- Kệ đồng hồ với thanh ngang màu phụ -->
+                  <div class="flip-shelf-stand" title="Kệ đồng hồ bàn">
+                    <div class="flip-shelf-prog" id="flipShelfProgress"></div>
+                  </div>
+                </div>
+
+                <!-- 3. Minimal (Đồng hồ tối giản) -->
+                <div class="clock-view clock-view-minimal" id="clockViewMinimal" style="display: none;">
+                  <div class="timer-center-sub" id="minCenterSub">TẬP TRUNG</div>
+                  <div class="minimal-clock-text" id="minimalClockText">25:00</div>
+                  <div class="minimal-prog-track">
+                    <div class="minimal-prog-fill" id="minimalProgFill"></div>
+                  </div>
+                </div>
+
+                <!-- 4. Kitchen Timer (Đồng hồ cơ học) -->
+                <div class="clock-view clock-view-kitchen" id="clockViewKitchen" style="display: none;">
+                  <div class="kitchen-timer-dial">
+                    <svg class="kitchen-svg" viewBox="0 0 240 240" id="kitchenTimerSvg">
+                      <defs>
+                        <radialGradient id="kitchenKnobGrad" cx="35%" cy="35%" r="65%">
+                          <stop offset="0%" stop-color="#ffffff" />
+                          <stop offset="60%" stop-color="#cbd5e1" />
+                          <stop offset="100%" stop-color="#94a3b8" />
+                        </radialGradient>
+                      </defs>
+                      <!-- Metallic Bezel -->
+                      <circle cx="120" cy="120" r="114" fill="#f1f5f9" stroke="#cbd5e1" stroke-width="4" />
+                      <circle cx="120" cy="120" r="102" fill="#ffffff" stroke="#e2e8f0" stroke-width="1.5" />
+                      <!-- Dynamic Pie Wedge (Tô vùng thời gian còn lại) -->
+                      <path id="kitchenTimerWedge" fill="var(--study-color-secondary, #10b981)" opacity="0.9" d="" />
+                      <!-- Dial Numbers & Ticks Container -->
+                      <g id="kitchenDialMarks"></g>
+                      <!-- Center Metal Knob -->
+                      <circle cx="120" cy="120" r="24" fill="url(#kitchenKnobGrad)" stroke="#94a3b8" stroke-width="1.5" filter="drop-shadow(0 2px 4px rgba(0,0,0,0.25))" />
+                      <circle cx="120" cy="120" r="6" fill="#64748b" opacity="0.4" />
+                      <line x1="120" y1="96" x2="120" y2="103" stroke="#e11d48" stroke-width="2.5" stroke-linecap="round" />
+                    </svg>
+                  </div>
+                  <div class="timer-center-sub" style="margin-top: 8px;">TẬP TRUNG</div>
+                  <div class="kitchen-digital-readout" id="kitchenDigitalText">25:00</div>
+                </div>
+
+                <!-- 5. Digital (Đồng hồ kỹ thuật số LCD) -->
+                <div class="clock-view clock-view-digital" id="clockViewDigital" style="display: none;">
+                  <div class="timer-center-sub" id="digitalCenterSub">TẬP TRUNG</div>
+                  <div class="digital-clock-casing">
+                    <div class="digital-lcd-face">
+                      <div class="digital-lcd-ghost">88:88</div>
+                      <div class="digital-lcd-active" id="digitalLcdActive">25:00</div>
+                    </div>
+                    <!-- Thanh tiến trình chia thành các ô vuông nhỏ kỹ thuật số -->
+                    <div class="digital-blocks-bar" id="digitalBlocksBar"></div>
+                  </div>
+                </div>
+
+                <!-- 6. Hourglass (Đồng hồ cát) -->
+                <div class="clock-view clock-view-hourglass" id="clockViewHourglass" style="display: none;">
+                  <div class="timer-center-sub" id="hourglassCenterSub">TẬP TRUNG</div>
+                  <div class="hourglass-wrap">
+                    <svg class="hourglass-svg" viewBox="0 0 160 210" id="hourglassSvg">
+                      <defs>
+                        <linearGradient id="sandGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                          <stop offset="0%" stop-color="var(--study-color-secondary, #10b981)" stop-opacity="0.8" />
+                          <stop offset="100%" stop-color="var(--study-color-secondary, #10b981)" />
+                        </linearGradient>
+                        <clipPath id="topBulbClip">
+                          <path d="M 45 20 Q 80 20 115 20 L 115 25 Q 110 70 84 103 L 76 103 Q 50 70 45 25 Z" />
+                        </clipPath>
+                        <clipPath id="bottomBulbClip">
+                          <path d="M 76 107 L 84 107 Q 110 140 115 185 L 45 185 Q 50 140 76 107 Z" />
+                        </clipPath>
+                      </defs>
+                      <!-- Top & Bottom Wooden/Metal Plates -->
+                      <rect x="30" y="8" width="100" height="12" rx="4" fill="#475569" stroke="#334155" stroke-width="1.5" />
+                      <rect x="30" y="190" width="100" height="12" rx="4" fill="#475569" stroke="#334155" stroke-width="1.5" />
+                      <!-- Support Pillars -->
+                      <line x1="38" y1="20" x2="38" y2="190" stroke="#94a3b8" stroke-width="3" stroke-linecap="round" />
+                      <line x1="122" y1="20" x2="122" y2="190" stroke="#94a3b8" stroke-width="3" stroke-linecap="round" />
+                      <!-- Glass Outline -->
+                      <path d="M 45 20 L 115 20 Q 110 70 84 105 Q 110 140 115 190 L 45 190 Q 50 140 76 105 Q 50 70 45 20 Z" fill="rgba(255,255,255,0.1)" stroke="rgba(148, 163, 184, 0.45)" stroke-width="2.5" />
+                      <!-- Top Sand (Vơi dần từ trên xuống) -->
+                      <g clip-path="url(#topBulbClip)">
+                        <path id="hourglassTopSand" fill="url(#sandGrad)" d="M 40 20 L 120 20 L 120 105 L 40 105 Z" />
+                      </g>
+                      <!-- Falling Stream (Dòng cát rơi qua eo kính) -->
+                      <line id="hourglassStream" x1="80" y1="105" x2="80" y2="185" stroke="var(--study-color-secondary, #10b981)" stroke-width="2.5" stroke-linecap="round" stroke-dasharray="4,2" />
+                      <!-- Bottom Sand (Đầy dần thành đụn cát tự nhiên) -->
+                      <g clip-path="url(#bottomBulbClip)">
+                        <path id="hourglassBottomSand" fill="url(#sandGrad)" d="M 40 190 Q 80 160 120 190 Z" />
+                      </g>
+                      <!-- Glass Shine Highlight -->
+                      <path d="M 50 30 Q 54 65 72 95" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="1.5" stroke-linecap="round" />
+                      <path d="M 110 175 Q 106 145 88 115" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="1.5" stroke-linecap="round" />
+                    </svg>
+                  </div>
+                  <div class="hourglass-digital-readout" id="hourglassDigitalText">25:00</div>
                 </div>
               </div>
 
@@ -997,15 +1119,10 @@
 
               <!-- NHỮNG VIỆC CẦN LÀM (TÍCH HỢP CHO PHÒNG CÁ NHÂN & THƯ VIỆN) -->
               <div class="todo-integrated-section" id="integratedPersonalTasksSection" style="margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--line);">
-                <div class="todo-head">
-                  <div style="flex: 1; min-width: 0;">
-                    <div class="todo-title-row" style="display: flex; align-items: center; gap: 8px;">
-                      <h3 style="font-size: 13.5px; white-space: nowrap; margin: 0; display: flex; align-items: center;"><svg class="ui-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:5px;"><rect x="3" y="5" width="6" height="6" rx="1"></rect><path d="m3 17 2 2 4-4"></path><path d="M13 6h8"></path><path d="M13 12h8"></path><path d="M13 18h8"></path></svg><span id="personalTodoHeadingText">Những việc cần làm</span></h3>
-                      <span class="todo-pct-badge" id="todoPctBadge">0%</span>
-                    </div>
-                    <div class="todo-progress-bar-wrap" style="margin-top: 4px;">
-                      <div class="todo-progress-bar" id="todoProgressBar" style="width: 0%;"></div>
-                    </div>
+                <div class="todo-head" style="display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 6px;">
+                  <div class="todo-title-row" style="display: flex; align-items: center; gap: 8px; min-width: 0;">
+                    <h3 style="font-size: 13.5px; white-space: nowrap; margin: 0; display: inline-flex; align-items: center; line-height: 1;"><svg class="ui-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:5px; flex-shrink: 0;"><rect x="3" y="5" width="6" height="6" rx="1"></rect><path d="m3 17 2 2 4-4"></path><path d="M13 6h8"></path><path d="M13 12h8"></path><path d="M13 18h8"></path></svg><span id="personalTodoHeadingText">Việc cần làm của bạn</span></h3>
+                    <span class="todo-pct-badge" id="todoPctBadge">0%</span>
                   </div>
                   <div class="todo-head-actions">
                     <button type="button" class="todo-head-icon-btn" id="btnTogglePersonalTasks" onclick="togglePersonalTasksCollapse()" title="Thu gọn / Mở rộng danh sách việc">
@@ -1019,11 +1136,15 @@
                     </button>
                   </div>
                 </div>
+                <!-- Progress bar placed below title row, maintaining clean vertical centering -->
+                <div class="todo-progress-bar-wrap" style="margin-top: 2px; margin-bottom: 12px;">
+                  <div class="todo-progress-bar" id="todoProgressBar" style="width: 0%;"></div>
+                </div>
                 <div class="personal-tasks-body" id="personalTasksBodyWrap">
                   <div class="todo-input-wrap">
                     <input type="text" id="newTodoInput" placeholder="Thêm việc cần làm..." maxlength="80" />
                     <select id="newTodoTagSelect" class="todo-tag-select" title="Gắn nhãn phân loại">
-                      <option value="">Không gắn nhãn</option>
+                      <option value="">🏷️ Nhãn</option>
                     </select>
                     <button type="button" class="todo-add-btn" id="addTodoBtn" title="Thêm việc"><svg class="ui-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg></button>
                   </div>
@@ -3454,6 +3575,78 @@
       <div class="settings-body">
         <!-- TAB 1: TIMER & PRESETS -->
         <div class="settings-tab-pane active" id="paneSettingsTimer">
+          <!-- KIỂU DÁNG ĐỒNG HỒ (CLOCK STYLES) -->
+          <div class="settings-group">
+            <div class="settings-group-header">
+              <h3>Kiểu dáng đồng hồ</h3>
+              <span style="font-size: 12px; color: var(--muted);">Chọn phong cách hiển thị thời gian yêu thích</span>
+            </div>
+            <div class="clock-style-grid" id="clockStyleGrid">
+              <div class="clock-style-card active" data-clock-style="dial" onclick="selectClockStyle('dial')">
+                <div class="style-preview-icon style-preview-dial">
+                  <svg width="44" height="44" viewBox="0 0 44 44">
+                    <circle cx="22" cy="22" r="18" fill="none" stroke="#cbd5e1" stroke-width="2"/>
+                    <circle cx="22" cy="22" r="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-dasharray="113" stroke-dashoffset="35"/>
+                    <circle cx="22" cy="4" r="3" fill="currentColor"/>
+                    <text x="22" y="26" font-size="9" font-weight="800" text-anchor="middle" fill="#1e293b">19:41</text>
+                  </svg>
+                </div>
+                <span class="clock-style-name">Mặt số (Dial)</span>
+              </div>
+              <div class="clock-style-card" data-clock-style="flip" onclick="selectClockStyle('flip')">
+                <div class="style-preview-icon style-preview-flip">
+                  <div class="mini-flip-card">19</div>
+                  <div class="mini-flip-sep">:</div>
+                  <div class="mini-flip-card">41</div>
+                  <div class="mini-flip-shelf"></div>
+                </div>
+                <span class="clock-style-name">Đồng hồ lá lật</span>
+              </div>
+              <div class="clock-style-card" data-clock-style="minimal" onclick="selectClockStyle('minimal')">
+                <div class="style-preview-icon style-preview-minimal">
+                  <div class="mini-min-time">19:41</div>
+                  <div class="mini-min-line"></div>
+                </div>
+                <span class="clock-style-name">Đồng hồ tối giản</span>
+              </div>
+              <div class="clock-style-card" data-clock-style="kitchen" onclick="selectClockStyle('kitchen')">
+                <div class="style-preview-icon style-preview-kitchen">
+                  <svg width="44" height="44" viewBox="0 0 44 44">
+                    <circle cx="22" cy="22" r="19" fill="#f8fafc" stroke="#cbd5e1" stroke-width="2"/>
+                    <circle cx="22" cy="22" r="16.5" fill="#ffffff" stroke="#e2e8f0" stroke-width="1"/>
+                    <path d="M 22 22 L 22 5.5 A 16.5 16.5 0 0 1 37 28 Z" fill="currentColor" opacity="0.85"/>
+                    <circle cx="22" cy="22" r="4.5" fill="#94a3b8"/>
+                  </svg>
+                </div>
+                <span class="clock-style-name">Đồng hồ cơ học</span>
+              </div>
+              <div class="clock-style-card" data-clock-style="digital" onclick="selectClockStyle('digital')">
+                <div class="style-preview-icon style-preview-digital">
+                  <div class="mini-dig-box">
+                    <div class="mini-dig-display">19:41</div>
+                    <div class="mini-dig-segments">
+                      <span>■</span><span>■</span><span>■</span><span>□</span><span>□</span>
+                    </div>
+                  </div>
+                </div>
+                <span class="clock-style-name">Đồng hồ kỹ thuật số</span>
+              </div>
+              <div class="clock-style-card" data-clock-style="hourglass" onclick="selectClockStyle('hourglass')">
+                <div class="style-preview-icon style-preview-hourglass">
+                  <svg width="36" height="44" viewBox="0 0 36 44">
+                    <rect x="4" y="3" width="28" height="3" rx="1.5" fill="#475569"/>
+                    <rect x="4" y="38" width="28" height="3" rx="1.5" fill="#475569"/>
+                    <path d="M 8 6 L 28 6 Q 26 20 20 22 Q 26 24 28 38 L 8 38 Q 10 24 16 22 Q 10 20 8 6 Z" fill="rgba(255,255,255,0.4)" stroke="#94a3b8" stroke-width="1.5"/>
+                    <path d="M 10 11 L 26 11 L 18 22 Z" fill="currentColor" opacity="0.85"/>
+                    <path d="M 12 38 Q 18 29 24 38 Z" fill="currentColor"/>
+                    <line x1="18" y1="22" x2="18" y2="35" stroke="currentColor" stroke-width="1.5" stroke-dasharray="2,1"/>
+                  </svg>
+                </div>
+                <span class="clock-style-name">Đồng hồ cát</span>
+              </div>
+            </div>
+          </div>
+
           <div class="settings-group">
             <div class="settings-group-header">
               <h3>Mẫu thiết lập thời gian</h3>
@@ -3871,13 +4064,51 @@
               <div class="preset-thumbs" id="wallpaperPresetsList"></div>
             </div>
 
-            <!-- Clock Color Customization -->
-            <div class="clock-color-wrap" style="margin-bottom: 16px;">
-              <div class="theme-tier-title">
-                <span>Màu sắc đồng hồ số</span>
-                <span class="perk-badge" id="badgeClockColorLock">🔒 14d</span>
+            <!-- 3 BỘ PHỐI MÀU GIAO DIỆN & ĐỒNG HỒ (MÀU CHÍNH, MÀU PHỤ, MÀU PHỤ KIỆN) -->
+            <div class="study-color-roles-wrap" style="margin-bottom: 18px; padding: 14px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                <div>
+                  <h4 style="margin: 0; font-size: 13.5px; font-weight: 700;">Bộ phối màu giao diện &amp; Đồng hồ</h4>
+                  <span style="font-size: 11.5px; color: var(--muted);">Tùy chỉnh 3 bộ màu độc lập (Mặc định cả 3 là Xanh lá)</span>
+                </div>
+                <button type="button" class="button button-xs button-ghost" onclick="resetStudyColorRoles()" title="Khôi phục mặc định 3 màu xanh lá">Mặc định xanh lá</button>
               </div>
-              <div class="clock-color-picker" id="clockColorPicker"></div>
+
+              <!-- 1. Màu chính -->
+              <div class="color-role-item" style="margin-bottom: 12px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                  <div>
+                    <strong style="font-size: 12.5px; color: var(--ink);">Màu chính:</strong>
+                    <span style="font-size: 11.5px; color: var(--muted); margin-left: 4px;">Thời gian (bộ đếm giờ / số phút &amp; giây)</span>
+                  </div>
+                  <input type="color" id="studyColorPrimaryPicker" value="#10b981" title="Chọn màu chính tùy ý" onchange="updateStudyColorRole('primary', this.value)" style="width: 28px; height: 28px; border: none; border-radius: 6px; cursor: pointer; padding: 0; background: transparent;" />
+                </div>
+                <div class="color-swatch-row" id="swatchesPrimary"></div>
+              </div>
+
+              <!-- 2. Màu phụ -->
+              <div class="color-role-item" style="margin-bottom: 12px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                  <div>
+                    <strong style="font-size: 12.5px; color: var(--ink);">Màu phụ:</strong>
+                    <span style="font-size: 11.5px; color: var(--muted); margin-left: 4px;">Màu đi kèm (vòng tròn, chấm, kệ, vạch cơ học, cát, ô LED)</span>
+                  </div>
+                  <input type="color" id="studyColorSecondaryPicker" value="#10b981" title="Chọn màu phụ tùy ý" onchange="updateStudyColorRole('secondary', this.value)" style="width: 28px; height: 28px; border: none; border-radius: 6px; cursor: pointer; padding: 0; background: transparent;" />
+                </div>
+                <div class="color-swatch-row" id="swatchesSecondary"></div>
+              </div>
+
+              <!-- 3. Màu phụ kiện -->
+              <div class="color-role-item">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                  <div>
+                    <strong style="font-size: 12.5px; color: var(--ink);">Màu phụ kiện:</strong>
+                    <span style="font-size: 11.5px; color: var(--muted); margin-left: 4px;">Bộ màu nút bấm (bắt đầu, tạm dừng, rời phòng, dấu +, icon câu nói, mục tiêu)</span>
+                  </div>
+                  <input type="color" id="studyColorAccessoryPicker" value="#10b981" title="Chọn màu phụ kiện tùy ý" onchange="updateStudyColorRole('accessory', this.value)" style="width: 28px; height: 28px; border: none; border-radius: 6px; cursor: pointer; padding: 0; background: transparent;" />
+                </div>
+                <div class="color-swatch-row" id="swatchesAccessory"></div>
+              </div>
             </div>
 
             <!-- Custom Wallpaper Upload -->
