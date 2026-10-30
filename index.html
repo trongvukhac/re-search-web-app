@@ -733,120 +733,140 @@
                   </div>
                 </div>
 
-                <!-- 2. Flip Clock (Đồng hồ lá lật) -->
+                <!-- 2. Flip Clock (Đồng hồ lá lật - Chuẩn Ảnh Mẫu 1) -->
                 <div class="clock-view clock-view-flip" id="clockViewFlip" style="display: none;">
-                  <div class="timer-center-sub" id="flipCenterSub">TẬP TRUNG</div>
-                  <div class="flip-clock-display">
-                    <div class="flip-card-wrap">
-                      <div class="flip-card" id="flipCardMin">
-                        <span class="flip-digit-top" id="flipMinTop">25</span>
-                        <span class="flip-digit-bot" id="flipMinBot">25</span>
-                        <div class="flip-seam"></div>
-                      </div>
+                  <div class="flip-status-tag" id="flipStatusTag">TẬP TRUNG</div>
+                  <div class="flip-board-wrap">
+                    <div class="flip-card" id="flipCardMin">
+                      <span class="flip-digit-number" id="flipMinNum">25</span>
+                      <div class="flip-divider-slit"></div>
+                      <div class="flip-notch flip-notch-left"></div>
+                      <div class="flip-notch flip-notch-right"></div>
                     </div>
-                    <div class="flip-colon">:</div>
-                    <div class="flip-card-wrap">
-                      <div class="flip-card" id="flipCardSec">
-                        <span class="flip-digit-top" id="flipSecTop">00</span>
-                        <span class="flip-digit-bot" id="flipSecBot">00</span>
-                        <div class="flip-seam"></div>
-                      </div>
+                    <div class="flip-colon">
+                      <span class="colon-dot"></span>
+                      <span class="colon-dot"></span>
+                    </div>
+                    <div class="flip-card" id="flipCardSec">
+                      <span class="flip-digit-number" id="flipSecNum">00</span>
+                      <div class="flip-divider-slit"></div>
+                      <div class="flip-notch flip-notch-left"></div>
+                      <div class="flip-notch flip-notch-right"></div>
                     </div>
                   </div>
-                  <!-- Kệ đồng hồ với thanh ngang màu phụ -->
-                  <div class="flip-shelf-stand" title="Kệ đồng hồ bàn">
+                  <!-- Kệ đồng hồ màu phụ bên dưới (Ảnh Mẫu 1) -->
+                  <div class="flip-shelf-stand" title="Tiến độ lượt học">
                     <div class="flip-shelf-prog" id="flipShelfProgress"></div>
                   </div>
                 </div>
 
                 <!-- 3. Minimal (Đồng hồ tối giản) -->
                 <div class="clock-view clock-view-minimal" id="clockViewMinimal" style="display: none;">
-                  <div class="timer-center-sub" id="minCenterSub">TẬP TRUNG</div>
+                  <div class="minimal-status-tag" id="minStatusTag">TẬP TRUNG</div>
                   <div class="minimal-clock-text" id="minimalClockText">25:00</div>
                   <div class="minimal-prog-track">
                     <div class="minimal-prog-fill" id="minimalProgFill"></div>
                   </div>
                 </div>
 
-                <!-- 4. Kitchen Timer (Đồng hồ cơ học) -->
+                <!-- 4. Kitchen Timer (Đồng hồ cơ học - Chuẩn Ảnh Mẫu 2) -->
                 <div class="clock-view clock-view-kitchen" id="clockViewKitchen" style="display: none;">
-                  <div class="kitchen-timer-dial">
-                    <svg class="kitchen-svg" viewBox="0 0 240 240" id="kitchenTimerSvg">
-                      <defs>
-                        <radialGradient id="kitchenKnobGrad" cx="35%" cy="35%" r="65%">
-                          <stop offset="0%" stop-color="#ffffff" />
-                          <stop offset="60%" stop-color="#cbd5e1" />
-                          <stop offset="100%" stop-color="#94a3b8" />
-                        </radialGradient>
-                      </defs>
-                      <!-- Metallic Bezel -->
-                      <circle cx="120" cy="120" r="114" fill="#f1f5f9" stroke="#cbd5e1" stroke-width="4" />
-                      <circle cx="120" cy="120" r="102" fill="#ffffff" stroke="#e2e8f0" stroke-width="1.5" />
-                      <!-- Dynamic Pie Wedge (Tô vùng thời gian còn lại) -->
+                  <div class="kitchen-dial-wrap">
+                    <svg class="kitchen-svg" viewBox="0 0 300 300" id="kitchenTimerSvg">
+                      <!-- Dial Background Face -->
+                      <circle cx="150" cy="150" r="142" fill="#ffffff" stroke="#e2e8f0" stroke-width="2" filter="drop-shadow(0 10px 24px rgba(0,0,0,0.06))" />
+                      <circle cx="150" cy="150" r="140" fill="none" stroke="#f1f5f9" stroke-width="1" />
+                      <!-- Dynamic Pie Wedge (Quét xuôi chiều kim đồng hồ từ 12h/0 tới mốc phút) -->
                       <path id="kitchenTimerWedge" fill="var(--study-color-secondary, #10b981)" opacity="0.9" d="" />
-                      <!-- Dial Numbers & Ticks Container -->
+                      <!-- 60 vạch và 12 mốc số 0, 5, 10... 55 -->
                       <g id="kitchenDialMarks"></g>
-                      <!-- Center Metal Knob -->
-                      <circle cx="120" cy="120" r="24" fill="url(#kitchenKnobGrad)" stroke="#94a3b8" stroke-width="1.5" filter="drop-shadow(0 2px 4px rgba(0,0,0,0.25))" />
-                      <circle cx="120" cy="120" r="6" fill="#64748b" opacity="0.4" />
-                      <line x1="120" y1="96" x2="120" y2="103" stroke="#e11d48" stroke-width="2.5" stroke-linecap="round" />
+                      <!-- Center White Knob with Secondary Center Dot -->
+                      <circle cx="150" cy="150" r="16" fill="#ffffff" stroke="#cbd5e1" stroke-width="2" filter="drop-shadow(0 2px 5px rgba(0,0,0,0.12))" />
+                      <circle cx="150" cy="150" r="6" fill="var(--study-color-secondary, #10b981)" id="kitchenCenterDot" />
                     </svg>
                   </div>
-                  <div class="timer-center-sub" style="margin-top: 8px;">TẬP TRUNG</div>
                   <div class="kitchen-digital-readout" id="kitchenDigitalText">25:00</div>
                 </div>
 
-                <!-- 5. Digital (Đồng hồ kỹ thuật số LCD) -->
+                <!-- 5. Digital Clock (Đồng hồ kỹ thuật số 7-Segment LCD - Chuẩn Ảnh Mẫu 3) -->
                 <div class="clock-view clock-view-digital" id="clockViewDigital" style="display: none;">
-                  <div class="timer-center-sub" id="digitalCenterSub">TẬP TRUNG</div>
-                  <div class="digital-clock-casing">
-                    <div class="digital-lcd-face">
-                      <div class="digital-lcd-ghost">88:88</div>
-                      <div class="digital-lcd-active" id="digitalLcdActive">25:00</div>
+                  <div class="digital-alarm-casing">
+                    <div class="digital-casing-header">
+                      <span class="digital-status-tag" id="digitalStatusTag">TẬP TRUNG</span>
+                      <span class="digital-sensor-hole"></span>
                     </div>
-                    <!-- Thanh tiến trình chia thành các ô vuông nhỏ kỹ thuật số -->
-                    <div class="digital-blocks-bar" id="digitalBlocksBar"></div>
+                    <div class="digital-7seg-display">
+                      <svg class="digital-7seg-svg" viewBox="0 0 320 96" id="digital7SegSvg">
+                        <!-- Digit 1 -->
+                        <g class="seg-digit" id="d7Digit1" transform="translate(30, 8) skewX(-4)"></g>
+                        <!-- Digit 2 -->
+                        <g class="seg-digit" id="d7Digit2" transform="translate(94, 8) skewX(-4)"></g>
+                        <!-- Colon Dots (Căn giữa tuyệt đối ở tâm 160) -->
+                        <g class="seg-colon" id="d7Colon" transform="translate(154, 8) skewX(-4)">
+                          <rect class="colon-sq" x="4" y="25" width="7" height="7" rx="1.5" />
+                          <rect class="colon-sq" x="2" y="52" width="7" height="7" rx="1.5" />
+                        </g>
+                        <!-- Digit 3 -->
+                        <g class="seg-digit" id="d7Digit3" transform="translate(178, 8) skewX(-4)"></g>
+                        <!-- Digit 4 -->
+                        <g class="seg-digit" id="d7Digit4" transform="translate(242, 8) skewX(-4)"></g>
+                      </svg>
+                    </div>
+                    <!-- Bottom 24 LED Progress Blocks (Ảnh Mẫu 3) -->
+                    <div class="digital-led-blocks" id="digitalLedBlocks"></div>
                   </div>
                 </div>
 
-                <!-- 6. Hourglass (Đồng hồ cát) -->
+                <!-- 6. Hourglass (Đồng hồ cát tự nhiên - Chuẩn Ảnh Mẫu 4) -->
                 <div class="clock-view clock-view-hourglass" id="clockViewHourglass" style="display: none;">
-                  <div class="timer-center-sub" id="hourglassCenterSub">TẬP TRUNG</div>
-                  <div class="hourglass-wrap">
-                    <svg class="hourglass-svg" viewBox="0 0 160 210" id="hourglassSvg">
+                  <div class="hourglass-assembly-wrap">
+                    <svg class="hourglass-svg" viewBox="0 0 180 250" id="hourglassSvg">
                       <defs>
-                        <linearGradient id="sandGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-                          <stop offset="0%" stop-color="var(--study-color-secondary, #10b981)" stop-opacity="0.8" />
-                          <stop offset="100%" stop-color="var(--study-color-secondary, #10b981)" />
-                        </linearGradient>
+                        <!-- Sand Granular Texture Pattern with sparkling micro grains -->
+                        <pattern id="sandTexturePattern" width="8" height="8" patternUnits="userSpaceOnUse">
+                          <rect width="8" height="8" fill="var(--study-color-secondary, #10b981)" />
+                          <circle cx="2" cy="2" r="0.8" fill="#ffffff" opacity="0.38" />
+                          <circle cx="6" cy="3" r="0.7" fill="#000000" opacity="0.22" />
+                          <circle cx="3" cy="6" r="0.8" fill="#ffffff" opacity="0.3" />
+                          <circle cx="7" cy="7" r="0.6" fill="#000000" opacity="0.25" />
+                        </pattern>
+                        <!-- Top Bulb Interior Clipping Path -->
                         <clipPath id="topBulbClip">
-                          <path d="M 45 20 Q 80 20 115 20 L 115 25 Q 110 70 84 103 L 76 103 Q 50 70 45 25 Z" />
+                          <path d="M 40 32 Q 90 32 140 32 Q 136 78 95 122 Q 90 125 85 122 Q 44 78 40 32 Z" />
                         </clipPath>
+                        <!-- Bottom Bulb Interior Clipping Path -->
                         <clipPath id="bottomBulbClip">
-                          <path d="M 76 107 L 84 107 Q 110 140 115 185 L 45 185 Q 50 140 76 107 Z" />
+                          <path d="M 85 128 Q 90 125 95 128 Q 136 172 140 218 Q 90 218 40 218 Q 44 172 85 128 Z" />
                         </clipPath>
                       </defs>
-                      <!-- Top & Bottom Wooden/Metal Plates -->
-                      <rect x="30" y="8" width="100" height="12" rx="4" fill="#475569" stroke="#334155" stroke-width="1.5" />
-                      <rect x="30" y="190" width="100" height="12" rx="4" fill="#475569" stroke="#334155" stroke-width="1.5" />
-                      <!-- Support Pillars -->
-                      <line x1="38" y1="20" x2="38" y2="190" stroke="#94a3b8" stroke-width="3" stroke-linecap="round" />
-                      <line x1="122" y1="20" x2="122" y2="190" stroke="#94a3b8" stroke-width="3" stroke-linecap="round" />
-                      <!-- Glass Outline -->
-                      <path d="M 45 20 L 115 20 Q 110 70 84 105 Q 110 140 115 190 L 45 190 Q 50 140 76 105 Q 50 70 45 20 Z" fill="rgba(255,255,255,0.1)" stroke="rgba(148, 163, 184, 0.45)" stroke-width="2.5" />
-                      <!-- Top Sand (Vơi dần từ trên xuống) -->
+                      <!-- Top & Bottom Plates (Espresso wood/metal with bevel) -->
+                      <rect x="24" y="16" width="132" height="15" rx="7" fill="#352b27" stroke="#221b18" stroke-width="1.5" filter="drop-shadow(0 2px 4px rgba(0,0,0,0.2))" />
+                      <line x1="30" y1="20" x2="150" y2="20" stroke="rgba(255,255,255,0.22)" stroke-width="1" stroke-linecap="round" />
+                      <rect x="24" y="219" width="132" height="15" rx="7" fill="#352b27" stroke="#221b18" stroke-width="1.5" filter="drop-shadow(0 3px 6px rgba(0,0,0,0.25))" />
+                      <line x1="30" y1="223" x2="150" y2="223" stroke="rgba(255,255,255,0.22)" stroke-width="1" stroke-linecap="round" />
+                      <!-- Two Side Support Rods with Spherical Brass Joints -->
+                      <line x1="32" y1="31" x2="32" y2="219" stroke="#786a62" stroke-width="3" />
+                      <circle cx="32" cy="31" r="4.5" fill="#524741" stroke="#352b27" stroke-width="1" />
+                      <circle cx="32" cy="219" r="4.5" fill="#524741" stroke="#352b27" stroke-width="1" />
+                      <line x1="148" y1="31" x2="148" y2="219" stroke="#786a62" stroke-width="3" />
+                      <circle cx="148" cy="31" r="4.5" fill="#524741" stroke="#352b27" stroke-width="1" />
+                      <circle cx="148" cy="219" r="4.5" fill="#524741" stroke="#352b27" stroke-width="1" />
+                      <!-- Glass Bulbs Body -->
+                      <path d="M 40 32 Q 90 32 140 32 Q 136 78 95 122 Q 90 125 85 122 Q 44 78 40 32 Z" fill="rgba(255,255,255,0.08)" stroke="rgba(148, 163, 184, 0.45)" stroke-width="2.5" />
+                      <path d="M 85 128 Q 90 125 95 128 Q 136 172 140 218 Q 90 218 40 218 Q 44 172 85 128 Z" fill="rgba(255,255,255,0.08)" stroke="rgba(148, 163, 184, 0.45)" stroke-width="2.5" />
+                      <!-- Top Sand Layer (Drops from top to waist) -->
                       <g clip-path="url(#topBulbClip)">
-                        <path id="hourglassTopSand" fill="url(#sandGrad)" d="M 40 20 L 120 20 L 120 105 L 40 105 Z" />
+                        <rect id="hourglassTopSand" x="35" y="32" width="110" height="92" fill="url(#sandTexturePattern)" />
                       </g>
-                      <!-- Falling Stream (Dòng cát rơi qua eo kính) -->
-                      <line id="hourglassStream" x1="80" y1="105" x2="80" y2="185" stroke="var(--study-color-secondary, #10b981)" stroke-width="2.5" stroke-linecap="round" stroke-dasharray="4,2" />
-                      <!-- Bottom Sand (Đầy dần thành đụn cát tự nhiên) -->
+                      <!-- Sand Falling Stream -->
+                      <line id="hourglassStream" x1="90" y1="124" x2="90" y2="218" stroke="var(--study-color-secondary, #10b981)" stroke-width="2.2" stroke-linecap="round" />
+                      <!-- Bottom Sand Mound (Grows upward and outward) -->
                       <g clip-path="url(#bottomBulbClip)">
-                        <path id="hourglassBottomSand" fill="url(#sandGrad)" d="M 40 190 Q 80 160 120 190 Z" />
+                        <path id="hourglassBottomSand" fill="url(#sandTexturePattern)" d="M 35 218 Q 90 218 145 218 Z" />
                       </g>
-                      <!-- Glass Shine Highlight -->
-                      <path d="M 50 30 Q 54 65 72 95" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="1.5" stroke-linecap="round" />
-                      <path d="M 110 175 Q 106 145 88 115" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="1.5" stroke-linecap="round" />
+                      <!-- Glass Specular Highlights (Left & Right curves) -->
+                      <path d="M 46 44 Q 54 80 78 112" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="2" stroke-linecap="round" />
+                      <path d="M 134 206 Q 126 170 102 138" fill="none" stroke="rgba(255,255,255,0.38)" stroke-width="1.8" stroke-linecap="round" />
                     </svg>
                   </div>
                   <div class="hourglass-digital-readout" id="hourglassDigitalText">25:00</div>

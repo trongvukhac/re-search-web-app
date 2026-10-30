@@ -7625,6 +7625,13 @@ function applyStudyColorRoles() {
   document.documentElement.style.setProperty('--study-color-secondary', sec);
   document.documentElement.style.setProperty('--study-color-accessory', acc);
 
+  const studyEl = document.getElementById("study");
+  if (studyEl) {
+    studyEl.style.setProperty('--study-color-primary', pri);
+    studyEl.style.setProperty('--study-color-secondary', sec);
+    studyEl.style.setProperty('--study-color-accessory', acc);
+  }
+
   // SVG Dial stops & knob
   const stop1 = $("#timerGradStop1");
   const stop2 = $("#timerGradStop2");
@@ -7735,14 +7742,14 @@ function describePieSlice(cx, cy, r, angleDeg) {
 
 function renderKitchenDialMarks() {
   const g = document.getElementById("kitchenDialMarks");
-  if (!g || g.children.length >= 60) return;
+  if (!g || g.children.length >= 72) return;
   g.innerHTML = "";
-  const cx = 120;
-  const cy = 120;
+  const cx = 150;
+  const cy = 150;
   for (let i = 0; i < 60; i++) {
     const isFive = (i % 5 === 0);
-    const innerR = isFive ? 86 : 94;
-    const outerR = 100;
+    const innerR = isFive ? 122 : 130;
+    const outerR = 138;
     const angleDeg = i * 6 - 90;
     const rad = (angleDeg * Math.PI) / 180;
     const x1 = (cx + innerR * Math.cos(rad)).toFixed(2);
@@ -7755,43 +7762,89 @@ function renderKitchenDialMarks() {
     line.setAttribute("y1", y1);
     line.setAttribute("x2", x2);
     line.setAttribute("y2", y2);
-    line.setAttribute("stroke", "#1e293b");
-    line.setAttribute("stroke-width", isFive ? "2" : "1");
-    line.setAttribute("opacity", isFive ? "0.8" : "0.3");
+    line.setAttribute("stroke", isFive ? "#1e293b" : "#64748b");
+    line.setAttribute("stroke-width", isFive ? "2.2" : "1.2");
+    line.setAttribute("opacity", isFive ? "0.85" : "0.35");
+    line.setAttribute("stroke-linecap", "round");
     g.appendChild(line);
 
     if (isFive) {
-      const textR = 74;
+      const textR = 108;
       const tx = (cx + textR * Math.cos(rad)).toFixed(2);
-      const ty = (cy + textR * Math.sin(rad) + 4).toFixed(2);
+      const ty = (cy + textR * Math.sin(rad) + 4.5).toFixed(2);
       const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
       text.setAttribute("x", tx);
       text.setAttribute("y", ty);
-      text.setAttribute("font-size", "11");
+      text.setAttribute("font-size", "13");
       text.setAttribute("font-weight", "800");
+      text.setAttribute("font-family", "'Inter', system-ui, sans-serif");
       text.setAttribute("text-anchor", "middle");
       text.setAttribute("fill", "#0f172a");
-      text.textContent = String(i === 0 ? 0 : i);
+      text.textContent = String(i);
       g.appendChild(text);
     }
   }
 }
 
+// 7-Segment SVG Geometry for Digital Alarm Clock (Ảnh Mẫu 3)
+const SEG_POLYGONS = {
+  a: "5,4 43,4 37,11 11,11",
+  b: "43,6 43,39 37,34 37,12",
+  c: "43,43 43,76 37,70 37,47",
+  d: "11,71 37,71 43,78 5,78",
+  e: "5,42 11,47 11,70 5,76",
+  f: "5,6 11,12 11,35 5,40",
+  g: "10,37 38,37 42,41 38,45 10,45 6,41"
+};
+
+const DIGIT_MAP = {
+  '0': ['a', 'b', 'c', 'd', 'e', 'f'],
+  '1': ['b', 'c'],
+  '2': ['a', 'b', 'g', 'e', 'd'],
+  '3': ['a', 'b', 'g', 'c', 'd'],
+  '4': ['f', 'g', 'b', 'c'],
+  '5': ['a', 'f', 'g', 'c', 'd'],
+  '6': ['a', 'f', 'g', 'e', 'c', 'd'],
+  '7': ['a', 'b', 'c'],
+  '8': ['a', 'b', 'c', 'd', 'e', 'f', 'g'],
+  '9': ['a', 'b', 'c', 'd', 'f', 'g']
+};
+
+function update7SegmentDigit(digitEl, char) {
+  if (!digitEl) return;
+  if (!digitEl.children || digitEl.children.length !== 7) {
+    digitEl.innerHTML = "";
+    ['a', 'b', 'c', 'd', 'e', 'f', 'g'].forEach(seg => {
+      const poly = document.createElementNS("http://www.w3.org/2000/svg", "polygon");
+      poly.setAttribute("points", SEG_POLYGONS[seg]);
+      poly.setAttribute("data-seg", seg);
+      digitEl.appendChild(poly);
+    });
+  }
+  const activeSegs = DIGIT_MAP[char] || [];
+  for (let i = 0; i < digitEl.children.length; i++) {
+    const child = digitEl.children[i];
+    const segName = child.getAttribute("data-seg");
+    const isOn = activeSegs.includes(segName);
+    child.setAttribute("class", isOn ? "seg-on" : "seg-off");
+  }
+}
+
 function renderDigitalBlocks(progressRatio) {
-  const bar = document.getElementById("digitalBlocksBar");
+  const bar = document.getElementById("digitalLedBlocks");
   if (!bar) return;
   const total = 24;
-  const filled = Math.round(progressRatio * total);
+  const filled = Math.round(Math.min(1, Math.max(0, progressRatio)) * total);
   if (bar.children.length !== total) {
     bar.innerHTML = "";
     for (let i = 0; i < total; i++) {
       const blk = document.createElement("span");
-      blk.className = `digital-block ${i < filled ? 'filled' : ''}`;
+      blk.className = `led-block ${i < filled ? 'active' : ''}`;
       bar.appendChild(blk);
     }
   } else {
     for (let i = 0; i < total; i++) {
-      bar.children[i].className = `digital-block ${i < filled ? 'filled' : ''}`;
+      bar.children[i].className = `led-block ${i < filled ? 'active' : ''}`;
     }
   }
 }
@@ -7886,21 +7939,39 @@ function updateTimerDisplay() {
   const strM = String(dispM).padStart(2, '0');
   const strS = String(dispS).padStart(2, '0');
 
-  // Flip Clock
-  const flipMinTop = $("#flipMinTop");
-  const flipMinBot = $("#flipMinBot");
-  const flipSecTop = $("#flipSecTop");
-  const flipSecBot = $("#flipSecBot");
-  if (flipMinTop) flipMinTop.textContent = strM;
-  if (flipMinBot) flipMinBot.textContent = strM;
-  if (flipSecTop) flipSecTop.textContent = strS;
-  if (flipSecBot) flipSecBot.textContent = strS;
+  // Sub status label (đồng bộ tiếng Việt cho cả 6 kiểu đồng hồ)
+  let subText = "TẬP TRUNG";
+  if (!studyState.isRunning && (studyState.remainingSeconds < studySettings.focusDuration * 60 || studyState.elapsedSessionSeconds > 0)) {
+    subText = "TẠM DỪNG";
+  } else if (isFlowtimeFocus) {
+    subText = "DÒNG CHẢY";
+  } else if (studyState.mode === 'shortbreak') {
+    subText = "NGHỈ NGẮN";
+  } else if (studyState.mode === 'longbreak') {
+    subText = "NGHỈ DÀI";
+  }
+
+  const subLabels = [
+    $("#timerCenterSub"),
+    $("#flipStatusTag"),
+    $("#minStatusTag"),
+    $("#digitalStatusTag")
+  ];
+  subLabels.forEach(el => {
+    if (el) el.textContent = subText;
+  });
+
+  // 2. Flip Clock (Chuẩn Ảnh Mẫu 1)
+  const flipMinNum = $("#flipMinNum");
+  const flipSecNum = $("#flipSecNum");
+  if (flipMinNum) flipMinNum.textContent = strM;
+  if (flipSecNum) flipSecNum.textContent = strS;
   const flipShelfProg = $("#flipShelfProgress");
   if (flipShelfProg) {
     flipShelfProg.style.width = `${(progressRatio * 100).toFixed(1)}%`;
   }
 
-  // Minimal Clock
+  // 3. Minimal Clock
   const minClock = $("#minimalClockText");
   if (minClock) minClock.textContent = formattedClock;
   const minProgFill = $("#minimalProgFill");
@@ -7908,40 +7979,43 @@ function updateTimerDisplay() {
     minProgFill.style.width = `${(progressRatio * 100).toFixed(1)}%`;
   }
 
-  // Kitchen Timer (Đồng hồ cơ học đếm ngược từ 60 phút trở về)
+  // 4. Kitchen Timer (Chuẩn Ảnh Mẫu 2 - Đồng hồ cơ học từ 60 phút trở về)
   if (activeStyle === 'kitchen') {
     renderKitchenDialMarks();
-    const remMins = Math.max(0, safeTotalSecs / 60);
-    const angleDeg = Math.min(60, remMins) * 6; // 6 độ mỗi phút trên mặt 60 phút
+    const remMins = Math.min(60, Math.max(0, safeTotalSecs / 60));
+    const angleDeg = remMins * 6; // 6 độ mỗi phút trên mặt 60 phút
     const wedgePath = $("#kitchenTimerWedge");
     if (wedgePath) {
-      wedgePath.setAttribute("d", describePieSlice(120, 120, 85, angleDeg));
+      wedgePath.setAttribute("d", describePieSlice(150, 150, 98, angleDeg));
     }
     const kitchenDigital = $("#kitchenDigitalText");
     if (kitchenDigital) kitchenDigital.textContent = formattedClock;
   }
 
-  // Digital LCD Clock
-  const digActive = $("#digitalLcdActive");
-  if (digActive) digActive.textContent = formattedClock;
-  const digBar = $("#digitalBlocksBar");
-  if (digBar && activeStyle === 'digital') {
+  // 5. Digital Clock (Chuẩn Ảnh Mẫu 3 - 7 Segment Retro Alarm)
+  if (activeStyle === 'digital') {
+    update7SegmentDigit($("#d7Digit1"), strM[0]);
+    update7SegmentDigit($("#d7Digit2"), strM[1]);
+    update7SegmentDigit($("#d7Digit3"), strS[0]);
+    update7SegmentDigit($("#d7Digit4"), strS[1]);
     renderDigitalBlocks(progressRatio);
   }
 
-  // Hourglass (Đồng hồ cát tự nhiên)
+  // 6. Hourglass (Chuẩn Ảnh Mẫu 4 - Đồng hồ cát tự nhiên)
   if (activeStyle === 'hourglass') {
-    const remRatio = 1 - progressRatio;
+    const remRatio = Math.max(0, Math.min(1, 1 - progressRatio));
     const topSand = $("#hourglassTopSand");
     const botSand = $("#hourglassBottomSand");
     const stream = $("#hourglassStream");
     if (topSand) {
-      const topY = 20 + (1 - remRatio) * 80;
-      topSand.setAttribute("d", `M 45 ${topY.toFixed(1)} Q 80 ${(topY + 4).toFixed(1)} 115 ${topY.toFixed(1)} L 84 105 L 76 105 Z`);
+      const topY = 32 + (1 - remRatio) * 88;
+      const topH = Math.max(0, 122 - topY);
+      topSand.setAttribute("y", topY.toFixed(1));
+      topSand.setAttribute("height", topH.toFixed(1));
     }
     if (botSand) {
-      const botPeak = 190 - (1 - remRatio) * 55;
-      botSand.setAttribute("d", `M 45 190 Q 80 ${botPeak.toFixed(1)} 115 190 Z`);
+      const moundPeakY = 218 - progressRatio * 76;
+      botSand.setAttribute("d", `M 36 218 Q 90 ${moundPeakY.toFixed(1)} 144 218 Z`);
     }
     if (stream) {
       if (studyState.isRunning && remRatio > 0.005) {
@@ -7949,32 +8023,12 @@ function updateTimerDisplay() {
         stream.style.opacity = "1";
       } else {
         stream.classList.remove("hourglass-stream-active");
-        stream.style.opacity = "0.2";
+        stream.style.opacity = "0";
       }
     }
     const hgDigital = $("#hourglassDigitalText");
     if (hgDigital) hgDigital.textContent = formattedClock;
   }
-
-  // Sub label
-  const subLabels = [
-    $("#timerCenterSub"),
-    $("#flipCenterSub"),
-    $("#minCenterSub"),
-    $("#digitalCenterSub"),
-    $("#hourglassCenterSub")
-  ];
-  let subText = "TẬP TRUNG";
-  if (isFlowtimeFocus) {
-    subText = "DÒNG CHẢY";
-  } else if (studyState.mode === 'shortbreak') {
-    subText = "NGHỈ NGẮN";
-  } else if (studyState.mode === 'longbreak') {
-    subText = "NGHỈ DÀI";
-  }
-  subLabels.forEach(el => {
-    if (el) el.textContent = subText;
-  });
 
   // Top banner
   const topBanner = $("#timerTopBanner");

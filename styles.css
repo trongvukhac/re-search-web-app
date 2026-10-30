@@ -5527,8 +5527,7 @@ html.dark-theme .timer-bg-circle,
 body.dark-theme .timer-bg-circle {
   stroke: rgba(255, 255, 255, 0.08);
 }
-:root,
-#study {
+:root {
   --study-color-primary: #10b981;
   --study-color-secondary: #10b981;
   --study-color-accessory: #10b981;
@@ -5629,76 +5628,113 @@ body.dark-theme .timer-clock {
   min-height: 280px;
 }
 
-/* 2. Flip Clock */
-.flip-clock-display {
+/* 2. Flip Clock (Ảnh Mẫu 1) */
+.flip-status-tag {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 3px;
+  color: var(--study-color-primary, #10b981);
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  line-height: 1;
+}
+.flip-board-wrap {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 12px;
-  margin: 12px 0 6px;
-}
-.flip-card-wrap {
-  perspective: 600px;
+  gap: 16px;
+  margin: 0 0 16px;
 }
 .flip-card {
   position: relative;
-  width: 108px;
-  height: 112px;
-  background: var(--surface, #ffffff);
-  border-radius: 12px;
-  border: 1px solid var(--line);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08), 0 2px 6px rgba(0, 0, 0, 0.04);
+  width: 140px;
+  height: 168px;
+  background: #ffffff;
+  border-radius: 18px;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.08), 0 2px 6px rgba(0, 0, 0, 0.04);
+  border: 1px solid rgba(0, 0, 0, 0.06);
   display: flex;
-  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   overflow: hidden;
 }
 html.dark-theme .flip-card,
 body.dark-theme .flip-card,
 #study.has-custom-bg .flip-card {
-  background: rgba(15, 23, 42, 0.85);
-  border-color: rgba(255, 255, 255, 0.15);
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.45);
+  background: #1e293b;
+  border-color: rgba(255, 255, 255, 0.12);
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.5);
 }
-.flip-digit-top,
-.flip-digit-bot {
-  height: 56px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+.flip-digit-number {
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
-  font-size: 58px;
+  font-size: 104px;
   font-weight: 800;
   color: var(--study-color-primary, #10b981);
+  line-height: 1;
+  letter-spacing: -3px;
+  z-index: 1;
+  user-select: none;
   font-variant-numeric: tabular-nums;
   font-feature-settings: "tnum" 1;
-  line-height: 1;
-  overflow: hidden;
 }
-.flip-digit-top {
-  align-items: flex-end;
-  background: linear-gradient(180deg, rgba(0,0,0,0.02) 0%, rgba(0,0,0,0.07) 100%);
-  border-bottom: 1.5px solid rgba(0, 0, 0, 0.15);
-  padding-bottom: 2px;
+.flip-divider-slit {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 1.5px;
+  background: rgba(0, 0, 0, 0.12);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
+  z-index: 3;
+  pointer-events: none;
 }
-.flip-digit-bot {
-  align-items: flex-start;
-  padding-top: 2px;
+html.dark-theme .flip-divider-slit,
+body.dark-theme .flip-divider-slit,
+#study.has-custom-bg .flip-divider-slit {
+  background: rgba(0, 0, 0, 0.4);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+.flip-notch {
+  position: absolute;
+  top: calc(50% - 4px);
+  width: 6px;
+  height: 8px;
+  background: var(--surface, #f8fafc);
+  z-index: 4;
+}
+.flip-notch-left {
+  left: 0;
+  border-radius: 0 4px 4px 0;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-left: none;
+}
+.flip-notch-right {
+  right: 0;
+  border-radius: 4px 0 0 4px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-right: none;
 }
 .flip-colon {
-  font-size: 46px;
-  font-weight: 800;
-  color: var(--study-color-primary, #10b981);
-  line-height: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  align-items: center;
+  justify-content: center;
+}
+.colon-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #94a3b8;
 }
 .flip-shelf-stand {
-  width: 250px;
-  height: 10px;
-  border-radius: 5px;
-  background: rgba(0, 0, 0, 0.08);
-  margin-top: 14px;
+  width: 280px;
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.06);
   overflow: hidden;
-  position: relative;
-  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.06);
 }
 html.dark-theme .flip-shelf-stand,
 body.dark-theme .flip-shelf-stand,
@@ -5709,24 +5745,34 @@ body.dark-theme .flip-shelf-stand,
   height: 100%;
   width: 0%;
   background: var(--study-color-secondary, #10b981);
-  border-radius: 5px;
+  border-radius: 999px;
   transition: width 0.35s ease;
 }
 
 /* 3. Minimal */
+.minimal-status-tag {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 3px;
+  color: var(--study-color-primary, #10b981);
+  text-transform: uppercase;
+  margin-bottom: 6px;
+  line-height: 1;
+}
 .minimal-clock-text {
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
-  font-size: 64px;
+  font-size: 76px;
   font-weight: 800;
   color: var(--study-color-primary, #10b981);
-  letter-spacing: 0;
+  letter-spacing: -1px;
   font-variant-numeric: tabular-nums;
   font-feature-settings: "tnum" 1;
-  margin: 18px 0 12px;
+  margin: 4px 0 14px;
   line-height: 1;
 }
 .minimal-prog-track {
-  width: 220px;
+  width: 240px;
   height: 6px;
   border-radius: 999px;
   background: rgba(0, 0, 0, 0.08);
@@ -5746,111 +5792,154 @@ body.dark-theme .minimal-prog-track,
   transition: width 0.35s ease;
 }
 
-/* 4. Kitchen Timer */
-.kitchen-timer-dial {
-  width: 240px;
-  height: 240px;
+/* 4. Kitchen Timer (Ảnh Mẫu 2) */
+.kitchen-dial-wrap {
+  width: 270px;
+  height: 270px;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 .kitchen-svg {
-  width: 240px;
-  height: 240px;
+  width: 270px;
+  height: 270px;
 }
 .kitchen-digital-readout {
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
-  font-size: 30px;
+  font-size: 46px;
   font-weight: 800;
   color: var(--study-color-primary, #10b981);
   font-variant-numeric: tabular-nums;
   font-feature-settings: "tnum" 1;
   line-height: 1;
-  margin-top: 4px;
+  margin-top: 14px;
+  text-align: center;
 }
 
-/* 5. Digital LCD Clock */
-.digital-clock-casing {
+/* 5. Digital Clock (7-Segment LCD - Ảnh Mẫu 3) */
+.digital-alarm-casing {
+  position: relative;
+  width: 340px;
+  padding: 20px 24px 18px;
+  border-radius: 28px;
+  background: #f2ece7;
+  box-shadow: inset 0 3px 5px rgba(255, 255, 255, 0.95), inset 0 -3px 6px rgba(0, 0, 0, 0.06), 0 12px 32px rgba(0, 0, 0, 0.08);
+  border: 1px solid rgba(0, 0, 0, 0.05);
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  background: #0b1120;
-  border: 2px solid rgba(255, 255, 255, 0.12);
-  border-radius: 18px;
-  padding: 20px 26px 14px;
-  box-shadow: inset 0 2px 14px rgba(0, 0, 0, 0.8), 0 12px 36px rgba(0, 0, 0, 0.25);
-  margin: 12px 0 6px;
-  min-width: 250px;
 }
-.digital-lcd-face {
-  position: relative;
-  display: inline-flex;
-  justify-content: center;
-  align-items: center;
-  font-family: 'Courier New', Courier, monospace;
-  font-size: 58px;
-  font-weight: 900;
-  letter-spacing: 2px;
-  line-height: 1;
+html.dark-theme .digital-alarm-casing,
+body.dark-theme .digital-alarm-casing,
+#study.has-custom-bg .digital-alarm-casing {
+  background: #1c2430;
+  box-shadow: inset 0 2px 4px rgba(255, 255, 255, 0.06), inset 0 -2px 6px rgba(0, 0, 0, 0.4), 0 14px 40px rgba(0, 0, 0, 0.5);
+  border-color: rgba(255, 255, 255, 0.08);
 }
-.digital-lcd-ghost {
-  color: rgba(255, 255, 255, 0.05);
-  user-select: none;
-}
-.digital-lcd-active {
-  position: absolute;
-  inset: 0;
+.digital-casing-header {
   display: flex;
   align-items: center;
-  justify-content: center;
-  color: var(--study-color-primary, #10b981);
-  text-shadow: 0 0 14px var(--study-color-primary, rgba(16, 185, 129, 0.6));
-  font-variant-numeric: tabular-nums;
-  font-feature-settings: "tnum" 1;
-}
-.digital-blocks-bar {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 3px;
-  margin-top: 14px;
+  justify-content: space-between;
+  margin-bottom: 8px;
   width: 100%;
 }
-.digital-block {
-  flex: 1;
-  height: 6px;
-  border-radius: 1px;
-  background: rgba(255, 255, 255, 0.08);
-  transition: all 0.2s ease;
+.digital-status-tag {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 2.5px;
+  color: var(--study-color-primary, #10b981);
+  text-transform: uppercase;
+  line-height: 1;
 }
-.digital-block.filled {
-  background: var(--study-color-secondary, #10b981);
-  box-shadow: 0 0 6px var(--study-color-secondary, rgba(16, 185, 129, 0.6));
+.digital-sensor-hole {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.15);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.3);
 }
-
-/* 6. Hourglass */
-.hourglass-wrap {
-  width: 160px;
-  height: 210px;
-  margin: 4px 0;
+html.dark-theme .digital-sensor-hole,
+body.dark-theme .digital-sensor-hole,
+#study.has-custom-bg .digital-sensor-hole {
+  background: rgba(255, 255, 255, 0.15);
+}
+.digital-7seg-display {
+  width: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
+}
+.digital-7seg-svg {
+  width: 100%;
+  height: auto;
+  max-height: 96px;
+}
+.seg-on {
+  fill: var(--study-color-primary, #10b981);
+  filter: drop-shadow(0 0 3px color-mix(in srgb, var(--study-color-primary, #10b981) 60%, transparent));
+  transition: fill 0.15s ease;
+}
+.seg-off {
+  fill: rgba(0, 0, 0, 0.05);
+  transition: fill 0.15s ease;
+}
+html.dark-theme .seg-off,
+body.dark-theme .seg-off,
+#study.has-custom-bg .seg-off {
+  fill: rgba(255, 255, 255, 0.06);
+}
+.colon-sq {
+  fill: var(--study-color-primary, #10b981);
+  filter: drop-shadow(0 0 3px color-mix(in srgb, var(--study-color-primary, #10b981) 60%, transparent));
+}
+.digital-led-blocks {
+  display: flex;
+  gap: 4px;
+  justify-content: space-between;
+  width: 100%;
+  margin-top: 14px;
+}
+.led-block {
+  flex: 1 1 0;
+  height: 7px;
+  border-radius: 2px;
+  background: rgba(0, 0, 0, 0.07);
+  transition: background 0.2s, box-shadow 0.2s;
+}
+html.dark-theme .led-block,
+body.dark-theme .led-block,
+#study.has-custom-bg .led-block {
+  background: rgba(255, 255, 255, 0.08);
+}
+.led-block.active {
+  background: var(--study-color-secondary, #10b981) !important;
+  box-shadow: 0 0 5px color-mix(in srgb, var(--study-color-secondary, #10b981) 60%, transparent);
+}
+
+/* 6. Hourglass (Ảnh Mẫu 4) */
+.hourglass-assembly-wrap {
+  width: 160px;
+  height: 220px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 4px 0 0;
 }
 .hourglass-svg {
   width: 160px;
-  height: 210px;
+  height: 220px;
 }
 .hourglass-digital-readout {
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
-  font-size: 30px;
+  font-size: 44px;
   font-weight: 800;
   color: var(--study-color-primary, #10b981);
   font-variant-numeric: tabular-nums;
   font-feature-settings: "tnum" 1;
   line-height: 1;
-  margin-top: 4px;
+  margin-top: 12px;
+  text-align: center;
 }
 @keyframes hourglassStreamFall {
   0% { stroke-dashoffset: 0; }
