@@ -374,10 +374,9 @@ function cleanupEmptyMeetingRooms(nowMs = Date.now()) {
   try {
     const activeRows = db.prepare(`
       SELECT room_id FROM study_sessions
-      WHERE (is_running = 1 AND (last_ping_ms > (? - 300000) OR (last_ping IS NOT NULL AND (strftime('%s', 'now') - strftime('%s', last_ping)) < 300)))
-         OR (last_ping_ms > (? - 180000))
-         OR (last_ping IS NOT NULL AND (strftime('%s', 'now') - strftime('%s', last_ping)) < 180)
-    `).all(nowMs, nowMs);
+      WHERE last_ping_ms > (? - 120000)
+         OR (last_ping IS NOT NULL AND (strftime('%s', 'now') - strftime('%s', last_ping)) < 120)
+    `).all(nowMs);
 
     const activeRoomSet = new Set(activeRows.map(r => r.room_id).filter(Boolean));
     const meetingRooms = db.prepare("SELECT id, empty_since_ms, created_at FROM study_rooms WHERE type = 'meeting'").all();
@@ -4672,18 +4671,19 @@ async function api(request, response, url) {
     const nowMs = Date.now();
     cleanupEmptyMeetingRooms(nowMs);
     const activeRows = db.prepare(`
-      SELECT room_id, user_id FROM study_sessions
-      WHERE (is_running = 1 AND (last_ping_ms > (? - 300000) OR (last_ping IS NOT NULL AND (strftime('%s', 'now') - strftime('%s', last_ping)) < 300)))
-         OR (last_ping_ms > (? - 180000))
-         OR (last_ping IS NOT NULL AND (strftime('%s', 'now') - strftime('%s', last_ping)) < 180)
-    `).all(nowMs, nowMs);
+      SELECT room_id, user_id, is_running FROM study_sessions
+      WHERE last_ping_ms > (? - 120000)
+         OR (last_ping IS NOT NULL AND (strftime('%s', 'now') - strftime('%s', last_ping)) < 120)
+    `).all(nowMs);
 
     const roomOccupancyMap = {};
     let privatePodsCount = 0;
     activeRows.forEach(r => {
       const rid = r.room_id || 'none';
       if (rid.startsWith('private_') || rid === 'commons' || rid === 'none' || !rid) {
-        privatePodsCount++;
+        if (r.is_running === 1) {
+          privatePodsCount++;
+        }
       } else {
         roomOccupancyMap[rid] = (roomOccupancyMap[rid] || 0) + 1;
       }
@@ -4735,11 +4735,22 @@ async function api(request, response, url) {
       };
     });
 
+    let totalCampusLearners = 0;
+    activeRows.forEach(r => {
+      const rid = r.room_id || 'none';
+      const isLib = rid.startsWith('lib_');
+      const meetRoom = rid.startsWith('meet_') ? meetingRooms.find(m => m.id === rid) : null;
+      const isMeetRunning = Boolean(meetRoom && meetRoom.timerState && meetRoom.timerState.isRunning);
+      if (r.is_running === 1 || isLib || isMeetRunning) {
+        totalCampusLearners++;
+      }
+    });
+
     return json(response, 200, {
       libraryRooms,
       meetingRooms,
       privatePodsCount,
-      totalCampusLearners: activeRows.length
+      totalCampusLearners
     });
   }
 
@@ -4987,13 +4998,20 @@ async function api(request, response, url) {
         return error(response, 403, "Chỉ chủ phòng mới có quyền điều khiển đồng hồ chung.");
       }
 
+      const t = body.timerState || body;
+      const isRunning = Boolean(t.isRunning !== undefined ? t.isRunning : body.isRunning);
+      const remainingSeconds = Number(t.remainingSeconds !== undefined ? t.remainingSeconds : body.remainingSeconds) || 0;
+      let targetEndMs = Number(t.targetEndMs || body.targetEndMs) || 0;
+      if (isRunning && targetEndMs <= 0 && remainingSeconds > 0) {
+        targetEndMs = Date.now() + remainingSeconds * 1000;
+      }
       const timerState = {
-        mode: body.mode || "focus",
-        durationMinutes: Number(body.durationMinutes) || 25,
-        remainingSeconds: Number(body.remainingSeconds) || 0,
-        isRunning: Boolean(body.isRunning),
-        targetEndMs: Number(body.targetEndMs) || 0,
-        cycleIndex: Number(body.cycleIndex) || 1,
+        mode: t.mode || body.mode || "focus",
+        durationMinutes: Number(t.durationMinutes || body.durationMinutes) || 25,
+        remainingSeconds,
+        isRunning,
+        targetEndMs,
+        cycleIndex: Number(t.cycleIndex || body.cycleIndex) || 1,
         updatedAt: Date.now()
       };
 
@@ -5191,6 +5209,8 @@ async function api(request, response, url) {
       targetRoomId = 'commons';
     }
 
+    cleanupEmptyMeetingRooms(nowMs);
+
     const allActiveRows = db.prepare(`
       SELECT s.user_id, s.room_id, s.goal, s.mode, s.duration_minutes, s.remaining_seconds,
              s.target_end_ms, s.is_running, s.started_at_ms, s.last_ping_ms,
@@ -5198,18 +5218,19 @@ async function api(request, response, url) {
              u.display_name, u.role, u.avatar
       FROM study_sessions s
       JOIN users u ON s.user_id = u.id
-      WHERE (s.is_running = 1 AND (s.last_ping_ms > (? - 300000) OR (s.last_ping IS NOT NULL AND (strftime('%s', 'now') - strftime('%s', s.last_ping)) < 300)))
-         OR (s.last_ping_ms > (? - 180000))
-         OR (s.last_ping IS NOT NULL AND (strftime('%s', 'now') - strftime('%s', s.last_ping)) < 180)
+      WHERE s.last_ping_ms > (? - 120000)
+         OR (s.last_ping IS NOT NULL AND (strftime('%s', 'now') - strftime('%s', s.last_ping)) < 120)
       ORDER BY s.is_running DESC, s.last_ping_ms DESC
-    `).all(nowMs, nowMs);
+    `).all(nowMs);
 
     const roomOccupancyMap = {};
     let privatePodsCount = 0;
     allActiveRows.forEach(r => {
       const rid = r.room_id || 'none';
       if (rid.startsWith('private_') || rid === 'commons' || rid === 'none' || !rid) {
-        privatePodsCount++;
+        if (r.is_running === 1) {
+          privatePodsCount++;
+        }
       } else {
         roomOccupancyMap[rid] = (roomOccupancyMap[rid] || 0) + 1;
       }
@@ -5382,10 +5403,21 @@ async function api(request, response, url) {
       myCheers = recentCheers.filter(c => c.recipientId === user.id && (Date.now() - c.timestamp) < 45000);
     }
 
+    let totalCampusLearners = 0;
+    allActiveRows.forEach(r => {
+      const rid = r.room_id || 'none';
+      const isLib = rid.startsWith('lib_');
+      const meetRoom = rid.startsWith('meet_') ? meetingRooms.find(m => m.id === rid) : null;
+      const isMeetRunning = Boolean(meetRoom && meetRoom.timerState && meetRoom.timerState.isRunning);
+      if (r.is_running === 1 || isLib || isMeetRunning) {
+        totalCampusLearners++;
+      }
+    });
+
     return json(response, 200, {
       learners,
       activeCount: targetLearners.length,
-      totalCampusLearners: allActiveRows.length,
+      totalCampusLearners,
       currentRoom,
       libraryRooms,
       meetingRooms,

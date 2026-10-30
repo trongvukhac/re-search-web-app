@@ -7357,9 +7357,9 @@ function updateDailyGoalUI() {
     const displayTotal = Math.min(12, Math.max(goal, completed));
     for (let d = 1; d <= displayTotal; d++) {
       if (d <= completed) {
-        dotsHtml += '<span class="meta-dot filled" style="color: #f05454; margin-right: 2px;">●</span>';
+        dotsHtml += '<span class="meta-goal-dot filled" title="Đã hoàn tất ' + d + ' Pomodoro"></span>';
       } else {
-        dotsHtml += '<span class="meta-dot empty" style="color: rgba(240, 84, 84, 0.3); margin-right: 2px;">○</span>';
+        dotsHtml += '<span class="meta-goal-dot empty" title="Mục tiêu Pomodoro ' + d + '"></span>';
       }
     }
     dotsEl.innerHTML = dotsHtml;
@@ -7643,24 +7643,27 @@ function updateTimerDisplay() {
   if (progressCircle) {
     const circum = 716.28;
     progressCircle.style.strokeDashoffset = (circum * (1 - progressRatio)).toFixed(2);
+    progressCircle.style.opacity = progressRatio <= 0.002 ? "0" : "1";
+    progressCircle.style.transformBox = "view-box";
+    progressCircle.style.transformOrigin = "140px 140px";
     if (isFlowtimeFocus) {
       // Đếm xuôi: quay thuận chiều kim đồng hồ
       progressCircle.style.transform = "rotate(-90deg)";
-      progressCircle.style.transformOrigin = "140px 140px";
     } else {
       // Đếm ngược: quay ngược chiều kim đồng hồ từ đỉnh 12h
       progressCircle.style.transform = "scaleX(-1) rotate(-90deg)";
-      progressCircle.style.transformOrigin = "140px 140px";
     }
   }
 
   const knob = $("#timerProgressKnob");
   if (knob) {
     // Đếm ngược thì quay theo ngược chiều kim đồng hồ, đếm xuôi thì quay thuận chiều
-    // Giữ nguyên cx="140" cy="26" và xoay transform để chấm tròn di chuyển chính xác theo đường cong vòng tròn
+    // Giữ nguyên cx="140" cy="26" và xoay quanh tâm (140, 140) chuẩn viewBox
     const rotDeg = isFlowtimeFocus ? (progressRatio * 360) : (-progressRatio * 360);
-    knob.style.transform = `rotate(${rotDeg.toFixed(2)}deg)`;
+    knob.style.transformBox = "view-box";
     knob.style.transformOrigin = "140px 140px";
+    knob.style.transform = `rotate(${rotDeg.toFixed(2)}deg)`;
+    knob.setAttribute("transform", `rotate(${rotDeg.toFixed(2)}, 140, 140)`);
   }
 
   // Sub label
@@ -7931,9 +7934,9 @@ function updateTimerDisplay() {
 
     if (completeBtn) {
       completeBtn.style.display = studyState.isRunning ? "inline-flex" : "none";
-      completeBtn.className = "study-btn-pill study-btn-leave study-action-ctrl";
+      completeBtn.className = "study-btn-secondary study-action-ctrl";
       completeBtn.innerHTML = `
-        <span class="btn-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></span>
+        <span class="btn-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></span>
         <span class="btn-label">Hoàn tất</span>
       `;
       completeBtn.onclick = () => finishStudySession(false);
@@ -7995,6 +7998,7 @@ window.applyTimerPreset = function(presetId) {
 
   saveStudySettings(false);
   updateTimerDisplay();
+  syncMeetingRoomTimerIfHost();
   syncStudyToServer();
 };
 
@@ -8077,6 +8081,7 @@ function setStudyMode(mode, duration) {
   studyState.elapsedSessionSeconds = 0;
 
   updateTimerDisplay();
+  syncMeetingRoomTimerIfHost();
   syncStudyToServer();
 }
 
@@ -8148,6 +8153,7 @@ function advanceStudyCycle(manualSkip = false) {
   studyState.elapsedSessionSeconds = 0;
   rotateStudyQuote();
   updateTimerDisplay();
+  syncMeetingRoomTimerIfHost();
   syncStudyToServer();
 }
 
@@ -8180,22 +8186,64 @@ async function syncStudyToServer() {
 
 function syncMeetingRoomTimerIfHost() {
   if (currentStudyRoomId && currentStudyRoomData && currentStudyRoomData.type === 'meeting' && currentStudyRoomData.isHost) {
+    const payload = {
+      roomId: currentStudyRoomId,
+      mode: studyState.mode,
+      durationMinutes: studyState.durationMinutes,
+      remainingSeconds: studyState.remainingSeconds,
+      isRunning: studyState.isRunning,
+      targetEndMs: studyState.targetEndMs,
+      cycleIndex: studyState.cycleIndex || 1,
+      timerState: {
+        mode: studyState.mode,
+        durationMinutes: studyState.durationMinutes,
+        remainingSeconds: studyState.remainingSeconds,
+        isRunning: studyState.isRunning,
+        targetEndMs: studyState.targetEndMs,
+        cycleIndex: studyState.cycleIndex || 1,
+        timestamp: Date.now()
+      }
+    };
     requestAPI("/api/study/rooms/meeting/timer", {
       method: "POST",
-      body: JSON.stringify({
-        roomId: currentStudyRoomId,
-        timerState: {
-          mode: studyState.mode,
-          durationMinutes: studyState.durationMinutes,
-          remainingSeconds: studyState.remainingSeconds,
-          isRunning: studyState.isRunning,
-          targetEndMs: studyState.targetEndMs,
-          cycleIndex: studyState.cycleIndex || 1,
-          timestamp: Date.now()
-        }
-      })
-    }).catch(() => {});
+      body: JSON.stringify(payload)
+    }).catch((err) => console.warn("syncMeetingRoomTimerIfHost:", err));
   }
+}
+
+function applyMeetingRoomTimerState(ts) {
+  if (!ts) return;
+  studyState.mode = ts.mode || 'focus';
+  studyState.durationMinutes = Number(ts.durationMinutes) || 25;
+  studyState.cycleIndex = Number(ts.cycleIndex) || 1;
+
+  if (ts.isRunning) {
+    const now = Date.now();
+    let rem = 0;
+    if (ts.targetEndMs && ts.targetEndMs > now) {
+      rem = Math.max(0, Math.ceil((ts.targetEndMs - now) / 1000));
+      studyState.targetEndMs = ts.targetEndMs;
+    } else {
+      rem = Number(ts.remainingSeconds) || (studyState.durationMinutes * 60);
+      studyState.targetEndMs = now + rem * 1000;
+    }
+    studyState.remainingSeconds = rem;
+    studyState.isRunning = true;
+    if (!studyState.timerInterval) {
+      startLocalTimerTick();
+    }
+  } else {
+    studyState.isRunning = false;
+    studyState.targetEndMs = 0;
+    if (studyState.timerInterval) {
+      clearInterval(studyState.timerInterval);
+      studyState.timerInterval = null;
+    }
+    studyState.remainingSeconds = (ts.remainingSeconds !== undefined && ts.remainingSeconds !== null)
+      ? Number(ts.remainingSeconds)
+      : (studyState.durationMinutes * 60);
+  }
+  updateTimerDisplay();
 }
 
 function startLocalTimerTick() {
@@ -8851,9 +8899,25 @@ async function fetchStudyLounge() {
       currentStudyRoomData = res.currentRoom;
       currentStudyRoomId = res.currentRoom.id;
     }
-    if (res.rooms) {
-      cachedStudyRooms = res.rooms;
-      updateSpaceFilterCounts(cachedStudyRooms);
+    if (res.meetingRooms) {
+      cachedMeetingRooms = res.meetingRooms;
+      const cntEl = $("#countMeetingRooms");
+      if (cntEl) cntEl.textContent = cachedMeetingRooms.length;
+      if (activeStudySpaceTab === 'meeting') {
+        renderMeetingRoomsList();
+      }
+    }
+    if (res.libraryRooms) {
+      res.libraryRooms.forEach(lr => {
+        cachedLibraryOccupancies[lr.id] = lr.occupancy;
+      });
+      if (activeStudySpaceTab === 'library') {
+        renderLibraryRoomsGrid();
+      }
+    }
+    if (res.privatePodsCount !== undefined) {
+      const privEl = $("#activePrivatePodsCount");
+      if (privEl) privEl.textContent = res.privatePodsCount;
     }
 
     renderActiveSpaceBanner(currentStudyRoomData);
@@ -8861,7 +8925,9 @@ async function fetchStudyLounge() {
 
     const liveHeaderBadge = $("#studyLiveCount");
     if (liveHeaderBadge) {
-      liveHeaderBadge.textContent = totalCampusLearnersCount > 0 ? totalCampusLearnersCount : lastFetchedLearners.filter(l => Boolean(l.isRunning)).length;
+      liveHeaderBadge.textContent = (typeof totalCampusLearnersCount === 'number')
+        ? totalCampusLearnersCount
+        : lastFetchedLearners.filter(l => Boolean(l.isRunning)).length;
     }
 
     renderCoStudyList(lastFetchedLearners);
@@ -8880,33 +8946,9 @@ async function fetchStudyLounge() {
       }
       updateTimerDisplay();
     }
-    // 2. Đồng bộ đồng hồ Phòng Họp theo Chủ phòng (dành cho thành viên)
+    // 2. Đồng bộ đồng hồ Phòng Học Nhóm theo Chủ phòng (dành cho thành viên)
     else if (currentStudyRoomData && currentStudyRoomData.type === 'meeting' && !currentStudyRoomData.isHost) {
-      const ts = currentStudyRoomData.timerState;
-      if (ts) {
-        studyState.mode = ts.mode || 'focus';
-        studyState.durationMinutes = ts.durationMinutes || 25;
-        studyState.cycleIndex = ts.cycleIndex || 1;
-        if (ts.isRunning && ts.targetEndMs > 0) {
-          const now = Date.now();
-          const rem = Math.max(0, Math.ceil((ts.targetEndMs - now) / 1000));
-          studyState.remainingSeconds = rem;
-          studyState.targetEndMs = ts.targetEndMs;
-          studyState.isRunning = true;
-          if (!studyState.timerInterval) {
-            startLocalTimerTick();
-          }
-        } else {
-          studyState.isRunning = false;
-          studyState.targetEndMs = 0;
-          if (studyState.timerInterval) {
-            clearInterval(studyState.timerInterval);
-            studyState.timerInterval = null;
-          }
-          studyState.remainingSeconds = ts.remainingSeconds !== undefined ? ts.remainingSeconds : (studyState.durationMinutes * 60);
-        }
-        updateTimerDisplay();
-      }
+      applyMeetingRoomTimerState(currentStudyRoomData.timerState);
     }
     // 3. Đồng bộ cá nhân đa thiết bị
     else if (res.mySession) {
@@ -9403,7 +9445,88 @@ async function loadAndRenderStudyRooms() {
   }
 }
 
-async function joinStudySpace(roomId, pinCode = null) {
+let pendingSwitchSpaceAction = null;
+
+function requestSwitchStudySpace(actionFn, targetRoomName = "") {
+  const isTimerActive = Boolean(
+    studyState.isRunning ||
+    (studyState.targetEndMs > 0 && studyState.remainingSeconds > 0) ||
+    (studyState.elapsedSessionSeconds > 0)
+  );
+
+  if (!isTimerActive) {
+    actionFn();
+    return;
+  }
+
+  pendingSwitchSpaceAction = actionFn;
+  const modal = document.getElementById("studySwitchSpaceConfirmModal");
+  const msg = document.getElementById("switchSpaceConfirmMsg");
+  if (msg) {
+    if (targetRoomName) {
+      msg.innerHTML = `Đồng hồ ca học của bạn hiện đang chạy. Khi chuyển sang <strong>${escapeHTML(targetRoomName)}</strong>, đồng hồ hiện tại sẽ được <strong>đặt lại (reset)</strong> và đồng bộ theo thời gian của phòng mới.`;
+    } else {
+      msg.innerHTML = `Đồng hồ ca học của bạn hiện đang chạy. Khi chuyển sang không gian mới, đồng hồ hiện tại sẽ được <strong>đặt lại (reset)</strong> và đồng bộ theo thời gian của phòng đó.`;
+    }
+  }
+
+  if (modal && typeof modal.showModal === 'function') {
+    modal.showModal();
+  } else if (confirm("Đồng hồ đang chạy! Chuyển phòng sẽ reset và đồng bộ theo thời gian phòng mới. Bạn có muốn tiếp tục?")) {
+    executeConfirmedSwitchSpace();
+  }
+}
+
+function cancelSwitchSpaceModal() {
+  pendingSwitchSpaceAction = null;
+  const modal = document.getElementById("studySwitchSpaceConfirmModal");
+  if (modal && typeof modal.close === 'function' && modal.open) {
+    modal.close();
+  }
+}
+
+async function executeConfirmedSwitchSpace() {
+  const modal = document.getElementById("studySwitchSpaceConfirmModal");
+  if (modal && typeof modal.close === 'function' && modal.open) {
+    modal.close();
+  }
+
+  const action = pendingSwitchSpaceAction;
+  pendingSwitchSpaceAction = null;
+
+  // Reset timer to clean state before entering new room
+  await pauseStudyTimer(false);
+  studyState.isRunning = false;
+  studyState.remainingSeconds = 0;
+  studyState.durationMinutes = 0;
+  studyState.targetEndMs = 0;
+  studyState.elapsedSessionSeconds = 0;
+  if (studyState.timerInterval) {
+    clearInterval(studyState.timerInterval);
+    studyState.timerInterval = null;
+  }
+  updateTimerDisplay();
+
+  if (typeof action === 'function') {
+    action();
+  }
+}
+
+async function joinStudySpace(roomId, pinCode = null, skipConfirm = false) {
+  if (!skipConfirm) {
+    let targetName = "không gian học mới";
+    if (roomId.startsWith('lib_')) {
+      const cfg = LIBRARY_ROOM_CONFIGS.find(c => c.id === roomId);
+      targetName = cfg ? cfg.name : "Phòng Thư viện 24/7";
+    } else if (roomId.startsWith('meet_')) {
+      const m = cachedMeetingRooms.find(r => r.id === roomId);
+      targetName = m ? `Phòng học nhóm "${m.name}"` : `Phòng học nhóm #${roomId}`;
+    } else if (roomId === 'private') {
+      targetName = "Phòng học cá nhân";
+    }
+    requestSwitchStudySpace(() => joinStudySpace(roomId, pinCode, true), targetName);
+    return;
+  }
   if (!session) {
     pendingJoinMeetingId = roomId;
     openAuth();
@@ -9448,11 +9571,14 @@ async function joinStudySpace(roomId, pinCode = null) {
         studyState.mode = live.isFocus ? 'focus' : 'shortbreak';
         studyState.durationMinutes = live.isFocus ? cfg.focus : cfg.break;
         studyState.remainingSeconds = live.remainingSec;
+        studyState.targetEndMs = live.targetEndMs;
         studyState.isRunning = true;
         if (!studyState.timerInterval) {
           startLocalTimerTick();
         }
         updateTimerDisplay();
+      } else if (res.room && res.room.type === 'meeting' && !res.room.isHost && res.room.timerState) {
+        applyMeetingRoomTimerState(res.room.timerState);
       }
 
       renderActiveSpaceBanner(res.room);
@@ -9526,7 +9652,13 @@ async function executeLeaveCurrentRoom() {
 
 let pendingJoinMeetingId = null;
 
-function prepareJoinMeetingRoom(roomId, requiresPin) {
+function prepareJoinMeetingRoom(roomId, requiresPin, skipConfirm = false) {
+  if (!skipConfirm) {
+    const m = cachedMeetingRooms.find(r => r.id === roomId);
+    const targetName = m ? `Phòng học nhóm "${m.name}"` : `Phòng học nhóm #${roomId}`;
+    requestSwitchStudySpace(() => prepareJoinMeetingRoom(roomId, requiresPin, true), targetName);
+    return;
+  }
   if (!session) {
     openAuth();
     return;
@@ -9541,7 +9673,7 @@ function prepareJoinMeetingRoom(roomId, requiresPin) {
       if (input) setTimeout(() => input.focus(), 100);
     }
   } else {
-    joinStudySpace(roomId);
+    joinStudySpace(roomId, null, true);
   }
 }
 
@@ -9591,9 +9723,13 @@ function openCreateMeetingModal() {
   }
 }
 
-async function handleCreateMeetingSubmit() {
+async function handleCreateMeetingSubmit(skipConfirm = false) {
   if (!session) {
     openAuth();
+    return;
+  }
+  if (!skipConfirm) {
+    requestSwitchStudySpace(() => handleCreateMeetingSubmit(true), "Phòng học nhóm mới");
     return;
   }
   const nameEl = document.getElementById("inputMeetingName");
@@ -9789,6 +9925,8 @@ async function submitNewSharedTask() {
 }
 
 // Window bindings for modal and room interactions
+window.cancelSwitchSpaceModal = cancelSwitchSpaceModal;
+window.executeConfirmedSwitchSpace = executeConfirmedSwitchSpace;
 window.switchStudySpaceCategoryTab = switchStudySpaceCategoryTab;
 window.joinStudySpace = joinStudySpace;
 window.confirmLeaveCurrentRoom = confirmLeaveCurrentRoom;
