@@ -7954,7 +7954,7 @@ function updateTimerDisplay() {
   }
 }
 
-window.applyTimerPreset = function(presetId) {
+window.applyTimerPreset = async function(presetId) {
   const cfg = STUDY_PRESET_CONFIGS[presetId];
   if (!cfg) return;
 
@@ -7998,8 +7998,8 @@ window.applyTimerPreset = function(presetId) {
 
   saveStudySettings(false);
   updateTimerDisplay();
-  syncMeetingRoomTimerIfHost();
-  syncStudyToServer();
+  await syncMeetingRoomTimerIfHost();
+  await syncStudyToServer();
 };
 
 window.setFlowtimeBreakRatio = function(ratio) {
@@ -8189,6 +8189,12 @@ function syncMeetingRoomTimerIfHost() {
     const payload = {
       roomId: currentStudyRoomId,
       mode: studyState.mode,
+      timerPreset: studySettings.timerPreset || '25_5',
+      focusMins: studySettings.focusMins || 25,
+      shortBreakMins: studySettings.shortBreakMins || 5,
+      longBreakMins: studySettings.longBreakMins || 15,
+      longBreakInterval: studySettings.longBreakInterval || 4,
+      flowtimeRatio: studySettings.flowtimeRatio || '1/4',
       durationMinutes: studyState.durationMinutes,
       remainingSeconds: studyState.remainingSeconds,
       isRunning: studyState.isRunning,
@@ -8196,6 +8202,12 @@ function syncMeetingRoomTimerIfHost() {
       cycleIndex: studyState.cycleIndex || 1,
       timerState: {
         mode: studyState.mode,
+        timerPreset: studySettings.timerPreset || '25_5',
+        focusMins: studySettings.focusMins || 25,
+        shortBreakMins: studySettings.shortBreakMins || 5,
+        longBreakMins: studySettings.longBreakMins || 15,
+        longBreakInterval: studySettings.longBreakInterval || 4,
+        flowtimeRatio: studySettings.flowtimeRatio || '1/4',
         durationMinutes: studyState.durationMinutes,
         remainingSeconds: studyState.remainingSeconds,
         isRunning: studyState.isRunning,
@@ -8204,15 +8216,37 @@ function syncMeetingRoomTimerIfHost() {
         timestamp: Date.now()
       }
     };
-    requestAPI("/api/study/rooms/meeting/timer", {
+    return requestAPI("/api/study/rooms/meeting/timer", {
       method: "POST",
       body: JSON.stringify(payload)
     }).catch((err) => console.warn("syncMeetingRoomTimerIfHost:", err));
   }
+  return Promise.resolve(null);
 }
 
 function applyMeetingRoomTimerState(ts) {
   if (!ts) return;
+
+  // Đồng bộ loại đồng hồ preset từ chủ phòng cho toàn bộ thành viên
+  if (ts.timerPreset) {
+    studySettings.timerPreset = ts.timerPreset;
+    if (ts.focusMins) studySettings.focusMins = Number(ts.focusMins);
+    if (ts.shortBreakMins) studySettings.shortBreakMins = Number(ts.shortBreakMins);
+    if (ts.longBreakMins) studySettings.longBreakMins = Number(ts.longBreakMins);
+    if (ts.longBreakInterval) studySettings.longBreakInterval = Number(ts.longBreakInterval);
+    if (ts.flowtimeRatio) studySettings.flowtimeRatio = ts.flowtimeRatio;
+
+    const presetBadge = $("#activePresetBadgeName");
+    if (presetBadge) {
+      if (ts.timerPreset === 'flowtime') presetBadge.textContent = "# Dòng chảy";
+      else if (ts.timerPreset === 'eye_rule') presetBadge.textContent = "# 20-20-20";
+      else {
+        const pInfo = (typeof STUDY_PRESET_CONFIGS !== 'undefined') ? STUDY_PRESET_CONFIGS[ts.timerPreset] : null;
+        presetBadge.textContent = pInfo ? `# ${pInfo.label}` : `# ${studySettings.focusMins}/${studySettings.shortBreakMins}`;
+      }
+    }
+  }
+
   studyState.mode = ts.mode || 'focus';
   studyState.durationMinutes = Number(ts.durationMinutes) || 25;
   studyState.cycleIndex = Number(ts.cycleIndex) || 1;
@@ -9621,6 +9655,9 @@ async function executeLeaveCurrentRoom() {
     localStorage.removeItem("research_study_room_id");
   } catch (e) {}
 
+  // Khôi phục lại cấu hình cá nhân của người dùng từ localStorage khi rời phòng nhóm
+  studySettings = getInitialStudySettings();
+
   // Reset timer to 0 on leaving room
   studyState.isRunning = false;
   studyState.remainingSeconds = 0;
@@ -9758,7 +9795,13 @@ async function handleCreateMeetingSubmit(skipConfirm = false) {
         name,
         type: 'meeting',
         pinCode: pinCode || null,
-        initialTasks
+        initialTasks,
+        timerPreset: studySettings.timerPreset || '25_5',
+        focusMins: studySettings.focusMins || 25,
+        shortBreakMins: studySettings.shortBreakMins || 5,
+        longBreakMins: studySettings.longBreakMins || 15,
+        longBreakInterval: studySettings.longBreakInterval || 4,
+        flowtimeRatio: studySettings.flowtimeRatio || '1/4'
       })
     });
     if (res && res.success && res.room) {
@@ -11888,8 +11931,12 @@ function resetStudyTheme() {
   const stop1 = $("#timerGradStop1");
   const stop2 = $("#timerGradStop2");
   if (stop1 && stop2) {
-    stop1.setAttribute("stop-color", "#10b981");
-    stop2.setAttribute("stop-color", "#34d399");
+    stop1.setAttribute("stop-color", "#f05454");
+    stop2.setAttribute("stop-color", "#e23e57");
+  }
+  const knob = $("#timerProgressKnob");
+  if (knob) {
+    knob.style.fill = "#f05454";
   }
   const progCircle = $("#timerProgressCircle");
   if (progCircle) {
@@ -12274,6 +12321,7 @@ window.saveStudySettings = function(closeModal = true) {
 
   updateTimerDisplay();
   updateDailyGoalUI();
+  syncMeetingRoomTimerIfHost();
 
   if (closeModal) {
     const modal = $("#studySettingsModal");

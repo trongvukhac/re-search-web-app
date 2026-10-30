@@ -4916,10 +4916,17 @@ async function api(request, response, url) {
       }
       if (!newId) newId = Math.floor(1000 + Math.random() * 9000).toString();
 
+      const initialFocusMins = Number(body.focusMins) || 25;
       const initialTimer = {
         mode: "focus",
-        durationMinutes: 25,
-        remainingSeconds: 1500,
+        timerPreset: String(body.timerPreset || "25_5").trim(),
+        focusMins: initialFocusMins,
+        shortBreakMins: Number(body.shortBreakMins) || 5,
+        longBreakMins: Number(body.longBreakMins) || 15,
+        longBreakInterval: Number(body.longBreakInterval) || 4,
+        flowtimeRatio: String(body.flowtimeRatio || "1/4").trim(),
+        durationMinutes: initialFocusMins,
+        remainingSeconds: initialFocusMins * 60,
         isRunning: false,
         targetEndMs: 0,
         cycleIndex: 1,
@@ -4993,7 +5000,7 @@ async function api(request, response, url) {
       const room = db.prepare("SELECT * FROM study_rooms WHERE id = ? AND type = 'meeting'").get(roomId);
       if (!room) return error(response, 404, "Phòng học nhóm không tồn tại.");
 
-      const isHostOrAdmin = (user.id === room.host_user_id || user.role === 'admin');
+      const isHostOrAdmin = (String(user.id) === String(room.host_user_id) || Number(user.id) === Number(room.host_user_id) || user.role === 'admin');
       if (!isHostOrAdmin) {
         return error(response, 403, "Chỉ chủ phòng mới có quyền điều khiển đồng hồ chung.");
       }
@@ -5007,6 +5014,12 @@ async function api(request, response, url) {
       }
       const timerState = {
         mode: t.mode || body.mode || "focus",
+        timerPreset: t.timerPreset || body.timerPreset || "25_5",
+        focusMins: Number(t.focusMins !== undefined ? t.focusMins : body.focusMins) || undefined,
+        shortBreakMins: Number(t.shortBreakMins !== undefined ? t.shortBreakMins : body.shortBreakMins) || undefined,
+        longBreakMins: Number(t.longBreakMins !== undefined ? t.longBreakMins : body.longBreakMins) || undefined,
+        longBreakInterval: Number(t.longBreakInterval !== undefined ? t.longBreakInterval : body.longBreakInterval) || undefined,
+        flowtimeRatio: t.flowtimeRatio || body.flowtimeRatio || undefined,
         durationMinutes: Number(t.durationMinutes || body.durationMinutes) || 25,
         remainingSeconds,
         isRunning,
