@@ -5976,33 +5976,35 @@ body.dark-theme .led-block,
   box-shadow: 0 0 5px color-mix(in srgb, var(--study-color-secondary, #10b981) 60%, transparent);
 }
 
-/* 6. Hourglass (Ảnh Mẫu 4) */
+/* 6. Hourglass (Đồng hồ cát tự nhiên, chân thực & chuyển động vật lý) */
 .hourglass-assembly-wrap {
-  width: 160px;
-  height: 220px;
+  width: 170px;
+  height: 240px;
   display: flex;
   align-items: center;
   justify-content: center;
   margin: 4px 0 0;
   transform-origin: 50% 50%;
+  will-change: transform;
 }
 .hourglass-assembly-wrap.hourglass-turn-over {
-  animation: hourglassFlip180 0.85s cubic-bezier(0.45, 0.05, 0.55, 0.95) forwards;
+  animation: hourglassFlipSmooth 0.85s cubic-bezier(0.4, 0.0, 0.2, 1) forwards;
 }
-@keyframes hourglassFlip180 {
+@keyframes hourglassFlipSmooth {
   0% {
     transform: rotate(0deg) scale(1);
   }
-  45% {
-    transform: rotate(90deg) scale(0.92);
+  50% {
+    transform: rotate(90deg) scale(0.94);
   }
   100% {
     transform: rotate(180deg) scale(1);
   }
 }
 .hourglass-svg {
-  width: 160px;
-  height: 220px;
+  width: 170px;
+  height: 240px;
+  overflow: visible;
 }
 .hourglass-digital-readout {
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
@@ -6015,12 +6017,59 @@ body.dark-theme .led-block,
   margin-top: 12px;
   text-align: center;
 }
-@keyframes hourglassStreamFall {
-  0% { stroke-dashoffset: 0; }
-  100% { stroke-dashoffset: -12; }
+@keyframes sandStreamTrickle {
+  0% {
+    stroke-dashoffset: 0;
+  }
+  100% {
+    stroke-dashoffset: -12;
+  }
 }
 .hourglass-stream-active {
-  animation: hourglassStreamFall 0.4s linear infinite;
+  animation: sandStreamTrickle 0.35s linear infinite;
+}
+@keyframes particleRain {
+  0% {
+    transform: translateY(0);
+    opacity: 0;
+  }
+  30% {
+    opacity: 0.9;
+  }
+  80% {
+    opacity: 0.8;
+  }
+  100% {
+    transform: translateY(70px);
+    opacity: 0;
+  }
+}
+.falling-particle-1 {
+  animation: particleRain 0.45s linear infinite;
+}
+.falling-particle-2 {
+  animation: particleRain 0.52s linear infinite 0.15s;
+}
+.falling-particle-3 {
+  animation: particleRain 0.48s linear infinite 0.3s;
+}
+@keyframes ripplePulse {
+  0% {
+    transform: scale(0.85);
+    opacity: 0.8;
+  }
+  50% {
+    transform: scale(1.15);
+    opacity: 0.4;
+  }
+  100% {
+    transform: scale(0.85);
+    opacity: 0.8;
+  }
+}
+.sand-impact-ripple {
+  transform-origin: 90px 200px;
+  animation: ripplePulse 0.7s ease-in-out infinite;
 }
 
 /* Primary Action Controls: Reset (Circular), Start (Accessory Pill), Next (Circular) */

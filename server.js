@@ -5587,24 +5587,33 @@ async function api(request, response, url) {
       let toastMessage = "";
       let reason = "";
 
-      // Phải hoàn thành tối thiểu 2 lượt (hoặc >= 40 phút) và chưa nhận trong tuần
-      if (cycles >= 2 || minutes >= 40) {
+      // Tính tổng số phút đã học trong tuần này (tính từ ngày Thứ Hai theo giờ VN GMT+7)
+      const weeklyMinutesRow = db.prepare(`
+        SELECT coalesce(sum(duration_minutes), 0) as totalMins
+        FROM study_logs
+        WHERE user_id = ? AND date(datetime(completed_at, '+7 hours')) >= ?
+      `).get(user.id, mondayDateStr);
+      const totalWeeklyMinsWithCurrent = (weeklyMinutesRow?.totalMins || 0) + minutes;
+
+      // Phải hoàn thành tối thiểu 2 lượt hoặc >= 40 phút (trong ca học này hoặc tích lũy trong tuần) và chưa nhận trong tuần
+      const meetsWeeklyReward = (cycles >= 2 || minutes >= 40 || totalWeeklyMinsWithCurrent >= 40);
+      if (meetsWeeklyReward) {
         if (!hasWeeklyStudyReward) {
           pointsAwarded = 10;
-          reason = `Hoàn thành ca tự học Pomodoro (${cycles} lượt, ${minutes} phút) - Thưởng tuần +10đ`;
-          toastMessage = `🎉 Hoàn thành xuất sắc ca tự học (${cycles} lượt)! +10 điểm thưởng tuần & giữ chuỗi thành công!`;
+          reason = `Hoàn thành tự học Pomodoro (${cycles > 0 ? cycles + ' lượt, ' : ''}${totalWeeklyMinsWithCurrent} phút/tuần) - Thưởng tuần +10đ`;
+          toastMessage = `🎉 Hoàn thành xuất sắc mục tiêu tự học tuần! +10 điểm thưởng tuần & giữ chuỗi thành công!`;
         } else {
           pointsAwarded = 0;
-          reason = `Hoàn thành ca tự học Pomodoro (${cycles} lượt, ${minutes} phút) - Đã nhận thưởng tuần này (1 lần/tuần)`;
-          toastMessage = `🎉 Hoàn tất ca tự học (${cycles} lượt)! Tuần này bạn đã nhận 10đ thưởng ca học (tối đa 1 lần/tuần). Hoạt động đã được ghi nhận giữ chuỗi!`;
+          reason = `Hoàn thành ca tự học Pomodoro (${cycles > 0 ? cycles + ' lượt, ' : ''}${minutes} phút) - Đã nhận thưởng tuần này (1 lần/tuần)`;
+          toastMessage = `🎉 Hoàn tất ca học (${minutes} phút)! Hoạt động đã được ghi nhận giữ chuỗi!`;
         }
       } else {
         pointsAwarded = 0;
-        reason = `Hoàn thành ca tự học (${minutes} phút, ${cycles} lượt) - Cần tối thiểu 2 lượt để nhận thưởng tuần (+10đ)`;
-        toastMessage = `🎉 Hoàn tất ca học (${minutes} phút)! Bạn cần hoàn thành tối thiểu 2 lượt Pomodoro để nhận 10đ thưởng tuần. Hoạt động đã được ghi nhận giữ chuỗi!`;
+        reason = `Hoàn thành ca tự học (${minutes} phút, ${cycles} lượt) - Cần tối thiểu 2 lượt hoặc 40 phút/tuần để nhận thưởng (+10đ)`;
+        toastMessage = `🎉 Hoàn tất ca học (${minutes} phút)! Tích lũy đủ 40 phút hoặc 2 lượt trong tuần để nhận 10đ thưởng tuần. Hoạt động đã được ghi nhận giữ chuỗi!`;
       }
 
-      if (minutes >= 20 || cycles >= 1) {
+      if (minutes >= 10 || cycles >= 1 || totalWeeklyMinsWithCurrent >= 20) {
         recordContribution(user.id, "study_session", pointsAwarded, "study", null, reason);
       }
       if (minutes > 0) {

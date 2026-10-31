@@ -849,53 +849,141 @@
                 <!-- 6. Hourglass (Đồng hồ cát tự nhiên - Chuẩn Ảnh Mẫu 4) -->
                 <div class="clock-view clock-view-hourglass" id="clockViewHourglass" style="display: none;">
                   <div class="hourglass-assembly-wrap" id="hourglassAssemblyWrap">
-                    <svg class="hourglass-svg" viewBox="0 0 180 250" id="hourglassSvg">
+                    <svg class="hourglass-svg" viewBox="0 0 180 252" id="hourglassSvg">
                       <defs>
                         <!-- Sand Granular Texture Pattern with sparkling micro grains -->
-                        <pattern id="sandTexturePattern" width="8" height="8" patternUnits="userSpaceOnUse">
-                          <rect width="8" height="8" fill="var(--study-color-secondary, #10b981)" />
-                          <circle cx="2" cy="2" r="0.8" fill="#ffffff" opacity="0.38" />
-                          <circle cx="6" cy="3" r="0.7" fill="#000000" opacity="0.22" />
-                          <circle cx="3" cy="6" r="0.8" fill="#ffffff" opacity="0.3" />
-                          <circle cx="7" cy="7" r="0.6" fill="#000000" opacity="0.25" />
+                        <pattern id="sandGranularPattern" width="16" height="16" patternUnits="userSpaceOnUse">
+                          <rect width="16" height="16" fill="var(--study-color-secondary, #10b981)" />
+                          <!-- Sparkling bright crystal grains -->
+                          <circle cx="2.5" cy="3.5" r="0.45" fill="#ffffff" opacity="0.65" />
+                          <circle cx="9.5" cy="2" r="0.55" fill="#ffffff" opacity="0.55" />
+                          <circle cx="14" cy="7.5" r="0.4" fill="#ffffff" opacity="0.6" />
+                          <circle cx="4" cy="11.5" r="0.5" fill="#ffffff" opacity="0.5" />
+                          <circle cx="11.5" cy="13.5" r="0.45" fill="#ffffff" opacity="0.65" />
+                          <!-- Mineral warm highlight grains -->
+                          <circle cx="6" cy="6" r="0.6" fill="#fef08a" opacity="0.4" />
+                          <circle cx="13" cy="3.5" r="0.5" fill="#fef08a" opacity="0.35" />
+                          <circle cx="1" cy="8" r="0.55" fill="#fef08a" opacity="0.4" />
+                          <circle cx="8" cy="9.5" r="0.65" fill="#fef08a" opacity="0.35" />
+                          <circle cx="14.5" cy="12" r="0.5" fill="#fef08a" opacity="0.4" />
+                          <!-- Depth / shadow granules -->
+                          <circle cx="4.5" cy="1.5" r="0.65" fill="#000000" opacity="0.22" />
+                          <circle cx="11" cy="5.5" r="0.7" fill="#000000" opacity="0.25" />
+                          <circle cx="7" cy="14" r="0.6" fill="#000000" opacity="0.2" />
+                          <circle cx="15" cy="15" r="0.75" fill="#000000" opacity="0.26" />
+                          <circle cx="2" cy="15" r="0.55" fill="#000000" opacity="0.2" />
+                          <circle cx="8.5" cy="4" r="0.5" fill="#000000" opacity="0.18" />
                         </pattern>
+
+                        <!-- Linear gradient for sand depth & volume -->
+                        <linearGradient id="sandVolumeGrad" x1="0" y1="0" x2="1" y2="0">
+                          <stop offset="0%" stop-color="#000000" stop-opacity="0.18" />
+                          <stop offset="25%" stop-color="#ffffff" stop-opacity="0.12" />
+                          <stop offset="65%" stop-color="#ffffff" stop-opacity="0.05" />
+                          <stop offset="100%" stop-color="#000000" stop-opacity="0.22" />
+                        </linearGradient>
+
+                        <!-- Wood frame gradient -->
+                        <linearGradient id="woodCapGrad" x1="0" y1="0" x2="1" y2="0">
+                          <stop offset="0%" stop-color="#1f1613" />
+                          <stop offset="35%" stop-color="#3d2c25" />
+                          <stop offset="70%" stop-color="#4a372e" />
+                          <stop offset="100%" stop-color="#1f1613" />
+                        </linearGradient>
+
+                        <!-- Brass pillar gradient -->
+                        <linearGradient id="brassGrad" x1="0" y1="0" x2="1" y2="0">
+                          <stop offset="0%" stop-color="#695635" />
+                          <stop offset="40%" stop-color="#d4af37" />
+                          <stop offset="70%" stop-color="#f3e5ab" />
+                          <stop offset="100%" stop-color="#59482b" />
+                        </linearGradient>
+
+                        <!-- Glass tint gradient -->
+                        <linearGradient id="glassBodyGrad" x1="0" y1="0" x2="1" y2="0">
+                          <stop offset="0%" stop-color="rgba(255,255,255,0.22)" />
+                          <stop offset="30%" stop-color="rgba(255,255,255,0.06)" />
+                          <stop offset="75%" stop-color="rgba(255,255,255,0.02)" />
+                          <stop offset="100%" stop-color="rgba(0,0,0,0.06)" />
+                        </linearGradient>
+
                         <!-- Top Bulb Interior Clipping Path -->
                         <clipPath id="topBulbClip">
-                          <path d="M 40 32 Q 90 32 140 32 Q 136 78 95 122 Q 90 125 85 122 Q 44 78 40 32 Z" />
+                          <path d="M 42 30 C 42 76 83 116 86 126 L 94 126 C 97 116 138 76 138 30 Z" />
                         </clipPath>
+
                         <!-- Bottom Bulb Interior Clipping Path -->
                         <clipPath id="bottomBulbClip">
-                          <path d="M 85 128 Q 90 125 95 128 Q 136 172 140 218 Q 90 218 40 218 Q 44 172 85 128 Z" />
+                          <path d="M 86 126 C 83 136 42 176 42 222 L 138 222 C 138 176 97 136 94 126 Z" />
                         </clipPath>
                       </defs>
-                      <!-- Top & Bottom Plates (Espresso wood/metal with bevel) -->
-                      <rect x="24" y="16" width="132" height="15" rx="7" fill="#352b27" stroke="#221b18" stroke-width="1.5" filter="drop-shadow(0 2px 4px rgba(0,0,0,0.2))" />
-                      <line x1="30" y1="20" x2="150" y2="20" stroke="rgba(255,255,255,0.22)" stroke-width="1" stroke-linecap="round" />
-                      <rect x="24" y="219" width="132" height="15" rx="7" fill="#352b27" stroke="#221b18" stroke-width="1.5" filter="drop-shadow(0 3px 6px rgba(0,0,0,0.25))" />
-                      <line x1="30" y1="223" x2="150" y2="223" stroke="rgba(255,255,255,0.22)" stroke-width="1" stroke-linecap="round" />
-                      <!-- Two Side Support Rods with Spherical Brass Joints -->
-                      <line x1="32" y1="31" x2="32" y2="219" stroke="#786a62" stroke-width="3" />
-                      <circle cx="32" cy="31" r="4.5" fill="#524741" stroke="#352b27" stroke-width="1" />
-                      <circle cx="32" cy="219" r="4.5" fill="#524741" stroke="#352b27" stroke-width="1" />
-                      <line x1="148" y1="31" x2="148" y2="219" stroke="#786a62" stroke-width="3" />
-                      <circle cx="148" cy="31" r="4.5" fill="#524741" stroke="#352b27" stroke-width="1" />
-                      <circle cx="148" cy="219" r="4.5" fill="#524741" stroke="#352b27" stroke-width="1" />
-                      <!-- Glass Bulbs Body -->
-                      <path d="M 40 32 Q 90 32 140 32 Q 136 78 95 122 Q 90 125 85 122 Q 44 78 40 32 Z" fill="rgba(255,255,255,0.08)" stroke="rgba(148, 163, 184, 0.45)" stroke-width="2.5" />
-                      <path d="M 85 128 Q 90 125 95 128 Q 136 172 140 218 Q 90 218 40 218 Q 44 172 85 128 Z" fill="rgba(255,255,255,0.08)" stroke="rgba(148, 163, 184, 0.45)" stroke-width="2.5" />
-                      <!-- Top Sand Layer (Drops from top to waist) -->
+
+                      <!-- 1. Wooden Base & Top Caps (Symmetrical Walnut with Bevel) -->
+                      <g id="topCap">
+                        <rect x="18" y="14" width="144" height="11" rx="5.5" fill="url(#woodCapGrad)" filter="drop-shadow(0 2px 3px rgba(0,0,0,0.18))" />
+                        <line x1="26" y1="17" x2="154" y2="17" stroke="rgba(255,255,255,0.25)" stroke-width="1" stroke-linecap="round" />
+                        <rect x="28" y="24" width="124" height="4" rx="2" fill="url(#brassGrad)" />
+                        <rect x="36" y="27" width="108" height="3" rx="1.5" fill="#1b120e" />
+                      </g>
+
+                      <g id="bottomCap">
+                        <rect x="36" y="222" width="108" height="3" rx="1.5" fill="#1b120e" />
+                        <rect x="28" y="224" width="124" height="4" rx="2" fill="url(#brassGrad)" />
+                        <rect x="18" y="227" width="144" height="11" rx="5.5" fill="url(#woodCapGrad)" filter="drop-shadow(0 3px 5px rgba(0,0,0,0.22))" />
+                        <line x1="26" y1="230" x2="154" y2="230" stroke="rgba(255,255,255,0.2)" stroke-width="1" stroke-linecap="round" />
+                      </g>
+
+                      <!-- 2. Dual Turned Brass Side Pillars -->
+                      <rect x="26" y="25" width="4.5" height="202" rx="2" fill="url(#brassGrad)" />
+                      <circle cx="28.25" cy="27" r="4" fill="url(#brassGrad)" stroke="#3a2d1e" stroke-width="0.8" />
+                      <circle cx="28.25" cy="225" r="4" fill="url(#brassGrad)" stroke="#3a2d1e" stroke-width="0.8" />
+
+                      <rect x="149.5" y="25" width="4.5" height="202" rx="2" fill="url(#brassGrad)" />
+                      <circle cx="151.75" cy="27" r="4" fill="url(#brassGrad)" stroke="#3a2d1e" stroke-width="0.8" />
+                      <circle cx="151.75" cy="225" r="4" fill="url(#brassGrad)" stroke="#3a2d1e" stroke-width="0.8" />
+
+                      <!-- 3. Glass Outer Bulbs & Body Fill -->
+                      <path d="M 42 30 C 42 76 83 116 86 126 C 83 136 42 176 42 222 L 138 222 C 138 176 97 136 94 126 C 97 116 138 76 138 30 Z"
+                            fill="url(#glassBodyGrad)"
+                            stroke="rgba(148, 163, 184, 0.45)"
+                            stroke-width="2.5" />
+
+                      <!-- 4. Top Sand Layer (Natural Funnel / Angle of Repose) -->
                       <g clip-path="url(#topBulbClip)">
-                        <rect id="hourglassTopSand" x="35" y="32" width="110" height="92" fill="url(#sandTexturePattern)" />
+                        <path id="hourglassTopSand" fill="url(#sandGranularPattern)" d="M 40 40 Q 90 48 140 40 L 140 126 L 40 126 Z" />
+                        <path id="hourglassTopSandDepth" fill="url(#sandVolumeGrad)" d="M 40 40 Q 90 48 140 40 L 140 126 L 40 126 Z" />
                       </g>
-                      <!-- Sand Falling Stream -->
-                      <line id="hourglassStream" x1="90" y1="124" x2="90" y2="218" stroke="var(--study-color-secondary, #10b981)" stroke-width="2.2" stroke-linecap="round" />
-                      <!-- Bottom Sand Mound (Grows upward and outward) -->
+
+                      <!-- 5. Falling Sand Stream & Particles -->
+                      <polygon id="hourglassFunnel" points="86,122 94,122 91.5,126 88.5,126" fill="var(--study-color-secondary, #10b981)" opacity="0.9" />
+                      
+                      <line id="hourglassStream"
+                            x1="90" y1="126" x2="90" y2="210"
+                            stroke="var(--study-color-secondary, #10b981)"
+                            stroke-width="2.6"
+                            stroke-dasharray="3, 2.5"
+                            stroke-linecap="round"
+                            class="hourglass-stream-active" />
+
+                      <g id="hourglassParticles" style="opacity: 1;">
+                        <circle cx="89.3" cy="132" r="0.8" fill="#ffffff" class="falling-particle-1" />
+                        <circle cx="90.6" cy="140" r="0.9" fill="var(--study-color-secondary, #10b981)" class="falling-particle-2" />
+                        <circle cx="89.8" cy="148" r="0.75" fill="#fef08a" class="falling-particle-3" />
+                      </g>
+
+                      <!-- 6. Bottom Sand Mound (Curved Organic Dune Heap) -->
                       <g clip-path="url(#bottomBulbClip)">
-                        <path id="hourglassBottomSand" fill="url(#sandTexturePattern)" d="M 35 218 Q 90 218 145 218 Z" />
+                        <path id="hourglassBottomSand" fill="url(#sandGranularPattern)" d="M 40 222 C 66 222 78 206 90 196 C 102 206 114 222 140 222 Z" />
+                        <path id="hourglassBottomSandDepth" fill="url(#sandVolumeGrad)" d="M 40 222 C 66 222 78 206 90 196 C 102 206 114 222 140 222 Z" />
+                        <ellipse id="sandImpactRipple" cx="90" cy="196" rx="5" ry="1.6" fill="var(--study-color-secondary, #10b981)" opacity="0.65" class="sand-impact-ripple" />
                       </g>
-                      <!-- Glass Specular Highlights (Left & Right curves) -->
-                      <path d="M 46 44 Q 54 80 78 112" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="2" stroke-linecap="round" />
-                      <path d="M 134 206 Q 126 170 102 138" fill="none" stroke="rgba(255,255,255,0.38)" stroke-width="1.8" stroke-linecap="round" />
+
+                      <!-- 7. Glass Highlights & Specular Reflections -->
+                      <path d="M 47 40 C 46 70 72 104 81 118" fill="none" stroke="rgba(255,255,255,0.65)" stroke-width="2.6" stroke-linecap="round" />
+                      <path d="M 81 134 C 72 148 46 182 47 212" fill="none" stroke="rgba(255,255,255,0.45)" stroke-width="2.4" stroke-linecap="round" />
+                      <path d="M 133 42 C 134 70 108 104 99 118" fill="none" stroke="rgba(255,255,255,0.22)" stroke-width="1.6" stroke-linecap="round" />
+                      <path d="M 99 134 C 108 148 134 182 133 210" fill="none" stroke="rgba(255,255,255,0.22)" stroke-width="1.6" stroke-linecap="round" />
+                      <ellipse cx="90" cy="126" rx="3" ry="1.2" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="1" />
                     </svg>
                   </div>
                   <div class="hourglass-digital-readout" id="hourglassDigitalText">25:00</div>

@@ -7662,14 +7662,26 @@ function applyStudyColorRoles() {
     kDot.setAttribute("fill", sec);
   }
 
-  // 3. Hourglass sand pattern & stream
-  const sandRect = document.querySelector("#sandTexturePattern rect");
+  // 3. Hourglass sand pattern, funnel, stream & impact ripple
+  const sandRect = document.querySelector("#sandGranularPattern rect") || document.querySelector("#sandTexturePattern rect");
   if (sandRect) {
     sandRect.setAttribute("fill", sec);
   }
   const hgStream = $("#hourglassStream");
   if (hgStream) {
     hgStream.setAttribute("stroke", sec);
+  }
+  const hgFunnel = $("#hourglassFunnel");
+  if (hgFunnel) {
+    hgFunnel.setAttribute("fill", sec);
+  }
+  const hgRipple = $("#sandImpactRipple");
+  if (hgRipple) {
+    hgRipple.setAttribute("fill", sec);
+  }
+  const hgPart2 = document.querySelector(".falling-particle-2");
+  if (hgPart2) {
+    hgPart2.setAttribute("fill", sec);
   }
 
   // 4. Update input color pickers if present
@@ -7762,25 +7774,52 @@ function triggerFlipLeafAnimation(cardEl, oldVal) {
 }
 
 // Hoạt ảnh xoay lật ngược đồng hồ cát (180deg flip animation)
-function triggerHourglassFlipAnimation(onMidpoint) {
+function triggerHourglassFlipAnimation(onComplete) {
   const wrap = document.getElementById("hourglassAssemblyWrap") || document.querySelector(".hourglass-assembly-wrap");
   if (!wrap) {
-    if (typeof onMidpoint === 'function') onMidpoint();
+    if (typeof onComplete === 'function') onComplete();
     return;
   }
+
+  // Đảm bảo trạng thái trước khi lật: cát ở đáy đầy, ngưng dòng chảy rơi
+  const topSand = $("#hourglassTopSand");
+  const topDepth = $("#hourglassTopSandDepth");
+  const botSand = $("#hourglassBottomSand");
+  const botDepth = $("#hourglassBottomSandDepth");
+  const stream = $("#hourglassStream");
+  const particles = $("#hourglassParticles");
+  const funnel = $("#hourglassFunnel");
+  const ripple = $("#sandImpactRipple");
+
+  if (topSand) {
+    topSand.setAttribute("d", "M 86 126 L 94 126 Z");
+    if (topDepth) topDepth.setAttribute("d", "M 86 126 L 94 126 Z");
+  }
+  if (botSand) {
+    const d = "M 40 222 C 66 222 78 148 90 140 C 102 148 114 222 140 222 Z";
+    botSand.setAttribute("d", d);
+    if (botDepth) botDepth.setAttribute("d", d);
+  }
+  if (stream) stream.style.opacity = "0";
+  if (particles) particles.style.opacity = "0";
+  if (funnel) funnel.style.opacity = "0";
+  if (ripple) ripple.style.opacity = "0";
+
   wrap.classList.remove("hourglass-turn-over");
   void wrap.offsetWidth;
   wrap.classList.add("hourglass-turn-over");
 
-  // Tại góc 90deg lơ lửng (~420ms), thực hiện reset hoặc đảo cát
+  // Khi xoay trọn vẹn 180 độ (850ms)
   setTimeout(() => {
-    if (typeof onMidpoint === 'function') onMidpoint();
-  }, 420);
-
-  // Kết thúc vòng quay 180deg
-  setTimeout(() => {
+    wrap.style.animation = "none";
     wrap.classList.remove("hourglass-turn-over");
-  }, 860);
+    void wrap.offsetWidth;
+    wrap.style.animation = "";
+
+    // Cập nhật lại giao diện đồng hồ theo trạng thái chu kỳ mới
+    updateTimerDisplay();
+    if (typeof onComplete === 'function') onComplete();
+  }, 850);
 }
 
 /* ====================================================
@@ -8196,31 +8235,67 @@ function updateTimerDisplay() {
     renderDigitalBlocks(progressRatio);
   }
 
-  // 6. Hourglass (Chuẩn Ảnh Mẫu 4 - Đồng hồ cát tự nhiên)
+  // 6. Hourglass (Đồng hồ cát tự nhiên, sống động)
   if (activeStyle === 'hourglass') {
     const remRatio = Math.max(0, Math.min(1, 1 - progressRatio));
     const topSand = $("#hourglassTopSand");
+    const topDepth = $("#hourglassTopSandDepth");
     const botSand = $("#hourglassBottomSand");
+    const botDepth = $("#hourglassBottomSandDepth");
     const stream = $("#hourglassStream");
+    const particles = $("#hourglassParticles");
+    const funnel = $("#hourglassFunnel");
+    const ripple = $("#sandImpactRipple");
+
+    // 1. Top sand: drains with natural funnel curve into the neck
     if (topSand) {
-      const topY = 32 + (1 - remRatio) * 88;
-      const topH = Math.max(0, 122 - topY);
-      topSand.setAttribute("y", topY.toFixed(1));
-      topSand.setAttribute("height", topH.toFixed(1));
+      if (remRatio <= 0.005) {
+        topSand.setAttribute("d", "M 86 126 L 94 126 Z");
+        if (topDepth) topDepth.setAttribute("d", "M 86 126 L 94 126 Z");
+        if (funnel) funnel.style.opacity = "0";
+      } else {
+        const topY = 30 + (1 - remRatio) * 92;
+        const centerDip = Math.min(125, topY + Math.min(16, remRatio * 16 + 2));
+        const d = `M 40 ${topY.toFixed(1)} Q 90 ${centerDip.toFixed(1)} 140 ${topY.toFixed(1)} L 140 126 L 40 126 Z`;
+        topSand.setAttribute("d", d);
+        if (topDepth) topDepth.setAttribute("d", d);
+        if (funnel) funnel.style.opacity = "0.9";
+      }
     }
+
+    // 2. Bottom sand: natural conical dune heap rising
+    let peakY = 222;
     if (botSand) {
-      const moundPeakY = 218 - progressRatio * 76;
-      botSand.setAttribute("d", `M 36 218 Q 90 ${moundPeakY.toFixed(1)} 144 218 Z`);
+      if (progressRatio <= 0.005) {
+        botSand.setAttribute("d", "M 40 222 L 140 222 Z");
+        if (botDepth) botDepth.setAttribute("d", "M 40 222 L 140 222 Z");
+        if (ripple) ripple.style.opacity = "0";
+      } else {
+        peakY = 222 - progressRatio * 82;
+        const d = `M 40 222 C 66 222 78 ${(peakY + 10).toFixed(1)} 90 ${peakY.toFixed(1)} C 102 ${(peakY + 10).toFixed(1)} 114 222 140 222 Z`;
+        botSand.setAttribute("d", d);
+        if (botDepth) botDepth.setAttribute("d", d);
+        if (ripple) {
+          ripple.setAttribute("cy", peakY.toFixed(1));
+          ripple.style.opacity = (studyState.isRunning && remRatio > 0.005) ? "0.65" : "0";
+        }
+      }
     }
+
+    // 3. Falling sand stream & micro particles
     if (stream) {
       if (studyState.isRunning && remRatio > 0.005) {
+        stream.setAttribute("y2", Math.min(220, peakY + 2).toFixed(1));
         stream.classList.add("hourglass-stream-active");
         stream.style.opacity = "1";
+        if (particles) particles.style.opacity = "1";
       } else {
         stream.classList.remove("hourglass-stream-active");
         stream.style.opacity = "0";
+        if (particles) particles.style.opacity = "0";
       }
     }
+
     const hgDigital = $("#hourglassDigitalText");
     if (hgDigital) hgDigital.textContent = formattedClock;
   }
@@ -9039,21 +9114,24 @@ async function finishStudySession(autoCompleted = false) {
   const totalElapsedMins = Math.round(studyState.elapsedSessionSeconds / 60);
   const isFocus = (studyState.mode === 'focus' || studyState.mode === 'pomodoro');
 
+  let sessionMinutesToLog = 0;
   if (isFocus) {
     // Chỉ khi hoàn thành 100% thời gian một lượt tập trung (autoCompleted === true) mới tính cộng 1 lượt vào mục tiêu hàng ngày
     if (autoCompleted) {
       recordTodayCompletedPomodoro();
       studyState.completedFocusCycles = (studyState.completedFocusCycles || 0) + 1;
-      studyState.accumulatedFocusMinutes = (studyState.accumulatedFocusMinutes || 0) + studyState.durationMinutes;
+      sessionMinutesToLog = studyState.durationMinutes || 25;
+      studyState.accumulatedFocusMinutes = (studyState.accumulatedFocusMinutes || 0) + sessionMinutesToLog;
     } else {
-      studyState.accumulatedFocusMinutes = (studyState.accumulatedFocusMinutes || 0) + totalElapsedMins;
+      sessionMinutesToLog = totalElapsedMins;
+      studyState.accumulatedFocusMinutes = (studyState.accumulatedFocusMinutes || 0) + sessionMinutesToLog;
     }
   }
 
-  const durationToCredit = isFocus ? (autoCompleted ? (studyState.accumulatedFocusMinutes || studyState.durationMinutes) : (studyState.accumulatedFocusMinutes || totalElapsedMins)) : 0;
+  const durationToCredit = sessionMinutesToLog;
   const cyclesToCredit = studyState.completedFocusCycles || 0;
 
-  if (session && (durationToCredit >= 20 || cyclesToCredit >= 1)) {
+  if (session && (durationToCredit >= 1 || cyclesToCredit >= 1)) {
     try {
       const res = await requestAPI("/api/study/complete", {
         method: "POST",
@@ -9076,7 +9154,7 @@ async function finishStudySession(autoCompleted = false) {
     } catch (e) {
       console.error(e);
     }
-  } else if (durationToCredit >= 20 || cyclesToCredit >= 1) {
+  } else if (durationToCredit >= 1 || cyclesToCredit >= 1) {
     toast(`🎉 Hoàn thành ca tự học ${durationToCredit} phút! (Đăng nhập để lưu điểm & giữ chuỗi)`);
   } else {
     toast("🎉 Đã hoàn tất ca học!");
