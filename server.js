@@ -675,6 +675,21 @@ try { db.exec("ALTER TABLE competition_phase_results ADD COLUMN on_time_bonus IN
 try { db.exec("ALTER TABLE posts ADD COLUMN deleted_at TEXT;"); } catch (e) { }
 try { db.exec("ALTER TABLE responses ADD COLUMN deleted_at TEXT;"); } catch (e) { }
 try { db.exec("ALTER TABLE posts ADD COLUMN document_id INTEGER REFERENCES documents(id);"); } catch (e) { }
+try {
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS post_documents (
+      post_id INTEGER NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
+      document_id INTEGER NOT NULL REFERENCES documents(id) ON DELETE CASCADE,
+      sort_order INTEGER NOT NULL DEFAULT 0,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      PRIMARY KEY (post_id, document_id)
+    );
+    CREATE INDEX IF NOT EXISTS idx_post_documents_post_id ON post_documents(post_id);
+    CREATE INDEX IF NOT EXISTS idx_post_documents_doc_id ON post_documents(document_id);
+    INSERT OR IGNORE INTO post_documents (post_id, document_id, sort_order)
+    SELECT id, document_id, 0 FROM posts WHERE document_id IS NOT NULL;
+  `);
+} catch (e) { }
 
 try {
   db.exec(`
@@ -1525,10 +1540,35 @@ function clearSession(request, response) {
   );
 }
 
-function serializePost(row, viewer) {
-  let linkedDoc = null;
+function getPostLinkedDocuments(postId) {
+  try {
+    const rows = db.prepare(`
+      SELECT d.id, d.title, d.format, d.category, d.source_url
+      FROM post_documents pd
+      JOIN documents d ON d.id = pd.document_id
+      WHERE pd.post_id = ?
+      ORDER BY pd.sort_order ASC, pd.created_at ASC
+    `).all(postId);
+    return rows.map(d => ({
+      id: Number(d.id),
+      title: d.title,
+      format: d.format || "Khác",
+      category: d.category || "",
+      sourceUrl: d.source_url || ""
+    }));
+  } catch (e) {
+    return [];
+  }
+}
+
+function serializePost(row, viewer, preloadedDocs) {
+  let linkedDocs = preloadedDocs;
+  if (!Array.isArray(linkedDocs)) {
+    linkedDocs = getPostLinkedDocuments(row.id);
+  }
+  let fallbackDoc = null;
   if (row.doc_id && row.doc_title) {
-    linkedDoc = {
+    fallbackDoc = {
       id: Number(row.doc_id),
       title: row.doc_title,
       format: row.doc_format || "Khác",
@@ -1539,7 +1579,7 @@ function serializePost(row, viewer) {
     try {
       const d = db.prepare("SELECT id, title, format, category, source_url FROM documents WHERE id=?").get(row.document_id);
       if (d) {
-        linkedDoc = {
+        fallbackDoc = {
           id: Number(d.id),
           title: d.title,
           format: d.format || "Khác",
@@ -1550,13 +1590,20 @@ function serializePost(row, viewer) {
     } catch (e) {}
   }
 
+  if (linkedDocs.length === 0 && fallbackDoc) {
+    linkedDocs = [fallbackDoc];
+  }
+  const primaryDoc = linkedDocs[0] || fallbackDoc || null;
+
   return {
     id: row.id,
     title: row.title,
     content: row.content,
     topic: row.topic,
-    documentId: row.document_id || null,
-    linkedDocument: linkedDoc,
+    documentId: primaryDoc ? primaryDoc.id : (row.document_id || null),
+    documentIds: linkedDocs.map(d => d.id),
+    linkedDocument: primaryDoc,
+    linkedDocuments: linkedDocs,
     isAnonymous: Boolean(row.is_anonymous),
     author:
       row.is_anonymous && !isAdmin(viewer)
@@ -1599,7 +1646,32 @@ function listPosts(viewer, search = "") {
        ORDER BY p.is_pinned DESC, p.created_at DESC`,
     )
     .all(needle, needle, needle);
-  return rows.map((r) => serializePost(r, viewer));
+
+  if (rows.length === 0) return [];
+  const postIds = rows.map(r => r.id);
+  const docMap = new Map();
+  try {
+    const placeholders = postIds.map(() => '?').join(',');
+    const pDocs = db.prepare(`
+      SELECT pd.post_id, d.id, d.title, d.format, d.category, d.source_url
+      FROM post_documents pd
+      JOIN documents d ON d.id = pd.document_id
+      WHERE pd.post_id IN (${placeholders})
+      ORDER BY pd.sort_order ASC, pd.created_at ASC
+    `).all(...postIds);
+    for (const pd of pDocs) {
+      if (!docMap.has(pd.post_id)) docMap.set(pd.post_id, []);
+      docMap.get(pd.post_id).push({
+        id: Number(pd.id),
+        title: pd.title,
+        format: pd.format || "Khác",
+        category: pd.category || "",
+        sourceUrl: pd.source_url || ""
+      });
+    }
+  } catch (e) {}
+
+  return rows.map((r) => serializePost(r, viewer, docMap.get(r.id)));
 }
 function bootstrapAdmin() {
   const email = process.env.RESEARCH_INITIAL_ADMIN_EMAIL;
@@ -3087,7 +3159,7 @@ async function api(request, response, url) {
         429,
         "Bạn đã đăng quá nhiều bài thảo luận trong một giờ.",
       );
-    const { title, content, topic, isAnonymous, documentId } = await readJSON(request);
+    const { title, content, topic, isAnonymous, documentId, documentIds } = await readJSON(request);
     const allowedTopics = db.prepare("SELECT name FROM topics WHERE status = 'approved'").all().map(t => t.name);
     if (
       typeof title !== "string" ||
@@ -3100,25 +3172,44 @@ async function api(request, response, url) {
     )
       return error(response, 400, "Nội dung bài đăng chưa hợp lệ.");
     const anonymous = isAdmin(user) ? 0 : isAnonymous ? 1 : 0;
-    let linkedDocId = null;
-    if (documentId) {
-      const dId = Number(documentId);
-      if (dId > 0) {
-        const docExists = db.prepare("SELECT id FROM documents WHERE id=? AND status='approved'").get(dId);
-        if (docExists) linkedDocId = docExists.id;
+    
+    let rawIds = [];
+    if (Array.isArray(documentIds)) {
+      rawIds = documentIds;
+    } else if (typeof documentIds === "string") {
+      try { rawIds = JSON.parse(documentIds); } catch (e) { rawIds = documentIds.split(",").map(s => s.trim()); }
+    } else if (documentId) {
+      rawIds = [documentId];
+    }
+    const validDocIds = [];
+    for (const rid of rawIds) {
+      const num = Number(rid);
+      if (num > 0 && !validDocIds.includes(num)) {
+        const docExists = db.prepare("SELECT id FROM documents WHERE id=? AND status='approved'").get(num);
+        if (docExists) validDocIds.push(num);
       }
     }
+    const primaryDocId = validDocIds[0] || null;
+
     const result = db
       .prepare(
         "INSERT INTO posts(author_id,title,content,topic,is_anonymous,document_id) VALUES (?,?,?,?,?,?)",
       )
-      .run(user.id, title.trim(), content.trim(), topic, anonymous, linkedDocId);
+      .run(user.id, title.trim(), content.trim(), topic, anonymous, primaryDocId);
+    const newPostId = result.lastInsertRowid;
+    if (validDocIds.length > 0) {
+      const insertPd = db.prepare("INSERT OR IGNORE INTO post_documents(post_id, document_id, sort_order) VALUES (?, ?, ?)");
+      validDocIds.forEach((dId, idx) => {
+        insertPd.run(newPostId, dId, idx);
+      });
+    }
+
     recordContribution(
       user.id,
       "post_created",
       2,
       "post",
-      result.lastInsertRowid,
+      newPostId,
       "Đăng bài thảo luận",
     );
     const post = db
@@ -3132,7 +3223,7 @@ async function api(request, response, url) {
          LEFT JOIN documents doc ON doc.id=p.document_id
          WHERE p.id=?`,
       )
-      .get(result.lastInsertRowid);
+      .get(newPostId);
     return json(response, 201, { post: serializePost(post, user) });
   }
   const postIdMatch = pathName.match(/^\/api\/posts\/(\d+)$/);
@@ -3297,7 +3388,7 @@ async function api(request, response, url) {
     const user = requireUser(request, response);
     if (!user || !requireCsrf(request, response, user)) return;
 
-    const { content, title, documentId } = await readJSON(request);
+    const { content, title, documentId, documentIds } = await readJSON(request);
     if (typeof content !== "string") {
       return error(response, 400, "Định dạng không hợp lệ.");
     }
@@ -3323,14 +3414,32 @@ async function api(request, response, url) {
       if (typeof title !== "string" || title.trim().length < 5) {
         return error(response, 400, "Tiêu đề quá ngắn.");
       }
-      let linkedDocId = null;
-      if (documentId !== undefined) {
-        const dId = Number(documentId);
-        if (dId > 0) {
-          const docExists = db.prepare("SELECT id FROM documents WHERE id=? AND status='approved'").get(dId);
-          if (docExists) linkedDocId = docExists.id;
+      if (documentIds !== undefined || documentId !== undefined) {
+        let rawIds = [];
+        if (Array.isArray(documentIds)) {
+          rawIds = documentIds;
+        } else if (typeof documentIds === "string") {
+          try { rawIds = JSON.parse(documentIds); } catch (e) { rawIds = documentIds.split(",").map(s => s.trim()); }
+        } else if (documentId) {
+          rawIds = [documentId];
         }
-        db.prepare(`UPDATE posts SET title=?, content=?, document_id=?, edited_at=CURRENT_TIMESTAMP WHERE id=?`).run(title.trim(), content.trim(), linkedDocId, id);
+        const validDocIds = [];
+        for (const rid of rawIds) {
+          const num = Number(rid);
+          if (num > 0 && !validDocIds.includes(num)) {
+            const docExists = db.prepare("SELECT id FROM documents WHERE id=? AND status='approved'").get(num);
+            if (docExists) validDocIds.push(num);
+          }
+        }
+        const primaryDocId = validDocIds[0] || null;
+        db.prepare(`UPDATE posts SET title=?, content=?, document_id=?, edited_at=CURRENT_TIMESTAMP WHERE id=?`).run(title.trim(), content.trim(), primaryDocId, id);
+        db.prepare("DELETE FROM post_documents WHERE post_id=?").run(id);
+        if (validDocIds.length > 0) {
+          const insertPd = db.prepare("INSERT OR IGNORE INTO post_documents(post_id, document_id, sort_order) VALUES (?, ?, ?)");
+          validDocIds.forEach((dId, idx) => {
+            insertPd.run(id, dId, idx);
+          });
+        }
       } else {
         db.prepare(`UPDATE posts SET title=?, content=?, edited_at=CURRENT_TIMESTAMP WHERE id=?`).run(title.trim(), content.trim(), id);
       }

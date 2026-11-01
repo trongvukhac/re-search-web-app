@@ -1431,7 +1431,9 @@ function normalizePost(p) {
     lecturerRecommended: Boolean(p.lecturerRecommended),
     readCount: Number(p.readCount || 0),
     documentId: p.documentId || p.document_id || (p.linkedDocument?.id) || null,
-    linkedDocument: p.linkedDocument || p.document || null,
+    documentIds: Array.isArray(p.documentIds) ? p.documentIds : (p.documentId ? [p.documentId] : []),
+    linkedDocument: p.linkedDocument || p.document || (Array.isArray(p.linkedDocuments) ? p.linkedDocuments[0] : null) || null,
+    linkedDocuments: Array.isArray(p.linkedDocuments) ? p.linkedDocuments : (p.linkedDocument ? [p.linkedDocument] : []),
   };
 }
 window.getRoleDisplay = function(role) {
@@ -2354,9 +2356,15 @@ function postCard(post) {
     : "";
   const authorUserId = (!post.anonymous && post.authorId) ? post.authorId : "";
   const ncAttr = authorUserId ? `data-namecard-user-id="${authorUserId}" style="cursor: pointer;" title="Xem thẻ tên"` : "";
-  const docBadge = post.linkedDocument
-    ? `<span class="post-tag post-doc-tag" onclick="event.stopPropagation(); viewDocumentById(${post.linkedDocument.id})" title="Tài liệu đính kèm: ${escapeHTML(post.linkedDocument.title)}" style="display:inline-flex; align-items:center; gap:4px; max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg> 📎 ${escapeHTML(post.linkedDocument.title)}</span>`
-    : "";
+  const linkedDocs = post.linkedDocuments || (post.linkedDocument ? [post.linkedDocument] : []);
+  let docBadge = "";
+  if (linkedDocs.length === 1) {
+    docBadge = `<span class="post-tag post-doc-tag" onclick="event.stopPropagation(); viewDocumentById(${linkedDocs[0].id})" title="Tài liệu đính kèm: ${escapeHTML(linkedDocs[0].title)}" style="display:inline-flex; align-items:center; gap:4px; max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg> 📎 ${escapeHTML(linkedDocs[0].title)}</span>`;
+  } else if (linkedDocs.length > 1) {
+    const allTitles = linkedDocs.map(d => d.title).join(", ");
+    docBadge = `<span class="post-tag post-doc-tag" onclick="event.stopPropagation(); viewDocumentById(${linkedDocs[0].id})" title="Tài liệu: ${escapeHTML(linkedDocs[0].title)}" style="display:inline-flex; align-items:center; gap:4px; max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg> 📎 ${escapeHTML(linkedDocs[0].title)}</span>` +
+      `<span class="post-tag post-doc-tag post-doc-more-tag" onclick="event.stopPropagation(); openDetail(${post.id})" title="${linkedDocs.length} tài liệu đính kèm: ${escapeHTML(allTitles)}" style="display:inline-flex; align-items:center; gap:3px;">+${linkedDocs.length - 1} tài liệu</span>`;
+  }
   return `<article class="post-card ${post.authorRole === "admin" ? "admin-post" : ""}" data-post-id="${post.id}" style="position: relative;">
     ${adminBtns}${editBtn}
     <span class="avatar avatar-xs ${getAvatarClass(post.streakTier, post.anonymous, post.authorRole)}" ${ncAttr}>${post.initials}</span>
@@ -3173,7 +3181,7 @@ function openQuestion() {
   $$(".identity-choice").forEach((b, i) =>
     b.classList.toggle("selected", i === 0),
   );
-  setAttachedDocUI("question", null);
+  setAttachedDocs("question", []);
   modal.showModal();
   $("#questionTitle").focus();
 }
@@ -3254,6 +3262,133 @@ function stopWebActivityTracker() {
 }
 window.initWebActivityTracker = initWebActivityTracker;
 window.stopWebActivityTracker = stopWebActivityTracker;
+
+// --- PLATFORM REVIEW PROMPT (KÊU GỌI ĐÁNH GIÁ NỀN TẢNG SAU 5 PHÚT HOẠT ĐỘNG) ---
+let platformReviewTrackerInterval = null;
+let platformReviewActiveSeconds = 0;
+try {
+  platformReviewActiveSeconds = parseInt(sessionStorage.getItem("re_search_platform_active_sec") || "0", 10);
+} catch (e) {}
+
+function initPlatformRatingPromptTracker() {
+  if (platformReviewTrackerInterval) return;
+
+  // Đảm bảo các listener ghi nhận tương tác chuột / phím đã được gán
+  if (!webActivityListenersAttached) {
+    webActivityListenersAttached = true;
+    let throttleTimeout = null;
+    const onUserInteraction = () => {
+      if (!throttleTimeout) {
+        lastUserInteractionTime = Date.now();
+        throttleTimeout = setTimeout(() => { throttleTimeout = null; }, 1000);
+      }
+    };
+    ['mousemove', 'mousedown', 'keydown', 'touchstart', 'scroll'].forEach(evt => {
+      window.addEventListener(evt, onUserInteraction, { passive: true });
+    });
+  }
+
+  platformReviewTrackerInterval = setInterval(() => {
+    // Chỉ tính khi tab đang mở và người dùng có tương tác trong vòng 90 giây
+    if (document.visibilityState !== "visible") return;
+    if (Date.now() - lastUserInteractionTime > 90000) return;
+
+    // Nếu đã đánh giá rồi hoặc đã đóng thông báo trong phiên này thì không đếm tiếp
+    if (sessionStorage.getItem("re_search_rating_banner_dismissed") === "1") return;
+    if (localStorage.getItem("re_search_user_rated_v1") === "1") return;
+    if (typeof siteReviewsData !== "undefined" && siteReviewsData && siteReviewsData.myReview) return;
+
+    platformReviewActiveSeconds += 1;
+    try {
+      sessionStorage.setItem("re_search_platform_active_sec", String(platformReviewActiveSeconds));
+    } catch (e) {}
+
+    // Sau tối thiểu 5 phút (300 giây) hoạt động
+    if (platformReviewActiveSeconds >= 300) {
+      if (sessionStorage.getItem("re_search_rating_banner_shown") !== "1") {
+        sessionStorage.setItem("re_search_rating_banner_shown", "1");
+        showPlatformRatingBanner();
+      }
+    }
+  }, 1000);
+}
+
+function showPlatformRatingBanner() {
+  if (document.getElementById("platformRatingBanner")) return;
+  // Kiểm tra điều kiện
+  if (sessionStorage.getItem("re_search_rating_banner_dismissed") === "1") return;
+  if (localStorage.getItem("re_search_user_rated_v1") === "1") return;
+  if (typeof siteReviewsData !== "undefined" && siteReviewsData && siteReviewsData.myReview) return;
+
+  const banner = document.createElement("div");
+  banner.id = "platformRatingBanner";
+  banner.setAttribute("role", "alert");
+  banner.setAttribute("aria-live", "polite");
+
+  let countdown = 300; // Hiển thị khoảng 5 phút (cơ chế như thông báo cập nhật phiên bản mới)
+  const formatCountdown = (s) => {
+    const m = Math.floor(s / 60);
+    const sec = s % 60;
+    return `${m}:${String(sec).padStart(2, "0")}`;
+  };
+
+  banner.innerHTML = `
+    <div style="font-size: 24px; flex-shrink: 0; line-height: 1;">⭐</div>
+    <div style="flex: 1; min-width: 0;">
+      <div style="font-weight: 700; color: #fbbf24; margin-bottom: 3px; font-size: 14px;">Bạn thấy RE:SEARCH thế nào?</div>
+      <div style="font-size: 12px; color: #94a3b8; line-height: 1.4;">
+        Bạn đã đồng hành cùng RE:SEARCH hơn 5 phút. Hãy dành chút thời gian gửi đánh giá để cộng đồng ngày càng hoàn thiện hơn nhé! (Tự đóng sau <strong id="ratingBannerSec" style="color: #fff; font-size: 13px;">${formatCountdown(countdown)}</strong>)
+      </div>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 6px; flex-shrink: 0;">
+      <button type="button" class="button button-small" style="background: #f59e0b; color: #1e1b4b; border:none; padding: 7px 14px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 700; white-space: nowrap;" onclick="handleRatingBannerAction()">
+        Đánh giá ngay
+      </button>
+      <button type="button" class="button button-quiet button-xs" style="color: #94a3b8; border:none; padding: 2px 4px; cursor: pointer; font-size: 11px; text-align: center; background: transparent;" onclick="dismissRatingBanner(true)">
+        Để sau
+      </button>
+    </div>
+  `;
+
+  document.body.appendChild(banner);
+
+  const timer = setInterval(() => {
+    countdown -= 1;
+    const secEl = document.getElementById("ratingBannerSec");
+    if (secEl) secEl.textContent = formatCountdown(countdown);
+    if (countdown <= 0) {
+      clearInterval(timer);
+      dismissRatingBanner(false);
+    }
+  }, 1000);
+  banner._timer = timer;
+}
+
+function dismissRatingBanner(byUser = false) {
+  const banner = document.getElementById("platformRatingBanner");
+  if (!banner) return;
+  if (banner._timer) clearInterval(banner._timer);
+  if (byUser) {
+    try { sessionStorage.setItem("re_search_rating_banner_dismissed", "1"); } catch (e) {}
+  }
+  banner.style.opacity = "0";
+  banner.style.transform = "translateY(20px) scale(0.96)";
+  setTimeout(() => {
+    banner.remove();
+  }, 350);
+}
+
+function handleRatingBannerAction() {
+  dismissRatingBanner(true);
+  if (typeof openSiteReviewModal === "function") {
+    openSiteReviewModal();
+  }
+}
+
+window.showPlatformRatingBanner = showPlatformRatingBanner;
+window.dismissRatingBanner = dismissRatingBanner;
+window.handleRatingBannerAction = handleRatingBannerAction;
+window.initPlatformRatingPromptTracker = initPlatformRatingPromptTracker;
 
 let postReadTimer = null;
 let postReadActivePostId = null;
@@ -3559,6 +3694,116 @@ if (docViewerModalEl) {
 let currentPickerTarget = "question";
 let currentPickerFilter = "all";
 
+const attachedDocsState = {
+  question: [],
+  edit: []
+};
+
+window.attachedDocsState = attachedDocsState;
+
+window.getAttachedDocs = function(target) {
+  return attachedDocsState[target] || [];
+};
+
+window.renderAttachedDocsUI = function(target) {
+  const list = attachedDocsState[target] || [];
+  const container = $(`#${target}LinkedDocsContainer`);
+  const hiddenId = $(`#${target}LinkedDocId`);
+  const hiddenIds = $(`#${target}LinkedDocIds`);
+  const countBadge = $(`#${target}LinkedDocsCountBadge`);
+  const emptyState = container?.querySelector(".doc-attach-empty-state");
+  const listEl = $(`#${target}LinkedDocsList`);
+  const addRow = $(`#${target}LinkedDocsAddRow`);
+
+  const ids = list.map(d => d.id);
+  if (hiddenId) hiddenId.value = ids.length > 0 ? String(ids[0]) : "";
+  if (hiddenIds) hiddenIds.value = JSON.stringify(ids);
+
+  if (countBadge) {
+    if (list.length > 0) {
+      countBadge.textContent = `Đã đính kèm ${list.length} tài liệu`;
+      countBadge.style.display = "inline-block";
+    } else {
+      countBadge.style.display = "none";
+    }
+  }
+
+  if (list.length === 0) {
+    if (container) container.classList.add("empty");
+    if (emptyState) emptyState.style.display = "flex";
+    if (listEl) {
+      listEl.innerHTML = "";
+      listEl.style.display = "none";
+    }
+    if (addRow) addRow.style.display = "none";
+    return;
+  }
+
+  if (container) container.classList.remove("empty");
+  if (emptyState) emptyState.style.display = "none";
+  if (addRow) addRow.style.display = "flex";
+
+  if (listEl) {
+    listEl.style.display = "flex";
+    listEl.innerHTML = list.map(d => {
+      const typeLabel = d.type === "course" || d.category === "course" ? "Tài liệu môn học" : "Tài liệu tham khảo";
+      return `
+        <div class="doc-attach-item" data-doc-id="${d.id}">
+          <span class="doc-format-pill">${escapeHTML(d.format || 'Khác')}</span>
+          <div class="doc-attach-item-info">
+            <div class="doc-attach-item-title">${escapeHTML(d.title)}</div>
+            <div class="doc-attach-item-meta">${typeLabel}${d.author ? ` · ${escapeHTML(d.author)}` : ''}</div>
+          </div>
+          <div class="doc-attach-item-actions">
+            <button type="button" class="button button-quiet button-xs" onclick="viewDocumentById(${d.id})" title="Xem trước tài liệu">
+              👁 Xem
+            </button>
+            <button type="button" class="button button-quiet button-xs doc-remove-btn" onclick="removeSingleAttachedDoc('${target}', ${d.id})" title="Gỡ tài liệu này">
+              ✕
+            </button>
+          </div>
+        </div>
+      `;
+    }).join("");
+  }
+};
+
+window.setAttachedDocs = function(target, docs) {
+  if (!Array.isArray(docs)) {
+    attachedDocsState[target] = docs ? [docs] : [];
+  } else {
+    attachedDocsState[target] = docs.filter(Boolean);
+  }
+  renderAttachedDocsUI(target);
+};
+
+// Backwards-compatible alias for single doc setter
+window.setAttachedDocUI = function(target, doc) {
+  if (!doc) {
+    window.setAttachedDocs(target, []);
+  } else {
+    window.setAttachedDocs(target, [doc]);
+  }
+};
+
+window.removeSingleAttachedDoc = function(target, docId) {
+  const numId = Number(docId);
+  attachedDocsState[target] = (attachedDocsState[target] || []).filter(d => d.id !== numId);
+  renderAttachedDocsUI(target);
+  if ($("#documentPickerModal")?.open) {
+    renderDocPickerList();
+  }
+};
+
+window.clearAllAttachedDocs = function(target) {
+  const t = target || currentPickerTarget;
+  attachedDocsState[t] = [];
+  renderAttachedDocsUI(t);
+  if ($("#documentPickerModal")?.open) {
+    renderDocPickerList();
+  }
+};
+
 window.openDocPicker = function(target = "question") {
   currentPickerTarget = target;
   currentPickerFilter = "all";
@@ -3597,14 +3842,16 @@ window.filterDocPickerList = function() {
 window.renderDocPickerList = function() {
   const container = $("#docPickerList");
   const countEl = $("#docPickerCount");
+  const selectedCountEl = $("#docPickerSelectedCount");
   if (!container) return;
 
   const q = ($("#docPickerSearch")?.value || "").trim().toLowerCase();
-  const currentSelectedId = Number(
-    currentPickerTarget === "question"
-      ? ($("#questionLinkedDocId")?.value || 0)
-      : ($("#editLinkedDocId")?.value || 0)
-  );
+  const currentSelectedDocs = attachedDocsState[currentPickerTarget] || [];
+  const currentSelectedIds = currentSelectedDocs.map(d => d.id);
+
+  if (selectedCountEl) {
+    selectedCountEl.textContent = `Đã chọn ${currentSelectedIds.length} tài liệu`;
+  }
 
   let list = (documents || []).filter(d => {
     if (currentPickerFilter !== "all" && d.type !== currentPickerFilter) return false;
@@ -3629,15 +3876,15 @@ window.renderDocPickerList = function() {
   }
 
   container.innerHTML = list.map(d => {
-    const isSelected = d.id === currentSelectedId;
+    const isSelected = currentSelectedIds.includes(d.id);
     return `
-      <div class="doc-picker-item ${isSelected ? 'is-selected' : ''}" onclick="selectDocForPost(${d.id})">
+      <div class="doc-picker-item ${isSelected ? 'is-selected' : ''}" onclick="toggleDocPickerItem(${d.id})">
         <span class="doc-format-pill">${escapeHTML(d.format || 'Khác')}</span>
         <div class="doc-picker-item-info">
           <div class="doc-picker-item-title">${escapeHTML(d.title)}</div>
           <div class="doc-picker-item-desc">${escapeHTML(stripHTML(d.desc || ''))}</div>
           <div class="doc-picker-item-meta">
-            <span>${d.type === 'course' ? 'Tài liệu môn học' : 'Tài liệu tham khảo'}</span>
+            <span>${d.type === 'course' || d.category === 'course' ? 'Tài liệu môn học' : 'Tài liệu tham khảo'}</span>
             <span>·</span>
             <span>${escapeHTML(d.author || '')}</span>
           </div>
@@ -3646,8 +3893,8 @@ window.renderDocPickerList = function() {
           <button type="button" class="button button-quiet button-xs" onclick="viewDocumentById(${d.id})" title="Xem trước tài liệu">
             👁 Xem
           </button>
-          <button type="button" class="button ${isSelected ? 'button-primary' : 'button-outline'} button-xs" onclick="selectDocForPost(${d.id})">
-            ${isSelected ? '✓ Đang chọn' : '+ Chọn'}
+          <button type="button" class="button ${isSelected ? 'button-primary' : 'button-outline'} button-xs" onclick="toggleDocPickerItem(${d.id})">
+            ${isSelected ? '✓ Đã chọn' : '+ Chọn'}
           </button>
         </div>
       </div>
@@ -3655,61 +3902,44 @@ window.renderDocPickerList = function() {
   }).join("");
 };
 
-window.selectDocForPost = function(docId) {
-  const doc = documents.find(d => d.id === Number(docId));
+window.toggleDocPickerItem = function(docId) {
+  const numId = Number(docId);
+  const doc = documents.find(d => d.id === numId) || getAppDocument(numId);
   if (!doc) return;
 
-  if (currentPickerTarget === "question") {
-    setAttachedDocUI("question", doc);
+  const target = currentPickerTarget || "question";
+  if (!attachedDocsState[target]) attachedDocsState[target] = [];
+
+  const existingIdx = attachedDocsState[target].findIndex(d => d.id === numId);
+  if (existingIdx >= 0) {
+    // Deselect
+    attachedDocsState[target].splice(existingIdx, 1);
   } else {
-    setAttachedDocUI("edit", doc);
+    // Select
+    attachedDocsState[target].push(doc);
   }
-  closeDocPicker();
+
+  renderAttachedDocsUI(target);
+  renderDocPickerList();
+};
+
+window.selectDocForPost = function(docId) {
+  toggleDocPickerItem(docId);
 };
 
 window.clearAndCloseDocPicker = function() {
-  removeAttachedDoc(currentPickerTarget);
+  clearAllAttachedDocs(currentPickerTarget);
   closeDocPicker();
 };
 
-window.setAttachedDocUI = function(target, doc) {
-  const hiddenInput = $(`#${target}LinkedDocId`);
-  const card = $(`#${target}LinkedDocCard`);
-  const emptyState = card?.querySelector(".doc-attach-empty-state");
-  const selectedState = card?.querySelector(".doc-attach-selected-state");
-  const titleEl = $(`#${target}DocTitle`);
-  const metaEl = $(`#${target}DocMeta`);
-  const badgeEl = $(`#${target}DocFormatBadge`);
-
-  if (!doc) {
-    if (hiddenInput) hiddenInput.value = "";
-    if (card) card.classList.add("empty");
-    if (emptyState) emptyState.style.display = "flex";
-    if (selectedState) selectedState.style.display = "none";
-    return;
-  }
-
-  if (hiddenInput) hiddenInput.value = String(doc.id);
-  if (card) card.classList.remove("empty");
-  if (emptyState) emptyState.style.display = "none";
-  if (selectedState) selectedState.style.display = "flex";
-  if (titleEl) titleEl.textContent = doc.title;
-  if (badgeEl) badgeEl.textContent = doc.format || "Khác";
-  if (metaEl) {
-    const typeLabel = doc.type === "course" || doc.category === "course" ? "Tài liệu môn học" : "Tài liệu tham khảo";
-    metaEl.textContent = `${typeLabel} · ${doc.author || ""}`;
-  }
-};
-
 window.removeAttachedDoc = function(target) {
-  setAttachedDocUI(target, null);
+  clearAllAttachedDocs(target);
 };
 
 window.previewSelectedDoc = function(target) {
-  const hiddenInput = $(`#${target}LinkedDocId`);
-  const docId = Number(hiddenInput?.value || 0);
-  if (docId > 0) {
-    viewDocumentById(docId);
+  const list = attachedDocsState[target] || [];
+  if (list.length > 0) {
+    viewDocumentById(list[0].id);
   }
 };
 
@@ -4056,22 +4286,36 @@ async function openDetail(id, updateHash = true, isBack = false, targetScrollY =
       saveBtn.onclick = () => toggleSavePost(post.id);
     }
 
-    const linkedDocCard = post.linkedDocument ? `
-      <div class="post-linked-doc-card">
-        <div class="post-linked-doc-icon">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+    const linkedDocs = Array.isArray(post.linkedDocuments) && post.linkedDocuments.length > 0
+      ? post.linkedDocuments
+      : (post.linkedDocument ? [post.linkedDocument] : []);
+
+    const linkedDocCard = linkedDocs.length > 0 ? `
+      <div class="post-linked-docs-block" style="margin: 18px 0 20px 0;">
+        <div class="post-linked-docs-header" style="font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--primary); margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+          <span>Tài liệu đính kèm (${linkedDocs.length})</span>
         </div>
-        <div class="post-linked-doc-info">
-          <div class="post-linked-doc-eyebrow">TÀI LIỆU TỪ KHO · <span class="doc-format-badge">${escapeHTML(post.linkedDocument.format || 'Tài liệu')}</span></div>
-          <h4 class="post-linked-doc-title">${escapeHTML(post.linkedDocument.title)}</h4>
-        </div>
-        <div class="post-linked-doc-actions">
-          <button type="button" class="button button-primary button-sm" onclick="viewDocumentById(${post.linkedDocument.id})">
-            <svg class="ui-btn-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg> Xem tài liệu
-          </button>
-          <button type="button" class="button button-outline button-sm" onclick="goToDocumentInRepo(${post.linkedDocument.id})" title="Đi tới tài liệu trong kho">
-            Kho tài liệu ↗
-          </button>
+        <div class="post-linked-docs-list" style="display: flex; flex-direction: column; gap: 8px;">
+          ${linkedDocs.map(doc => `
+            <div class="post-linked-doc-card">
+              <div class="post-linked-doc-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+              </div>
+              <div class="post-linked-doc-info">
+                <div class="post-linked-doc-eyebrow">TÀI LIỆU TỪ KHO · <span class="doc-format-badge">${escapeHTML(doc.format || 'Tài liệu')}</span></div>
+                <h4 class="post-linked-doc-title">${escapeHTML(doc.title)}</h4>
+              </div>
+              <div class="post-linked-doc-actions">
+                <button type="button" class="button button-primary button-sm" onclick="viewDocumentById(${doc.id})">
+                  <svg class="ui-btn-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg> Xem tài liệu
+                </button>
+                <button type="button" class="button button-outline button-sm" onclick="goToDocumentInRepo(${doc.id})" title="Đi tới tài liệu trong kho">
+                  Kho tài liệu ↗
+                </button>
+              </div>
+            </div>
+          `).join("")}
         </div>
       </div>
     ` : "";
@@ -4805,9 +5049,11 @@ window.openEditModal = async (type, id) => {
       $("#editTitle").value = title;
       if (editDocSection) {
         editDocSection.style.display = "block";
-        const docId = data.post.documentId;
-        const linkedDoc = docId ? (getAppDocument(docId) || data.post.linkedDocument || { id: docId, title: `Tài liệu #${docId}` }) : null;
-        setAttachedDocUI("edit", linkedDoc);
+        const postDocs = Array.isArray(data.post.linkedDocuments) && data.post.linkedDocuments.length > 0
+          ? data.post.linkedDocuments
+          : (data.post.linkedDocument ? [data.post.linkedDocument] : (data.post.documentId ? [{ id: data.post.documentId, title: `Tài liệu #${data.post.documentId}` }] : []));
+        const fullDocs = postDocs.map(d => getAppDocument(d.id) || d);
+        setAttachedDocs("edit", fullDocs);
       }
     }
   } else if (type === "responses") {
@@ -4857,14 +5103,16 @@ $("#editForm").addEventListener("submit", async (e) => {
   
   const content = type === "document_comments" ? rawText : editEditor.root.innerHTML;
   const title = type === "posts" ? $("#editTitle").value.trim() : "";
-  const docIdVal = $("#editLinkedDocId")?.value;
-  const documentId = type === "posts" ? (docIdVal ? Number(docIdVal) : null) : undefined;
+  const attached = attachedDocsState.edit || [];
+  const docIds = attached.map(d => d.id);
+  const primaryDocId = docIds[0] || null;
 
   try {
     const endpoint = type === "document_comments" ? `/api/documents/comments/${id}` : `/api/${type}/${id}`;
     const payload = { content, title };
     if (type === "posts") {
-      payload.documentId = documentId;
+      payload.documentId = primaryDocId;
+      payload.documentIds = docIds;
     }
     await requestAPI(endpoint, {
       method: "PATCH",
@@ -4924,8 +5172,9 @@ $("#questionForm").addEventListener("submit", async (e) => {
     responses: 0,
     anonymous,
   };
-  const docIdVal = $("#questionLinkedDocId")?.value;
-  const linkedDocId = docIdVal ? Number(docIdVal) : null;
+  const attached = attachedDocsState.question || [];
+  const docIds = attached.map(d => d.id);
+  const primaryDocId = docIds[0] || null;
   try {
     if (serverMode) {
       const data = await requestAPI("/api/posts", {
@@ -4935,7 +5184,8 @@ $("#questionForm").addEventListener("submit", async (e) => {
           content,
           topic: newPost.topic,
           isAnonymous: anonymous,
-          documentId: linkedDocId ? Number(linkedDocId) : null,
+          documentId: primaryDocId,
+          documentIds: docIds,
         }),
       });
       newPost = normalizePost(data.post);
@@ -18207,6 +18457,12 @@ async function handleSiteReviewSubmit(e) {
     }
 
     await loadSiteReviews();
+    try {
+      localStorage.setItem("re_search_user_rated_v1", "1");
+    } catch (e) {}
+    if (typeof dismissRatingBanner === "function") {
+      dismissRatingBanner(false);
+    }
   } catch (err) {
     toast(err.message || "Không thể gửi đánh giá.");
   } finally {
@@ -18233,6 +18489,9 @@ async function handleSiteReviewDelete() {
     }
 
     await loadSiteReviews();
+    try {
+      localStorage.removeItem("re_search_user_rated_v1");
+    } catch (e) {}
   } catch (err) {
     toast(err.message || "Không thể xóa đánh giá.");
   }
@@ -18428,7 +18687,11 @@ function initSiteReviewsListeners() {
 
 document.addEventListener("DOMContentLoaded", () => {
   initSiteReviewsListeners();
+  initPlatformRatingPromptTracker();
 });
+if (document.readyState === "complete" || document.readyState === "interactive") {
+  initPlatformRatingPromptTracker();
+}
 
 window.openSiteReviewModal = openSiteReviewModal;
 window.slideSiteReviews = slideSiteReviews;
