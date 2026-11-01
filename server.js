@@ -4598,13 +4598,44 @@ async function api(request, response, url) {
     try {
       const link = new URL(sourceUrl);
       if (!["https:", "http:"].includes(link.protocol)) throw new Error();
+      const ALLOWED_DOC_FORMATS = [
+        "PDF",
+        "Word",
+        "Slide",
+        "Bảng tính",
+        "Hình ảnh",
+        "Video",
+        "Audio",
+        "Mã nguồn",
+        "Tập dữ liệu",
+        "Ebook",
+        "Khác"
+      ];
+      let normalizedFormat = typeof format === "string" ? format.trim() : "Khác";
+      const formatAliases = {
+        "docx": "Word", "doc": "Word",
+        "pptx": "Slide", "ppt": "Slide",
+        "excel": "Bảng tính", "xlsx": "Bảng tính", "xls": "Bảng tính", "csv": "Bảng tính",
+        "image": "Hình ảnh", "infographic": "Hình ảnh", "png": "Hình ảnh", "jpg": "Hình ảnh",
+        "mp4": "Video",
+        "mp3": "Audio", "podcast": "Audio",
+        "notebook": "Mã nguồn", "code": "Mã nguồn", "python": "Mã nguồn", "r": "Mã nguồn",
+        "dataset": "Tập dữ liệu", "spss": "Tập dữ liệu",
+        "ebook": "Ebook", "epub": "Ebook"
+      };
+      if (formatAliases[normalizedFormat.toLowerCase()]) {
+        normalizedFormat = formatAliases[normalizedFormat.toLowerCase()];
+      }
+      if (!ALLOWED_DOC_FORMATS.includes(normalizedFormat)) {
+        normalizedFormat = "Khác";
+      }
+
       if (
         typeof title !== "string" ||
         title.trim().length < 3 ||
         typeof description !== "string" ||
         description.trim().length < 3 ||
-        !["course", "reference"].includes(category) ||
-        !["PDF", "Hình ảnh", "Video", "Khác"].includes(format)
+        !["course", "reference"].includes(category)
       )
         throw new Error();
       const result = db
@@ -4617,7 +4648,7 @@ async function api(request, response, url) {
           description.trim(),
           link.href,
           category,
-          format,
+          normalizedFormat,
           isAdmin(user) ? "approved" : "pending",
           isAdmin(user) ? user.id : null,
         );

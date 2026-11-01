@@ -3161,13 +3161,53 @@ div.user-name-tier-5,
   background: #fce4e4;
   color: #c92a2a;
 }
-.document-type[data-format="Hình ảnh"] {
+.document-type[data-format="Word"],
+.document-type[data-format="DOCX"],
+.document-type[data-format="DOC"] {
+  background: #e7f5ff;
+  color: #1971c2;
+}
+.document-type[data-format="Slide"],
+.document-type[data-format="PPTX"],
+.document-type[data-format="PPT"] {
+  background: #fff4e6;
+  color: #d9480f;
+}
+.document-type[data-format="Bảng tính"],
+.document-type[data-format="Excel"],
+.document-type[data-format="XLSX"],
+.document-type[data-format="CSV"] {
+  background: #ebfbee;
+  color: #2b8a3e;
+}
+.document-type[data-format="Hình ảnh"],
+.document-type[data-format="IMAGE"] {
   background: #e3fafc;
   color: #0b7285;
 }
 .document-type[data-format="Video"] {
   background: #f3f0ff;
   color: #6741d9;
+}
+.document-type[data-format="Audio"],
+.document-type[data-format="Podcast"] {
+  background: #fff0f6;
+  color: #c2255c;
+}
+.document-type[data-format="Mã nguồn"],
+.document-type[data-format="Notebook"],
+.document-type[data-format="Code"] {
+  background: #e6fcf5;
+  color: #0ca678;
+}
+.document-type[data-format="Tập dữ liệu"],
+.document-type[data-format="Dataset"] {
+  background: #fff9db;
+  color: #f08c00;
+}
+.document-type[data-format="Ebook"] {
+  background: #f4ece1;
+  color: #8c5b36;
 }
 .document-type[data-format="Khác"] {
   background: #f1f3f5;
@@ -20662,6 +20702,16 @@ body.dark-theme .all-review-card-footer {
 /* ==========================================================================
    22. POST LINKED DOCUMENT & EXTERNAL LINK VIEWER
    ========================================================================== */
+.post-linked-docs-block {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+.post-linked-docs-list {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
 .post-linked-doc-card {
   display: flex;
   align-items: center;
@@ -20672,6 +20722,9 @@ body.dark-theme .all-review-card-footer {
   border-radius: 8px;
   padding: 12px 16px;
   margin: 16px 0;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
   transition: all 0.2s ease;
 }
 .post-linked-doc-card:hover {
@@ -20719,9 +20772,9 @@ body.dark-theme .all-review-card-footer {
   font-weight: 600;
   color: var(--ink, #1e293b);
   line-height: 1.4;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  white-space: normal;
 }
 .post-linked-doc-actions {
   display: flex;
@@ -20785,11 +20838,41 @@ body.dark-theme .post-doc-tag {
   .post-linked-doc-card {
     flex-direction: column;
     align-items: flex-start;
-    gap: 10px;
+    gap: 8px;
+    padding: 10px 12px;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+  .post-linked-doc-icon {
+    display: none !important;
+  }
+  .post-linked-doc-info {
+    width: 100%;
+    min-width: 0;
+  }
+  .post-linked-doc-title {
+    white-space: normal !important;
+    word-break: break-word !important;
+    overflow-wrap: anywhere !important;
+    font-size: 13.5px;
+    line-height: 1.4;
   }
   .post-linked-doc-actions {
     width: 100%;
     justify-content: flex-start;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 4px;
+  }
+  .post-linked-doc-actions .button {
+    font-size: 12px !important;
+    padding: 5px 10px !important;
+  }
+  .doc-attach-item-title {
+    white-space: normal !important;
+    word-break: break-word !important;
+    overflow-wrap: anywhere !important;
   }
 }
 
@@ -21026,9 +21109,10 @@ body.dark-theme .doc-picker-toolbar {
   font-size: 13px;
   font-weight: 600;
   color: var(--ink, #1e293b);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  white-space: normal;
+  line-height: 1.35;
 }
 .doc-attach-item-meta {
   font-size: 11px;

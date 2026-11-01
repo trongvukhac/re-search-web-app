@@ -2358,12 +2358,12 @@ function postCard(post) {
   const ncAttr = authorUserId ? `data-namecard-user-id="${authorUserId}" style="cursor: pointer;" title="Xem thẻ tên"` : "";
   const linkedDocs = post.linkedDocuments || (post.linkedDocument ? [post.linkedDocument] : []);
   let docBadge = "";
-  if (linkedDocs.length === 1) {
-    docBadge = `<span class="post-tag post-doc-tag" onclick="event.stopPropagation(); viewDocumentById(${linkedDocs[0].id})" title="Tài liệu đính kèm: ${escapeHTML(linkedDocs[0].title)}" style="display:inline-flex; align-items:center; gap:4px; max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg> 📎 ${escapeHTML(linkedDocs[0].title)}</span>`;
-  } else if (linkedDocs.length > 1) {
+  if (linkedDocs.length > 0) {
     const allTitles = linkedDocs.map(d => d.title).join(", ");
-    docBadge = `<span class="post-tag post-doc-tag" onclick="event.stopPropagation(); viewDocumentById(${linkedDocs[0].id})" title="Tài liệu: ${escapeHTML(linkedDocs[0].title)}" style="display:inline-flex; align-items:center; gap:4px; max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg> 📎 ${escapeHTML(linkedDocs[0].title)}</span>` +
-      `<span class="post-tag post-doc-tag post-doc-more-tag" onclick="event.stopPropagation(); openDetail(${post.id})" title="${linkedDocs.length} tài liệu đính kèm: ${escapeHTML(allTitles)}" style="display:inline-flex; align-items:center; gap:3px;">+${linkedDocs.length - 1} tài liệu</span>`;
+    const clickAction = linkedDocs.length === 1 
+      ? `viewDocumentById(${linkedDocs[0].id})` 
+      : `openDetail(${post.id})`;
+    docBadge = `<span class="post-tag post-doc-tag" onclick="event.stopPropagation(); ${clickAction}" title="${linkedDocs.length} tài liệu đính kèm: ${escapeHTML(allTitles)}" style="display:inline-flex; align-items:center; gap:4px; font-weight:600;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg> 📎 ${linkedDocs.length} tài liệu</span>`;
   }
   return `<article class="post-card ${post.authorRole === "admin" ? "admin-post" : ""}" data-post-id="${post.id}" style="position: relative;">
     ${adminBtns}${editBtn}
@@ -3270,6 +3270,24 @@ try {
   platformReviewActiveSeconds = parseInt(sessionStorage.getItem("re_search_platform_active_sec") || "0", 10);
 } catch (e) {}
 
+function getRatingPromptTodayKey() {
+  try {
+    return new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Ho_Chi_Minh" }).format(new Date());
+  } catch (e) {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  }
+}
+
+function isRatingBannerDismissedToday() {
+  try {
+    const today = getRatingPromptTodayKey();
+    if (localStorage.getItem("re_search_rating_dismissed_" + today) === "1") return true;
+    if (sessionStorage.getItem("re_search_rating_banner_dismissed") === "1") return true;
+  } catch (e) {}
+  return false;
+}
+
 function initPlatformRatingPromptTracker() {
   if (platformReviewTrackerInterval) return;
 
@@ -3293,8 +3311,8 @@ function initPlatformRatingPromptTracker() {
     if (document.visibilityState !== "visible") return;
     if (Date.now() - lastUserInteractionTime > 90000) return;
 
-    // Nếu đã đánh giá rồi hoặc đã đóng thông báo trong phiên này thì không đếm tiếp
-    if (sessionStorage.getItem("re_search_rating_banner_dismissed") === "1") return;
+    // Nếu đã đánh giá rồi hoặc đã bấm bỏ qua trong ngày hôm nay thì không đếm tiếp
+    if (isRatingBannerDismissedToday()) return;
     if (localStorage.getItem("re_search_user_rated_v1") === "1") return;
     if (typeof siteReviewsData !== "undefined" && siteReviewsData && siteReviewsData.myReview) return;
 
@@ -3316,7 +3334,7 @@ function initPlatformRatingPromptTracker() {
 function showPlatformRatingBanner() {
   if (document.getElementById("platformRatingBanner")) return;
   // Kiểm tra điều kiện
-  if (sessionStorage.getItem("re_search_rating_banner_dismissed") === "1") return;
+  if (isRatingBannerDismissedToday()) return;
   if (localStorage.getItem("re_search_user_rated_v1") === "1") return;
   if (typeof siteReviewsData !== "undefined" && siteReviewsData && siteReviewsData.myReview) return;
 
@@ -3335,9 +3353,9 @@ function showPlatformRatingBanner() {
   banner.innerHTML = `
     <div style="font-size: 24px; flex-shrink: 0; line-height: 1;">⭐</div>
     <div style="flex: 1; min-width: 0;">
-      <div style="font-weight: 700; color: #fbbf24; margin-bottom: 3px; font-size: 14px;">Bạn thấy RE:SEARCH thế nào?</div>
+      <div style="font-weight: 700; color: #fbbf24; margin-bottom: 3px; font-size: 14px;">Bạn thấy trải nghiệm với RE:SEARCH như thế nào?</div>
       <div style="font-size: 12px; color: #94a3b8; line-height: 1.4;">
-        Bạn đã đồng hành cùng RE:SEARCH hơn 5 phút. Hãy dành chút thời gian gửi đánh giá để cộng đồng ngày càng hoàn thiện hơn nhé! (Tự đóng sau <strong id="ratingBannerSec" style="color: #fff; font-size: 13px;">${formatCountdown(countdown)}</strong>)
+        Hãy dành ít phút đánh giá nền tảng nhé (Tự đóng sau <strong id="ratingBannerSec" style="color: #fff; font-size: 13px;">${formatCountdown(countdown)}</strong>)
       </div>
     </div>
     <div style="display: flex; flex-direction: column; gap: 6px; flex-shrink: 0;">
@@ -3345,7 +3363,7 @@ function showPlatformRatingBanner() {
         Đánh giá ngay
       </button>
       <button type="button" class="button button-quiet button-xs" style="color: #94a3b8; border:none; padding: 2px 4px; cursor: pointer; font-size: 11px; text-align: center; background: transparent;" onclick="dismissRatingBanner(true)">
-        Để sau
+        Bỏ qua
       </button>
     </div>
   `;
@@ -3369,7 +3387,15 @@ function dismissRatingBanner(byUser = false) {
   if (!banner) return;
   if (banner._timer) clearInterval(banner._timer);
   if (byUser) {
-    try { sessionStorage.setItem("re_search_rating_banner_dismissed", "1"); } catch (e) {}
+    try {
+      const today = getRatingPromptTodayKey();
+      localStorage.setItem("re_search_rating_dismissed_" + today, "1");
+      sessionStorage.setItem("re_search_rating_banner_dismissed", "1");
+    } catch (e) {}
+  } else {
+    try {
+      sessionStorage.setItem("re_search_rating_banner_dismissed", "1");
+    } catch (e) {}
   }
   banner.style.opacity = "0";
   banner.style.transform = "translateY(20px) scale(0.96)";
@@ -3389,6 +3415,8 @@ window.showPlatformRatingBanner = showPlatformRatingBanner;
 window.dismissRatingBanner = dismissRatingBanner;
 window.handleRatingBannerAction = handleRatingBannerAction;
 window.initPlatformRatingPromptTracker = initPlatformRatingPromptTracker;
+window.getRatingPromptTodayKey = getRatingPromptTodayKey;
+window.isRatingBannerDismissedToday = isRatingBannerDismissedToday;
 
 let postReadTimer = null;
 let postReadActivePostId = null;

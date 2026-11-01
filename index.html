@@ -29,7 +29,7 @@
     <script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js" defer></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" defer></script>
-    <link rel="stylesheet" href="styles.css?v=106" />
+    <link rel="stylesheet" href="styles.css?v=107" />
   </head>
   <body>
     <dialog
@@ -2394,10 +2394,17 @@
         /></label>
         <label
           >Định dạng<select id="docFormat">
-            <option value="PDF">PDF</option>
-            <option value="Hình ảnh">Hình ảnh</option>
-            <option value="Video">Video</option>
-            <option value="Khác">Khác (Link)</option>
+            <option value="PDF">PDF (Tài liệu PDF)</option>
+            <option value="Word">Word (DOC/DOCX - Đề cương, mẫu báo cáo)</option>
+            <option value="Slide">Slide (PPT/PPTX - Bài giảng, trình chiếu)</option>
+            <option value="Bảng tính">Bảng tính (Excel/CSV - Bảng tính, số liệu)</option>
+            <option value="Hình ảnh">Hình ảnh (Sơ đồ, infographic, tư liệu)</option>
+            <option value="Video">Video (Bài giảng ghi hình, hội thảo)</option>
+            <option value="Audio">Audio (Podcast, ghi âm bài giảng, phỏng vấn)</option>
+            <option value="Mã nguồn">Mã nguồn (Code Python, R, Jupyter Notebook)</option>
+            <option value="Tập dữ liệu">Tập dữ liệu (Dataset khảo sát, dữ liệu thô)</option>
+            <option value="Ebook">Ebook (Sách điện tử, giáo trình toàn văn)</option>
+            <option value="Khác">Khác (Liên kết web, tư liệu khác)</option>
           </select></label
         >
         <label
@@ -5237,6 +5244,6 @@
       </div>
     </dialog>
 
-    <script src="app.js?v=122" defer></script>
+    <script src="app.js?v=123" defer></script>
   </body>
 </html>
