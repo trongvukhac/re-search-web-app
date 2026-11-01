@@ -4433,6 +4433,9 @@ async function api(request, response, url) {
       return error(response, 403, "Chỉ chủ sở hữu thẻ tên mới có quyền xem danh sách người yêu thích.");
     }
 
+    const countRow = db.prepare("SELECT COUNT(*) AS count FROM namecard_likes WHERE to_user_id = ?").get(targetUserId);
+    const totalCount = Number(countRow?.count || 0);
+
     const rows = db.prepare(`
       SELECT nl.id, nl.from_user_id, nl.created_at,
              u.display_name, u.avatar, u.role,
@@ -4441,6 +4444,7 @@ async function api(request, response, url) {
       JOIN users u ON u.id = nl.from_user_id
       WHERE nl.to_user_id = ?
       ORDER BY nl.created_at DESC
+      LIMIT 50
     `).all(user.id, targetUserId);
 
     const list = rows.map(r => ({
@@ -4454,7 +4458,7 @@ async function api(request, response, url) {
       hasLikedBack: Boolean(r.has_liked_back)
     }));
 
-    return json(response, 200, { likes: list, total: list.length });
+    return json(response, 200, { likes: list, total: totalCount });
   }
 
   if (method === "POST" && pathName === "/api/me/change-password") {

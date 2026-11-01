@@ -6659,9 +6659,8 @@ const COVER_PRESETS = [
 
 window.openNamecard = async function(userId) {
   if (!userId) return;
-  const likesModal = document.getElementById("namecardLikesModal");
-  if (likesModal && typeof likesModal.close === "function" && likesModal.open) {
-    likesModal.close();
+  if (typeof closeNamecardLikesPopover === "function") {
+    closeNamecardLikesPopover();
   }
   try {
     const data = await requestAPI(`/api/users/${userId}/namecard`);
@@ -6711,7 +6710,7 @@ window.openNamecard = async function(userId) {
         likeBtn.title = "Bấm để xem danh sách người đã yêu thích thẻ tên của bạn";
         likeBtn.onclick = (e) => {
           e.stopPropagation();
-          showNamecardLikesModal(data.user.id);
+          toggleNamecardLikesPopover(data.user.id);
         };
       } else {
         if (hasLiked) {
@@ -6990,72 +6989,188 @@ window.filterForumByUser = function() {
   }
 };
 
-window.showNamecardLikesModal = async function(userId) {
-  const modal = document.getElementById("namecardLikesModal");
-  if (!modal) return;
-  const body = document.getElementById("namecardLikesBody");
-  const countBadge = document.getElementById("namecardLikesTotalBadge");
-  if (body) {
-    body.innerHTML = `
-      <div style="text-align: center; padding: 24px 16px; color: var(--muted); font-size: 13px;">
+let currentNamecardLikesList = [];
+let currentNamecardLikesPage = 1;
+const NC_LIKES_PER_PAGE = 5;
+const NC_LIKES_MAX_PAGES = 10;
+
+function formatPopoverTime(isoStr) {
+  if (!isoStr) return "Hôm nay";
+  const date = new Date(isoStr);
+  if (isNaN(date.getTime())) return "Hôm nay";
+
+  const now = new Date();
+  const isToday = date.getDate() === now.getDate() &&
+                  date.getMonth() === now.getMonth() &&
+                  date.getFullYear() === now.getFullYear();
+
+  const timeStr = date.toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" });
+  if (isToday) return `${timeStr} hôm nay`;
+
+  const yesterday = new Date(now);
+  yesterday.setDate(now.getDate() - 1);
+  const isYesterday = date.getDate() === yesterday.getDate() &&
+                      date.getMonth() === yesterday.getMonth() &&
+                      date.getFullYear() === yesterday.getFullYear();
+  if (isYesterday) return `${timeStr} hôm qua`;
+
+  return `${timeStr} ngày ${date.toLocaleDateString("vi-VN", { day: '2-digit', month: '2-digit' })}`;
+}
+
+window.closeNamecardLikesPopover = function(e) {
+  if (e) e.stopPropagation();
+  const popover = document.getElementById("namecardLikesPopover");
+  if (popover) {
+    popover.style.display = "none";
+  }
+};
+
+window.toggleNamecardLikesPopover = async function(userId) {
+  const popover = document.getElementById("namecardLikesPopover");
+  if (!popover) return;
+
+  if (popover.style.display === "block") {
+    closeNamecardLikesPopover();
+    return;
+  }
+
+  const listEl = document.getElementById("namecardPopoverList");
+  const countBadge = document.getElementById("namecardPopoverTotalBadge");
+  const paginationEl = document.getElementById("namecardPopoverPagination");
+  const limitNoteEl = document.getElementById("namecardPopoverLimitNote");
+
+  if (listEl) {
+    listEl.innerHTML = `
+      <div style="text-align: center; padding: 32px 16px; color: var(--muted); font-size: 13px;">
         <svg class="spinner" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="animation: spin 0.8s linear infinite; display: inline-block; margin-bottom: 8px;"><circle cx="12" cy="12" r="10" stroke-opacity="0.25"></circle><path d="M12 2a10 10 0 0 1 10 10"></path></svg>
         <div>Đang tải danh sách...</div>
       </div>`;
   }
-  modal.showModal();
+  if (paginationEl) paginationEl.innerHTML = "";
+  if (limitNoteEl) limitNoteEl.style.display = "none";
+
+  popover.style.display = "block";
 
   try {
     const res = await requestAPI(`/api/users/${userId}/namecard-likes`);
-    const likes = res?.likes || [];
-    if (countBadge) countBadge.textContent = likes.length;
+    currentNamecardLikesList = res?.likes || [];
+    currentNamecardLikesPage = 1;
+    const totalLikes = typeof res?.total === "number" ? res.total : currentNamecardLikesList.length;
 
-    if (!likes.length) {
-      if (body) {
-        body.innerHTML = `
+    if (countBadge) countBadge.textContent = totalLikes;
+
+    if (!currentNamecardLikesList.length) {
+      if (listEl) {
+        listEl.innerHTML = `
           <div style="text-align: center; padding: 32px 16px; color: var(--muted); font-size: 13px;">
             <div style="font-size: 32px; margin-bottom: 8px;">🤍</div>
             <strong style="display: block; font-size: 14px; color: var(--ink); margin-bottom: 4px;">Chưa có lượt yêu thích nào</strong>
-            <p style="margin: 0; line-height: 1.45;">Hãy tích cực chia sẻ và thảo luận để thẻ tên của bạn được nhiều người biết đến hơn nhé!</p>
+            <p style="margin: 0; line-height: 1.45; font-size: 12px;">Hãy tích cực chia sẻ và thảo luận để thẻ tên của bạn được nhiều người biết đến hơn nhé!</p>
           </div>`;
       }
       return;
     }
 
-    if (body) {
-      body.innerHTML = `
-        <div class="namecard-likes-list" style="display: flex; flex-direction: column; gap: 8px;">
-          ${likes.map(l => {
-            const likeBackBtn = l.hasLikedBack
-              ? `<button type="button" class="button button-outline button-sm" disabled style="opacity: 0.7; gap: 4px; pointer-events: none; font-size: 11px; padding: 4px 10px; border-radius: 6px;">
-                   <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-                   <span>Đã yêu thích</span>
-                 </button>`
-              : `<button type="button" class="button button-primary button-sm" onclick="likeBackUser(event, ${l.fromUserId}, this)" style="gap: 4px; font-size: 11px; padding: 4px 10px; border-radius: 6px;">
-                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-                   <span>Yêu thích</span>
-                 </button>`;
-            return `
-              <div class="namecard-like-row" style="display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface);">
-                <div style="display: flex; align-items: center; gap: 10px; min-width: 0; flex: 1;">
-                  <span class="avatar avatar-sm ${getAvatarClass(l.streakTier, false, l.role)}" data-namecard-user-id="${l.fromUserId}" style="cursor: pointer;" title="Xem thẻ tên">${l.avatar}</span>
-                  <div style="min-width: 0; flex: 1;">
-                    <div style="display: flex; align-items: center; gap: 6px; line-height: 1.2;">
-                      <strong class="${getNameClass(l.streakTier)}" data-namecard-user-id="${l.fromUserId}" style="cursor: pointer; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHTML(l.displayName)}</strong>
-                      ${l.role === "admin" ? '<span style="font-size: 10px; font-weight: 700; color: #92400e; background: #fef3c7; padding: 1px 6px; border-radius: 4px;">Admin</span>' : (l.role === "lecturer" ? '<span style="font-size: 10px; font-weight: 700; color: #0369a1; background: #e0f2fe; padding: 1px 6px; border-radius: 4px;">Giảng viên</span>' : "")}
-                    </div>
-                    <small style="color: var(--muted); font-size: 11px; display: block; margin-top: 2px;">${formatTime(l.createdAt)}</small>
-                  </div>
-                </div>
-                <div style="flex-shrink: 0;">
-                  ${likeBackBtn}
-                </div>
-              </div>`;
-          }).join("")}
-        </div>`;
+    renderNamecardLikesPage(1);
+  } catch (err) {
+    if (listEl) {
+      listEl.innerHTML = `<div style="text-align: center; padding: 24px; color: var(--error); font-size: 12.5px;">${escapeHTML(err.message || "Không thể tải danh sách.")}</div>`;
     }
-  } catch (e) {
-    if (body) {
-      body.innerHTML = `<div style="text-align: center; padding: 24px; color: var(--error);">${escapeHTML(e.message || "Không thể tải danh sách người yêu thích.")}</div>`;
+  }
+};
+
+window.renderNamecardLikesPage = function(page) {
+  const listEl = document.getElementById("namecardPopoverList");
+  const paginationEl = document.getElementById("namecardPopoverPagination");
+  const limitNoteEl = document.getElementById("namecardPopoverLimitNote");
+
+  const totalItems = currentNamecardLikesList.length;
+  const totalPages = Math.min(NC_LIKES_MAX_PAGES, Math.max(1, Math.ceil(totalItems / NC_LIKES_PER_PAGE)));
+
+  page = Math.max(1, Math.min(page, totalPages));
+  currentNamecardLikesPage = page;
+
+  const start = (page - 1) * NC_LIKES_PER_PAGE;
+  const pageItems = currentNamecardLikesList.slice(start, start + NC_LIKES_PER_PAGE);
+
+  if (listEl) {
+    listEl.innerHTML = pageItems.map(l => {
+      const actionBtn = l.hasLikedBack
+        ? `<button type="button" class="nc-popover-action-btn is-liked" disabled>
+             <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+             <span>Đã yêu thích</span>
+           </button>`
+        : `<button type="button" class="nc-popover-action-btn" onclick="likeBackUser(event, ${l.fromUserId}, this)">
+             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+             <span>Yêu thích</span>
+           </button>`;
+
+      return `
+        <div class="nc-popover-user-row">
+          <div class="nc-popover-user-left">
+            <div class="nc-popover-avatar ${getAvatarClass(l.streakTier, false, l.role)}" data-namecard-user-id="${l.fromUserId}" title="Xem thẻ tên">${l.avatar}</div>
+            <div class="nc-popover-user-info">
+              <div class="nc-popover-user-name ${getNameClass(l.streakTier)}" data-namecard-user-id="${l.fromUserId}" title="${escapeHTML(l.displayName)}">${escapeHTML(l.displayName)}</div>
+              <div class="nc-popover-user-time">${formatPopoverTime(l.createdAt)}</div>
+            </div>
+          </div>
+          <div style="flex-shrink: 0;">
+            ${actionBtn}
+          </div>
+        </div>`;
+    }).join("");
+  }
+
+  // Render pagination
+  if (paginationEl) {
+    if (totalPages <= 1) {
+      paginationEl.innerHTML = "";
+    } else {
+      let pageButtonsHtml = "";
+
+      // Previous button
+      pageButtonsHtml += `<button type="button" class="nc-page-arrow" onclick="renderNamecardLikesPage(${page - 1})" ${page <= 1 ? "disabled" : ""} aria-label="Trang trước">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"></polyline></svg>
+      </button>`;
+
+      // Page numbers with ellipsis
+      const pageNumbers = [];
+      if (totalPages <= 7) {
+        for (let i = 1; i <= totalPages; i++) pageNumbers.push(i);
+      } else {
+        if (page <= 4) {
+          pageNumbers.push(1, 2, 3, 4, 5, "...", totalPages);
+        } else if (page >= totalPages - 3) {
+          pageNumbers.push(1, "...", totalPages - 4, totalPages - 3, totalPages - 2, totalPages - 1, totalPages);
+        } else {
+          pageNumbers.push(1, "...", page - 1, page, page + 1, "...", totalPages);
+        }
+      }
+
+      pageNumbers.forEach(p => {
+        if (p === "...") {
+          pageButtonsHtml += `<span class="nc-page-dots">…</span>`;
+        } else {
+          const isActive = p === page ? "active" : "";
+          pageButtonsHtml += `<button type="button" class="nc-page-num ${isActive}" onclick="renderNamecardLikesPage(${p})">${p}</button>`;
+        }
+      });
+
+      // Next button
+      pageButtonsHtml += `<button type="button" class="nc-page-arrow" onclick="renderNamecardLikesPage(${page + 1})" ${page >= totalPages ? "disabled" : ""} aria-label="Trang sau">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg>
+      </button>`;
+
+      paginationEl.innerHTML = pageButtonsHtml;
+    }
+  }
+
+  // Check requirement: "ở trang 10 sẽ hiện dòng ở cuối 'Chỉ hiển thị 50 lượt yêu thích gần nhất'"
+  if (limitNoteEl) {
+    if (page === 10 || (page === totalPages && currentNamecardLikesList.length >= 50)) {
+      limitNoteEl.style.display = "block";
+    } else {
+      limitNoteEl.style.display = "none";
     }
   }
 };
@@ -7067,20 +7182,37 @@ window.likeBackUser = async function(e, targetUserId, btn) {
   try {
     const res = await requestAPI(`/api/users/${targetUserId}/like-namecard`, { method: "POST" });
     if (res && res.ok) {
-      btn.className = "button button-outline button-sm";
+      btn.className = "nc-popover-action-btn is-liked";
       btn.disabled = true;
-      btn.style.opacity = "0.7";
-      btn.style.pointerEvents = "none";
       btn.innerHTML = `
         <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
         <span>Đã yêu thích</span>`;
       toast("Đã yêu thích lại thẻ tên!");
+      const item = currentNamecardLikesList.find(l => l.fromUserId === targetUserId);
+      if (item) item.hasLikedBack = true;
     }
   } catch (err) {
     toast(err.message || "Không thể gửi yêu thích.");
     btn.disabled = false;
   }
 };
+
+// Global click and ESC listeners for popover
+document.addEventListener("click", (e) => {
+  const popover = document.getElementById("namecardLikesPopover");
+  if (!popover || popover.style.display === "none") return;
+  const likeBtn = document.getElementById("namecardLikeBtn");
+  if (popover.contains(e.target) || (likeBtn && likeBtn.contains(e.target))) {
+    return;
+  }
+  closeNamecardLikesPopover();
+});
+
+window.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") {
+    closeNamecardLikesPopover();
+  }
+});
 
 // ==========================================
 // MODAL 1: CHỈNH SỬA THẺ TÊN & TRANG TRÍ

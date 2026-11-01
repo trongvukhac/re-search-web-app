@@ -29,7 +29,7 @@
     <script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js" defer></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" defer></script>
-    <link rel="stylesheet" href="styles.css?v=112" />
+    <link rel="stylesheet" href="styles.css?v=113" />
   </head>
   <body>
     <dialog
@@ -2622,10 +2622,39 @@
                       <h2 class="namecard-display-name" id="namecardDisplayName" style="margin: 0;">Tên người dùng</h2>
                       <button type="button" class="namecard-edit-name-btn" id="namecardEditNameBtn" onclick="openEditNamecardModal('name')" style="display: none;" title="Chỉnh sửa tên & tiểu sử">✏️ Sửa</button>
                     </div>
-                    <button type="button" class="namecard-like-btn" id="namecardLikeBtn" title="Yêu thích thẻ tên" data-streak-tier="0">
-                      <svg class="nc-heart-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
-                      <span class="nc-like-count" id="namecardLikeCount">0</span>
-                    </button>
+                    <div class="namecard-like-anchor">
+                      <button type="button" class="namecard-like-btn" id="namecardLikeBtn" title="Yêu thích thẻ tên" data-streak-tier="0">
+                        <svg class="nc-heart-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+                        <span class="nc-like-count" id="namecardLikeCount">0</span>
+                      </button>
+
+                      <!-- POPOVER CỬA SỔ NHỎ NẢY RA (XEM DEMO) -->
+                      <div class="namecard-likes-popover" id="namecardLikesPopover" style="display: none;" role="dialog" aria-labelledby="namecardPopoverTitle">
+                        <div class="nc-popover-head">
+                          <div class="nc-popover-title-row">
+                            <svg class="nc-popover-heart-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+                            <span class="nc-popover-title" id="namecardPopoverTitle">Người yêu thích thẻ tên</span>
+                            <span class="nc-popover-total-pill" id="namecardPopoverTotalBadge">0</span>
+                          </div>
+                          <button type="button" class="nc-popover-close-btn" onclick="closeNamecardLikesPopover(event)" aria-label="Đóng">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                          </button>
+                        </div>
+                        <div class="nc-popover-lock-note">
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                          <span>Chỉ bạn mới có thể xem danh sách này.</span>
+                        </div>
+                        <div class="nc-popover-list" id="namecardPopoverList">
+                          <!-- 5 items will be dynamically rendered -->
+                        </div>
+                        <div class="nc-popover-pagination-wrap" id="namecardPopoverPagination">
+                          <!-- Pagination controls -->
+                        </div>
+                        <div class="nc-popover-limit-note" id="namecardPopoverLimitNote" style="display: none;">
+                          Chỉ hiển thị 50 lượt yêu thích gần nhất
+                        </div>
+                      </div>
+                    </div>
                   </div>
                   <div class="namecard-badges">
                     <span class="namecard-role-badge" id="namecardRoleBadge">
@@ -3065,26 +3094,6 @@
       </div>
     </dialog>
 
-    <!-- MODAL DANH SÁCH NGƯỜI YÊU THÍCH THẺ TÊN (Chỉ chính chủ xem được) -->
-    <dialog class="modal" id="namecardLikesModal" aria-labelledby="namecardLikesTitle">
-      <div class="modal-card" style="max-width: 440px; width: 100%;">
-        <div class="modal-head" style="padding: 18px 20px; border-bottom: 1px solid var(--line);">
-          <div>
-            <p class="eyebrow" style="margin-bottom: 4px;">THẺ TÊN CỦA BẠN</p>
-            <h2 id="namecardLikesTitle" style="font-size: 17px; margin: 0; display: flex; align-items: center; gap: 8px;">
-              <span>Người đã yêu thích</span>
-              <span class="badge" id="namecardLikesTotalBadge" style="font-size: 11.5px; padding: 2px 8px; border-radius: 999px;">0</span>
-            </h2>
-          </div>
-          <button type="button" class="close-modal" onclick="document.getElementById('namecardLikesModal').close()" aria-label="Đóng">
-            <svg class="ui-icon modal-close-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-          </button>
-        </div>
-        <div class="modal-body" id="namecardLikesBody" style="max-height: 420px; overflow-y: auto; padding: 14px 16px;">
-          <!-- Nạp động bằng JavaScript -->
-        </div>
-      </div>
-    </dialog>
 
     <!-- MODAL 3: ĐỔI MẬT KHẨU -->
     <dialog class="modal" id="changePasswordModal">
@@ -5305,6 +5314,6 @@
       </div>
     </dialog>
 
-    <script src="app.js?v=128" defer></script>
+    <script src="app.js?v=129" defer></script>
   </body>
 </html>
