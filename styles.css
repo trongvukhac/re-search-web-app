@@ -20793,6 +20793,211 @@ body.dark-theme .post-doc-tag {
   }
 }
 
+/* ==========================================================================
+   23. SMART DOCUMENT PICKER & ATTACHMENT WIDGET
+   ========================================================================== */
+.button-xs {
+  padding: 3px 8px !important;
+  font-size: 11px !important;
+  height: 26px !important;
+  border-radius: 6px !important;
+  line-height: 1 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.doc-attach-box {
+  border: 1.5px dashed var(--line, #cbd5e1);
+  border-radius: 10px;
+  background: var(--surface-2, #f8fafc);
+  transition: all 0.2s ease;
+  overflow: hidden;
+}
+.doc-attach-box:hover {
+  border-color: var(--primary, #123d30);
+  background: var(--surface, #ffffff);
+}
+.doc-attach-empty-state {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  cursor: pointer;
+}
+.doc-attach-empty-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: rgba(18, 61, 48, 0.08);
+  color: var(--primary, #123d30);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.doc-attach-empty-text {
+  flex: 1;
+  min-width: 0;
+}
+.doc-attach-empty-title {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--ink, #1e293b);
+}
+.doc-attach-empty-desc {
+  font-size: 11.5px;
+  color: var(--muted, #64748b);
+  margin-top: 2px;
+}
+.doc-attach-btn {
+  flex-shrink: 0;
+  font-size: 12px !important;
+  padding: 6px 12px !important;
+}
+
+.doc-attach-selected-state {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  background: rgba(18, 61, 48, 0.04);
+  border: 1px solid rgba(18, 61, 48, 0.25);
+  border-radius: 10px;
+}
+.doc-format-pill {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 3px 6px;
+  border-radius: 4px;
+  background: var(--primary, #123d30);
+  color: #ffffff;
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+.doc-attach-selected-info {
+  flex: 1;
+  min-width: 0;
+}
+.doc-attach-selected-title {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--ink, #1e293b);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.doc-attach-selected-meta {
+  font-size: 11px;
+  color: var(--muted, #64748b);
+  margin-top: 2px;
+}
+.doc-attach-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+/* Document Picker List Item */
+.doc-picker-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border: 1px solid var(--line, #e2e8f0);
+  border-radius: 8px;
+  background: var(--surface, #ffffff);
+  transition: all 0.15s ease;
+  cursor: pointer;
+}
+.doc-picker-item:hover {
+  border-color: var(--primary, #123d30);
+  background: var(--surface-2, #f8fafc);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.04);
+}
+.doc-picker-item.is-selected {
+  border-color: var(--primary, #123d30);
+  background: rgba(18, 61, 48, 0.06);
+}
+.doc-picker-item-info {
+  flex: 1;
+  min-width: 0;
+}
+.doc-picker-item-title {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--ink, #1e293b);
+  margin-bottom: 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.doc-picker-item-desc {
+  font-size: 12px;
+  color: var(--muted, #64748b);
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.doc-picker-item-meta {
+  font-size: 11px;
+  color: var(--muted, #64748b);
+  margin-top: 3px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+body.dark-theme .doc-attach-box {
+  background: #182028;
+  border-color: rgba(255, 255, 255, 0.15);
+}
+body.dark-theme .doc-attach-empty-icon {
+  background: rgba(52, 211, 153, 0.15);
+  color: #34d399;
+}
+body.dark-theme .doc-attach-empty-title,
+body.dark-theme .doc-attach-selected-title {
+  color: #f1f5f9;
+}
+body.dark-theme .doc-attach-selected-state {
+  background: rgba(52, 211, 153, 0.08);
+  border-color: rgba(52, 211, 153, 0.3);
+}
+body.dark-theme .doc-format-pill {
+  background: #34d399;
+  color: #064e3b;
+}
+body.dark-theme .doc-picker-item {
+  background: #182028;
+  border-color: rgba(255, 255, 255, 0.12);
+}
+body.dark-theme .doc-picker-item:hover {
+  background: #202b36;
+  border-color: #34d399;
+}
+body.dark-theme .doc-picker-item.is-selected {
+  background: rgba(52, 211, 153, 0.12);
+  border-color: #34d399;
+}
+body.dark-theme .doc-picker-item-title {
+  color: #f1f5f9;
+}
+body.dark-theme .doc-picker-container,
+body.dark-theme .doc-picker-head,
+body.dark-theme .doc-picker-footer {
+  background: #182028 !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+}
+body.dark-theme .doc-picker-toolbar {
+  background: #131920 !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+}
+
 
 
 

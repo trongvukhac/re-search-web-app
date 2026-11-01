@@ -29,7 +29,7 @@
     <script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js" defer></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" defer></script>
-    <link rel="stylesheet" href="styles.css?v=104" />
+    <link rel="stylesheet" href="styles.css?v=105" />
   </head>
   <body>
     <dialog
@@ -156,17 +156,20 @@
       "
     >
       <div class="doc-viewer-container">
-        <div class="modal-head doc-viewer-head" style="gap: 12px;">
+        <div class="modal-head doc-viewer-head" style="gap: 12px; padding: 12px 18px;">
           <div class="doc-viewer-head-title" style="flex: 1; min-width: 0;">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="doc-viewer-icon"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-            <h2 id="externalLinkTitle" class="doc-viewer-title" style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-              Liên kết ngoài
-            </h2>
+            <div style="flex: 1; min-width: 0;">
+              <h2 id="externalLinkTitle" class="doc-viewer-title" style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                Liên kết ngoài
+              </h2>
+              <div id="externalLinkUrlText" style="font-size: 11px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: monospace;"></div>
+            </div>
           </div>
-          <div style="display: flex; align-items: center; gap: 8px;">
-            <a id="externalLinkOpenTab" href="#" target="_blank" rel="noopener noreferrer" class="button button-outline" style="padding: 6px 12px; font-size: 0.82rem; height: 32px; display: inline-flex; align-items: center; gap: 6px; text-decoration: none;" title="Mở trang trong tab mới nếu trang web chặn nhúng">
+          <div style="display: flex; align-items: center; gap: 8px; flex-shrink: 0;">
+            <a id="externalLinkOpenTab" href="#" target="_blank" rel="noopener noreferrer" class="button button-primary" style="padding: 6px 14px; font-size: 0.82rem; height: 34px; display: inline-flex; align-items: center; gap: 6px; text-decoration: none;" title="Mở trang trong tab mới (không làm mất tiến trình đọc)">
               <span>Mở tab mới</span>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
             </a>
             <button
               class="close-modal"
@@ -178,13 +181,87 @@
             </button>
           </div>
         </div>
-        <div class="external-link-body" style="position: relative; flex: 1; width: 100%; height: calc(100% - 56px);">
+        <div id="externalLinkNotice" style="padding: 8px 18px; background: rgba(217,119,6,0.1); border-bottom: 1px solid rgba(217,119,6,0.22); color: #b45309; font-size: 12px; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-shrink: 0;">
+          <span style="display: flex; align-items: center; gap: 6px;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink: 0;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            Nếu trang bị trắng do chính sách chống nhúng (X-Frame-Options) của bên ngoài, hãy bấm <strong>Mở tab mới</strong>.
+          </span>
+          <a id="externalLinkDirectBtn" href="#" target="_blank" rel="noopener noreferrer" style="color: #b45309; font-weight: 700; text-decoration: underline; white-space: nowrap;">Mở trang ngay ↗</a>
+        </div>
+        <div class="external-link-body" style="position: relative; flex: 1; width: 100%; height: 100%;">
           <iframe
             id="externalLinkIframe"
             class="doc-viewer-iframe"
-            sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
+            sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-top-navigation-by-user-activation"
             style="width: 100%; height: 100%; border: none;"
           ></iframe>
+        </div>
+      </div>
+    </dialog>
+
+    <!-- SMART DOCUMENT PICKER MODAL -->
+    <dialog
+      id="documentPickerModal"
+      class="modal doc-picker-dialog"
+      style="
+        position: fixed;
+        inset: 0;
+        margin: auto;
+        width: 90vw;
+        max-width: 760px;
+        max-height: 85vh;
+        height: auto;
+        padding: 0;
+        border: none;
+        border-radius: 14px;
+        overflow: hidden;
+        box-shadow: 0 24px 65px rgba(0, 0, 0, 0.45);
+        z-index: 1050;
+      "
+    >
+      <div class="doc-picker-container" style="display: flex; flex-direction: column; height: 100%; max-height: 85vh; background: var(--surface);">
+        <div class="modal-head doc-picker-head" style="padding: 16px 20px; border-bottom: 1px solid var(--line); margin: 0; display: flex; align-items: center; justify-content: space-between;">
+          <div>
+            <p class="eyebrow" style="color: var(--primary); margin: 0 0 2px 0;">KHO TÀI LIỆU NCKH</p>
+            <h2 style="margin: 0; font-size: 1.15rem; font-weight: 700;">Chọn tài liệu đính kèm</h2>
+          </div>
+          <button type="button" class="close-modal" onclick="closeDocPicker()" aria-label="Đóng">
+            <svg class="ui-icon modal-close-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+          </button>
+        </div>
+
+        <div class="doc-picker-toolbar" style="padding: 12px 20px; background: var(--surface-2); border-bottom: 1px solid var(--line); display: flex; flex-direction: column; gap: 10px;">
+          <div class="search-inline" style="width: 100%;">
+            <span class="search-inline-icon">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+            </span>
+            <input
+              id="docPickerSearch"
+              type="search"
+              placeholder="Tìm theo tên bài giảng, giáo trình, tác giả..."
+              oninput="filterDocPickerList()"
+              style="width: 100%; border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px 8px 36px; font-size: 14px; background: var(--surface); color: var(--ink);"
+            />
+          </div>
+          <div class="doc-picker-chips" style="display: flex; gap: 6px; flex-wrap: wrap; align-items: center;">
+            <button type="button" class="filter-chip selected" data-picker-filter="all" onclick="setDocPickerFilter('all', this)">Tất cả</button>
+            <button type="button" class="filter-chip" data-picker-filter="course" onclick="setDocPickerFilter('course', this)">Tài liệu môn học</button>
+            <button type="button" class="filter-chip" data-picker-filter="reference" onclick="setDocPickerFilter('reference', this)">Tài liệu tham khảo</button>
+            <span style="flex: 1;"></span>
+            <span id="docPickerCount" style="font-size: 12px; color: var(--muted); font-weight: 500;">0 tài liệu</span>
+          </div>
+        </div>
+
+        <div id="docPickerList" class="doc-picker-list" style="flex: 1; max-height: 420px; min-height: 220px; overflow-y: auto; padding: 14px 20px; display: flex; flex-direction: column; gap: 8px;">
+        </div>
+
+        <div class="doc-picker-footer" style="padding: 12px 20px; border-top: 1px solid var(--line); background: var(--surface); display: flex; justify-content: space-between; align-items: center;">
+          <button type="button" class="button button-quiet button-sm" onclick="clearAndCloseDocPicker()">
+            Không đính kèm tài liệu
+          </button>
+          <button type="button" class="button button-outline button-sm" onclick="closeDocPicker()">
+            Đóng
+          </button>
         </div>
       </div>
     </dialog>
@@ -2131,11 +2208,39 @@
           <select id="questionTopic" style="flex: 1; margin: 0; min-height: 42px;"></select>
           <button type="button" class="button button-outline" id="proposeTopicBtn" style="padding: 0 12px; white-space: nowrap; margin: 0;">+ Chủ đề mới</button>
         </div>
-        <label style="margin-top: 12px; display: block; font-weight: 600;">Liên kết tài liệu (Tùy chọn)</label>
-        <div style="margin-top: 4px;">
-          <select id="questionLinkedDocument" style="width: 100%; margin: 0; min-height: 42px;">
-            <option value="">-- Không đính kèm tài liệu --</option>
-          </select>
+        <label style="margin-top: 14px; display: block; font-weight: 600;">Tài liệu liên kết từ Kho (Tùy chọn)</label>
+        <input type="hidden" id="questionLinkedDocId" value="" />
+        <div id="questionLinkedDocCard" class="doc-attach-box empty">
+          <div class="doc-attach-empty-state" onclick="openDocPicker('question')">
+            <div class="doc-attach-empty-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+            </div>
+            <div class="doc-attach-empty-text">
+              <div class="doc-attach-empty-title">Đính kèm tài liệu từ Kho tài liệu</div>
+              <div class="doc-attach-empty-desc">Nhấn để tìm kiếm và chọn bài giảng, giáo trình hoặc tài liệu tham khảo</div>
+            </div>
+            <button type="button" class="button button-outline button-sm doc-attach-btn">
+              + Chọn tài liệu
+            </button>
+          </div>
+          <div class="doc-attach-selected-state" style="display: none;">
+            <span class="doc-format-pill" id="questionDocFormatBadge">PDF</span>
+            <div class="doc-attach-selected-info">
+              <div class="doc-attach-selected-title" id="questionDocTitle">Tên tài liệu</div>
+              <div class="doc-attach-selected-meta" id="questionDocMeta">Tài liệu tham khảo</div>
+            </div>
+            <div class="doc-attach-actions">
+              <button type="button" class="button button-quiet button-xs" onclick="previewSelectedDoc('question')" title="Xem trước tài liệu">
+                👁 Xem
+              </button>
+              <button type="button" class="button button-outline button-xs" onclick="openDocPicker('question')" title="Đổi tài liệu khác">
+                Đổi
+              </button>
+              <button type="button" class="button button-quiet button-xs doc-remove-btn" onclick="removeAttachedDoc('question')" title="Bỏ chọn tài liệu">
+                ✕
+              </button>
+            </div>
+          </div>
         </div>
         <div class="anonymous-choice">
           <div>
@@ -2204,12 +2309,42 @@
         <label style="display:block; margin-bottom:4px; margin-top: 12px; font-weight: 600;">Nội dung</label>
         <div id="editContentContainer" style="height: 150px; border-radius: 8px;"></div>
         <small style="display:block; margin-top:4px;">Ít nhất 25 ký tự.</small>
-        <label id="editLinkedDocLabel" style="display:none; margin-top: 12px; font-weight: 600;">
-          Liên kết tài liệu (Tùy chọn)
-          <select id="editLinkedDocument" style="width: 100%; margin-top: 4px; min-height: 42px;">
-            <option value="">-- Không đính kèm tài liệu --</option>
-          </select>
-        </label>
+        <div id="editLinkedDocSection" style="display:none; margin-top: 14px;">
+          <label style="display: block; font-weight: 600; margin-bottom: 6px;">Tài liệu liên kết từ Kho (Tùy chọn)</label>
+          <input type="hidden" id="editLinkedDocId" value="" />
+          <div id="editLinkedDocCard" class="doc-attach-box empty">
+            <div class="doc-attach-empty-state" onclick="openDocPicker('edit')">
+              <div class="doc-attach-empty-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+              </div>
+              <div class="doc-attach-empty-text">
+                <div class="doc-attach-empty-title">Đính kèm tài liệu từ Kho tài liệu</div>
+                <div class="doc-attach-empty-desc">Nhấn để tìm kiếm và chọn bài giảng, giáo trình hoặc tài liệu tham khảo</div>
+              </div>
+              <button type="button" class="button button-outline button-sm doc-attach-btn">
+                + Chọn tài liệu
+              </button>
+            </div>
+            <div class="doc-attach-selected-state" style="display: none;">
+              <span class="doc-format-pill" id="editDocFormatBadge">PDF</span>
+              <div class="doc-attach-selected-info">
+                <div class="doc-attach-selected-title" id="editDocTitle">Tên tài liệu</div>
+                <div class="doc-attach-selected-meta" id="editDocMeta">Tài liệu tham khảo</div>
+              </div>
+              <div class="doc-attach-actions">
+                <button type="button" class="button button-quiet button-xs" onclick="previewSelectedDoc('edit')" title="Xem trước tài liệu">
+                  👁 Xem
+                </button>
+                <button type="button" class="button button-outline button-xs" onclick="openDocPicker('edit')" title="Đổi tài liệu khác">
+                  Đổi
+                </button>
+                <button type="button" class="button button-quiet button-xs doc-remove-btn" onclick="removeAttachedDoc('edit')" title="Bỏ chọn tài liệu">
+                  ✕
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
         <button type="submit" class="button" style="margin-top: 16px;">Lưu thay đổi</button>
       </form>
     </dialog>
@@ -5109,6 +5244,6 @@
       </div>
     </dialog>
 
-    <script src="app.js?v=120" defer></script>
+    <script src="app.js?v=121" defer></script>
   </body>
 </html>

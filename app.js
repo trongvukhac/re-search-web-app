@@ -2,6 +2,12 @@ let topics = [];
 let allTopics = [];
 const seedPosts = [];
 const documents = [];
+window.appDocuments = documents;
+function getAppDocument(id) {
+  const numId = Number(id);
+  return documents.find((d) => d.id === numId) || null;
+}
+window.getAppDocument = getAppDocument;
 let posts = [...seedPosts];
 let currentFilter = "all";
 let currentDocFilter = "all";
@@ -2536,10 +2542,18 @@ function renderDocuments() {
   );
 }
 
-window.viewDocumentById = function(docId) {
-  const doc = (window.documents || []).find((d) => d.id === Number(docId));
-  if (doc && doc.url) {
-    let previewUrl = doc.url;
+window.viewDocumentById = async function(docId) {
+  let doc = getAppDocument(docId);
+  if (!doc) {
+    try {
+      const res = await requestAPI("/api/documents");
+      if (res && res.documents) {
+        doc = res.documents.find((d) => d.id === Number(docId));
+      }
+    } catch (e) {}
+  }
+  if (doc && (doc.url || doc.sourceUrl)) {
+    let previewUrl = doc.url || doc.sourceUrl;
     if (
       previewUrl.includes("drive.google.com") &&
       previewUrl.includes("/view")
@@ -2551,13 +2565,17 @@ window.viewDocumentById = function(docId) {
     updateDocDiscussionUIState();
     if (typeof setDocAnonymousReply === "function") setDocAnonymousReply(false);
     loadDocComments(doc.id);
-    $("#viewerIframe").src = previewUrl;
+    const iframe = $("#viewerIframe");
+    if (iframe) iframe.src = previewUrl;
     const titleEl = $("#viewerTitle");
     if (titleEl) {
       titleEl.textContent = doc.title;
       titleEl.setAttribute("title", doc.title);
     }
-    $("#documentViewerModal").showModal();
+    const modal = $("#documentViewerModal");
+    if (modal && typeof modal.showModal === "function") {
+      if (!modal.open) modal.showModal();
+    }
     startDocReadTracking(doc.id);
   } else {
     toast("Không tìm thấy thông tin tài liệu này.");
@@ -3099,6 +3117,8 @@ window.addEventListener("click", (e) => {
       "detailModal",
       "questionModal",
       "documentViewerModal",
+      "externalLinkModal",
+      "documentPickerModal",
       "documentModal",
       "editModal",
       "authModal",
@@ -3153,15 +3173,7 @@ function openQuestion() {
   $$(".identity-choice").forEach((b, i) =>
     b.classList.toggle("selected", i === 0),
   );
-  const docSelect = $("#questionLinkedDocument");
-  if (docSelect) {
-    let opts = '<option value="">-- Không đính kèm tài liệu --</option>';
-    if (Array.isArray(window.documents) && window.documents.length > 0) {
-      opts += window.documents.map(d => `<option value="${d.id}">[${escapeHTML(d.format || 'Khác')}] ${escapeHTML(d.title)}</option>`).join("");
-    }
-    docSelect.innerHTML = opts;
-    docSelect.value = "";
-  }
+  setAttachedDocUI("question", null);
   modal.showModal();
   $("#questionTitle").focus();
 }
@@ -3544,6 +3556,163 @@ if (docViewerModalEl) {
   });
 }
 
+let currentPickerTarget = "question";
+let currentPickerFilter = "all";
+
+window.openDocPicker = function(target = "question") {
+  currentPickerTarget = target;
+  currentPickerFilter = "all";
+  const modal = $("#documentPickerModal");
+  if (!modal) return;
+
+  const searchInput = $("#docPickerSearch");
+  if (searchInput) searchInput.value = "";
+
+  $$("#documentPickerModal .filter-chip").forEach(btn => {
+    btn.classList.toggle("selected", btn.dataset.pickerFilter === "all");
+  });
+
+  renderDocPickerList();
+  if (typeof modal.showModal === "function") {
+    if (!modal.open) modal.showModal();
+  }
+};
+
+window.closeDocPicker = function() {
+  const modal = $("#documentPickerModal");
+  if (modal && modal.open) modal.close();
+};
+
+window.setDocPickerFilter = function(filter, btn) {
+  currentPickerFilter = filter;
+  $$("#documentPickerModal .filter-chip").forEach(b => b.classList.remove("selected"));
+  if (btn) btn.classList.add("selected");
+  renderDocPickerList();
+};
+
+window.filterDocPickerList = function() {
+  renderDocPickerList();
+};
+
+window.renderDocPickerList = function() {
+  const container = $("#docPickerList");
+  const countEl = $("#docPickerCount");
+  if (!container) return;
+
+  const q = ($("#docPickerSearch")?.value || "").trim().toLowerCase();
+  const currentSelectedId = Number(
+    currentPickerTarget === "question"
+      ? ($("#questionLinkedDocId")?.value || 0)
+      : ($("#editLinkedDocId")?.value || 0)
+  );
+
+  let list = (documents || []).filter(d => {
+    if (currentPickerFilter !== "all" && d.type !== currentPickerFilter) return false;
+    if (q) {
+      const match = `${d.title} ${d.desc || ""} ${d.author || ""} ${d.format || ""}`.toLowerCase();
+      if (!match.includes(q)) return false;
+    }
+    return true;
+  });
+
+  if (countEl) countEl.textContent = `${list.length} tài liệu`;
+
+  if (list.length === 0) {
+    container.innerHTML = `
+      <div style="padding: 36px 16px; text-align: center; color: var(--muted);">
+        <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin-bottom: 8px; opacity: 0.6;"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+        <p style="font-size: 14px; font-weight: 600; margin: 0; color: var(--ink);">Không tìm thấy tài liệu phù hợp</p>
+        <small style="margin-top: 4px; display: block;">Hãy thử tìm bằng từ khóa khác hoặc chuyển sang danh mục "Tất cả".</small>
+      </div>
+    `;
+    return;
+  }
+
+  container.innerHTML = list.map(d => {
+    const isSelected = d.id === currentSelectedId;
+    return `
+      <div class="doc-picker-item ${isSelected ? 'is-selected' : ''}" onclick="selectDocForPost(${d.id})">
+        <span class="doc-format-pill">${escapeHTML(d.format || 'Khác')}</span>
+        <div class="doc-picker-item-info">
+          <div class="doc-picker-item-title">${escapeHTML(d.title)}</div>
+          <div class="doc-picker-item-desc">${escapeHTML(stripHTML(d.desc || ''))}</div>
+          <div class="doc-picker-item-meta">
+            <span>${d.type === 'course' ? 'Tài liệu môn học' : 'Tài liệu tham khảo'}</span>
+            <span>·</span>
+            <span>${escapeHTML(d.author || '')}</span>
+          </div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 6px;" onclick="event.stopPropagation()">
+          <button type="button" class="button button-quiet button-xs" onclick="viewDocumentById(${d.id})" title="Xem trước tài liệu">
+            👁 Xem
+          </button>
+          <button type="button" class="button ${isSelected ? 'button-primary' : 'button-outline'} button-xs" onclick="selectDocForPost(${d.id})">
+            ${isSelected ? '✓ Đang chọn' : '+ Chọn'}
+          </button>
+        </div>
+      </div>
+    `;
+  }).join("");
+};
+
+window.selectDocForPost = function(docId) {
+  const doc = documents.find(d => d.id === Number(docId));
+  if (!doc) return;
+
+  if (currentPickerTarget === "question") {
+    setAttachedDocUI("question", doc);
+  } else {
+    setAttachedDocUI("edit", doc);
+  }
+  closeDocPicker();
+};
+
+window.clearAndCloseDocPicker = function() {
+  removeAttachedDoc(currentPickerTarget);
+  closeDocPicker();
+};
+
+window.setAttachedDocUI = function(target, doc) {
+  const hiddenInput = $(`#${target}LinkedDocId`);
+  const card = $(`#${target}LinkedDocCard`);
+  const emptyState = card?.querySelector(".doc-attach-empty-state");
+  const selectedState = card?.querySelector(".doc-attach-selected-state");
+  const titleEl = $(`#${target}DocTitle`);
+  const metaEl = $(`#${target}DocMeta`);
+  const badgeEl = $(`#${target}DocFormatBadge`);
+
+  if (!doc) {
+    if (hiddenInput) hiddenInput.value = "";
+    if (card) card.classList.add("empty");
+    if (emptyState) emptyState.style.display = "flex";
+    if (selectedState) selectedState.style.display = "none";
+    return;
+  }
+
+  if (hiddenInput) hiddenInput.value = String(doc.id);
+  if (card) card.classList.remove("empty");
+  if (emptyState) emptyState.style.display = "none";
+  if (selectedState) selectedState.style.display = "flex";
+  if (titleEl) titleEl.textContent = doc.title;
+  if (badgeEl) badgeEl.textContent = doc.format || "Khác";
+  if (metaEl) {
+    const typeLabel = doc.type === "course" || doc.category === "course" ? "Tài liệu môn học" : "Tài liệu tham khảo";
+    metaEl.textContent = `${typeLabel} · ${doc.author || ""}`;
+  }
+};
+
+window.removeAttachedDoc = function(target) {
+  setAttachedDocUI(target, null);
+};
+
+window.previewSelectedDoc = function(target) {
+  const hiddenInput = $(`#${target}LinkedDocId`);
+  const docId = Number(hiddenInput?.value || 0);
+  if (docId > 0) {
+    viewDocumentById(docId);
+  }
+};
+
 window.openExternalLinkModal = function(url, title) {
   if (!url) return;
   const modal = $("#externalLinkModal");
@@ -3553,19 +3722,29 @@ window.openExternalLinkModal = function(url, title) {
   }
   const iframe = $("#externalLinkIframe");
   const titleEl = $("#externalLinkTitle");
+  const urlTextEl = $("#externalLinkUrlText");
   const openTabBtn = $("#externalLinkOpenTab");
+  const directBtn = $("#externalLinkDirectBtn");
 
   if (titleEl) {
-    titleEl.textContent = title || url;
+    titleEl.textContent = title || "Liên kết ngoài";
     titleEl.setAttribute("title", title || url);
+  }
+  if (urlTextEl) {
+    urlTextEl.textContent = url;
   }
   if (openTabBtn) {
     openTabBtn.href = url;
   }
+  if (directBtn) {
+    directBtn.href = url;
+  }
   if (iframe) {
     iframe.src = url;
   }
-  modal.showModal();
+  if (typeof modal.showModal === "function") {
+    if (!modal.open) modal.showModal();
+  }
 };
 
 const extLinkModalEl = $("#externalLinkModal");
@@ -3574,23 +3753,13 @@ if (extLinkModalEl) {
     const iframe = $("#externalLinkIframe");
     if (iframe) iframe.src = "about:blank";
   });
-  extLinkModalEl.addEventListener("click", (e) => {
-    const rect = extLinkModalEl.getBoundingClientRect();
-    const isOutside = (
-      e.clientX < rect.left ||
-      e.clientX > rect.right ||
-      e.clientY < rect.top ||
-      e.clientY > rect.bottom
-    );
-    if (isOutside) {
-      extLinkModalEl.close();
-    }
-  });
 }
 
 document.addEventListener("click", (e) => {
   const link = e.target.closest("a");
   if (!link) return;
+
+  if (e.ctrlKey || e.metaKey || e.shiftKey || e.button === 1) return;
 
   const inContent = link.closest(".detail-copy, .response-copy, .post-copy-preview, .document-desc, .announcement");
   if (!inContent) return;
@@ -4624,8 +4793,7 @@ function checkAndShowBanner() {
 window.openEditModal = async (type, id) => {
   let content = "";
   let title = "";
-  const editDocLabel = $("#editLinkedDocLabel");
-  const editDocSelect = $("#editLinkedDocument");
+  const editDocSection = $("#editLinkedDocSection");
 
   if (type === "posts") {
     const post = posts.find(p => p.id === id);
@@ -4635,18 +4803,15 @@ window.openEditModal = async (type, id) => {
       title = data.post.title;
       $("#editTitleLabel").style.display = "block";
       $("#editTitle").value = title;
-      if (editDocLabel && editDocSelect) {
-        editDocLabel.style.display = "block";
-        let opts = '<option value="">-- Không đính kèm tài liệu --</option>';
-        if (Array.isArray(window.documents) && window.documents.length > 0) {
-          opts += window.documents.map(d => `<option value="${d.id}">[${escapeHTML(d.format || 'Khác')}] ${escapeHTML(d.title)}</option>`).join("");
-        }
-        editDocSelect.innerHTML = opts;
-        editDocSelect.value = data.post.documentId ? String(data.post.documentId) : "";
+      if (editDocSection) {
+        editDocSection.style.display = "block";
+        const docId = data.post.documentId;
+        const linkedDoc = docId ? (getAppDocument(docId) || data.post.linkedDocument || { id: docId, title: `Tài liệu #${docId}` }) : null;
+        setAttachedDocUI("edit", linkedDoc);
       }
     }
   } else if (type === "responses") {
-    if (editDocLabel) editDocLabel.style.display = "none";
+    if (editDocSection) editDocSection.style.display = "none";
     const r = document.querySelector(`.response .detail-actions button[onclick*="voteResponse(${id},"]`)?.closest(".response");
     if (r) {
       const contentEl = r.querySelector(".collapsible-content") || r.querySelector(".response-copy");
@@ -4654,7 +4819,7 @@ window.openEditModal = async (type, id) => {
     }
     $("#editTitleLabel").style.display = "none";
   } else if (type === "document_comments") {
-    if (editDocLabel) editDocLabel.style.display = "none";
+    if (editDocSection) editDocSection.style.display = "none";
     const card = document.getElementById(`docComment-${id}`);
     if (card) {
       const contentEl = card.querySelector(".doc-comment-content");
@@ -4692,13 +4857,14 @@ $("#editForm").addEventListener("submit", async (e) => {
   
   const content = type === "document_comments" ? rawText : editEditor.root.innerHTML;
   const title = type === "posts" ? $("#editTitle").value.trim() : "";
-  const documentId = type === "posts" ? ($("#editLinkedDocument")?.value || null) : undefined;
+  const docIdVal = $("#editLinkedDocId")?.value;
+  const documentId = type === "posts" ? (docIdVal ? Number(docIdVal) : null) : undefined;
 
   try {
     const endpoint = type === "document_comments" ? `/api/documents/comments/${id}` : `/api/${type}/${id}`;
     const payload = { content, title };
     if (type === "posts") {
-      payload.documentId = documentId ? Number(documentId) : (documentId === "" ? null : undefined);
+      payload.documentId = documentId;
     }
     await requestAPI(endpoint, {
       method: "PATCH",
@@ -4758,7 +4924,8 @@ $("#questionForm").addEventListener("submit", async (e) => {
     responses: 0,
     anonymous,
   };
-  const linkedDocId = $("#questionLinkedDocument")?.value || null;
+  const docIdVal = $("#questionLinkedDocId")?.value;
+  const linkedDocId = docIdVal ? Number(docIdVal) : null;
   try {
     if (serverMode) {
       const data = await requestAPI("/api/posts", {
