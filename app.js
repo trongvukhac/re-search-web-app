@@ -1762,6 +1762,170 @@ function renderLeaderboard() {
   const currentUserId = cachedLeaderboardData.currentUser?.id;
   const isUserInTop5 = Boolean(currentUserId && list.slice(0, 5).some(u => u.id === currentUserId));
 
+function getMiniCoverStyle(coverVal) {
+  const val = coverVal || "default";
+  if (val.startsWith("data:image/") || val.startsWith("http")) {
+    return `background-image: url('${val}');`;
+  }
+  if (val.startsWith("color:")) {
+    return `background-color: ${val.replace("color:", "")};`;
+  }
+  let path = null;
+  const foundPreset = typeof COVER_PRESETS !== "undefined" ? COVER_PRESETS.find(p => p.id === val) : null;
+  if (foundPreset) {
+    if (foundPreset.type === "image") {
+      path = foundPreset.value.startsWith("/") ? foundPreset.value : "/" + foundPreset.value;
+      return `background-image: url('${path}');`;
+    }
+    if (foundPreset.type === "gradient") {
+      return `background-image: ${foundPreset.value};`;
+    }
+    return `background-color: ${foundPreset.value};`;
+  }
+  const fallbackImages = {
+    "ton_vinh_phai_dep": "/covers/ton-vinh-phai-dep.png",
+    "bua_tiec_ma_mi": "/covers/bua-tiec-ma-mi.png",
+    "khu_rung_tri_thuc": "/covers/khu-rung-tri-thuc.png",
+    "mua_anh_dao_no": "/covers/mua-anh-dao-no.png",
+    "vuong_quoc_mua_dong": "/covers/vuong-quoc-mua-dong.png",
+    "tinh_tu_sao_troi": "/covers/tinh-tu-sao-troi.png",
+    "ky_nguyen_hoang_kim": "/covers/ky-nguyen-hoang-kim.png",
+  };
+  if (fallbackImages[val]) {
+    return `background-image: url('${fallbackImages[val]}');`;
+  }
+  const fallbackGradients = {
+    "emerald_gradient": "linear-gradient(135deg, #064e3b 0%, #059669 50%, #6ee7b7 100%)",
+    "sunset_gradient": "linear-gradient(135deg, #4c0519 0%, #db2777 50%, #fcd34d 100%)",
+    "aurora_gradient": "linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #4338ca 100%)",
+    "royal_gradient": "linear-gradient(135deg, #3b0764 0%, #7c3aed 50%, #c084fc 100%)",
+    "default": "linear-gradient(135deg, #1e3a8a 0%, #3b82f6 50%, #93c5fd 100%)"
+  };
+  return `background-image: ${fallbackGradients[val] || fallbackGradients.default};`;
+}
+
+function renderRankMedallion(rank, customText) {
+  const r = Number(rank);
+  if (r === 1) {
+    return `<svg class="lb-medallion-svg lb-crown-gold" width="34" height="34" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="goldPlate" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#FFE57F"/>
+          <stop offset="45%" stop-color="#F59E0B"/>
+          <stop offset="100%" stop-color="#D97706"/>
+        </linearGradient>
+        <linearGradient id="goldRim" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#FFFBEB"/>
+          <stop offset="100%" stop-color="#92400E"/>
+        </linearGradient>
+        <linearGradient id="goldCrown" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#FFFFFF"/>
+          <stop offset="25%" stop-color="#FDE047"/>
+          <stop offset="70%" stop-color="#EAB308"/>
+          <stop offset="100%" stop-color="#CA8A04"/>
+        </linearGradient>
+        <filter id="goldGlow" x="-20%" y="-20%" width="140%" height="140%">
+          <feDropShadow dx="0" dy="1.5" stdDeviation="1.5" flood-color="#b45309" flood-opacity="0.35"/>
+        </filter>
+      </defs>
+      <circle cx="18" cy="18" r="16.5" fill="url(#goldPlate)" stroke="url(#goldRim)" stroke-width="1.5" filter="url(#goldGlow)"/>
+      <circle cx="18" cy="18" r="14" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="1"/>
+      <path d="M10 24L11.5 15L15 19L18 12L21 19L24.5 15L26 24H10Z" fill="url(#goldCrown)" stroke="#92400E" stroke-width="0.8" stroke-linejoin="round"/>
+      <path d="M10 23.5H26V25C26 25.6 25.5 26 24.8 26H11.2C10.5 26 10 25.6 10 25V23.5Z" fill="#B45309"/>
+      <circle cx="18" cy="12" r="1.5" fill="#FFFFFF"/>
+      <circle cx="11.5" cy="15" r="1.2" fill="#FFFFFF"/>
+      <circle cx="24.5" cy="15" r="1.2" fill="#FFFFFF"/>
+      <circle cx="18" cy="24.5" r="1" fill="#FEF08A"/>
+      <circle cx="14" cy="24.5" r="0.8" fill="#FDE047"/>
+      <circle cx="22" cy="24.5" r="0.8" fill="#FDE047"/>
+    </svg>`;
+  }
+  if (r === 2) {
+    return `<svg class="lb-medallion-svg lb-crown-silver" width="34" height="34" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="silverPlate" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#F8FAFC"/>
+          <stop offset="45%" stop-color="#CBD5E1"/>
+          <stop offset="100%" stop-color="#94A3B8"/>
+        </linearGradient>
+        <linearGradient id="silverRim" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#FFFFFF"/>
+          <stop offset="100%" stop-color="#475569"/>
+        </linearGradient>
+        <linearGradient id="silverCrown" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#FFFFFF"/>
+          <stop offset="35%" stop-color="#E2E8F0"/>
+          <stop offset="75%" stop-color="#94A3B8"/>
+          <stop offset="100%" stop-color="#64748B"/>
+        </linearGradient>
+        <filter id="silverGlow" x="-20%" y="-20%" width="140%" height="140%">
+          <feDropShadow dx="0" dy="1.5" stdDeviation="1.5" flood-color="#475569" flood-opacity="0.3"/>
+        </filter>
+      </defs>
+      <circle cx="18" cy="18" r="16.5" fill="url(#silverPlate)" stroke="url(#silverRim)" stroke-width="1.5" filter="url(#silverGlow)"/>
+      <circle cx="18" cy="18" r="14" fill="none" stroke="rgba(255,255,255,0.6)" stroke-width="1"/>
+      <path d="M10 24L11.5 15L15 19L18 12L21 19L24.5 15L26 24H10Z" fill="url(#silverCrown)" stroke="#475569" stroke-width="0.8" stroke-linejoin="round"/>
+      <path d="M10 23.5H26V25C26 25.6 25.5 26 24.8 26H11.2C10.5 26 10 25.6 10 25V23.5Z" fill="#475569"/>
+      <circle cx="18" cy="12" r="1.5" fill="#FFFFFF"/>
+      <circle cx="11.5" cy="15" r="1.2" fill="#FFFFFF"/>
+      <circle cx="24.5" cy="15" r="1.2" fill="#FFFFFF"/>
+      <circle cx="18" cy="24.5" r="1" fill="#F8FAFC"/>
+      <circle cx="14" cy="24.5" r="0.8" fill="#E2E8F0"/>
+      <circle cx="22" cy="24.5" r="0.8" fill="#E2E8F0"/>
+    </svg>`;
+  }
+  if (r === 3) {
+    return `<svg class="lb-medallion-svg lb-crown-bronze" width="34" height="34" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="bronzePlate" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#FFEDD5"/>
+          <stop offset="45%" stop-color="#EA580C"/>
+          <stop offset="100%" stop-color="#9A3412"/>
+        </linearGradient>
+        <linearGradient id="bronzeRim" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#FFF7ED"/>
+          <stop offset="100%" stop-color="#7C2D12"/>
+        </linearGradient>
+        <linearGradient id="bronzeCrown" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#FFEDD5"/>
+          <stop offset="35%" stop-color="#FB923C"/>
+          <stop offset="80%" stop-color="#C2410C"/>
+          <stop offset="100%" stop-color="#7C2D12"/>
+        </linearGradient>
+        <filter id="bronzeGlow" x="-20%" y="-20%" width="140%" height="140%">
+          <feDropShadow dx="0" dy="1.5" stdDeviation="1.5" flood-color="#7c2d12" flood-opacity="0.35"/>
+        </filter>
+      </defs>
+      <circle cx="18" cy="18" r="16.5" fill="url(#bronzePlate)" stroke="url(#bronzeRim)" stroke-width="1.5" filter="url(#bronzeGlow)"/>
+      <circle cx="18" cy="18" r="14" fill="none" stroke="rgba(255,255,255,0.45)" stroke-width="1"/>
+      <path d="M10 24L11.5 15L15 19L18 12L21 19L24.5 15L26 24H10Z" fill="url(#bronzeCrown)" stroke="#7C2D12" stroke-width="0.8" stroke-linejoin="round"/>
+      <path d="M10 23.5H26V25C26 25.6 25.5 26 24.8 26H11.2C10.5 26 10 25.6 10 25V23.5Z" fill="#7C2D12"/>
+      <circle cx="18" cy="12" r="1.3" fill="#FFFFFF"/>
+      <circle cx="11.5" cy="15" r="1.1" fill="#FFFFFF"/>
+      <circle cx="24.5" cy="15" r="1.1" fill="#FFFFFF"/>
+      <text x="18" y="21.5" text-anchor="middle" font-family="'Plus Jakarta Sans', system-ui, sans-serif" font-weight="900" font-size="8.5" fill="#FFFFFF" stroke="#7C2D12" stroke-width="0.3">3</text>
+    </svg>`;
+  }
+
+  const text = customText !== undefined ? String(customText) : String(rank || "");
+  const isMe = rank === "me" || text.includes("#") || text.length > 2;
+  const isLong = text.length > 2;
+
+  if (isMe) {
+    return `<svg class="lb-medallion-svg lb-medallion-me" width="34" height="34" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="18" cy="18" r="15.5" fill="#246247" stroke="#1b4d37" stroke-width="1.5"/>
+      <circle cx="18" cy="18" r="13" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="1"/>
+      <text x="18" y="${isLong ? 21.5 : 22.5}" text-anchor="middle" font-family="'Plus Jakarta Sans', system-ui, sans-serif" font-weight="800" font-size="${isLong ? 9.5 : 12}" fill="#FFFFFF">${text}</text>
+    </svg>`;
+  }
+
+  return `<svg class="lb-medallion-svg lb-medallion-num" width="34" height="34" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="18" cy="18" r="15.5" fill="#F1F5F9" stroke="#CBD5E1" stroke-width="1.5"/>
+    <circle cx="18" cy="18" r="13" fill="none" stroke="rgba(255,255,255,0.8)" stroke-width="1"/>
+    <text x="18" y="22.5" text-anchor="middle" font-family="'Plus Jakarta Sans', system-ui, sans-serif" font-weight="800" font-size="12" fill="#475569">${text}</text>
+  </svg>`;
+}
+
   let html = list
     .slice(0, 5)
     .map((user, idx) => {
@@ -1774,11 +1938,16 @@ function renderLeaderboard() {
                 ? `⭐ ${user.score || 0}`
                 : `<span style="display:inline-flex;align-items:center;gap:3px;color:#e11d48;font-weight:700;"><svg width="12" height="12" viewBox="0 0 24 24" fill="#e11d48"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg> ${user.likesCount || 0}</span>`));
 
+      const coverStyle = getMiniCoverStyle(user.coverImage);
+      const medallion = renderRankMedallion(idx + 1, idx + 1);
+
       return `
         <div class="leaderboard-item ${isMe ? "is-me" : ""}" data-namecard-user-id="${user.id}" style="cursor: pointer;">
+          <div class="lb-cover-art" style="${coverStyle}"></div>
+          <div class="lb-cover-overlay"></div>
+          <div class="lb-rank-medallion rank-${idx + 1}">${medallion}</div>
           <div class="lb-avatar-wrap">
             <span class="avatar avatar-sm ${getAvatarClass(user.streakTier, false, user.role)}">${user.initials || '?'}</span>
-            <span class="lb-rank-badge rank-${idx + 1}">${idx + 1}</span>
           </div>
           <div class="lb-info">
             <span class="lb-name ${getNameClass(user.streakTier)}">${escapeHTML(user.displayName)}</span>
@@ -1791,11 +1960,17 @@ function renderLeaderboard() {
     .join("");
 
   if (!isUserInTop5 && userRankInfo && (userRankInfo.rank || isLikes)) {
+    const userCoverStyle = getMiniCoverStyle(userRankInfo.coverImage);
+    const userRankDisplay = formatLeaderboardRank(userRankInfo.rank);
+    const userMedallion = renderRankMedallion("me", userRankDisplay);
+
     html += `
       <div class="leaderboard-item is-me lb-my-rank-row" data-namecard-user-id="${userRankInfo.id}" style="cursor: pointer;">
+        <div class="lb-cover-art" style="${userCoverStyle}"></div>
+        <div class="lb-cover-overlay"></div>
+        <div class="lb-rank-medallion rank-me">${userMedallion}</div>
         <div class="lb-avatar-wrap">
           <span class="avatar avatar-sm ${getAvatarClass(userRankInfo.streakTier, false, userRankInfo.role)}">${userRankInfo.initials || '?'}</span>
-          <span class="lb-rank-badge rank-me">${formatLeaderboardRank(userRankInfo.rank)}</span>
         </div>
         <div class="lb-info">
           <span class="lb-name ${getNameClass(userRankInfo.streakTier)}">${escapeHTML(userRankInfo.displayName)}</span>
@@ -2305,15 +2480,17 @@ function openAuth() {
 function stripHtml(html) {
   if (!html) return "";
   let text = String(html);
+  for (let i = 0; i < 2; i++) {
+    text = text.replace(/&lt;/g, "<")
+               .replace(/&gt;/g, ">")
+               .replace(/&quot;/g, '"')
+               .replace(/&#39;/g, "'")
+               .replace(/&amp;/g, "&");
+  }
   text = text.replace(/<\/(p|div|h[1-6]|li|blockquote|tr)>/gi, " ");
   text = text.replace(/<(br|hr)\s*\/?>/gi, " ");
   text = text.replace(/<[^>]*>/g, "");
-  text = text.replace(/&nbsp;/g, " ")
-             .replace(/&amp;/g, "&")
-             .replace(/&lt;/g, "<")
-             .replace(/&gt;/g, ">")
-             .replace(/&quot;/g, '"')
-             .replace(/&#39;/g, "'");
+  text = text.replace(/&nbsp;/g, " ");
   return text.replace(/\s+/g, " ").trim();
 }
 
@@ -16734,9 +16911,14 @@ function renderLeaderboardUI(data) {
     );
     const avatarClass = getAvatarClass(u.streakTier, false, u.role);
     const nameClass = getNameClass(u.streakTier);
+    const coverStyle = getMiniCoverStyle(u.coverImage);
+    const medallion = renderRankMedallion(u.rank, u.rank);
+
     rowsHTML += `
       <div class="comp-lb-row ${isCurrent ? "is-current-user" : ""}" data-namecard-user-id="${u.userId}" style="cursor: pointer;" title="Xem thẻ tên">
-        <span class="comp-lb-rank">#${u.rank}</span>
+        <div class="lb-cover-art" style="${coverStyle}"></div>
+        <div class="lb-cover-overlay"></div>
+        <div class="lb-rank-medallion rank-${u.rank}">${medallion}</div>
         <div class="comp-lb-user">
           <div class="comp-lb-avatar-wrap">
             <span class="avatar avatar-sm ${avatarClass}">${escapeHTML(u.avatar || u.initials || "U")}</span>
@@ -16755,9 +16937,14 @@ function renderLeaderboardUI(data) {
   if (currentUserEntry && currentUserEntry.rank > 10) {
     const myAvatarClass = getAvatarClass(currentUserEntry.streakTier, false, currentUserEntry.role);
     const myNameClass = getNameClass(currentUserEntry.streakTier);
+    const myCoverStyle = getMiniCoverStyle(currentUserEntry.coverImage);
+    const myMedallion = renderRankMedallion("me", currentUserEntry.rank);
+
     rowsHTML += `
-      <div class="comp-lb-row is-current-user top-11-plus-row">
-        <span class="comp-lb-rank">#${currentUserEntry.rank}</span>
+      <div class="comp-lb-row is-current-user top-11-plus-row" data-namecard-user-id="${currentUserEntry.userId}" style="cursor: pointer;" title="Xem thẻ tên">
+        <div class="lb-cover-art" style="${myCoverStyle}"></div>
+        <div class="lb-cover-overlay"></div>
+        <div class="lb-rank-medallion rank-me">${myMedallion}</div>
         <div class="comp-lb-user">
           <div class="comp-lb-avatar-wrap">
             <span class="avatar avatar-sm ${myAvatarClass}">${escapeHTML(currentUserEntry.avatar || currentUserEntry.initials || "U")}</span>

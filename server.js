@@ -1541,16 +1541,19 @@ function recordContribution(
 }
 function stripHtml(text) {
   if (!text) return "";
-  return String(text)
+  let s = String(text);
+  for (let i = 0; i < 2; i++) {
+    s = s.replace(/&lt;/g, "<")
+         .replace(/&gt;/g, ">")
+         .replace(/&quot;/g, '"')
+         .replace(/&#39;/g, "'")
+         .replace(/&amp;/g, "&");
+  }
+  return s
     .replace(/<\/(p|div|h[1-6]|li|blockquote|tr)>/gi, " ")
     .replace(/<(br|hr)\s*\/?>/gi, " ")
     .replace(/<[^>]*>/g, "")
     .replace(/&nbsp;/g, " ")
-    .replace(/&amp;/g, "&")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
     .replace(/\s+/g, " ")
     .trim();
 }
@@ -3577,7 +3580,7 @@ async function api(request, response, url) {
     // 1. TOP ĐÓNG GÓP (Không bao gồm admin, giảng viên và thành viên ngoài trường)
     const allContribStudents = db
       .prepare(`
-        SELECT u.id, u.display_name as displayName, u.avatar, u.role, coalesce(sum(c.points), 0) as totalPoints
+        SELECT u.id, u.display_name as displayName, u.avatar, u.role, u.cover_image as coverImage, coalesce(sum(c.points), 0) as totalPoints
         FROM users u
         LEFT JOIN contribution_events c ON u.id = c.user_id
         WHERE u.role NOT IN ('admin', 'lecturer', 'member')
@@ -3592,6 +3595,7 @@ async function api(request, response, url) {
       avatar: u.avatar,
       initials: u.avatar || getAvatarEmoji(u.displayName),
       role: u.role,
+      coverImage: u.coverImage || "default",
       totalPoints: Number(u.totalPoints),
       streakTier: getAuthorStreakTier(u.id),
       rank: idx + 1
@@ -3607,7 +3611,7 @@ async function api(request, response, url) {
     };
 
     const students = db
-      .prepare("SELECT id, display_name as displayName, avatar, role, student_id as studentId, class_name as className FROM users WHERE role NOT IN ('admin', 'lecturer')")
+      .prepare("SELECT id, display_name as displayName, avatar, role, cover_image as coverImage, student_id as studentId, class_name as className FROM users WHERE role NOT IN ('admin', 'lecturer')")
       .all();
 
     const streakList = students.map(s => {
@@ -3618,6 +3622,7 @@ async function api(request, response, url) {
         avatar: s.avatar,
         initials: s.avatar || getAvatarEmoji(s.displayName),
         role: s.role,
+        coverImage: s.coverImage || "default",
         streak: streakInfo.streak,
         streakTier: streakInfo.streakTier,
         streakStartDate: streakInfo.streakStartDate,
@@ -3645,6 +3650,7 @@ async function api(request, response, url) {
         u.display_name as displayName,
         u.avatar,
         u.role,
+        u.cover_image as coverImage,
         u.student_id as studentId,
         u.class_name as className,
         sum(r.best_score) as totalScore,
@@ -3664,6 +3670,7 @@ async function api(request, response, url) {
       avatar: row.avatar,
       initials: row.avatar || getAvatarEmoji(row.displayName),
       role: row.role,
+      coverImage: row.coverImage || "default",
       score: Number(row.totalScore || 0),
       streakTier: getAuthorStreakTier(row.userId),
       rank: idx + 1
@@ -3678,6 +3685,7 @@ async function api(request, response, url) {
           u.display_name as displayName, 
           u.avatar, 
           u.role,
+          u.cover_image as coverImage,
           COUNT(nl.id) as likesCount,
           MAX(nl.created_at) as reachedAt
         FROM users u
@@ -3693,6 +3701,7 @@ async function api(request, response, url) {
       avatar: u.avatar,
       initials: u.avatar || getAvatarEmoji(u.displayName),
       role: u.role,
+      coverImage: u.coverImage || "default",
       likesCount: Number(u.likesCount),
       streakTier: getAuthorStreakTier(u.id),
       reachedAt: u.reachedAt,
@@ -3758,6 +3767,7 @@ async function api(request, response, url) {
         avatar: user.avatar,
         initials: user.avatar || getAvatarEmoji(user.display_name),
         role: user.role,
+        coverImage: user.cover_image || "default",
         isMember,
         isAdmin,
         streakTier: getAuthorStreakTier(user.id),
@@ -7477,6 +7487,7 @@ async function api(request, response, url) {
           u.email,
           u.avatar,
           u.role,
+          u.cover_image as coverImage,
           u.student_id as studentId,
           u.class_name as className,
           coalesce(s.shields, 0) as shields,
@@ -7499,6 +7510,7 @@ async function api(request, response, url) {
           u.email,
           u.avatar,
           u.role,
+          u.cover_image as coverImage,
           u.student_id as studentId,
           u.class_name as className,
           coalesce(s.shields, 0) as shields,
@@ -7534,6 +7546,7 @@ async function api(request, response, url) {
         displayName: row.displayName,
         avatar: row.avatar || getAvatarEmoji(row.displayName),
         role: row.role,
+        coverImage: row.coverImage || "default",
         streak: streakInfo.streak,
         streakTier: streakInfo.streakTier,
         shields: row.shields,
