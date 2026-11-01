@@ -1626,7 +1626,7 @@ function applySession(user) {
 }
 
 let currentLeaderboardTab = "contributions";
-let cachedLeaderboardData = { leaderboard: [], streakLeaderboard: [], arenaLeaderboard: [], currentUser: null };
+let cachedLeaderboardData = { leaderboard: [], streakLeaderboard: [], arenaLeaderboard: [], likesLeaderboard: [], currentUser: null };
 
 function formatLeaderboardRank(rank) {
   if (!rank || rank <= 0) return "--";
@@ -1641,7 +1641,8 @@ function formatLeaderboardRank(rank) {
 const LEADERBOARD_TABS = [
   { id: "contributions", title: "Top đóng góp" },
   { id: "streak", title: "Top giữ chuỗi" },
-  { id: "competition", title: "Top thi đua" }
+  { id: "competition", title: "Top thi đua" },
+  { id: "likes", title: "Top hấp dẫn" }
 ];
 
 window.cycleLeaderboardTab = function(direction = 1) {
@@ -1670,6 +1671,7 @@ window.switchLeaderboardTab = function(tab) {
   $("#tabTopContrib")?.classList.toggle("active", tab === "contributions");
   $("#tabTopStreak")?.classList.toggle("active", tab === "streak");
   $("#tabTopArena")?.classList.toggle("active", tab === "competition");
+  $("#tabTopLikes")?.classList.toggle("active", tab === "likes");
 
   renderLeaderboard();
 };
@@ -1691,13 +1693,14 @@ function renderLeaderboard() {
   const isContrib = currentLeaderboardTab === "contributions";
   const isStreak = currentLeaderboardTab === "streak";
   const isArena = currentLeaderboardTab === "competition";
+  const isLikes = currentLeaderboardTab === "likes";
 
   let list = [];
   let userRankInfo = null;
 
   if (isContrib) {
     list = cachedLeaderboardData.leaderboard || [];
-    if (cachedLeaderboardData.currentUser) {
+    if (cachedLeaderboardData.currentUser && cachedLeaderboardData.currentUser.contributions?.isParticipant) {
       userRankInfo = {
         ...cachedLeaderboardData.currentUser,
         rank: cachedLeaderboardData.currentUser.contributions?.rank,
@@ -1706,7 +1709,7 @@ function renderLeaderboard() {
     }
   } else if (isStreak) {
     list = cachedLeaderboardData.streakLeaderboard || [];
-    if (cachedLeaderboardData.currentUser) {
+    if (cachedLeaderboardData.currentUser && cachedLeaderboardData.currentUser.streak?.isParticipant) {
       userRankInfo = {
         ...cachedLeaderboardData.currentUser,
         rank: cachedLeaderboardData.currentUser.streak?.rank,
@@ -1717,18 +1720,28 @@ function renderLeaderboard() {
     }
   } else if (isArena) {
     list = cachedLeaderboardData.arenaLeaderboard || [];
-    if (cachedLeaderboardData.currentUser) {
+    if (cachedLeaderboardData.currentUser && cachedLeaderboardData.currentUser.arena?.isParticipant) {
       userRankInfo = {
         ...cachedLeaderboardData.currentUser,
         rank: cachedLeaderboardData.currentUser.arena?.rank,
         valDisplay: `⭐ ${cachedLeaderboardData.currentUser.arena?.score || 0}`
       };
     }
+  } else if (isLikes) {
+    list = cachedLeaderboardData.likesLeaderboard || [];
+    if (cachedLeaderboardData.currentUser && cachedLeaderboardData.currentUser.likes?.isParticipant) {
+      const myLikes = cachedLeaderboardData.currentUser.likes;
+      userRankInfo = {
+        ...cachedLeaderboardData.currentUser,
+        rank: myLikes.rank,
+        valDisplay: `<span style="display:inline-flex;align-items:center;gap:3px;color:#e11d48;font-weight:700;"><svg width="12" height="12" viewBox="0 0 24 24" fill="#e11d48"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg> ${myLikes.count || 0}</span>`
+      };
+    }
   }
 
-  if (!cachedLeaderboardData.leaderboard?.length && !cachedLeaderboardData.arenaLeaderboard?.length && !cachedLeaderboardData.streakLeaderboard?.length) {
+  if (!cachedLeaderboardData.leaderboard?.length && !cachedLeaderboardData.arenaLeaderboard?.length && !cachedLeaderboardData.streakLeaderboard?.length && !cachedLeaderboardData.likesLeaderboard?.length) {
     requestAPI("/api/leaderboard").then(data => {
-      if (data && (data.leaderboard || data.streakLeaderboard || data.arenaLeaderboard)) {
+      if (data && (data.leaderboard || data.streakLeaderboard || data.arenaLeaderboard || data.likesLeaderboard)) {
         cachedLeaderboardData = data;
         renderLeaderboard();
         updateResponsiveAsidePlacement();
@@ -1740,6 +1753,7 @@ function renderLeaderboard() {
     let emptyMsg = "Chưa có dữ liệu đóng góp.";
     if (isStreak) emptyMsg = "Chưa có dữ liệu chuỗi.";
     if (isArena) emptyMsg = "Chưa có dữ liệu thi đua từ các tuần đã chốt.";
+    if (isLikes) emptyMsg = "Chưa có dữ liệu lượt yêu thích thẻ tên.";
     lbEl.innerHTML = `<p style="color: var(--muted); font-size: 13px; text-align: center; padding: 12px 0;">${emptyMsg}</p>`;
     return;
   }
@@ -1755,7 +1769,9 @@ function renderLeaderboard() {
         ? `${user.totalPoints}đ`
         : (isStreak
             ? `<span style="display:inline-flex;align-items:center;gap:3px;">${getFlameSVG(user.streakTier || 0, 15)} ${user.streak} ngày</span>`
-            : `⭐ ${user.score || 0}`);
+            : (isArena
+                ? `⭐ ${user.score || 0}`
+                : `<span style="display:inline-flex;align-items:center;gap:3px;color:#e11d48;font-weight:700;"><svg width="12" height="12" viewBox="0 0 24 24" fill="#e11d48"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg> ${user.likesCount || 0}</span>`));
 
       return `
         <div class="leaderboard-item ${isMe ? "is-me" : ""}" data-namecard-user-id="${user.id}" style="cursor: pointer;">
@@ -1767,13 +1783,13 @@ function renderLeaderboard() {
             <span class="lb-name ${getNameClass(user.streakTier)}">${escapeHTML(user.displayName)}</span>
             ${user.role && user.role !== 'student' ? `<span class="lb-role lb-role-${user.role}">${getRoleDisplay(user.role)}</span>` : ""}
           </div>
-          <div class="lb-points">${pointsDisplay}</div>
+          <div class="lb-points ${isLikes ? "lb-points-likes" : ""}">${pointsDisplay}</div>
         </div>
       `;
     })
     .join("");
 
-  if (!isUserInTop5 && userRankInfo && userRankInfo.rank) {
+  if (!isUserInTop5 && userRankInfo && (userRankInfo.rank || isLikes)) {
     html += `
       <div class="leaderboard-item is-me lb-my-rank-row" data-namecard-user-id="${userRankInfo.id}" style="cursor: pointer;">
         <div class="lb-avatar-wrap">
@@ -1784,7 +1800,7 @@ function renderLeaderboard() {
           <span class="lb-name ${getNameClass(userRankInfo.streakTier)}">${escapeHTML(userRankInfo.displayName)}</span>
           ${userRankInfo.role && userRankInfo.role !== 'student' ? `<span class="lb-role lb-role-${userRankInfo.role}">${getRoleDisplay(userRankInfo.role)}</span>` : ""}
         </div>
-        <div class="lb-points">${userRankInfo.valDisplay}</div>
+        <div class="lb-points ${isLikes ? "lb-points-likes" : ""}">${userRankInfo.valDisplay}</div>
       </div>
     `;
   }
@@ -2983,9 +2999,9 @@ function go(rawRoute, scrollToTop = true) {
 
   if (baseRoute === "home") {
     renderHome();
-    if (!cachedLeaderboardData?.leaderboard?.length && !cachedLeaderboardData?.arenaLeaderboard?.length) {
+    if (!cachedLeaderboardData?.leaderboard?.length && !cachedLeaderboardData?.arenaLeaderboard?.length && !cachedLeaderboardData?.likesLeaderboard?.length) {
       requestAPI("/api/leaderboard").then(data => {
-        if (data && (data.leaderboard || data.streakLeaderboard || data.arenaLeaderboard)) {
+        if (data && (data.leaderboard || data.streakLeaderboard || data.arenaLeaderboard || data.likesLeaderboard)) {
           cachedLeaderboardData = data;
           renderLeaderboard();
           updateResponsiveAsidePlacement();
@@ -6743,6 +6759,12 @@ window.openNamecard = async function(userId) {
                 data.user.hasLiked = true;
                 data.user.likesCount = res.likesCount;
                 toast("Đã yêu thích thẻ tên!");
+                requestAPI("/api/leaderboard").then(lb => {
+                  if (lb) {
+                    cachedLeaderboardData = lb;
+                    renderLeaderboard();
+                  }
+                }).catch(() => {});
               }
             } catch (err) {
               toast(err.message || "Không thể gửi yêu thích.");
@@ -7190,6 +7212,12 @@ window.likeBackUser = async function(e, targetUserId, btn) {
       toast("Đã yêu thích lại thẻ tên!");
       const item = currentNamecardLikesList.find(l => l.fromUserId === targetUserId);
       if (item) item.hasLikedBack = true;
+      requestAPI("/api/leaderboard").then(lb => {
+        if (lb) {
+          cachedLeaderboardData = lb;
+          renderLeaderboard();
+        }
+      }).catch(() => {});
     }
   } catch (err) {
     toast(err.message || "Không thể gửi yêu thích.");

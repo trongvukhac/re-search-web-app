@@ -5366,6 +5366,11 @@ dialog.detail-modal[open] {
   flex-shrink: 0;
   white-space: nowrap;
 }
+.lb-points-likes {
+  background: #ffe4e6 !important;
+  color: #e11d48 !important;
+  border: 1px solid rgba(225, 29, 72, 0.2) !important;
+}
 
 /* User Highlight in Leaderboard (Top 5 item or 6th row) */
 .leaderboard-item.is-me {
@@ -20656,6 +20661,11 @@ body.dark-theme .lb-points {
   background: rgba(255, 255, 255, 0.08) !important;
   color: #4ade80 !important;
   border: 1px solid rgba(255, 255, 255, 0.12) !important;
+}
+body.dark-theme .lb-points-likes {
+  background: rgba(225, 29, 72, 0.2) !important;
+  color: #fb7185 !important;
+  border: 1px solid rgba(251, 113, 133, 0.3) !important;
 }
 body.dark-theme .lb-role-admin {
   background: rgba(239, 68, 68, 0.2) !important;

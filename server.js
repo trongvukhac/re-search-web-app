@@ -3651,14 +3651,47 @@ async function api(request, response, url) {
       rank: idx + 1
     }));
 
-    // 4. THÔNG TIN XẾP HẠNG CỦA NGƯỜI DÙNG HIỆN TẠI
+    // 4. TOP HẤP DẪN (Đo số lượt tim thẻ tên của người dùng, Admin cũng tham gia)
+    // Nếu cùng số tim, xếp hạng theo người đạt được số tim đó sớm nhất (MAX(nl.created_at) ASC)
+    const allLikesUsers = db
+      .prepare(`
+        SELECT 
+          u.id, 
+          u.display_name as displayName, 
+          u.avatar, 
+          u.role,
+          COUNT(nl.id) as likesCount,
+          MAX(nl.created_at) as reachedAt
+        FROM users u
+        JOIN namecard_likes nl ON u.id = nl.to_user_id
+        GROUP BY u.id
+        ORDER BY likesCount DESC, reachedAt ASC, u.id ASC
+      `)
+      .all();
+
+    const topLikesUsers = allLikesUsers.slice(0, 5).map((u, idx) => ({
+      id: u.id,
+      displayName: u.displayName,
+      avatar: u.avatar,
+      initials: u.avatar || getAvatarEmoji(u.displayName),
+      role: u.role,
+      likesCount: Number(u.likesCount),
+      streakTier: getAuthorStreakTier(u.id),
+      reachedAt: u.reachedAt,
+      rank: idx + 1
+    }));
+
+    // 5. THÔNG TIN XẾP HẠNG CỦA NGƯỜI DÙNG HIỆN TẠI
     let currentUserData = null;
-    if (user && user.role !== "admin" && user.role !== "lecturer") {
+    if (user) {
       const isMember = user.role === "member";
+      const isAdmin = user.role === "admin";
+      const isLecturer = user.role === "lecturer";
+      const isStudent = !isAdmin && !isLecturer && !isMember;
 
       let myContribRank = null;
       let myContribPoints = 0;
-      if (!isMember) {
+      if (isStudent) {
         const myContribIdx = allContribStudents.findIndex(u => u.id === user.id);
         myContribRank = myContribIdx !== -1 ? myContribIdx + 1 : allContribStudents.length + 1;
         const myContribItem = myContribIdx !== -1 ? allContribStudents[myContribIdx] : null;
@@ -3668,13 +3701,17 @@ async function api(request, response, url) {
         myContribPoints = Number(userPointsRow?.pts || 0);
       }
 
-      const myStreakIdx = streakList.findIndex(s => s.id === user.id);
-      const myStreakRank = myStreakIdx !== -1 ? myStreakIdx + 1 : streakList.length + 1;
-      const myStreakItem = myStreakIdx !== -1 ? streakList[myStreakIdx] : null;
+      let myStreakRank = null;
+      let myStreakItem = null;
+      if (!isAdmin && !isLecturer) {
+        const myStreakIdx = streakList.findIndex(s => s.id === user.id);
+        myStreakRank = myStreakIdx !== -1 ? myStreakIdx + 1 : streakList.length + 1;
+        myStreakItem = myStreakIdx !== -1 ? streakList[myStreakIdx] : null;
+      }
 
       let myArenaRank = null;
       let myArenaScore = 0;
-      if (!isMember) {
+      if (isStudent) {
         const myArenaIdx = arenaRows.findIndex(r => r.userId === user.id);
         if (myArenaIdx !== -1) {
           myArenaRank = myArenaIdx + 1;
@@ -3685,6 +3722,18 @@ async function api(request, response, url) {
         }
       }
 
+      const myLikesIdx = allLikesUsers.findIndex(u => u.id === user.id);
+      let myLikesRank = null;
+      let myLikesCount = 0;
+      if (myLikesIdx !== -1) {
+        myLikesRank = myLikesIdx + 1;
+        myLikesCount = Number(allLikesUsers[myLikesIdx].likesCount);
+      } else {
+        const userLikesRow = db.prepare("SELECT COUNT(*) as count FROM namecard_likes WHERE to_user_id = ?").get(user.id);
+        myLikesCount = Number(userLikesRow?.count || 0);
+        myLikesRank = null;
+      }
+
       currentUserData = {
         id: user.id,
         displayName: user.display_name,
@@ -3692,22 +3741,28 @@ async function api(request, response, url) {
         initials: user.avatar || getAvatarEmoji(user.display_name),
         role: user.role,
         isMember,
+        isAdmin,
         streakTier: getAuthorStreakTier(user.id),
         contributions: {
           rank: myContribRank,
           totalPoints: myContribPoints,
-          isParticipant: !isMember
+          isParticipant: isStudent
         },
         streak: {
           rank: myStreakRank,
           streak: myStreakItem ? myStreakItem.streak : 0,
           streakTier: myStreakItem ? myStreakItem.streakTier : 0,
-          isParticipant: true
+          isParticipant: !isAdmin && !isLecturer
         },
         arena: {
           rank: myArenaRank,
           score: myArenaScore,
-          isParticipant: !isMember
+          isParticipant: isStudent
+        },
+        likes: {
+          rank: myLikesRank,
+          count: myLikesCount,
+          isParticipant: true
         }
       };
     }
@@ -3716,6 +3771,7 @@ async function api(request, response, url) {
       leaderboard: topUsers,
       streakLeaderboard: topStreakUsers,
       arenaLeaderboard: topArenaUsers,
+      likesLeaderboard: topLikesUsers,
       currentUser: currentUserData
     });
   }
