@@ -725,6 +725,22 @@ try {
   console.error("[DB Schema site_reviews]", e);
 }
 
+try {
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS namecard_likes (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      from_user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      to_user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE(from_user_id, to_user_id)
+    );
+    CREATE INDEX IF NOT EXISTS idx_namecard_likes_to_user ON namecard_likes(to_user_id);
+    CREATE INDEX IF NOT EXISTS idx_namecard_likes_from_user ON namecard_likes(from_user_id);
+  `);
+} catch (e) {
+  console.error("[DB Schema namecard_likes]", e);
+}
+
 
 
 function cleanupExpiredTrash() {
@@ -4097,6 +4113,14 @@ async function api(request, response, url) {
       });
     }
 
+    const likesRow = db.prepare("SELECT COUNT(*) AS count FROM namecard_likes WHERE to_user_id = ?").get(targetUser.id);
+    const likesCount = Number(likesRow?.count || 0);
+    let hasLiked = false;
+    if (viewer && viewer.id !== targetUser.id) {
+      const existingLike = db.prepare("SELECT 1 FROM namecard_likes WHERE from_user_id = ? AND to_user_id = ?").get(viewer.id, targetUser.id);
+      hasLiked = Boolean(existingLike);
+    }
+
     return json(response, 200, {
       user: {
         id: targetUser.id,
@@ -4111,6 +4135,8 @@ async function api(request, response, url) {
         isSelf,
         canUploadCustomCover,
         limitedItems,
+        likesCount,
+        hasLiked,
         ...(isPrivileged ? {
           studentId: targetUser.student_id || null,
           realName: targetUser.real_name || null,
@@ -4346,6 +4372,73 @@ async function api(request, response, url) {
 
     const updatedUser = db.prepare("SELECT * FROM users WHERE id=?").get(user.id);
     return json(response, 200, { ok: true, user: publicUser(updatedUser) });
+  }
+
+  // --- NAMECARD LIKE ENDPOINT ---
+  const likeNamecardMatch = pathName.match(/^\/api\/users\/(\d+)\/like-namecard$/);
+  if (method === "POST" && likeNamecardMatch) {
+    const user = requireUser(request, response);
+    if (!user) return;
+    if (!requireCsrf(request, response, user)) return;
+
+    const targetUserId = Number(likeNamecardMatch[1]);
+    const targetUser = db.prepare("SELECT id FROM users WHERE id = ?").get(targetUserId);
+    if (!targetUser) return error(response, 404, "Không tìm thấy người dùng.");
+
+    if (user.id === targetUserId) {
+      return error(response, 400, "Không thể tự yêu thích thẻ tên của chính mình.");
+    }
+
+    const existing = db.prepare("SELECT id FROM namecard_likes WHERE from_user_id = ? AND to_user_id = ?").get(user.id, targetUserId);
+    if (existing) {
+      return error(response, 400, "Bạn đã yêu thích thẻ tên này rồi.");
+    }
+
+    try {
+      db.prepare("INSERT INTO namecard_likes (from_user_id, to_user_id) VALUES (?, ?)").run(user.id, targetUserId);
+    } catch (e) {
+      return error(response, 400, "Không thể yêu thích thẻ tên.");
+    }
+
+    const likesRow = db.prepare("SELECT COUNT(*) AS count FROM namecard_likes WHERE to_user_id = ?").get(targetUserId);
+    const likesCount = Number(likesRow?.count || 0);
+
+    return json(response, 200, { ok: true, likesCount, hasLiked: true });
+  }
+
+  // --- NAMECARD LIKES LIST (CHỈ CHÍNH CHỦ XEM ĐƯỢC) ---
+  const namecardLikesListMatch = pathName.match(/^\/api\/users\/(\d+)\/namecard-likes$/);
+  if (method === "GET" && namecardLikesListMatch) {
+    const user = requireUser(request, response);
+    if (!user) return;
+
+    const targetUserId = Number(namecardLikesListMatch[1]);
+    if (user.id !== targetUserId) {
+      return error(response, 403, "Chỉ chủ sở hữu thẻ tên mới có quyền xem danh sách người yêu thích.");
+    }
+
+    const rows = db.prepare(`
+      SELECT nl.id, nl.from_user_id, nl.created_at,
+             u.display_name, u.avatar, u.role,
+             (SELECT 1 FROM namecard_likes WHERE from_user_id = ? AND to_user_id = nl.from_user_id) AS has_liked_back
+      FROM namecard_likes nl
+      JOIN users u ON u.id = nl.from_user_id
+      WHERE nl.to_user_id = ?
+      ORDER BY nl.created_at DESC
+    `).all(user.id, targetUserId);
+
+    const list = rows.map(r => ({
+      id: r.id,
+      fromUserId: r.from_user_id,
+      displayName: r.display_name,
+      avatar: r.avatar || getAvatarEmoji(r.display_name),
+      role: r.role,
+      streakTier: getAuthorStreakTier(r.from_user_id),
+      createdAt: r.created_at.replace(' ', 'T') + 'Z',
+      hasLikedBack: Boolean(r.has_liked_back)
+    }));
+
+    return json(response, 200, { likes: list, total: list.length });
   }
 
   if (method === "POST" && pathName === "/api/me/change-password") {

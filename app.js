@@ -4605,11 +4605,11 @@ async function openDetail(id, updateHash = true, isBack = false, targetScrollY =
           </div>
           <div class="response-copy collapsible-wrapper"><div class="collapsible-content ql-editor">${DOMPurify.sanitize(r.content)}</div><button type="button" class="read-more-btn" onclick="toggleReadMore(this)">Xem thêm</button></div>
           <div class="detail-actions" style="margin-top:8px; display:flex; align-items:center; border: none; padding: 0;">
-            <button class="button button-outline button-sm" onclick="voteResponse(${r.id}, 1)"><svg class="icon-upvote-svg" width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 4 3 20 21 20"/></svg> <span>Hữu ích</span></button>
+            <button class="button button-outline button-sm response-vote-btn" onclick="voteResponse(${r.id}, 1)" title="Hữu ích"><svg class="icon-upvote-svg" width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 4 3 20 21 20"/></svg> <span>Hữu ích</span></button>
             <span style="font-weight:600; color:var(--primary); width:16px; text-align:center;">${r.helpfulCount}</span>
-            <button class="button button-outline button-sm" onclick="voteResponse(${r.id}, -1)"><svg class="icon-upvote-svg" width="12" height="12" viewBox="0 0 24 24" fill="currentColor" style="transform: rotate(180deg);"><polygon points="12 4 3 20 21 20"/></svg> <span>Không hữu ích</span></button>
+            <button class="button button-outline button-sm response-vote-btn" onclick="voteResponse(${r.id}, -1)" title="Không hữu ích"><svg class="icon-upvote-svg" width="12" height="12" viewBox="0 0 24 24" fill="currentColor" style="transform: rotate(180deg);"><polygon points="12 4 3 20 21 20"/></svg> <span>Không hữu ích</span></button>
             <button class="button button-outline button-sm" style="margin-left: 8px;" onclick="showReplyForm(${r.id}, ${post.id}, ${targetParentId})">Phản hồi</button>
-            <button class="button button-outline button-sm" style="margin-left: 6px;" onclick="copyResponseLink(${post.id}, ${r.id})" title="Sao chép liên kết phản hồi này">
+            <button class="button button-outline button-sm response-copy-btn" style="margin-left: 6px;" onclick="copyResponseLink(${post.id}, ${r.id})" title="Sao chép liên kết phản hồi này">
               <svg class="ui-btn-icon" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
               <span>Chia sẻ</span>
             </button>
@@ -6634,6 +6634,10 @@ const COVER_PRESETS = [
 
 window.openNamecard = async function(userId) {
   if (!userId) return;
+  const likesModal = document.getElementById("namecardLikesModal");
+  if (likesModal && typeof likesModal.close === "function" && likesModal.open) {
+    likesModal.close();
+  }
   try {
     const data = await requestAPI(`/api/users/${userId}/namecard`);
     if (!data || !data.user) return;
@@ -6664,6 +6668,66 @@ window.openNamecard = async function(userId) {
     if (nameEl) {
       nameEl.textContent = data.user.displayName || "Người dùng";
       nameEl.className = "namecard-display-name " + getNameClass(streakTier);
+    }
+
+    // Namecard Like / Heart Widget
+    const likeBtn = $("#namecardLikeBtn");
+    const likeCountEl = $("#namecardLikeCount");
+    const isSelf = Boolean(data.user.isSelf);
+    const hasLiked = Boolean(data.user.hasLiked);
+
+    if (likeBtn) {
+      likeBtn.setAttribute("data-streak-tier", streakTier);
+      likeBtn.classList.toggle("has-liked", hasLiked);
+      likeBtn.classList.toggle("is-self", isSelf);
+      if (likeCountEl) likeCountEl.textContent = data.user.likesCount || 0;
+
+      if (isSelf) {
+        likeBtn.title = "Bấm để xem danh sách người đã yêu thích thẻ tên của bạn";
+        likeBtn.onclick = (e) => {
+          e.stopPropagation();
+          showNamecardLikesModal(data.user.id);
+        };
+      } else {
+        if (hasLiked) {
+          likeBtn.title = "Bạn đã yêu thích thẻ tên này";
+          likeBtn.onclick = (e) => {
+            e.stopPropagation();
+            toast("Bạn đã yêu thích thẻ tên này rồi.");
+          };
+        } else {
+          likeBtn.title = "Bấm để yêu thích thẻ tên";
+          likeBtn.onclick = async (e) => {
+            e.stopPropagation();
+            if (!session) {
+              toast("Vui lòng đăng nhập để yêu thích thẻ tên.");
+              return;
+            }
+            likeBtn.disabled = true;
+            try {
+              const res = await requestAPI(`/api/users/${data.user.id}/like-namecard`, { method: "POST" });
+              if (res && res.ok) {
+                likeBtn.classList.add("has-liked");
+                likeBtn.classList.add("animate-pop");
+                setTimeout(() => likeBtn.classList.remove("animate-pop"), 400);
+                if (likeCountEl) likeCountEl.textContent = res.likesCount;
+                likeBtn.title = "Bạn đã yêu thích thẻ tên này";
+                likeBtn.onclick = (ev) => {
+                  ev.stopPropagation();
+                  toast("Bạn đã yêu thích thẻ tên này rồi.");
+                };
+                data.user.hasLiked = true;
+                data.user.likesCount = res.likesCount;
+                toast("Đã yêu thích thẻ tên!");
+              }
+            } catch (err) {
+              toast(err.message || "Không thể gửi yêu thích.");
+            } finally {
+              likeBtn.disabled = false;
+            }
+          };
+        }
+      }
     }
     
     // Role Badge
@@ -6727,7 +6791,6 @@ window.openNamecard = async function(userId) {
     }
 
     // Edit buttons for self
-    const isSelf = Boolean(data.user.isSelf);
     if ($("#namecardEditCoverBtn")) $("#namecardEditCoverBtn").style.display = isSelf ? "inline-flex" : "none";
     if ($("#namecardEditNameBtn")) $("#namecardEditNameBtn").style.display = isSelf ? "inline-flex" : "none";
 
@@ -6899,6 +6962,98 @@ window.filterForumByUser = function() {
   if ($("#forumSearch") && userName) {
     $("#forumSearch").value = userName;
     renderPosts();
+  }
+};
+
+window.showNamecardLikesModal = async function(userId) {
+  const modal = document.getElementById("namecardLikesModal");
+  if (!modal) return;
+  const body = document.getElementById("namecardLikesBody");
+  const countBadge = document.getElementById("namecardLikesTotalBadge");
+  if (body) {
+    body.innerHTML = `
+      <div style="text-align: center; padding: 24px 16px; color: var(--muted); font-size: 13px;">
+        <svg class="spinner" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="animation: spin 0.8s linear infinite; display: inline-block; margin-bottom: 8px;"><circle cx="12" cy="12" r="10" stroke-opacity="0.25"></circle><path d="M12 2a10 10 0 0 1 10 10"></path></svg>
+        <div>Đang tải danh sách...</div>
+      </div>`;
+  }
+  modal.showModal();
+
+  try {
+    const res = await requestAPI(`/api/users/${userId}/namecard-likes`);
+    const likes = res?.likes || [];
+    if (countBadge) countBadge.textContent = likes.length;
+
+    if (!likes.length) {
+      if (body) {
+        body.innerHTML = `
+          <div style="text-align: center; padding: 32px 16px; color: var(--muted); font-size: 13px;">
+            <div style="font-size: 32px; margin-bottom: 8px;">🤍</div>
+            <strong style="display: block; font-size: 14px; color: var(--ink); margin-bottom: 4px;">Chưa có lượt yêu thích nào</strong>
+            <p style="margin: 0; line-height: 1.45;">Hãy tích cực chia sẻ và thảo luận để thẻ tên của bạn được nhiều người biết đến hơn nhé!</p>
+          </div>`;
+      }
+      return;
+    }
+
+    if (body) {
+      body.innerHTML = `
+        <div class="namecard-likes-list" style="display: flex; flex-direction: column; gap: 8px;">
+          ${likes.map(l => {
+            const likeBackBtn = l.hasLikedBack
+              ? `<button type="button" class="button button-outline button-sm" disabled style="opacity: 0.7; gap: 4px; pointer-events: none; font-size: 11px; padding: 4px 10px; border-radius: 6px;">
+                   <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+                   <span>Đã yêu thích</span>
+                 </button>`
+              : `<button type="button" class="button button-primary button-sm" onclick="likeBackUser(event, ${l.fromUserId}, this)" style="gap: 4px; font-size: 11px; padding: 4px 10px; border-radius: 6px;">
+                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+                   <span>Yêu thích</span>
+                 </button>`;
+            return `
+              <div class="namecard-like-row" style="display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface);">
+                <div style="display: flex; align-items: center; gap: 10px; min-width: 0; flex: 1;">
+                  <span class="avatar avatar-sm ${getAvatarClass(l.streakTier, false, l.role)}" data-namecard-user-id="${l.fromUserId}" style="cursor: pointer;" title="Xem thẻ tên">${l.avatar}</span>
+                  <div style="min-width: 0; flex: 1;">
+                    <div style="display: flex; align-items: center; gap: 6px; line-height: 1.2;">
+                      <strong class="${getNameClass(l.streakTier)}" data-namecard-user-id="${l.fromUserId}" style="cursor: pointer; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHTML(l.displayName)}</strong>
+                      ${l.role === "admin" ? '<span style="font-size: 10px; font-weight: 700; color: #92400e; background: #fef3c7; padding: 1px 6px; border-radius: 4px;">Admin</span>' : (l.role === "lecturer" ? '<span style="font-size: 10px; font-weight: 700; color: #0369a1; background: #e0f2fe; padding: 1px 6px; border-radius: 4px;">Giảng viên</span>' : "")}
+                    </div>
+                    <small style="color: var(--muted); font-size: 11px; display: block; margin-top: 2px;">${formatTime(l.createdAt)}</small>
+                  </div>
+                </div>
+                <div style="flex-shrink: 0;">
+                  ${likeBackBtn}
+                </div>
+              </div>`;
+          }).join("")}
+        </div>`;
+    }
+  } catch (e) {
+    if (body) {
+      body.innerHTML = `<div style="text-align: center; padding: 24px; color: var(--error);">${escapeHTML(e.message || "Không thể tải danh sách người yêu thích.")}</div>`;
+    }
+  }
+};
+
+window.likeBackUser = async function(e, targetUserId, btn) {
+  if (e) e.stopPropagation();
+  if (!btn || !targetUserId) return;
+  btn.disabled = true;
+  try {
+    const res = await requestAPI(`/api/users/${targetUserId}/like-namecard`, { method: "POST" });
+    if (res && res.ok) {
+      btn.className = "button button-outline button-sm";
+      btn.disabled = true;
+      btn.style.opacity = "0.7";
+      btn.style.pointerEvents = "none";
+      btn.innerHTML = `
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+        <span>Đã yêu thích</span>`;
+      toast("Đã yêu thích lại thẻ tên!");
+    }
+  } catch (err) {
+    toast(err.message || "Không thể gửi yêu thích.");
+    btn.disabled = false;
   }
 };
 
