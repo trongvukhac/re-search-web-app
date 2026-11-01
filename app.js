@@ -1424,6 +1424,8 @@ function normalizePost(p) {
     isPinned: Boolean(p.isPinned),
     lecturerRecommended: Boolean(p.lecturerRecommended),
     readCount: Number(p.readCount || 0),
+    documentId: p.documentId || p.document_id || (p.linkedDocument?.id) || null,
+    linkedDocument: p.linkedDocument || p.document || null,
   };
 }
 window.getRoleDisplay = function(role) {
@@ -2237,7 +2239,7 @@ function renderActivityRow(r) {
   const getActionText = () => {
     switch (r.action) {
       case "web_active": return escapeHTML(r.reason || "Hoạt động sôi nổi trên web 5 phút để thắp sáng chuỗi");
-      case "post_created": return `Bạn đã đăng câu hỏi${getSnippet()}`;
+      case "post_created": return `Bạn đã đăng bài thảo luận${getSnippet()}`;
       case "response_created": return `Bạn đã trả lời${getSnippet()}`;
       case "helpful_received": return `Bài đăng${getSnippet()} nhận được lượt Vote`;
       case "document_approved": return `Tài liệu${getSnippet()} đã được duyệt`;
@@ -2346,6 +2348,9 @@ function postCard(post) {
     : "";
   const authorUserId = (!post.anonymous && post.authorId) ? post.authorId : "";
   const ncAttr = authorUserId ? `data-namecard-user-id="${authorUserId}" style="cursor: pointer;" title="Xem thẻ tên"` : "";
+  const docBadge = post.linkedDocument
+    ? `<span class="post-tag post-doc-tag" onclick="event.stopPropagation(); viewDocumentById(${post.linkedDocument.id})" title="Tài liệu đính kèm: ${escapeHTML(post.linkedDocument.title)}" style="display:inline-flex; align-items:center; gap:4px; max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg> 📎 ${escapeHTML(post.linkedDocument.title)}</span>`
+    : "";
   return `<article class="post-card ${post.authorRole === "admin" ? "admin-post" : ""}" data-post-id="${post.id}" style="position: relative;">
     ${adminBtns}${editBtn}
     <span class="avatar avatar-xs ${getAvatarClass(post.streakTier, post.anonymous, post.authorRole)}" ${ncAttr}>${post.initials}</span>
@@ -2357,7 +2362,7 @@ function postCard(post) {
       <h3 style="margin-top: 0;">${escapeHTML(post.title)}</h3>
       <div class="post-copy-preview">${escapeHTML(post.excerpt)}</div>
     </div>
-    <div class="post-stats"><span class="post-tag">${post.topic}</span><span style="font-weight:600; color:var(--primary); display: inline-flex; align-items: center; gap: 3px;"><svg class="icon-upvote-svg" width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 4 3 20 21 20"/></svg>${post.upvotes}</span><span style="font-weight:600; color:var(--sage-5); display: inline-flex; align-items: center; gap: 4px;"><svg class="icon-chat-svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>${post.responses}</span></div>
+    <div class="post-stats"><span class="post-tag">${post.topic}</span>${docBadge}<span style="font-weight:600; color:var(--primary); display: inline-flex; align-items: center; gap: 3px;"><svg class="icon-upvote-svg" width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 4 3 20 21 20"/></svg>${post.upvotes}</span><span style="font-weight:600; color:var(--sage-5); display: inline-flex; align-items: center; gap: 4px;"><svg class="icon-chat-svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>${post.responses}</span><span style="font-weight:500; color:var(--muted); display:inline-flex; align-items:center; gap:3px;" title="${post.readCount || 0} lượt đọc"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>${post.readCount || 0}</span></div>
   </article>`;
 }
 
@@ -2428,6 +2433,7 @@ function renderPosts() {
     result.sort((a, b) => b.id - a.id);
   }
   if (currentFilter === "popular") result.sort((a, b) => b.upvotes - a.upvotes);
+  if (currentFilter === "most-read") result.sort((a, b) => (b.readCount || 0) - (a.readCount || 0));
   if (currentFilter === "unanswered")
     result = result.filter((p) => p.responses === 0);
 
@@ -2435,7 +2441,7 @@ function renderPosts() {
 
   const html = result.length
     ? result.map(postCard).join("")
-    : `<div class="empty-state"><h3>Chưa tìm thấy nội dung phù hợp</h3><p>Thử dùng từ khóa khác hoặc đặt câu hỏi mới.</p></div>`;
+    : `<div class="empty-state"><h3>Chưa tìm thấy nội dung phù hợp</h3><p>Thử dùng từ khóa khác hoặc tạo bài đăng mới.</p></div>`;
   $("#forumFeed").innerHTML = html;
   $$(".forum-feed .post-card").forEach((el) =>
     el.addEventListener("click", (e) => {
@@ -2500,7 +2506,7 @@ function renderHome() {
       <li>
         <span class="avatar avatar-xs ${getAvatarClass(p.streakTier, p.anonymous, p.authorRole)}" ${ncAttr}>${p.initials}</span>
         <p>
-          <strong class="${getNameClass(p.streakTier)}" ${ncAttr}>${escapeHTML(p.author)}</strong> vừa đặt câu hỏi<br />
+          <strong class="${getNameClass(p.streakTier)}" ${ncAttr}>${escapeHTML(p.author)}</strong> vừa đăng bài thảo luận<br />
           <small>${p.time}</small>
         </p>
       </li>
@@ -2525,34 +2531,50 @@ function renderDocuments() {
     .join("");
   $$(".document-card").forEach((el) =>
     el.addEventListener("click", () => {
-      const doc = documents.find((d) => d.id === Number(el.dataset.doc));
-      if (doc && doc.url) {
-        let previewUrl = doc.url;
-        if (
-          previewUrl.includes("drive.google.com") &&
-          previewUrl.includes("/view")
-        ) {
-          previewUrl = previewUrl.replace(/\/view.*$/, "/preview");
-        }
-        currentViewingDocId = doc.id;
-        isDocDiscussionOpen = false;
-        updateDocDiscussionUIState();
-        if (typeof setDocAnonymousReply === "function") setDocAnonymousReply(false);
-        loadDocComments(doc.id);
-        $("#viewerIframe").src = previewUrl;
-        const titleEl = $("#viewerTitle");
-        if (titleEl) {
-          titleEl.textContent = doc.title;
-          titleEl.setAttribute("title", doc.title);
-        }
-        $("#documentViewerModal").showModal();
-        startDocReadTracking(doc.id);
-      } else {
-        toast("Tài liệu này không có link hợp lệ.");
-      }
+      viewDocumentById(Number(el.dataset.doc));
     }),
   );
 }
+
+window.viewDocumentById = function(docId) {
+  const doc = (window.documents || []).find((d) => d.id === Number(docId));
+  if (doc && doc.url) {
+    let previewUrl = doc.url;
+    if (
+      previewUrl.includes("drive.google.com") &&
+      previewUrl.includes("/view")
+    ) {
+      previewUrl = previewUrl.replace(/\/view.*$/, "/preview");
+    }
+    currentViewingDocId = doc.id;
+    isDocDiscussionOpen = false;
+    updateDocDiscussionUIState();
+    if (typeof setDocAnonymousReply === "function") setDocAnonymousReply(false);
+    loadDocComments(doc.id);
+    $("#viewerIframe").src = previewUrl;
+    const titleEl = $("#viewerTitle");
+    if (titleEl) {
+      titleEl.textContent = doc.title;
+      titleEl.setAttribute("title", doc.title);
+    }
+    $("#documentViewerModal").showModal();
+    startDocReadTracking(doc.id);
+  } else {
+    toast("Không tìm thấy thông tin tài liệu này.");
+  }
+};
+
+window.goToDocumentInRepo = function(docId) {
+  go("documents");
+  setTimeout(() => {
+    const el = document.querySelector(`.document-card[data-doc="${docId}"]`);
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+      el.classList.add("highlight-pulse");
+      setTimeout(() => el.classList.remove("highlight-pulse"), 2500);
+    }
+  }, 150);
+};
 
 function updateResponsiveAsidePlacement() {
   const cardsContainer = document.getElementById("forumCommunityAsideCards");
@@ -2604,6 +2626,14 @@ function go(rawRoute, scrollToTop = true) {
   if (baseRoute.startsWith("post-") || baseRoute.startsWith("post/")) {
     const pId = Number(baseRoute.replace(/^post[-/]/, ""));
     if (pId) {
+      if (window.postNavigationStack && window.postNavigationStack.length > 0) {
+        const last = window.postNavigationStack[window.postNavigationStack.length - 1];
+        if (last.postId === pId) {
+          window.postNavigationStack.pop();
+          openDetail(pId, false, true, last.scrollY);
+          return;
+        }
+      }
       openDetail(pId, false);
       return;
     }
@@ -2612,6 +2642,7 @@ function go(rawRoute, scrollToTop = true) {
   if (baseRoute !== "post-detail" && !baseRoute.startsWith("post-") && !baseRoute.startsWith("post/")) {
     stopPostReadTracking();
     if (typeof showMobileNav === "function") showMobileNav();
+    window.postNavigationStack = [];
   }
 
   const isSameRoute = (currentActiveRoute === baseRoute);
@@ -3122,6 +3153,15 @@ function openQuestion() {
   $$(".identity-choice").forEach((b, i) =>
     b.classList.toggle("selected", i === 0),
   );
+  const docSelect = $("#questionLinkedDocument");
+  if (docSelect) {
+    let opts = '<option value="">-- Không đính kèm tài liệu --</option>';
+    if (Array.isArray(window.documents) && window.documents.length > 0) {
+      opts += window.documents.map(d => `<option value="${d.id}">[${escapeHTML(d.format || 'Khác')}] ${escapeHTML(d.title)}</option>`).join("");
+    }
+    docSelect.innerHTML = opts;
+    docSelect.value = "";
+  }
   modal.showModal();
   $("#questionTitle").focus();
 }
@@ -3504,7 +3544,128 @@ if (docViewerModalEl) {
   });
 }
 
-async function openDetail(id, updateHash = true) {
+window.openExternalLinkModal = function(url, title) {
+  if (!url) return;
+  const modal = $("#externalLinkModal");
+  if (!modal) {
+    window.open(url, "_blank", "noopener,noreferrer");
+    return;
+  }
+  const iframe = $("#externalLinkIframe");
+  const titleEl = $("#externalLinkTitle");
+  const openTabBtn = $("#externalLinkOpenTab");
+
+  if (titleEl) {
+    titleEl.textContent = title || url;
+    titleEl.setAttribute("title", title || url);
+  }
+  if (openTabBtn) {
+    openTabBtn.href = url;
+  }
+  if (iframe) {
+    iframe.src = url;
+  }
+  modal.showModal();
+};
+
+const extLinkModalEl = $("#externalLinkModal");
+if (extLinkModalEl) {
+  extLinkModalEl.addEventListener("close", () => {
+    const iframe = $("#externalLinkIframe");
+    if (iframe) iframe.src = "about:blank";
+  });
+  extLinkModalEl.addEventListener("click", (e) => {
+    const rect = extLinkModalEl.getBoundingClientRect();
+    const isOutside = (
+      e.clientX < rect.left ||
+      e.clientX > rect.right ||
+      e.clientY < rect.top ||
+      e.clientY > rect.bottom
+    );
+    if (isOutside) {
+      extLinkModalEl.close();
+    }
+  });
+}
+
+document.addEventListener("click", (e) => {
+  const link = e.target.closest("a");
+  if (!link) return;
+
+  const inContent = link.closest(".detail-copy, .response-copy, .post-copy-preview, .document-desc, .announcement");
+  if (!inContent) return;
+
+  const href = link.getAttribute("href");
+  if (!href || href === "#" || href.startsWith("javascript:")) return;
+
+  // 1. Internal post link
+  const postMatch = href.match(/#post-(\d+)/) || href.match(/\/api\/posts\/(\d+)/);
+  if (postMatch) {
+    e.preventDefault();
+    const targetPostId = Number(postMatch[1]);
+    if (targetPostId) {
+      if (window.currentActiveRoute === "post-detail" && window.currentDetailPostId && window.currentDetailPostId !== targetPostId) {
+        if (!window.postNavigationStack) window.postNavigationStack = [];
+        window.postNavigationStack.push({
+          postId: window.currentDetailPostId,
+          scrollY: window.scrollY || 0
+        });
+      }
+      openDetail(targetPostId);
+      return;
+    }
+  }
+
+  // 2. Internal document link
+  const docMatch = href.match(/#doc(?:ument)?-(\d+)/);
+  if (docMatch) {
+    e.preventDefault();
+    viewDocumentById(Number(docMatch[1]));
+    return;
+  }
+
+  // 3. External link
+  if (href.startsWith("http://") || href.startsWith("https://")) {
+    try {
+      const parsedUrl = new URL(href, window.location.origin);
+      if (parsedUrl.origin === window.location.origin) {
+        if (parsedUrl.hash && parsedUrl.hash.startsWith("#post-")) {
+          const pId = Number(parsedUrl.hash.replace("#post-", ""));
+          if (pId) {
+            e.preventDefault();
+            if (window.currentActiveRoute === "post-detail" && window.currentDetailPostId && window.currentDetailPostId !== pId) {
+              if (!window.postNavigationStack) window.postNavigationStack = [];
+              window.postNavigationStack.push({
+                postId: window.currentDetailPostId,
+                scrollY: window.scrollY || 0
+              });
+            }
+            openDetail(pId);
+            return;
+          }
+        }
+      } else {
+        e.preventDefault();
+        openExternalLinkModal(href, link.textContent?.trim() || link.title || href);
+        return;
+      }
+    } catch (err) {
+      e.preventDefault();
+      openExternalLinkModal(href, link.textContent?.trim() || href);
+      return;
+    }
+  }
+});
+
+async function openDetail(id, updateHash = true, isBack = false, targetScrollY = 0) {
+  if (!window.postNavigationStack) window.postNavigationStack = [];
+  if (!isBack && window.currentDetailPostId && window.currentDetailPostId !== id && currentActiveRoute === "post-detail") {
+    window.postNavigationStack.push({
+      postId: window.currentDetailPostId,
+      scrollY: window.scrollY || 0
+    });
+  }
+
   window.currentDetailPostId = id;
 
   // Lưu vị trí cuộn hiện tại của Diễn đàn trước khi mở bài viết
@@ -3524,7 +3685,9 @@ async function openDetail(id, updateHash = true) {
     a.classList.toggle("active", a.dataset.route === "forum"),
   );
   currentActiveRoute = "post-detail";
-  window.scrollTo({ top: 0, behavior: "smooth" });
+  if (!isBack || !targetScrollY) {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
   if (typeof hideMobileNav === "function") hideMobileNav();
   showPostDetailTopNav();
   lastPostDetailScrollY = 0;
@@ -3548,6 +3711,11 @@ async function openDetail(id, updateHash = true) {
   if (backBtn) {
     backBtn.onclick = () => {
       stopPostReadTracking();
+      if (window.postNavigationStack && window.postNavigationStack.length > 0) {
+        const prev = window.postNavigationStack.pop();
+        openDetail(prev.postId, true, true, prev.scrollY);
+        return;
+      }
       if (typeof showMobileNav === "function") showMobileNav();
       go("forum", false); // false = không cuộn về đầu trang
     };
@@ -3677,7 +3845,7 @@ async function openDetail(id, updateHash = true) {
 
     const responsesHTML = roots.length
       ? roots.map((r) => renderResponse(r, 0)).join("")
-      : `<p class="detail-copy">Câu hỏi này chưa có phản hồi. Hãy là người đầu tiên đóng góp một góc nhìn hoặc nguồn tài liệu hữu ích.</p>`;
+      : `<p class="detail-copy">Bài thảo luận này chưa có phản hồi. Hãy là người đầu tiên đóng góp một góc nhìn hoặc nguồn tài liệu hữu ích.</p>`;
 
     let adminBtns = "";
     if (session?.role === "admin") {
@@ -3719,6 +3887,26 @@ async function openDetail(id, updateHash = true) {
       saveBtn.onclick = () => toggleSavePost(post.id);
     }
 
+    const linkedDocCard = post.linkedDocument ? `
+      <div class="post-linked-doc-card">
+        <div class="post-linked-doc-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+        </div>
+        <div class="post-linked-doc-info">
+          <div class="post-linked-doc-eyebrow">TÀI LIỆU TỪ KHO · <span class="doc-format-badge">${escapeHTML(post.linkedDocument.format || 'Tài liệu')}</span></div>
+          <h4 class="post-linked-doc-title">${escapeHTML(post.linkedDocument.title)}</h4>
+        </div>
+        <div class="post-linked-doc-actions">
+          <button type="button" class="button button-primary button-sm" onclick="viewDocumentById(${post.linkedDocument.id})">
+            <svg class="ui-btn-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg> Xem tài liệu
+          </button>
+          <button type="button" class="button button-outline button-sm" onclick="goToDocumentInRepo(${post.linkedDocument.id})" title="Đi tới tài liệu trong kho">
+            Kho tài liệu ↗
+          </button>
+        </div>
+      </div>
+    ` : "";
+
     $("#detailContent").innerHTML = `
       ${hiddenBanner}
       <div class="modal-head" style="position: relative; margin-bottom: 16px;">
@@ -3739,6 +3927,7 @@ async function openDetail(id, updateHash = true) {
         </div>
       </div>
       <div class="detail-copy ql-editor">${DOMPurify.sanitize(post.content || post.excerpt)}</div>
+      ${linkedDocCard}
       <div class="detail-actions">
         <button class="button button-outline button-sm" onclick="votePost(${post.id}, 1)"><svg class="icon-upvote-svg" width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 4 3 20 21 20"/></svg> <span>Hữu ích</span></button>
         <span style="font-weight:600; color:var(--primary); min-width: 16px; text-align: center;">${post.helpfulCount || post.upvotes || 0}</span>
@@ -3757,6 +3946,12 @@ async function openDetail(id, updateHash = true) {
       <h3 class="detail-response-title">Phản hồi (${post.responseCount || 0})</h3>
       <div id="responsesContainer">${responsesHTML}</div>
     `;
+
+    if (isBack && typeof targetScrollY === "number" && targetScrollY > 0) {
+      setTimeout(() => {
+        window.scrollTo({ top: targetScrollY, behavior: "auto" });
+      }, 50);
+    }
 
     $("#pinnedReplyContainer").innerHTML = `
       <form id="replyForm" class="reply-bar collapsed">
@@ -4429,6 +4624,8 @@ function checkAndShowBanner() {
 window.openEditModal = async (type, id) => {
   let content = "";
   let title = "";
+  const editDocLabel = $("#editLinkedDocLabel");
+  const editDocSelect = $("#editLinkedDocument");
 
   if (type === "posts") {
     const post = posts.find(p => p.id === id);
@@ -4438,8 +4635,18 @@ window.openEditModal = async (type, id) => {
       title = data.post.title;
       $("#editTitleLabel").style.display = "block";
       $("#editTitle").value = title;
+      if (editDocLabel && editDocSelect) {
+        editDocLabel.style.display = "block";
+        let opts = '<option value="">-- Không đính kèm tài liệu --</option>';
+        if (Array.isArray(window.documents) && window.documents.length > 0) {
+          opts += window.documents.map(d => `<option value="${d.id}">[${escapeHTML(d.format || 'Khác')}] ${escapeHTML(d.title)}</option>`).join("");
+        }
+        editDocSelect.innerHTML = opts;
+        editDocSelect.value = data.post.documentId ? String(data.post.documentId) : "";
+      }
     }
   } else if (type === "responses") {
+    if (editDocLabel) editDocLabel.style.display = "none";
     const r = document.querySelector(`.response .detail-actions button[onclick*="voteResponse(${id},"]`)?.closest(".response");
     if (r) {
       const contentEl = r.querySelector(".collapsible-content") || r.querySelector(".response-copy");
@@ -4447,6 +4654,7 @@ window.openEditModal = async (type, id) => {
     }
     $("#editTitleLabel").style.display = "none";
   } else if (type === "document_comments") {
+    if (editDocLabel) editDocLabel.style.display = "none";
     const card = document.getElementById(`docComment-${id}`);
     if (card) {
       const contentEl = card.querySelector(".doc-comment-content");
@@ -4484,12 +4692,17 @@ $("#editForm").addEventListener("submit", async (e) => {
   
   const content = type === "document_comments" ? rawText : editEditor.root.innerHTML;
   const title = type === "posts" ? $("#editTitle").value.trim() : "";
+  const documentId = type === "posts" ? ($("#editLinkedDocument")?.value || null) : undefined;
 
   try {
     const endpoint = type === "document_comments" ? `/api/documents/comments/${id}` : `/api/${type}/${id}`;
+    const payload = { content, title };
+    if (type === "posts") {
+      payload.documentId = documentId ? Number(documentId) : (documentId === "" ? null : undefined);
+    }
     await requestAPI(endpoint, {
       method: "PATCH",
-      body: JSON.stringify({ content, title })
+      body: JSON.stringify(payload)
     });
     toast("Cập nhật thành công!");
     $("#editModal").close();
@@ -4545,6 +4758,7 @@ $("#questionForm").addEventListener("submit", async (e) => {
     responses: 0,
     anonymous,
   };
+  const linkedDocId = $("#questionLinkedDocument")?.value || null;
   try {
     if (serverMode) {
       const data = await requestAPI("/api/posts", {
@@ -4554,6 +4768,7 @@ $("#questionForm").addEventListener("submit", async (e) => {
           content,
           topic: newPost.topic,
           isAnonymous: anonymous,
+          documentId: linkedDocId ? Number(linkedDocId) : null,
         }),
       });
       newPost = normalizePost(data.post);
@@ -4563,7 +4778,7 @@ $("#questionForm").addEventListener("submit", async (e) => {
     renderPosts();
     renderHome();
     go("forum");
-    toast("Câu hỏi đã được đăng. +2 Điểm đóng góp");
+    toast("Bài thảo luận đã được đăng. +2 Điểm đóng góp");
     hydrateServer();
   } catch (err) {
     toast(err.message);

@@ -674,6 +674,7 @@ try { db.exec("ALTER TABLE competition_sessions ADD COLUMN on_time_bonus INTEGER
 try { db.exec("ALTER TABLE competition_phase_results ADD COLUMN on_time_bonus INTEGER NOT NULL DEFAULT 0;"); } catch (e) { }
 try { db.exec("ALTER TABLE posts ADD COLUMN deleted_at TEXT;"); } catch (e) { }
 try { db.exec("ALTER TABLE responses ADD COLUMN deleted_at TEXT;"); } catch (e) { }
+try { db.exec("ALTER TABLE posts ADD COLUMN document_id INTEGER REFERENCES documents(id);"); } catch (e) { }
 
 try {
   db.exec(`
@@ -1525,11 +1526,37 @@ function clearSession(request, response) {
 }
 
 function serializePost(row, viewer) {
+  let linkedDoc = null;
+  if (row.doc_id && row.doc_title) {
+    linkedDoc = {
+      id: Number(row.doc_id),
+      title: row.doc_title,
+      format: row.doc_format || "Khác",
+      category: row.doc_category || "",
+      sourceUrl: row.doc_source_url || ""
+    };
+  } else if (row.document_id) {
+    try {
+      const d = db.prepare("SELECT id, title, format, category, source_url FROM documents WHERE id=?").get(row.document_id);
+      if (d) {
+        linkedDoc = {
+          id: Number(d.id),
+          title: d.title,
+          format: d.format || "Khác",
+          category: d.category || "",
+          sourceUrl: d.source_url || ""
+        };
+      }
+    } catch (e) {}
+  }
+
   return {
     id: row.id,
     title: row.title,
     content: row.content,
     topic: row.topic,
+    documentId: row.document_id || null,
+    linkedDocument: linkedDoc,
     isAnonymous: Boolean(row.is_anonymous),
     author:
       row.is_anonymous && !isAdmin(viewer)
@@ -1559,7 +1586,17 @@ function listPosts(viewer, search = "") {
   const needle = `%${search.trim()}%`;
   const rows = db
     .prepare(
-      `SELECT p.*,u.display_name,u.avatar,u.role,(SELECT coalesce(sum(vote_value),0) FROM votes v WHERE v.target_type='post' AND v.target_id=p.id) helpful_count,(SELECT count(*) FROM responses r WHERE r.post_id=p.id AND r.status='visible') response_count,(SELECT count(*) FROM votes v JOIN users vu ON vu.id=v.user_id WHERE v.target_type='post' AND v.target_id=p.id AND v.vote_value > 0 AND vu.role='lecturer') lecturer_recommended FROM posts p JOIN users u ON u.id=p.author_id WHERE p.status='visible' AND (p.title LIKE ? OR p.content LIKE ? OR p.topic LIKE ?) ORDER BY p.is_pinned DESC, p.created_at DESC`,
+      `SELECT p.*,
+              u.display_name, u.avatar, u.role,
+              doc.id as doc_id, doc.title as doc_title, doc.format as doc_format, doc.category as doc_category, doc.source_url as doc_source_url,
+              (SELECT coalesce(sum(vote_value),0) FROM votes v WHERE v.target_type='post' AND v.target_id=p.id) helpful_count,
+              (SELECT count(*) FROM responses r WHERE r.post_id=p.id AND r.status='visible') response_count,
+              (SELECT count(*) FROM votes v JOIN users vu ON vu.id=v.user_id WHERE v.target_type='post' AND v.target_id=p.id AND v.vote_value > 0 AND vu.role='lecturer') lecturer_recommended
+       FROM posts p
+       JOIN users u ON u.id=p.author_id
+       LEFT JOIN documents doc ON doc.id=p.document_id
+       WHERE p.status='visible' AND (p.title LIKE ? OR p.content LIKE ? OR p.topic LIKE ?)
+       ORDER BY p.is_pinned DESC, p.created_at DESC`,
     )
     .all(needle, needle, needle);
   return rows.map((r) => serializePost(r, viewer));
@@ -3048,9 +3085,9 @@ async function api(request, response, url) {
       return error(
         response,
         429,
-        "Bạn đã đăng quá nhiều câu hỏi trong một giờ.",
+        "Bạn đã đăng quá nhiều bài thảo luận trong một giờ.",
       );
-    const { title, content, topic, isAnonymous } = await readJSON(request);
+    const { title, content, topic, isAnonymous, documentId } = await readJSON(request);
     const allowedTopics = db.prepare("SELECT name FROM topics WHERE status = 'approved'").all().map(t => t.name);
     if (
       typeof title !== "string" ||
@@ -3061,23 +3098,39 @@ async function api(request, response, url) {
       content.trim().length > 10000 ||
       !allowedTopics.includes(topic)
     )
-      return error(response, 400, "Nội dung câu hỏi chưa hợp lệ.");
+      return error(response, 400, "Nội dung bài đăng chưa hợp lệ.");
     const anonymous = isAdmin(user) ? 0 : isAnonymous ? 1 : 0;
+    let linkedDocId = null;
+    if (documentId) {
+      const dId = Number(documentId);
+      if (dId > 0) {
+        const docExists = db.prepare("SELECT id FROM documents WHERE id=? AND status='approved'").get(dId);
+        if (docExists) linkedDocId = docExists.id;
+      }
+    }
     const result = db
       .prepare(
-        "INSERT INTO posts(author_id,title,content,topic,is_anonymous) VALUES (?,?,?,?,?)",
+        "INSERT INTO posts(author_id,title,content,topic,is_anonymous,document_id) VALUES (?,?,?,?,?,?)",
       )
-      .run(user.id, title.trim(), content.trim(), topic, anonymous);
+      .run(user.id, title.trim(), content.trim(), topic, anonymous, linkedDocId);
     recordContribution(
       user.id,
       "post_created",
       2,
       "post",
       result.lastInsertRowid,
+      "Đăng bài thảo luận",
     );
     const post = db
       .prepare(
-        `SELECT p.*,u.display_name,u.avatar,u.role,0 helpful_count,0 response_count FROM posts p JOIN users u ON u.id=p.author_id WHERE p.id=?`,
+        `SELECT p.*,
+                u.display_name,u.avatar,u.role,
+                doc.id as doc_id, doc.title as doc_title, doc.format as doc_format, doc.category as doc_category, doc.source_url as doc_source_url,
+                0 helpful_count,0 response_count
+         FROM posts p
+         JOIN users u ON u.id=p.author_id
+         LEFT JOIN documents doc ON doc.id=p.document_id
+         WHERE p.id=?`,
       )
       .get(result.lastInsertRowid);
     return json(response, 201, { post: serializePost(post, user) });
@@ -3088,7 +3141,17 @@ async function api(request, response, url) {
     const allowHidden = isAdmin(viewer) ? 1 : 0;
     const row = db
       .prepare(
-        `SELECT p.*,u.display_name,u.avatar,u.role,(SELECT coalesce(sum(vote_value),0) FROM votes v WHERE v.target_type='post' AND v.target_id=p.id) helpful_count,(SELECT count(*) FROM responses r WHERE r.post_id=p.id AND (r.status='visible' OR (r.status='hidden' AND ?=1))) response_count,(SELECT count(*) FROM votes v JOIN users vu ON vu.id=v.user_id WHERE v.target_type='post' AND v.target_id=p.id AND v.vote_value > 0 AND vu.role='lecturer') lecturer_recommended,(SELECT 1 FROM saved_posts sp WHERE sp.post_id=p.id AND sp.user_id=?) is_saved FROM posts p JOIN users u ON u.id=p.author_id WHERE p.id=? AND (p.status='visible' OR (p.status='hidden' AND ?=1))`,
+        `SELECT p.*,
+                u.display_name,u.avatar,u.role,
+                doc.id as doc_id, doc.title as doc_title, doc.format as doc_format, doc.category as doc_category, doc.source_url as doc_source_url,
+                (SELECT coalesce(sum(vote_value),0) FROM votes v WHERE v.target_type='post' AND v.target_id=p.id) helpful_count,
+                (SELECT count(*) FROM responses r WHERE r.post_id=p.id AND (r.status='visible' OR (r.status='hidden' AND ?=1))) response_count,
+                (SELECT count(*) FROM votes v JOIN users vu ON vu.id=v.user_id WHERE v.target_type='post' AND v.target_id=p.id AND v.vote_value > 0 AND vu.role='lecturer') lecturer_recommended,
+                (SELECT 1 FROM saved_posts sp WHERE sp.post_id=p.id AND sp.user_id=?) is_saved
+         FROM posts p
+         JOIN users u ON u.id=p.author_id
+         LEFT JOIN documents doc ON doc.id=p.document_id
+         WHERE p.id=? AND (p.status='visible' OR (p.status='hidden' AND ?=1))`,
       )
       .get(allowHidden, viewer?.id || null, Number(postIdMatch[1]), allowHidden);
     if (!row) return error(response, 404, "Không tìm thấy bài đăng.");
@@ -3234,7 +3297,7 @@ async function api(request, response, url) {
     const user = requireUser(request, response);
     if (!user || !requireCsrf(request, response, user)) return;
 
-    const { content, title } = await readJSON(request);
+    const { content, title, documentId } = await readJSON(request);
     if (typeof content !== "string") {
       return error(response, 400, "Định dạng không hợp lệ.");
     }
@@ -3260,7 +3323,17 @@ async function api(request, response, url) {
       if (typeof title !== "string" || title.trim().length < 5) {
         return error(response, 400, "Tiêu đề quá ngắn.");
       }
-      db.prepare(`UPDATE posts SET title=?, content=?, edited_at=CURRENT_TIMESTAMP WHERE id=?`).run(title.trim(), content.trim(), id);
+      let linkedDocId = null;
+      if (documentId !== undefined) {
+        const dId = Number(documentId);
+        if (dId > 0) {
+          const docExists = db.prepare("SELECT id FROM documents WHERE id=? AND status='approved'").get(dId);
+          if (docExists) linkedDocId = docExists.id;
+        }
+        db.prepare(`UPDATE posts SET title=?, content=?, document_id=?, edited_at=CURRENT_TIMESTAMP WHERE id=?`).run(title.trim(), content.trim(), linkedDocId, id);
+      } else {
+        db.prepare(`UPDATE posts SET title=?, content=?, edited_at=CURRENT_TIMESTAMP WHERE id=?`).run(title.trim(), content.trim(), id);
+      }
     } else {
       db.prepare(`UPDATE responses SET content=?, edited_at=CURRENT_TIMESTAMP WHERE id=?`).run(content.trim(), id);
     }
