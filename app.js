@@ -1434,6 +1434,7 @@ function normalizePost(p) {
     documentIds: Array.isArray(p.documentIds) ? p.documentIds : (p.documentId ? [p.documentId] : []),
     linkedDocument: p.linkedDocument || p.document || (Array.isArray(p.linkedDocuments) ? p.linkedDocuments[0] : null) || null,
     linkedDocuments: Array.isArray(p.linkedDocuments) ? p.linkedDocuments : (p.linkedDocument ? [p.linkedDocument] : []),
+    status: p.status || "visible",
   };
 }
 window.getRoleDisplay = function(role) {
@@ -2008,6 +2009,26 @@ function renderProfileStats(profileData) {
 
 let initialStudyRouteHandled = false;
 
+function updateCommunityStats(serverStats) {
+  const elTotal = $("#statTotalPosts");
+  const elRatio = $("#statAnsweredRatio");
+  if (!elTotal && !elRatio) return;
+
+  if (serverStats && typeof serverStats.totalPosts === "number") {
+    if (elTotal) elTotal.textContent = serverStats.totalPosts;
+    if (elRatio) elRatio.textContent = serverStats.answeredRatio + "%";
+    return;
+  }
+
+  const visiblePosts = posts.filter((p) => !p.status || p.status === "visible");
+  const totalPosts = visiblePosts.length;
+  const answeredPosts = visiblePosts.filter((p) => (Number(p.responses) || 0) > 0).length;
+  const ratio = totalPosts > 0 ? Math.round((answeredPosts / totalPosts) * 100) : 0;
+
+  if (elTotal) elTotal.textContent = totalPosts;
+  if (elRatio) elRatio.textContent = ratio + "%";
+}
+
 async function hydrateServer(force = false) {
   if (!serverMode) return;
   // Hoãn làm mới ngầm nếu người dùng đang gõ văn bản hoặc đang mở hộp thoại
@@ -2060,15 +2081,7 @@ async function hydrateServer(force = false) {
       if (!currentActiveRoute || currentActiveRoute === "home") renderHome();
       if (currentActiveRoute === "forum") renderPosts();
 
-      const communityPosts = posts.filter((p) => p.authorRole !== "admin");
-      const totalPosts = communityPosts.length;
-      const answeredPosts = communityPosts.filter((p) => p.responses > 0).length;
-      const ratio =
-        totalPosts > 0 ? Math.round((answeredPosts / totalPosts) * 100) : 0;
-      const elTotal = $("#statTotalPosts");
-      const elRatio = $("#statAnsweredRatio");
-      if (elTotal) elTotal.textContent = totalPosts;
-      if (elRatio) elRatio.textContent = ratio + "%";
+      updateCommunityStats(postsData.stats);
     }
 
     if (leaderboardData) {
@@ -2605,7 +2618,14 @@ function renderPosts() {
     result = result.filter(p => new Date(p.createdAt) >= yesterday);
     result.sort((a, b) => b.id - a.id);
   }
-  if (currentFilter === "popular") result.sort((a, b) => b.upvotes - a.upvotes);
+  if (currentFilter === "popular") {
+    result.sort((a, b) => {
+      const sumA = (Number(a.upvotes) || 0) + (Number(a.responses) || 0);
+      const sumB = (Number(b.upvotes) || 0) + (Number(b.responses) || 0);
+      if (sumB !== sumA) return sumB - sumA;
+      return (new Date(b.createdAt || 0) - new Date(a.createdAt || 0)) || (b.id - a.id);
+    });
+  }
   if (currentFilter === "most-read") result.sort((a, b) => (b.readCount || 0) - (a.readCount || 0));
   if (currentFilter === "unanswered")
     result = result.filter((p) => p.responses === 0);
@@ -2624,6 +2644,7 @@ function renderPosts() {
   );
 }
 function renderHome() {
+  updateCommunityStats();
   if (typeof initHomeBannerStack === "function") initHomeBannerStack();
   const unpinnedRecentPosts = [...posts]
     .sort((a, b) => (new Date(b.createdAt || 0) - new Date(a.createdAt || 0)) || (b.id - a.id))

@@ -3195,8 +3195,26 @@ async function api(request, response, url) {
   }
   if (method === "GET" && pathName === "/api/posts") {
     const viewer = sessionFrom(request) || { role: "student" };
+    const searchQuery = url.searchParams.get("q") || "";
+    const postList = listPosts(viewer, searchQuery);
+    const statsRow = db.prepare(`
+      SELECT 
+        count(*) as totalPosts,
+        count(CASE WHEN (SELECT count(*) FROM responses r WHERE r.post_id = p.id AND r.status = 'visible') > 0 THEN 1 END) as answeredPosts
+      FROM posts p
+      WHERE p.status = 'visible'
+    `).get();
+    const totalPosts = Number(statsRow?.totalPosts || 0);
+    const answeredPosts = Number(statsRow?.answeredPosts || 0);
+    const answeredRatio = totalPosts > 0 ? Math.round((answeredPosts / totalPosts) * 100) : 0;
+
     return json(response, 200, {
-      posts: listPosts(viewer, url.searchParams.get("q") || ""),
+      posts: postList,
+      stats: {
+        totalPosts,
+        answeredPosts,
+        answeredRatio
+      }
     });
   }
   if (method === "POST" && pathName === "/api/posts") {
