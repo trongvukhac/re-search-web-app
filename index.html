@@ -29,7 +29,7 @@
     <script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js" defer></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" defer></script>
-    <link rel="stylesheet" href="styles.css?v=108" />
+    <link rel="stylesheet" href="styles.css?v=109" />
   </head>
   <body>
     <dialog
@@ -2095,22 +2095,24 @@
         <div class="account-grid" id="accountGrid" style="display: none">
           <section class="account-activity">
             <div class="section-heading" style="display: block; margin-bottom: 24px;">
-              <div style="display: flex; justify-content: space-between; align-items: flex-end;">
+              <div style="display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 12px;">
                 <div>
-                  <p class="eyebrow" style="margin-bottom: 12px;">NHẬT KÝ HOẠT ĐỘNG</p>
-                  <div class="document-tabs" style="margin-bottom: 0; border-bottom: none;">
-                    <button class="tab active" id="tabContributionsBtn" onclick="switchAccountTab('contributions')">Đóng góp gần đây</button>
-                    <button class="tab" id="tabMyPostsBtn" onclick="switchAccountTab('myPosts')">Bài đăng của tôi</button>
-                    <button class="tab" id="tabSavedPostsBtn" onclick="switchAccountTab('saved')">Bài đăng đã lưu</button>
+                  <p class="eyebrow" style="margin-bottom: 10px;">NHẬT KÝ HOẠT ĐỘNG</p>
+                  <div class="account-tabs-nav" id="accountTabsNav">
+                    <button type="button" class="tab active" id="tabContributionsBtn" onclick="switchAccountTab('contributions')">Đóng góp gần đây</button>
+                    <button type="button" class="tab" id="tabMyPostsBtn" onclick="switchAccountTab('myPosts')">Bài đăng của tôi</button>
+                    <button type="button" class="tab" id="tabSavedPostsBtn" onclick="switchAccountTab('savedPosts')">Bài đăng đã lưu</button>
+                    <button type="button" class="tab" id="tabSavedDocsBtn" onclick="switchAccountTab('savedDocs')">Tài liệu đã lưu</button>
                   </div>
                 </div>
-                <button class="text-link" id="viewAllContributionsBtn" style="margin-bottom: 8px;">Xem tất cả →</button>
+                <button class="text-link" id="viewAllContributionsBtn" style="margin-bottom: 6px;">Xem tất cả →</button>
               </div>
-              <div style="border-bottom: 1px solid var(--line); margin-top: -1px;"></div>
+              <div style="border-bottom: 1px solid var(--line); margin-top: 14px;"></div>
             </div>
-            <div id="recentContributionsContainer"></div>
+            <div id="recentContributionsContainer" class="activity-timeline"></div>
             <div id="myPostsContainer" class="forum-feed" style="display: none;"></div>
             <div id="savedPostsContainer" class="forum-feed" style="display: none;"></div>
+            <div id="savedDocsContainer" class="saved-docs-feed" style="display: none;"></div>
           </section>
           <aside class="admin-panel" id="adminPanel" style="display: none">
             <p class="eyebrow">QUẢN TRỊ VIÊN</p>

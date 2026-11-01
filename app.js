@@ -2132,62 +2132,69 @@ async function hydrateServer(force = false) {
           if ($("#savedPostsContainer")) {
              try {
                 const savedData = await requestAPI(`/api/users/${current.user.id}/saved-posts`).catch(() => ({ posts: [] }));
-                const savedDocsData = await requestAPI(`/api/users/${current.user.id}/saved-documents`).catch(() => ({ documents: [] }));
                 const hasPosts = savedData && savedData.posts && savedData.posts.length > 0;
-                const hasDocs = savedDocsData && savedDocsData.documents && savedDocsData.documents.length > 0;
 
-                if (!hasPosts && !hasDocs) {
-                   $("#savedPostsContainer").innerHTML = `<p class="empty-state">Chưa có bài đăng hoặc tài liệu nào được lưu.</p>`;
+                if (!hasPosts) {
+                   $("#savedPostsContainer").innerHTML = `
+                     <div class="activity-empty-state">
+                       <div class="empty-state-icon">
+                         <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+                       </div>
+                       <p class="empty-state-title">Chưa có bài thảo luận nào được lưu</p>
+                       <p class="empty-state-desc">Khi đọc các bài thảo luận trên diễn đàn, nhấn <b>★ Lưu</b> để đánh dấu và xem lại thuận tiện tại đây.</p>
+                       <button type="button" class="button button-outline button-sm" onclick="go('forum')">Khám phá Diễn đàn thảo luận →</button>
+                     </div>`;
                 } else {
-                   let html = "";
-                   if (hasDocs) {
-                      html += `
-                        <div style="grid-column: 1 / -1; margin: 8px 0 14px 0;">
-                          <h3 style="font-size: 13px; font-weight: 700; color: var(--primary); text-transform: uppercase; letter-spacing: 0.5px; display: flex; align-items: center; gap: 6px; margin: 0 0 10px 0;">
-                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-                            Tài liệu đã lưu (${savedDocsData.documents.length})
-                          </h3>
-                          <div class="document-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px;">
-                            ${savedDocsData.documents.map(d => `
-                              <article class="document-card" data-doc="${d.id}" style="cursor: pointer; position: relative;">
-                                <div class="document-header-badges">
-                                  <div class="document-type" data-format="${d.format}">${d.format}</div>
-                                  <span class="document-id-badge" title="Mã tài liệu: #TL-${d.id}">#TL-${d.id}</span>
-                                </div>
-                                <p class="eyebrow">${d.category === "course" ? "TÀI LIỆU MÔN HỌC" : "TÀI LIỆU THAM KHẢO"}</p>
-                                <h2>${escapeHTML(d.title)}</h2>
-                                <div class="document-desc ql-editor">${DOMPurify.sanitize(d.description)}</div>
-                                <div class="document-footer">
-                                  <span>${escapeHTML(d.submittedBy)}</span>
-                                  <div class="document-footer-actions">
-                                    <button type="button" class="doc-card-action-btn" onclick="event.stopPropagation(); copyDocumentLink(${d.id})" title="Sao chép link">📋 Chia sẻ</button>
-                                    <button type="button" class="doc-card-action-btn is-saved" onclick="event.stopPropagation(); toggleSaveDocument(${d.id})" title="Bỏ lưu">★ Đã lưu</button>
-                                  </div>
-                                </div>
-                              </article>
-                            `).join("")}
-                          </div>
-                        </div>
-                      `;
-                   }
-                   if (hasPosts) {
-                      const normalizedSaved = savedData.posts.map(normalizePost);
-                      if (hasDocs) {
-                        html += `
-                          <div style="grid-column: 1 / -1; margin: 18px 0 10px 0;">
-                            <h3 style="font-size: 13px; font-weight: 700; color: var(--primary); text-transform: uppercase; letter-spacing: 0.5px; margin: 0;">
-                              Bài thảo luận đã lưu (${normalizedSaved.length})
-                            </h3>
-                          </div>
-                        `;
-                      }
-                      html += normalizedSaved.map(postCard).join("");
-                   }
-                   $("#savedPostsContainer").innerHTML = html;
+                   const normalizedSaved = savedData.posts.map(normalizePost);
+                   $("#savedPostsContainer").innerHTML = normalizedSaved.map(postCard).join("");
                    $$("#savedPostsContainer .post-card").forEach(el => 
                       el.addEventListener("click", () => openDetail(Number(el.dataset.postId)))
                    );
-                   $$("#savedPostsContainer .document-card").forEach(el =>
+                }
+             } catch(e) {
+                console.error(e);
+             }
+          }
+          if ($("#savedDocsContainer")) {
+             try {
+                const savedDocsData = await requestAPI(`/api/users/${current.user.id}/saved-documents`).catch(() => ({ documents: [] }));
+                const hasDocs = savedDocsData && savedDocsData.documents && savedDocsData.documents.length > 0;
+
+                if (!hasDocs) {
+                   $("#savedDocsContainer").innerHTML = `
+                     <div class="activity-empty-state">
+                       <div class="empty-state-icon">
+                         <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                       </div>
+                       <p class="empty-state-title">Chưa có tài liệu nào được lưu</p>
+                       <p class="empty-state-desc">Bạn có thể lưu các tài liệu quan trọng trong kho tài liệu để truy cập nhanh chóng bất cứ lúc nào.</p>
+                       <button type="button" class="button button-outline button-sm" onclick="go('documents')">Khám phá Kho tài liệu →</button>
+                     </div>`;
+                } else {
+                   $("#savedDocsContainer").innerHTML = `
+                     <div class="document-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px;">
+                       ${savedDocsData.documents.map(d => `
+                         <article class="document-card" data-doc="${d.id}" style="cursor: pointer; position: relative;">
+                           <div class="document-header-badges">
+                             <div class="document-type" data-format="${d.format}">${d.format}</div>
+                             <span class="document-id-badge" title="Mã tài liệu: #TL-${d.id}">#TL-${d.id}</span>
+                           </div>
+                           <p class="eyebrow">${d.category === "course" ? "TÀI LIỆU MÔN HỌC" : "TÀI LIỆU THAM KHẢO"}</p>
+                           <h2>${escapeHTML(d.title)}</h2>
+                           <div class="document-desc ql-editor">${DOMPurify.sanitize(d.description)}</div>
+                           <div class="document-footer">
+                             <div class="document-footer-author">
+                               <span>${escapeHTML(d.submittedBy)}</span>
+                             </div>
+                             <div class="document-footer-actions">
+                               <button type="button" class="doc-card-action-btn" onclick="event.stopPropagation(); copyDocumentLink(${d.id})" title="Sao chép link">📋 Chia sẻ</button>
+                               <button type="button" class="doc-card-action-btn is-saved" onclick="event.stopPropagation(); toggleSaveDocument(${d.id})" title="Bỏ lưu">★ Đã lưu</button>
+                             </div>
+                           </div>
+                         </article>
+                       `).join("")}
+                     </div>`;
+                   $$("#savedDocsContainer .document-card").forEach(el =>
                       el.addEventListener("click", () => viewDocumentById(Number(el.dataset.doc)))
                    );
                 }
@@ -2263,71 +2270,117 @@ function openAuth() {
 }
 
 function renderActivityRow(r) {
-  const icons = {
-    post_created: "↳",
-    response_created: "💬",
-    helpful_received: "✦",
-    document_approved: "↗",
-    admin_adjustment: "⚙",
-    response_deleted: "✕",
-    post_deleted: "✕",
-    post_hidden: "👁️",
-    response_hidden: "👁️",
-    post_unhidden: "↺",
-    response_unhidden: "↺",
-    post_restored: "↺",
-    response_restored: "↺",
-    weekly_active_reward: "🎁",
-    post_read: "📖",
-    document_read: "📄",
-    study_session: "🎧",
-    document_discussion: "💬",
-    document_comment_deleted: "✕",
-    competition_reward: "👑",
-    competition_phase_bonus: "🌟",
-    web_active: "🔥"
+  const iconConfigs = {
+    post_created: {
+      type: "green",
+      svg: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>`
+    },
+    response_created: {
+      type: "blue",
+      svg: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>`
+    },
+    helpful_received: {
+      type: "amber",
+      svg: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>`
+    },
+    document_approved: {
+      type: "green",
+      svg: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><polyline points="9 15 11 17 15 13"/></svg>`
+    },
+    post_read: {
+      type: "slate",
+      svg: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>`
+    },
+    document_read: {
+      type: "slate",
+      svg: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>`
+    },
+    study_session: {
+      type: "purple",
+      svg: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`
+    },
+    document_discussion: {
+      type: "blue",
+      svg: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>`
+    },
+    web_active: {
+      type: "amber",
+      svg: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 17c1.38 0 2.5-1.12 2.5-2.5 0-.61-.22-1.17-.58-1.61L12 12l-.92.89c-.36.44-.58 1-.58 1.61z"/><path d="M12 2c-.67 2.1-2.07 3.91-3.69 5.34C6.18 9.21 5 11.45 5 14a7 7 0 0 0 14 0c0-3.32-1.92-6.2-4.5-7.5-.16 1.5-1.02 2.76-2.25 3.42C12.44 7.6 12.3 4.67 12 2z"/></svg>`
+    },
+    weekly_active_reward: {
+      type: "amber",
+      svg: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/><line x1="12" y1="22" x2="12" y2="7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/></svg>`
+    },
+    competition_reward: {
+      type: "amber",
+      svg: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.45 1-1 1H7v4h10v-4h-2c-.55 0-1-.45-1-1v-2.34c3.27-.67 5.75-3.54 5.75-7.66V4H4.25v3c0 4.12 2.48 6.99 5.75 7.66z"/></svg>`
+    },
+    competition_phase_bonus: {
+      type: "amber",
+      svg: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>`
+    },
+    admin_adjustment: {
+      type: r.points >= 0 ? "green" : "rose",
+      svg: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>`
+    },
+    default: {
+      type: "slate",
+      svg: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>`
+    }
   };
-  
+  const isNegative = ["response_deleted", "post_deleted", "post_hidden", "response_hidden", "document_comment_deleted"].includes(r.action);
+  const cfg = isNegative ? {
+    type: "rose",
+    svg: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>`
+  } : (iconConfigs[r.action] || iconConfigs.default);
+
   const getSnippet = () => {
     if (!r.referenceContent) return "";
     let t = r.referenceContent.trim();
-    if (t.length > 30) t = t.substring(0, 30) + "...";
-    return ` <i>"${escapeHTML(t)}"</i>`;
+    if (t.length > 34) t = t.substring(0, 34) + "...";
+    return ` <i style="color: var(--muted); font-style: normal; font-weight: 500;">"${escapeHTML(t)}"</i>`;
   };
   
   const getActionText = () => {
     switch (r.action) {
       case "web_active": return escapeHTML(r.reason || "Hoạt động sôi nổi trên web 5 phút để thắp sáng chuỗi");
-      case "post_created": return `Bạn đã đăng bài thảo luận${getSnippet()}`;
-      case "response_created": return `Bạn đã trả lời${getSnippet()}`;
-      case "helpful_received": return `Bài đăng${getSnippet()} nhận được lượt Vote`;
+      case "post_created": return `Đã đăng bài thảo luận${getSnippet()}`;
+      case "response_created": return `Đã phản hồi${getSnippet()}`;
+      case "helpful_received": return `Bài thảo luận${getSnippet()} nhận được lượt Vote`;
       case "document_approved": return `Tài liệu${getSnippet()} đã được duyệt`;
-      case "post_read": return `Đọc bài đăng${getSnippet()} (giữ chuỗi)`;
-      case "document_read": return `Xem tài liệu${getSnippet()} (giữ chuỗi)`;
+      case "post_read": return `Đọc bài thảo luận${getSnippet()}`;
+      case "document_read": return `Xem tài liệu${getSnippet()}`;
       case "study_session": return `Hoàn thành ca tự học NCKH: ${escapeHTML(r.reason || 'Tự học tập trung')}`;
-      case "document_discussion": return escapeHTML(r.reason || `Bạn đã thảo luận về tài liệu`);
-      case "document_comment_deleted": return escapeHTML(r.reason || `Thảo luận tài liệu của bạn đã bị xóa`);
-      case "admin_adjustment": return r.points > 0 ? `Được TA cộng điểm: ${escapeHTML(r.reason || '')}` : `Bị trừ điểm do vi phạm quy định: ${escapeHTML(r.reason || '')}`;
-      case "response_deleted": return `Phản hồi của bạn đã bị xóa`;
-      case "post_deleted": return `Câu hỏi của bạn đã bị chuyển vào Thùng rác`;
-      case "post_hidden": return `Bài đăng của bạn đã bị ẩn`;
-      case "response_hidden": return `Bình luận của bạn đã bị ẩn do bài viết gốc bị ẩn`;
-      case "post_unhidden": return `Bài đăng của bạn đã được mở lại (huỷ ẩn)`;
-      case "response_unhidden": return `Bình luận của bạn đã được mở lại`;
-      case "post_restored": return `Bài đăng của bạn đã được khôi phục từ Thùng rác`;
-      case "response_restored": return `Bình luận của bạn đã được khôi phục`;
+      case "document_discussion": return escapeHTML(r.reason || `Đã thảo luận về tài liệu`);
+      case "document_comment_deleted": return escapeHTML(r.reason || `Thảo luận tài liệu đã bị xóa`);
+      case "admin_adjustment": return r.points > 0 ? `Được TA cộng điểm: ${escapeHTML(r.reason || '')}` : `Bị trừ điểm: ${escapeHTML(r.reason || '')}`;
+      case "response_deleted": return `Phản hồi đã bị xóa`;
+      case "post_deleted": return `Bài viết đã bị chuyển vào Thùng rác`;
+      case "post_hidden": return `Bài viết đã bị ẩn`;
+      case "response_hidden": return `Bình luận đã bị ẩn`;
+      case "post_unhidden": return `Bài viết đã được mở lại (huỷ ẩn)`;
+      case "response_unhidden": return `Bình luận đã được mở lại`;
+      case "post_restored": return `Bài viết đã được khôi phục từ Thùng rác`;
+      case "response_restored": return `Bình luận đã được khôi phục`;
       case "weekly_active_reward": return r.reason || `Điểm năng động tuần`;
-      case "competition_reward": return escapeHTML(r.reason || `Thưởng Bảng xếp hạng tuần Đấu trường Arena`);
-      case "competition_phase_bonus": return escapeHTML(r.reason || `Thưởng tham gia các chặng thi đấu Đấu trường Arena`);
+      case "competition_reward": return escapeHTML(r.reason || `Thưởng Bảng xếp hạng Đấu trường Arena`);
+      case "competition_phase_bonus": return escapeHTML(r.reason || `Thưởng tham gia các chặng Đấu trường Arena`);
       default: return r.action;
     }
   };
 
+  const pointClass = r.points > 0 ? "pts-positive" : (r.points < 0 ? "pts-negative" : "pts-zero");
   const sign = r.points > 0 ? "+" : "";
+
   return `<div class="activity-row">
-    <span class="activity-icon">${icons[r.action] || "•"}</span>
-    <div><strong>${getActionText()}</strong><p>${formatTime(r.date)}</p></div>
-    <span class="activity-points">${sign}${r.points}</span>
+    <div class="activity-icon-badge badge-${cfg.type}">${cfg.svg}</div>
+    <div class="activity-info">
+      <div class="activity-title">${getActionText()}</div>
+      <div class="activity-time">${formatTime(r.date)}</div>
+    </div>
+    <div class="activity-points-wrap">
+      <span class="activity-points-pill ${pointClass}">${sign}${r.points}</span>
+    </div>
   </div>`;
 }
 
@@ -2414,7 +2467,7 @@ function postCard(post) {
     const clickAction = linkedDocs.length === 1 
       ? `viewDocumentById(${linkedDocs[0].id})` 
       : `openDetail(${post.id})`;
-    docBadge = `<span class="post-tag post-doc-tag" onclick="event.stopPropagation(); ${clickAction}" title="${linkedDocs.length} tài liệu đính kèm: ${escapeHTML(allTitles)}" style="display:inline-flex; align-items:center; gap:4px; font-weight:600;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg> 📎 ${linkedDocs.length} tài liệu</span>`;
+    docBadge = `<span class="post-tag post-doc-tag" onclick="event.stopPropagation(); ${clickAction}" title="${linkedDocs.length} tài liệu đính kèm: ${escapeHTML(allTitles)}"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg><span class="doc-tag-count">${linkedDocs.length}</span><span class="doc-tag-label">&nbsp;tài liệu</span></span>`;
   }
   return `<article class="post-card ${post.authorRole === "admin" ? "admin-post" : ""}" data-post-id="${post.id}" style="position: relative;">
     ${adminBtns}${editBtn}
@@ -2427,7 +2480,26 @@ function postCard(post) {
       <h3 style="margin-top: 0;">${escapeHTML(post.title)}</h3>
       <div class="post-copy-preview">${escapeHTML(post.excerpt)}</div>
     </div>
-    <div class="post-stats"><span class="post-tag">${post.topic}</span>${docBadge}<span style="font-weight:600; color:var(--primary); display: inline-flex; align-items: center; gap: 3px;"><svg class="icon-upvote-svg" width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 4 3 20 21 20"/></svg>${post.upvotes}</span><span style="font-weight:600; color:var(--sage-5); display: inline-flex; align-items: center; gap: 4px;"><svg class="icon-chat-svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>${post.responses}</span><span style="font-weight:500; color:var(--muted); display:inline-flex; align-items:center; gap:3px;" title="${post.readCount || 0} lượt đọc"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>${post.readCount || 0}</span></div>
+    <div class="post-stats">
+      <div class="post-stats-tags">
+        <span class="post-tag">${post.topic}</span>
+        ${docBadge}
+      </div>
+      <div class="post-stats-metrics">
+        <span class="post-stat-item stat-views" title="${post.readCount || 0} lượt đọc">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+          <span>${post.readCount || 0}</span>
+        </span>
+        <span class="post-stat-item stat-comments" title="${post.responses || 0} phản hồi">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          <span>${post.responses || 0}</span>
+        </span>
+        <span class="post-stat-item stat-votes" title="${post.upvotes || 0} lượt vote">
+          <svg class="icon-upvote-svg" width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 4 3 20 21 20"/></svg>
+          <span>${post.upvotes || 0}</span>
+        </span>
+      </div>
+    </div>
   </article>`;
 }
 
@@ -6356,10 +6428,10 @@ window.submitInlineReply = async (containerId, postId, actualParentId) => {
 };
 
 window.switchAccountTab = (tab) => {
-  ["#tabContributionsBtn", "#tabMyPostsBtn", "#tabSavedPostsBtn"].forEach(id => {
+  ["#tabContributionsBtn", "#tabMyPostsBtn", "#tabSavedPostsBtn", "#tabSavedDocsBtn"].forEach(id => {
     if ($(id)) $(id).classList.remove("active");
   });
-  ["#recentContributionsContainer", "#myPostsContainer", "#savedPostsContainer"].forEach(id => {
+  ["#recentContributionsContainer", "#myPostsContainer", "#savedPostsContainer", "#savedDocsContainer"].forEach(id => {
     if ($(id)) $(id).style.display = "none";
   });
 
@@ -6370,6 +6442,10 @@ window.switchAccountTab = (tab) => {
   } else if (tab === 'myPosts') {
     if ($("#tabMyPostsBtn")) $("#tabMyPostsBtn").classList.add("active");
     if ($("#myPostsContainer")) $("#myPostsContainer").style.display = "grid";
+    if ($("#viewAllContributionsBtn")) $("#viewAllContributionsBtn").style.display = "none";
+  } else if (tab === 'savedDocs') {
+    if ($("#tabSavedDocsBtn")) $("#tabSavedDocsBtn").classList.add("active");
+    if ($("#savedDocsContainer")) $("#savedDocsContainer").style.display = "block";
     if ($("#viewAllContributionsBtn")) $("#viewAllContributionsBtn").style.display = "none";
   } else {
     if ($("#tabSavedPostsBtn")) $("#tabSavedPostsBtn").classList.add("active");
