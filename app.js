@@ -2070,7 +2070,11 @@ async function hydrateServer(force = false) {
           title: d.title,
           desc: d.desc || d.description,
           author: d.submittedBy || d.author,
+          authorId: d.submittedById || d.submitted_by || null,
+          authorRole: d.submittedByRole || "member",
+          initials: d.submittedByAvatar || getAvatarEmoji(d.submittedBy || d.author || "TL"),
           streakTier: Number(d.submittedByStreakTier || d.streakTier || 0),
+          createdAt: d.createdAt,
           date: formatTime(d.createdAt || d.date),
           url: d.url || d.sourceUrl,
           isSaved: Boolean(d.isSaved),
@@ -2589,8 +2593,10 @@ function renderPosts() {
 }
 function renderHome() {
   if (typeof initHomeBannerStack === "function") initHomeBannerStack();
-  const newest = posts.slice(0, 3);
-  $("#homePostList").innerHTML = newest.map(postCard).join("");
+  const unpinnedRecentPosts = [...posts]
+    .sort((a, b) => (new Date(b.createdAt || 0) - new Date(a.createdAt || 0)) || (b.id - a.id))
+    .slice(0, 3);
+  $("#homePostList").innerHTML = unpinnedRecentPosts.map(postCard).join("");
   $$("#homePostList .post-card").forEach((el) =>
     el.addEventListener("click", (e) => {
       if (e.target.closest("[data-namecard-user-id]")) return;
@@ -2612,39 +2618,80 @@ function renderHome() {
     }),
   );
 
-  const pinnedPost = posts.find((p) => p.isPinned);
+  const pinnedPosts = posts.filter((p) => p.isPinned).slice(0, 3);
   const pinnedContainer = $("#pinnedNotificationContainer");
   if (pinnedContainer) {
-    if (pinnedPost) {
-      pinnedContainer.innerHTML = `
-        <section class="announcement" style="cursor: pointer" onclick="openDetail(${pinnedPost.id})">
+    if (pinnedPosts.length > 0) {
+      pinnedContainer.innerHTML = pinnedPosts
+        .map(
+          (p) => `
+        <section class="announcement" style="cursor: pointer; margin-bottom: 12px;" onclick="openDetail(${p.id})">
           <div class="announcement-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="17" x2="12" y2="22"></line><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.89A2 2 0 0 1 15 10.77V6h1a1 1 0 0 0 0-2H8a1 1 0 0 0 0 2h1v4.77a2 2 0 0 1-1.11 1.79l-1.78.89A2 2 0 0 0 5 15.24Z"></path></svg></div>
-          <div>
+          <div style="flex: 1; min-width: 0;">
             <p class="eyebrow">THÔNG BÁO ĐƯỢC GHIM</p>
-            <h2>${escapeHTML(pinnedPost.title)}</h2>
-            <div class="post-copy-preview">${escapeHTML(pinnedPost.excerpt)}</div>
+            <h2 style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHTML(p.title)}</h2>
+            <div class="post-copy-preview">${escapeHTML(p.excerpt)}</div>
           </div>
           <button class="arrow-circle" aria-label="Xem thông báo">→</button>
         </section>
-      `;
+      `
+        )
+        .join("");
     } else {
       pinnedContainer.innerHTML = "";
     }
   }
 
+  const allContributions = [
+    ...posts.map((p) => ({
+      type: "post",
+      id: p.id,
+      title: p.title,
+      author: p.author,
+      authorId: (!p.anonymous && p.authorId) ? p.authorId : "",
+      authorRole: p.authorRole,
+      streakTier: p.streakTier,
+      initials: p.initials,
+      anonymous: p.anonymous,
+      createdAt: p.createdAt || 0,
+      time: p.time,
+      actionText: "vừa đăng bài thảo luận"
+    })),
+    ...documents.map((d) => ({
+      type: "document",
+      id: d.id,
+      title: d.title,
+      author: d.author || "Thành viên",
+      authorId: d.authorId || "",
+      authorRole: d.authorRole || "member",
+      streakTier: d.streakTier || 0,
+      initials: d.initials || "TL",
+      anonymous: false,
+      createdAt: d.createdAt || 0,
+      time: d.date || formatTime(d.createdAt),
+      actionText: "vừa chia sẻ tài liệu"
+    }))
+  ];
+
+  allContributions.sort((a, b) => (new Date(b.createdAt || 0) - new Date(a.createdAt || 0)) || (b.id - a.id));
+  const topRecent = allContributions.slice(0, 3);
+
   const globalRecent = $("#globalRecentContributions");
   if (globalRecent) {
-    globalRecent.innerHTML = newest
+    globalRecent.innerHTML = topRecent
       .map(
-        (p) => {
-          const authorUserId = (!p.anonymous && p.authorId) ? p.authorId : "";
+        (c) => {
+          const authorUserId = (!c.anonymous && c.authorId) ? c.authorId : "";
           const ncAttr = authorUserId ? `data-namecard-user-id="${authorUserId}" style="cursor: pointer;" title="Xem thẻ tên"` : "";
+          const clickFn = c.type === "post" ? `openDetail(${c.id})` : `viewDocumentById(${c.id})`;
           return `
-      <li>
-        <span class="avatar avatar-xs ${getAvatarClass(p.streakTier, p.anonymous, p.authorRole)}" ${ncAttr}>${p.initials}</span>
-        <p>
-          <strong class="${getNameClass(p.streakTier)}" ${ncAttr}>${escapeHTML(p.author)}</strong> vừa đăng bài thảo luận<br />
-          <small>${p.time}</small>
+      <li style="cursor: pointer;" onclick="if (!event.target.closest('[data-namecard-user-id]')) ${clickFn}">
+        <span class="avatar avatar-xs ${getAvatarClass(c.streakTier, c.anonymous, c.authorRole)}" ${ncAttr}>${c.initials}</span>
+        <p class="global-contrib-text">
+          <strong class="${getNameClass(c.streakTier)}" ${ncAttr}>${escapeHTML(c.author)}</strong>
+          <span class="global-contrib-action">${c.actionText}</span>
+          <span class="global-contrib-sep">·</span>
+          <small>${c.time}</small>
         </p>
       </li>
     `;
@@ -6310,13 +6357,7 @@ if ($("#closeHistory")) {
 if ($("#openGuide")) {
   $("#openGuide").onclick = () => {
     const modal = document.getElementById("guideModal");
-    if (modal) {
-      const iframe = modal.querySelector("iframe");
-      if (iframe && !iframe.src && iframe.dataset.src) {
-        iframe.src = iframe.dataset.src;
-      }
-      modal.showModal();
-    }
+    if (modal) modal.showModal();
   };
 }
 window.addEventListener("keydown", (e) => {

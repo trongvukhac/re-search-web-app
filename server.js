@@ -4587,7 +4587,7 @@ async function api(request, response, url) {
     const viewer = sessionFrom(request);
     const rows = db
       .prepare(
-        `SELECT d.*, u.display_name,
+        `SELECT d.*, u.display_name, u.avatar, u.role,
                 (SELECT 1 FROM saved_documents sd WHERE sd.document_id = d.id AND sd.user_id = ?) is_saved
          FROM documents d 
          JOIN users u ON u.id = d.submitted_by 
@@ -4605,6 +4605,9 @@ async function api(request, response, url) {
         format: d.format,
         status: d.status,
         submittedBy: d.display_name,
+        submittedById: d.submitted_by,
+        submittedByRole: d.role,
+        submittedByAvatar: d.avatar || getAvatarEmoji(d.display_name),
         submittedByStreakTier: getAuthorStreakTier(d.submitted_by),
         createdAt: d.created_at.replace(' ', 'T') + 'Z',
         isSaved: Boolean(d.is_saved),
@@ -6292,6 +6295,14 @@ async function api(request, response, url) {
       return error(response, 403, "Chỉ TA/Admin mới có quyền này.");
     const { isPinned } = await readJSON(request);
     const postId = Number(pinMatch[1]);
+    if (isPinned) {
+      const currentPinned = db
+        .prepare("SELECT COUNT(*) AS count FROM posts WHERE is_pinned = 1 AND id != ? AND deleted_at IS NULL AND status = 'visible'")
+        .get(postId);
+      if (currentPinned && currentPinned.count >= 3) {
+        return error(response, 400, "Chỉ được ghim tối đa 3 bài đăng cùng lúc. Vui lòng bỏ ghim bài khác trước.");
+      }
+    }
     const changed = db
       .prepare(
         "UPDATE posts SET is_pinned=?, updated_at=CURRENT_TIMESTAMP WHERE id=?",
