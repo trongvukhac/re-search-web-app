@@ -29,7 +29,7 @@
     <script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js" defer></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" defer></script>
-    <link rel="stylesheet" href="styles.css?v=107" />
+    <link rel="stylesheet" href="styles.css?v=108" />
   </head>
   <body>
     <dialog
@@ -59,14 +59,36 @@
               Xem tài liệu
             </h2>
           </div>
-          <button
-            class="close-modal"
-            type="button"
-            onclick="this.closest('dialog').close()"
-            aria-label="Đóng"
-          >
-            <svg class="ui-icon modal-close-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-          </button>
+          <div class="doc-viewer-head-actions">
+            <button
+              type="button"
+              class="button button-outline button-sm doc-viewer-share-btn"
+              id="docViewerShareBtn"
+              onclick="copyDocumentLink(currentViewingDocId)"
+              title="Sao chép liên kết tài liệu"
+            >
+              <svg class="ui-btn-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+              <span>Chia sẻ</span>
+            </button>
+            <button
+              type="button"
+              class="button button-outline button-sm doc-viewer-save-btn"
+              id="docViewerSaveBtn"
+              onclick="toggleSaveDocument(currentViewingDocId)"
+              title="Lưu tài liệu"
+            >
+              <svg class="ui-btn-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+              <span>Lưu</span>
+            </button>
+            <button
+              class="close-modal"
+              type="button"
+              onclick="this.closest('dialog').close()"
+              aria-label="Đóng"
+            >
+              <svg class="ui-icon modal-close-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            </button>
+          </div>
         </div>
         <iframe
           id="viewerIframe"
@@ -100,7 +122,7 @@
                 <textarea
                   id="docCommentInput"
                   class="doc-reply-textarea"
-                  placeholder="Hỏi hoặc chia sẻ ý kiến về tài liệu..."
+                  placeholder="Hỏi hoặc chia sẻ ý kiến về tài liệu... (Enter để gửi, Shift+Enter xuống dòng)"
                   rows="1"
                   required
                 ></textarea>
@@ -5244,6 +5266,6 @@
       </div>
     </dialog>
 
-    <script src="app.js?v=123" defer></script>
+    <script src="app.js?v=124" defer></script>
   </body>
 </html>

@@ -2073,6 +2073,7 @@ async function hydrateServer(force = false) {
           streakTier: Number(d.submittedByStreakTier || d.streakTier || 0),
           date: formatTime(d.createdAt || d.date),
           url: d.url || d.sourceUrl,
+          isSaved: Boolean(d.isSaved),
         });
       });
       if (!currentActiveRoute || currentActiveRoute === "documents") renderDocuments();
@@ -2130,15 +2131,65 @@ async function hydrateServer(force = false) {
           }
           if ($("#savedPostsContainer")) {
              try {
-                const savedData = await requestAPI(`/api/users/${current.user.id}/saved-posts`);
-                if (savedData && savedData.posts && savedData.posts.length > 0) {
-                   const normalizedSaved = savedData.posts.map(normalizePost);
-                   $("#savedPostsContainer").innerHTML = normalizedSaved.map(postCard).join("");
+                const savedData = await requestAPI(`/api/users/${current.user.id}/saved-posts`).catch(() => ({ posts: [] }));
+                const savedDocsData = await requestAPI(`/api/users/${current.user.id}/saved-documents`).catch(() => ({ documents: [] }));
+                const hasPosts = savedData && savedData.posts && savedData.posts.length > 0;
+                const hasDocs = savedDocsData && savedDocsData.documents && savedDocsData.documents.length > 0;
+
+                if (!hasPosts && !hasDocs) {
+                   $("#savedPostsContainer").innerHTML = `<p class="empty-state">Chưa có bài đăng hoặc tài liệu nào được lưu.</p>`;
+                } else {
+                   let html = "";
+                   if (hasDocs) {
+                      html += `
+                        <div style="grid-column: 1 / -1; margin: 8px 0 14px 0;">
+                          <h3 style="font-size: 13px; font-weight: 700; color: var(--primary); text-transform: uppercase; letter-spacing: 0.5px; display: flex; align-items: center; gap: 6px; margin: 0 0 10px 0;">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                            Tài liệu đã lưu (${savedDocsData.documents.length})
+                          </h3>
+                          <div class="document-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px;">
+                            ${savedDocsData.documents.map(d => `
+                              <article class="document-card" data-doc="${d.id}" style="cursor: pointer; position: relative;">
+                                <div class="document-header-badges">
+                                  <div class="document-type" data-format="${d.format}">${d.format}</div>
+                                  <span class="document-id-badge" title="Mã tài liệu: #TL-${d.id}">#TL-${d.id}</span>
+                                </div>
+                                <p class="eyebrow">${d.category === "course" ? "TÀI LIỆU MÔN HỌC" : "TÀI LIỆU THAM KHẢO"}</p>
+                                <h2>${escapeHTML(d.title)}</h2>
+                                <div class="document-desc ql-editor">${DOMPurify.sanitize(d.description)}</div>
+                                <div class="document-footer">
+                                  <span>${escapeHTML(d.submittedBy)}</span>
+                                  <div class="document-footer-actions">
+                                    <button type="button" class="doc-card-action-btn" onclick="event.stopPropagation(); copyDocumentLink(${d.id})" title="Sao chép link">📋 Chia sẻ</button>
+                                    <button type="button" class="doc-card-action-btn is-saved" onclick="event.stopPropagation(); toggleSaveDocument(${d.id})" title="Bỏ lưu">★ Đã lưu</button>
+                                  </div>
+                                </div>
+                              </article>
+                            `).join("")}
+                          </div>
+                        </div>
+                      `;
+                   }
+                   if (hasPosts) {
+                      const normalizedSaved = savedData.posts.map(normalizePost);
+                      if (hasDocs) {
+                        html += `
+                          <div style="grid-column: 1 / -1; margin: 18px 0 10px 0;">
+                            <h3 style="font-size: 13px; font-weight: 700; color: var(--primary); text-transform: uppercase; letter-spacing: 0.5px; margin: 0;">
+                              Bài thảo luận đã lưu (${normalizedSaved.length})
+                            </h3>
+                          </div>
+                        `;
+                      }
+                      html += normalizedSaved.map(postCard).join("");
+                   }
+                   $("#savedPostsContainer").innerHTML = html;
                    $$("#savedPostsContainer .post-card").forEach(el => 
                       el.addEventListener("click", () => openDetail(Number(el.dataset.postId)))
                    );
-                } else {
-                   $("#savedPostsContainer").innerHTML = `<p class="empty-state">Chưa có bài đăng nào được lưu.</p>`;
+                   $$("#savedPostsContainer .document-card").forEach(el =>
+                      el.addEventListener("click", () => viewDocumentById(Number(el.dataset.doc)))
+                   );
                 }
              } catch(e) {
                 console.error(e);
@@ -2539,7 +2590,38 @@ function renderDocuments() {
     .map(
       (d) => {
         const delBtn = isAdminOrTA ? `<button class="delete-doc-btn" onclick="deleteDocument(event, ${d.id})" style="position:absolute; top:8px; right:8px; background:transparent; color:var(--error); border:none; padding:8px; cursor:pointer; font-size:16px; line-height:1; z-index:10;" aria-label="Xoá tài liệu">✕</button>` : "";
-        return `<article class="document-card" data-doc="${d.id}" style="position:relative;">${delBtn}<div class="document-type" data-format="${d.format}">${d.format}</div><p class="eyebrow">${d.type === "course" ? "TÀI LIỆU MÔN HỌC" : "TÀI LIỆU THAM KHẢO"}</p><h2>${d.title}</h2><div class="document-desc ql-editor">${DOMPurify.sanitize(d.desc)}</div><div class="document-footer"><span class="${getNameClass(d.streakTier)}">${escapeHTML(d.author)}</span><span>${d.date}</span></div></article>`;
+        const isSaved = Boolean(d.isSaved);
+        const saveBtnContent = isSaved
+          ? `<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg> <span>Đã lưu</span>`
+          : `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg> <span>Lưu</span>`;
+
+        return `
+          <article class="document-card" data-doc="${d.id}" style="position:relative;">
+            ${delBtn}
+            <div class="document-header-badges">
+              <div class="document-type" data-format="${d.format}">${d.format}</div>
+              <span class="document-id-badge" title="Mã tài liệu: #TL-${d.id}">#TL-${d.id}</span>
+            </div>
+            <p class="eyebrow">${d.type === "course" ? "TÀI LIỆU MÔN HỌC" : "TÀI LIỆU THAM KHẢO"}</p>
+            <h2>${d.title}</h2>
+            <div class="document-desc ql-editor">${DOMPurify.sanitize(d.desc)}</div>
+            <div class="document-footer">
+              <div class="document-footer-author">
+                <span class="${getNameClass(d.streakTier)}">${escapeHTML(d.author)}</span>
+                <span>${d.date}</span>
+              </div>
+              <div class="document-footer-actions">
+                <button type="button" class="doc-card-action-btn" onclick="event.stopPropagation(); copyDocumentLink(${d.id})" title="Sao chép liên kết tài liệu">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+                  <span>Chia sẻ</span>
+                </button>
+                <button type="button" class="doc-card-action-btn doc-card-save-btn ${isSaved ? 'is-saved' : ''}" onclick="event.stopPropagation(); toggleSaveDocument(${d.id})" title="${isSaved ? 'Bỏ lưu tài liệu' : 'Lưu tài liệu'}">
+                  ${saveBtnContent}
+                </button>
+              </div>
+            </div>
+          </article>
+        `;
       }
     )
     .join("");
@@ -2549,6 +2631,49 @@ function renderDocuments() {
     }),
   );
 }
+
+window.copyDocumentLink = function(id) {
+  if (!id) return;
+  const url = `${window.location.origin}/#doc-${id}`;
+  navigator.clipboard.writeText(url).then(() => {
+    toast("Đã sao chép liên kết tài liệu!");
+  }).catch(() => {
+    prompt("Sao chép liên kết tài liệu:", url);
+  });
+};
+
+function updateDocViewerSaveBtn(docId, isSaved) {
+  const saveBtn = document.getElementById("docViewerSaveBtn");
+  if (!saveBtn) return;
+  saveBtn.classList.toggle("is-saved", Boolean(isSaved));
+  saveBtn.innerHTML = isSaved
+    ? `<svg class="ui-btn-icon" width="13" height="13" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg> <span>Đã lưu</span>`
+    : `<svg class="ui-btn-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg> <span>Lưu</span>`;
+}
+window.updateDocViewerSaveBtn = updateDocViewerSaveBtn;
+
+window.toggleSaveDocument = async function(id) {
+  if (serverMode && !session) return openAuth();
+  try {
+    const data = await requestAPI(`/api/documents/${id}/save`, { method: "POST" });
+    const targetDoc = documents.find(d => d.id === Number(id));
+    if (targetDoc) {
+      targetDoc.isSaved = data.isSaved;
+    }
+    if (data.isSaved) {
+      toast("Đã lưu tài liệu.");
+    } else {
+      toast("Đã bỏ lưu tài liệu.");
+    }
+    renderDocuments();
+    updateDocViewerSaveBtn(id, data.isSaved);
+    if (window.currentProfileId) {
+      loadProfile(window.currentProfileId);
+    }
+  } catch (err) {
+    toast(err.message);
+  }
+};
 
 window.viewDocumentById = async function(docId) {
   let doc = getAppDocument(docId);
@@ -2580,9 +2705,13 @@ window.viewDocumentById = async function(docId) {
       titleEl.textContent = doc.title;
       titleEl.setAttribute("title", doc.title);
     }
+    updateDocViewerSaveBtn(doc.id, doc.isSaved);
     const modal = $("#documentViewerModal");
     if (modal && typeof modal.showModal === "function") {
       if (!modal.open) modal.showModal();
+    }
+    if (location.hash !== `#doc-${doc.id}`) {
+      history.pushState(null, "", `#doc-${doc.id}`);
     }
     startDocReadTracking(doc.id);
   } else {
@@ -2649,6 +2778,16 @@ function go(rawRoute, scrollToTop = true) {
     return;
   }
 
+  const replyMatch = baseRoute.match(/^post[-/](\d+)[-/](?:reply|comment)[-/](\d+)$/);
+  if (replyMatch) {
+    const pId = Number(replyMatch[1]);
+    const rId = Number(replyMatch[2]);
+    if (pId && rId) {
+      openDetail(pId, false, false, 0, rId);
+      return;
+    }
+  }
+
   if (baseRoute.startsWith("post-") || baseRoute.startsWith("post/")) {
     const pId = Number(baseRoute.replace(/^post[-/]/, ""));
     if (pId) {
@@ -2661,6 +2800,18 @@ function go(rawRoute, scrollToTop = true) {
         }
       }
       openDetail(pId, false);
+      return;
+    }
+  }
+
+  if (baseRoute.startsWith("doc-") || baseRoute.startsWith("doc/")) {
+    const docId = Number(baseRoute.replace(/^doc[-/]/, ""));
+    if (docId) {
+      go("documents", false);
+      setTimeout(() => {
+        viewDocumentById(docId);
+        goToDocumentInRepo(docId);
+      }, 120);
       return;
     }
   }
@@ -3608,6 +3759,21 @@ async function loadDocComments(docId) {
       fabBadge.textContent = comments.length;
       fabBadge.style.display = comments.length > 0 ? "flex" : "none";
     }
+
+    const input = $("#docCommentInput");
+    if (input && !input.dataset.keyListenerAttached) {
+      input.dataset.keyListenerAttached = "true";
+      input.addEventListener("keydown", (evt) => {
+        if (evt.key === "Enter" && !evt.shiftKey) {
+          evt.preventDefault();
+          handleSendDocComment(evt);
+        }
+      });
+      input.addEventListener("input", () => {
+        input.style.height = "auto";
+        input.style.height = Math.min(input.scrollHeight, 120) + "px";
+      });
+    }
   } catch (e) {
     console.error("Error loading document comments:", e);
   }
@@ -3630,7 +3796,8 @@ function renderDocCommentsList(comments) {
   }
   const isPrivileged = session?.role === "admin" || session?.role === "ta" || session?.role === "lecturer";
   listEl.innerHTML = comments.map(c => {
-    const delBtn = isPrivileged ? `
+    const canDelete = c.isAuthor || isPrivileged;
+    const delBtn = canDelete ? `
       <button type="button" class="doc-comment-del-btn" onclick="deleteDocComment(${c.id})" title="Xoá thảo luận" aria-label="Xoá thảo luận">✕</button>
     ` : "";
     const editBtn = c.isAuthor ? renderEditBtn(c.id, c.createdAt, "document_comments") : "";
@@ -3638,14 +3805,21 @@ function renderDocCommentsList(comments) {
       : (c.author.role === "ta" ? ' <span class="doc-comment-role-badge">[TA]</span>'
       : (c.author.role === "admin" ? ' <span class="doc-comment-role-badge">[Admin]</span>' : ''));
 
+    const authorName = c.isAuthor ? "Bạn" : escapeHTML(c.author.displayName);
+    const ncAttr = (!c.anonymous && c.author.id) 
+      ? `data-namecard-user-id="${c.author.id}" style="cursor: pointer;" title="Xem thẻ tên"` 
+      : '';
+
     return `
-      <div class="doc-comment-card" id="docComment-${c.id}">
+      <div class="doc-comment-card" id="docComment-${c.id}" data-comment-id="${c.id}">
         <div class="doc-comment-top">
           <div class="doc-comment-author-info">
-            <span class="avatar avatar-xs ${getAvatarClass(c.author.streakTier, c.anonymous, c.author.role)}">${escapeHTML(c.author.initials || '?')}</span>
-            <strong class="${getNameClass(c.author.streakTier)}">${escapeHTML(c.author.displayName)}</strong>
+            <span class="avatar avatar-xs ${getAvatarClass(c.author.streakTier, c.anonymous, c.author.role)}" ${ncAttr}>${escapeHTML(c.author.initials || '?')}</span>
+            <strong class="${getNameClass(c.author.streakTier)}" ${ncAttr}>${authorName}</strong>
             ${roleBadge}
             ${c.anonymous ? '<span class="doc-comment-anon-badge">· Ẩn danh</span>' : ''}
+            <span class="doc-comment-time">${formatTime(c.createdAt)}</span>
+            ${getEditedIndicator(c.editedAt)}
           </div>
           <div class="doc-comment-actions">
             ${editBtn}
@@ -3682,7 +3856,10 @@ window.handleSendDocComment = async function(e) {
       method: "POST",
       body: JSON.stringify({ content, isAnonymous })
     });
-    if (input) input.value = "";
+    if (input) {
+      input.value = "";
+      input.style.height = "";
+    }
     toast("Đã gửi thảo luận thành công! 🎉");
     await loadDocComments(currentViewingDocId);
     if (typeof loadContributions === "function") loadContributions();
@@ -3716,6 +3893,9 @@ if (docViewerModalEl) {
     currentViewingDocId = null;
     isDocDiscussionOpen = false;
     updateDocDiscussionUIState();
+    if (location.hash && location.hash.startsWith("#doc-")) {
+      history.replaceState(null, "", "#documents");
+    }
   });
 }
 
@@ -4025,6 +4205,25 @@ document.addEventListener("click", (e) => {
   const href = link.getAttribute("href");
   if (!href || href === "#" || href.startsWith("javascript:")) return;
 
+  // 0. Comment / reply link in post
+  const replyClickMatch = href.match(/#post-(\d+)-(?:reply|comment)-(\d+)/);
+  if (replyClickMatch) {
+    e.preventDefault();
+    const targetPostId = Number(replyClickMatch[1]);
+    const targetReplyId = Number(replyClickMatch[2]);
+    if (targetPostId) {
+      if (window.currentActiveRoute === "post-detail" && window.currentDetailPostId && window.currentDetailPostId !== targetPostId) {
+        if (!window.postNavigationStack) window.postNavigationStack = [];
+        window.postNavigationStack.push({
+          postId: window.currentDetailPostId,
+          scrollY: window.scrollY || 0
+        });
+      }
+      openDetail(targetPostId, true, false, 0, targetReplyId);
+      return;
+    }
+  }
+
   // 1. Internal post link
   const postMatch = href.match(/#post-(\d+)/) || href.match(/\/api\/posts\/(\d+)/);
   if (postMatch) {
@@ -4056,6 +4255,23 @@ document.addEventListener("click", (e) => {
     try {
       const parsedUrl = new URL(href, window.location.origin);
       if (parsedUrl.origin === window.location.origin) {
+        const replyHashMatch = parsedUrl.hash && parsedUrl.hash.match(/^#post-(\d+)-(?:reply|comment)-(\d+)/);
+        if (replyHashMatch) {
+          e.preventDefault();
+          const targetPostId = Number(replyHashMatch[1]);
+          const targetReplyId = Number(replyHashMatch[2]);
+          if (targetPostId) {
+            if (window.currentActiveRoute === "post-detail" && window.currentDetailPostId && window.currentDetailPostId !== targetPostId) {
+              if (!window.postNavigationStack) window.postNavigationStack = [];
+              window.postNavigationStack.push({
+                postId: window.currentDetailPostId,
+                scrollY: window.scrollY || 0
+              });
+            }
+            openDetail(targetPostId, true, false, 0, targetReplyId);
+            return;
+          }
+        }
         if (parsedUrl.hash && parsedUrl.hash.startsWith("#post-")) {
           const pId = Number(parsedUrl.hash.replace("#post-", ""));
           if (pId) {
@@ -4084,7 +4300,7 @@ document.addEventListener("click", (e) => {
   }
 });
 
-async function openDetail(id, updateHash = true, isBack = false, targetScrollY = 0) {
+async function openDetail(id, updateHash = true, isBack = false, targetScrollY = 0, targetResponseId = 0) {
   if (!window.postNavigationStack) window.postNavigationStack = [];
   if (!isBack && window.currentDetailPostId && window.currentDetailPostId !== id && currentActiveRoute === "post-detail") {
     window.postNavigationStack.push({
@@ -4100,8 +4316,11 @@ async function openDetail(id, updateHash = true, isBack = false, targetScrollY =
     savedForumScrollY = window.scrollY || 0;
   }
 
-  if (updateHash && location.hash !== `#post-${id}`) {
-    history.pushState(null, "", `#post-${id}`);
+  if (updateHash) {
+    const desiredHash = targetResponseId ? `#post-${id}-comment-${targetResponseId}` : `#post-${id}`;
+    if (location.hash !== desiredHash) {
+      history.pushState(null, "", desiredHash);
+    }
   }
 
   // Chuyển sang hiển thị Dedicated Page
@@ -4160,6 +4379,16 @@ async function openDetail(id, updateHash = true, isBack = false, targetScrollY =
       });
     };
   }
+
+  window.copyResponseLink = function(postId, responseId) {
+    if (!postId || !responseId) return;
+    const url = `${window.location.origin}/#post-${postId}-comment-${responseId}`;
+    navigator.clipboard.writeText(url).then(() => {
+      toast("Đã sao chép liên kết phản hồi!");
+    }).catch(() => {
+      prompt("Sao chép liên kết phản hồi:", url);
+    });
+  };
 
   if (postReadActivePostId !== id) {
     stopPostReadTracking();
@@ -4243,7 +4472,7 @@ async function openDetail(id, updateHash = true, isBack = false, targetScrollY =
       const targetParentId = level >= 2 ? r.parentId : r.id;
 
       return `
-      <div class="response" style="position: relative;">
+      <div class="response" id="response-${r.id}" data-response-id="${r.id}" style="position: relative;">
         ${editBtn}
         <span class="avatar avatar-xs ${getAvatarClass(r.author?.streakTier, r.anonymous, r.author?.role)}" ${!r.anonymous && r.author?.id ? `data-namecard-user-id="${r.author.id}" style="cursor: pointer;" title="Xem thẻ tên"` : ''}>${r.author.initials}</span>
         <div style="flex: 1;">
@@ -4261,6 +4490,10 @@ async function openDetail(id, updateHash = true, isBack = false, targetScrollY =
             <span style="font-weight:600; color:var(--primary); width:16px; text-align:center;">${r.helpfulCount}</span>
             <button class="button button-outline button-sm" onclick="voteResponse(${r.id}, -1)"><svg class="icon-upvote-svg" width="12" height="12" viewBox="0 0 24 24" fill="currentColor" style="transform: rotate(180deg);"><polygon points="12 4 3 20 21 20"/></svg> <span>Không hữu ích</span></button>
             <button class="button button-outline button-sm" style="margin-left: 8px;" onclick="showReplyForm(${r.id}, ${post.id}, ${targetParentId})">Phản hồi</button>
+            <button class="button button-outline button-sm" style="margin-left: 6px;" onclick="copyResponseLink(${post.id}, ${r.id})" title="Sao chép liên kết phản hồi này">
+              <svg class="ui-btn-icon" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+              <span>Chia sẻ</span>
+            </button>
             ${deleteBtn}
           </div>
           <div id="reply-form-${r.id}" style="display:none; margin-top:8px;"></div>
@@ -4388,7 +4621,16 @@ async function openDetail(id, updateHash = true, isBack = false, targetScrollY =
       <div id="responsesContainer">${responsesHTML}</div>
     `;
 
-    if (isBack && typeof targetScrollY === "number" && targetScrollY > 0) {
+    if (targetResponseId) {
+      setTimeout(() => {
+        const respEl = document.getElementById(`response-${targetResponseId}`);
+        if (respEl) {
+          respEl.scrollIntoView({ behavior: "smooth", block: "center" });
+          respEl.classList.add("highlight-pulse");
+          setTimeout(() => respEl.classList.remove("highlight-pulse"), 3000);
+        }
+      }, 150);
+    } else if (isBack && typeof targetScrollY === "number" && targetScrollY > 0) {
       setTimeout(() => {
         window.scrollTo({ top: targetScrollY, behavior: "auto" });
       }, 50);
@@ -17418,12 +17660,13 @@ function collectCurrentAdminQuestionsFromDOM() {
 
 async function switchAdminPhaseTab(phase) {
   const oldPhase = compState.adminSelectedPhase || 1;
+  const currentTrack = (compState.adminSelectedTrack === "free" || compState.adminBoardMode === "free") ? "free" : "main";
   if (oldPhase !== phase) {
-    // Lưu các câu hỏi đang sửa trên giao diện vào bản nháp bộ nhớ tạm
+    // Lưu các câu hỏi đang sửa trên giao diện vào bản nháp bộ nhớ tạm CỦA TRACK HIỆN TẠI
     const currentEdits = collectCurrentAdminQuestionsFromDOM();
     if (currentEdits && currentEdits.some(q => q.questionText || q.optionA)) {
       if (!compState.adminPhaseDrafts) compState.adminPhaseDrafts = {};
-      compState.adminPhaseDrafts[oldPhase] = currentEdits;
+      compState.adminPhaseDrafts[`${currentTrack}_${oldPhase}`] = currentEdits;
     }
   }
 
@@ -17432,15 +17675,16 @@ async function switchAdminPhaseTab(phase) {
     btn.classList.toggle("active", i === (phase - 1));
   });
 
-  // Nếu giai đoạn này đang có bản nháp (do vừa nhập Excel hoặc vừa gõ), ưu tiên hiển thị ngay
-  const draftKey = `${compState.adminSelectedTrack || 'main'}_${phase}`;
-  if (compState.adminPhaseDrafts && (compState.adminPhaseDrafts[draftKey] || compState.adminPhaseDrafts[phase])) {
-    compState.adminQuestions = compState.adminPhaseDrafts[draftKey] || compState.adminPhaseDrafts[phase];
+  // Nếu giai đoạn này đang có bản nháp của track hiện tại, ưu tiên hiển thị ngay
+  const draftKey = `${currentTrack}_${phase}`;
+  if (compState.adminPhaseDrafts && compState.adminPhaseDrafts[draftKey]) {
+    compState.adminQuestions = compState.adminPhaseDrafts[draftKey];
     renderAdminQuestionsList();
     const badge = $("#adminPhaseStatusBadge");
     if (badge) {
       const cnt = compState.adminQuestions.length;
-      badge.textContent = `📝 ${cnt}/10 câu (Bản nháp chưa lưu)`;
+      const trackName = currentTrack === "free" ? "Bảng Tự do" : "Bảng chính";
+      badge.textContent = `📝 ${cnt}/10 câu (Bản nháp ${trackName} chưa lưu)`;
       badge.style.color = "#d97706";
     }
   } else {
@@ -17449,6 +17693,15 @@ async function switchAdminPhaseTab(phase) {
 }
 
 window.switchAdminQuestionTrack = async function(track, syncBoard = true) {
+  // Lưu nháp đang sửa trên giao diện cho track cũ trước khi đổi
+  const oldTrack = (compState.adminSelectedTrack === "free" || compState.adminBoardMode === "free") ? "free" : "main";
+  const curPhase = compState.adminSelectedPhase || 1;
+  const currentEdits = collectCurrentAdminQuestionsFromDOM();
+  if (currentEdits && currentEdits.some(q => q.questionText || q.optionA)) {
+    if (!compState.adminPhaseDrafts) compState.adminPhaseDrafts = {};
+    compState.adminPhaseDrafts[`${oldTrack}_${curPhase}`] = currentEdits;
+  }
+
   compState.adminSelectedTrack = (track === "free") ? "free" : "main";
   if (syncBoard) {
     compState.adminBoardMode = compState.adminSelectedTrack;
@@ -17468,8 +17721,22 @@ window.switchAdminQuestionTrack = async function(track, syncBoard = true) {
       if (noticeBadge) noticeBadge.textContent = "Đang soạn câu hỏi cho Bảng chính (Lớp 06 & 07)";
     }
   }
-  const curPhase = compState.adminSelectedPhase || 1;
-  await loadAdminPhaseQuestions(curPhase);
+
+  // Nếu track mới đã có bản nháp, ưu tiên hiển thị bản nháp của track mới
+  const newDraftKey = `${compState.adminSelectedTrack}_${curPhase}`;
+  if (compState.adminPhaseDrafts && compState.adminPhaseDrafts[newDraftKey]) {
+    compState.adminQuestions = compState.adminPhaseDrafts[newDraftKey];
+    renderAdminQuestionsList();
+    const badge = $("#adminPhaseStatusBadge");
+    if (badge) {
+      const cnt = compState.adminQuestions.length;
+      const trackName = compState.adminSelectedTrack === "free" ? "Bảng Tự do" : "Bảng chính";
+      badge.textContent = `📝 ${cnt}/10 câu (Bản nháp ${trackName} chưa lưu)`;
+      badge.style.color = "#d97706";
+    }
+  } else {
+    await loadAdminPhaseQuestions(curPhase);
+  }
 };
 
 async function loadAdminPhaseQuestions(phase) {
@@ -17607,7 +17874,15 @@ async function adminSaveQuestions() {
   }
 
   const curPhase = compState.adminSelectedPhase || 1;
-  const track = compState.adminSelectedTrack || "main";
+  const track = (compState.adminSelectedTrack === "free" || compState.adminBoardMode === "free") ? "free" : "main";
+  const trackLabel = track === "free" ? "Bảng thi Tự do (VLU)" : "Bảng chính (Lớp 06 & 07)";
+
+  if (questions.length !== 10) {
+    if (!confirm(`Bạn mới nhập ${questions.length}/10 câu hỏi hợp lệ cho [${trackLabel}]. Chặng thi cần đủ 10 câu để hiển thị trên trang chủ. Bạn có muốn lưu bản nháp này vào cơ sở dữ liệu không?`)) {
+      return;
+    }
+  }
+
   try {
     await requestAPI("/api/admin/competition/questions", {
       method: "POST",
@@ -17623,7 +17898,7 @@ async function adminSaveQuestions() {
       delete compState.adminPhaseDrafts[`${track}_${curPhase}`];
       delete compState.adminPhaseDrafts[curPhase];
     }
-    toast(`✅ Đã lưu bộ câu hỏi ${track === 'free' ? 'Bảng Tự do' : 'Bảng chính'} thành công!`);
+    toast(`✅ Đã lưu bộ câu hỏi [${trackLabel}] cho Chặng ${curPhase} thành công!`);
     await loadAdminPhaseQuestions(curPhase);
     loadWeeklyCompetitionStatus();
   } catch (e) {
@@ -17632,9 +17907,9 @@ async function adminSaveQuestions() {
 }
 
 async function adminSeedSampleQuestions() {
-  const track = compState.adminSelectedTrack || "main";
-  const trackLabel = track === "free" ? "Bảng Tự do" : "Bảng chính (Lớp 06 & 07)";
-  if (!confirm(`Hành động này sẽ nạp 30 câu hỏi mẫu NCKH cho ${trackLabel} vào cơ sở dữ liệu. Bạn có chắc chắn?`)) return;
+  const track = (compState.adminSelectedTrack === "free" || compState.adminBoardMode === "free") ? "free" : "main";
+  const trackLabel = track === "free" ? "Bảng Tự do (VLU)" : "Bảng chính (Lớp 06 & 07)";
+  if (!confirm(`Hành động này sẽ nạp lại 30 câu hỏi mẫu NCKH cho [${trackLabel}] vào cơ sở dữ liệu. Bạn có chắc chắn?`)) return;
   try {
     const res = await requestAPI("/api/admin/competition/seed-samples", {
       method: "POST",
@@ -17643,6 +17918,15 @@ async function adminSeedSampleQuestions() {
         track: track
       })
     });
+    // Xóa nháp của track này nếu có
+    if (compState.adminPhaseDrafts) {
+      delete compState.adminPhaseDrafts[`${track}_1`];
+      delete compState.adminPhaseDrafts[`${track}_2`];
+      delete compState.adminPhaseDrafts[`${track}_3`];
+      delete compState.adminPhaseDrafts[1];
+      delete compState.adminPhaseDrafts[2];
+      delete compState.adminPhaseDrafts[3];
+    }
     toast(`⚡ Đã tải thành công 30 câu hỏi mẫu cho ${trackLabel}!`);
     await loadAdminPhaseQuestions(compState.adminSelectedPhase || 1);
     loadWeeklyCompetitionStatus();

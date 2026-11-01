@@ -188,6 +188,12 @@ db.exec(`
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (user_id, post_id)
   );
+  CREATE TABLE IF NOT EXISTS saved_documents (
+    user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+    document_id INTEGER REFERENCES documents(id) ON DELETE CASCADE,
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (user_id, document_id)
+  );
   CREATE TABLE IF NOT EXISTS user_streak_shields (
     user_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
     shields INTEGER NOT NULL DEFAULT 0,
@@ -217,31 +223,31 @@ db.exec(`
   );
 `);
 
-try { db.exec("ALTER TABLE users ADD COLUMN student_id TEXT;"); } catch (e) {}
-try { db.exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_users_unique_student_id ON users(LOWER(TRIM(student_id))) WHERE student_id IS NOT NULL AND TRIM(student_id) != '';"); } catch (e) {}
-try { db.exec("ALTER TABLE users ADD COLUMN real_name TEXT;"); } catch (e) {}
-try { db.exec("ALTER TABLE users ADD COLUMN class_name TEXT;"); } catch (e) {}
-try { db.exec("ALTER TABLE users ADD COLUMN avatar TEXT;"); } catch (e) {}
-try { db.exec("ALTER TABLE users ADD COLUMN avatar_changed INTEGER NOT NULL DEFAULT 0;"); } catch (e) {}
-try { db.exec("ALTER TABLE users ADD COLUMN avatar_last_changed INTEGER;"); } catch (e) {}
-try { db.exec("ALTER TABLE users ADD COLUMN email_changed INTEGER NOT NULL DEFAULT 0;"); } catch (e) {}
-try { db.exec("ALTER TABLE users ADD COLUMN locked_until TEXT;"); } catch (e) {}
-try { db.exec("ALTER TABLE posts ADD COLUMN is_pinned INTEGER NOT NULL DEFAULT 0 CHECK(is_pinned IN (0,1));"); } catch (e) {}
-try { db.exec("ALTER TABLE votes ADD COLUMN vote_value INTEGER NOT NULL DEFAULT 1;"); } catch (e) {}
-try { db.exec("ALTER TABLE documents ADD COLUMN format TEXT NOT NULL DEFAULT 'Khác';"); } catch (e) {}
-try { db.exec("ALTER TABLE responses ADD COLUMN parent_id INTEGER REFERENCES responses(id) ON DELETE CASCADE;"); } catch (e) {}
-try { db.exec("ALTER TABLE posts ADD COLUMN edited_at TEXT;"); } catch (e) {}
-try { db.exec("ALTER TABLE responses ADD COLUMN edited_at TEXT;"); } catch (e) {}
-try { db.exec("ALTER TABLE posts ADD COLUMN read_count INTEGER NOT NULL DEFAULT 0;"); } catch (e) {}
-try { db.exec("ALTER TABLE study_sessions ADD COLUMN mode TEXT NOT NULL DEFAULT 'pomodoro';"); } catch (e) {}
-try { db.exec("ALTER TABLE study_sessions ADD COLUMN remaining_seconds INTEGER NOT NULL DEFAULT 1500;"); } catch (e) {}
-try { db.exec("ALTER TABLE study_sessions ADD COLUMN target_end_ms INTEGER NOT NULL DEFAULT 0;"); } catch (e) {}
-try { db.exec("ALTER TABLE study_sessions ADD COLUMN is_running INTEGER NOT NULL DEFAULT 0;"); } catch (e) {}
-try { db.exec("ALTER TABLE study_sessions ADD COLUMN started_at_ms INTEGER NOT NULL DEFAULT 0;"); } catch (e) {}
-try { db.exec("ALTER TABLE study_sessions ADD COLUMN cycle_index INTEGER NOT NULL DEFAULT 1;"); } catch (e) {}
-try { db.exec("ALTER TABLE study_sessions ADD COLUMN wallpaper TEXT DEFAULT 'default';"); } catch (e) {}
-try { db.exec("ALTER TABLE study_sessions ADD COLUMN aura TEXT DEFAULT 'emerald';"); } catch (e) {}
-try { db.exec("ALTER TABLE study_sessions ADD COLUMN room_id TEXT DEFAULT 'none';"); } catch (e) {}
+try { db.exec("ALTER TABLE users ADD COLUMN student_id TEXT;"); } catch (e) { }
+try { db.exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_users_unique_student_id ON users(LOWER(TRIM(student_id))) WHERE student_id IS NOT NULL AND TRIM(student_id) != '';"); } catch (e) { }
+try { db.exec("ALTER TABLE users ADD COLUMN real_name TEXT;"); } catch (e) { }
+try { db.exec("ALTER TABLE users ADD COLUMN class_name TEXT;"); } catch (e) { }
+try { db.exec("ALTER TABLE users ADD COLUMN avatar TEXT;"); } catch (e) { }
+try { db.exec("ALTER TABLE users ADD COLUMN avatar_changed INTEGER NOT NULL DEFAULT 0;"); } catch (e) { }
+try { db.exec("ALTER TABLE users ADD COLUMN avatar_last_changed INTEGER;"); } catch (e) { }
+try { db.exec("ALTER TABLE users ADD COLUMN email_changed INTEGER NOT NULL DEFAULT 0;"); } catch (e) { }
+try { db.exec("ALTER TABLE users ADD COLUMN locked_until TEXT;"); } catch (e) { }
+try { db.exec("ALTER TABLE posts ADD COLUMN is_pinned INTEGER NOT NULL DEFAULT 0 CHECK(is_pinned IN (0,1));"); } catch (e) { }
+try { db.exec("ALTER TABLE votes ADD COLUMN vote_value INTEGER NOT NULL DEFAULT 1;"); } catch (e) { }
+try { db.exec("ALTER TABLE documents ADD COLUMN format TEXT NOT NULL DEFAULT 'Khác';"); } catch (e) { }
+try { db.exec("ALTER TABLE responses ADD COLUMN parent_id INTEGER REFERENCES responses(id) ON DELETE CASCADE;"); } catch (e) { }
+try { db.exec("ALTER TABLE posts ADD COLUMN edited_at TEXT;"); } catch (e) { }
+try { db.exec("ALTER TABLE responses ADD COLUMN edited_at TEXT;"); } catch (e) { }
+try { db.exec("ALTER TABLE posts ADD COLUMN read_count INTEGER NOT NULL DEFAULT 0;"); } catch (e) { }
+try { db.exec("ALTER TABLE study_sessions ADD COLUMN mode TEXT NOT NULL DEFAULT 'pomodoro';"); } catch (e) { }
+try { db.exec("ALTER TABLE study_sessions ADD COLUMN remaining_seconds INTEGER NOT NULL DEFAULT 1500;"); } catch (e) { }
+try { db.exec("ALTER TABLE study_sessions ADD COLUMN target_end_ms INTEGER NOT NULL DEFAULT 0;"); } catch (e) { }
+try { db.exec("ALTER TABLE study_sessions ADD COLUMN is_running INTEGER NOT NULL DEFAULT 0;"); } catch (e) { }
+try { db.exec("ALTER TABLE study_sessions ADD COLUMN started_at_ms INTEGER NOT NULL DEFAULT 0;"); } catch (e) { }
+try { db.exec("ALTER TABLE study_sessions ADD COLUMN cycle_index INTEGER NOT NULL DEFAULT 1;"); } catch (e) { }
+try { db.exec("ALTER TABLE study_sessions ADD COLUMN wallpaper TEXT DEFAULT 'default';"); } catch (e) { }
+try { db.exec("ALTER TABLE study_sessions ADD COLUMN aura TEXT DEFAULT 'emerald';"); } catch (e) { }
+try { db.exec("ALTER TABLE study_sessions ADD COLUMN room_id TEXT DEFAULT 'none';"); } catch (e) { }
 
 // Flexible Study Spaces (Thư viện, Phòng họp, Buồng riêng tư)
 try {
@@ -269,11 +275,11 @@ try {
   console.warn("Lỗi khởi tạo bảng study_rooms:", e.message);
 }
 
-try { db.exec("ALTER TABLE study_rooms ADD COLUMN host_user_id INTEGER REFERENCES users(id) ON DELETE SET NULL;"); } catch (e) {}
-try { db.exec("ALTER TABLE study_rooms ADD COLUMN timer_state_json TEXT;"); } catch (e) {}
-try { db.exec("ALTER TABLE study_rooms ADD COLUMN focus_mins INTEGER;"); } catch (e) {}
-try { db.exec("ALTER TABLE study_rooms ADD COLUMN break_mins INTEGER;"); } catch (e) {}
-try { db.exec("ALTER TABLE study_rooms ADD COLUMN empty_since_ms INTEGER;"); } catch (e) {}
+try { db.exec("ALTER TABLE study_rooms ADD COLUMN host_user_id INTEGER REFERENCES users(id) ON DELETE SET NULL;"); } catch (e) { }
+try { db.exec("ALTER TABLE study_rooms ADD COLUMN timer_state_json TEXT;"); } catch (e) { }
+try { db.exec("ALTER TABLE study_rooms ADD COLUMN focus_mins INTEGER;"); } catch (e) { }
+try { db.exec("ALTER TABLE study_rooms ADD COLUMN break_mins INTEGER;"); } catch (e) { }
+try { db.exec("ALTER TABLE study_rooms ADD COLUMN empty_since_ms INTEGER;"); } catch (e) { }
 
 const LIBRARY_ROOMS = [
   {
@@ -398,11 +404,11 @@ function cleanupEmptyMeetingRooms(nowMs = Date.now()) {
     console.warn("Lỗi dọn dẹp phòng họp trống:", e.message);
   }
 }
-try { setInterval(cleanupEmptyMeetingRooms, 60000); } catch (e) {}
-try { db.exec("ALTER TABLE users ADD COLUMN bio TEXT;"); } catch (e) {}
-try { db.exec("ALTER TABLE users ADD COLUMN cover_image TEXT;"); } catch (e) {}
-try { db.exec("ALTER TABLE users ADD COLUMN namecard_frame TEXT DEFAULT 'default';"); } catch (e) {}
-try { db.exec("ALTER TABLE users ADD COLUMN namecard_theme TEXT DEFAULT 'default';"); } catch (e) {}
+try { setInterval(cleanupEmptyMeetingRooms, 60000); } catch (e) { }
+try { db.exec("ALTER TABLE users ADD COLUMN bio TEXT;"); } catch (e) { }
+try { db.exec("ALTER TABLE users ADD COLUMN cover_image TEXT;"); } catch (e) { }
+try { db.exec("ALTER TABLE users ADD COLUMN namecard_frame TEXT DEFAULT 'default';"); } catch (e) { }
+try { db.exec("ALTER TABLE users ADD COLUMN namecard_theme TEXT DEFAULT 'default';"); } catch (e) { }
 
 // Tự động đồng bộ mã lớp cho các sinh viên có MSSV trong danh sách lớp 06 hoặc 07
 try {
@@ -476,6 +482,16 @@ try {
   `);
 } catch (e) { }
 try { db.exec("ALTER TABLE document_comments ADD COLUMN edited_at TEXT;"); } catch (e) { }
+try {
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS saved_documents (
+      user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+      document_id INTEGER REFERENCES documents(id) ON DELETE CASCADE,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      PRIMARY KEY (user_id, document_id)
+    );
+  `);
+} catch (e) { }
 try {
   db.exec(`
     INSERT INTO user_streak_shields (user_id, shields, last_milestone_rewarded, updated_at)
@@ -926,6 +942,7 @@ function deleteUserPermanently(userId) {
     db.prepare("DELETE FROM sessions WHERE user_id = ?").run(userId);
     db.prepare("DELETE FROM password_resets WHERE user_id = ?").run(userId);
     db.prepare("DELETE FROM saved_posts WHERE user_id = ?").run(userId);
+    db.prepare("DELETE FROM saved_documents WHERE user_id = ?").run(userId);
 
     // 2. Dọn sạch chuỗi ngày, khiên, sự kiện đóng góp (đưa toàn bộ số liệu về 0)
     db.prepare("DELETE FROM activity_days WHERE user_id = ?").run(userId);
@@ -1587,7 +1604,7 @@ function serializePost(row, viewer, preloadedDocs) {
           sourceUrl: d.source_url || ""
         };
       }
-    } catch (e) {}
+    } catch (e) { }
   }
 
   if (linkedDocs.length === 0 && fallbackDoc) {
@@ -1669,7 +1686,7 @@ function listPosts(viewer, search = "") {
         sourceUrl: pd.source_url || ""
       });
     }
-  } catch (e) {}
+  } catch (e) { }
 
   return rows.map((r) => serializePost(r, viewer, docMap.get(r.id)));
 }
@@ -3172,7 +3189,7 @@ async function api(request, response, url) {
     )
       return error(response, 400, "Nội dung bài đăng chưa hợp lệ.");
     const anonymous = isAdmin(user) ? 0 : isAnonymous ? 1 : 0;
-    
+
     let rawIds = [];
     if (Array.isArray(documentIds)) {
       rawIds = documentIds;
@@ -4570,9 +4587,14 @@ async function api(request, response, url) {
     const viewer = sessionFrom(request);
     const rows = db
       .prepare(
-        `SELECT d.*,u.display_name FROM documents d JOIN users u ON u.id=d.submitted_by WHERE d.status='approved' OR ?='admin' ORDER BY d.created_at DESC`,
+        `SELECT d.*, u.display_name,
+                (SELECT 1 FROM saved_documents sd WHERE sd.document_id = d.id AND sd.user_id = ?) is_saved
+         FROM documents d 
+         JOIN users u ON u.id = d.submitted_by 
+         WHERE d.status = 'approved' OR ? = 'admin' 
+         ORDER BY d.created_at DESC`,
       )
-      .all(viewer?.role || "student");
+      .all(viewer?.id || null, viewer?.role || "student");
     return json(response, 200, {
       documents: rows.map((d) => ({
         id: d.id,
@@ -4585,6 +4607,7 @@ async function api(request, response, url) {
         submittedBy: d.display_name,
         submittedByStreakTier: getAuthorStreakTier(d.submitted_by),
         createdAt: d.created_at.replace(' ', 'T') + 'Z',
+        isSaved: Boolean(d.is_saved),
       })),
     });
   }
@@ -4695,6 +4718,54 @@ async function api(request, response, url) {
       }
     }
     return json(response, 200, { success: true });
+  }
+
+  const saveDocMatch = pathName.match(/^\/api\/documents\/(\d+)\/save$/);
+  if (method === "POST" && saveDocMatch) {
+    const user = requireUser(request, response);
+    if (!user || !requireCsrf(request, response, user)) return;
+    const docId = Number(saveDocMatch[1]);
+    const doc = db.prepare("SELECT id FROM documents WHERE id=?").get(docId);
+    if (!doc) return error(response, 404, "Không tìm thấy tài liệu.");
+    const existing = db.prepare("SELECT 1 FROM saved_documents WHERE user_id=? AND document_id=?").get(user.id, docId);
+    if (existing) {
+      db.prepare("DELETE FROM saved_documents WHERE user_id=? AND document_id=?").run(user.id, docId);
+      return json(response, 200, { isSaved: false });
+    } else {
+      db.prepare("INSERT INTO saved_documents(user_id, document_id) VALUES (?,?)").run(user.id, docId);
+      return json(response, 200, { isSaved: true });
+    }
+  }
+
+  const savedDocsMatch = pathName.match(/^\/api\/users\/(\d+)\/saved-documents$/);
+  if (method === "GET" && savedDocsMatch) {
+    const user = requireUser(request, response);
+    if (!user) return;
+    const targetUserId = Number(savedDocsMatch[1]);
+    if (user.id !== targetUserId && !isAdmin(user)) return error(response, 403, "Không có quyền.");
+    const rows = db.prepare(`
+      SELECT d.*, u.display_name, 1 as is_saved
+      FROM documents d
+      JOIN users u ON u.id = d.submitted_by
+      JOIN saved_documents sd ON sd.document_id = d.id
+      WHERE sd.user_id = ? AND d.status = 'approved'
+      ORDER BY sd.created_at DESC
+    `).all(targetUserId);
+    return json(response, 200, {
+      documents: rows.map(d => ({
+        id: d.id,
+        title: d.title,
+        description: d.description,
+        sourceUrl: d.source_url,
+        category: d.category,
+        format: d.format,
+        status: d.status,
+        submittedBy: d.display_name,
+        submittedByStreakTier: getAuthorStreakTier(d.submitted_by),
+        createdAt: d.created_at.replace(' ', 'T') + 'Z',
+        isSaved: true
+      }))
+    });
   }
 
   // --- DOCUMENT DISCUSSION / COMMENTS ENDPOINTS ---
@@ -4931,9 +5002,9 @@ async function api(request, response, url) {
 
     const meetingRooms = meetingRows.map(rm => {
       let tasks = [];
-      try { tasks = JSON.parse(rm.shared_tasks_json || "[]"); } catch (e) {}
+      try { tasks = JSON.parse(rm.shared_tasks_json || "[]"); } catch (e) { }
       let timerState = null;
-      try { timerState = JSON.parse(rm.timer_state_json || "null"); } catch (e) {}
+      try { timerState = JSON.parse(rm.timer_state_json || "null"); } catch (e) { }
       return {
         id: rm.id,
         name: rm.name,
@@ -5054,7 +5125,7 @@ async function api(request, response, url) {
       }
 
       if (room.empty_since_ms) {
-        try { db.prepare("UPDATE study_rooms SET empty_since_ms = NULL WHERE id = ?").run(room.id); } catch (e) {}
+        try { db.prepare("UPDATE study_rooms SET empty_since_ms = NULL WHERE id = ?").run(room.id); } catch (e) { }
       }
 
       db.prepare(`
@@ -5067,9 +5138,9 @@ async function api(request, response, url) {
       `).run(user.id, roomId, nowMs, nowMs);
 
       let sharedTasks = [];
-      try { sharedTasks = JSON.parse(room.shared_tasks_json || "[]"); } catch (e) {}
+      try { sharedTasks = JSON.parse(room.shared_tasks_json || "[]"); } catch (e) { }
       let timerState = null;
-      try { timerState = JSON.parse(room.timer_state_json || "null"); } catch (e) {}
+      try { timerState = JSON.parse(room.timer_state_json || "null"); } catch (e) { }
 
       const hostUser = room.host_user_id ? db.prepare("SELECT display_name FROM users WHERE id = ?").get(room.host_user_id) : null;
 
@@ -5263,7 +5334,7 @@ async function api(request, response, url) {
       if (!room) return error(response, 404, "Phòng không tồn tại.");
 
       let tasks = [];
-      try { tasks = JSON.parse(room.shared_tasks_json || "[]"); } catch (e) {}
+      try { tasks = JSON.parse(room.shared_tasks_json || "[]"); } catch (e) { }
       const target = tasks.find(t => String(t.id) === taskId);
       if (!target) return error(response, 404, "Nhiệm vụ không tồn tại.");
 
@@ -5303,7 +5374,7 @@ async function api(request, response, url) {
       if (!room) return error(response, 404, "Phòng không tồn tại.");
 
       let tasks = [];
-      try { tasks = JSON.parse(room.shared_tasks_json || "[]"); } catch (e) {}
+      try { tasks = JSON.parse(room.shared_tasks_json || "[]"); } catch (e) { }
       const target = tasks.find(t => String(t.id) === taskId);
       if (!target) return error(response, 404, "Nhiệm vụ không tồn tại.");
 
@@ -5339,7 +5410,7 @@ async function api(request, response, url) {
       if (!room) return error(response, 404, "Phòng không tồn tại.");
 
       let tasks = [];
-      try { tasks = JSON.parse(room.shared_tasks_json || "[]"); } catch (e) {}
+      try { tasks = JSON.parse(room.shared_tasks_json || "[]"); } catch (e) { }
       tasks.push({
         id: `st_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`,
         text,
@@ -5379,7 +5450,7 @@ async function api(request, response, url) {
       if (!room) return error(response, 404, "Phòng không tồn tại.");
 
       let tasks = [];
-      try { tasks = JSON.parse(room.shared_tasks_json || "[]"); } catch (e) {}
+      try { tasks = JSON.parse(room.shared_tasks_json || "[]"); } catch (e) { }
       const target = tasks.find(t => String(t.id) === taskId);
       if (!target) return error(response, 404, "Nhiệm vụ không tồn tại.");
 
@@ -5412,7 +5483,7 @@ async function api(request, response, url) {
       if (!room) return error(response, 404, "Phòng không tồn tại.");
 
       let tasks = [];
-      try { tasks = JSON.parse(room.shared_tasks_json || "[]"); } catch (e) {}
+      try { tasks = JSON.parse(room.shared_tasks_json || "[]"); } catch (e) { }
       tasks = tasks.filter(t => String(t.id) !== taskId);
 
       db.prepare("UPDATE study_rooms SET shared_tasks_json = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?")
@@ -5491,9 +5562,9 @@ async function api(request, response, url) {
 
     const meetingRooms = meetingRows.map(rm => {
       let tasks = [];
-      try { tasks = JSON.parse(rm.shared_tasks_json || "[]"); } catch (e) {}
+      try { tasks = JSON.parse(rm.shared_tasks_json || "[]"); } catch (e) { }
       let timerState = null;
-      try { timerState = JSON.parse(rm.timer_state_json || "null"); } catch (e) {}
+      try { timerState = JSON.parse(rm.timer_state_json || "null"); } catch (e) { }
       return {
         id: rm.id,
         name: rm.name,
@@ -5545,9 +5616,9 @@ async function api(request, response, url) {
           const meetingRoom = db.prepare("SELECT * FROM study_rooms WHERE id = ?").get(targetRoomId);
           if (meetingRoom) {
             let sharedTasks = [];
-            try { sharedTasks = JSON.parse(meetingRoom.shared_tasks_json || "[]"); } catch (e) {}
+            try { sharedTasks = JSON.parse(meetingRoom.shared_tasks_json || "[]"); } catch (e) { }
             let timerState = null;
-            try { timerState = JSON.parse(meetingRoom.timer_state_json || "null"); } catch (e) {}
+            try { timerState = JSON.parse(meetingRoom.timer_state_json || "null"); } catch (e) { }
             const hostUser = meetingRoom.host_user_id ? db.prepare("SELECT display_name FROM users WHERE id = ?").get(meetingRoom.host_user_id) : null;
 
             currentRoom = {
@@ -6312,6 +6383,10 @@ async function api(request, response, url) {
     const id = Number(deleteDocMatch[1]);
     const doc = db.prepare("SELECT id FROM documents WHERE id=?").get(id);
     if (!doc) return error(response, 404, "Không tìm thấy tài liệu.");
+    db.prepare("DELETE FROM saved_documents WHERE document_id=?").run(id);
+    db.prepare("DELETE FROM document_comments WHERE document_id=?").run(id);
+    db.prepare("DELETE FROM post_documents WHERE document_id=?").run(id);
+    db.prepare("UPDATE posts SET document_id=NULL WHERE document_id=?").run(id);
     db.prepare("DELETE FROM documents WHERE id=?").run(id);
     db.prepare(
       "INSERT INTO audit_logs(actor_id,action,subject_type,subject_id,reason) VALUES (?,?,?,?,?)",
@@ -8282,7 +8357,7 @@ async function api(request, response, url) {
 
     const body = await readJSON(request);
     const { phase, questions } = body;
-    const track = body.track === "free" ? "free" : "main";
+    const track = (body.track === "free" || url.searchParams.get("track") === "free") ? "free" : "main";
     const vnNow = getVietnamNow();
     const currentComp = getOrCreateCurrentCompetition(vnNow);
     const competitionId = body.competitionId || currentComp.id;
@@ -8290,6 +8365,8 @@ async function api(request, response, url) {
     if (!competitionId || !phase || !Array.isArray(questions)) {
       return error(response, 400, "Dữ liệu câu hỏi không hợp lệ.");
     }
+
+    console.log(`[Admin Save Questions] Comp: ${competitionId}, Phase: ${phase}, Track: ${track}, Questions: ${questions.length}`);
 
     db.exec("BEGIN");
     try {
@@ -8385,11 +8462,22 @@ async function api(request, response, url) {
     if (!requireCsrf(request, response, user)) return;
 
     const body = await readJSON(request).catch(() => ({}));
-    const track = body?.track === "free" ? "free" : "main";
+    const track = (body?.track === "free" || url.searchParams.get("track") === "free") ? "free" : "main";
     const vnNow = getVietnamNow();
     const comp = getOrCreateCurrentCompetition(vnNow);
     const compId = Number(body?.competitionId) || comp.id;
+
+    // Delete dependent answers and questions for this track and competitionId so re-seeding completely refreshes
+    db.prepare(`
+      DELETE FROM competition_answers 
+      WHERE question_id IN (
+        SELECT id FROM competition_questions WHERE competition_id = ? AND track = ?
+      )
+    `).run(compId, track);
+    db.prepare("DELETE FROM competition_questions WHERE competition_id = ? AND track = ?").run(compId, track);
+
     seedSampleCompetitionQuestions(compId, track);
+    notifyCompetitionResultsChanged();
     return json(response, 200, { ok: true, message: `Đã nạp 30 câu hỏi mẫu cho ${track === "free" ? "Bảng Tự do" : "Bảng chính"}.` });
   }
 
