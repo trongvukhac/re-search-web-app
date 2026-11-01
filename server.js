@@ -1539,6 +1539,22 @@ function recordContribution(
     "INSERT INTO contribution_events(user_id,event_type,points,reference_type,reference_id,reason) VALUES (?,?,?,?,?,?)",
   ).run(userId, type, points, referenceType, referenceId, reason);
 }
+function stripHtml(text) {
+  if (!text) return "";
+  return String(text)
+    .replace(/<\/(p|div|h[1-6]|li|blockquote|tr)>/gi, " ")
+    .replace(/<(br|hr)\s*\/?>/gi, " ")
+    .replace(/<[^>]*>/g, "")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 function isSecureRequest(request) {
   if (process.env.FLY_APP_NAME) return true;
   if (!request) return false;
@@ -3796,8 +3812,8 @@ async function api(request, response, url) {
         action: r.action,
         points: r.points,
         date: r.created_at.replace(' ', 'T') + 'Z',
-        reason: r.reason,
-        referenceContent: r.reference_content,
+        reason: stripHtml(r.reason),
+        referenceContent: stripHtml(r.reference_content),
       })),
     });
   }
@@ -3881,8 +3897,8 @@ async function api(request, response, url) {
         action: r.action,
         points: r.points,
         date: r.created_at.replace(' ', 'T') + 'Z',
-        reason: r.reason,
-        referenceContent: r.reference_content,
+        reason: stripHtml(r.reason),
+        referenceContent: stripHtml(r.reference_content),
       })),
     });
   }

@@ -29,7 +29,7 @@
     <script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js" defer></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" defer></script>
-    <link rel="stylesheet" href="styles.css?v=111" />
+    <link rel="stylesheet" href="styles.css?v=112" />
   </head>
   <body>
     <dialog
@@ -1606,7 +1606,7 @@
                       <span id="gatewayStatusText">ĐANG MỞ CỔNG</span>
                     </span>
                     <span class="comp-phase-tag" id="gatewayPhaseTag">Chặng 1</span>
-                    <span class="comp-class-badge" id="gatewayClassBadge" style="background: rgba(255,255,255,0.18); border: 1px solid rgba(255,255,255,0.3); border-radius: 20px; padding: 4px 10px; font-size: 11px; font-weight: 700; color: #fff;">Bảng thi: Lớp 06</span>
+                    <span class="comp-class-badge" id="gatewayClassBadge">Bảng thi: Lớp 06</span>
                   </div>
                   <h3 id="gatewayPhaseTitle">Phương pháp &amp; Thiết kế Nghiên cứu Khoa học</h3>
                   <p id="gatewayWeekTitle">Chủ đề tuần: Phương pháp Nghiên cứu &amp; Xử lý Dữ liệu Khoa học</p>
@@ -2094,20 +2094,20 @@
 
         <div class="account-grid" id="accountGrid" style="display: none">
           <section class="account-activity">
-            <div class="section-heading" style="display: block; margin-bottom: 24px;">
-              <div style="display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 12px;">
-                <div style="min-width: 0; max-width: 100%;">
-                  <p class="eyebrow" style="margin-bottom: 10px;">NHẬT KÝ HOẠT ĐỘNG</p>
-                  <div class="account-tabs-nav" id="accountTabsNav">
-                    <button type="button" class="tab active" id="tabContributionsBtn" onclick="switchAccountTab('contributions')">Đóng góp gần đây</button>
-                    <button type="button" class="tab" id="tabMyPostsBtn" onclick="switchAccountTab('myPosts')">Bài đăng của tôi</button>
-                    <button type="button" class="tab" id="tabSavedPostsBtn" onclick="switchAccountTab('savedPosts')">Bài đăng đã lưu</button>
-                    <button type="button" class="tab" id="tabSavedDocsBtn" onclick="switchAccountTab('savedDocs')">Tài liệu đã lưu</button>
-                  </div>
-                </div>
-                <button class="text-link" id="viewAllContributionsBtn" style="margin-bottom: 6px;">Xem tất cả →</button>
+            <div class="account-activity-header">
+              <div class="account-activity-top-row">
+                <p class="eyebrow">NHẬT KÝ HOẠT ĐỘNG</p>
+                <button class="text-link" id="viewAllContributionsBtn">Xem tất cả →</button>
               </div>
-              <div style="border-bottom: 1px solid var(--line); margin-top: 14px;"></div>
+              <div class="account-tabs-scroll-wrap">
+                <div class="account-tabs-nav" id="accountTabsNav" role="tablist">
+                  <button type="button" class="tab active" id="tabContributionsBtn" onclick="switchAccountTab('contributions')">Đóng góp gần đây</button>
+                  <button type="button" class="tab" id="tabMyPostsBtn" onclick="switchAccountTab('myPosts')">Bài đăng của tôi</button>
+                  <button type="button" class="tab" id="tabSavedPostsBtn" onclick="switchAccountTab('savedPosts')">Bài đăng đã lưu</button>
+                  <button type="button" class="tab" id="tabSavedDocsBtn" onclick="switchAccountTab('savedDocs')">Tài liệu đã lưu</button>
+                </div>
+              </div>
+              <div class="account-activity-divider"></div>
             </div>
             <div id="recentContributionsContainer" class="activity-timeline"></div>
             <div id="myPostsContainer" class="forum-feed" style="display: none;"></div>
@@ -2132,7 +2132,7 @@
                   id="adminAccountLookupId"
                   class="input"
                   placeholder="Tra cứu hồ sơ theo ID..."
-                  style="flex: 1; padding: 6px 10px; font-size: 13px; background: rgba(255,255,255,0.08); color: inherit; border: 1px solid rgba(255,255,255,0.2);"
+                  style="flex: 1; min-width: 0; padding: 6px 10px; font-size: 13px; background: rgba(255,255,255,0.08); color: inherit; border: 1px solid rgba(255,255,255,0.2);"
                 />
                 <button type="submit" class="button button-sm button-primary" style="white-space: nowrap;">
                   🔍 Tra cứu
@@ -5305,6 +5305,6 @@
       </div>
     </dialog>
 
-    <script src="app.js?v=127" defer></script>
+    <script src="app.js?v=128" defer></script>
   </body>
 </html>

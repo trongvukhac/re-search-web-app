@@ -2273,6 +2273,21 @@ function openAuth() {
   $("#authEmail").focus();
 }
 
+function stripHtml(html) {
+  if (!html) return "";
+  let text = String(html);
+  text = text.replace(/<\/(p|div|h[1-6]|li|blockquote|tr)>/gi, " ");
+  text = text.replace(/<(br|hr)\s*\/?>/gi, " ");
+  text = text.replace(/<[^>]*>/g, "");
+  text = text.replace(/&nbsp;/g, " ")
+             .replace(/&amp;/g, "&")
+             .replace(/&lt;/g, "<")
+             .replace(/&gt;/g, ">")
+             .replace(/&quot;/g, '"')
+             .replace(/&#39;/g, "'");
+  return text.replace(/\s+/g, " ").trim();
+}
+
 function renderActivityRow(r) {
   const iconConfigs = {
     post_created: {
@@ -2340,24 +2355,25 @@ function renderActivityRow(r) {
 
   const getSnippet = () => {
     if (!r.referenceContent) return "";
-    let t = r.referenceContent.trim();
-    if (t.length > 34) t = t.substring(0, 34) + "...";
+    let t = stripHtml(r.referenceContent);
+    if (!t) return "";
+    if (t.length > 36) t = t.substring(0, 36) + "...";
     return ` <i style="color: var(--muted); font-style: normal; font-weight: 500;">"${escapeHTML(t)}"</i>`;
   };
   
   const getActionText = () => {
     switch (r.action) {
-      case "web_active": return escapeHTML(r.reason || "Hoạt động sôi nổi trên web 5 phút để thắp sáng chuỗi");
+      case "web_active": return escapeHTML(stripHtml(r.reason) || "Hoạt động sôi nổi trên web 5 phút để thắp sáng chuỗi");
       case "post_created": return `Đã đăng bài thảo luận${getSnippet()}`;
       case "response_created": return `Đã phản hồi${getSnippet()}`;
       case "helpful_received": return `Bài thảo luận${getSnippet()} nhận được lượt Vote`;
       case "document_approved": return `Tài liệu${getSnippet()} đã được duyệt`;
       case "post_read": return `Đọc bài thảo luận${getSnippet()}`;
       case "document_read": return `Xem tài liệu${getSnippet()}`;
-      case "study_session": return `Hoàn thành ca tự học NCKH: ${escapeHTML(r.reason || 'Tự học tập trung')}`;
-      case "document_discussion": return escapeHTML(r.reason || `Đã thảo luận về tài liệu`);
-      case "document_comment_deleted": return escapeHTML(r.reason || `Thảo luận tài liệu đã bị xóa`);
-      case "admin_adjustment": return r.points > 0 ? `Được TA cộng điểm: ${escapeHTML(r.reason || '')}` : `Bị trừ điểm: ${escapeHTML(r.reason || '')}`;
+      case "study_session": return `Hoàn thành ca tự học NCKH: ${escapeHTML(stripHtml(r.reason) || 'Tự học tập trung')}`;
+      case "document_discussion": return escapeHTML(stripHtml(r.reason) || `Đã thảo luận về tài liệu`);
+      case "document_comment_deleted": return escapeHTML(stripHtml(r.reason) || `Thảo luận tài liệu đã bị xóa`);
+      case "admin_adjustment": return r.points > 0 ? `Được TA cộng điểm: ${escapeHTML(stripHtml(r.reason) || '')}` : `Bị trừ điểm: ${escapeHTML(stripHtml(r.reason) || '')}`;
       case "response_deleted": return `Phản hồi đã bị xóa`;
       case "post_deleted": return `Bài viết đã bị chuyển vào Thùng rác`;
       case "post_hidden": return `Bài viết đã bị ẩn`;
@@ -2366,10 +2382,10 @@ function renderActivityRow(r) {
       case "response_unhidden": return `Bình luận đã được mở lại`;
       case "post_restored": return `Bài viết đã được khôi phục từ Thùng rác`;
       case "response_restored": return `Bình luận đã được khôi phục`;
-      case "weekly_active_reward": return r.reason || `Điểm năng động tuần`;
-      case "competition_reward": return escapeHTML(r.reason || `Thưởng Bảng xếp hạng Đấu trường Arena`);
-      case "competition_phase_bonus": return escapeHTML(r.reason || `Thưởng tham gia các chặng Đấu trường Arena`);
-      default: return r.action;
+      case "weekly_active_reward": return escapeHTML(stripHtml(r.reason)) || `Điểm năng động tuần`;
+      case "competition_reward": return escapeHTML(stripHtml(r.reason) || `Thưởng Bảng xếp hạng Đấu trường Arena`);
+      case "competition_phase_bonus": return escapeHTML(stripHtml(r.reason) || `Thưởng tham gia các chặng Đấu trường Arena`);
+      default: return escapeHTML(stripHtml(r.action));
     }
   };
 
@@ -6476,22 +6492,31 @@ window.switchAccountTab = (tab) => {
     if ($(id)) $(id).style.display = "none";
   });
 
+  let activeBtn = null;
   if (tab === 'contributions') {
-    if ($("#tabContributionsBtn")) $("#tabContributionsBtn").classList.add("active");
+    activeBtn = $("#tabContributionsBtn");
+    if (activeBtn) activeBtn.classList.add("active");
     if ($("#recentContributionsContainer")) $("#recentContributionsContainer").style.display = "block";
     if ($("#viewAllContributionsBtn")) $("#viewAllContributionsBtn").style.display = "";
   } else if (tab === 'myPosts') {
-    if ($("#tabMyPostsBtn")) $("#tabMyPostsBtn").classList.add("active");
+    activeBtn = $("#tabMyPostsBtn");
+    if (activeBtn) activeBtn.classList.add("active");
     if ($("#myPostsContainer")) $("#myPostsContainer").style.display = "grid";
     if ($("#viewAllContributionsBtn")) $("#viewAllContributionsBtn").style.display = "none";
   } else if (tab === 'savedDocs') {
-    if ($("#tabSavedDocsBtn")) $("#tabSavedDocsBtn").classList.add("active");
+    activeBtn = $("#tabSavedDocsBtn");
+    if (activeBtn) activeBtn.classList.add("active");
     if ($("#savedDocsContainer")) $("#savedDocsContainer").style.display = "block";
     if ($("#viewAllContributionsBtn")) $("#viewAllContributionsBtn").style.display = "none";
   } else {
-    if ($("#tabSavedPostsBtn")) $("#tabSavedPostsBtn").classList.add("active");
+    activeBtn = $("#tabSavedPostsBtn");
+    if (activeBtn) activeBtn.classList.add("active");
     if ($("#savedPostsContainer")) $("#savedPostsContainer").style.display = "grid";
     if ($("#viewAllContributionsBtn")) $("#viewAllContributionsBtn").style.display = "none";
+  }
+
+  if (activeBtn && typeof activeBtn.scrollIntoView === "function") {
+    activeBtn.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "nearest" });
   }
 };
 
