@@ -1821,8 +1821,10 @@ function getMiniCoverStyle(coverVal) {
       return `
         <div class="leaderboard-item ${isMe ? "is-me" : ""}" data-namecard-user-id="${user.id}" style="cursor: pointer;">
           <div class="lb-capsule">
-            <div class="lb-cover-art" style="${coverStyle}"></div>
-            <div class="lb-cover-overlay"></div>
+            <div class="lb-cover-art-wrap">
+              <div class="lb-cover-art" style="${coverStyle}"></div>
+              <div class="lb-cover-overlay"></div>
+            </div>
             <div class="lb-avatar-wrap">
               <span class="avatar avatar-sm ${getAvatarClass(user.streakTier, false, user.role)}">${user.initials || '?'}</span>
               <span class="lb-rank-badge rank-${idx + 1}">${idx + 1}</span>
@@ -1845,8 +1847,10 @@ function getMiniCoverStyle(coverVal) {
     html += `
       <div class="leaderboard-item is-me lb-my-rank-row" data-namecard-user-id="${userRankInfo.id}" style="cursor: pointer;">
         <div class="lb-capsule">
-          <div class="lb-cover-art" style="${userCoverStyle}"></div>
-          <div class="lb-cover-overlay"></div>
+          <div class="lb-cover-art-wrap">
+            <div class="lb-cover-art" style="${userCoverStyle}"></div>
+            <div class="lb-cover-overlay"></div>
+          </div>
           <div class="lb-avatar-wrap">
             <span class="avatar avatar-sm ${getAvatarClass(userRankInfo.streakTier, false, userRankInfo.role)}">${userRankInfo.initials || '?'}</span>
             <span class="lb-rank-badge rank-me">${userRankDisplay}</span>
@@ -16796,8 +16800,10 @@ function renderLeaderboardUI(data) {
     rowsHTML += `
       <div class="comp-lb-row ${isCurrent ? "is-current-user" : ""}" data-namecard-user-id="${u.userId}" style="cursor: pointer;" title="Xem thẻ tên">
         <div class="comp-lb-capsule">
-          <div class="lb-cover-art" style="${coverStyle}"></div>
-          <div class="lb-cover-overlay"></div>
+          <div class="lb-cover-art-wrap">
+            <div class="lb-cover-art" style="${coverStyle}"></div>
+            <div class="lb-cover-overlay"></div>
+          </div>
           <div class="comp-lb-avatar-wrap">
             <span class="avatar avatar-sm ${avatarClass}">${escapeHTML(u.avatar || u.initials || "U")}</span>
             <span class="lb-rank-badge rank-${u.rank}">${u.rank}</span>
@@ -16823,8 +16829,10 @@ function renderLeaderboardUI(data) {
     rowsHTML += `
       <div class="comp-lb-row is-current-user top-11-plus-row" data-namecard-user-id="${currentUserEntry.userId}" style="cursor: pointer;" title="Xem thẻ tên">
         <div class="comp-lb-capsule">
-          <div class="lb-cover-art" style="${myCoverStyle}"></div>
-          <div class="lb-cover-overlay"></div>
+          <div class="lb-cover-art-wrap">
+            <div class="lb-cover-art" style="${myCoverStyle}"></div>
+            <div class="lb-cover-overlay"></div>
+          </div>
           <div class="comp-lb-avatar-wrap">
             <span class="avatar avatar-sm ${myAvatarClass}">${escapeHTML(currentUserEntry.avatar || currentUserEntry.initials || "U")}</span>
             <span class="lb-rank-badge rank-me">#${currentUserEntry.rank}</span>

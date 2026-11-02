@@ -5302,7 +5302,7 @@ dialog.detail-modal[open] {
   background: #ffffff;
   border: 1px solid rgba(0, 0, 0, 0.08);
   box-shadow: 0 1.5px 5px rgba(0, 0, 0, 0.03);
-  overflow: hidden;
+  overflow: visible !important;
   height: 40px;
   box-sizing: border-box;
   transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
@@ -5313,12 +5313,20 @@ dialog.detail-modal[open] {
   border-color: rgba(99, 102, 241, 0.35);
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.07);
 }
+.lb-cover-art-wrap {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+}
 .lb-cover-art {
   position: absolute;
   top: 0;
   right: 0;
   bottom: 0;
-  width: 58%;
+  width: 72%;
   background-size: cover;
   background-position: center right;
   background-repeat: no-repeat;
@@ -5340,24 +5348,24 @@ dialog.detail-modal[open] {
   pointer-events: none;
   z-index: 1;
   background: linear-gradient(
-    90deg,
+    118deg,
     #ffffff 0%,
-    #ffffff 42%,
-    rgba(255, 255, 255, 0.92) 52%,
-    rgba(255, 255, 255, 0.6) 65%,
-    rgba(255, 255, 255, 0.15) 82%,
-    rgba(255, 255, 255, 0) 100%
+    #ffffff 32%,
+    rgba(255, 255, 255, 0.94) 44%,
+    rgba(255, 255, 255, 0.62) 58%,
+    rgba(255, 255, 255, 0.18) 76%,
+    rgba(255, 255, 255, 0) 95%
   );
 }
 .leaderboard-item.lb-my-rank-row .lb-cover-overlay {
   background: linear-gradient(
-    90deg,
+    118deg,
     #f0fdf4 0%,
-    #f0fdf4 42%,
-    rgba(240, 253, 244, 0.92) 52%,
-    rgba(240, 253, 244, 0.6) 65%,
-    rgba(240, 253, 244, 0.15) 82%,
-    rgba(240, 253, 244, 0) 100%
+    #f0fdf4 32%,
+    rgba(240, 253, 244, 0.94) 44%,
+    rgba(240, 253, 244, 0.62) 58%,
+    rgba(240, 253, 244, 0.18) 76%,
+    rgba(240, 253, 244, 0) 95%
   );
 }
 .lb-avatar-wrap {
@@ -5368,8 +5376,8 @@ dialog.detail-modal[open] {
   margin-right: 6px;
   flex-shrink: 0;
   padding: 1px;
-  overflow: visible;
-  z-index: 2;
+  overflow: visible !important;
+  z-index: 3;
 }
 .lb-avatar-wrap .avatar {
   width: 28px;
@@ -5393,7 +5401,7 @@ dialog.detail-modal[open] {
   font-weight: 800;
   border: 1.5px solid #fff;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
-  z-index: 3;
+  z-index: 10 !important;
   box-sizing: border-box;
   line-height: 1;
 }
@@ -5521,13 +5529,13 @@ dialog.detail-modal[open] {
 }
 [data-user-theme="ruby"] .leaderboard-item.lb-my-rank-row .lb-cover-overlay {
   background: linear-gradient(
-    90deg,
+    118deg,
     #fff1f2 0%,
-    #fff1f2 42%,
-    rgba(255, 241, 242, 0.92) 52%,
-    rgba(255, 241, 242, 0.6) 65%,
-    rgba(255, 241, 242, 0.15) 82%,
-    rgba(255, 241, 242, 0) 100%
+    #fff1f2 32%,
+    rgba(255, 241, 242, 0.94) 44%,
+    rgba(255, 241, 242, 0.62) 58%,
+    rgba(255, 241, 242, 0.18) 76%,
+    rgba(255, 241, 242, 0) 95%
   );
 }
 [data-user-theme="ruby"] .lb-rank-badge.rank-me {
@@ -5546,13 +5554,13 @@ dialog.detail-modal[open] {
 }
 [data-user-theme="mythic"] .leaderboard-item.lb-my-rank-row .lb-cover-overlay {
   background: linear-gradient(
-    90deg,
+    118deg,
     #faf5ff 0%,
-    #faf5ff 42%,
-    rgba(250, 245, 255, 0.92) 52%,
-    rgba(250, 245, 255, 0.6) 65%,
-    rgba(250, 245, 255, 0.15) 82%,
-    rgba(250, 245, 255, 0) 100%
+    #faf5ff 32%,
+    rgba(250, 245, 255, 0.94) 44%,
+    rgba(250, 245, 255, 0.62) 58%,
+    rgba(250, 245, 255, 0.18) 76%,
+    rgba(250, 245, 255, 0) 95%
   );
 }
 [data-user-theme="mythic"] .lb-rank-badge.rank-me {
@@ -13172,7 +13180,7 @@ body.dark-theme .doc-viewer-save-btn.is-saved {
   background: #ffffff;
   border: 1px solid rgba(0, 0, 0, 0.08);
   box-shadow: 0 1.5px 5px rgba(0, 0, 0, 0.03);
-  overflow: hidden;
+  overflow: visible !important;
   height: 40px;
   box-sizing: border-box;
   transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
@@ -13187,13 +13195,13 @@ body.dark-theme .doc-viewer-save-btn.is-saved {
 
 .comp-lb-capsule .lb-cover-overlay {
   background: linear-gradient(
-    90deg,
+    118deg,
     #ffffff 0%,
-    #ffffff 42%,
-    rgba(255, 255, 255, 0.92) 52%,
-    rgba(255, 255, 255, 0.6) 65%,
-    rgba(255, 255, 255, 0.15) 82%,
-    rgba(255, 255, 255, 0) 100%
+    #ffffff 32%,
+    rgba(255, 255, 255, 0.94) 44%,
+    rgba(255, 255, 255, 0.62) 58%,
+    rgba(255, 255, 255, 0.18) 76%,
+    rgba(255, 255, 255, 0) 95%
   );
 }
 
@@ -13209,13 +13217,13 @@ body.dark-theme .doc-viewer-save-btn.is-saved {
 
 .comp-lb-row.is-current-user .comp-lb-capsule .lb-cover-overlay {
   background: linear-gradient(
-    90deg,
+    118deg,
     #f0fdf4 0%,
-    #f0fdf4 42%,
-    rgba(240, 253, 244, 0.92) 52%,
-    rgba(240, 253, 244, 0.6) 65%,
-    rgba(240, 253, 244, 0.15) 82%,
-    rgba(240, 253, 244, 0) 100%
+    #f0fdf4 32%,
+    rgba(240, 253, 244, 0.94) 44%,
+    rgba(240, 253, 244, 0.62) 58%,
+    rgba(240, 253, 244, 0.18) 76%,
+    rgba(240, 253, 244, 0) 95%
   );
 }
 
@@ -13231,13 +13239,13 @@ body.dark-theme .doc-viewer-save-btn.is-saved {
 
 .comp-lb-row.top-11-plus-row .comp-lb-capsule .lb-cover-overlay {
   background: linear-gradient(
-    90deg,
+    118deg,
     #fffbeb 0%,
-    #fffbeb 42%,
-    rgba(255, 251, 235, 0.92) 52%,
-    rgba(255, 251, 235, 0.6) 65%,
-    rgba(255, 251, 235, 0.15) 82%,
-    rgba(255, 251, 235, 0) 100%
+    #fffbeb 32%,
+    rgba(255, 251, 235, 0.94) 44%,
+    rgba(255, 251, 235, 0.62) 58%,
+    rgba(255, 251, 235, 0.18) 76%,
+    rgba(255, 251, 235, 0) 95%
   );
 }
 
@@ -13259,7 +13267,9 @@ body.dark-theme .doc-viewer-save-btn.is-saved {
   justify-content: center;
   flex-shrink: 0;
   margin-right: 7px;
-  overflow: visible;
+  overflow: visible !important;
+  z-index: 3;
+}
   z-index: 2;
 }
 
@@ -19630,13 +19640,13 @@ body.dark-theme .comp-lb-capsule .comp-lb-name {
 body.dark-theme .lb-capsule .lb-cover-overlay,
 body.dark-theme .comp-lb-capsule .lb-cover-overlay {
   background: linear-gradient(
-    90deg,
+    118deg,
     #202c39 0%,
-    #202c39 42%,
-    rgba(32, 44, 57, 0.94) 52%,
-    rgba(32, 44, 57, 0.65) 65%,
-    rgba(32, 44, 57, 0.18) 82%,
-    rgba(32, 44, 57, 0) 100%
+    #202c39 32%,
+    rgba(32, 44, 57, 0.95) 44%,
+    rgba(32, 44, 57, 0.68) 58%,
+    rgba(32, 44, 57, 0.2) 76%,
+    rgba(32, 44, 57, 0) 95%
   ) !important;
 }
 
@@ -19649,13 +19659,13 @@ body.dark-theme .comp-lb-row.is-current-user .comp-lb-capsule {
 body.dark-theme .leaderboard-item.is-me .lb-cover-overlay,
 body.dark-theme .comp-lb-row.is-current-user .lb-cover-overlay {
   background: linear-gradient(
-    90deg,
+    118deg,
     #0f241a 0%,
-    #0f241a 42%,
-    rgba(15, 36, 26, 0.94) 52%,
-    rgba(15, 36, 26, 0.65) 65%,
-    rgba(15, 36, 26, 0.18) 82%,
-    rgba(15, 36, 26, 0) 100%
+    #0f241a 32%,
+    rgba(15, 36, 26, 0.95) 44%,
+    rgba(15, 36, 26, 0.68) 58%,
+    rgba(15, 36, 26, 0.2) 76%,
+    rgba(15, 36, 26, 0) 95%
   ) !important;
 }
 
@@ -19981,13 +19991,13 @@ html.dark-theme[data-user-theme="ruby"] body a.text-link {
 }
 [data-user-theme="ruby"] body.dark-theme .leaderboard-item.is-me .lb-cover-overlay {
   background: linear-gradient(
-    90deg,
+    118deg,
     #2b0d14 0%,
-    #2b0d14 42%,
-    rgba(43, 13, 20, 0.94) 52%,
-    rgba(43, 13, 20, 0.65) 65%,
-    rgba(43, 13, 20, 0.18) 82%,
-    rgba(43, 13, 20, 0) 100%
+    #2b0d14 32%,
+    rgba(43, 13, 20, 0.95) 44%,
+    rgba(43, 13, 20, 0.68) 58%,
+    rgba(43, 13, 20, 0.2) 76%,
+    rgba(43, 13, 20, 0) 95%
   ) !important;
 }
 [data-user-theme="ruby"] body.dark-theme .lb-rank-badge.rank-me {
@@ -20221,13 +20231,13 @@ html.dark-theme[data-user-theme="mythic"] body a.text-link {
 }
 [data-user-theme="mythic"] body.dark-theme .leaderboard-item.is-me .lb-cover-overlay {
   background: linear-gradient(
-    90deg,
+    118deg,
     #24123a 0%,
-    #24123a 42%,
-    rgba(36, 18, 58, 0.94) 52%,
-    rgba(36, 18, 58, 0.65) 65%,
-    rgba(36, 18, 58, 0.18) 82%,
-    rgba(36, 18, 58, 0) 100%
+    #24123a 32%,
+    rgba(36, 18, 58, 0.95) 44%,
+    rgba(36, 18, 58, 0.68) 58%,
+    rgba(36, 18, 58, 0.2) 76%,
+    rgba(36, 18, 58, 0) 95%
   ) !important;
 }
 [data-user-theme="mythic"] body.dark-theme .lb-rank-badge.rank-me {
@@ -21006,13 +21016,13 @@ body.dark-theme .leaderboard-item.is-me:hover .lb-capsule {
 }
 body.dark-theme .leaderboard-item.is-me .lb-cover-overlay {
   background: linear-gradient(
-    90deg,
+    118deg,
     #0f241a 0%,
-    #0f241a 42%,
-    rgba(15, 36, 26, 0.94) 52%,
-    rgba(15, 36, 26, 0.65) 65%,
-    rgba(15, 36, 26, 0.18) 82%,
-    rgba(15, 36, 26, 0) 100%
+    #0f241a 32%,
+    rgba(15, 36, 26, 0.95) 44%,
+    rgba(15, 36, 26, 0.68) 58%,
+    rgba(15, 36, 26, 0.2) 76%,
+    rgba(15, 36, 26, 0) 95%
   ) !important;
 }
 body.dark-theme .lb-rank-badge.rank-me {
