@@ -29,7 +29,7 @@
     <script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js" defer></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" defer></script>
-    <link rel="stylesheet" href="styles.css?v=118" />
+    <link rel="stylesheet" href="styles.css?v=119" />
   </head>
   <body>
     <dialog
@@ -545,37 +545,37 @@
           <!-- CỘT PHẢI: NGĂN XẾP BANNER THÔNG BÁO (Kích thước chuẩn 430 x 240 px, luân phiên 15s) -->
           <div id="bannerStackCard" class="banner-stack-card" aria-label="Ngăn xếp banner thông báo" title="Kéo ngang để xem các banner khác">
             <div class="banner-track" id="bannerTrack">
-              <!-- Slide 1: Vinh danh thành viên đạt chuỗi 30 đầu tiên (Từ 30/10 đến hết ngày 03/11/2026) -->
-              <div class="banner-slide active" data-banner-id="streak-30-first" data-index="0">
+              <!-- Slide 1: Cập nhật mới Namecard (Từ 02/11 đến hết ngày 10/11/2026) -->
+              <div class="banner-slide active" data-banner-id="namecard-update" data-index="0">
+                <img src="public/assets/banner-namecard-update.jpg?v=20261102_1" class="banner-image" alt="Cập nhật mới Namecard: Like Thẻ tên, Đọc tài liệu, Bảng xếp hạng" />
+              </div>
+              <!-- Slide 2: Vinh danh thành viên đạt chuỗi 30 đầu tiên (Từ 30/10 đến hết ngày 03/11/2026) -->
+              <div class="banner-slide" data-banner-id="streak-30-first" data-index="1">
                 <img src="public/assets/banner-streak-30.jpg?v=20261030_1" class="banner-image" alt="Vinh danh thành viên đầu tiên đạt chuỗi 30 ngày — Lương Bích Khuê" />
               </div>
-              <!-- Slide 2: Cập nhật phòng tự học phiên bản mới (Từ 30/10 đến hết ngày 10/11/2026) -->
-              <div class="banner-slide" data-banner-id="study-update" data-index="1">
+              <!-- Slide 3: Cập nhật phòng tự học phiên bản mới (Từ 30/10 đến hết ngày 10/11/2026) -->
+              <div class="banner-slide" data-banner-id="study-update" data-index="2">
                 <img src="public/assets/banner-study-update.jpg?v=20261030_1" class="banner-image" alt="Cập nhật mới: Phòng tự học phiên bản mới" />
               </div>
-              <!-- Slide 3: Tính năng mới Dark Mode (Từ 26/10 đến hết ngày 03/11/2026) -->
-              <div class="banner-slide" data-banner-id="dark-mode" data-index="2">
+              <!-- Slide 4: Tính năng mới Dark Mode (Từ 26/10 đến hết ngày 03/11/2026) -->
+              <div class="banner-slide" data-banner-id="dark-mode" data-index="3">
                 <img src="public/assets/banner-dark-mode.jpg?v=20261026_1" class="banner-image" alt="Tính năng mới Dark Mode đã có mặt trên RE:SEARCH!" />
               </div>
-              <!-- Slide 4: Bảng Vàng Tuần 03 — Phương Pháp Nghiên Cứu Định Lượng (Từ 25/10 đến hết ngày 01/11/2026) -->
-              <div class="banner-slide" data-banner-id="leaderboard-w03" data-index="3">
+              <!-- Slide 5: Bảng Vàng Tuần 03 — Phương Pháp Nghiên Cứu Định Lượng (Từ 25/10 đến hết ngày 01/11/2026) -->
+              <div class="banner-slide" data-banner-id="leaderboard-w03" data-index="4">
                 <img src="public/assets/banner-leaderboard-w03.jpg?v=20261025_1" class="banner-image" alt="Bảng Vàng Tuần 03 — Phương Pháp Nghiên Cứu Định Lượng" />
               </div>
-              <!-- Slide 5: Bảng Vàng Tuần 02 — Phỏng Vấn Sâu (Từ 18/10 đến hết ngày 25/10/2026) -->
-              <div class="banner-slide" data-banner-id="leaderboard-w02" data-index="4">
+              <!-- Slide 6: Bảng Vàng Tuần 02 — Phỏng Vấn Sâu (Từ 18/10 đến hết ngày 25/10/2026) -->
+              <div class="banner-slide" data-banner-id="leaderboard-w02" data-index="5">
                 <img src="public/assets/banner-leaderboard-w02.jpg?v=20261018_1" class="banner-image" alt="Bảng Vàng Tuần 02 — Phỏng Vấn Sâu" />
               </div>
-              <!-- Slide 6: Bảng Vàng Tuần 01 — Phương Pháp Nghiên Cứu Định Tính (Hết ngày 18/10/2026) -->
-              <div class="banner-slide" data-banner-id="leaderboard-w01" data-index="5">
+              <!-- Slide 7: Bảng Vàng Tuần 01 — Phương Pháp Nghiên Cứu Định Tính (Hết ngày 18/10/2026) -->
+              <div class="banner-slide" data-banner-id="leaderboard-w01" data-index="6">
                 <img src="public/assets/banner-leaderboard-w01.jpg?v=20261016_1" class="banner-image" alt="Bảng Vàng Tuần 01 — Phương Pháp Nghiên Cứu Định Tính" />
               </div>
-              <!-- Slide 7: Halloween Cho Kẹo Hay Bị Ghẹo (Sau 01/11/2026 sẽ không hiển thị) -->
-              <div class="banner-slide" data-banner-id="halloween" data-index="6">
+              <!-- Slide 8: Halloween Cho Kẹo Hay Bị Ghẹo (Sau 01/11/2026 sẽ không hiển thị) -->
+              <div class="banner-slide" data-banner-id="halloween" data-index="7">
                 <img src="public/assets/banner-halloween.jpg?v=20261016_2" class="banner-image" alt="Halloween Cho Kẹo Hay Bị Ghẹo" />
-              </div>
-              <!-- Slide 8: Tính Năng Mới Namecard (Sau 30/11/2026 sẽ không hiển thị) -->
-              <div class="banner-slide" data-banner-id="namecard" data-index="7">
-                <img src="public/assets/banner-namecard.jpg" class="banner-image" alt="Tính Năng Mới Namecard" />
               </div>
             </div>
             <!-- Floating Navigation Controls ở góc dưới bên phải -->
@@ -5315,6 +5315,6 @@
       </div>
     </dialog>
 
-    <script src="app.js?v=134" defer></script>
+    <script src="app.js?v=135" defer></script>
   </body>
 </html>

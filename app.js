@@ -6985,11 +6985,30 @@ window.openNamecard = async function(userId) {
   }
 };
 
-window.openMyNamecard = function() {
+window.highlightNamecardLikeButton = function() {
+  const likeBtn = $("#namecardLikeBtn");
+  if (!likeBtn) return;
+  likeBtn.classList.remove("highlight-heart-attention");
+  void likeBtn.offsetWidth;
+  likeBtn.classList.add("highlight-heart-attention");
+  setTimeout(() => {
+    likeBtn.classList.remove("highlight-heart-attention");
+  }, 2600);
+};
+
+window.openMyNamecard = async function(highlightLike = false) {
   if (session && session.id) {
-    openNamecard(session.id);
+    await openNamecard(session.id);
+    if (highlightLike) {
+      setTimeout(() => {
+        if (typeof highlightNamecardLikeButton === "function") {
+          highlightNamecardLikeButton();
+        }
+      }, 350);
+    }
   } else {
     toast("Vui lòng đăng nhập để xem thẻ tên của bạn.");
+    if (typeof openAuth === "function") openAuth();
   }
 };
 
@@ -15000,6 +15019,31 @@ initTapToScrollTop();
 // =========================================================================
 const HOME_BANNERS_CONFIG = [
   {
+    id: "namecard-update",
+    title: "Cập nhật mới Namecard: Like Thẻ tên, Đọc tài liệu, Bảng xếp hạng",
+    image: "public/assets/banner-namecard-update.jpg?v=20261102_1",
+    // thời gian xuất hiện: 2/11 - 10/11/2026
+    startsAt: new Date("2026-11-02T00:00:00+07:00").getTime(),
+    expiresAt: new Date("2026-11-10T23:59:59+07:00").getTime(),
+    action: async () => {
+      if (session && session.id) {
+        if (typeof openMyNamecard === "function") {
+          await openMyNamecard(true);
+        } else if (typeof openNamecard === "function") {
+          await openNamecard(session.id);
+          setTimeout(() => {
+            if (typeof highlightNamecardLikeButton === "function") {
+              highlightNamecardLikeButton();
+            }
+          }, 350);
+        }
+      } else {
+        toast("Đăng nhập để xem Thẻ tên cá nhân & tính năng Like Thẻ tên mới nhé! ❤️");
+        if (typeof openAuth === "function") openAuth();
+      }
+    }
+  },
+  {
     id: "streak-30-first",
     title: "Vinh danh thành viên đầu tiên đạt chuỗi 30 ngày — Lương Bích Khuê",
     image: "public/assets/banner-streak-30.jpg?v=20261030_1",
@@ -15079,16 +15123,6 @@ const HOME_BANNERS_CONFIG = [
     action: () => {
       if (typeof openNamecardModal === "function") openNamecardModal();
       else toast("Sự kiện Halloween Bữa tiệc ma mị!");
-    }
-  },
-  {
-    id: "namecard",
-    title: "Tính năng mới Namecard",
-    image: "public/assets/banner-namecard.jpg",
-    // sau 30/11/2026 sẽ không hiển thị nữa
-    expiresAt: new Date("2026-11-30T23:59:59+07:00").getTime(),
-    action: () => {
-      if (typeof openNamecardModal === "function") openNamecardModal();
     }
   }
 ];
