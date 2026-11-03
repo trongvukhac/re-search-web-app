@@ -1085,6 +1085,51 @@ function getNameClass(tier) {
   return 'user-name-default';
 }
 
+function getMiniCoverStyle(coverVal) {
+  const val = coverVal || "default";
+  if (val.startsWith("data:image/") || val.startsWith("http")) {
+    return `background-image: url('${val}');`;
+  }
+  if (val.startsWith("color:")) {
+    return `background-color: ${val.replace("color:", "")};`;
+  }
+  let path = null;
+  const presets = typeof COVER_PRESETS !== "undefined" ? COVER_PRESETS : (typeof window !== "undefined" ? window.COVER_PRESETS : null);
+  const foundPreset = presets ? presets.find(p => p.id === val) : null;
+  if (foundPreset) {
+    if (foundPreset.type === "image") {
+      path = foundPreset.value.startsWith("/") ? foundPreset.value : "/" + foundPreset.value;
+      return `background-image: url('${path}');`;
+    }
+    if (foundPreset.type === "gradient") {
+      return `background-image: ${foundPreset.value};`;
+    }
+    return `background-color: ${foundPreset.value};`;
+  }
+  const fallbackImages = {
+    "ton_vinh_phai_dep": "/covers/ton-vinh-phai-dep.png",
+    "bua_tiec_ma_mi": "/covers/bua-tiec-ma-mi.png",
+    "khu_rung_tri_thuc": "/covers/khu-rung-tri-thuc.png",
+    "mua_anh_dao_no": "/covers/mua-anh-dao-no.png",
+    "vuong_quoc_mua_dong": "/covers/vuong-quoc-mua-dong.png",
+    "tinh_tu_sao_troi": "/covers/tinh-tu-sao-troi.png",
+    "ky_nguyen_hoang_kim": "/covers/ky-nguyen-hoang-kim.png",
+  };
+  if (fallbackImages[val]) {
+    return `background-image: url('${fallbackImages[val]}');`;
+  }
+  const fallbackGradients = {
+    "emerald_gradient": "linear-gradient(135deg, #064e3b 0%, #059669 50%, #6ee7b7 100%)",
+    "sunset_gradient": "linear-gradient(135deg, #4c0519 0%, #db2777 50%, #fcd34d 100%)",
+    "aurora_gradient": "linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #4338ca 100%)",
+    "royal_gradient": "linear-gradient(135deg, #3b0764 0%, #7c3aed 50%, #c084fc 100%)",
+    "default": "linear-gradient(135deg, #1e3a8a 0%, #3b82f6 50%, #93c5fd 100%)"
+  };
+  return `background-image: ${fallbackGradients[val] || fallbackGradients.default};`;
+}
+window.getMiniCoverStyle = getMiniCoverStyle;
+window.getMinicoverstyle = getMiniCoverStyle;
+
 const STREAK_MILESTONES = [
   {
     days: 3,
@@ -1761,48 +1806,6 @@ function renderLeaderboard() {
 
   const currentUserId = cachedLeaderboardData.currentUser?.id;
   const isUserInTop5 = Boolean(currentUserId && list.slice(0, 5).some(u => u.id === currentUserId));
-
-function getMiniCoverStyle(coverVal) {
-  const val = coverVal || "default";
-  if (val.startsWith("data:image/") || val.startsWith("http")) {
-    return `background-image: url('${val}');`;
-  }
-  if (val.startsWith("color:")) {
-    return `background-color: ${val.replace("color:", "")};`;
-  }
-  let path = null;
-  const foundPreset = typeof COVER_PRESETS !== "undefined" ? COVER_PRESETS.find(p => p.id === val) : null;
-  if (foundPreset) {
-    if (foundPreset.type === "image") {
-      path = foundPreset.value.startsWith("/") ? foundPreset.value : "/" + foundPreset.value;
-      return `background-image: url('${path}');`;
-    }
-    if (foundPreset.type === "gradient") {
-      return `background-image: ${foundPreset.value};`;
-    }
-    return `background-color: ${foundPreset.value};`;
-  }
-  const fallbackImages = {
-    "ton_vinh_phai_dep": "/covers/ton-vinh-phai-dep.png",
-    "bua_tiec_ma_mi": "/covers/bua-tiec-ma-mi.png",
-    "khu_rung_tri_thuc": "/covers/khu-rung-tri-thuc.png",
-    "mua_anh_dao_no": "/covers/mua-anh-dao-no.png",
-    "vuong_quoc_mua_dong": "/covers/vuong-quoc-mua-dong.png",
-    "tinh_tu_sao_troi": "/covers/tinh-tu-sao-troi.png",
-    "ky_nguyen_hoang_kim": "/covers/ky-nguyen-hoang-kim.png",
-  };
-  if (fallbackImages[val]) {
-    return `background-image: url('${fallbackImages[val]}');`;
-  }
-  const fallbackGradients = {
-    "emerald_gradient": "linear-gradient(135deg, #064e3b 0%, #059669 50%, #6ee7b7 100%)",
-    "sunset_gradient": "linear-gradient(135deg, #4c0519 0%, #db2777 50%, #fcd34d 100%)",
-    "aurora_gradient": "linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #4338ca 100%)",
-    "royal_gradient": "linear-gradient(135deg, #3b0764 0%, #7c3aed 50%, #c084fc 100%)",
-    "default": "linear-gradient(135deg, #1e3a8a 0%, #3b82f6 50%, #93c5fd 100%)"
-  };
-  return `background-image: ${fallbackGradients[val] || fallbackGradients.default};`;
-}
 
   let html = list
     .slice(0, 5)
@@ -13067,7 +13070,7 @@ function renderCustomAudioList(category, containerEl, tracks) {
   }).join("");
 }
 
-window.updateCustomAudioVolume = function(id, val) {
+function updateCustomAudioVolume(id, val) {
   const numVal = Number(val);
   studyState.customVolumes[id] = numVal;
   try {
@@ -13086,7 +13089,7 @@ window.updateCustomAudioVolume = function(id, val) {
   }
 };
 
-window.toggleCustomAudio = function(id) {
+function toggleCustomAudio(id) {
   const allTracks = [
     ...(studyState.customEnvAudioTracks || []),
     ...(studyState.customMixAudioTracks || []),
@@ -13252,7 +13255,7 @@ function toggleCustomMixAudio(track) {
   updateMasterAmbientButtonState();
 }
 
-window.confirmDeleteCustomAudioTrack = async function(id) {
+async function confirmDeleteCustomAudioTrack(id) {
   const allTracks = [
     ...(studyState.customEnvAudioTracks || []),
     ...(studyState.customMixAudioTracks || []),
@@ -16761,15 +16764,20 @@ function renderLeaderboardUI(data) {
   if (top2) {
     const top2AvatarClass = getAvatarClass(top2.streakTier, false, top2.role);
     const top2NameClass = getNameClass(top2.streakTier);
+    const top2Cover = getMiniCoverStyle(top2.coverImage);
     podiumHTML += `
       <div class="podium-col rank-2" data-namecard-user-id="${top2.userId}" style="cursor: pointer;" title="Xem thẻ tên">
         <div class="podium-avatar-wrap">
           <div class="podium-avatar avatar ${top2AvatarClass}">${escapeHTML(top2.avatar || top2.initials || "U")}</div>
           <span class="podium-crown silver">${getArenaMedalSVG(2, 34)}</span>
         </div>
-        <div class="podium-name ${top2NameClass}" title="${escapeHTML(top2.displayName)}">${getFlameSVG(top2.streakTier, 14)} <span>${escapeHTML(top2.displayName)}</span></div>
+        <div class="podium-name ${top2NameClass}" title="${escapeHTML(top2.displayName)}">
+          ${getFlameSVG(top2.streakTier, 14)} <span>${escapeHTML(top2.displayName)}</span>
+          ${top2.role && top2.role !== 'student' ? `<span class="lb-role lb-role-${top2.role}" style="margin-left:4px; font-size:10px; padding:1px 5px;">${getRoleDisplay(top2.role)}</span>` : ""}
+        </div>
         <div class="podium-score"><svg class="ui-icon" width="13" height="13" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.5" style="color: #f59e0b; margin-right: 2px;"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>${top2.score}</div>
         <div class="podium-stand stand-2">
+          <div class="podium-stand-cover" style="${top2Cover}"></div>
           <span class="stand-num">2</span>
         </div>
       </div>
@@ -16781,15 +16789,20 @@ function renderLeaderboardUI(data) {
   if (top1) {
     const top1AvatarClass = getAvatarClass(top1.streakTier, false, top1.role);
     const top1NameClass = getNameClass(top1.streakTier);
+    const top1Cover = getMiniCoverStyle(top1.coverImage);
     podiumHTML += `
       <div class="podium-col rank-1" data-namecard-user-id="${top1.userId}" style="cursor: pointer;" title="Xem thẻ tên">
         <div class="podium-avatar-wrap">
           <div class="podium-avatar rank-1-avatar avatar avatar-lg ${top1AvatarClass}">${escapeHTML(top1.avatar || top1.initials || "U")}</div>
           <span class="podium-crown gold">${getArenaMedalSVG(1, 38)}</span>
         </div>
-        <div class="podium-name font-bold ${top1NameClass}" title="${escapeHTML(top1.displayName)}">${getFlameSVG(top1.streakTier, 16)} <span>${escapeHTML(top1.displayName)}</span></div>
+        <div class="podium-name font-bold ${top1NameClass}" title="${escapeHTML(top1.displayName)}">
+          ${getFlameSVG(top1.streakTier, 16)} <span>${escapeHTML(top1.displayName)}</span>
+          ${top1.role && top1.role !== 'student' ? `<span class="lb-role lb-role-${top1.role}" style="margin-left:4px; font-size:10px; padding:1px 5px;">${getRoleDisplay(top1.role)}</span>` : ""}
+        </div>
         <div class="podium-score gold-score"><svg class="ui-icon" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.5" style="color: #f59e0b; margin-right: 2px;"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>${top1.score}</div>
         <div class="podium-stand stand-1">
+          <div class="podium-stand-cover" style="${top1Cover}"></div>
           <span class="stand-num">1</span>
         </div>
       </div>
@@ -16799,15 +16812,20 @@ function renderLeaderboardUI(data) {
   if (top3) {
     const top3AvatarClass = getAvatarClass(top3.streakTier, false, top3.role);
     const top3NameClass = getNameClass(top3.streakTier);
+    const top3Cover = getMiniCoverStyle(top3.coverImage);
     podiumHTML += `
       <div class="podium-col rank-3" data-namecard-user-id="${top3.userId}" style="cursor: pointer;" title="Xem thẻ tên">
         <div class="podium-avatar-wrap">
           <div class="podium-avatar avatar ${top3AvatarClass}">${escapeHTML(top3.avatar || top3.initials || "U")}</div>
           <span class="podium-crown bronze">${getArenaMedalSVG(3, 34)}</span>
         </div>
-        <div class="podium-name ${top3NameClass}" title="${escapeHTML(top3.displayName)}">${getFlameSVG(top3.streakTier, 14)} <span>${escapeHTML(top3.displayName)}</span></div>
+        <div class="podium-name ${top3NameClass}" title="${escapeHTML(top3.displayName)}">
+          ${getFlameSVG(top3.streakTier, 14)} <span>${escapeHTML(top3.displayName)}</span>
+          ${top3.role && top3.role !== 'student' ? `<span class="lb-role lb-role-${top3.role}" style="margin-left:4px; font-size:10px; padding:1px 5px;">${getRoleDisplay(top3.role)}</span>` : ""}
+        </div>
         <div class="podium-score"><svg class="ui-icon" width="13" height="13" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.5" style="color: #f59e0b; margin-right: 2px;"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>${top3.score}</div>
         <div class="podium-stand stand-3">
+          <div class="podium-stand-cover" style="${top3Cover}"></div>
           <span class="stand-num">3</span>
         </div>
       </div>
@@ -16832,25 +16850,26 @@ function renderLeaderboardUI(data) {
     const coverStyle = getMiniCoverStyle(u.coverImage);
 
     rowsHTML += `
-      <div class="comp-lb-row ${isCurrent ? "is-current-user" : ""}" data-namecard-user-id="${u.userId}" style="cursor: pointer;" title="Xem thẻ tên">
-        <div class="comp-lb-capsule">
+      <div class="comp-lb-row leaderboard-item ${isCurrent ? "is-current-user is-me" : ""}" data-namecard-user-id="${u.userId}" style="cursor: pointer;" title="Xem thẻ tên">
+        <div class="comp-lb-capsule lb-capsule">
           <div class="lb-cover-art-wrap">
             <div class="lb-cover-art" style="${coverStyle}"></div>
             <div class="lb-cover-overlay"></div>
           </div>
-          <div class="comp-lb-avatar-wrap">
+          <div class="comp-lb-avatar-wrap lb-avatar-wrap">
             <span class="avatar avatar-sm ${avatarClass}">${escapeHTML(u.avatar || u.initials || "U")}</span>
             <span class="lb-rank-badge rank-${u.rank}">${u.rank}</span>
           </div>
-          <div class="comp-lb-user">
-            <span class="comp-lb-name ${nameClass}">
+          <div class="comp-lb-user lb-info">
+            <span class="comp-lb-name lb-name ${nameClass}">
               ${getFlameSVG(u.streakTier, 15)}
               <span class="lb-name-text">${escapeHTML(u.displayName)}</span>
             </span>
+            ${u.role && u.role !== 'student' ? `<span class="lb-role lb-role-${u.role}">${getRoleDisplay(u.role)}</span>` : ""}
             ${isCurrent ? '<span class="you-tag">(Bạn)</span>' : ""}
           </div>
         </div>
-        <span class="comp-lb-score"><svg class="ui-icon" width="13" height="13" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.5" style="color: #f59e0b; margin-right: 2px;"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>${u.score}</span>
+        <span class="comp-lb-score lb-points"><svg class="ui-icon" width="13" height="13" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.5" style="color: #f59e0b; margin-right: 2px;"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>${u.score}</span>
       </div>
     `;
   });
@@ -16861,27 +16880,32 @@ function renderLeaderboardUI(data) {
     const myCoverStyle = getMiniCoverStyle(currentUserEntry.coverImage);
 
     rowsHTML += `
-      <div class="comp-lb-row is-current-user top-11-plus-row" data-namecard-user-id="${currentUserEntry.userId}" style="cursor: pointer;" title="Xem thẻ tên">
-        <div class="comp-lb-capsule">
+      <div class="comp-lb-row leaderboard-item is-current-user is-me top-11-plus-row lb-my-rank-row" data-namecard-user-id="${currentUserEntry.userId}" style="cursor: pointer;" title="Xem thẻ tên">
+        <div class="comp-lb-capsule lb-capsule">
           <div class="lb-cover-art-wrap">
             <div class="lb-cover-art" style="${myCoverStyle}"></div>
             <div class="lb-cover-overlay"></div>
           </div>
-          <div class="comp-lb-avatar-wrap">
+          <div class="comp-lb-avatar-wrap lb-avatar-wrap">
             <span class="avatar avatar-sm ${myAvatarClass}">${escapeHTML(currentUserEntry.avatar || currentUserEntry.initials || "U")}</span>
             <span class="lb-rank-badge rank-me">#${currentUserEntry.rank}</span>
           </div>
-          <div class="comp-lb-user">
-            <span class="comp-lb-name ${myNameClass}">
+          <div class="comp-lb-user lb-info">
+            <span class="comp-lb-name lb-name ${myNameClass}">
               ${getFlameSVG(currentUserEntry.streakTier, 15)}
               <span class="lb-name-text">${escapeHTML(currentUserEntry.displayName)}</span>
             </span>
+            ${currentUserEntry.role && currentUserEntry.role !== 'student' ? `<span class="lb-role lb-role-${currentUserEntry.role}">${getRoleDisplay(currentUserEntry.role)}</span>` : ""}
             <span class="you-tag">(Bạn)</span>
           </div>
         </div>
-        <span class="comp-lb-score"><svg class="ui-icon" width="13" height="13" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.5" style="color: #f59e0b; margin-right: 2px;"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>${currentUserEntry.score}</span>
+        <span class="comp-lb-score lb-points"><svg class="ui-icon" width="13" height="13" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.5" style="color: #f59e0b; margin-right: 2px;"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>${currentUserEntry.score}</span>
       </div>
     `;
+  }
+
+  if (!rowsHTML) {
+    rowsHTML = `<div class="comp-lb-empty" style="padding: 24px 12px; font-size: 13px; color: var(--muted); text-align: center;">Chưa có thành viên nào từ hạng 4 trở đi.</div>`;
   }
 
   lbList.innerHTML = rowsHTML;
