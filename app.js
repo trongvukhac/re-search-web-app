@@ -16769,7 +16769,7 @@ function renderArenaTop3(top1, top2, top3, isWeek = false) {
 
   function renderMiniNamecard(user, rank) {
     if (!user) {
-      return `<div class="arena-champion-card mini-namecard rank-${rank} empty"></div>`;
+      return `<div class="arena-champion-card mini-namecard rank-${rank} empty"><div class="mini-card-canvas"></div></div>`;
     }
     const avatarClass = getAvatarClass(user.streakTier, false, user.role);
     const nameClass = getNameClass(user.streakTier);
@@ -16793,37 +16793,40 @@ function renderArenaTop3(top1, top2, top3, isWeek = false) {
 
     return `
       <div class="arena-champion-card mini-namecard rank-${rank}" data-namecard-user-id="${user.userId}" data-frame="${activeFrame}" style="cursor: pointer;" title="Xem thẻ tên">
-        <!-- Khung viền thẻ tên mini -->
+        <!-- 1. Thân thẻ Canvas: Bo góc 28px * scale, clip ảnh bìa và nền đồng bộ 100% với NamecardStage -->
+        <div class="mini-card-canvas">
+          <!-- Ảnh bìa mini -->
+          <div class="champ-cover-banner mini-cover" style="${coverStyle}">
+            <div class="champ-cover-gradient"></div>
+          </div>
+
+          <!-- Thân thẻ tên mini -->
+          <div class="champ-body mini-namecard-body">
+            <!-- Huy chương (đặt ở phía trên avatar, canh giữa) + Avatar -->
+            <div class="champ-avatar-wrap">
+              <span class="champ-crown rank-medal rank-${rank}">${getArenaMedalSVG(rank, medalSize)}</span>
+              <div class="avatar champ-avatar rank-${rank}-avatar ${avatarClass}">${escapeHTML(user.avatar || user.initials || "U")}</div>
+            </div>
+
+            <!-- Tên + Icon lửa chuỗi (Không có vai trò) -->
+            <div class="champ-name ${rank === 1 ? 'font-bold' : ''} ${nameClass}" title="${escapeHTML(user.displayName)}">
+              ${getFlameSVG(user.streakTier, flameSize)} <span class="lb-name-text">${escapeHTML(user.displayName)}</span>
+            </div>
+
+            <!-- Tag: Top 1-2-3 (Chặng) hoặc Quán/Á/Quý quân (Toàn tuần) nằm giữa tên và điểm số -->
+            <div class="champ-rank-tag-wrap">
+              <span class="champ-rank-pill pill-rank-${rank}">${rankTag}</span>
+            </div>
+
+            <!-- Số điểm -->
+            <div class="champ-score ${rank === 1 ? 'gold-score' : ''}">
+              <svg class="ui-icon" width="13" height="13" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.5" style="color: #f59e0b; margin-right: 2px;"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>${user.score}
+            </div>
+          </div>
+        </div>
+
+        <!-- 2. Khung viền thẻ tên mini: Nằm độc lập phía trên canvas để hoa lá vươn ra ngoài mà không bị cắt -->
         <div class="mini-card-frame-layer" data-frame="${activeFrame}"></div>
-
-        <!-- Ảnh bìa mini -->
-        <div class="champ-cover-banner mini-cover" style="${coverStyle}">
-          <div class="champ-cover-gradient"></div>
-        </div>
-
-        <!-- Thân thẻ tên mini -->
-        <div class="champ-body mini-namecard-body">
-          <!-- Huy chương (đặt ở phía trên avatar, canh giữa) + Avatar -->
-          <div class="champ-avatar-wrap">
-            <span class="champ-crown rank-medal rank-${rank}">${getArenaMedalSVG(rank, medalSize)}</span>
-            <div class="avatar champ-avatar rank-${rank}-avatar ${avatarClass}">${escapeHTML(user.avatar || user.initials || "U")}</div>
-          </div>
-
-          <!-- Tên + Icon lửa chuỗi (Không có vai trò) -->
-          <div class="champ-name ${rank === 1 ? 'font-bold' : ''} ${nameClass}" title="${escapeHTML(user.displayName)}">
-            ${getFlameSVG(user.streakTier, flameSize)} <span class="lb-name-text">${escapeHTML(user.displayName)}</span>
-          </div>
-
-          <!-- Tag: Top 1-2-3 (Chặng) hoặc Quán/Á/Quý quân (Toàn tuần) nằm giữa tên và điểm số -->
-          <div class="champ-rank-tag-wrap">
-            <span class="champ-rank-pill pill-rank-${rank}">${rankTag}</span>
-          </div>
-
-          <!-- Số điểm -->
-          <div class="champ-score ${rank === 1 ? 'gold-score' : ''}">
-            <svg class="ui-icon" width="13" height="13" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.5" style="color: #f59e0b; margin-right: 2px;"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>${user.score}
-          </div>
-        </div>
       </div>
     `;
   }

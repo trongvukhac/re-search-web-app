@@ -14911,11 +14911,13 @@ body.dark-theme .doc-viewer-save-btn.is-saved {
   position: relative;
   display: flex;
   flex-direction: column;
-  background: #ffffff;
+  background: transparent;
   overflow: visible !important;
   box-sizing: border-box;
   aspect-ratio: 680 / 760;
   transition: transform 0.22s ease, box-shadow 0.22s ease;
+  border: none;
+  box-shadow: none;
 }
 
 .arena-champion-card.mini-namecard:hover {
@@ -14923,52 +14925,54 @@ body.dark-theme .doc-viewer-save-btn.is-saved {
 }
 
 .arena-champion-card.mini-namecard.rank-1 {
-  --card-w: 230px;
-  width: var(--card-w);
-  height: calc(var(--card-w) * 760 / 680);
-  --mini-scale: calc(230 / 680);
-  border-radius: calc(28px * var(--mini-scale));
+  --mini-scale: 0.3382; /* 230 / 680 */
+  width: calc(680px * var(--mini-scale));
+  height: calc(760px * var(--mini-scale));
   z-index: 2;
 }
 
-.arena-champion-card.mini-namecard.rank-2 {
-  --card-w: 200px;
-  width: var(--card-w);
-  height: calc(var(--card-w) * 760 / 680);
-  --mini-scale: calc(200 / 680);
-  border-radius: calc(28px * var(--mini-scale));
-  z-index: 1;
-}
-
+.arena-champion-card.mini-namecard.rank-2,
 .arena-champion-card.mini-namecard.rank-3 {
-  --card-w: 200px;
-  width: var(--card-w);
-  height: calc(var(--card-w) * 760 / 680);
-  --mini-scale: calc(200 / 680);
-  border-radius: calc(28px * var(--mini-scale));
+  --mini-scale: 0.2941; /* 200 / 680 */
+  width: calc(680px * var(--mini-scale));
+  height: calc(760px * var(--mini-scale));
   z-index: 1;
 }
 
-/* Khung viền vinh danh mặc định cho Top 3 khi không trang bị khung riêng */
-.arena-champion-card.mini-namecard.rank-1[data-frame="none"],
-.arena-champion-card.mini-namecard.rank-1[data-frame="default"] {
+/* 1. Thân thẻ Canvas (Mini Card Canvas): Bo góc 28px * scale, clip ảnh bìa & nội dung đồng bộ NamecardStage */
+.mini-card-canvas {
+  position: absolute;
+  inset: 0;
+  border-radius: calc(28px * var(--mini-scale));
+  overflow: hidden;
+  background: #ffffff;
+  box-shadow: 0 4px 18px rgba(15, 23, 42, 0.08);
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  z-index: 5;
+}
+
+/* Khung viền vinh danh mặc định cho Top 3 khi không trang bị khung riêng (áp dụng trực tiếp lên Canvas) */
+.arena-champion-card.mini-namecard.rank-1[data-frame="none"] .mini-card-canvas,
+.arena-champion-card.mini-namecard.rank-1[data-frame="default"] .mini-card-canvas {
   border: calc(10px * var(--mini-scale)) solid #f59e0b;
   box-shadow: 0 10px 28px rgba(245, 158, 11, 0.22);
 }
 
-.arena-champion-card.mini-namecard.rank-2[data-frame="none"],
-.arena-champion-card.mini-namecard.rank-2[data-frame="default"] {
+.arena-champion-card.mini-namecard.rank-2[data-frame="none"] .mini-card-canvas,
+.arena-champion-card.mini-namecard.rank-2[data-frame="default"] .mini-card-canvas {
   border: calc(10px * var(--mini-scale)) solid #94a3b8;
   box-shadow: 0 6px 20px rgba(148, 163, 184, 0.18);
 }
 
-.arena-champion-card.mini-namecard.rank-3[data-frame="none"],
-.arena-champion-card.mini-namecard.rank-3[data-frame="default"] {
+.arena-champion-card.mini-namecard.rank-3[data-frame="none"] .mini-card-canvas,
+.arena-champion-card.mini-namecard.rank-3[data-frame="default"] .mini-card-canvas {
   border: calc(10px * var(--mini-scale)) solid #ea580c;
   box-shadow: 0 6px 20px rgba(234, 88, 12, 0.18);
 }
 
-.arena-champion-card.mini-namecard:not([data-frame="none"]):not([data-frame="default"]) {
+.arena-champion-card.mini-namecard:not([data-frame="none"]):not([data-frame="default"]) .mini-card-canvas {
   border: none;
   box-shadow: 0 6px 22px rgba(15, 23, 42, 0.08);
 }
@@ -15132,10 +15136,7 @@ body.dark-theme .doc-viewer-save-btn.is-saved {
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
-  border-top-left-radius: inherit;
-  border-top-right-radius: inherit;
-  overflow: hidden;
-  height: calc(var(--card-w, 200px) * 760 / 680 * 0.35);
+  height: 34%;
   flex-shrink: 0;
 }
 
@@ -15153,7 +15154,7 @@ body.dark-theme .doc-viewer-save-btn.is-saved {
 
 /* Thân thẻ tên mini */
 .champ-body.mini-namecard-body {
-  padding: 0 8px 10px 8px;
+  padding: 0 6px calc(14px * var(--mini-scale)) 6px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -16919,57 +16920,44 @@ body.dark-theme .comp-tab-btn.active {
     overflow: visible !important;
   }
 
-  .arena-champion-card.rank-1 {
-    width: 36% !important;
-    flex: 0 1 36% !important;
-  }
-
+  .arena-champion-card.rank-1,
   .arena-champion-card.rank-2,
   .arena-champion-card.rank-3 {
-    width: 31% !important;
-    flex: 0 1 31% !important;
+    width: auto !important;
+    flex: none !important;
   }
 
-  /* Mini Namecard trên mobile: Tối ưu kích thước & layout ngăn chặn tràn thẻ */
+  /* Mini Namecard trên mobile: Giữ chuẩn tuyệt đối tỉ lệ 680x760 (17:19) đồng nhất với Namecard gốc */
   .arena-champion-card.mini-namecard {
-    height: auto !important;
-    aspect-ratio: auto !important;
+    aspect-ratio: 680 / 760 !important;
     box-sizing: border-box !important;
     overflow: visible !important;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
   }
 
   .arena-champion-card.mini-namecard.rank-1 {
-    --card-w: min(138px, calc((100vw - 32px) * 0.36)) !important;
-    width: var(--card-w) !important;
-    min-height: 156px !important;
-    --mini-scale: calc(var(--card-w) / 680) !important;
-    border-radius: 12px !important;
+    --mini-scale: 0.185 !important;
+    width: calc(680px * var(--mini-scale)) !important; /* ~125.8px */
+    height: calc(760px * var(--mini-scale)) !important; /* ~140.6px */
+    flex: 0 0 calc(680px * var(--mini-scale)) !important;
   }
 
   .arena-champion-card.mini-namecard.rank-2,
   .arena-champion-card.mini-namecard.rank-3 {
-    --card-w: min(114px, calc((100vw - 32px) * 0.30)) !important;
-    width: var(--card-w) !important;
-    min-height: 140px !important;
-    --mini-scale: calc(var(--card-w) / 680) !important;
-    border-radius: 10px !important;
+    --mini-scale: 0.153 !important;
+    width: calc(680px * var(--mini-scale)) !important; /* ~104px */
+    height: calc(760px * var(--mini-scale)) !important; /* ~116.3px */
+    flex: 0 0 calc(680px * var(--mini-scale)) !important;
   }
 
-  .arena-champion-card.mini-namecard.rank-1 .champ-cover-banner {
-    height: 48px !important;
-    border-top-left-radius: 10px !important;
-    border-top-right-radius: 10px !important;
-  }
-
-  .arena-champion-card.mini-namecard.rank-2 .champ-cover-banner,
-  .arena-champion-card.mini-namecard.rank-3 .champ-cover-banner {
-    height: 40px !important;
-    border-top-left-radius: 8px !important;
-    border-top-right-radius: 8px !important;
+  .champ-cover-banner {
+    height: 33% !important;
   }
 
   .champ-body.mini-namecard-body {
-    padding: 0 4px 7px 4px !important;
+    padding: 0 3px 5px 3px !important;
     display: flex !important;
     flex-direction: column !important;
     align-items: center !important;
@@ -16980,8 +16968,8 @@ body.dark-theme .comp-tab-btn.active {
   }
 
   .champ-avatar-wrap {
-    margin-top: -16px !important;
-    margin-bottom: 2px !important;
+    margin-top: -15px !important;
+    margin-bottom: 1px !important;
     position: relative !important;
     display: inline-flex !important;
     justify-content: center !important;
@@ -16989,37 +16977,37 @@ body.dark-theme .comp-tab-btn.active {
   }
 
   .arena-champion-card.mini-namecard.rank-1 .champ-avatar-wrap {
-    margin-top: -20px !important;
+    margin-top: -18px !important;
     margin-bottom: 2px !important;
   }
 
   .champ-avatar.rank-1-avatar {
-    width: 38px !important;
-    height: 38px !important;
-    font-size: 16px !important;
-    --ring-inset: -3px;
-    --ring-width: 1.8px;
+    width: 34px !important;
+    height: 34px !important;
+    font-size: 14.5px !important;
+    --ring-inset: -2.5px;
+    --ring-width: 1.5px;
   }
 
   .champ-avatar.rank-2-avatar {
-    width: 32px !important;
-    height: 32px !important;
-    font-size: 14px !important;
-    --ring-inset: -2.5px;
-    --ring-width: 1.5px;
+    width: 28px !important;
+    height: 28px !important;
+    font-size: 12px !important;
+    --ring-inset: -2px;
+    --ring-width: 1.2px;
   }
 
   .champ-avatar.rank-3-avatar {
-    width: 30px !important;
-    height: 30px !important;
-    font-size: 13px !important;
-    --ring-inset: -2.5px;
-    --ring-width: 1.5px;
+    width: 26px !important;
+    height: 26px !important;
+    font-size: 11px !important;
+    --ring-inset: -2px;
+    --ring-width: 1.2px;
   }
 
   .champ-crown.rank-medal {
     position: absolute !important;
-    top: -16px !important;
+    top: -14px !important;
     left: 50% !important;
     z-index: 10 !important;
     pointer-events: none !important;
@@ -17027,7 +17015,7 @@ body.dark-theme .comp-tab-btn.active {
   }
 
   .champ-crown.rank-medal.rank-1 {
-    top: -18px !important;
+    top: -16px !important;
     animation: medalBobMobileRank1 2.6s ease-in-out infinite alternate !important;
   }
 
@@ -17050,10 +17038,10 @@ body.dark-theme .comp-tab-btn.active {
   }
 
   .champ-name {
-    font-size: 11px !important;
+    font-size: 10px !important;
     font-weight: 700 !important;
-    padding: 0 3px !important;
-    gap: 2.5px !important;
+    padding: 0 2px !important;
+    gap: 2px !important;
     min-width: 0 !important;
     width: 100% !important;
     max-width: 100% !important;
@@ -17062,17 +17050,18 @@ body.dark-theme .comp-tab-btn.active {
     align-items: center !important;
     justify-content: center !important;
     overflow: hidden !important;
+    line-height: 1.2 !important;
   }
 
   .champ-name.font-bold {
-    font-size: 11.5px !important;
+    font-size: 11px !important;
     font-weight: 800 !important;
   }
 
   .champ-name svg {
     flex-shrink: 0 !important;
-    width: 13px !important;
-    height: 13px !important;
+    width: 11px !important;
+    height: 11px !important;
   }
 
   .champ-name .lb-name-text {
@@ -17080,12 +17069,12 @@ body.dark-theme .comp-tab-btn.active {
     text-overflow: ellipsis !important;
     white-space: nowrap !important;
     min-width: 0 !important;
-    max-width: calc(100% - 16px) !important;
+    max-width: calc(100% - 13px) !important;
     display: inline-block !important;
   }
 
   .champ-rank-tag-wrap {
-    margin: 2px 0 !important;
+    margin: 1px 0 !important;
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
@@ -17093,21 +17082,21 @@ body.dark-theme .comp-tab-btn.active {
   }
 
   .champ-rank-pill {
-    font-size: 9px !important;
+    font-size: 8px !important;
     font-weight: 800 !important;
-    padding: 2px 6px !important;
-    letter-spacing: 0.2px !important;
+    padding: 1px 5px !important;
+    letter-spacing: 0.1px !important;
     white-space: nowrap !important;
-    line-height: 1.3 !important;
+    line-height: 1.2 !important;
     border-radius: 9999px !important;
     max-width: 96% !important;
     box-sizing: border-box !important;
   }
 
   .champ-score {
-    font-size: 10.5px !important;
+    font-size: 9.5px !important;
     font-weight: 800 !important;
-    padding: 2px 7px !important;
+    padding: 1px 6px !important;
     white-space: nowrap !important;
     display: inline-flex !important;
     align-items: center !important;
@@ -17117,8 +17106,8 @@ body.dark-theme .comp-tab-btn.active {
   }
 
   .champ-score svg {
-    width: 11px !important;
-    height: 11px !important;
+    width: 10px !important;
+    height: 10px !important;
     margin-right: 2px !important;
     flex-shrink: 0 !important;
   }
@@ -23099,25 +23088,35 @@ body.dark-theme .arena-champion-card {
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3) !important;
 }
 
-body.dark-theme .arena-champion-card.mini-namecard.rank-1[data-frame="none"],
-body.dark-theme .arena-champion-card.mini-namecard.rank-1[data-frame="default"] {
+body.dark-theme .arena-champion-card.mini-namecard {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+body.dark-theme .mini-card-canvas {
+  background: #182028 !important;
+}
+
+body.dark-theme .arena-champion-card.mini-namecard.rank-1[data-frame="none"] .mini-card-canvas,
+body.dark-theme .arena-champion-card.mini-namecard.rank-1[data-frame="default"] .mini-card-canvas {
   border-color: #f59e0b !important;
   box-shadow: 0 8px 28px rgba(245, 158, 11, 0.25) !important;
 }
 
-body.dark-theme .arena-champion-card.mini-namecard.rank-2[data-frame="none"],
-body.dark-theme .arena-champion-card.mini-namecard.rank-2[data-frame="default"] {
+body.dark-theme .arena-champion-card.mini-namecard.rank-2[data-frame="none"] .mini-card-canvas,
+body.dark-theme .arena-champion-card.mini-namecard.rank-2[data-frame="default"] .mini-card-canvas {
   border-color: #64748b !important;
   box-shadow: 0 6px 20px rgba(100, 116, 139, 0.25) !important;
 }
 
-body.dark-theme .arena-champion-card.mini-namecard.rank-3[data-frame="none"],
-body.dark-theme .arena-champion-card.mini-namecard.rank-3[data-frame="default"] {
+body.dark-theme .arena-champion-card.mini-namecard.rank-3[data-frame="none"] .mini-card-canvas,
+body.dark-theme .arena-champion-card.mini-namecard.rank-3[data-frame="default"] .mini-card-canvas {
   border-color: #c2410c !important;
   box-shadow: 0 6px 20px rgba(194, 65, 12, 0.25) !important;
 }
 
-body.dark-theme .arena-champion-card.mini-namecard:not([data-frame="none"]):not([data-frame="default"]) {
+body.dark-theme .arena-champion-card.mini-namecard:not([data-frame="none"]):not([data-frame="default"]) .mini-card-canvas {
   border: none !important;
 }
 
