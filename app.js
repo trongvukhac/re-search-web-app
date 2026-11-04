@@ -16764,7 +16764,7 @@ function switchArenaPodiumConcept(conceptId) {
 }
 window.switchArenaPodiumConcept = switchArenaPodiumConcept;
 
-function renderArenaTop3(top1, top2, top3) {
+function renderArenaTop3(top1, top2, top3, isWeek = false) {
   let html = `<div class="arena-concept1-wrap arena-top3-cards">`;
 
   function renderMiniNamecard(user, rank) {
@@ -16776,15 +16776,17 @@ function renderArenaTop3(top1, top2, top3) {
     const coverStyle = getMiniCoverStyle(user.coverImage);
     const activeFrame = (user.namecardFrame && user.namecardFrame !== "default") ? user.namecardFrame : "none";
 
-    let rankTag = "Quán quân";
+    // BXH 3 Chặng (1, 2, 3): Top 1 / Top 2 / Top 3
+    // BXH Toàn tuần (week): Quán quân / Á quân / Quý quân
+    let rankTag = isWeek ? "Quán quân" : "Top 1";
     let medalSize = 38;
     let flameSize = 16;
     if (rank === 2) {
-      rankTag = "Á quân";
+      rankTag = isWeek ? "Á quân" : "Top 2";
       medalSize = 34;
       flameSize = 14;
     } else if (rank === 3) {
-      rankTag = "Quý quân";
+      rankTag = isWeek ? "Quý quân" : "Top 3";
       medalSize = 30;
       flameSize = 14;
     }
@@ -16812,7 +16814,7 @@ function renderArenaTop3(top1, top2, top3) {
             ${getFlameSVG(user.streakTier, flameSize)} <span class="lb-name-text">${escapeHTML(user.displayName)}</span>
           </div>
 
-          <!-- Tag: Quán quân / Á quân / Quý quân (không đi kèm huy chương) nằm giữa tên và điểm số -->
+          <!-- Tag: Top 1-2-3 (Chặng) hoặc Quán/Á/Quý quân (Toàn tuần) nằm giữa tên và điểm số -->
           <div class="champ-rank-tag-wrap">
             <span class="champ-rank-pill pill-rank-${rank}">${rankTag}</span>
           </div>
@@ -16866,11 +16868,12 @@ function renderLeaderboardUI(data) {
     return;
   }
 
+  const isWeek = Boolean(data.phase === "week" || data.isWeek || (compState && compState.activeLbPhase === "week"));
   const top1 = top10.find(u => u.rank === 1);
   const top2 = top10.find(u => u.rank === 2);
   const top3 = top10.find(u => u.rank === 3);
 
-  podiumWrap.innerHTML = renderArenaTop3(top1, top2, top3);
+  podiumWrap.innerHTML = renderArenaTop3(top1, top2, top3, isWeek);
 
   const rest = top10.filter(u => u.rank >= 4);
   let rowsHTML = "";

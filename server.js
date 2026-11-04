@@ -7617,6 +7617,7 @@ async function api(request, response, url) {
       ok: true,
       resultsVersion: competitionResultsVersion,
       phase: phaseParam,
+      isWeek: Boolean(isWeekPhase),
       classCode: targetClass,
       classTitle,
       phaseTitle,
