@@ -14858,7 +14858,7 @@ body.dark-theme .doc-viewer-save-btn.is-saved {
   justify-content: center;
   gap: 16px;
   width: 100%;
-  padding-top: 6px;
+  padding-top: 52px;
 }
 
 .arena-champion-card {
@@ -15152,9 +15152,62 @@ body.dark-theme .doc-viewer-save-btn.is-saved {
   pointer-events: none;
 }
 
+/* Huy chương Top 3 vinh danh nằm ngoài hẳn phía trên khung, căn giữa, không dính avatar */
+.champ-top-medal-anchor {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 35;
+  pointer-events: none;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+/* Khi có khung nghệ thuật vươn ra ngoài, nâng huy chương lên cao hơn để nằm ngoài hẳn hoa văn của khung */
+.arena-champion-card.mini-namecard[data-frame="gold"] .champ-top-medal-anchor {
+  margin-bottom: calc(68px * var(--mini-scale));
+}
+.arena-champion-card.mini-namecard[data-frame="stars"] .champ-top-medal-anchor,
+.arena-champion-card.mini-namecard[data-frame="ice"] .champ-top-medal-anchor {
+  margin-bottom: calc(62px * var(--mini-scale));
+}
+.arena-champion-card.mini-namecard[data-frame="leaves"] .champ-top-medal-anchor,
+.arena-champion-card.mini-namecard[data-frame="sakura"] .champ-top-medal-anchor,
+.arena-champion-card.mini-namecard[data-frame="ton_vinh_phai_dep"] .champ-top-medal-anchor,
+.arena-champion-card.mini-namecard[data-frame="bua_tiec_ma_mi"] .champ-top-medal-anchor {
+  margin-bottom: calc(54px * var(--mini-scale));
+}
+
+.champ-crown.rank-medal {
+  position: static;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 35;
+  pointer-events: none;
+  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.22));
+  animation: medalBobAbove 2.6s ease-in-out infinite alternate;
+}
+
+.champ-crown.rank-medal.rank-1 {
+  filter: drop-shadow(0 6px 14px rgba(245, 158, 11, 0.35));
+}
+
+@keyframes medalBobAbove {
+  0% {
+    transform: translateY(0);
+  }
+  100% {
+    transform: translateY(-4px);
+  }
+}
+
 /* Thân thẻ tên mini */
 .champ-body.mini-namecard-body {
-  padding: 0 6px calc(14px * var(--mini-scale)) 6px;
+  padding: 0 6px 0 6px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -15162,14 +15215,15 @@ body.dark-theme .doc-viewer-save-btn.is-saved {
   position: relative;
   z-index: 5;
   flex: 1;
-  justify-content: space-between;
+  min-width: 0;
+  box-sizing: border-box;
 }
 
-/* Avatar Wrapper & Huy chương đặt ở phía trên avatar, canh giữa */
+/* Avatar Wrapper (đặt giữa ranh giới banner & body, hoàn toàn độc lập không dính huy chương) */
 .champ-avatar-wrap {
-  margin-top: -26px;
+  margin-top: -24px;
   position: relative;
-  margin-bottom: 2px;
+  margin-bottom: 0;
   display: inline-flex;
   justify-content: center;
   align-items: center;
@@ -15177,21 +15231,7 @@ body.dark-theme .doc-viewer-save-btn.is-saved {
 }
 
 .arena-champion-card.mini-namecard.rank-1 .champ-avatar-wrap {
-  margin-top: -30px;
-}
-
-.champ-crown.rank-medal {
-  position: absolute;
-  top: -20px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 10;
-  pointer-events: none;
-  animation: medalBob 2.6s ease-in-out infinite alternate;
-}
-
-.champ-crown.rank-medal.rank-1 {
-  top: -24px;
+  margin-top: -27px;
 }
 
 /* Avatar giữ nguyên màu nền và khung chuỗi tự nhiên, không ép khung vàng/bạc/đồng hay nền trắng */
@@ -15234,6 +15274,20 @@ body.dark-theme .doc-viewer-save-btn.is-saved {
   transform: scale(1.05);
 }
 
+/* Cụm thông tin: Tên, Tag thứ hạng, Điểm số (kết nối gần nhau, cách khung dưới đẹp mắt) */
+.champ-info-group {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  flex: 1;
+  gap: 3.5px;
+  padding-bottom: calc(28px * var(--mini-scale));
+  min-width: 0;
+  box-sizing: border-box;
+}
+
 /* Tên & Icon lửa chuỗi */
 .champ-name {
   font-size: 13px;
@@ -15271,7 +15325,7 @@ body.dark-theme .doc-viewer-save-btn.is-saved {
 
 /* Tag Quán quân, Á quân, Quý quân nằm giữa tên và điểm số */
 .champ-rank-tag-wrap {
-  margin: 2px 0 4px 0;
+  margin: 0;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -15306,25 +15360,68 @@ body.dark-theme .doc-viewer-save-btn.is-saved {
   border: 1px solid #ffedd5;
 }
 
-/* Số điểm */
+/* Số điểm: Đồng bộ huy hiệu và icon ngôi sao tương phản cao */
 .champ-score {
   font-size: 12px;
   font-weight: 800;
-  color: #b45309;
-  background: #fef3c7;
-  padding: 3px 12px;
+  padding: 3px 11px;
   border-radius: 9999px;
-  box-shadow: 0 2px 6px rgba(180, 83, 9, 0.1);
   display: inline-flex;
   align-items: center;
-  gap: 3px;
-  margin-top: 1px;
+  gap: 3.5px;
+  line-height: 1.3;
+  margin: 0;
+  box-sizing: border-box;
 }
 
+.champ-score .champ-score-star {
+  width: 13px;
+  height: 13px;
+  flex-shrink: 0;
+  margin-right: 1px;
+}
+
+/* TOP 1: Khung điểm Quán quân vàng kim rực rỡ với Ngôi sao Trắng Tinh Khiết nổi bật 100%, không bị chìm */
 .champ-score.gold-score {
   background: linear-gradient(135deg, #f59e0b, #d97706);
   color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.35);
   box-shadow: 0 3px 10px rgba(245, 158, 11, 0.35);
+}
+
+.champ-score.gold-score .champ-score-star {
+  color: #ffffff !important;
+  fill: #ffffff !important;
+  stroke: #ffffff !important;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.28));
+}
+
+/* TOP 2: Hạng Bạc */
+.champ-score.silver-score {
+  background: #f1f5f9;
+  color: #334155;
+  border: 1px solid #cbd5e1;
+  box-shadow: 0 2px 6px rgba(100, 116, 139, 0.12);
+}
+
+.champ-score.silver-score .champ-score-star {
+  color: #64748b !important;
+  fill: #64748b !important;
+  stroke: #64748b !important;
+}
+
+/* TOP 3: Hạng Đồng */
+.champ-score.bronze-score {
+  background: #fff7ed;
+  color: #9a3412;
+  border: 1px solid #fed7aa;
+  box-shadow: 0 2px 6px rgba(234, 88, 12, 0.12);
+}
+
+.champ-score.bronze-score .champ-score-star {
+  color: #ea580c !important;
+  fill: #ea580c !important;
+  stroke: #ea580c !important;
 }
 
 /* --------------------------------------------------------------------------
@@ -16911,7 +17008,7 @@ body.dark-theme .comp-tab-btn.active {
   /* Concept 1 Mobile */
   .arena-concept1-wrap {
     gap: 6px !important;
-    padding-top: 24px !important;
+    padding-top: 38px !important;
     padding-bottom: 6px !important;
     align-items: flex-end !important;
     justify-content: center !important;
@@ -16956,20 +17053,66 @@ body.dark-theme .comp-tab-btn.active {
     height: 33% !important;
   }
 
+  /* Huy chương Top 3 trên Mobile: Nằm ngoài hẳn phía trên khung, căn giữa, không dính avatar */
+  .champ-top-medal-anchor {
+    margin-bottom: 6px !important;
+  }
+
+  .arena-champion-card.mini-namecard[data-frame="gold"] .champ-top-medal-anchor {
+    margin-bottom: calc(68px * var(--mini-scale)) !important;
+  }
+  .arena-champion-card.mini-namecard[data-frame="stars"] .champ-top-medal-anchor,
+  .arena-champion-card.mini-namecard[data-frame="ice"] .champ-top-medal-anchor {
+    margin-bottom: calc(62px * var(--mini-scale)) !important;
+  }
+  .arena-champion-card.mini-namecard[data-frame="leaves"] .champ-top-medal-anchor,
+  .arena-champion-card.mini-namecard[data-frame="sakura"] .champ-top-medal-anchor,
+  .arena-champion-card.mini-namecard[data-frame="ton_vinh_phai_dep"] .champ-top-medal-anchor,
+  .arena-champion-card.mini-namecard[data-frame="bua_tiec_ma_mi"] .champ-top-medal-anchor {
+    margin-bottom: calc(54px * var(--mini-scale)) !important;
+  }
+
+  .champ-crown.rank-medal {
+    position: static !important;
+    animation: medalBobAboveMobile 2.6s ease-in-out infinite alternate !important;
+  }
+
+  .champ-crown.rank-medal.rank-1 svg {
+    width: 28px !important;
+    height: 28px !important;
+  }
+  .champ-crown.rank-medal.rank-2 svg {
+    width: 25px !important;
+    height: 25px !important;
+  }
+  .champ-crown.rank-medal.rank-3 svg {
+    width: 23px !important;
+    height: 23px !important;
+  }
+
+  @keyframes medalBobAboveMobile {
+    0% {
+      transform: translateY(0);
+    }
+    100% {
+      transform: translateY(-2.5px);
+    }
+  }
+
   .champ-body.mini-namecard-body {
-    padding: 0 3px 5px 3px !important;
+    padding: 0 3px 0 3px !important;
     display: flex !important;
     flex-direction: column !important;
     align-items: center !important;
-    justify-content: space-between !important;
+    justify-content: flex-start !important;
     flex: 1 !important;
     min-width: 0 !important;
     box-sizing: border-box !important;
   }
 
   .champ-avatar-wrap {
-    margin-top: -15px !important;
-    margin-bottom: 1px !important;
+    margin-top: -14px !important;
+    margin-bottom: 0 !important;
     position: relative !important;
     display: inline-flex !important;
     justify-content: center !important;
@@ -16977,8 +17120,8 @@ body.dark-theme .comp-tab-btn.active {
   }
 
   .arena-champion-card.mini-namecard.rank-1 .champ-avatar-wrap {
-    margin-top: -18px !important;
-    margin-bottom: 2px !important;
+    margin-top: -17px !important;
+    margin-bottom: 0 !important;
   }
 
   .champ-avatar.rank-1-avatar {
@@ -17005,36 +17148,18 @@ body.dark-theme .comp-tab-btn.active {
     --ring-width: 1.2px;
   }
 
-  .champ-crown.rank-medal {
-    position: absolute !important;
-    top: -14px !important;
-    left: 50% !important;
-    z-index: 10 !important;
-    pointer-events: none !important;
-    animation: medalBobMobile 2.6s ease-in-out infinite alternate !important;
-  }
-
-  .champ-crown.rank-medal.rank-1 {
-    top: -16px !important;
-    animation: medalBobMobileRank1 2.6s ease-in-out infinite alternate !important;
-  }
-
-  @keyframes medalBobMobile {
-    0% {
-      transform: translateX(-50%) translateY(0) scale(0.78);
-    }
-    100% {
-      transform: translateX(-50%) translateY(-3px) scale(0.82);
-    }
-  }
-
-  @keyframes medalBobMobileRank1 {
-    0% {
-      transform: translateX(-50%) translateY(0) scale(0.88);
-    }
-    100% {
-      transform: translateX(-50%) translateY(-3px) scale(0.92);
-    }
+  /* Cụm thông tin trên Mobile: Thu hẹp khoảng cách gần nhau, cách khung dưới đẹp mắt không dính viền */
+  .champ-info-group {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 100% !important;
+    flex: 1 !important;
+    gap: 2px !important;
+    padding-bottom: 8px !important;
+    box-sizing: border-box !important;
+    min-width: 0 !important;
   }
 
   .champ-name {
@@ -17074,7 +17199,7 @@ body.dark-theme .comp-tab-btn.active {
   }
 
   .champ-rank-tag-wrap {
-    margin: 1px 0 !important;
+    margin: 0 !important;
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
@@ -17084,7 +17209,7 @@ body.dark-theme .comp-tab-btn.active {
   .champ-rank-pill {
     font-size: 8px !important;
     font-weight: 800 !important;
-    padding: 1px 5px !important;
+    padding: 1.5px 5.5px !important;
     letter-spacing: 0.1px !important;
     white-space: nowrap !important;
     line-height: 1.2 !important;
@@ -17096,19 +17221,20 @@ body.dark-theme .comp-tab-btn.active {
   .champ-score {
     font-size: 9.5px !important;
     font-weight: 800 !important;
-    padding: 1px 6px !important;
+    padding: 1.5px 7px !important;
     white-space: nowrap !important;
     display: inline-flex !important;
     align-items: center !important;
     justify-content: center !important;
     line-height: 1.2 !important;
     border-radius: 9999px !important;
+    margin: 0 !important;
   }
 
-  .champ-score svg {
+  .champ-score .champ-score-star {
     width: 10px !important;
     height: 10px !important;
-    margin-right: 2px !important;
+    margin-right: 1.5px !important;
     flex-shrink: 0 !important;
   }
 
@@ -23151,7 +23277,38 @@ body.dark-theme .champ-score {
 body.dark-theme .champ-score.gold-score {
   background: linear-gradient(135deg, #f59e0b, #d97706) !important;
   color: #ffffff !important;
-  border: none !important;
+  border: 1px solid rgba(255, 255, 255, 0.3) !important;
+}
+
+body.dark-theme .champ-score.gold-score .champ-score-star {
+  color: #ffffff !important;
+  fill: #ffffff !important;
+  stroke: #ffffff !important;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.35));
+}
+
+body.dark-theme .champ-score.silver-score {
+  background: #273646 !important;
+  color: #e2e8f0 !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+}
+
+body.dark-theme .champ-score.silver-score .champ-score-star {
+  color: #94a3b8 !important;
+  fill: #94a3b8 !important;
+  stroke: #94a3b8 !important;
+}
+
+body.dark-theme .champ-score.bronze-score {
+  background: #3b2216 !important;
+  color: #fdba74 !important;
+  border: 1px solid rgba(251, 146, 60, 0.28) !important;
+}
+
+body.dark-theme .champ-score.bronze-score .champ-score-star {
+  color: #fb923c !important;
+  fill: #fb923c !important;
+  stroke: #fb923c !important;
 }
 
 body.dark-theme .champ-rank-pill.pill-rank-1 {

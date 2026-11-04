@@ -16779,20 +16779,28 @@ function renderArenaTop3(top1, top2, top3, isWeek = false) {
     // BXH 3 Chặng (1, 2, 3): Top 1 / Top 2 / Top 3
     // BXH Toàn tuần (week): Quán quân / Á quân / Quý quân
     let rankTag = isWeek ? "Quán quân" : "Top 1";
-    let medalSize = 38;
+    let medalSize = 40;
     let flameSize = 16;
+    let scoreClass = "gold-score";
     if (rank === 2) {
       rankTag = isWeek ? "Á quân" : "Top 2";
-      medalSize = 34;
+      medalSize = 36;
       flameSize = 14;
+      scoreClass = "silver-score";
     } else if (rank === 3) {
       rankTag = isWeek ? "Quý quân" : "Top 3";
-      medalSize = 30;
+      medalSize = 32;
       flameSize = 14;
+      scoreClass = "bronze-score";
     }
 
     return `
       <div class="arena-champion-card mini-namecard rank-${rank}" data-namecard-user-id="${user.userId}" data-frame="${activeFrame}" style="cursor: pointer;" title="Xem thẻ tên">
+        <!-- Huy chương vinh danh nằm ngoài hẳn phía trên khung, căn giữa, không dính avatar -->
+        <div class="champ-top-medal-anchor">
+          <span class="champ-crown rank-medal rank-${rank}">${getArenaMedalSVG(rank, medalSize)}</span>
+        </div>
+
         <!-- 1. Thân thẻ Canvas: Bo góc 28px * scale, clip ảnh bìa và nền đồng bộ 100% với NamecardStage -->
         <div class="mini-card-canvas">
           <!-- Ảnh bìa mini -->
@@ -16802,25 +16810,27 @@ function renderArenaTop3(top1, top2, top3, isWeek = false) {
 
           <!-- Thân thẻ tên mini -->
           <div class="champ-body mini-namecard-body">
-            <!-- Huy chương (đặt ở phía trên avatar, canh giữa) + Avatar -->
+            <!-- Avatar (đặt ở mép banner & body, không dính huy chương) -->
             <div class="champ-avatar-wrap">
-              <span class="champ-crown rank-medal rank-${rank}">${getArenaMedalSVG(rank, medalSize)}</span>
               <div class="avatar champ-avatar rank-${rank}-avatar ${avatarClass}">${escapeHTML(user.avatar || user.initials || "U")}</div>
             </div>
 
-            <!-- Tên + Icon lửa chuỗi (Không có vai trò) -->
-            <div class="champ-name ${rank === 1 ? 'font-bold' : ''} ${nameClass}" title="${escapeHTML(user.displayName)}">
-              ${getFlameSVG(user.streakTier, flameSize)} <span class="lb-name-text">${escapeHTML(user.displayName)}</span>
-            </div>
+            <!-- Cụm thông tin: Tên, Tag thứ hạng, Điểm số (kết nối gần nhau, cách khung dưới đẹp mắt) -->
+            <div class="champ-info-group">
+              <!-- Tên + Icon lửa chuỗi (Không có vai trò) -->
+              <div class="champ-name ${rank === 1 ? 'font-bold' : ''} ${nameClass}" title="${escapeHTML(user.displayName)}">
+                ${getFlameSVG(user.streakTier, flameSize)} <span class="lb-name-text">${escapeHTML(user.displayName)}</span>
+              </div>
 
-            <!-- Tag: Top 1-2-3 (Chặng) hoặc Quán/Á/Quý quân (Toàn tuần) nằm giữa tên và điểm số -->
-            <div class="champ-rank-tag-wrap">
-              <span class="champ-rank-pill pill-rank-${rank}">${rankTag}</span>
-            </div>
+              <!-- Tag: Top 1-2-3 (Chặng) hoặc Quán/Á/Quý quân (Toàn tuần) nằm giữa tên và điểm số -->
+              <div class="champ-rank-tag-wrap">
+                <span class="champ-rank-pill pill-rank-${rank}">${rankTag}</span>
+              </div>
 
-            <!-- Số điểm -->
-            <div class="champ-score ${rank === 1 ? 'gold-score' : ''}">
-              <svg class="ui-icon" width="13" height="13" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.5" style="color: #f59e0b; margin-right: 2px;"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>${user.score}
+              <!-- Số điểm -->
+              <div class="champ-score ${scoreClass}">
+                <svg class="ui-icon champ-score-star" width="13" height="13" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>${user.score}
+              </div>
             </div>
           </div>
         </div>
