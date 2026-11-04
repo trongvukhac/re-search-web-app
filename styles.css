@@ -15274,7 +15274,7 @@ body.dark-theme .doc-viewer-save-btn.is-saved {
   transform: scale(1.05);
 }
 
-/* Cụm thông tin: Tên, Tag thứ hạng, Điểm số (kết nối gần nhau, cách khung dưới đẹp mắt) */
+/* Cụm thông tin: Tên, Tag thứ hạng, Điểm số (khoảng hở vừa phải, không dính sát và cách khung dưới đẹp mắt) */
 .champ-info-group {
   display: flex;
   flex-direction: column;
@@ -15282,10 +15282,15 @@ body.dark-theme .doc-viewer-save-btn.is-saved {
   justify-content: center;
   width: 100%;
   flex: 1;
-  gap: 3.5px;
-  padding-bottom: calc(28px * var(--mini-scale));
+  gap: 7px;
+  padding-top: 4px;
+  padding-bottom: calc(32px * var(--mini-scale));
   min-width: 0;
   box-sizing: border-box;
+}
+
+.arena-champion-card.mini-namecard.rank-1 .champ-info-group {
+  gap: 8px;
 }
 
 /* Tên & Icon lửa chuỗi */
@@ -17148,7 +17153,7 @@ body.dark-theme .comp-tab-btn.active {
     --ring-width: 1.2px;
   }
 
-  /* Cụm thông tin trên Mobile: Thu hẹp khoảng cách gần nhau, cách khung dưới đẹp mắt không dính viền */
+  /* Cụm thông tin trên Mobile: Khoảng hở vừa phải, không dính sát và cách khung dưới đẹp mắt */
   .champ-info-group {
     display: flex !important;
     flex-direction: column !important;
@@ -17156,10 +17161,16 @@ body.dark-theme .comp-tab-btn.active {
     justify-content: center !important;
     width: 100% !important;
     flex: 1 !important;
-    gap: 2px !important;
-    padding-bottom: 8px !important;
+    gap: 4px !important;
+    padding-top: 2px !important;
+    padding-bottom: 7px !important;
     box-sizing: border-box !important;
     min-width: 0 !important;
+  }
+
+  .arena-champion-card.mini-namecard.rank-1 .champ-info-group {
+    gap: 4.5px !important;
+    padding-bottom: 9px !important;
   }
 
   .champ-name {
