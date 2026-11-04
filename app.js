@@ -16797,7 +16797,6 @@ function renderArenaTop3(top1, top2, top3) {
         <!-- Ảnh bìa mini -->
         <div class="champ-cover-banner mini-cover" style="${coverStyle}">
           <div class="champ-cover-gradient"></div>
-          ${rank === 1 ? '<span class="champ-sparkle">✨</span>' : ''}
         </div>
 
         <!-- Thân thẻ tên mini -->
@@ -16810,7 +16809,7 @@ function renderArenaTop3(top1, top2, top3) {
 
           <!-- Tên + Icon lửa chuỗi (Không có vai trò) -->
           <div class="champ-name ${rank === 1 ? 'font-bold' : ''} ${nameClass}" title="${escapeHTML(user.displayName)}">
-            ${getFlameSVG(user.streakTier, flameSize)} <span>${escapeHTML(user.displayName)}</span>
+            ${getFlameSVG(user.streakTier, flameSize)} <span class="lb-name-text">${escapeHTML(user.displayName)}</span>
           </div>
 
           <!-- Tag: Quán quân / Á quân / Quý quân (không đi kèm huy chương) nằm giữa tên và điểm số -->
