@@ -14902,26 +14902,216 @@ body.dark-theme .doc-viewer-save-btn.is-saved {
   pointer-events: none;
 }
 
-/* Banner cover art at top */
+/* --------------------------------------------------------------------------
+   MINI NAMECARD (THẺ TÊN MINI TOP 3 ARENA)
+   -------------------------------------------------------------------------- */
+.arena-champion-card.mini-namecard {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  background: #ffffff;
+  border-radius: 18px;
+  overflow: visible !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
+  transition: transform 0.22s ease, box-shadow 0.22s ease;
+}
+
+.arena-champion-card.mini-namecard:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.09);
+}
+
+.arena-champion-card.mini-namecard.rank-1 {
+  width: 235px;
+  flex: 0 1 235px;
+  border: 2px solid #f59e0b;
+  box-shadow: 0 8px 28px rgba(245, 158, 11, 0.22);
+  z-index: 2;
+}
+
+.arena-champion-card.mini-namecard.rank-1:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 14px 34px rgba(245, 158, 11, 0.3);
+}
+
+.arena-champion-card.mini-namecard.rank-2 {
+  width: 205px;
+  flex: 0 1 205px;
+  border: 1.5px solid #cbd5e1;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
+}
+
+.arena-champion-card.mini-namecard.rank-3 {
+  width: 205px;
+  flex: 0 1 205px;
+  border: 1.5px solid #d97706;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
+}
+
+/* Khung thẻ tên mini (Mini Namecard Frame Layer) */
+.mini-card-frame-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 15;
+  pointer-events: none;
+  background: center / 100% 100% no-repeat;
+  border-radius: 18px;
+  opacity: 0;
+  transition: opacity 180ms ease;
+}
+
+.mini-card-frame-layer[data-frame] {
+  opacity: 1;
+}
+
+.mini-card-frame-layer[data-frame="default"],
+.mini-card-frame-layer[data-frame="none"],
+.mini-card-frame-layer[data-frame=""] {
+  opacity: 0;
+  display: none;
+}
+
+/* 5 Khung nghệ thuật cho thẻ mini */
+.mini-card-frame-layer[data-frame="leaves"] {
+  background-image: url("frames/v2/leaves.png?v=5");
+  inset: -18px -15px -24px -15px;
+}
+
+.mini-card-frame-layer[data-frame="sakura"] {
+  background-image: url("frames/v2/sakura.png?v=5");
+  inset: -20px -16px -25px -16px;
+}
+
+.mini-card-frame-layer[data-frame="ice"] {
+  background-image: url("frames/v2/ice.png?v=5");
+  inset: -22px -19px -25px -22px;
+}
+
+.mini-card-frame-layer[data-frame="stars"] {
+  background-image: url("frames/v2/stars.png?v=5");
+  inset: -22px -18px -25px -22px;
+}
+
+.mini-card-frame-layer[data-frame="gold"] {
+  background-image: url("frames/v2/gold.png?v=5");
+  inset: -24px -12px -27px -17px;
+}
+
+.mini-card-frame-layer[data-frame="ton_vinh_phai_dep"] {
+  background-image: url("frames/v2/ton_vinh_phai_dep.png?v=2");
+  inset: -18px -12px -18px -15px;
+}
+
+.mini-card-frame-layer[data-frame="bua_tiec_ma_mi"] {
+  background-image: url("frames/v2/bua_tiec_ma_mi.png?v=2");
+  inset: -20px -15px -21px -16px;
+}
+
+/* Khung cơ bản miễn phí (độ dày 4.5px cho thẻ mini) */
+.mini-card-frame-layer[data-frame^="basic_"] {
+  inset: 0px;
+  border-radius: 18px;
+  background: none;
+  pointer-events: none;
+  z-index: 15;
+}
+
+.mini-card-frame-layer[data-frame="basic_ocean"] {
+  border: 4.5px solid transparent;
+  background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 50%, #93c5fd 100%) border-box;
+  -webkit-mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
+  mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  box-shadow: 0 0 10px rgba(59, 130, 246, 0.35);
+}
+
+.mini-card-frame-layer[data-frame="basic_emerald"] {
+  border: 4.5px solid transparent;
+  background: linear-gradient(135deg, #064e3b 0%, #059669 50%, #6ee7b7 100%) border-box;
+  -webkit-mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
+  mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  box-shadow: 0 0 10px rgba(16, 185, 129, 0.35);
+}
+
+.mini-card-frame-layer[data-frame="basic_sunset"] {
+  border: 4.5px solid transparent;
+  background: linear-gradient(135deg, #4c0519 0%, #db2777 50%, #fcd34d 100%) border-box;
+  -webkit-mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
+  mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  box-shadow: 0 0 10px rgba(219, 39, 119, 0.35);
+}
+
+.mini-card-frame-layer[data-frame="basic_aurora"] {
+  border: 4.5px solid transparent;
+  background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #4338ca 100%) border-box;
+  -webkit-mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
+  mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  box-shadow: 0 0 10px rgba(99, 102, 241, 0.35);
+}
+
+.mini-card-frame-layer[data-frame="basic_royal"] {
+  border: 4.5px solid transparent;
+  background: linear-gradient(135deg, #3b0764 0%, #7c3aed 50%, #c084fc 100%) border-box;
+  -webkit-mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
+  mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  box-shadow: 0 0 10px rgba(168, 85, 247, 0.35);
+}
+
+.mini-card-frame-layer[data-frame="basic_midnight"] {
+  border: 4.5px solid transparent;
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%) border-box;
+  -webkit-mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
+  mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+}
+
+.mini-card-frame-layer[data-frame="basic_slate"] {
+  border: 4.5px solid #475569;
+  background: none;
+}
+
+.mini-card-frame-layer[data-frame="basic_deep_green"] {
+  border: 4.5px solid #064e3b;
+  background: none;
+}
+
+.mini-card-frame-layer[data-frame="basic_pure_black"] {
+  border: 4.5px solid #18181b;
+  background: none;
+}
+
+/* Banner ảnh bìa mini (Mini Cover Art Banner) */
 .champ-cover-banner {
   width: 100%;
   position: relative;
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
+  border-top-left-radius: 16px;
+  border-top-right-radius: 16px;
   overflow: hidden;
 }
 
 .arena-champion-card.rank-1 .champ-cover-banner {
-  height: 92px;
+  height: 94px;
 }
 
 .arena-champion-card.rank-2 .champ-cover-banner {
-  height: 78px;
+  height: 80px;
 }
 
 .arena-champion-card.rank-3 .champ-cover-banner {
-  height: 72px;
+  height: 74px;
 }
 
 .champ-cover-gradient {
@@ -14929,45 +15119,11 @@ body.dark-theme .doc-viewer-save-btn.is-saved {
   inset: 0;
   background: linear-gradient(
     to bottom,
-    rgba(0, 0, 0, 0.25) 0%,
-    rgba(0, 0, 0, 0.04) 40%,
-    rgba(0, 0, 0, 0.68) 100%
+    rgba(0, 0, 0, 0.15) 0%,
+    rgba(0, 0, 0, 0.02) 40%,
+    rgba(0, 0, 0, 0.65) 100%
   );
   pointer-events: none;
-}
-
-.champ-rank-tag {
-  position: absolute;
-  top: 8px;
-  left: 8px;
-  padding: 3px 9px;
-  border-radius: 9999px;
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: 0.4px;
-  text-transform: uppercase;
-  z-index: 2;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
-}
-
-.champ-rank-tag.gold {
-  background: linear-gradient(135deg, #f59e0b, #d97706);
-  color: #ffffff;
-  border: 1px solid rgba(255, 255, 255, 0.35);
-}
-
-.champ-rank-tag.silver {
-  background: rgba(15, 23, 42, 0.75);
-  color: #f1f5f9;
-  border: 1px solid rgba(255, 255, 255, 0.25);
-  backdrop-filter: blur(4px);
-}
-
-.champ-rank-tag.bronze {
-  background: rgba(69, 26, 3, 0.85);
-  color: #fed7aa;
-  border: 1px solid rgba(249, 115, 22, 0.35);
-  backdrop-filter: blur(4px);
 }
 
 .champ-sparkle {
@@ -14985,24 +15141,40 @@ body.dark-theme .doc-viewer-save-btn.is-saved {
   50% { opacity: 1; transform: scale(1.15); }
 }
 
-/* Card Body */
-.champ-body {
-  padding: 0 12px 14px 12px;
+/* Thân thẻ tên mini */
+.champ-body.mini-namecard-body {
+  padding: 0 10px 14px 10px;
   display: flex;
   flex-direction: column;
   align-items: center;
   text-align: center;
   position: relative;
+  z-index: 5;
 }
 
+/* Avatar Wrapper & Huy chương đặt ở phía trên avatar, canh giữa */
 .champ-avatar-wrap {
-  margin-top: -30px;
+  margin-top: -32px;
   position: relative;
   margin-bottom: 8px;
   display: inline-flex;
   justify-content: center;
   align-items: center;
-  z-index: 3;
+  z-index: 4;
+}
+
+.champ-crown.rank-medal {
+  position: absolute;
+  top: -24px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
+  pointer-events: none;
+  animation: medalBob 2.6s ease-in-out infinite alternate;
+}
+
+.champ-crown.rank-medal.rank-1 {
+  top: -26px;
 }
 
 .champ-avatar {
@@ -15017,24 +15189,24 @@ body.dark-theme .doc-viewer-save-btn.is-saved {
 }
 
 .champ-avatar.rank-1-avatar {
-  width: 62px !important;
-  height: 62px !important;
-  font-size: 28px !important;
+  width: 64px !important;
+  height: 64px !important;
+  font-size: 29px !important;
   border: 3px solid #facc15 !important;
   box-shadow: 0 0 20px rgba(250, 204, 21, 0.45) !important;
 }
 
 .champ-avatar.rank-2-avatar {
-  width: 52px !important;
-  height: 52px !important;
-  font-size: 22px !important;
+  width: 54px !important;
+  height: 54px !important;
+  font-size: 23px !important;
   border: 2.5px solid #e2e8f0 !important;
 }
 
 .champ-avatar.rank-3-avatar {
-  width: 48px !important;
-  height: 48px !important;
-  font-size: 20px !important;
+  width: 50px !important;
+  height: 50px !important;
+  font-size: 21px !important;
   border: 2.5px solid #d97706 !important;
 }
 
@@ -15042,18 +15214,9 @@ body.dark-theme .doc-viewer-save-btn.is-saved {
   transform: scale(1.05);
 }
 
-.champ-crown {
-  position: absolute;
-  top: -22px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 10;
-  pointer-events: none;
-  animation: medalBob 2.6s ease-in-out infinite alternate;
-}
-
+/* Tên & Icon lửa chuỗi */
 .champ-name {
-  font-size: 13px;
+  font-size: 13.5px;
   font-weight: 700;
   color: var(--ink);
   text-align: center;
@@ -15062,18 +15225,56 @@ body.dark-theme .doc-viewer-save-btn.is-saved {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  margin-bottom: 4px;
+  margin-bottom: 2px;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 3px;
+  gap: 4px;
 }
 
 .champ-name.font-bold {
-  font-size: 14.5px;
+  font-size: 15px;
   font-weight: 800;
 }
 
+/* Tag Quán quân, Á quân, Quý quân nằm giữa tên và điểm số */
+.champ-rank-tag-wrap {
+  margin: 3px 0 6px 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.champ-rank-pill {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.3px;
+  padding: 2px 10px;
+  border-radius: 9999px;
+  display: inline-block;
+  line-height: 1.4;
+}
+
+.champ-rank-pill.pill-rank-1 {
+  background: #fef3c7;
+  color: #92400e;
+  border: 1px solid #fde68a;
+  box-shadow: 0 1px 4px rgba(245, 158, 11, 0.16);
+}
+
+.champ-rank-pill.pill-rank-2 {
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid #e2e8f0;
+}
+
+.champ-rank-pill.pill-rank-3 {
+  background: #fff7ed;
+  color: #9a3412;
+  border: 1px solid #ffedd5;
+}
+
+/* Số điểm */
 .champ-score {
   font-size: 12px;
   font-weight: 800;
@@ -15084,8 +15285,8 @@ body.dark-theme .doc-viewer-save-btn.is-saved {
   box-shadow: 0 2px 6px rgba(180, 83, 9, 0.1);
   display: inline-flex;
   align-items: center;
-  gap: 2px;
-  margin-top: 3px;
+  gap: 3px;
+  margin-top: 1px;
 }
 
 .champ-score.gold-score {
@@ -16703,12 +16904,14 @@ body.dark-theme .comp-tab-btn.active {
     height: 48px !important;
   }
 
-  .champ-rank-tag {
-    font-size: 8px !important;
-    padding: 2px 5px !important;
-    top: 5px !important;
-    left: 5px !important;
-  }
+  .mini-card-frame-layer[data-frame="leaves"] { inset: -10px -8px -14px -8px !important; }
+  .mini-card-frame-layer[data-frame="sakura"] { inset: -11px -9px -15px -9px !important; }
+  .mini-card-frame-layer[data-frame="ice"] { inset: -12px -10px -15px -11px !important; }
+  .mini-card-frame-layer[data-frame="stars"] { inset: -12px -10px -15px -11px !important; }
+  .mini-card-frame-layer[data-frame="gold"] { inset: -13px -7px -16px -9px !important; }
+  .mini-card-frame-layer[data-frame="ton_vinh_phai_dep"] { inset: -10px -7px -10px -8px !important; }
+  .mini-card-frame-layer[data-frame="bua_tiec_ma_mi"] { inset: -11px -8px -12px -9px !important; }
+  .mini-card-frame-layer[data-frame^="basic_"] { border-width: 3px !important; }
 
   .champ-sparkle {
     display: none !important;
@@ -16716,7 +16919,7 @@ body.dark-theme .comp-tab-btn.active {
 
   .champ-avatar-wrap {
     margin-top: -20px !important;
-    margin-bottom: 4px !important;
+    margin-bottom: 3px !important;
   }
 
   .champ-avatar.rank-1-avatar {
@@ -16737,17 +16940,32 @@ body.dark-theme .comp-tab-btn.active {
     font-size: 15px !important;
   }
 
-  .champ-crown {
-    top: -16px !important;
-    transform: translateX(-50%) scale(0.8) !important;
+  .champ-crown.rank-medal {
+    top: -18px !important;
+    transform: translateX(-50%) scale(0.78) !important;
+  }
+
+  .champ-crown.rank-medal.rank-1 {
+    top: -20px !important;
+    transform: translateX(-50%) scale(0.85) !important;
   }
 
   .champ-name {
     font-size: 11px !important;
+    margin-bottom: 1px !important;
   }
 
   .champ-name.font-bold {
     font-size: 11.5px !important;
+  }
+
+  .champ-rank-tag-wrap {
+    margin: 1px 0 3px 0 !important;
+  }
+
+  .champ-rank-pill {
+    font-size: 9px !important;
+    padding: 1px 6px !important;
   }
 
   .champ-score {
@@ -16755,8 +16973,8 @@ body.dark-theme .comp-tab-btn.active {
     padding: 2px 7px !important;
   }
 
-  .champ-body {
-    padding: 0 4px 10px 4px !important;
+  .champ-body.mini-namecard-body {
+    padding: 0 4px 8px 4px !important;
   }
 
   /* Concept 2 Mobile */
@@ -22756,6 +22974,24 @@ body.dark-theme .champ-score.gold-score {
   background: linear-gradient(135deg, #f59e0b, #d97706) !important;
   color: #ffffff !important;
   border: none !important;
+}
+
+body.dark-theme .champ-rank-pill.pill-rank-1 {
+  background: #2a2010 !important;
+  color: #fcd34d !important;
+  border-color: rgba(245, 158, 11, 0.45) !important;
+}
+
+body.dark-theme .champ-rank-pill.pill-rank-2 {
+  background: #1e293b !important;
+  color: #cbd5e1 !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+}
+
+body.dark-theme .champ-rank-pill.pill-rank-3 {
+  background: #2a1b12 !important;
+  color: #fdba74 !important;
+  border-color: rgba(249, 115, 22, 0.4) !important;
 }
 
 body.dark-theme .arena-glass-card {
