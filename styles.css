@@ -14576,12 +14576,12 @@ body.dark-theme .doc-viewer-save-btn.is-saved {
 /* 3D Podium Container (Matching Demo Box 6) */
 .comp-podium-wrap {
   display: flex;
-  justify-content: center;
-  align-items: flex-end;
+  flex-direction: column;
   gap: 16px;
-  padding: 24px 10px 10px 10px;
+  padding: 16px 10px 22px 10px;
   margin-bottom: 26px;
   border-bottom: 1px solid var(--line);
+  position: relative;
 }
 
 .podium-col {
@@ -14781,6 +14781,671 @@ body.dark-theme .doc-viewer-save-btn.is-saved {
 .podium-stand.stand-3 {
   height: 60px;
   background: linear-gradient(180deg, #d97706 0%, #b45309 60%, #78350f 100%);
+}
+
+/* ==========================================================================
+   ARENA TOP 3 CONCEPTS & SWITCHER
+   ========================================================================== */
+
+/* Switcher Bar */
+.arena-concept-switcher-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 6px 12px;
+  border-radius: 9999px;
+  background: var(--sage-2);
+  border: 1px solid var(--line);
+  margin-bottom: 4px;
+}
+
+.arena-concept-label {
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  display: flex;
+  align-items: center;
+  white-space: nowrap;
+}
+
+.arena-concept-pills {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  overflow-x: auto;
+}
+
+.concept-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 9999px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--muted);
+  background: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  font-family: inherit;
+}
+
+.concept-chip:hover {
+  color: var(--ink);
+  border-color: rgba(0, 0, 0, 0.18);
+  transform: translateY(-1px);
+}
+
+.concept-chip.active {
+  background: linear-gradient(135deg, #fffbeb, #fef3c7);
+  color: #92400e;
+  border-color: #f59e0b;
+  font-weight: 800;
+  box-shadow: 0 2px 6px rgba(245, 158, 11, 0.2);
+}
+
+/* --------------------------------------------------------------------------
+   CONCEPT 1: PRESTIGE CHAMPION CARDS (THẺ QUÁN QUÂN)
+   -------------------------------------------------------------------------- */
+.arena-concept1-wrap {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 16px;
+  width: 100%;
+  padding-top: 6px;
+}
+
+.arena-champion-card {
+  display: flex;
+  flex-direction: column;
+  background: #ffffff;
+  border-radius: 18px;
+  border: 1px solid var(--line);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+  overflow: hidden;
+  transition: transform 0.22s ease, box-shadow 0.22s ease;
+  position: relative;
+}
+
+.arena-champion-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.08);
+}
+
+.arena-champion-card.rank-2,
+.arena-champion-card.rank-3 {
+  width: 205px;
+  flex: 0 1 205px;
+}
+
+.arena-champion-card.rank-1 {
+  width: 235px;
+  flex: 0 1 235px;
+  border: 2px solid #f59e0b;
+  box-shadow: 0 8px 28px rgba(245, 158, 11, 0.2);
+  z-index: 2;
+}
+
+.arena-champion-card.rank-1:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 14px 34px rgba(245, 158, 11, 0.28);
+}
+
+.arena-champion-card.empty {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+/* Banner cover art at top */
+.champ-cover-banner {
+  width: 100%;
+  position: relative;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  overflow: hidden;
+}
+
+.arena-champion-card.rank-1 .champ-cover-banner {
+  height: 92px;
+}
+
+.arena-champion-card.rank-2 .champ-cover-banner {
+  height: 78px;
+}
+
+.arena-champion-card.rank-3 .champ-cover-banner {
+  height: 72px;
+}
+
+.champ-cover-gradient {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0.25) 0%,
+    rgba(0, 0, 0, 0.04) 40%,
+    rgba(0, 0, 0, 0.68) 100%
+  );
+  pointer-events: none;
+}
+
+.champ-rank-tag {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  padding: 3px 9px;
+  border-radius: 9999px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  z-index: 2;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+.champ-rank-tag.gold {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+}
+
+.champ-rank-tag.silver {
+  background: rgba(15, 23, 42, 0.75);
+  color: #f1f5f9;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  backdrop-filter: blur(4px);
+}
+
+.champ-rank-tag.bronze {
+  background: rgba(69, 26, 3, 0.85);
+  color: #fed7aa;
+  border: 1px solid rgba(249, 115, 22, 0.35);
+  backdrop-filter: blur(4px);
+}
+
+.champ-sparkle {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  font-size: 14px;
+  color: #fef08a;
+  animation: sparklePulse 2s ease-in-out infinite;
+  z-index: 2;
+}
+
+@keyframes sparklePulse {
+  0%, 100% { opacity: 0.5; transform: scale(0.9); }
+  50% { opacity: 1; transform: scale(1.15); }
+}
+
+/* Card Body */
+.champ-body {
+  padding: 0 12px 14px 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  position: relative;
+}
+
+.champ-avatar-wrap {
+  margin-top: -30px;
+  position: relative;
+  margin-bottom: 8px;
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 3;
+}
+
+.champ-avatar {
+  border-radius: 50% !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  background: #ffffff !important;
+  overflow: visible !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  transition: transform 0.2s ease;
+}
+
+.champ-avatar.rank-1-avatar {
+  width: 62px !important;
+  height: 62px !important;
+  font-size: 28px !important;
+  border: 3px solid #facc15 !important;
+  box-shadow: 0 0 20px rgba(250, 204, 21, 0.45) !important;
+}
+
+.champ-avatar.rank-2-avatar {
+  width: 52px !important;
+  height: 52px !important;
+  font-size: 22px !important;
+  border: 2.5px solid #e2e8f0 !important;
+}
+
+.champ-avatar.rank-3-avatar {
+  width: 48px !important;
+  height: 48px !important;
+  font-size: 20px !important;
+  border: 2.5px solid #d97706 !important;
+}
+
+.arena-champion-card:hover .champ-avatar {
+  transform: scale(1.05);
+}
+
+.champ-crown {
+  position: absolute;
+  top: -22px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
+  pointer-events: none;
+  animation: medalBob 2.6s ease-in-out infinite alternate;
+}
+
+.champ-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink);
+  text-align: center;
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+}
+
+.champ-name.font-bold {
+  font-size: 14.5px;
+  font-weight: 800;
+}
+
+.champ-score {
+  font-size: 12px;
+  font-weight: 800;
+  color: #b45309;
+  background: #fef3c7;
+  padding: 3px 12px;
+  border-radius: 9999px;
+  box-shadow: 0 2px 6px rgba(180, 83, 9, 0.1);
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  margin-top: 3px;
+}
+
+.champ-score.gold-score {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: #ffffff;
+  box-shadow: 0 3px 10px rgba(245, 158, 11, 0.35);
+}
+
+/* --------------------------------------------------------------------------
+   CONCEPT 2: FLOATING GLASS STAGE (BỤC KÍNH BAY)
+   -------------------------------------------------------------------------- */
+.arena-concept2-wrap {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 14px;
+  width: 100%;
+  padding-top: 10px;
+}
+
+.arena-glass-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+}
+
+.arena-glass-col.rank-2,
+.arena-glass-col.rank-3 {
+  width: 180px;
+  flex: 0 1 180px;
+}
+
+.arena-glass-col.rank-1 {
+  width: 205px;
+  flex: 0 1 205px;
+  z-index: 2;
+}
+
+.arena-glass-col.empty {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.arena-glass-card {
+  width: 100%;
+  border-radius: 16px;
+  padding: 12px 10px;
+  position: relative;
+  overflow: hidden;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+  margin-bottom: 8px;
+  transition: transform 0.2s ease;
+}
+
+.arena-glass-col:hover .arena-glass-card {
+  transform: translateY(-3px);
+}
+
+.arena-glass-card.rank-1-glass {
+  border: 2px solid #f59e0b;
+  box-shadow: 0 8px 24px rgba(245, 158, 11, 0.22);
+}
+
+.glass-backdrop-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.65);
+  backdrop-filter: blur(2.5px);
+  pointer-events: none;
+}
+
+.glass-card-content {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  color: #ffffff;
+}
+
+.glass-crown {
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.glass-avatar {
+  width: 48px !important;
+  height: 48px !important;
+  border-radius: 50% !important;
+  border: 2px solid rgba(255, 255, 255, 0.85) !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  margin-bottom: 5px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+}
+
+.arena-glass-col.rank-1 .glass-avatar {
+  width: 56px !important;
+  height: 56px !important;
+  border: 2.5px solid #facc15 !important;
+  box-shadow: 0 0 16px rgba(250, 204, 21, 0.45);
+}
+
+.glass-user-name {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #ffffff;
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+}
+
+.glass-user-name.font-bold {
+  font-size: 13.5px;
+  font-weight: 800;
+  color: #fef08a;
+}
+
+.glass-score-badge {
+  font-size: 11px;
+  font-weight: 800;
+  color: #fde68a;
+  background: rgba(0, 0, 0, 0.4);
+  padding: 2px 8px;
+  border-radius: 9999px;
+  margin-top: 4px;
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.glass-score-badge.gold-score {
+  background: rgba(245, 158, 11, 0.35);
+  border-color: #f59e0b;
+  color: #ffffff;
+}
+
+.arena-metallic-pedestal {
+  width: 100%;
+  border-radius: 12px 12px 0 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  font-weight: 900;
+  color: #ffffff;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  position: relative;
+  box-shadow: inset 0 2px 4px rgba(255, 255, 255, 0.35), 0 4px 12px rgba(0, 0, 0, 0.12);
+}
+
+.arena-metallic-pedestal::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.pedestal-1 {
+  height: 68px;
+  background: linear-gradient(180deg, #f59e0b 0%, #d97706 60%, #b45309 100%);
+}
+
+.pedestal-2 {
+  height: 48px;
+  background: linear-gradient(180deg, #94a3b8 0%, #64748b 60%, #475569 100%);
+}
+
+.pedestal-3 {
+  height: 34px;
+  background: linear-gradient(180deg, #d97706 0%, #b45309 60%, #78350f 100%);
+}
+
+/* --------------------------------------------------------------------------
+   CONCEPT 3: ROYAL GRAND CAPSULES (CAPSULE HOÀNG GIA)
+   -------------------------------------------------------------------------- */
+.arena-concept3-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+  max-width: 620px;
+  margin: 0 auto;
+}
+
+.royal-grand-capsule {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px 0 8px;
+  border-radius: 9999px;
+  background: #ffffff;
+  border: 1.5px solid var(--line);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  overflow: hidden;
+  transition: all 0.2s ease;
+  height: 52px;
+}
+
+.royal-grand-capsule:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+}
+
+.royal-grand-capsule.rank-1 {
+  height: 60px;
+  border: 2px solid #f59e0b;
+  box-shadow: 0 4px 18px rgba(245, 158, 11, 0.22);
+}
+
+.royal-cover-art {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 72%;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  pointer-events: none;
+}
+
+.royal-cover-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    115deg,
+    #ffffff 0%,
+    #ffffff 28%,
+    rgba(255, 255, 255, 0.94) 44%,
+    rgba(255, 255, 255, 0.58) 64%,
+    rgba(255, 255, 255, 0.15) 82%,
+    rgba(255, 255, 255, 0) 98%
+  );
+  pointer-events: none;
+}
+
+.royal-left-content {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.royal-avatar-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.royal-avatar {
+  width: 38px !important;
+  height: 38px !important;
+  border-radius: 50% !important;
+  border: 2px solid #ffffff !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
+.royal-grand-capsule.rank-1 .royal-avatar {
+  width: 44px !important;
+  height: 44px !important;
+  border: 2px solid #facc15 !important;
+  box-shadow: 0 0 12px rgba(250, 204, 21, 0.4);
+}
+
+.royal-medal-badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  z-index: 5;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.25));
+}
+
+.royal-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.royal-name-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.royal-name {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--ink);
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.royal-name.font-bold {
+  font-size: 14.5px;
+  font-weight: 800;
+}
+
+.royal-rank-pill {
+  font-size: 10px;
+  font-weight: 800;
+  padding: 1.5px 7px;
+  border-radius: 9999px;
+  letter-spacing: 0.3px;
+}
+
+.royal-rank-pill.gold {
+  background: #fef3c7;
+  color: #92400e;
+  border: 1px solid #fde68a;
+}
+
+.royal-rank-pill.silver {
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid #e2e8f0;
+}
+
+.royal-rank-pill.bronze {
+  background: #fff7ed;
+  color: #9a3412;
+  border: 1px solid #ffedd5;
+}
+
+.royal-score-badge {
+  position: relative;
+  z-index: 2;
+  font-size: 12px;
+  font-weight: 800;
+  padding: 4px 12px;
+  border-radius: 9999px;
+  background: var(--sage-2);
+  color: var(--ink);
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--line);
+}
+
+.royal-score-badge.gold-score {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: #ffffff;
+  border: none;
+  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3);
 }
 
 /* Leaderboard List (Matching Demo Box 6) */
@@ -15981,12 +16646,197 @@ body.dark-theme .comp-tab-btn.active {
     line-height: 1.4 !important;
   }
 
-  /* Podium on mobile */
+  /* Podium & Top 3 on mobile */
   .comp-podium-wrap {
-    gap: 6px;
-    padding: 16px 0 6px 0;
-    width: 100%;
-    justify-content: space-around;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 12px !important;
+    padding: 12px 2px 16px 2px !important;
+    width: 100% !important;
+  }
+
+  .arena-concept-switcher-bar {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    border-radius: 14px !important;
+    padding: 8px 10px !important;
+    gap: 6px !important;
+  }
+
+  .arena-concept-pills {
+    width: 100% !important;
+    overflow-x: auto !important;
+    padding-bottom: 2px !important;
+  }
+
+  .concept-chip {
+    font-size: 10.5px !important;
+    padding: 3px 8px !important;
+  }
+
+  /* Concept 1 Mobile */
+  .arena-concept1-wrap {
+    gap: 6px !important;
+  }
+
+  .arena-champion-card.rank-1 {
+    width: 36% !important;
+    flex: 0 1 36% !important;
+  }
+
+  .arena-champion-card.rank-2,
+  .arena-champion-card.rank-3 {
+    width: 31% !important;
+    flex: 0 1 31% !important;
+  }
+
+  .arena-champion-card.rank-1 .champ-cover-banner {
+    height: 60px !important;
+  }
+
+  .arena-champion-card.rank-2 .champ-cover-banner {
+    height: 52px !important;
+  }
+
+  .arena-champion-card.rank-3 .champ-cover-banner {
+    height: 48px !important;
+  }
+
+  .champ-rank-tag {
+    font-size: 8px !important;
+    padding: 2px 5px !important;
+    top: 5px !important;
+    left: 5px !important;
+  }
+
+  .champ-sparkle {
+    display: none !important;
+  }
+
+  .champ-avatar-wrap {
+    margin-top: -20px !important;
+    margin-bottom: 4px !important;
+  }
+
+  .champ-avatar.rank-1-avatar {
+    width: 44px !important;
+    height: 44px !important;
+    font-size: 19px !important;
+  }
+
+  .champ-avatar.rank-2-avatar {
+    width: 38px !important;
+    height: 38px !important;
+    font-size: 16px !important;
+  }
+
+  .champ-avatar.rank-3-avatar {
+    width: 36px !important;
+    height: 36px !important;
+    font-size: 15px !important;
+  }
+
+  .champ-crown {
+    top: -16px !important;
+    transform: translateX(-50%) scale(0.8) !important;
+  }
+
+  .champ-name {
+    font-size: 11px !important;
+  }
+
+  .champ-name.font-bold {
+    font-size: 11.5px !important;
+  }
+
+  .champ-score {
+    font-size: 10px !important;
+    padding: 2px 7px !important;
+  }
+
+  .champ-body {
+    padding: 0 4px 10px 4px !important;
+  }
+
+  /* Concept 2 Mobile */
+  .arena-concept2-wrap {
+    gap: 6px !important;
+  }
+
+  .arena-glass-col.rank-1 {
+    width: 36% !important;
+    flex: 0 1 36% !important;
+  }
+
+  .arena-glass-col.rank-2,
+  .arena-glass-col.rank-3 {
+    width: 31% !important;
+    flex: 0 1 31% !important;
+  }
+
+  .arena-glass-card {
+    padding: 8px 4px !important;
+    border-radius: 12px !important;
+    margin-bottom: 5px !important;
+  }
+
+  .glass-avatar {
+    width: 36px !important;
+    height: 36px !important;
+    font-size: 15px !important;
+  }
+
+  .arena-glass-col.rank-1 .glass-avatar {
+    width: 42px !important;
+    height: 42px !important;
+    font-size: 18px !important;
+  }
+
+  .glass-user-name {
+    font-size: 10.5px !important;
+  }
+
+  .glass-score-badge {
+    font-size: 9.5px !important;
+    padding: 1.5px 5px !important;
+  }
+
+  .pedestal-1 { height: 48px !important; }
+  .pedestal-2 { height: 34px !important; }
+  .pedestal-3 { height: 24px !important; }
+
+  /* Concept 3 Mobile */
+  .royal-grand-capsule {
+    height: 46px !important;
+    padding: 0 10px 0 6px !important;
+  }
+
+  .royal-grand-capsule.rank-1 {
+    height: 52px !important;
+  }
+
+  .royal-avatar {
+    width: 32px !important;
+    height: 32px !important;
+  }
+
+  .royal-grand-capsule.rank-1 .royal-avatar {
+    width: 38px !important;
+    height: 38px !important;
+  }
+
+  .royal-name {
+    font-size: 12px !important;
+  }
+
+  .royal-name.font-bold {
+    font-size: 12.5px !important;
+  }
+
+  .royal-score-badge {
+    font-size: 10.5px !important;
+    padding: 2.5px 8px !important;
   }
 
   .podium-col {
@@ -21852,6 +22702,113 @@ body.dark-theme .comp-lb-row.top-11-plus-row .lb-cover-overlay {
     rgba(39, 30, 12, 0.2) 76%,
     rgba(39, 30, 12, 0) 95%
   ) !important;
+}
+
+/* 14b. Dark Theme Overrides for Arena Top 3 Concepts */
+body.dark-theme .arena-concept-switcher-bar {
+  background: #17222c !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+body.dark-theme .concept-chip {
+  background: #202c39 !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+  color: #cbd5e1 !important;
+}
+
+body.dark-theme .concept-chip:hover {
+  background: #273646 !important;
+  color: #ffffff !important;
+}
+
+body.dark-theme .concept-chip.active {
+  background: rgba(245, 158, 11, 0.22) !important;
+  border-color: #f59e0b !important;
+  color: #fbbf24 !important;
+}
+
+body.dark-theme .arena-champion-card {
+  background: #1e2a38 !important;
+  border-color: rgba(255, 255, 255, 0.09) !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3) !important;
+}
+
+body.dark-theme .arena-champion-card.rank-1 {
+  border-color: #f59e0b !important;
+  box-shadow: 0 8px 28px rgba(245, 158, 11, 0.25) !important;
+}
+
+body.dark-theme .champ-avatar {
+  background: #1e2a38 !important;
+}
+
+body.dark-theme .champ-name {
+  color: #f1f5f9 !important;
+}
+
+body.dark-theme .champ-score {
+  background: #273646 !important;
+  color: #e2e8f0 !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+body.dark-theme .champ-score.gold-score {
+  background: linear-gradient(135deg, #f59e0b, #d97706) !important;
+  color: #ffffff !important;
+  border: none !important;
+}
+
+body.dark-theme .arena-glass-card {
+  border-color: rgba(255, 255, 255, 0.14) !important;
+}
+
+body.dark-theme .arena-glass-card.rank-1-glass {
+  border-color: #f59e0b !important;
+}
+
+body.dark-theme .royal-grand-capsule {
+  background: #202c39 !important;
+  border-color: rgba(255, 255, 255, 0.09) !important;
+}
+
+body.dark-theme .royal-grand-capsule.rank-1 {
+  background: #272113 !important;
+  border-color: #f59e0b !important;
+  box-shadow: 0 4px 20px rgba(245, 158, 11, 0.25) !important;
+}
+
+body.dark-theme .royal-cover-overlay {
+  background: linear-gradient(
+    115deg,
+    #202c39 0%,
+    #202c39 28%,
+    rgba(32, 44, 57, 0.95) 44%,
+    rgba(32, 44, 57, 0.65) 64%,
+    rgba(32, 44, 57, 0.18) 82%,
+    rgba(32, 44, 57, 0) 98%
+  ) !important;
+}
+
+body.dark-theme .royal-grand-capsule.rank-1 .royal-cover-overlay {
+  background: linear-gradient(
+    115deg,
+    #272113 0%,
+    #272113 28%,
+    rgba(39, 33, 19, 0.95) 44%,
+    rgba(39, 33, 19, 0.65) 64%,
+    rgba(39, 33, 19, 0.18) 82%,
+    rgba(39, 33, 19, 0) 98%
+  ) !important;
+}
+
+body.dark-theme .royal-name {
+  color: #f1f5f9 !important;
+}
+
+body.dark-theme .royal-score-badge {
+  background: #283747 !important;
+  color: #f1f5f9 !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
 }
 
 /* 15. Other Document & Study Cards */

@@ -148,6 +148,13 @@ const compState = {
   activeLbPhase: "1",
   activeLbClass: "06",
   adminSelectedTrack: "main",
+  arenaPodiumConcept: (function() {
+    try {
+      return localStorage.getItem("re_arena_podium_concept") || "concept1";
+    } catch (e) {
+      return "concept1";
+    }
+  })(),
   cachedLeaderboard: {},
   lastResultsVersion: null,
   lbAutoRefreshInterval: null,
@@ -16723,6 +16730,304 @@ window.refreshArenaLeaderboard = async function() {
   }
 };
 
+function renderArenaConceptSwitcherBar(activeConcept) {
+  return `
+    <div class="arena-concept-switcher-bar">
+      <span class="arena-concept-label">
+        <svg class="ui-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: -1px; margin-right: 4px;"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+        Demo giao diện Top 3:
+      </span>
+      <div class="arena-concept-pills">
+        <button type="button" class="concept-chip ${activeConcept === 'concept1' ? 'active' : ''}" onclick="switchArenaPodiumConcept('concept1')">
+          <span>🏆</span> <strong>Concept 1: Thẻ Quán Quân</strong>
+        </button>
+        <button type="button" class="concept-chip ${activeConcept === 'concept2' ? 'active' : ''}" onclick="switchArenaPodiumConcept('concept2')">
+          <span>🎖️</span> <strong>Concept 2: Bục Kính Bay</strong>
+        </button>
+        <button type="button" class="concept-chip ${activeConcept === 'concept3' ? 'active' : ''}" onclick="switchArenaPodiumConcept('concept3')">
+          <span>👑</span> <strong>Concept 3: Capsule Hoàng Gia</strong>
+        </button>
+      </div>
+    </div>
+  `;
+}
+
+function switchArenaPodiumConcept(conceptId) {
+  if (!['concept1', 'concept2', 'concept3'].includes(conceptId)) conceptId = 'concept1';
+  compState.arenaPodiumConcept = conceptId;
+  try {
+    localStorage.setItem("re_arena_podium_concept", conceptId);
+  } catch (e) {}
+  if (window.lastArenaLeaderboardData) {
+    renderLeaderboardUI(window.lastArenaLeaderboardData);
+  }
+}
+window.switchArenaPodiumConcept = switchArenaPodiumConcept;
+
+function renderArenaTop3Concept1(top1, top2, top3) {
+  let html = `<div class="arena-concept1-wrap">`;
+
+  // RANK 2 (Left)
+  if (top2) {
+    const avatarClass = getAvatarClass(top2.streakTier, false, top2.role);
+    const nameClass = getNameClass(top2.streakTier);
+    const coverStyle = getMiniCoverStyle(top2.coverImage);
+    html += `
+      <div class="arena-champion-card rank-2" data-namecard-user-id="${top2.userId}" style="cursor: pointer;" title="Xem thẻ tên">
+        <div class="champ-cover-banner" style="${coverStyle}">
+          <div class="champ-cover-gradient"></div>
+          <span class="champ-rank-tag silver">🥈 Á Quân 1</span>
+        </div>
+        <div class="champ-body">
+          <div class="champ-avatar-wrap">
+            <div class="avatar champ-avatar rank-2-avatar ${avatarClass}">${escapeHTML(top2.avatar || top2.initials || "U")}</div>
+            <span class="champ-crown silver">${getArenaMedalSVG(2, 32)}</span>
+          </div>
+          <div class="champ-name ${nameClass}" title="${escapeHTML(top2.displayName)}">
+            ${getFlameSVG(top2.streakTier, 14)} <span>${escapeHTML(top2.displayName)}</span>
+            ${top2.role && top2.role !== 'student' ? `<span class="lb-role lb-role-${top2.role}" style="margin-left:3px; font-size:9.5px; padding:1px 4px;">${getRoleDisplay(top2.role)}</span>` : ""}
+          </div>
+          <div class="champ-score"><svg class="ui-icon" width="13" height="13" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.5" style="color: #f59e0b; margin-right: 2px;"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>${top2.score}</div>
+        </div>
+      </div>
+    `;
+  } else {
+    html += `<div class="arena-champion-card rank-2 empty"></div>`;
+  }
+
+  // RANK 1 (Center)
+  if (top1) {
+    const avatarClass = getAvatarClass(top1.streakTier, false, top1.role);
+    const nameClass = getNameClass(top1.streakTier);
+    const coverStyle = getMiniCoverStyle(top1.coverImage);
+    html += `
+      <div class="arena-champion-card rank-1" data-namecard-user-id="${top1.userId}" style="cursor: pointer;" title="Xem thẻ tên">
+        <div class="champ-cover-banner" style="${coverStyle}">
+          <div class="champ-cover-gradient"></div>
+          <span class="champ-rank-tag gold">👑 Quán Quân</span>
+          <span class="champ-sparkle">✨</span>
+        </div>
+        <div class="champ-body">
+          <div class="champ-avatar-wrap">
+            <div class="avatar champ-avatar rank-1-avatar avatar-lg ${avatarClass}">${escapeHTML(top1.avatar || top1.initials || "U")}</div>
+            <span class="champ-crown gold">${getArenaMedalSVG(1, 38)}</span>
+          </div>
+          <div class="champ-name font-bold ${nameClass}" title="${escapeHTML(top1.displayName)}">
+            ${getFlameSVG(top1.streakTier, 16)} <span>${escapeHTML(top1.displayName)}</span>
+            ${top1.role && top1.role !== 'student' ? `<span class="lb-role lb-role-${top1.role}" style="margin-left:4px; font-size:10px; padding:1px 5px;">${getRoleDisplay(top1.role)}</span>` : ""}
+          </div>
+          <div class="champ-score gold-score"><svg class="ui-icon" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.5" style="color: #f59e0b; margin-right: 2px;"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>${top1.score}</div>
+        </div>
+      </div>
+    `;
+  }
+
+  // RANK 3 (Right)
+  if (top3) {
+    const avatarClass = getAvatarClass(top3.streakTier, false, top3.role);
+    const nameClass = getNameClass(top3.streakTier);
+    const coverStyle = getMiniCoverStyle(top3.coverImage);
+    html += `
+      <div class="arena-champion-card rank-3" data-namecard-user-id="${top3.userId}" style="cursor: pointer;" title="Xem thẻ tên">
+        <div class="champ-cover-banner" style="${coverStyle}">
+          <div class="champ-cover-gradient"></div>
+          <span class="champ-rank-tag bronze">🥉 Á Quân 2</span>
+        </div>
+        <div class="champ-body">
+          <div class="champ-avatar-wrap">
+            <div class="avatar champ-avatar rank-3-avatar ${avatarClass}">${escapeHTML(top3.avatar || top3.initials || "U")}</div>
+            <span class="champ-crown bronze">${getArenaMedalSVG(3, 30)}</span>
+          </div>
+          <div class="champ-name ${nameClass}" title="${escapeHTML(top3.displayName)}">
+            ${getFlameSVG(top3.streakTier, 14)} <span>${escapeHTML(top3.displayName)}</span>
+            ${top3.role && top3.role !== 'student' ? `<span class="lb-role lb-role-${top3.role}" style="margin-left:3px; font-size:9.5px; padding:1px 4px;">${getRoleDisplay(top3.role)}</span>` : ""}
+          </div>
+          <div class="champ-score"><svg class="ui-icon" width="13" height="13" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.5" style="color: #f59e0b; margin-right: 2px;"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>${top3.score}</div>
+        </div>
+      </div>
+    `;
+  } else {
+    html += `<div class="arena-champion-card rank-3 empty"></div>`;
+  }
+
+  html += `</div>`;
+  return html;
+}
+
+function renderArenaTop3Concept2(top1, top2, top3) {
+  let html = `<div class="arena-concept2-wrap">`;
+
+  // RANK 2 (Left)
+  if (top2) {
+    const avatarClass = getAvatarClass(top2.streakTier, false, top2.role);
+    const nameClass = getNameClass(top2.streakTier);
+    const coverStyle = getMiniCoverStyle(top2.coverImage);
+    html += `
+      <div class="arena-glass-col rank-2" data-namecard-user-id="${top2.userId}" style="cursor: pointer;" title="Xem thẻ tên">
+        <div class="arena-glass-card" style="${coverStyle}">
+          <div class="glass-backdrop-overlay"></div>
+          <div class="glass-card-content">
+            <span class="glass-crown silver">${getArenaMedalSVG(2, 30)}</span>
+            <div class="avatar glass-avatar ${avatarClass}">${escapeHTML(top2.avatar || top2.initials || "U")}</div>
+            <div class="glass-user-name ${nameClass}">${escapeHTML(top2.displayName)}</div>
+            <div class="glass-score-badge"><svg class="ui-icon" width="12" height="12" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.5" style="color: #f59e0b; margin-right: 2px;"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>${top2.score}</div>
+          </div>
+        </div>
+        <div class="arena-metallic-pedestal pedestal-2">
+          <span>2</span>
+        </div>
+      </div>
+    `;
+  } else {
+    html += `<div class="arena-glass-col rank-2 empty"></div>`;
+  }
+
+  // RANK 1 (Center)
+  if (top1) {
+    const avatarClass = getAvatarClass(top1.streakTier, false, top1.role);
+    const nameClass = getNameClass(top1.streakTier);
+    const coverStyle = getMiniCoverStyle(top1.coverImage);
+    html += `
+      <div class="arena-glass-col rank-1" data-namecard-user-id="${top1.userId}" style="cursor: pointer;" title="Xem thẻ tên">
+        <div class="arena-glass-card rank-1-glass" style="${coverStyle}">
+          <div class="glass-backdrop-overlay"></div>
+          <div class="glass-card-content">
+            <span class="glass-crown gold">${getArenaMedalSVG(1, 36)}</span>
+            <div class="avatar glass-avatar ${avatarClass}">${escapeHTML(top1.avatar || top1.initials || "U")}</div>
+            <div class="glass-user-name font-bold ${nameClass}">${escapeHTML(top1.displayName)}</div>
+            <div class="glass-score-badge gold-score"><svg class="ui-icon" width="13" height="13" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.5" style="color: #f59e0b; margin-right: 2px;"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>${top1.score}</div>
+          </div>
+        </div>
+        <div class="arena-metallic-pedestal pedestal-1">
+          <span>1</span>
+        </div>
+      </div>
+    `;
+  }
+
+  // RANK 3 (Right)
+  if (top3) {
+    const avatarClass = getAvatarClass(top3.streakTier, false, top3.role);
+    const nameClass = getNameClass(top3.streakTier);
+    const coverStyle = getMiniCoverStyle(top3.coverImage);
+    html += `
+      <div class="arena-glass-col rank-3" data-namecard-user-id="${top3.userId}" style="cursor: pointer;" title="Xem thẻ tên">
+        <div class="arena-glass-card" style="${coverStyle}">
+          <div class="glass-backdrop-overlay"></div>
+          <div class="glass-card-content">
+            <span class="glass-crown bronze">${getArenaMedalSVG(3, 28)}</span>
+            <div class="avatar glass-avatar ${avatarClass}">${escapeHTML(top3.avatar || top3.initials || "U")}</div>
+            <div class="glass-user-name ${nameClass}">${escapeHTML(top3.displayName)}</div>
+            <div class="glass-score-badge"><svg class="ui-icon" width="12" height="12" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.5" style="color: #f59e0b; margin-right: 2px;"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>${top3.score}</div>
+          </div>
+        </div>
+        <div class="arena-metallic-pedestal pedestal-3">
+          <span>3</span>
+        </div>
+      </div>
+    `;
+  } else {
+    html += `<div class="arena-glass-col rank-3 empty"></div>`;
+  }
+
+  html += `</div>`;
+  return html;
+}
+
+function renderArenaTop3Concept3(top1, top2, top3) {
+  let html = `<div class="arena-concept3-wrap">`;
+
+  // Top 1 Grand Capsule
+  if (top1) {
+    const avatarClass = getAvatarClass(top1.streakTier, false, top1.role);
+    const nameClass = getNameClass(top1.streakTier);
+    const coverStyle = getMiniCoverStyle(top1.coverImage);
+    html += `
+      <div class="royal-grand-capsule rank-1" data-namecard-user-id="${top1.userId}" style="cursor: pointer;" title="Xem thẻ tên">
+        <div class="royal-cover-art" style="${coverStyle}"></div>
+        <div class="royal-cover-overlay"></div>
+        <div class="royal-left-content">
+          <div class="royal-avatar-wrap">
+            <div class="avatar royal-avatar ${avatarClass}">${escapeHTML(top1.avatar || top1.initials || "U")}</div>
+            <span class="royal-medal-badge">${getArenaMedalSVG(1, 24)}</span>
+          </div>
+          <div class="royal-info">
+            <div class="royal-name-row">
+              <span class="royal-name font-bold ${nameClass}">${getFlameSVG(top1.streakTier, 16)} ${escapeHTML(top1.displayName)}</span>
+              <span class="royal-rank-pill gold">👑 Quán quân</span>
+              ${top1.role && top1.role !== 'student' ? `<span class="lb-role lb-role-${top1.role}">${getRoleDisplay(top1.role)}</span>` : ""}
+            </div>
+          </div>
+        </div>
+        <div class="royal-score-badge gold-score">
+          <svg class="ui-icon" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.5" style="color: #f59e0b; margin-right: 2px;"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>${top1.score}
+        </div>
+      </div>
+    `;
+  }
+
+  // Top 2 Grand Capsule
+  if (top2) {
+    const avatarClass = getAvatarClass(top2.streakTier, false, top2.role);
+    const nameClass = getNameClass(top2.streakTier);
+    const coverStyle = getMiniCoverStyle(top2.coverImage);
+    html += `
+      <div class="royal-grand-capsule rank-2" data-namecard-user-id="${top2.userId}" style="cursor: pointer;" title="Xem thẻ tên">
+        <div class="royal-cover-art" style="${coverStyle}"></div>
+        <div class="royal-cover-overlay"></div>
+        <div class="royal-left-content">
+          <div class="royal-avatar-wrap">
+            <div class="avatar royal-avatar ${avatarClass}">${escapeHTML(top2.avatar || top2.initials || "U")}</div>
+            <span class="royal-medal-badge">${getArenaMedalSVG(2, 22)}</span>
+          </div>
+          <div class="royal-info">
+            <div class="royal-name-row">
+              <span class="royal-name ${nameClass}">${getFlameSVG(top2.streakTier, 14)} ${escapeHTML(top2.displayName)}</span>
+              <span class="royal-rank-pill silver">🥈 Á quân 1</span>
+              ${top2.role && top2.role !== 'student' ? `<span class="lb-role lb-role-${top2.role}">${getRoleDisplay(top2.role)}</span>` : ""}
+            </div>
+          </div>
+        </div>
+        <div class="royal-score-badge">
+          <svg class="ui-icon" width="13" height="13" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.5" style="color: #f59e0b; margin-right: 2px;"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>${top2.score}
+        </div>
+      </div>
+    `;
+  }
+
+  // Top 3 Grand Capsule
+  if (top3) {
+    const avatarClass = getAvatarClass(top3.streakTier, false, top3.role);
+    const nameClass = getNameClass(top3.streakTier);
+    const coverStyle = getMiniCoverStyle(top3.coverImage);
+    html += `
+      <div class="royal-grand-capsule rank-3" data-namecard-user-id="${top3.userId}" style="cursor: pointer;" title="Xem thẻ tên">
+        <div class="royal-cover-art" style="${coverStyle}"></div>
+        <div class="royal-cover-overlay"></div>
+        <div class="royal-left-content">
+          <div class="royal-avatar-wrap">
+            <div class="avatar royal-avatar ${avatarClass}">${escapeHTML(top3.avatar || top3.initials || "U")}</div>
+            <span class="royal-medal-badge">${getArenaMedalSVG(3, 20)}</span>
+          </div>
+          <div class="royal-info">
+            <div class="royal-name-row">
+              <span class="royal-name ${nameClass}">${getFlameSVG(top3.streakTier, 14)} ${escapeHTML(top3.displayName)}</span>
+              <span class="royal-rank-pill bronze">🥉 Á quân 2</span>
+              ${top3.role && top3.role !== 'student' ? `<span class="lb-role lb-role-${top3.role}">${getRoleDisplay(top3.role)}</span>` : ""}
+            </div>
+          </div>
+        </div>
+        <div class="royal-score-badge">
+          <svg class="ui-icon" width="13" height="13" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.5" style="color: #f59e0b; margin-right: 2px;"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>${top3.score}
+        </div>
+      </div>
+    `;
+  }
+
+  html += `</div>`;
+  return html;
+}
+
 function renderLeaderboardUI(data) {
   window.lastArenaLeaderboardData = data;
   const podiumWrap = $("#compPodiumWrap");
@@ -16759,82 +17064,17 @@ function renderLeaderboardUI(data) {
   const top2 = top10.find(u => u.rank === 2);
   const top3 = top10.find(u => u.rank === 3);
 
-  let podiumHTML = "";
-
-  if (top2) {
-    const top2AvatarClass = getAvatarClass(top2.streakTier, false, top2.role);
-    const top2NameClass = getNameClass(top2.streakTier);
-    const top2Cover = getMiniCoverStyle(top2.coverImage);
-    podiumHTML += `
-      <div class="podium-col rank-2" data-namecard-user-id="${top2.userId}" style="cursor: pointer;" title="Xem thẻ tên">
-        <div class="podium-avatar-wrap">
-          <div class="podium-avatar avatar ${top2AvatarClass}">${escapeHTML(top2.avatar || top2.initials || "U")}</div>
-          <span class="podium-crown silver">${getArenaMedalSVG(2, 34)}</span>
-        </div>
-        <div class="podium-name ${top2NameClass}" title="${escapeHTML(top2.displayName)}">
-          ${getFlameSVG(top2.streakTier, 14)} <span>${escapeHTML(top2.displayName)}</span>
-          ${top2.role && top2.role !== 'student' ? `<span class="lb-role lb-role-${top2.role}" style="margin-left:4px; font-size:10px; padding:1px 5px;">${getRoleDisplay(top2.role)}</span>` : ""}
-        </div>
-        <div class="podium-score"><svg class="ui-icon" width="13" height="13" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.5" style="color: #f59e0b; margin-right: 2px;"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>${top2.score}</div>
-        <div class="podium-stand stand-2">
-          <div class="podium-stand-cover" style="${top2Cover}"></div>
-          <span class="stand-num">2</span>
-        </div>
-      </div>
-    `;
+  const currentConcept = compState.arenaPodiumConcept || "concept1";
+  let podiumBody = "";
+  if (currentConcept === "concept2") {
+    podiumBody = renderArenaTop3Concept2(top1, top2, top3);
+  } else if (currentConcept === "concept3") {
+    podiumBody = renderArenaTop3Concept3(top1, top2, top3);
   } else {
-    podiumHTML += `<div class="podium-col rank-2 empty"></div>`;
+    podiumBody = renderArenaTop3Concept1(top1, top2, top3);
   }
 
-  if (top1) {
-    const top1AvatarClass = getAvatarClass(top1.streakTier, false, top1.role);
-    const top1NameClass = getNameClass(top1.streakTier);
-    const top1Cover = getMiniCoverStyle(top1.coverImage);
-    podiumHTML += `
-      <div class="podium-col rank-1" data-namecard-user-id="${top1.userId}" style="cursor: pointer;" title="Xem thẻ tên">
-        <div class="podium-avatar-wrap">
-          <div class="podium-avatar rank-1-avatar avatar avatar-lg ${top1AvatarClass}">${escapeHTML(top1.avatar || top1.initials || "U")}</div>
-          <span class="podium-crown gold">${getArenaMedalSVG(1, 38)}</span>
-        </div>
-        <div class="podium-name font-bold ${top1NameClass}" title="${escapeHTML(top1.displayName)}">
-          ${getFlameSVG(top1.streakTier, 16)} <span>${escapeHTML(top1.displayName)}</span>
-          ${top1.role && top1.role !== 'student' ? `<span class="lb-role lb-role-${top1.role}" style="margin-left:4px; font-size:10px; padding:1px 5px;">${getRoleDisplay(top1.role)}</span>` : ""}
-        </div>
-        <div class="podium-score gold-score"><svg class="ui-icon" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.5" style="color: #f59e0b; margin-right: 2px;"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>${top1.score}</div>
-        <div class="podium-stand stand-1">
-          <div class="podium-stand-cover" style="${top1Cover}"></div>
-          <span class="stand-num">1</span>
-        </div>
-      </div>
-    `;
-  }
-
-  if (top3) {
-    const top3AvatarClass = getAvatarClass(top3.streakTier, false, top3.role);
-    const top3NameClass = getNameClass(top3.streakTier);
-    const top3Cover = getMiniCoverStyle(top3.coverImage);
-    podiumHTML += `
-      <div class="podium-col rank-3" data-namecard-user-id="${top3.userId}" style="cursor: pointer;" title="Xem thẻ tên">
-        <div class="podium-avatar-wrap">
-          <div class="podium-avatar avatar ${top3AvatarClass}">${escapeHTML(top3.avatar || top3.initials || "U")}</div>
-          <span class="podium-crown bronze">${getArenaMedalSVG(3, 34)}</span>
-        </div>
-        <div class="podium-name ${top3NameClass}" title="${escapeHTML(top3.displayName)}">
-          ${getFlameSVG(top3.streakTier, 14)} <span>${escapeHTML(top3.displayName)}</span>
-          ${top3.role && top3.role !== 'student' ? `<span class="lb-role lb-role-${top3.role}" style="margin-left:4px; font-size:10px; padding:1px 5px;">${getRoleDisplay(top3.role)}</span>` : ""}
-        </div>
-        <div class="podium-score"><svg class="ui-icon" width="13" height="13" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.5" style="color: #f59e0b; margin-right: 2px;"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>${top3.score}</div>
-        <div class="podium-stand stand-3">
-          <div class="podium-stand-cover" style="${top3Cover}"></div>
-          <span class="stand-num">3</span>
-        </div>
-      </div>
-    `;
-  } else {
-    podiumHTML += `<div class="podium-col rank-3 empty"></div>`;
-  }
-
-  podiumWrap.innerHTML = podiumHTML;
+  podiumWrap.innerHTML = renderArenaConceptSwitcherBar(currentConcept) + podiumBody;
 
   const rest = top10.filter(u => u.rank >= 4);
   let rowsHTML = "";
