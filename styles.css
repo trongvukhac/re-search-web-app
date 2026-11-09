@@ -13130,6 +13130,10 @@ body.dark-theme .doc-viewer-save-btn.is-saved {
   overflow: hidden;
 }
 
+.banner-slide.no-action {
+  cursor: default;
+}
+
 .banner-image,
 .banner-stack-card img {
   width: 100%;

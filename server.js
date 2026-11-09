@@ -1592,10 +1592,10 @@ function stripHtml(text) {
   let s = String(text);
   for (let i = 0; i < 2; i++) {
     s = s.replace(/&lt;/g, "<")
-         .replace(/&gt;/g, ">")
-         .replace(/&quot;/g, '"')
-         .replace(/&#39;/g, "'")
-         .replace(/&amp;/g, "&");
+      .replace(/&gt;/g, ">")
+      .replace(/&quot;/g, '"')
+      .replace(/&#39;/g, "'")
+      .replace(/&amp;/g, "&");
   }
   return s
     .replace(/<\/(p|div|h[1-6]|li|blockquote|tr)>/gi, " ")

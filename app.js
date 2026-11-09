@@ -15060,6 +15060,27 @@ initTapToScrollTop();
 // =========================================================================
 const HOME_BANNERS_CONFIG = [
   {
+    id: "leaderboard-w04",
+    title: "Bảng Vàng Toàn Đoàn Tuần 04 — Mô Hình Nghiên Cứu",
+    image: "public/assets/banner-leaderboard-w04.jpg?v=20261109_1",
+    // thời gian xuất hiện: 9/11 - 15/11/2026, không tương tác
+    startsAt: new Date("2026-11-09T00:00:00+07:00").getTime(),
+    expiresAt: new Date("2026-11-15T23:59:59+07:00").getTime(),
+    action: null
+  },
+  {
+    id: "arena-w05",
+    title: "RE:SEARCH Arena Tuần 05 — Mô hình nghiên cứu và tư duy lý thuyết",
+    image: "public/assets/banner-arena-w05.jpg?v=20261109_1",
+    // thời gian xuất hiện: 9/11 - 15/11/2026, tương tác: qua tab Arena
+    startsAt: new Date("2026-11-09T00:00:00+07:00").getTime(),
+    expiresAt: new Date("2026-11-15T23:59:59+07:00").getTime(),
+    action: () => {
+      if (typeof go === "function") go("arena");
+      else toast("Tham gia ngay Đấu trường Arena Tuần 05!");
+    }
+  },
+  {
     id: "namecard-update",
     title: "Cập nhật mới Namecard: Like Thẻ tên, Đọc tài liệu, Bảng xếp hạng",
     image: "public/assets/banner-namecard-update.jpg?v=20261102_1",
@@ -15219,7 +15240,8 @@ function initHomeBannerStack() {
   bannerTrack.querySelectorAll(".banner-slide").forEach((el) => el.remove());
   activeBanners.forEach((b, idx) => {
     const slide = document.createElement("div");
-    slide.className = "banner-slide";
+    slide.className = "banner-slide" + (!b.action ? " no-action" : "");
+    if (!b.action) slide.style.cursor = "default";
     slide.dataset.bannerId = b.id;
     slide.dataset.index = idx;
     slide.innerHTML = `<img src="${b.image}" class="banner-image" alt="${escapeHTML(b.title)}" />`;
