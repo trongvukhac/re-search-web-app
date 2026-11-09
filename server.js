@@ -2065,6 +2065,9 @@ function formatDMY(date) {
 // KHUNG & ẢNH BÌA HOẠT ĐỘNG GIỚI HẠN (LIMITED EVENT ITEMS)
 // =========================================================================
 
+const LIMITED_COVER_IDS = new Set(["ton_vinh_phai_dep", "bua_tiec_ma_mi", "chinh_phuc_bau_troi"]);
+const LIMITED_FRAME_IDS = new Set(["ton_vinh_phai_dep", "bua_tiec_ma_mi", "chinh_phuc_bau_troi"]);
+
 const LIMITED_THEMES = [
   {
     id: "ton_vinh_phai_dep",
@@ -2095,14 +2098,173 @@ const LIMITED_THEMES = [
       if (m === 11 && d === 1) return true;
       return false;
     }
+  },
+  {
+    id: "chinh_phuc_bau_troi",
+    name: "Chinh phục bầu trời",
+    coverId: "chinh_phuc_bau_troi",
+    frameId: "chinh_phuc_bau_troi",
+    durationDays: 30,
+    isEligible: () => false // Kích hoạt có điều kiện qua Đấu trường tuần 09/11 - 15/11 lúc 01:00 CN 15/11
   }
 ];
+
+function checkAndGrantArenaSkyLimitedItems(userId, vnNow) {
+  if (!userId) return;
+  // Kích hoạt khi đạt điều kiện hợp lệ vào 01:00 chủ nhật 15/11
+  const SKY_ACTIVATION_TIME = new Date("2026-11-15T01:00:00+07:00").getTime();
+  if (vnNow.getTime() < SKY_ACTIVATION_TIME) return;
+
+  // Tuần thi đấu 09/11 - 15/11 (week_key = '2026-W46')
+  const comp = db.prepare(`
+    SELECT id, status FROM weekly_competitions 
+    WHERE week_key = '2026-W46' OR start_date = '2026-11-09'
+  `).get();
+  if (!comp) return;
+
+  // Lấy thứ hạng của user
+  let rank = null;
+  const rewardRow = db.prepare(`
+    SELECT rank FROM competition_weekly_rewards WHERE competition_id = ? AND user_id = ?
+  `).get(comp.id, userId);
+
+  if (rewardRow && rewardRow.rank > 0) {
+    rank = rewardRow.rank;
+  } else {
+    // Nếu chưa chốt thưởng trong bảng competition_weekly_rewards, tự động tính từ bảng kết quả
+    const participants = db.prepare(`
+      SELECT 
+        u.id as userId,
+        u.student_id as studentId,
+        u.class_name as className,
+        sum(r.best_score) as totalStars,
+        min(r.updated_at) as firstCompletedAt
+      FROM users u
+      JOIN competition_phase_results r ON u.id = r.user_id
+      WHERE r.competition_id = ?
+      GROUP BY u.id
+      ORDER BY totalStars DESC, firstCompletedAt ASC
+    `).all(comp.id);
+
+    const studentRow = db.prepare("SELECT student_id, class_name FROM users WHERE id = ?").get(userId);
+    const userClass = studentRow ? getArenaClassByStudentId(studentRow.student_id) : "TD";
+
+    let classParts = [];
+    if (userClass === "TD") {
+      classParts = participants.filter(p => getArenaClassByStudentId(p.studentId) === "TD");
+    } else {
+      const targetIds = userClass === "07" ? CLASS_07_STUDENT_IDS : CLASS_06_STUDENT_IDS;
+      const targetName = userClass === "07" ? "261_71RESE30312_07" : "261_71RESE30312_06";
+      classParts = participants.filter(p => {
+        if (p.studentId && targetIds.has(String(p.studentId).trim())) return true;
+        if (p.className && p.className.trim() === targetName) return true;
+        return false;
+      });
+    }
+
+    const classIdx = classParts.findIndex(p => p.userId === userId);
+    const overallIdx = participants.findIndex(p => p.userId === userId);
+
+    const classRank = classIdx >= 0 ? classIdx + 1 : null;
+    const overallRank = overallIdx >= 0 ? overallIdx + 1 : null;
+
+    if (classRank && overallRank) rank = Math.min(classRank, overallRank);
+    else rank = classRank || overallRank;
+  }
+
+  if (!rank) return;
+
+  const unlockedAt = new Date(Math.max(SKY_ACTIVATION_TIME, vnNow.getTime())).toISOString();
+  // Hạn sử dụng: 30 ngày kể từ khi nhận
+  const expDate = new Date(new Date(unlockedAt).getTime() + 30 * 24 * 60 * 60 * 1000);
+  const expiresAt = expDate.toISOString();
+
+  // Frame: top 10 đấu trường tuần 9/11 - 15/11
+  if (rank <= 10) {
+    const existing = db.prepare(
+      "SELECT expires_at FROM user_limited_items WHERE user_id=? AND item_type='frame' AND item_id='chinh_phuc_bau_troi'"
+    ).get(userId);
+    if (!existing) {
+      db.prepare(`
+        INSERT INTO user_limited_items (user_id, item_type, item_id, unlocked_at, expires_at)
+        VALUES (?, 'frame', 'chinh_phuc_bau_troi', ?, ?)
+      `).run(userId, unlockedAt, expiresAt);
+    }
+  }
+
+  // Ảnh bìa: top 3 đấu trường tuần 9/11 - 15/11 (top 3 nhận cả bộ frame và ảnh bìa)
+  if (rank <= 3) {
+    const existing = db.prepare(
+      "SELECT expires_at FROM user_limited_items WHERE user_id=? AND item_type='cover' AND item_id='chinh_phuc_bau_troi'"
+    ).get(userId);
+    if (!existing) {
+      db.prepare(`
+        INSERT INTO user_limited_items (user_id, item_type, item_id, unlocked_at, expires_at)
+        VALUES (?, 'cover', 'chinh_phuc_bau_troi', ?, ?)
+      `).run(userId, unlockedAt, expiresAt);
+    }
+  }
+}
+
+function checkAndRevertExpiredUserDecorations(userId) {
+  if (!userId) return;
+  const userRow = db.prepare("SELECT id, role, cover_image, namecard_frame FROM users WHERE id=?").get(userId);
+  if (!userRow) return;
+
+  // Admin và TA có quyền sử dụng vĩnh viễn, không bao giờ bị thu hồi
+  if (userRow.role === "admin" || userRow.role === "ta") return;
+
+  const limitedStatus = getUserLimitedItemsStatus(userId);
+  let updated = false;
+  let newFrame = userRow.namecard_frame;
+  let newCover = userRow.cover_image;
+
+  if (LIMITED_FRAME_IDS.has(userRow.namecard_frame)) {
+    const frameStatus = limitedStatus.frames[userRow.namecard_frame];
+    if (!frameStatus || !frameStatus.isUnlocked) {
+      newFrame = "none";
+      updated = true;
+    }
+  }
+
+  if (LIMITED_COVER_IDS.has(userRow.cover_image)) {
+    const coverStatus = limitedStatus.covers[userRow.cover_image];
+    if (!coverStatus || !coverStatus.isUnlocked) {
+      newCover = "default";
+      updated = true;
+    }
+  }
+
+  if (updated) {
+    db.prepare("UPDATE users SET namecard_frame=?, cover_image=?, updated_at=CURRENT_TIMESTAMP WHERE id=?")
+      .run(newFrame, newCover, userId);
+  }
+}
+
+function sweepExpiredUserDecorations() {
+  try {
+    const usersWithLimited = db.prepare(`
+      SELECT id FROM users 
+      WHERE role NOT IN ('admin', 'ta') 
+        AND (namecard_frame IN ('ton_vinh_phai_dep', 'bua_tiec_ma_mi', 'chinh_phuc_bau_troi')
+          OR cover_image IN ('ton_vinh_phai_dep', 'bua_tiec_ma_mi', 'chinh_phuc_bau_troi'))
+    `).all();
+
+    for (const u of usersWithLimited) {
+      checkAndRevertExpiredUserDecorations(u.id);
+    }
+  } catch (err) {
+    console.error("Lỗi quét thu hồi namecard hết hạn:", err);
+  }
+}
 
 function checkAndGrantLimitedItems(userId) {
   if (!userId) return;
   const vnNow = getVietnamNow();
+
+  // Kiểm tra vật phẩm sự kiện thông thường
   for (const theme of LIMITED_THEMES) {
-    if (theme.isEligible(vnNow)) {
+    if (typeof theme.isEligible === "function" && theme.isEligible(vnNow)) {
       // Tính hạn dùng 30 ngày kể từ hiện tại
       const expDate = new Date(vnNow.getTime() + theme.durationDays * 24 * 60 * 60 * 1000);
       const expiresAt = expDate.toISOString();
@@ -2137,6 +2299,12 @@ function checkAndGrantLimitedItems(userId) {
       }
     }
   }
+
+  // Kiểm tra cấp vật phẩm Đấu trường Chinh phục bầu trời (Top 10 khung, Top 3 ảnh bìa)
+  checkAndGrantArenaSkyLimitedItems(userId, vnNow);
+
+  // Thu hồi tự động nếu vật phẩm đeo trên người đã hết hạn
+  checkAndRevertExpiredUserDecorations(userId);
 }
 
 function getUserLimitedItemsStatus(userId) {
@@ -2868,6 +3036,40 @@ function awardCompetitionSundayRewards(competitionId) {
             totalPointsToAward,
             shields
           );
+
+          // Trao thưởng vật phẩm giới hạn "Chinh phục bầu trời" nếu là tuần 09/11 - 15/11
+          if (comp.week_key === '2026-W46' || comp.start_date === '2026-11-09') {
+            const SKY_ACTIVATION_TIME = new Date("2026-11-15T01:00:00+07:00").getTime();
+            const curTime = getVietnamNow().getTime();
+            if (curTime >= SKY_ACTIVATION_TIME) {
+              const unlockedAt = new Date(Math.max(SKY_ACTIVATION_TIME, curTime)).toISOString();
+              const expiresAt = new Date(new Date(unlockedAt).getTime() + 30 * 24 * 60 * 60 * 1000).toISOString();
+
+              if (rank <= 10) {
+                const existingFrame = db.prepare(
+                  "SELECT expires_at FROM user_limited_items WHERE user_id=? AND item_type='frame' AND item_id='chinh_phuc_bau_troi'"
+                ).get(p.userId);
+                if (!existingFrame) {
+                  db.prepare(`
+                    INSERT INTO user_limited_items (user_id, item_type, item_id, unlocked_at, expires_at)
+                    VALUES (?, 'frame', 'chinh_phuc_bau_troi', ?, ?)
+                  `).run(p.userId, unlockedAt, expiresAt);
+                }
+              }
+
+              if (rank <= 3) {
+                const existingCover = db.prepare(
+                  "SELECT expires_at FROM user_limited_items WHERE user_id=? AND item_type='cover' AND item_id='chinh_phuc_bau_troi'"
+                ).get(p.userId);
+                if (!existingCover) {
+                  db.prepare(`
+                    INSERT INTO user_limited_items (user_id, item_type, item_id, unlocked_at, expires_at)
+                    VALUES (?, 'cover', 'chinh_phuc_bau_troi', ?, ?)
+                  `).run(p.userId, unlockedAt, expiresAt);
+                }
+              }
+            }
+          }
 
           awardedCount++;
         }
@@ -4150,6 +4352,15 @@ async function api(request, response, url) {
     const targetUser = db.prepare("SELECT id, display_name, email, role, avatar, bio, cover_image, namecard_frame, namecard_theme, student_id, real_name, class_name, created_at FROM users WHERE id = ?").get(targetUserId);
     if (!targetUser) return error(response, 404, "Không tìm thấy người dùng.");
 
+    // Cập nhật cấp vật phẩm và thu hồi tự động nếu trang bị đã hết hạn
+    checkAndGrantLimitedItems(targetUser.id);
+    checkAndRevertExpiredUserDecorations(targetUser.id);
+    const refreshedTarget = db.prepare("SELECT cover_image, namecard_frame FROM users WHERE id = ?").get(targetUser.id);
+    if (refreshedTarget) {
+      targetUser.cover_image = refreshedTarget.cover_image;
+      targetUser.namecard_frame = refreshedTarget.namecard_frame;
+    }
+
     const viewer = sessionFrom(request);
     const isSelf = Boolean(viewer && viewer.id === targetUser.id);
     const isPrivileged = Boolean(viewer && isSuperAdmin(viewer));
@@ -4460,9 +4671,6 @@ async function api(request, response, url) {
       ["tinh_tu_sao_troi", 30],
       ["ky_nguyen_hoang_kim", 50],
     ]);
-
-    const LIMITED_COVER_IDS = new Set(["ton_vinh_phai_dep", "bua_tiec_ma_mi"]);
-    const LIMITED_FRAME_IDS = new Set(["ton_vinh_phai_dep", "bua_tiec_ma_mi"]);
 
     // Cập nhật cấp vật phẩm giới hạn nếu đủ điều kiện
     checkAndGrantLimitedItems(user.id);
@@ -9132,8 +9340,10 @@ function checkAndAwardSundayCompetitionRewards() {
 checkAndAwardWeeklyRewards();
 checkAndAwardSundayCompetitionRewards();
 cleanupExpiredTrash();
+sweepExpiredUserDecorations();
 setInterval(checkAndAwardWeeklyRewards, 60000);
 setInterval(checkAndAwardSundayCompetitionRewards, 60000);
+setInterval(sweepExpiredUserDecorations, 60000);
 setInterval(cleanupExpiredTrash, 60 * 60 * 1000);
 
 server.listen(PORT, "::", () =>

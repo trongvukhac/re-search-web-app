@@ -29,7 +29,7 @@ function setCachedUser(u) {
     } else {
       localStorage.removeItem("research_cached_user");
     }
-  } catch (e) {}
+  } catch (e) { }
 }
 
 function getCachedContribs() {
@@ -48,7 +48,7 @@ function setCachedContribs(c) {
     } else {
       localStorage.removeItem("research_cached_contribs");
     }
-  } catch (e) {}
+  } catch (e) { }
 }
 
 let session = getCachedUser();
@@ -148,7 +148,7 @@ const compState = {
   activeLbPhase: "1",
   activeLbClass: "06",
   adminSelectedTrack: "main",
-  arenaPodiumConcept: (function() {
+  arenaPodiumConcept: (function () {
     try {
       return localStorage.getItem("re_arena_podium_concept") || "concept1";
     } catch (e) {
@@ -158,12 +158,12 @@ const compState = {
   cachedLeaderboard: {},
   lastResultsVersion: null,
   lbAutoRefreshInterval: null,
-  
+
   // Tickers
   homeTimerInterval: null,
   gatewayTimerInterval: null,
   quizTimerInterval: null,
-  
+
   // Quiz live state
   currentQIndex: 0,
   questionTries: 0,
@@ -174,14 +174,14 @@ const compState = {
   quizFirstTryBonusCount: 0,
   activeQuestions: [],
   sessionToken: null,
-  
+
   // Confetti
   confettiAnimationId: null,
-  
+
   // Admin
   adminSelectedPhase: 1,
   adminQuestions: [],
-  
+
   // Audio
   audioCtx: null
 };
@@ -190,7 +190,7 @@ window.compState = compState;
 let sundayCeremonySoundPlayed = false;
 let sundayInteractionCleanup = null;
 
-window.notifyPerkLocked = function(days, featureName) {
+window.notifyPerkLocked = function (days, featureName) {
   toast(`🔒 ${featureName} mở khóa ở Chuỗi ${days} ngày!`);
 };
 
@@ -334,7 +334,7 @@ function initEditor(containerId, placeholder = "") {
       toolbar: [
         ['bold', 'italic', 'underline', 'strike'],
         [{ 'color': [] }, { 'background': [] }],
-        [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+        [{ 'list': 'ordered' }, { 'list': 'bullet' }],
         ['link'],
         ['clean']
       ]
@@ -350,7 +350,7 @@ async function requestAPI(url, options = {}) {
       if (sData && sData.csrfToken) {
         csrfToken = sData.csrfToken;
       }
-    } catch (e) {}
+    } catch (e) { }
   }
   const headers = {
     "Content-Type": "application/json",
@@ -413,13 +413,13 @@ function isUserBusyWithCriticalTask() {
     ) {
       return true;
     }
-  } catch (e) {}
+  } catch (e) { }
   return false;
 }
 
 function triggerAppUpdate(newBuildId) {
   if (isUpdatePromptShowing) return;
-  
+
   if (isUserBusyWithCriticalTask()) {
     // Nếu người dùng đang làm bài hoặc viết bài: hoãn lại và kiểm tra lại sau 30 giây
     setTimeout(() => {
@@ -429,7 +429,7 @@ function triggerAppUpdate(newBuildId) {
   }
 
   isUpdatePromptShowing = true;
-  
+
   let banner = document.getElementById("appUpdateBanner");
   if (!banner) {
     banner = document.createElement("div");
@@ -499,7 +499,7 @@ async function checkAppVersionInBackground() {
     if (data && data.buildId) {
       handleAppBuildVersion(data.buildId);
     }
-  } catch (e) {}
+  } catch (e) { }
 }
 
 // Bắt sự kiện khi người dùng chuyển lại tab sau thời gian dài không dùng
@@ -518,15 +518,15 @@ function formatTime(isoStr) {
   if (!isoStr) return "Hôm nay";
   const date = new Date(isoStr);
   if (isNaN(date.getTime())) return "Hôm nay";
-  
+
   const now = new Date();
   const isToday = date.getDate() === now.getDate() &&
-                  date.getMonth() === now.getMonth() &&
-                  date.getFullYear() === now.getFullYear();
-                  
+    date.getMonth() === now.getMonth() &&
+    date.getFullYear() === now.getFullYear();
+
   const timeStr = date.toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" });
   if (isToday) return `Hôm nay, ${timeStr}`;
-  
+
   return `${date.toLocaleDateString("vi-VN", { day: '2-digit', month: '2-digit', year: 'numeric' })} lúc ${timeStr}`;
 }
 function stripHTML(html) {
@@ -546,7 +546,7 @@ function getStreakTier(streak) {
 
 function getFlame2DSVG(tier = 0, size = 20, extraClass = '') {
   const t = Number(tier) || 0;
-  
+
   let outerGrad = '', midGrad = '', coreGrad = '';
   if (t === 5) {
     // Mythic Prism: Celestial Violet -> Neon Fuchsia -> Ember Red -> Solar Gold
@@ -766,8 +766,8 @@ function getFlameSVG(tier = 0, size = 20, extraClass = '') {
 
 // Fallback no-op handlers for backwards compatibility
 function getStreakStylePreference() { return "2d"; }
-function toggleStreakStyle() {}
-function setStreakStyle() {}
+function toggleStreakStyle() { }
+function setStreakStyle() { }
 window.getStreakStylePreference = getStreakStylePreference;
 window.toggleStreakStyle = toggleStreakStyle;
 window.setStreakStyle = setStreakStyle;
@@ -1114,6 +1114,7 @@ function getMiniCoverStyle(coverVal) {
     return `background-color: ${foundPreset.value};`;
   }
   const fallbackImages = {
+    "chinh_phuc_bau_troi": "/covers/chinh-phuc-bau-troi.png",
     "ton_vinh_phai_dep": "/covers/ton-vinh-phai-dep.png",
     "bua_tiec_ma_mi": "/covers/bua-tiec-ma-mi.png",
     "khu_rung_tri_thuc": "/covers/khu-rung-tri-thuc.png",
@@ -1193,10 +1194,10 @@ function getStreakTitle(streak = 0, tier) {
   return "Tân binh";
 }
 
-window.openStreakJourneyModal = function() {
+window.openStreakJourneyModal = function () {
   const modal = document.getElementById("streakJourneyModal");
   if (!modal) return;
-  
+
   const currentStreak = Number(session?.streak || window.currentStreakCount || 0);
   const listEl = document.getElementById("journeyMilestonesList");
   if (listEl) {
@@ -1229,7 +1230,7 @@ window.openStreakJourneyModal = function() {
   modal.showModal();
 };
 
-window.closeStreakJourneyModal = function() {
+window.closeStreakJourneyModal = function () {
   const modal = document.getElementById("streakJourneyModal");
   if (modal) modal.close();
 };
@@ -1237,7 +1238,7 @@ window.closeStreakJourneyModal = function() {
 let currentShieldLogs = [];
 let shieldHistoryFilter = "all";
 
-window.openStreakShieldModal = async function() {
+window.openStreakShieldModal = async function () {
   const modal = document.getElementById("streakShieldModal");
   if (!modal) return;
 
@@ -1309,12 +1310,12 @@ window.openStreakShieldModal = async function() {
   }
 };
 
-window.closeStreakShieldModal = function() {
+window.closeStreakShieldModal = function () {
   const modal = document.getElementById("streakShieldModal");
   if (modal) modal.close();
 };
 
-window.filterShieldHistory = function(filterType) {
+window.filterShieldHistory = function (filterType) {
   shieldHistoryFilter = filterType;
   $$(".shield-tab-btn").forEach(btn => {
     btn.classList.toggle("active", btn.dataset.shieldFilter === filterType);
@@ -1334,8 +1335,8 @@ function renderShieldHistoryUI(logs = [], filterType = "all") {
   }
 
   if (!filtered.length) {
-    const emptyMsg = filterType === "add" 
-      ? "Chưa có lịch sử được cộng khiên nào." 
+    const emptyMsg = filterType === "add"
+      ? "Chưa có lịch sử được cộng khiên nào."
       : (filterType === "use" ? "Chưa có lịch sử tiêu hao khiên nào." : "Chưa có biến động khiên nào được ghi nhận.");
     listEl.innerHTML = `<div class="shield-history-empty">${emptyMsg}</div>`;
     return;
@@ -1489,7 +1490,7 @@ function normalizePost(p) {
     status: p.status || "visible",
   };
 }
-window.getRoleDisplay = function(role) {
+window.getRoleDisplay = function (role) {
   if (role === "admin") return "Admin";
   if (role === "lecturer") return "Giảng viên";
   if (role === "ta") return "TA";
@@ -1530,9 +1531,9 @@ function applySession(user) {
 
   $$(".profile-chip-text").forEach(
     (el) =>
-      (el.innerHTML = user
-        ? `<span class="${getNameClass(streakTier)}">${escapeHTML(user.displayName)}</span> <b>${roleDisplay}</b>`
-        : "Đăng nhập"),
+    (el.innerHTML = user
+      ? `<span class="${getNameClass(streakTier)}">${escapeHTML(user.displayName)}</span> <b>${roleDisplay}</b>`
+      : "Đăng nhập"),
   );
 
   const accountName = $(".account-header h1");
@@ -1699,7 +1700,7 @@ const LEADERBOARD_TABS = [
   { id: "study", title: "Ong chăm chỉ" }
 ];
 
-window.cycleLeaderboardTab = function(direction = 1) {
+window.cycleLeaderboardTab = function (direction = 1) {
   const availableTabs = LEADERBOARD_TABS;
   const currentIdx = availableTabs.findIndex(t => t.id === currentLeaderboardTab);
   let nextIdx = (currentIdx === -1 ? 0 : currentIdx + direction);
@@ -1708,7 +1709,7 @@ window.cycleLeaderboardTab = function(direction = 1) {
   window.switchLeaderboardTab(availableTabs[nextIdx].id);
 };
 
-window.switchLeaderboardTab = function(tab) {
+window.switchLeaderboardTab = function (tab) {
   currentLeaderboardTab = tab;
 
   // Cập nhật tiêu đề carousel và dots
@@ -1812,7 +1813,7 @@ function renderLeaderboard() {
         renderLeaderboard();
         updateResponsiveAsidePlacement();
       }
-    }).catch(() => {});
+    }).catch(() => { });
   }
 
   if (!list || list.length === 0) {
@@ -1835,12 +1836,12 @@ function renderLeaderboard() {
       const pointsDisplay = isContrib
         ? `${user.totalPoints}đ`
         : (isStreak
-            ? `<span style="display:inline-flex;align-items:center;gap:3px;">${getFlameSVG(user.streakTier || 0, 14)} ${user.streak}n</span>`
-            : (isArena
-                ? `⭐ ${user.score || 0}`
-                : (isLikes
-                    ? `<span style="display:inline-flex;align-items:center;gap:4px;color:#e11d48;font-weight:700;"><svg width="13" height="13" viewBox="0 0 24 24" fill="#e11d48"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg> ${user.likesCount || 0}</span>`
-                    : `${user.hours ?? Math.floor((user.totalMinutes || 0) / 60)}h`)));
+          ? `<span style="display:inline-flex;align-items:center;gap:3px;">${getFlameSVG(user.streakTier || 0, 14)} ${user.streak}n</span>`
+          : (isArena
+            ? `⭐ ${user.score || 0}`
+            : (isLikes
+              ? `<span style="display:inline-flex;align-items:center;gap:4px;color:#e11d48;font-weight:700;"><svg width="13" height="13" viewBox="0 0 24 24" fill="#e11d48"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg> ${user.likesCount || 0}</span>`
+              : `${user.hours ?? Math.floor((user.totalMinutes || 0) / 60)}h`)));
 
       const coverStyle = getMiniCoverStyle(user.coverImage);
 
@@ -1909,7 +1910,7 @@ function renderLeaderboard() {
   lbEl.innerHTML = html;
 }
 
-window.showInactivityWarningModal = function(warningInfo) {
+window.showInactivityWarningModal = function (warningInfo) {
   const modal = $("#inactivityWarningModal");
   if (!modal) return;
   const countdownText = $("#inactivityCountdownText");
@@ -1923,7 +1924,7 @@ window.showInactivityWarningModal = function(warningInfo) {
   }
 };
 
-window.closeInactivityWarningModal = function() {
+window.closeInactivityWarningModal = function () {
   const modal = $("#inactivityWarningModal");
   if (!modal) return;
   if (typeof modal.close === "function") {
@@ -1933,7 +1934,7 @@ window.closeInactivityWarningModal = function() {
   }
 };
 
-window.confirmMaintainAccount = async function() {
+window.confirmMaintainAccount = async function () {
   const btn = $("#confirmMaintainAccountBtn");
   if (btn) {
     btn.disabled = true;
@@ -2030,7 +2031,7 @@ function renderProfileStats(profileData) {
     const days = ["T2", "T3", "T4", "T5", "T6", "T7", "CN"];
     const now = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Ho_Chi_Minh" }));
 
-    window.restoreStreak = async function() {
+    window.restoreStreak = async function () {
       const btn = document.querySelector("#restoreStreakContainer button");
       try {
         if (btn) {
@@ -2040,7 +2041,7 @@ function renderProfileStats(profileData) {
         const res = await requestAPI("/api/auth/restore-streak", { method: "POST" });
         toast(res?.message || "Đã khôi phục chuỗi thành công! 🛡️🔥");
         await hydrateServer();
-      } catch(e) {
+      } catch (e) {
         toast(e?.message || "Không thể khôi phục chuỗi.");
         if (btn) {
           btn.disabled = false;
@@ -2051,18 +2052,18 @@ function renderProfileStats(profileData) {
     };
     const today = now.getDay();
     const vnDayIndex = today === 0 ? 6 : today - 1;
-    
+
     const startOfWeek = new Date(now);
     startOfWeek.setDate(now.getDate() - vnDayIndex);
-    
+
     const weekDates = [];
     for (let i = 0; i < 7; i++) {
-       const d = new Date(startOfWeek);
-       d.setDate(startOfWeek.getDate() + i);
-       const y = d.getFullYear();
-       const m = String(d.getMonth()+1).padStart(2, '0');
-       const day = String(d.getDate()).padStart(2, '0');
-       weekDates.push(`${y}-${m}-${day}`);
+      const d = new Date(startOfWeek);
+      d.setDate(startOfWeek.getDate() + i);
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      weekDates.push(`${y}-${m}-${day}`);
     }
 
     const activeSet = new Set(profileData.activityDays || []);
@@ -2077,13 +2078,13 @@ function renderProfileStats(profileData) {
         let mark = "";
 
         if (isActive) {
-           cls = "done";
-           mark = getFlameSVG(streakTier, 14);
+          cls = "done";
+          mark = getFlameSVG(streakTier, 14);
         } else if (isToday) {
-           cls = "today";
-           mark = `<span style="opacity: 0.5;">${getFlameSVG(0, 13)}</span>`;
+          cls = "today";
+          mark = `<span style="opacity: 0.5;">${getFlameSVG(0, 13)}</span>`;
         } else {
-           mark = "○";
+          mark = "○";
         }
 
         return `<div class="day ${cls}"><small>${d}</small><i>${mark}</i></div>`;
@@ -2233,28 +2234,28 @@ async function hydrateServer(force = false) {
           if (container && profileData.recentContributions) {
             container.innerHTML = profileData.recentContributions.length
               ? profileData.recentContributions
-                  .map(renderActivityRow)
-                  .join("")
+                .map(renderActivityRow)
+                .join("")
               : `<p class="empty-state">Chưa có hoạt động nào gần đây.</p>`;
           }
           if ($("#myPostsContainer")) {
-             const myPosts = posts.filter(p => p.isAuthor);
-             if (myPosts.length > 0) {
-                 $("#myPostsContainer").innerHTML = myPosts.map(postCard).join("");
-                 $$("#myPostsContainer .post-card").forEach(el => 
-                    el.addEventListener("click", () => openDetail(Number(el.dataset.postId)))
-                 );
-             } else {
-                 $("#myPostsContainer").innerHTML = `<p class="empty-state">Bạn chưa đăng bài đăng nào.</p>`;
-             }
+            const myPosts = posts.filter(p => p.isAuthor);
+            if (myPosts.length > 0) {
+              $("#myPostsContainer").innerHTML = myPosts.map(postCard).join("");
+              $$("#myPostsContainer .post-card").forEach(el =>
+                el.addEventListener("click", () => openDetail(Number(el.dataset.postId)))
+              );
+            } else {
+              $("#myPostsContainer").innerHTML = `<p class="empty-state">Bạn chưa đăng bài đăng nào.</p>`;
+            }
           }
           if ($("#savedPostsContainer")) {
-             try {
-                const savedData = await requestAPI(`/api/users/${current.user.id}/saved-posts`).catch(() => ({ posts: [] }));
-                const hasPosts = savedData && savedData.posts && savedData.posts.length > 0;
+            try {
+              const savedData = await requestAPI(`/api/users/${current.user.id}/saved-posts`).catch(() => ({ posts: [] }));
+              const hasPosts = savedData && savedData.posts && savedData.posts.length > 0;
 
-                if (!hasPosts) {
-                   $("#savedPostsContainer").innerHTML = `
+              if (!hasPosts) {
+                $("#savedPostsContainer").innerHTML = `
                      <div class="activity-empty-state">
                        <div class="empty-state-icon">
                          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
@@ -2263,24 +2264,24 @@ async function hydrateServer(force = false) {
                        <p class="empty-state-desc">Khi đọc các bài thảo luận trên diễn đàn, nhấn <b>★ Lưu</b> để đánh dấu và xem lại thuận tiện tại đây.</p>
                        <button type="button" class="button button-outline button-sm" onclick="go('forum')">Khám phá Diễn đàn thảo luận →</button>
                      </div>`;
-                } else {
-                   const normalizedSaved = savedData.posts.map(normalizePost);
-                   $("#savedPostsContainer").innerHTML = normalizedSaved.map(postCard).join("");
-                   $$("#savedPostsContainer .post-card").forEach(el => 
-                      el.addEventListener("click", () => openDetail(Number(el.dataset.postId)))
-                   );
-                }
-             } catch(e) {
-                console.error(e);
-             }
+              } else {
+                const normalizedSaved = savedData.posts.map(normalizePost);
+                $("#savedPostsContainer").innerHTML = normalizedSaved.map(postCard).join("");
+                $$("#savedPostsContainer .post-card").forEach(el =>
+                  el.addEventListener("click", () => openDetail(Number(el.dataset.postId)))
+                );
+              }
+            } catch (e) {
+              console.error(e);
+            }
           }
           if ($("#savedDocsContainer")) {
-             try {
-                const savedDocsData = await requestAPI(`/api/users/${current.user.id}/saved-documents`).catch(() => ({ documents: [] }));
-                const hasDocs = savedDocsData && savedDocsData.documents && savedDocsData.documents.length > 0;
+            try {
+              const savedDocsData = await requestAPI(`/api/users/${current.user.id}/saved-documents`).catch(() => ({ documents: [] }));
+              const hasDocs = savedDocsData && savedDocsData.documents && savedDocsData.documents.length > 0;
 
-                if (!hasDocs) {
-                   $("#savedDocsContainer").innerHTML = `
+              if (!hasDocs) {
+                $("#savedDocsContainer").innerHTML = `
                      <div class="activity-empty-state">
                        <div class="empty-state-icon">
                          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
@@ -2289,8 +2290,8 @@ async function hydrateServer(force = false) {
                        <p class="empty-state-desc">Bạn có thể lưu các tài liệu quan trọng trong kho tài liệu để truy cập nhanh chóng bất cứ lúc nào.</p>
                        <button type="button" class="button button-outline button-sm" onclick="go('documents')">Khám phá Kho tài liệu →</button>
                      </div>`;
-                } else {
-                   $("#savedDocsContainer").innerHTML = `
+              } else {
+                $("#savedDocsContainer").innerHTML = `
                      <div class="document-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px;">
                        ${savedDocsData.documents.map(d => `
                          <article class="document-card" data-doc="${d.id}" style="cursor: pointer; position: relative;">
@@ -2314,13 +2315,13 @@ async function hydrateServer(force = false) {
                          </article>
                        `).join("")}
                      </div>`;
-                   $$("#savedDocsContainer .document-card").forEach(el =>
-                      el.addEventListener("click", () => viewDocumentById(Number(el.dataset.doc)))
-                   );
-                }
-             } catch(e) {
-                console.error(e);
-             }
+                $$("#savedDocsContainer .document-card").forEach(el =>
+                  el.addEventListener("click", () => viewDocumentById(Number(el.dataset.doc)))
+                );
+              }
+            } catch (e) {
+              console.error(e);
+            }
           }
         }
       } catch (e) {
@@ -2339,7 +2340,7 @@ async function hydrateServer(force = false) {
               $("#adminPendingDocs").textContent =
                 adminData.pendingDocuments || 0;
           }
-        } catch (e) {}
+        } catch (e) { }
       } else {
         if ($("#adminPanel")) $("#adminPanel").style.display = "none";
       }
@@ -2394,10 +2395,10 @@ function stripHtml(html) {
   let text = String(html);
   for (let i = 0; i < 2; i++) {
     text = text.replace(/&lt;/g, "<")
-               .replace(/&gt;/g, ">")
-               .replace(/&quot;/g, '"')
-               .replace(/&#39;/g, "'")
-               .replace(/&amp;/g, "&");
+      .replace(/&gt;/g, ">")
+      .replace(/&quot;/g, '"')
+      .replace(/&#39;/g, "'")
+      .replace(/&amp;/g, "&");
   }
   text = text.replace(/<\/(p|div|h[1-6]|li|blockquote|tr)>/gi, " ");
   text = text.replace(/<(br|hr)\s*\/?>/gi, " ");
@@ -2478,7 +2479,7 @@ function renderActivityRow(r) {
     if (t.length > 36) t = t.substring(0, 36) + "...";
     return ` <i style="color: var(--muted); font-style: normal; font-weight: 500;">"${escapeHTML(t)}"</i>`;
   };
-  
+
   const getActionText = () => {
     switch (r.action) {
       case "web_active": return escapeHTML(stripHtml(r.reason) || "Hoạt động sôi nổi trên web 5 phút để thắp sáng chuỗi");
@@ -2534,7 +2535,7 @@ function renderEditBtn(id, createdAtStr, type) {
   if (!session) return "";
   const createdAt = new Date(createdAtStr).getTime();
   const thirtyMins = 30 * 60 * 1000;
-  if (Date.now() - createdAt >= thirtyMins) return ""; 
+  if (Date.now() - createdAt >= thirtyMins) return "";
 
   const penSvg = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>`;
   const timerSvg = `<svg class="edit-countdown-svg timer-circle" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><circle class="progress edit-progress-${type}-${id}" cx="12" cy="12" r="10"></circle></svg>`;
@@ -2602,8 +2603,8 @@ function postCard(post) {
   let docBadge = "";
   if (linkedDocs.length > 0) {
     const allTitles = linkedDocs.map(d => d.title).join(", ");
-    const clickAction = linkedDocs.length === 1 
-      ? `viewDocumentById(${linkedDocs[0].id})` 
+    const clickAction = linkedDocs.length === 1
+      ? `viewDocumentById(${linkedDocs[0].id})`
       : `openDetail(${post.id})`;
     docBadge = `<span class="post-tag post-doc-tag" onclick="event.stopPropagation(); ${clickAction}" title="${linkedDocs.length} tài liệu đính kèm: ${escapeHTML(allTitles)}"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg><span class="doc-tag-count">${linkedDocs.length}</span><span class="doc-tag-label">&nbsp;tài liệu</span></span>`;
   }
@@ -2749,7 +2750,7 @@ function renderHome() {
     .map((t) => `<button class="topic" data-topic="${t}">${t}</button>`)
     .join("");
   $("#topicCloud").innerHTML = topicsHtml;
-  
+
   const mobileTopicCloud = $("#mobileTopicCloud");
   if (mobileTopicCloud) mobileTopicCloud.innerHTML = topicsHtml;
   $$(".topic").forEach((el) =>
@@ -2894,7 +2895,7 @@ function renderDocuments() {
   );
 }
 
-window.copyDocumentLink = function(id) {
+window.copyDocumentLink = function (id) {
   if (!id) return;
   const url = `${window.location.origin}/#doc-${id}`;
   navigator.clipboard.writeText(url).then(() => {
@@ -2914,7 +2915,7 @@ function updateDocViewerSaveBtn(docId, isSaved) {
 }
 window.updateDocViewerSaveBtn = updateDocViewerSaveBtn;
 
-window.toggleSaveDocument = async function(id) {
+window.toggleSaveDocument = async function (id) {
   if (serverMode && !session) return openAuth();
   try {
     const data = await requestAPI(`/api/documents/${id}/save`, { method: "POST" });
@@ -2937,7 +2938,7 @@ window.toggleSaveDocument = async function(id) {
   }
 };
 
-window.viewDocumentById = async function(docId) {
+window.viewDocumentById = async function (docId) {
   let doc = getAppDocument(docId);
   if (!doc) {
     try {
@@ -2945,7 +2946,7 @@ window.viewDocumentById = async function(docId) {
       if (res && res.documents) {
         doc = res.documents.find((d) => d.id === Number(docId));
       }
-    } catch (e) {}
+    } catch (e) { }
   }
   if (doc && (doc.url || doc.sourceUrl)) {
     let previewUrl = doc.url || doc.sourceUrl;
@@ -2991,7 +2992,7 @@ window.viewDocumentById = async function(docId) {
   }
 };
 
-window.goToDocumentInRepo = function(docId) {
+window.goToDocumentInRepo = function (docId) {
   go("documents");
   setTimeout(() => {
     const el = document.querySelector(`.document-card[data-doc="${docId}"]`);
@@ -3127,7 +3128,7 @@ function go(rawRoute, scrollToTop = true) {
           renderLeaderboard();
           updateResponsiveAsidePlacement();
         }
-      }).catch(() => {});
+      }).catch(() => { });
     } else {
       renderLeaderboard();
     }
@@ -3208,7 +3209,7 @@ function initMobileNavScrollHandler() {
       (window.scrollY ||
         window.pageYOffset ||
         document.documentElement.scrollTop)) ||
-      0
+    0
   );
   showMobileNav();
 
@@ -3224,9 +3225,9 @@ function initMobileNavScrollHandler() {
     const currentY = Math.max(
       0,
       window.scrollY ||
-        window.pageYOffset ||
-        document.documentElement.scrollTop ||
-        0
+      window.pageYOffset ||
+      document.documentElement.scrollTop ||
+      0
     );
 
     // Luôn hiện thanh điều hướng khi ở gần đầu trang
@@ -3319,7 +3320,7 @@ function initPostDetailNavScrollHandler() {
       (window.scrollY ||
         window.pageYOffset ||
         document.documentElement.scrollTop)) ||
-      0
+    0
   );
 
   const onScroll = () => {
@@ -3330,9 +3331,9 @@ function initPostDetailNavScrollHandler() {
     const currentY = Math.max(
       0,
       window.scrollY ||
-        window.pageYOffset ||
-        document.documentElement.scrollTop ||
-        0
+      window.pageYOffset ||
+      document.documentElement.scrollTop ||
+      0
     );
 
     // 1. Luôn hiển thị khi ở gần đầu trang (<= 75px) - đảm bảo Back, Copy link, Save không bao giờ kẹt khi cuộn lên
@@ -3563,7 +3564,7 @@ window.addEventListener("click", (e) => {
       "editProfileModal"
     ];
     if (noBackdropCloseIds.includes(e.target.id)) return;
-    
+
     // Nếu người dùng đang focus nhập liệu, không đóng dialog nhầm
     const activeEl = document.activeElement;
     if (
@@ -3691,7 +3692,7 @@ let platformReviewTrackerInterval = null;
 let platformReviewActiveSeconds = 0;
 try {
   platformReviewActiveSeconds = parseInt(sessionStorage.getItem("re_search_platform_active_sec") || "0", 10);
-} catch (e) {}
+} catch (e) { }
 
 function getRatingPromptTodayKey() {
   try {
@@ -3707,7 +3708,7 @@ function isRatingBannerDismissedToday() {
     const today = getRatingPromptTodayKey();
     if (localStorage.getItem("re_search_rating_dismissed_" + today) === "1") return true;
     if (sessionStorage.getItem("re_search_rating_banner_dismissed") === "1") return true;
-  } catch (e) {}
+  } catch (e) { }
   return false;
 }
 
@@ -3742,7 +3743,7 @@ function initPlatformRatingPromptTracker() {
     platformReviewActiveSeconds += 1;
     try {
       sessionStorage.setItem("re_search_platform_active_sec", String(platformReviewActiveSeconds));
-    } catch (e) {}
+    } catch (e) { }
 
     // Sau tối thiểu 5 phút (300 giây) hoạt động
     if (platformReviewActiveSeconds >= 300) {
@@ -3814,11 +3815,11 @@ function dismissRatingBanner(byUser = false) {
       const today = getRatingPromptTodayKey();
       localStorage.setItem("re_search_rating_dismissed_" + today, "1");
       sessionStorage.setItem("re_search_rating_banner_dismissed", "1");
-    } catch (e) {}
+    } catch (e) { }
   } else {
     try {
       sessionStorage.setItem("re_search_rating_banner_dismissed", "1");
-    } catch (e) {}
+    } catch (e) { }
   }
   banner.style.opacity = "0";
   banner.style.transform = "translateY(20px) scale(0.96)";
@@ -3947,7 +3948,7 @@ if (detailModalEl) {
 let currentViewingDocId = null;
 let isDocDiscussionOpen = false;
 
-window.toggleDocDiscussion = function() {
+window.toggleDocDiscussion = function () {
   if (!currentViewingDocId) return;
   isDocDiscussionOpen = !isDocDiscussionOpen;
   updateDocDiscussionUIState();
@@ -3982,7 +3983,7 @@ function updateDocDiscussionUIState() {
   }
 }
 
-window.toggleDocAnonymousDropdown = function(e) {
+window.toggleDocAnonymousDropdown = function (e) {
   const dd = document.getElementById("docAnonymousDropdown");
   if (dd) {
     dd.classList.toggle("show");
@@ -3990,7 +3991,7 @@ window.toggleDocAnonymousDropdown = function(e) {
   }
 };
 
-window.setDocAnonymousReply = function(isAnon, e) {
+window.setDocAnonymousReply = function (isAnon, e) {
   const anonInput = document.getElementById("docCommentAnon");
   if (anonInput) anonInput.checked = isAnon;
   const avatarLabel = document.getElementById("docReplyAvatarLabel");
@@ -4075,11 +4076,11 @@ function renderDocCommentsList(comments) {
     const editBtn = c.isAuthor ? renderEditBtn(c.id, c.createdAt, "document_comments") : "";
     const roleBadge = c.author.role === "lecturer" ? ' <span class="doc-comment-role-badge">[Giảng viên]</span>'
       : (c.author.role === "ta" ? ' <span class="doc-comment-role-badge">[TA]</span>'
-      : (c.author.role === "admin" ? ' <span class="doc-comment-role-badge">[Admin]</span>' : ''));
+        : (c.author.role === "admin" ? ' <span class="doc-comment-role-badge">[Admin]</span>' : ''));
 
     const authorName = c.isAuthor ? "Bạn" : escapeHTML(c.author.displayName);
-    const ncAttr = (!c.anonymous && c.author.id) 
-      ? `data-namecard-user-id="${c.author.id}" style="cursor: pointer;" title="Xem thẻ tên"` 
+    const ncAttr = (!c.anonymous && c.author.id)
+      ? `data-namecard-user-id="${c.author.id}" style="cursor: pointer;" title="Xem thẻ tên"`
       : '';
 
     return `
@@ -4106,7 +4107,7 @@ function renderDocCommentsList(comments) {
   if (typeof updateEditTimers === "function") updateEditTimers();
 }
 
-window.handleSendDocComment = async function(e) {
+window.handleSendDocComment = async function (e) {
   if (e) e.preventDefault();
   if (!session) {
     openAuth();
@@ -4142,7 +4143,7 @@ window.handleSendDocComment = async function(e) {
   }
 };
 
-window.deleteDocComment = async function(commentId) {
+window.deleteDocComment = async function (commentId) {
   if (!confirm("Bạn có chắc chắn muốn xoá thảo luận này không?")) return;
   try {
     await requestAPI(`/api/documents/comments/${commentId}`, {
@@ -4181,11 +4182,11 @@ const attachedDocsState = {
 
 window.attachedDocsState = attachedDocsState;
 
-window.getAttachedDocs = function(target) {
+window.getAttachedDocs = function (target) {
   return attachedDocsState[target] || [];
 };
 
-window.renderAttachedDocsUI = function(target) {
+window.renderAttachedDocsUI = function (target) {
   const list = attachedDocsState[target] || [];
   const container = $(`#${target}LinkedDocsContainer`);
   const hiddenId = $(`#${target}LinkedDocId`);
@@ -4248,7 +4249,7 @@ window.renderAttachedDocsUI = function(target) {
   }
 };
 
-window.setAttachedDocs = function(target, docs) {
+window.setAttachedDocs = function (target, docs) {
   if (!Array.isArray(docs)) {
     attachedDocsState[target] = docs ? [docs] : [];
   } else {
@@ -4258,7 +4259,7 @@ window.setAttachedDocs = function(target, docs) {
 };
 
 // Backwards-compatible alias for single doc setter
-window.setAttachedDocUI = function(target, doc) {
+window.setAttachedDocUI = function (target, doc) {
   if (!doc) {
     window.setAttachedDocs(target, []);
   } else {
@@ -4266,7 +4267,7 @@ window.setAttachedDocUI = function(target, doc) {
   }
 };
 
-window.removeSingleAttachedDoc = function(target, docId) {
+window.removeSingleAttachedDoc = function (target, docId) {
   const numId = Number(docId);
   attachedDocsState[target] = (attachedDocsState[target] || []).filter(d => d.id !== numId);
   renderAttachedDocsUI(target);
@@ -4275,7 +4276,7 @@ window.removeSingleAttachedDoc = function(target, docId) {
   }
 };
 
-window.clearAllAttachedDocs = function(target) {
+window.clearAllAttachedDocs = function (target) {
   const t = target || currentPickerTarget;
   attachedDocsState[t] = [];
   renderAttachedDocsUI(t);
@@ -4284,7 +4285,7 @@ window.clearAllAttachedDocs = function(target) {
   }
 };
 
-window.openDocPicker = function(target = "question") {
+window.openDocPicker = function (target = "question") {
   currentPickerTarget = target;
   currentPickerFilter = "all";
   const modal = $("#documentPickerModal");
@@ -4303,23 +4304,23 @@ window.openDocPicker = function(target = "question") {
   }
 };
 
-window.closeDocPicker = function() {
+window.closeDocPicker = function () {
   const modal = $("#documentPickerModal");
   if (modal && modal.open) modal.close();
 };
 
-window.setDocPickerFilter = function(filter, btn) {
+window.setDocPickerFilter = function (filter, btn) {
   currentPickerFilter = filter;
   $$("#documentPickerModal .filter-chip").forEach(b => b.classList.remove("selected"));
   if (btn) btn.classList.add("selected");
   renderDocPickerList();
 };
 
-window.filterDocPickerList = function() {
+window.filterDocPickerList = function () {
   renderDocPickerList();
 };
 
-window.renderDocPickerList = function() {
+window.renderDocPickerList = function () {
   const container = $("#docPickerList");
   const countEl = $("#docPickerCount");
   const selectedCountEl = $("#docPickerSelectedCount");
@@ -4382,7 +4383,7 @@ window.renderDocPickerList = function() {
   }).join("");
 };
 
-window.toggleDocPickerItem = function(docId) {
+window.toggleDocPickerItem = function (docId) {
   const numId = Number(docId);
   const doc = documents.find(d => d.id === numId) || getAppDocument(numId);
   if (!doc) return;
@@ -4403,27 +4404,27 @@ window.toggleDocPickerItem = function(docId) {
   renderDocPickerList();
 };
 
-window.selectDocForPost = function(docId) {
+window.selectDocForPost = function (docId) {
   toggleDocPickerItem(docId);
 };
 
-window.clearAndCloseDocPicker = function() {
+window.clearAndCloseDocPicker = function () {
   clearAllAttachedDocs(currentPickerTarget);
   closeDocPicker();
 };
 
-window.removeAttachedDoc = function(target) {
+window.removeAttachedDoc = function (target) {
   clearAllAttachedDocs(target);
 };
 
-window.previewSelectedDoc = function(target) {
+window.previewSelectedDoc = function (target) {
   const list = attachedDocsState[target] || [];
   if (list.length > 0) {
     viewDocumentById(list[0].id);
   }
 };
 
-window.openExternalLinkModal = function(url, title) {
+window.openExternalLinkModal = function (url, title) {
   if (!url) return;
   const modal = $("#externalLinkModal");
   if (!modal) {
@@ -4652,7 +4653,7 @@ async function openDetail(id, updateHash = true, isBack = false, targetScrollY =
     };
   }
 
-  window.copyResponseLink = function(postId, responseId) {
+  window.copyResponseLink = function (postId, responseId) {
     if (!postId || !responseId) return;
     const url = `${window.location.origin}/#post-${postId}-comment-${responseId}`;
     navigator.clipboard.writeText(url).then(() => {
@@ -4731,7 +4732,7 @@ async function openDetail(id, updateHash = true, isBack = false, targetScrollY =
         session?.role === "admin" || session?.role === "ta"
           ? `<button class="button button-outline button-sm" style="color: var(--error); border-color: var(--error); margin-left: 8px;" onclick="deleteResponse(${r.id})">Xoá</button>`
           : "";
-      
+
       let childHtml = "";
       if (r.children.length > 0) {
         childHtml = `<div class="response-children">` + r.children.map(c => renderResponse(c, level + 1)).join("") + `</div>`;
@@ -4813,8 +4814,8 @@ async function openDetail(id, updateHash = true, isBack = false, targetScrollY =
     const saveBtn = $("#postDetailSaveBtn");
     if (saveBtn) {
       saveBtn.className = `button button-outline button-sm post-detail-save-btn ${post.isSaved ? "is-saved" : ""}`;
-      saveBtn.innerHTML = post.isSaved 
-        ? `<svg class="ui-icon" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg> Đã lưu` 
+      saveBtn.innerHTML = post.isSaved
+        ? `<svg class="ui-icon" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg> Đã lưu`
         : `<svg class="ui-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg> Lưu`;
       saveBtn.onclick = () => toggleSavePost(post.id);
     }
@@ -4938,7 +4939,7 @@ async function openDetail(id, updateHash = true, isBack = false, targetScrollY =
         go("forum");
       };
     }
-    
+
     const replyEditor = initEditor("replyContentContainer", "Chia sẻ góc nhìn hoặc gợi ý tài liệu...");
 
     $("#replyForm").onsubmit = async (e) => {
@@ -4992,21 +4993,21 @@ async function openDetail(id, updateHash = true, isBack = false, targetScrollY =
 function toast(message) {
   const el = $("#toast");
   el.textContent = message;
-  
+
   if (el.showPopover) {
-    try { el.showPopover(); } catch(e) {} // ignore if already open
+    try { el.showPopover(); } catch (e) { } // ignore if already open
   }
-  
+
   el.classList.add("show");
-  
+
   // Clear any existing timeout to avoid premature hiding
   if (el.toastTimeout) clearTimeout(el.toastTimeout);
-  
+
   el.toastTimeout = setTimeout(() => {
     el.classList.remove("show");
     setTimeout(() => {
       if (el.hidePopover && !el.classList.contains("show")) {
-        try { el.hidePopover(); } catch(e) {}
+        try { el.hidePopover(); } catch (e) { }
       }
     }, 200); // Wait for transition
   }, 2500);
@@ -5182,7 +5183,7 @@ function updateQuickMenuUser(user = session) {
 }
 window.updateQuickMenuUser = updateQuickMenuUser;
 
-window.toggleQuickUserMenu = function(e) {
+window.toggleQuickUserMenu = function (e) {
   if (e) {
     e.preventDefault();
     e.stopPropagation();
@@ -5198,7 +5199,7 @@ window.toggleQuickUserMenu = function(e) {
   }
 };
 
-window.closeQuickUserMenu = function() {
+window.closeQuickUserMenu = function () {
   const wrap = $("#quickUserMenuWrap");
   const btn = $("#quickMenuBtn");
   if (wrap) wrap.classList.remove("open");
@@ -5208,7 +5209,7 @@ window.closeQuickUserMenu = function() {
   }
 };
 
-window.handleQuickMenuAction = function(action) {
+window.handleQuickMenuAction = function (action) {
   closeQuickUserMenu();
   switch (action) {
     case "namecard":
@@ -5537,11 +5538,11 @@ document.addEventListener("DOMContentLoaded", () => {
     const days = ["T2", "T3", "T4", "T5", "T6", "T7", "CN"];
     grid.innerHTML = days.map(d => `<div class="day"><small>${d}</small><i>○</i></div>`).join("");
   }
-  
+
   checkAndShowBanner();
 });
 
-window.closeBanner = function(hours) {
+window.closeBanner = function (hours) {
   const banner = document.getElementById("assignmentBanner");
   if (banner) banner.close();
   const nextTime = new Date().getTime() + (hours || 2) * 60 * 60 * 1000;
@@ -5642,7 +5643,7 @@ $("#editForm").addEventListener("submit", async (e) => {
     setSubmitLoading(e, false);
     return;
   }
-  
+
   const content = type === "document_comments" ? rawText : editEditor.root.innerHTML;
   const title = type === "posts" ? $("#editTitle").value.trim() : "";
   const attached = attachedDocsState.edit || [];
@@ -5662,7 +5663,7 @@ $("#editForm").addEventListener("submit", async (e) => {
     });
     toast("Cập nhật thành công!");
     $("#editModal").close();
-    
+
     // Refresh content based on type
     if (type === "posts") {
       hydrateServer();
@@ -5808,7 +5809,7 @@ $("#documentForm").addEventListener("submit", async (e) => {
     setSubmitLoading(e, false);
   }
 });
-window.openLogoutConfirmModal = function() {
+window.openLogoutConfirmModal = function () {
   const modal = $("#logoutConfirmModal");
   if (modal && typeof modal.showModal === "function") {
     modal.showModal();
@@ -5819,14 +5820,14 @@ window.openLogoutConfirmModal = function() {
   }
 };
 
-window.closeLogoutConfirmModal = function() {
+window.closeLogoutConfirmModal = function () {
   const modal = $("#logoutConfirmModal");
   if (modal && typeof modal.close === "function") {
     modal.close();
   }
 };
 
-window.executeLogout = async function() {
+window.executeLogout = async function () {
   const modal = $("#logoutConfirmModal");
   if (modal && typeof modal.close === "function") {
     modal.close();
@@ -5912,10 +5913,10 @@ async function loadAdminPasswordResets() {
         const statusBadge = isPending
           ? `<span style="background: rgba(245, 158, 11, 0.15); color: #b45309; padding: 2px 8px; border-radius: 12px; font-weight: 600; font-size: 11px;">Chờ cấp</span>`
           : r.status === "used"
-          ? `<span style="background: rgba(16, 185, 129, 0.15); color: #047857; padding: 2px 8px; border-radius: 12px; font-weight: 600; font-size: 11px;">Đã dùng</span>`
-          : r.status === "expired"
-          ? `<span style="background: rgba(107, 114, 128, 0.15); color: #4b5563; padding: 2px 8px; border-radius: 12px; font-weight: 600; font-size: 11px;">Hết hạn</span>`
-          : `<span style="background: rgba(239, 68, 68, 0.15); color: #b91c1c; padding: 2px 8px; border-radius: 12px; font-weight: 600; font-size: 11px;">Đã hủy</span>`;
+            ? `<span style="background: rgba(16, 185, 129, 0.15); color: #047857; padding: 2px 8px; border-radius: 12px; font-weight: 600; font-size: 11px;">Đã dùng</span>`
+            : r.status === "expired"
+              ? `<span style="background: rgba(107, 114, 128, 0.15); color: #4b5563; padding: 2px 8px; border-radius: 12px; font-weight: 600; font-size: 11px;">Hết hạn</span>`
+              : `<span style="background: rgba(239, 68, 68, 0.15); color: #b91c1c; padding: 2px 8px; border-radius: 12px; font-weight: 600; font-size: 11px;">Đã hủy</span>`;
 
         const studentInfo =
           `<strong>${escapeHTML(r.display_name || "Chưa đặt tên")}</strong>` +
@@ -5960,7 +5961,7 @@ async function loadAdminPasswordResets() {
   }
 }
 
-window.copyResetCode = function(code) {
+window.copyResetCode = function (code) {
   navigator.clipboard.writeText(code).then(() => {
     toast(`Đã sao chép mã xác thực: ${code}`);
   }).catch(() => {
@@ -5968,7 +5969,7 @@ window.copyResetCode = function(code) {
   });
 };
 
-window.revokeResetRequest = async function(id) {
+window.revokeResetRequest = async function (id) {
   if (!confirm("Bạn có chắc chắn muốn hủy và xóa mã xác thực này không?")) return;
   try {
     await requestAPI("/api/admin/password-resets/revoke", {
@@ -6040,7 +6041,7 @@ window.filterAdminTrash = filterAdminTrash;
 function renderAdminTrashTable() {
   const tbody = $("#adminTrashBody");
   if (!tbody) return;
-  
+
   let items = [];
   if (currentTrashFilter === 'all' || currentTrashFilter === 'post') {
     items = items.concat(cachedTrashData.posts || []);
@@ -6092,7 +6093,7 @@ function renderAdminTrashTable() {
   }).join("");
 }
 
-window.restoreTrashItem = async function(type, id) {
+window.restoreTrashItem = async function (type, id) {
   const typeText = type === 'post' ? 'bài đăng' : 'bình luận';
   if (!confirm(`Bạn có chắc chắn muốn khôi phục ${typeText} này về diễn đàn?`)) return;
   try {
@@ -6147,7 +6148,7 @@ window.filterAdminHidden = filterAdminHidden;
 function renderAdminHiddenTable() {
   const tbody = $("#adminHiddenBody");
   if (!tbody) return;
-  
+
   let items = [];
   if (currentHiddenFilter === 'all' || currentHiddenFilter === 'post') {
     items = items.concat(cachedHiddenData.posts || []);
@@ -6197,7 +6198,7 @@ function renderAdminHiddenTable() {
   }).join("");
 }
 
-window.unhideItemFromAdmin = async function(type, id) {
+window.unhideItemFromAdmin = async function (type, id) {
   const isPost = type === 'post';
   const typeText = isPost ? 'bài đăng' : 'bình luận';
   const pointsText = isPost ? '+2' : '+4';
@@ -6216,7 +6217,7 @@ window.unhideItemFromAdmin = async function(type, id) {
   }
 };
 
-window.moveHiddenToTrash = async function(type, id) {
+window.moveHiddenToTrash = async function (type, id) {
   const isPost = type === 'post';
   const typeText = isPost ? 'bài đăng' : 'bình luận';
   if (!confirm(`Chuyển ${typeText} này vào Thùng rác (lưu trữ 7 ngày)?\nSau 7 ngày nội dung sẽ bị xóa vĩnh viễn.`)) return;
@@ -6363,14 +6364,14 @@ window.adjustUserPoints = async (id) => {
 async function loadAdminDocuments() {
   const data = await requestAPI("/api/documents");
   const topicsData = await requestAPI("/api/topics");
-  
+
   const pendingDocs = data.documents.filter((d) => d.status === "pending");
   const pendingTopics = (topicsData.topics || []).filter((t) => t.status === "pending");
-  
+
   $("#adminDocList").innerHTML = pendingDocs.length
     ? pendingDocs
-        .map(
-          (d) => `
+      .map(
+        (d) => `
     <div style="padding: 16px; border: 1px solid var(--sage-2); border-radius: 8px;">
       <h3 style="margin: 0 0 8px 0;">${escapeHTML(d.title)} <span style="font-size: 12px; font-weight: normal; color: var(--sage-4);">(${escapeHTML(d.format)})</span></h3>
       <p style="margin: 0 0 12px 0;">Đề xuất bởi: ${escapeHTML(d.submittedBy)}</p>
@@ -6381,14 +6382,14 @@ async function loadAdminDocuments() {
       </div>
     </div>
   `,
-        )
-        .join("")
+      )
+      .join("")
     : "<p>Không có tài liệu nào đang chờ duyệt.</p>";
 
   $("#adminTopicList").innerHTML = pendingTopics.length
     ? pendingTopics
-        .map(
-          (t) => `
+      .map(
+        (t) => `
     <div style="padding: 16px; border: 1px solid var(--sage-2); border-radius: 8px;">
       <h3 style="margin: 0 0 8px 0;">${escapeHTML(t.name)}</h3>
       <p style="margin: 0 0 12px 0;">Đề xuất bởi: ${escapeHTML(t.createdBy)}</p>
@@ -6398,8 +6399,8 @@ async function loadAdminDocuments() {
       </div>
     </div>
   `,
-        )
-        .join("")
+      )
+      .join("")
     : "<p>Không có chủ đề nào đang chờ duyệt.</p>";
 }
 
@@ -6475,7 +6476,7 @@ $$(".admin-tab").forEach((tab) => {
 function switchAdminTab(targetTab) {
   const modal = $("#adminModal");
   if (modal && !modal.open) {
-    try { modal.showModal(); } catch (e) {}
+    try { modal.showModal(); } catch (e) { }
   }
   const tabBtn = $(`.admin-tab[data-admin-tab="${targetTab}"]`);
   if (tabBtn) tabBtn.click();
@@ -6565,7 +6566,7 @@ window.showReplyForm = (containerId, postId, actualParentId) => {
     container.innerHTML = "";
     return;
   }
-  
+
   // Close all other inline forms
   document.querySelectorAll('[id^="reply-form-"]').forEach(el => {
     el.style.display = "none";
@@ -6599,13 +6600,13 @@ window.submitInlineReply = async (containerId, postId, actualParentId) => {
   const rawText = window.inlineReplyEditor.getText().trim();
   const isAnonymous = document.getElementById(`inlineReplyAnonymous-${containerId}`).checked;
   const parentId = actualParentId || containerId;
-  
+
   if (rawText.length < 10) {
     toast("Phản hồi cần có ít nhất 10 ký tự.");
     return;
   }
   const content = window.inlineReplyEditor.root.innerHTML;
-  
+
   const formEl = document.getElementById(`reply-form-${containerId}`);
   setSubmitLoading(formEl, true);
   try {
@@ -6741,8 +6742,8 @@ let currentSelectedCover = "default";
 let currentViewingNamecardUserId = null;
 
 const AVATAR_OPTIONS = [
-  "🌱", "🎓", "🚀", "📚", "⭐", "💡", 
-  "🔥", "🏆", "✨", "🦊", "🐱", "🐼", 
+  "🌱", "🎓", "🚀", "📚", "⭐", "💡",
+  "🔥", "🏆", "✨", "🦊", "🐱", "🐼",
   "🎨", "🔬", "⚡", "🌟"
 ];
 
@@ -6769,12 +6770,14 @@ const FRAME_OPTIONS = [
   { id: "gold", name: "Kỷ nguyên hoàng kim", minDays: 50 },
 
   // Khung hữu hạn nhận qua hoạt động giới hạn (thời hạn 30 ngày)
+  { id: "chinh_phuc_bau_troi", name: "Chinh phục bầu trời", isLimited: true, lockNote: "Khung dành cho Top 10 Đấu trường tuần 09/11 - 15/11 (Kích hoạt 01:00 CN 15/11, hạn dùng 30 ngày)" },
   { id: "ton_vinh_phai_dep", name: "Tôn vinh phái đẹp", isLimited: true, lockNote: "Khung nhận được qua hoạt động giới hạn" },
   { id: "bua_tiec_ma_mi", name: "Bữa tiệc ma mị", isLimited: true, lockNote: "Khung nhận được qua hoạt động giới hạn" },
 ];
 
 const COVER_PRESETS = [
   // Ảnh bìa hữu hạn nhận qua hoạt động giới hạn (thời hạn 30 ngày)
+  { id: "chinh_phuc_bau_troi", name: "Chinh phục bầu trời", type: "image", value: "covers/chinh-phuc-bau-troi.png", isLimited: true, lockNote: "Ảnh bìa dành cho Top 3 Đấu trường tuần 09/11 - 15/11 (Kích hoạt 01:00 CN 15/11, hạn dùng 30 ngày)" },
   { id: "ton_vinh_phai_dep", name: "Tôn vinh phái đẹp", type: "image", value: "covers/ton-vinh-phai-dep.png", isLimited: true, lockNote: "Ảnh bìa nhận được qua hoạt động giới hạn" },
   { id: "bua_tiec_ma_mi", name: "Bữa tiệc ma mị", type: "image", value: "covers/bua-tiec-ma-mi.png", isLimited: true, lockNote: "Ảnh bìa nhận được qua hoạt động giới hạn" },
 
@@ -6796,7 +6799,7 @@ const COVER_PRESETS = [
   { id: "color:#18181b", name: "Đen tuyền", type: "color", value: "#18181b", minDays: 0 },
 ];
 
-window.openNamecard = async function(userId) {
+window.openNamecard = async function (userId) {
   if (!userId) return;
   if (typeof closeNamecardLikesPopover === "function") {
     closeNamecardLikesPopover();
@@ -6887,7 +6890,7 @@ window.openNamecard = async function(userId) {
                     cachedLeaderboardData = lb;
                     renderLeaderboard();
                   }
-                }).catch(() => {});
+                }).catch(() => { });
               }
             } catch (err) {
               toast(err.message || "Không thể gửi yêu thích.");
@@ -6898,7 +6901,7 @@ window.openNamecard = async function(userId) {
         }
       }
     }
-    
+
     // Role Badge
     const roleText = $("#namecardRoleText");
     const roleBadge = $("#namecardRoleBadge");
@@ -7026,7 +7029,7 @@ window.openNamecard = async function(userId) {
   }
 };
 
-window.highlightNamecardLikeButton = function() {
+window.highlightNamecardLikeButton = function () {
   const likeBtn = $("#namecardLikeBtn");
   if (!likeBtn) return;
   likeBtn.classList.remove("highlight-heart-attention");
@@ -7037,7 +7040,7 @@ window.highlightNamecardLikeButton = function() {
   }, 2600);
 };
 
-window.openMyNamecard = async function(highlightLike = false) {
+window.openMyNamecard = async function (highlightLike = false) {
   if (session && session.id) {
     await openNamecard(session.id);
     if (highlightLike) {
@@ -7055,7 +7058,7 @@ window.openMyNamecard = async function(highlightLike = false) {
 
 let currentViewingCoverVal = "default";
 
-window.openFullCoverViewer = function(explicitCoverVal) {
+window.openFullCoverViewer = function (explicitCoverVal) {
   const coverVal = explicitCoverVal || currentViewingCoverVal || $("#namecardCover")?.dataset?.coverVal || "default";
   if (!coverVal) return;
   const modal = $("#fullCoverViewerModal");
@@ -7085,7 +7088,7 @@ window.openFullCoverViewer = function(explicitCoverVal) {
   modal.showModal();
 };
 
-window.copyNamecardId = function() {
+window.copyNamecardId = function () {
   const text = $("#namecardIdText")?.textContent?.replace("ID ", "").trim();
   if (!text) return;
   navigator.clipboard.writeText(text).then(() => {
@@ -7095,7 +7098,7 @@ window.copyNamecardId = function() {
   });
 };
 
-window.copyNcProfileField = function(elementId, label) {
+window.copyNcProfileField = function (elementId, label) {
   const el = document.getElementById(elementId);
   const val = el?.textContent?.trim() || "";
   if (!val || val === "—" || val === "Chưa cập nhật") {
@@ -7109,7 +7112,7 @@ window.copyNcProfileField = function(elementId, label) {
   });
 };
 
-window.copyAllNcProfileInfo = function() {
+window.copyAllNcProfileInfo = function () {
   const mssv = document.getElementById("ncStatStudentId")?.textContent?.trim() || "Chưa cập nhật";
   const name = document.getElementById("ncStatRealName")?.textContent?.trim() || "Chưa cập nhật";
   const className = document.getElementById("ncStatClassName")?.textContent?.trim() || "Chưa cập nhật";
@@ -7130,19 +7133,19 @@ window.copyAllNcProfileInfo = function() {
   });
 };
 
-window.goToStudyFromCard = function() {
+window.goToStudyFromCard = function () {
   const modal = $("#namecardModal");
   if (modal && typeof modal.close === "function") modal.close();
   go("study");
 };
 
-window.goToArenaFromCard = function() {
+window.goToArenaFromCard = function () {
   const modal = $("#namecardModal");
   if (modal && typeof modal.close === "function") modal.close();
   go("arena");
 };
 
-window.filterForumByUser = function() {
+window.filterForumByUser = function () {
   const modal = $("#namecardModal");
   if (modal && typeof modal.close === "function") modal.close();
   const userName = $("#namecardDisplayName")?.textContent?.trim() || "";
@@ -7165,8 +7168,8 @@ function formatPopoverTime(isoStr) {
 
   const now = new Date();
   const isToday = date.getDate() === now.getDate() &&
-                  date.getMonth() === now.getMonth() &&
-                  date.getFullYear() === now.getFullYear();
+    date.getMonth() === now.getMonth() &&
+    date.getFullYear() === now.getFullYear();
 
   const timeStr = date.toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" });
   if (isToday) return `${timeStr} hôm nay`;
@@ -7174,14 +7177,14 @@ function formatPopoverTime(isoStr) {
   const yesterday = new Date(now);
   yesterday.setDate(now.getDate() - 1);
   const isYesterday = date.getDate() === yesterday.getDate() &&
-                      date.getMonth() === yesterday.getMonth() &&
-                      date.getFullYear() === yesterday.getFullYear();
+    date.getMonth() === yesterday.getMonth() &&
+    date.getFullYear() === yesterday.getFullYear();
   if (isYesterday) return `${timeStr} hôm qua`;
 
   return `${timeStr} ngày ${date.toLocaleDateString("vi-VN", { day: '2-digit', month: '2-digit' })}`;
 }
 
-window.closeNamecardLikesPopover = function(e) {
+window.closeNamecardLikesPopover = function (e) {
   if (e) e.stopPropagation();
   const popover = document.getElementById("namecardLikesPopover");
   if (popover) {
@@ -7189,7 +7192,7 @@ window.closeNamecardLikesPopover = function(e) {
   }
 };
 
-window.toggleNamecardLikesPopover = async function(userId) {
+window.toggleNamecardLikesPopover = async function (userId) {
   const popover = document.getElementById("namecardLikesPopover");
   if (!popover) return;
 
@@ -7243,7 +7246,7 @@ window.toggleNamecardLikesPopover = async function(userId) {
   }
 };
 
-window.renderNamecardLikesPage = function(page) {
+window.renderNamecardLikesPage = function (page) {
   const listEl = document.getElementById("namecardPopoverList");
   const paginationEl = document.getElementById("namecardPopoverPagination");
   const limitNoteEl = document.getElementById("namecardPopoverLimitNote");
@@ -7339,7 +7342,7 @@ window.renderNamecardLikesPage = function(page) {
   }
 };
 
-window.likeBackUser = async function(e, targetUserId, btn) {
+window.likeBackUser = async function (e, targetUserId, btn) {
   if (e) e.stopPropagation();
   if (!btn || !targetUserId) return;
   btn.disabled = true;
@@ -7359,7 +7362,7 @@ window.likeBackUser = async function(e, targetUserId, btn) {
           cachedLeaderboardData = lb;
           renderLeaderboard();
         }
-      }).catch(() => {});
+      }).catch(() => { });
     }
   } catch (err) {
     toast(err.message || "Không thể gửi yêu thích.");
@@ -7428,7 +7431,7 @@ if ($("#namecardBioInput")) {
 }
 
 // ==========================================
-window.openEditNamecardModal = function(section = "all") {
+window.openEditNamecardModal = function (section = "all") {
   if (!session) {
     toast("Vui lòng đăng nhập để chỉnh sửa thẻ tên.");
     return;
@@ -7590,8 +7593,8 @@ function renderFramePicker() {
     } else {
       isUnlocked = isPrivileged || longestStreak >= (f.minDays || 0);
       lockTooltip = isUnlocked ? f.name : `Cần chuỗi ${f.minDays}+ ngày`;
-      badgeHtml = isUnlocked 
-        ? `<span class="choice-unlock-badge">${f.minDays ? `${f.minDays} ngày` : "Có sẵn"}</span>` 
+      badgeHtml = isUnlocked
+        ? `<span class="choice-unlock-badge">${f.minDays ? `${f.minDays} ngày` : "Có sẵn"}</span>`
         : `<span class="choice-lock-badge" title="Cần chuỗi ${f.minDays}+ ngày"><svg class="ui-icon" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px; margin-right:2px;"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>${f.minDays}</span>`;
     }
 
@@ -7653,8 +7656,8 @@ function renderCoverPicker() {
     } else {
       isUnlocked = isPrivileged || longestStreak >= (p.minDays || 0);
       lockTooltip = isUnlocked ? p.name : `Cần chuỗi ${p.minDays}+ ngày`;
-      badgeHtml = isUnlocked 
-        ? (p.minDays ? `<span class="choice-unlock-badge">${p.minDays} ngày</span>` : '') 
+      badgeHtml = isUnlocked
+        ? (p.minDays ? `<span class="choice-unlock-badge">${p.minDays} ngày</span>` : '')
         : `<span class="choice-lock-badge" title="Cần chuỗi ${p.minDays}+ ngày">🔒 ${p.minDays}</span>`;
     }
 
@@ -7697,7 +7700,7 @@ function renderCoverPicker() {
 
 // Client compression for custom cover
 if ($("#coverFileInput")) {
-  $("#coverFileInput").onchange = function(e) {
+  $("#coverFileInput").onchange = function (e) {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -7707,9 +7710,9 @@ if ($("#coverFileInput")) {
     }
 
     const reader = new FileReader();
-    reader.onload = function(evt) {
+    reader.onload = function (evt) {
       const img = new Image();
-      img.onload = function() {
+      img.onload = function () {
         const canvas = document.createElement("canvas");
         const MAX_W = 1200;
         const MAX_H = 420;
@@ -7757,7 +7760,7 @@ if ($("#coverFileInput")) {
 }
 
 if ($("#btnRemoveCustomCover")) {
-  $("#btnRemoveCustomCover").onclick = function() {
+  $("#btnRemoveCustomCover").onclick = function () {
     currentSelectedCover = "default";
     const previewBox = $("#coverUploadPreview");
     if (previewBox) previewBox.style.display = "none";
@@ -7794,7 +7797,7 @@ if ($("#editNamecardForm")) {
         session = { ...session, ...res.user };
       }
       toast("Đã lưu thẻ tên & trang trí!");
-      
+
       // Cập nhật lại initialState sau khi lưu thành công
       namecardInitialState = {
         displayName: payload.displayName,
@@ -7821,7 +7824,7 @@ if ($("#editNamecardForm")) {
 // ==========================================
 // MODAL 2: CHỈNH SỬA HỒ SƠ (THÔNG TIN NỘI BỘ & EMAIL)
 // ==========================================
-window.openEditProfileModal = function() {
+window.openEditProfileModal = function () {
   if (!session) {
     toast("Vui lòng đăng nhập để chỉnh sửa hồ sơ.");
     return;
@@ -7857,7 +7860,7 @@ window.openEditProfileModal = function() {
   $("#editProfileModal").showModal();
 };
 
-window.openEditProfileModalForArena = function() {
+window.openEditProfileModalForArena = function () {
   if (typeof openEditProfileModal === "function") {
     openEditProfileModal();
     setTimeout(() => {
@@ -8016,7 +8019,7 @@ if (ncCardElement) {
 // ==========================================
 // MODAL 3: ĐỔI MẬT KHẨU
 // ==========================================
-window.openChangePasswordModal = function() {
+window.openChangePasswordModal = function () {
   if (!session) {
     toast("Vui lòng đăng nhập để đổi mật khẩu.");
     return;
@@ -8082,7 +8085,7 @@ document.addEventListener("click", (e) => {
   }
 }, true);
 
-window.promptChangeAvatar = async function() {
+window.promptChangeAvatar = async function () {
   const newAvatar = prompt("Đổi Avatar (1 lần mỗi 7 ngày):\n\nHãy nhập 1 biểu tượng (Emoji) hoặc ký tự bạn muốn dùng làm Avatar:");
   if (!newAvatar) return;
   const trimmed = newAvatar.trim();
@@ -8092,7 +8095,7 @@ window.promptChangeAvatar = async function() {
   }
   const confirmChange = confirm(`Bạn có chắc chắn muốn dùng "${trimmed}" làm Avatar không? (Sau khi đổi cần chờ 7 ngày để đổi lại)`);
   if (!confirmChange) return;
-  
+
   try {
     const btn = document.getElementById("changeAvatarBtn");
     if (btn) {
@@ -8105,7 +8108,7 @@ window.promptChangeAvatar = async function() {
     });
     toast("Đã đổi avatar thành công!");
     window.location.reload();
-  } catch(e) {
+  } catch (e) {
     toast(e.message || "Lỗi khi đổi avatar.");
     const btn = document.getElementById("changeAvatarBtn");
     if (btn) {
@@ -8122,7 +8125,7 @@ setInterval(() => {
   }
 }, 30000);
 
-window.toggleReadMore = function(btn) {
+window.toggleReadMore = function (btn) {
   const content = btn.previousElementSibling;
   if (content.classList.contains('expanded')) {
     content.classList.remove('expanded');
@@ -8133,7 +8136,7 @@ window.toggleReadMore = function(btn) {
   }
 };
 
-window.expandReplyTools = function() {
+window.expandReplyTools = function () {
   const form = document.getElementById('replyForm');
   if (form) {
     form.classList.remove('collapsed');
@@ -8143,7 +8146,7 @@ window.expandReplyTools = function() {
   }
 };
 
-window.collapseReplyTools = function() {
+window.collapseReplyTools = function () {
   const form = document.getElementById('replyForm');
   if (form) {
     form.classList.remove('expanded');
@@ -8151,7 +8154,7 @@ window.collapseReplyTools = function() {
   }
 };
 
-window.toggleAnonymousDropdown = function(e) {
+window.toggleAnonymousDropdown = function (e) {
   const dd = document.getElementById('anonymousDropdown');
   if (dd) {
     dd.classList.toggle('show');
@@ -8159,7 +8162,7 @@ window.toggleAnonymousDropdown = function(e) {
   }
 };
 
-window.setAnonymousReply = function(isAnon) {
+window.setAnonymousReply = function (isAnon) {
   document.getElementById('replyAnonymous').checked = isAnon;
   const avatarLabel = document.getElementById('replyAvatarLabel');
   if (isAnon) {
@@ -8621,7 +8624,7 @@ function getUserStudyStreak() {
   return Number(curSession.streak || 0);
 }
 
-window.updateStudyStreakPerks = function() {
+window.updateStudyStreakPerks = function () {
   const streak = getUserStudyStreak();
   const curSession = session || (typeof window !== 'undefined' && window.session);
   const isAdmin = curSession && curSession.role === 'admin';
@@ -8903,7 +8906,7 @@ function getTodayCompletedPomodoros() {
     if (data && data.date === getTodayKey()) {
       return Number(data.count) || 0;
     }
-  } catch (e) {}
+  } catch (e) { }
   return 0;
 }
 
@@ -8915,7 +8918,7 @@ function recordTodayCompletedPomodoro() {
       date: getTodayKey(),
       count: next
     }));
-  } catch (e) {}
+  } catch (e) { }
   updateDailyGoalUI();
 }
 
@@ -8986,7 +8989,7 @@ function pauseActiveStudyAudioForBreak() {
     activeCustomMix.forEach(k => {
       if (studyState.customMixAudioPlayers[k]) studyState.customMixAudioPlayers[k].pause();
     });
-  } catch (e) {}
+  } catch (e) { }
 }
 
 function resumeActiveStudyAudioAfterBreak() {
@@ -8994,24 +8997,24 @@ function resumeActiveStudyAudioAfterBreak() {
   const snap = studyState._breakPausedSounds;
   try {
     if (snap.envTrack && studyState.envAudioPlayers[snap.envTrack]) {
-      studyState.envAudioPlayers[snap.envTrack].play().catch(() => {});
+      studyState.envAudioPlayers[snap.envTrack].play().catch(() => { });
     }
     if (snap.musicTrack && studyState.musicAudioPlayers[snap.musicTrack]) {
-      studyState.musicAudioPlayers[snap.musicTrack].play().catch(() => {});
+      studyState.musicAudioPlayers[snap.musicTrack].play().catch(() => { });
     }
     (snap.mixTracks || []).forEach(k => {
-      if (studyState.mixAudioPlayers[k]) studyState.mixAudioPlayers[k].play().catch(() => {});
+      if (studyState.mixAudioPlayers[k]) studyState.mixAudioPlayers[k].play().catch(() => { });
     });
     if (snap.customEnv && studyState.customEnvAudioPlayer) {
-      studyState.customEnvAudioPlayer.play().catch(() => {});
+      studyState.customEnvAudioPlayer.play().catch(() => { });
     }
     if (snap.customMusic && studyState.customMusicAudioPlayer) {
-      studyState.customMusicAudioPlayer.play().catch(() => {});
+      studyState.customMusicAudioPlayer.play().catch(() => { });
     }
     (snap.customMix || []).forEach(k => {
-      if (studyState.customMixAudioPlayers[k]) studyState.customMixAudioPlayers[k].play().catch(() => {});
+      if (studyState.customMixAudioPlayers[k]) studyState.customMixAudioPlayers[k].play().catch(() => { });
     });
-  } catch (e) {}
+  } catch (e) { }
   studyState._breakPausedSounds = null;
 }
 
@@ -9051,7 +9054,7 @@ function renderClockTicks() {
   }
 }
 
-window.focusStudyGoalInput = function() {
+window.focusStudyGoalInput = function () {
   const prompt = $("#studyQuickTaskPrompt");
   const box = $("#studyGoalBox");
   const input = $("#studyGoalInput");
@@ -9063,7 +9066,7 @@ window.focusStudyGoalInput = function() {
   input.select();
 };
 
-window.handleStudyGoalSubmit = function() {
+window.handleStudyGoalSubmit = function () {
   const input = $("#studyGoalInput");
   if (input) {
     studyState.goal = input.value.trim();
@@ -9072,7 +9075,7 @@ window.handleStudyGoalSubmit = function() {
   finishStudyGoalEdit();
 };
 
-window.handleStudyGoalBlur = function() {
+window.handleStudyGoalBlur = function () {
   const input = $("#studyGoalInput");
   if (input) {
     studyState.goal = input.value.trim();
@@ -9100,7 +9103,7 @@ function finishStudyGoalEdit() {
   }
 }
 
-window.clearStudyGoal = function() {
+window.clearStudyGoal = function () {
   studyState.goal = "";
   const input = $("#studyGoalInput");
   if (input) input.value = "";
@@ -9217,7 +9220,7 @@ function renderStudyColorRoleSwatches() {
   renderRow("swatchesAccessory", "accessory", studySettings.accessoryColor || '#10b981');
 }
 
-window.updateStudyColorRole = function(role, colorHex) {
+window.updateStudyColorRole = function (role, colorHex) {
   const streak = getUserStudyStreak();
   if (colorHex.toLowerCase() !== '#10b981' && streak < 7) {
     notifyPerkLocked(7, "Bộ phối màu đồng hồ");
@@ -9234,7 +9237,7 @@ window.updateStudyColorRole = function(role, colorHex) {
   updateDailyGoalUI();
 };
 
-window.resetStudyColorRoles = function() {
+window.resetStudyColorRoles = function () {
   studySettings.primaryColor = "#10b981";
   studySettings.secondaryColor = "#10b981";
   studySettings.accessoryColor = "#10b981";
@@ -9337,7 +9340,7 @@ function getClockStyleLabel(styleId) {
   }
 }
 
-window.selectClockStyle = function(styleId) {
+window.selectClockStyle = function (styleId) {
   studySettings.clockStyle = styleId;
   saveStudySettings(false);
   updateClockStyleGridUI();
@@ -10048,7 +10051,7 @@ function updateTimerDisplay() {
   }
 }
 
-window.applyTimerPreset = async function(presetId) {
+window.applyTimerPreset = async function (presetId) {
   const cfg = STUDY_PRESET_CONFIGS[presetId];
   if (!cfg) return;
 
@@ -10097,7 +10100,7 @@ window.applyTimerPreset = async function(presetId) {
   await syncStudyToServer();
 };
 
-window.setFlowtimeBreakRatio = function(ratio) {
+window.setFlowtimeBreakRatio = function (ratio) {
   studySettings.flowtimeRatio = ratio;
   saveStudySettings(false);
   updateStaticStudyControlsUI();
@@ -10122,7 +10125,7 @@ window.setFlowtimeBreakRatio = function(ratio) {
   }
 };
 
-window.triggerFlowtimeBreak = function() {
+window.triggerFlowtimeBreak = function () {
   if (studyState.elapsedSessionSeconds < 5) {
     toast("Hãy tập trung ít nhất vài phút trước khi bắt đầu nghỉ giải lao nhé!");
     return;
@@ -10167,8 +10170,8 @@ function setStudyMode(mode, duration) {
   const isEye = (studySettings.timerPreset === 'eye_rule');
   const finalDuration = duration || (
     standardMode === 'focus' ? studySettings.focusMins :
-    standardMode === 'shortbreak' ? (isEye ? (20 / 60) : studySettings.shortBreakMins) :
-    studySettings.longBreakMins
+      standardMode === 'shortbreak' ? (isEye ? (20 / 60) : studySettings.shortBreakMins) :
+        studySettings.longBreakMins
   );
 
   studyState.durationMinutes = finalDuration;
@@ -10594,7 +10597,7 @@ async function resetStudyTimer() {
   if (session) {
     try {
       await requestAPI("/api/study/leave", { method: "POST" });
-    } catch (e) {}
+    } catch (e) { }
   }
   if (studySettings.clockStyle === 'hourglass') {
     triggerHourglassFlipAnimation();
@@ -10674,7 +10677,7 @@ async function finishStudySession(autoCompleted = false) {
     if (session) {
       try {
         await requestAPI("/api/study/leave", { method: "POST" });
-      } catch (e) {}
+      } catch (e) { }
     }
 
     updateTimerDisplay();
@@ -10688,31 +10691,31 @@ function resumeActiveStudyAudioIfPaused() {
   try {
     if (studyState.activeEnvTrack) {
       const p = studyState.envAudioPlayers[studyState.activeEnvTrack];
-      if (p && p.paused && !p._isExplicitlyStopped) p.play().catch(() => {});
+      if (p && p.paused && !p._isExplicitlyStopped) p.play().catch(() => { });
     }
     if (studyState.activeMusicTrack) {
       const p = studyState.musicAudioPlayers[studyState.activeMusicTrack];
-      if (p && p.paused && !p._isExplicitlyStopped) p.play().catch(() => {});
+      if (p && p.paused && !p._isExplicitlyStopped) p.play().catch(() => { });
     }
     Object.keys(studyState.activeMixSounds || {}).forEach(k => {
       if (studyState.activeMixSounds[k]) {
         const p = studyState.mixAudioPlayers[k];
-        if (p && p.paused && !p._isExplicitlyStopped) p.play().catch(() => {});
+        if (p && p.paused && !p._isExplicitlyStopped) p.play().catch(() => { });
       }
     });
     if (studyState.activeCustomEnvId && studyState.customEnvAudioPlayer && studyState.customEnvAudioPlayer.paused && !studyState.customEnvAudioPlayer._isExplicitlyStopped) {
-      studyState.customEnvAudioPlayer.play().catch(() => {});
+      studyState.customEnvAudioPlayer.play().catch(() => { });
     }
     if (studyState.activeCustomMusicId && studyState.customMusicAudioPlayer && studyState.customMusicAudioPlayer.paused && !studyState.customMusicAudioPlayer._isExplicitlyStopped) {
-      studyState.customMusicAudioPlayer.play().catch(() => {});
+      studyState.customMusicAudioPlayer.play().catch(() => { });
     }
     Object.keys(studyState.activeCustomMixSounds || {}).forEach(k => {
       if (studyState.activeCustomMixSounds[k]) {
         const p = studyState.customMixAudioPlayers[k];
-        if (p && p.paused && !p._isExplicitlyStopped) p.play().catch(() => {});
+        if (p && p.paused && !p._isExplicitlyStopped) p.play().catch(() => { });
       }
     });
-  } catch (e) {}
+  } catch (e) { }
 }
 
 // Background tab throttling resolution via Page Visibility & Focus APIs
@@ -10969,7 +10972,7 @@ function renderCoStudyList(rawLearners = [], force = false) {
     const isSelfClass = l.isSelf ? 'is-self' : '';
     const nameDisplay = l.isSelf ? `${escapeHTML(l.name)} (Bạn)` : escapeHTML(l.name);
     const roleBadge = l.role === 'admin' ? '<span class="lb-role lb-role-admin">Admin</span>' : (l.role === 'ta' ? '<span class="lb-role lb-role-ta">TA</span>' : '');
-    
+
     let statusText = '';
     let statusIcon = '';
     if (l.isRunning) {
@@ -11253,8 +11256,8 @@ function togglePersonalTasksCollapse(forceState) {
   body.style.display = willShow ? "block" : "none";
   if (btn) btn.title = willShow ? "Thu gọn danh sách việc" : "Mở rộng danh sách việc";
   if (icon) {
-    icon.innerHTML = willShow 
-      ? '<polyline points="18 15 12 9 6 15"></polyline>' 
+    icon.innerHTML = willShow
+      ? '<polyline points="18 15 12 9 6 15"></polyline>'
       : '<polyline points="6 9 12 15 18 9"></polyline>';
   }
 }
@@ -11715,7 +11718,7 @@ async function joinStudySpace(roomId, pinCode = null, skipConfirm = false) {
       currentStudyRoomData = res.room || null;
       try {
         localStorage.setItem("research_study_room_id", currentStudyRoomId);
-      } catch (e) {}
+      } catch (e) { }
 
       // If this is a continuous library room, synchronize timer immediately
       if (currentStudyRoomId.startsWith('lib_')) {
@@ -11766,13 +11769,13 @@ async function executeLeaveCurrentRoom() {
       method: "POST",
       body: JSON.stringify({ roomId: currentStudyRoomId })
     });
-  } catch (e) {}
+  } catch (e) { }
 
   currentStudyRoomId = null;
   currentStudyRoomData = null;
   try {
     localStorage.removeItem("research_study_room_id");
-  } catch (e) {}
+  } catch (e) { }
 
   // Khôi phục lại cấu hình cá nhân của người dùng từ localStorage khi rời phòng nhóm
   studySettings = getInitialStudySettings();
@@ -11933,7 +11936,7 @@ async function handleCreateMeetingSubmit(skipConfirm = false) {
       currentStudyRoomData = res.room;
       try {
         localStorage.setItem("research_study_room_id", currentStudyRoomId);
-      } catch (e) {}
+      } catch (e) { }
       renderActiveSpaceBanner(res.room);
       renderSharedCohortTasks(res.room.sharedTasks || []);
       fetchStudyLounge();
@@ -12131,13 +12134,13 @@ function showCheerToast(c) {
   }, 4000);
 }
 
-window.notifyCheerLocked = function() {
+window.notifyCheerLocked = function () {
   toast("🔒 Tính năng Cổ vũ tương tác mở khóa ở Chuỗi 3 ngày (Sinh viên năng động)!");
 };
 
 let isSendingStudyCheer = false;
 
-window.sendStudyCheer = async function(recipientId, cheerType) {
+window.sendStudyCheer = async function (recipientId, cheerType) {
   if (!canAccessStudyLounge()) {
     toast(STUDY_MAINTENANCE_MSG);
     return;
@@ -12255,7 +12258,7 @@ function createStudyAudioPlayer(src) {
   let retryTimer = null;
 
   const originalPlay = player.play.bind(player);
-  player.play = function() {
+  player.play = function () {
     player._isExplicitlyStopped = false;
     if (retryTimer) {
       clearTimeout(retryTimer);
@@ -12265,7 +12268,7 @@ function createStudyAudioPlayer(src) {
   };
 
   const originalPause = player.pause.bind(player);
-  player.pause = function() {
+  player.pause = function () {
     player._isExplicitlyStopped = true;
     if (retryTimer) {
       clearTimeout(retryTimer);
@@ -12288,8 +12291,8 @@ function createStudyAudioPlayer(src) {
               player.src = src;
               player.load();
               player.currentTime = 0;
-              player.play().catch(() => {});
-            } catch (e) {}
+              player.play().catch(() => { });
+            } catch (e) { }
           });
         }
       } catch (e) {
@@ -12327,11 +12330,11 @@ function fadeAudioIn(player, targetVol, durationMs = 250) {
   // On mobile Safari/iOS, setting volume to 0 or muted before play can trigger muted-audio mode.
   // Start with target volume so mobile plays audibly immediately.
   player.volume = target;
-  
+
   // Ensure AudioContext is active if available
   try {
     getAudioContext();
-  } catch (e) {}
+  } catch (e) { }
 
   const playPromise = player.play();
   if (playPromise !== undefined) {
@@ -12363,7 +12366,7 @@ function fadeAudioOut(player, durationMs = 180, onComplete) {
       try {
         player.pause();
         player.currentTime = 0;
-      } catch (e) {}
+      } catch (e) { }
       if (onComplete) onComplete();
     }
   }, stepTime);
@@ -12449,7 +12452,7 @@ function toggleEnvTrack(trackId) {
   if (DEFAULT_ENV_AUDIO_SOURCES && DEFAULT_ENV_AUDIO_SOURCES[trackId]) {
     let player = studyState.envAudioPlayers[trackId];
     if (!player || player.error) {
-      if (player) { try { player.pause(); player.src = ""; } catch (e) {} }
+      if (player) { try { player.pause(); player.src = ""; } catch (e) { } }
       player = createStudyAudioPlayer(DEFAULT_ENV_AUDIO_SOURCES[trackId]);
       studyState.envAudioPlayers[trackId] = player;
     }
@@ -12565,7 +12568,7 @@ function toggleMixTrack(trackId) {
     if (DEFAULT_MIX_AUDIO_SOURCES && DEFAULT_MIX_AUDIO_SOURCES[trackId]) {
       let player = studyState.mixAudioPlayers[trackId];
       if (!player || player.error) {
-        if (player) { try { player.pause(); player.src = ""; } catch (e) {} }
+        if (player) { try { player.pause(); player.src = ""; } catch (e) { } }
         player = createStudyAudioPlayer(DEFAULT_MIX_AUDIO_SOURCES[trackId]);
         studyState.mixAudioPlayers[trackId] = player;
       }
@@ -12664,7 +12667,7 @@ function toggleMusicTrack(trackId) {
   if (DEFAULT_MUSIC_AUDIO_SOURCES && DEFAULT_MUSIC_AUDIO_SOURCES[trackId]) {
     let player = studyState.musicAudioPlayers[trackId];
     if (!player || player.error) {
-      if (player) { try { player.pause(); player.src = ""; } catch (e) {} }
+      if (player) { try { player.pause(); player.src = ""; } catch (e) { } }
       player = createStudyAudioPlayer(DEFAULT_MUSIC_AUDIO_SOURCES[trackId]);
       studyState.musicAudioPlayers[trackId] = player;
     }
@@ -12738,11 +12741,11 @@ function updateMasterAmbientButtonState() {
   const masterBtn = $("#toggleAmbientMaster");
   if (!masterBtn) return;
   const anyActive = (studyState.activeEnvTrack !== null) ||
-                    (studyState.activeMusicTrack !== null) ||
-                    (studyState.activeCustomEnvId !== null) ||
-                    (studyState.activeCustomMusicId !== null) ||
-                    Object.values(studyState.activeMixSounds).some(v => v) ||
-                    Object.values(studyState.activeCustomMixSounds).some(v => v);
+    (studyState.activeMusicTrack !== null) ||
+    (studyState.activeCustomEnvId !== null) ||
+    (studyState.activeCustomMusicId !== null) ||
+    Object.values(studyState.activeMixSounds).some(v => v) ||
+    Object.values(studyState.activeCustomMixSounds).some(v => v);
 
   masterBtn.textContent = anyActive ? "Tắt tất cả" : "Bật tất cả";
 }
@@ -12885,7 +12888,7 @@ function playSoftReminderChime() {
     osc1.stop(now + 0.7);
     osc2.start(now + 0.12);
     osc2.stop(now + 1.45);
-  } catch (e) {}
+  } catch (e) { }
 }
 
 let tickSoundToggle = false;
@@ -12920,7 +12923,7 @@ function playTickSound() {
 
     osc.start(now);
     osc.stop(now + 0.03);
-  } catch (e) {}
+  } catch (e) { }
 }
 
 function playChimeSound() {
@@ -12950,7 +12953,7 @@ function previewTickingSound(type) {
     gain.connect(ctx.destination);
     osc.start(now);
     osc.stop(now + 0.035);
-  } catch (e) {}
+  } catch (e) { }
 }
 
 /* --- 8. CUSTOM AUDIO UPLOAD, PERSISTENT STORAGE & PLAYBACK --- */
@@ -12960,7 +12963,7 @@ try {
   if (savedCustomVols) {
     studyState.customVolumes = Object.assign({}, JSON.parse(savedCustomVols), studyState.customVolumes);
   }
-} catch (e) {}
+} catch (e) { }
 
 function getTrackBlobUrl(track) {
   if (track.objectUrl) return track.objectUrl;
@@ -13113,7 +13116,7 @@ function updateCustomAudioVolume(id, val) {
   studyState.customVolumes[id] = numVal;
   try {
     localStorage.setItem("research_custom_audio_vols", JSON.stringify(studyState.customVolumes));
-  } catch (e) {}
+  } catch (e) { }
 
   const userVol = Math.max(0, Math.min(1, numVal / 100));
   if (studyState.activeCustomEnvId === id && studyState.customEnvAudioPlayer) {
@@ -13167,7 +13170,7 @@ function toggleCustomEnvAudio(track) {
 
   let player = studyState.customEnvAudioPlayer;
   if (!player || player.src !== audioUrl || player.error) {
-    if (player) { try { player.pause(); } catch(e){} }
+    if (player) { try { player.pause(); } catch (e) { } }
     player = createStudyAudioPlayer(audioUrl);
     studyState.customEnvAudioPlayer = player;
   }
@@ -13216,7 +13219,7 @@ function toggleCustomMusicAudio(track) {
 
   let player = studyState.customMusicAudioPlayer;
   if (!player || player.src !== audioUrl || player.error) {
-    if (player) { try { player.pause(); } catch(e){} }
+    if (player) { try { player.pause(); } catch (e) { } }
     player = createStudyAudioPlayer(audioUrl);
     studyState.customMusicAudioPlayer = player;
   }
@@ -13253,7 +13256,7 @@ function toggleCustomMixAudio(track) {
       try {
         p.pause();
         p.currentTime = 0;
-      } catch (e) {}
+      } catch (e) { }
     }
     studyState.activeCustomMixSounds[id] = false;
     updateCustomTrackDOM(id, false);
@@ -13270,7 +13273,7 @@ function toggleCustomMixAudio(track) {
 
   let player = studyState.customMixAudioPlayers[id];
   if (!player || player.src !== audioUrl || player.error) {
-    if (player) { try { player.pause(); } catch(e){} }
+    if (player) { try { player.pause(); } catch (e) { } }
     player = createStudyAudioPlayer(audioUrl);
     studyState.customMixAudioPlayers[id] = player;
   }
@@ -13315,7 +13318,7 @@ async function confirmDeleteCustomAudioTrack(id) {
   if (studyState.activeCustomMixSounds[id]) {
     const p = studyState.customMixAudioPlayers[id];
     if (p) {
-      try { p.pause(); p.currentTime = 0; } catch (e) {}
+      try { p.pause(); p.currentTime = 0; } catch (e) { }
       delete studyState.customMixAudioPlayers[id];
     }
     studyState.activeCustomMixSounds[id] = false;
@@ -13323,7 +13326,7 @@ async function confirmDeleteCustomAudioTrack(id) {
 
   // 2. Thu hồi object URL nếu có
   if (track && track.objectUrl) {
-    try { URL.revokeObjectURL(track.objectUrl); } catch (e) {}
+    try { URL.revokeObjectURL(track.objectUrl); } catch (e) { }
   }
 
   // 3. Xóa trong IndexedDB
@@ -13333,7 +13336,7 @@ async function confirmDeleteCustomAudioTrack(id) {
   await loadCustomAudioFromDB();
 };
 
-window.triggerUploadEnvAudio = function() {
+window.triggerUploadEnvAudio = function () {
   const streak = getUserStudyStreak();
   if (streak < 30) {
     notifyPerkLocked(30, "Tính năng tải âm thanh tùy biến");
@@ -13343,7 +13346,7 @@ window.triggerUploadEnvAudio = function() {
   if (input) input.click();
 };
 
-window.triggerUploadMixAudio = function() {
+window.triggerUploadMixAudio = function () {
   const streak = getUserStudyStreak();
   if (streak < 30) {
     notifyPerkLocked(30, "Tính năng tải âm thanh tùy biến");
@@ -13353,7 +13356,7 @@ window.triggerUploadMixAudio = function() {
   if (input) input.click();
 };
 
-window.triggerUploadMusicAudio = function() {
+window.triggerUploadMusicAudio = function () {
   const streak = getUserStudyStreak();
   if (streak < 30) {
     notifyPerkLocked(30, "Tính năng tải âm thanh tùy biến");
@@ -13836,91 +13839,91 @@ function toggleStudyZenView() {
 
 /* --- HÀO QUANG & MÀU SẮC GRADIENT ĐỘC QUYỀN (Streak >= 30: 5 đầu; Streak >= 50: cả 10) --- */
 const COLOR_AURAS = [
-  { 
-    id: 'emerald', 
-    name: 'Ngọc Lục Bảo (Mặc định)', 
-    gradient: 'linear-gradient(135deg, #10b981 0%, #059669 50%, #34d399 100%)', 
-    primary: '#10b981', 
+  {
+    id: 'emerald',
+    name: 'Ngọc Lục Bảo (Mặc định)',
+    gradient: 'linear-gradient(135deg, #10b981 0%, #059669 50%, #34d399 100%)',
+    primary: '#10b981',
     glow: 'rgba(16, 185, 129, 0.45)',
     stops: ['#10b981', '#34d399']
   },
-  { 
-    id: 'pomodoro', 
-    name: 'San Hô Pomodoro', 
-    gradient: 'linear-gradient(135deg, #f05454 0%, #e23e57 50%, #ff758c 100%)', 
-    primary: '#f05454', 
+  {
+    id: 'pomodoro',
+    name: 'San Hô Pomodoro',
+    gradient: 'linear-gradient(135deg, #f05454 0%, #e23e57 50%, #ff758c 100%)',
+    primary: '#f05454',
     glow: 'rgba(240, 84, 84, 0.45)',
     stops: ['#f05454', '#e23e57']
   },
-  { 
-    id: 'cyan', 
-    name: 'Lam Băng Sương Mai', 
-    gradient: 'linear-gradient(135deg, #00f2fe 0%, #4facfe 50%, #00c6fb 100%)', 
-    primary: '#00f2fe', 
+  {
+    id: 'cyan',
+    name: 'Lam Băng Sương Mai',
+    gradient: 'linear-gradient(135deg, #00f2fe 0%, #4facfe 50%, #00c6fb 100%)',
+    primary: '#00f2fe',
     glow: 'rgba(0, 242, 254, 0.45)',
     stops: ['#00f2fe', '#4facfe']
   },
-  { 
-    id: 'amber', 
-    name: 'Hỏa Diệm Hoàng Hôn', 
-    gradient: 'linear-gradient(135deg, #ff7e5f 0%, #feb47b 50%, #ff5e62 100%)', 
-    primary: '#ff7e5f', 
+  {
+    id: 'amber',
+    name: 'Hỏa Diệm Hoàng Hôn',
+    gradient: 'linear-gradient(135deg, #ff7e5f 0%, #feb47b 50%, #ff5e62 100%)',
+    primary: '#ff7e5f',
     glow: 'rgba(255, 126, 95, 0.45)',
     stops: ['#ff7e5f', '#feb47b']
   },
-  { 
-    id: 'purple', 
-    name: 'Tím Hoàng Gia Huyền Bí', 
-    gradient: 'linear-gradient(135deg, #7048e8 0%, #b5179e 50%, #da77f2 100%)', 
-    primary: '#b5179e', 
+  {
+    id: 'purple',
+    name: 'Tím Hoàng Gia Huyền Bí',
+    gradient: 'linear-gradient(135deg, #7048e8 0%, #b5179e 50%, #da77f2 100%)',
+    primary: '#b5179e',
     glow: 'rgba(181, 23, 158, 0.45)',
     stops: ['#7048e8', '#da77f2']
   },
-  { 
-    id: 'rose', 
-    name: 'Thạch Anh Hồng Ngọc', 
-    gradient: 'linear-gradient(135deg, #ff416c 0%, #ff4b2b 50%, #ff758c 100%)', 
-    primary: '#ff416c', 
+  {
+    id: 'rose',
+    name: 'Thạch Anh Hồng Ngọc',
+    gradient: 'linear-gradient(135deg, #ff416c 0%, #ff4b2b 50%, #ff758c 100%)',
+    primary: '#ff416c',
     glow: 'rgba(255, 65, 108, 0.45)',
     stops: ['#ff416c', '#ff758c']
   },
-  { 
-    id: 'gold', 
-    name: 'Hoàng Gia Vàng Kim', 
-    gradient: 'linear-gradient(135deg, #f59f00 0%, #ffd700 50%, #f08c00 100%)', 
-    primary: '#f59f00', 
+  {
+    id: 'gold',
+    name: 'Hoàng Gia Vàng Kim',
+    gradient: 'linear-gradient(135deg, #f59f00 0%, #ffd700 50%, #f08c00 100%)',
+    primary: '#f59f00',
     glow: 'rgba(245, 159, 0, 0.45)',
     stops: ['#f59f00', '#ffd700']
   },
-  { 
-    id: 'aurora', 
-    name: 'Cực Quang Cửu Thiên', 
-    gradient: 'linear-gradient(135deg, #00f2fe 0%, #38ef7d 50%, #11998e 100%)', 
-    primary: '#00f2fe', 
+  {
+    id: 'aurora',
+    name: 'Cực Quang Cửu Thiên',
+    gradient: 'linear-gradient(135deg, #00f2fe 0%, #38ef7d 50%, #11998e 100%)',
+    primary: '#00f2fe',
     glow: 'rgba(0, 242, 254, 0.5)',
     stops: ['#00f2fe', '#38ef7d']
   },
-  { 
-    id: 'sunset_grad', 
-    name: 'Hoàng Kim Sang Trọng', 
-    gradient: 'linear-gradient(135deg, #f6d365 0%, #fda085 50%, #ff6b6b 100%)', 
-    primary: '#fda085', 
+  {
+    id: 'sunset_grad',
+    name: 'Hoàng Kim Sang Trọng',
+    gradient: 'linear-gradient(135deg, #f6d365 0%, #fda085 50%, #ff6b6b 100%)',
+    primary: '#fda085',
     glow: 'rgba(253, 160, 133, 0.5)',
     stops: ['#f6d365', '#ff6b6b']
   },
-  { 
-    id: 'cyberpunk', 
-    name: 'Tím Cyberpunk Neon', 
-    gradient: 'linear-gradient(135deg, #f093fb 0%, #f5576c 50%, #4facfe 100%)', 
-    primary: '#f093fb', 
+  {
+    id: 'cyberpunk',
+    name: 'Tím Cyberpunk Neon',
+    gradient: 'linear-gradient(135deg, #f093fb 0%, #f5576c 50%, #4facfe 100%)',
+    primary: '#f093fb',
     glow: 'rgba(240, 147, 251, 0.5)',
     stops: ['#f093fb', '#4facfe']
   },
-  { 
-    id: 'cosmic', 
-    name: 'Vũ Trụ Vô Tận', 
-    gradient: 'linear-gradient(135deg, #5ee7df 0%, #b490ca 50%, #667eea 100%)', 
-    primary: '#5ee7df', 
+  {
+    id: 'cosmic',
+    name: 'Vũ Trụ Vô Tận',
+    gradient: 'linear-gradient(135deg, #5ee7df 0%, #b490ca 50%, #667eea 100%)',
+    primary: '#5ee7df',
     glow: 'rgba(94, 231, 223, 0.5)',
     stops: ['#5ee7df', '#667eea']
   }
@@ -14056,7 +14059,7 @@ function resetStudyTheme() {
   toast("Đã đặt lại không gian học tập mặc định.");
 }
 
-window.notifyPerkLocked = function(days, perkName) {
+window.notifyPerkLocked = function (days, perkName) {
   toast(`🔒 ${perkName} mở khóa ở Chuỗi ${days} ngày!`);
 };
 
@@ -14067,11 +14070,11 @@ function toggleStudyFullscreen() {
   if (btn) btn.textContent = isZen ? "✕" : "⛶";
   if (isZen) {
     if (document.documentElement.requestFullscreen) {
-      document.documentElement.requestFullscreen().catch(() => {});
+      document.documentElement.requestFullscreen().catch(() => { });
     }
   } else {
     if (document.fullscreenElement && document.exitFullscreen) {
-      document.exitFullscreen().catch(() => {});
+      document.exitFullscreen().catch(() => { });
     }
   }
 }
@@ -14099,12 +14102,12 @@ function sendStudyNotification() {
         body,
         icon: "/favicon.ico"
       });
-    } catch (e) {}
+    } catch (e) { }
   }
 }
 
 /* --- 13. SETTINGS MODAL HANDLERS --- */
-window.switchStudySettingsTab = function(tabName) {
+window.switchStudySettingsTab = function (tabName) {
   $$(".settings-tab-btn").forEach(btn => {
     btn.classList.toggle("active", btn.dataset.settingsTab === tabName);
   });
@@ -14138,7 +14141,7 @@ window.switchStudySettingsTab = function(tabName) {
   }
 };
 
-window.selectModalPreset = function(presetId) {
+window.selectModalPreset = function (presetId) {
   $$("#presetSelectorGrid .preset-card").forEach(c => {
     c.classList.toggle("active", c.dataset.preset === presetId);
   });
@@ -14167,7 +14170,7 @@ window.selectModalPreset = function(presetId) {
   handleCustomDurationChange();
 };
 
-window.stepDuration = function(type, delta) {
+window.stepDuration = function (type, delta) {
   let input = null;
   let min = 1, max = 180;
   if (type === 'focus') {
@@ -14187,7 +14190,7 @@ window.stepDuration = function(type, delta) {
   handleCustomDurationChange();
 };
 
-window.stepLongBreakInterval = function(delta) {
+window.stepLongBreakInterval = function (delta) {
   const input = $("#settingLongBreakInterval");
   if (!input) return;
   const current = Number(input.value) || 4;
@@ -14196,7 +14199,7 @@ window.stepLongBreakInterval = function(delta) {
   handleCustomDurationChange();
 };
 
-window.stepDailyGoal = function(delta) {
+window.stepDailyGoal = function (delta) {
   const input = $("#settingDailyGoal");
   if (!input) return;
   const current = Number(input.value) || 8;
@@ -14204,7 +14207,7 @@ window.stepDailyGoal = function(delta) {
   input.value = next;
 };
 
-window.handleCustomDurationChange = function() {
+window.handleCustomDurationChange = function () {
   const fInput = $("#settingFocusMins");
   const sInput = $("#settingShortBreakMins");
   const lInput = $("#settingLongBreakMins");
@@ -14226,14 +14229,14 @@ window.handleCustomDurationChange = function() {
   }
 };
 
-window.handleAlarmVolumeChange = function(val) {
+window.handleAlarmVolumeChange = function (val) {
   const num = Math.max(0, Math.min(100, Number(val) || 0));
   const textEl = $("#alarmVolumeVal");
   if (textEl) textEl.textContent = `${num}%`;
   studySettings.alarmVolume = num;
 };
 
-window.setAlarmRings = function(rings) {
+window.setAlarmRings = function (rings) {
   const num = Number(rings) || 1;
   studySettings.alarmRings = num;
   $$("#ringMultiplierGroup .ring-mult-btn").forEach(btn => {
@@ -14241,7 +14244,7 @@ window.setAlarmRings = function(rings) {
   });
 };
 
-window.setReminderBeforeEnd = function(mins) {
+window.setReminderBeforeEnd = function (mins) {
   const num = Number(mins) || 0;
   studySettings.reminderBeforeEnd = num;
   $$("#reminderPillGroup .remind-pill-btn").forEach(btn => {
@@ -14249,11 +14252,11 @@ window.setReminderBeforeEnd = function(mins) {
   });
 };
 
-window.updateFlowtimeRatioSetting = function(val) {
+window.updateFlowtimeRatioSetting = function (val) {
   studySettings.flowtimeRatio = val;
 };
 
-window.openMethodGuideModal = function(method = 'all') {
+window.openMethodGuideModal = function (method = 'all') {
   const modal = $("#studyMethodGuideModal");
   if (!modal) return;
   modal.showModal();
@@ -14266,7 +14269,7 @@ window.openMethodGuideModal = function(method = 'all') {
   }
 };
 
-window.openStudySettingsModal = function(initialTab = 'timer', showCustom = false) {
+window.openStudySettingsModal = function (initialTab = 'timer', showCustom = false) {
   const modal = $("#studySettingsModal");
   if (!modal) return;
 
@@ -14351,7 +14354,7 @@ window.openStudySettingsModal = function(initialTab = 'timer', showCustom = fals
   modal.showModal();
 };
 
-window.saveStudySettings = function(closeModal = true) {
+window.saveStudySettings = function (closeModal = true) {
   const modal = $("#studySettingsModal");
   if (closeModal || (modal && modal.open)) {
     const fInput = $("#settingFocusMins");
@@ -14400,7 +14403,7 @@ window.saveStudySettings = function(closeModal = true) {
 
   try {
     localStorage.setItem(STUDY_SETTINGS_KEY, JSON.stringify(studySettings));
-  } catch (e) {}
+  } catch (e) { }
 
   if (closeModal && !studyState.isRunning) {
     if (studySettings.timerPreset === 'flowtime') {
@@ -14526,7 +14529,7 @@ function loadStudyTodos() {
 function saveStudyTodos(todos) {
   try {
     localStorage.setItem(STUDY_TODO_STORAGE_KEY, JSON.stringify(todos));
-  } catch (e) {}
+  } catch (e) { }
   loadStudyTodos();
 }
 
@@ -14555,11 +14558,11 @@ function addStudyTodo() {
   saveStudyTodos(todos);
 }
 
-window.cycleTaskStatus = function(idx) {
+window.cycleTaskStatus = function (idx) {
   let todos = [];
   try {
     todos = JSON.parse(localStorage.getItem(STUDY_TODO_STORAGE_KEY) || "[]");
-  } catch (e) {}
+  } catch (e) { }
   if (!todos[idx]) return;
 
   const currentStatusId = todos[idx].status || (todos[idx].done ? "hoan_thanh" : "chua_lam");
@@ -14572,11 +14575,11 @@ window.cycleTaskStatus = function(idx) {
   saveStudyTodos(todos);
 };
 
-window.toggleStudyTodo = function(idx) {
+window.toggleStudyTodo = function (idx) {
   let todos = [];
   try {
     todos = JSON.parse(localStorage.getItem(STUDY_TODO_STORAGE_KEY) || "[]");
-  } catch (e) {}
+  } catch (e) { }
   if (todos[idx]) {
     const nextDone = !todos[idx].done;
     todos[idx].done = nextDone;
@@ -14585,11 +14588,11 @@ window.toggleStudyTodo = function(idx) {
   }
 };
 
-window.deleteStudyTodo = function(idx) {
+window.deleteStudyTodo = function (idx) {
   let todos = [];
   try {
     todos = JSON.parse(localStorage.getItem(STUDY_TODO_STORAGE_KEY) || "[]");
-  } catch (e) {}
+  } catch (e) { }
   todos.splice(idx, 1);
   saveStudyTodos(todos);
 };
@@ -14598,7 +14601,7 @@ function clearCompletedTodos() {
   let todos = [];
   try {
     todos = JSON.parse(localStorage.getItem(STUDY_TODO_STORAGE_KEY) || "[]");
-  } catch (e) {}
+  } catch (e) { }
   todos = todos.filter(t => !t.done && t.status !== "hoan_thanh" && t.status !== "huy");
   saveStudyTodos(todos);
   toast("Đã dọn dẹp các việc đã xong / hủy!");
@@ -14642,7 +14645,7 @@ function renderTaskLabelsManagerList() {
   `).join("");
 }
 
-window.handleCreateTaskLabel = function() {
+window.handleCreateTaskLabel = function () {
   const nameInput = $("#newLabelNameInput");
   const colorInput = $("#newLabelColorInput");
   if (!nameInput) return;
@@ -14668,11 +14671,11 @@ window.handleCreateTaskLabel = function() {
   toast(`Đã thêm nhãn: "${newTag.name}"`);
 };
 
-window.promptAddNewTaskLabel = function() {
+window.promptAddNewTaskLabel = function () {
   window.handleCreateTaskLabel();
 };
 
-window.updateTaskLabelColor = function(id, color) {
+window.updateTaskLabelColor = function (id, color) {
   const target = (studySettings.taskLabels || []).find(l => l.id === id);
   if (target) {
     target.color = color;
@@ -14682,7 +14685,7 @@ window.updateTaskLabelColor = function(id, color) {
   }
 };
 
-window.updateTaskLabelName = function(id, name) {
+window.updateTaskLabelName = function (id, name) {
   const target = (studySettings.taskLabels || []).find(l => l.id === id);
   if (target && name.trim()) {
     target.name = name.trim();
@@ -14692,7 +14695,7 @@ window.updateTaskLabelName = function(id, name) {
   }
 };
 
-window.deleteTaskLabel = function(id) {
+window.deleteTaskLabel = function (id) {
   if (!confirm("Bạn có chắc muốn xóa nhãn này không?")) return;
   studySettings.taskLabels = (studySettings.taskLabels || []).filter(l => l.id !== id);
   saveStudySettings(false);
@@ -14722,7 +14725,7 @@ function onEnterStudyLounge() {
       let savedRoomId = null;
       try {
         savedRoomId = localStorage.getItem("research_study_room_id");
-      } catch (e) {}
+      } catch (e) { }
 
       if (savedRoomId && savedRoomId !== 'commons' && savedRoomId !== 'private') {
         currentStudyRoomId = savedRoomId;
@@ -14898,11 +14901,11 @@ function initStudyLoungeEvents() {
   if (masterAmbientBtn) {
     masterAmbientBtn.onclick = () => {
       const anyActive = (studyState.activeEnvTrack !== null) ||
-                        (studyState.activeMusicTrack !== null) ||
-                        (studyState.activeCustomEnvId !== null) ||
-                        (studyState.activeCustomMusicId !== null) ||
-                        Object.values(studyState.activeMixSounds).some(v => v) ||
-                        Object.values(studyState.activeCustomMixSounds).some(v => v);
+        (studyState.activeMusicTrack !== null) ||
+        (studyState.activeCustomEnvId !== null) ||
+        (studyState.activeCustomMusicId !== null) ||
+        Object.values(studyState.activeMixSounds).some(v => v) ||
+        Object.values(studyState.activeCustomMixSounds).some(v => v);
       if (anyActive) {
         stopAllStudyAudio();
       } else {
@@ -15568,7 +15571,7 @@ function playCompSound(type) {
         osc.stop(now + i * 0.1 + 0.55);
       });
     }
-  } catch (e) {}
+  } catch (e) { }
 }
 
 function launchQuizConfetti() {
@@ -16014,7 +16017,7 @@ async function onEnterArena() {
   }
 }
 
-window.switchLbClass = async function(classCode) {
+window.switchLbClass = async function (classCode) {
   const user = session || (typeof window !== "undefined" && window.session);
   const isPrivileged = Boolean(user && (user.role === "admin" || user.role === "lecturer" || user.role === "ta"));
   if (!isPrivileged) return;
@@ -16028,14 +16031,14 @@ window.switchLbClass = async function(classCode) {
 
 function stopSundayCeremonySound() {
   if (typeof sundayInteractionCleanup === "function") {
-    try { sundayInteractionCleanup(); } catch (e) {}
+    try { sundayInteractionCleanup(); } catch (e) { }
     sundayInteractionCleanup = null;
   }
   if (compState && compState.sundayAudio) {
     try {
       compState.sundayAudio.pause();
       compState.sundayAudio.currentTime = 0;
-    } catch (e) {}
+    } catch (e) { }
   }
 }
 
@@ -16065,11 +16068,11 @@ function playSundayCeremonySound() {
         console.warn("Sunday ceremony audio play deferred/blocked by autoplay policy:", err);
         const resumeOnUserInteraction = () => {
           if (sundayInteractionCleanup) {
-            try { sundayInteractionCleanup(); } catch (e) {}
+            try { sundayInteractionCleanup(); } catch (e) { }
             sundayInteractionCleanup = null;
           }
           if (compState.sundayAudio && compState.sundayAudio.paused) {
-            compState.sundayAudio.play().catch(() => {});
+            compState.sundayAudio.play().catch(() => { });
           }
         };
         const cleanup = () => {
@@ -16769,7 +16772,7 @@ async function loadAndRenderLeaderboard(phase, forceRefresh = false, isSilent = 
   }
 }
 
-window.refreshArenaLeaderboard = async function() {
+window.refreshArenaLeaderboard = async function () {
   const btn = $("#lbRefreshBtn");
   if (btn) {
     btn.disabled = true;
@@ -16810,7 +16813,7 @@ function switchArenaPodiumConcept(conceptId) {
   compState.arenaPodiumConcept = conceptId;
   try {
     localStorage.setItem("re_arena_podium_concept", conceptId);
-  } catch (e) {}
+  } catch (e) { }
   if (window.lastArenaLeaderboardData) {
     renderLeaderboardUI(window.lastArenaLeaderboardData);
   }
@@ -17107,7 +17110,7 @@ function closeQuizStartConfirmModal() {
   if (modal && modal.open) {
     try {
       modal.close();
-    } catch (e) {}
+    } catch (e) { }
   }
   compState.pendingStartPhase = null;
 }
@@ -17682,13 +17685,13 @@ function cancelQuizExit() {
   if (exitModal && exitModal.open) {
     try {
       exitModal.close();
-    } catch (e) {}
+    } catch (e) { }
   }
   const quizModal = $("#competitionQuizModal");
   if (quizModal && !quizModal.open) {
     try {
       quizModal.showModal();
-    } catch (e) {}
+    } catch (e) { }
   }
 }
 
@@ -18218,7 +18221,7 @@ function renderAdminBoardModeUI() {
   }
 }
 
-window.switchAdminBoardTab = async function(mode) {
+window.switchAdminBoardTab = async function (mode) {
   compState.adminBoardMode = (mode === "free") ? "free" : "main";
   renderAdminBoardModeUI();
   if (typeof switchAdminQuestionTrack === "function") {
@@ -18229,7 +18232,7 @@ window.switchAdminBoardTab = async function(mode) {
 async function loadAdminCompetition(targetCompetitionId) {
   try {
     const targetId = targetCompetitionId || compState.adminSelectedCompetitionId;
-    const url = targetId 
+    const url = targetId
       ? `/api/admin/competition/overview?competitionId=${targetId}`
       : "/api/admin/competition/overview";
     const data = await requestAPI(url);
@@ -18264,7 +18267,7 @@ async function loadAdminCompetition(targetCompetitionId) {
   }
 }
 
-window.adminToggleSelectedWeekStatus = async function() {
+window.adminToggleSelectedWeekStatus = async function () {
   const compId = compState.adminSelectedCompetitionId;
   if (!compId) return;
   const comp = compState.adminSelectedCompRaw || {};
@@ -18297,7 +18300,7 @@ window.adminToggleSelectedWeekStatus = async function() {
   }
 };
 
-window.adminQuickToggleArena = function() {
+window.adminQuickToggleArena = function () {
   const curCompId = compState.overview?.week?.id || compState.status?.week?.id;
   if (!curCompId) return;
   compState.adminSelectedCompetitionId = curCompId;
@@ -18305,7 +18308,7 @@ window.adminQuickToggleArena = function() {
   adminToggleSelectedWeekStatus();
 };
 
-window.onAdminChangeCompetitionWeek = async function(compId) {
+window.onAdminChangeCompetitionWeek = async function (compId) {
   const newCompId = Number(compId);
   if (!newCompId) return;
   compState.adminSelectedCompetitionId = newCompId;
@@ -18410,7 +18413,7 @@ async function switchAdminPhaseTab(phase) {
   }
 }
 
-window.switchAdminQuestionTrack = async function(track, syncBoard = true) {
+window.switchAdminQuestionTrack = async function (track, syncBoard = true) {
   // Lưu nháp đang sửa trên giao diện cho track cũ trước khi đổi
   const oldTrack = (compState.adminSelectedTrack === "free" || compState.adminBoardMode === "free") ? "free" : "main";
   const curPhase = compState.adminSelectedPhase || 1;
@@ -18689,7 +18692,7 @@ function adminDownloadExcelTemplate() {
   const currentTrack = (compState.adminSelectedTrack === "free" || compState.adminBoardMode === "free") ? "free" : "main";
   const trackLabel = currentTrack === "free" ? "Bảng thi Tự do (VLU)" : "Bảng chính (Lớp 06 & 07)";
   const fileSuffix = currentTrack === "free" ? "Bang_Tu_Do" : "Bang_Chinh";
-  
+
   const p1Questions = [
     { "STT": 1, "Bảng thi": trackLabel, "Giai đoạn": 1, "Câu hỏi": "Bước đầu tiên trong quy trình nghiên cứu khoa học chuẩn là gì?", "Đáp án A": "Xác định vấn đề và câu hỏi nghiên cứu", "Đáp án B": "Tiến hành thu thập dữ liệu thực địa ngay", "Đáp án C": "Viết báo cáo kết quả và thảo luận", "Đáp án đúng (A/B/C)": "A", "Gợi ý (Hint)": "Trước khi làm bất kỳ khảo sát hay thí nghiệm nào, nhà nghiên cứu phải xác định rõ vấn đề và câu hỏi cần giải quyết." },
     { "STT": 2, "Bảng thi": trackLabel, "Giai đoạn": 1, "Câu hỏi": "Phương pháp nghiên cứu nào thường sử dụng bảng hỏi (survey) để thu thập dữ liệu định lượng?", "Đáp án A": "Nghiên cứu định tính phỏng vấn sâu", "Đáp án B": "Nghiên cứu điều tra khảo sát (Survey research)", "Đáp án C": "Phương pháp quan sát tham dự", "Đáp án đúng (A/B/C)": "B", "Gợi ý (Hint)": "Khảo sát diện rộng bằng bảng câu hỏi chuẩn hóa là đặc trưng điển hình của nghiên cứu điều tra (Survey research)." },
@@ -18831,7 +18834,7 @@ async function adminHandleExcelUpload(event) {
       wb.SheetNames.forEach(sheetName => {
         const sheet = wb.Sheets[sheetName];
         const sheetRows = XLSX.utils.sheet_to_json(sheet, { defval: "" });
-        
+
         let sheetDefaultPhase = currentPhase;
         const sLower = sheetName.toLowerCase().replace(/[\s_-]+/g, "");
         if (sLower.includes("giaidoan1") || sLower.includes("gd1") || sLower === "1") sheetDefaultPhase = 1;
@@ -19503,7 +19506,7 @@ async function handleSiteReviewSubmit(e) {
     await loadSiteReviews();
     try {
       localStorage.setItem("re_search_user_rated_v1", "1");
-    } catch (e) {}
+    } catch (e) { }
     if (typeof dismissRatingBanner === "function") {
       dismissRatingBanner(false);
     }
@@ -19535,7 +19538,7 @@ async function handleSiteReviewDelete() {
     await loadSiteReviews();
     try {
       localStorage.removeItem("re_search_user_rated_v1");
-    } catch (e) {}
+    } catch (e) { }
   } catch (err) {
     toast(err.message || "Không thể xóa đánh giá.");
   }
@@ -19769,6 +19772,5 @@ if (initialRequestedBase === "study" && serverMode) {
   go(initialRequestedRoute, false);
 }
 hydrateServer();
-
 
 

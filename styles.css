@@ -14972,11 +14972,11 @@ body.dark-theme .doc-viewer-save-btn.is-saved {
   z-index: 1;
 }
 
-/* 1. Thân thẻ Canvas (Mini Card Canvas): Bo góc 28px * scale, clip ảnh bìa & nội dung đồng bộ NamecardStage */
+/* 1. Thân thẻ Canvas (Mini Card Canvas): Bo góc 60px * scale theo chuẩn khung Chinh Phục Bầu Trời, clip ảnh bìa & nội dung đồng bộ NamecardStage */
 .mini-card-canvas {
   position: absolute;
   inset: 0;
-  border-radius: calc(28px * var(--mini-scale));
+  border-radius: calc(60px * var(--mini-scale));
   overflow: hidden;
   background: #ffffff;
   box-shadow: 0 4px 18px rgba(15, 23, 42, 0.08);
@@ -15064,7 +15064,13 @@ body.dark-theme .doc-viewer-save-btn.is-saved {
   background-size: 100% 100%;
 }
 
-/* 2 Khung hoạt động giới hạn */
+/* Khung hoạt động giới hạn */
+.mini-card-frame-layer[data-frame="chinh_phuc_bau_troi"] {
+  background-image: url("frames/v2/chinh_phuc_bau_troi.png?v=1");
+  inset: calc(-50px * var(--mini-scale)) calc(-71px * var(--mini-scale)) calc(-61px * var(--mini-scale)) calc(-64px * var(--mini-scale));
+  background-size: 100% 100%;
+}
+
 .mini-card-frame-layer[data-frame="ton_vinh_phai_dep"] {
   background-image: url("frames/v2/ton_vinh_phai_dep.png?v=2");
   inset: calc(-46px * var(--mini-scale)) calc(-29px * var(--mini-scale)) calc(-45px * var(--mini-scale)) calc(-41px * var(--mini-scale));
@@ -15077,10 +15083,10 @@ body.dark-theme .doc-viewer-save-btn.is-saved {
   background-size: 100% 100%;
 }
 
-/* Khung cơ bản miễn phí - Scale độ dày viền theo chuẩn công thức 12px * scale, bo góc 28px * scale */
+/* Khung cơ bản miễn phí - Scale độ dày viền theo chuẩn công thức 12px * scale, bo góc 60px * scale */
 .mini-card-frame-layer[data-frame^="basic_"] {
   inset: 0px;
-  border-radius: calc(28px * var(--mini-scale));
+  border-radius: calc(60px * var(--mini-scale));
   border-width: calc(12px * var(--mini-scale));
   border-style: solid;
   background: none;
@@ -19954,14 +19960,14 @@ dialog.modal.namecard-modal {
   transform: scale(var(--nc-scale, 1));
 }
 
-/* 1. THÂN THẺ CANVAS: Chiếm trọn 100% stage, bo góc 24px, đổ bóng sang trọng
+/* 1. THÂN THẺ CANVAS: Chiếm trọn 100% stage, bo góc 60px chuẩn theo khung Chinh Phục Bầu Trời, đổ bóng sang trọng
    và OVERFLOW HIDDEN để CLIP hoàn hảo nội dung cuộn bên trong, không bao giờ bị trào ra ngoài đỉnh thẻ */
 .namecard-canvas {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
-  border-radius: 28px;
+  border-radius: 60px;
   overflow: hidden;
   background: #ffffff;
   box-shadow: 0 30px 70px -15px rgba(15, 23, 42, 0.4);
@@ -20085,7 +20091,13 @@ dialog.modal.namecard-modal {
   background-size: 100% 100%;
 }
 
-/* 2 Khung hoạt động giới hạn */
+/* Khung hoạt động giới hạn */
+.namecard-frame-layer[data-frame="chinh_phuc_bau_troi"] {
+  background-image: url("frames/v2/chinh_phuc_bau_troi.png?v=1");
+  inset: -50px -71px -61px -64px;
+  background-size: 100% 100%;
+}
+
 .namecard-frame-layer[data-frame="ton_vinh_phai_dep"] {
   background-image: url("frames/v2/ton_vinh_phai_dep.png?v=2");
   inset: -46px -29px -45px -41px;
@@ -20098,10 +20110,10 @@ dialog.modal.namecard-modal {
   background-size: 100% 100%;
 }
 
-/* Khung cơ bản miễn phí (độ dày 12px, bo góc ngoài 28px - bo góc trong chuẩn công thức: 28px - 12px = 16px) */
+/* Khung cơ bản miễn phí (độ dày 12px, bo góc ngoài 60px - bo góc trong chuẩn công thức: 60px - 12px = 48px) */
 .namecard-frame-layer[data-frame^="basic_"] {
   inset: 0px;
-  border-radius: 28px;
+  border-radius: 60px;
   background: none;
   pointer-events: none;
   z-index: 25;
@@ -20234,6 +20246,11 @@ dialog.modal.namecard-modal {
   background-size: 100% 100%;
 }
 
+.frame-choice-preview[data-frame-preview="chinh_phuc_bau_troi"] {
+  background-image: url("frames/v2/thumbs/chinh_phuc_bau_troi.png?v=1");
+  background-size: 100% 100%;
+}
+
 .frame-choice-preview[data-frame-preview="ton_vinh_phai_dep"] {
   background-image: url("frames/v2/thumbs/ton_vinh_phai_dep.png?v=1");
   background-size: 100% 100%;
@@ -20330,12 +20347,12 @@ dialog.modal.namecard-modal {
   pointer-events: none;
 }
 
-/* Content Container that slides OVER the stationary cover */
+/* Content Container that slides OVER the stationary cover (chuẩn nested corner: R_outer(60px) - basic_border(12px) = 48px) */
 .namecard-content-wrap {
   position: relative;
   z-index: 3;
   background: #ffffff;
-  border-radius: 18px 18px 0 0;
+  border-radius: 48px 48px 0 0;
   box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.06);
   flex: 1;
   display: flex;
