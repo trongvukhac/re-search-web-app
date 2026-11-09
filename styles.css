@@ -13291,18 +13291,22 @@ body.dark-theme .doc-viewer-save-btn.is-saved {
 .comp-status-badge {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
-  padding: 4px 10px;
-  border-radius: 20px;
-  font-size: 11px;
-  font-weight: 800;
-  letter-spacing: 0.5px;
+  height: 28px;
+  line-height: 28px;
+  padding: 0 12px;
+  border-radius: 9999px;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
   text-transform: uppercase;
   transition: all 0.3s ease;
   background: rgba(16, 185, 129, 0.2);
   color: #34d399;
   border: 1px solid rgba(52, 211, 153, 0.3);
   white-space: nowrap;
+  box-sizing: border-box;
 }
 
 /* 1. ĐANG MỞ CỔNG: Xanh lá */
@@ -14097,30 +14101,39 @@ body.dark-theme .doc-viewer-save-btn.is-saved {
 }
 
 .comp-phase-tag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 28px;
+  line-height: 28px;
+  padding: 0 12px;
+  border-radius: 9999px;
   background: rgba(255, 255, 255, 0.14);
   color: #e2e8f0;
   font-size: 11.5px;
   font-weight: 700;
-  padding: 4px 10px;
-  border-radius: 6px;
   border: 1px solid rgba(255, 255, 255, 0.15);
   white-space: nowrap;
+  box-sizing: border-box;
 }
 
 .comp-class-badge {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  justify-content: center;
+  text-align: center;
+  height: 28px;
+  line-height: 28px;
+  padding: 0 12px;
+  border-radius: 9999px;
   background: rgba(255, 255, 255, 0.18);
   border: 1px solid rgba(255, 255, 255, 0.3);
-  border-radius: 20px;
-  padding: 4px 10px;
-  font-size: 11px;
+  font-size: 11.5px;
   font-weight: 700;
   color: #ffffff;
   white-space: nowrap;
   letter-spacing: 0.2px;
-  line-height: 1.3;
+  box-sizing: border-box;
 }
 
 .comp-gateway-hero.theme-state-open .comp-class-badge {
@@ -16702,6 +16715,14 @@ body.dark-theme .comp-tab-btn.active {
   .comp-gateway-badge-row .comp-phase-tag {
     white-space: nowrap !important;
     flex-shrink: 0 !important;
+    height: 28px !important;
+    line-height: 28px !important;
+    padding: 0 12px !important;
+    border-radius: 9999px !important;
+    font-size: 11.5px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
   }
 
   .comp-gateway-badge-row .comp-class-badge {
@@ -16710,8 +16731,15 @@ body.dark-theme .comp-tab-btn.active {
     max-width: 100% !important;
     white-space: nowrap !important;
     margin-top: 4px !important;
+    height: 28px !important;
+    line-height: 28px !important;
+    padding: 0 12px !important;
+    border-radius: 9999px !important;
+    font-size: 11.5px !important;
     display: inline-flex !important;
     align-items: center !important;
+    justify-content: center !important;
+    text-align: center !important;
   }
 
   .comp-gateway-hero h3 {
@@ -25664,6 +25692,7 @@ dialog.modal.all-reviews-modal:not([open]) {
   display: flex;
   flex-direction: column;
   gap: 6px;
+  width: 100%;
 }
 
 .distribution-bar-row {
@@ -25671,6 +25700,7 @@ dialog.modal.all-reviews-modal:not([open]) {
   align-items: center;
   gap: 10px;
   font-size: 12px;
+  width: 100%;
 }
 
 .dist-star-label {
@@ -25680,10 +25710,12 @@ dialog.modal.all-reviews-modal:not([open]) {
   display: flex;
   align-items: center;
   gap: 2px;
+  flex-shrink: 0;
 }
 
 .dist-bar-track {
   flex: 1;
+  min-width: 60px;
   height: 8px;
   background: rgba(0, 0, 0, 0.06);
   border-radius: 999px;
@@ -25971,6 +26003,7 @@ body.dark-theme .all-review-card-footer {
     flex-direction: column;
     gap: 18px;
     text-align: center;
+    padding: 16px !important;
   }
 
   .overview-score-box {
@@ -25979,6 +26012,11 @@ body.dark-theme .all-review-card-footer {
     padding-right: 0;
     padding-bottom: 14px;
     width: 100%;
+  }
+
+  .overview-distribution-bars {
+    width: 100% !important;
+    align-self: stretch !important;
   }
 
   .all-reviews-grid {
@@ -26829,4 +26867,187 @@ body.dark-theme .post-doc-more-tag {
     bottom: 14px !important;
     max-width: none !important;
   }
+}
+
+/* Document Subtitle / Citation & Viewer Subtitle */
+.document-subtitle {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--muted);
+  margin: -4px 0 9px 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  line-height: 1.4;
+  font-style: italic;
+}
+
+.document-subtitle .doc-sub-icon {
+  font-style: normal;
+  font-size: 13px;
+  opacity: 0.85;
+}
+
+.doc-viewer-subtitle {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--muted);
+  margin-top: 2px;
+  font-style: italic;
+  line-height: 1.35;
+}
+
+body.dark-theme .document-subtitle,
+body.dark-theme .doc-viewer-subtitle {
+  color: #94a3b8;
+}
+
+/* ==========================================================================
+   DARK THEME COMPREHENSIVE INPUTS & BUTTONS AUDIT
+   ========================================================================== */
+
+/* 1. Global text inputs, textareas, selects in dark mode */
+body.dark-theme input:not([type="checkbox"]):not([type="radio"]):not([type="color"]):not([type="range"]):not([type="submit"]):not([type="button"]):not([type="reset"]):not([type="file"]),
+body.dark-theme textarea,
+body.dark-theme select {
+  background-color: #11161b !important;
+  border-color: rgba(255, 255, 255, 0.16) !important;
+  color: #f1f5f9 !important;
+}
+
+body.dark-theme input:not([type="checkbox"]):not([type="radio"]):not([type="color"]):not([type="range"]):not([type="submit"]):not([type="button"]):not([type="reset"]):not([type="file"]):focus,
+body.dark-theme textarea:focus,
+body.dark-theme select:focus {
+  border-color: #34d399 !important;
+  box-shadow: 0 0 0 3px rgba(52, 211, 153, 0.2) !important;
+}
+
+/* 2. Disabled states in dark mode (prevent bright white blinding inputs) */
+body.dark-theme input:disabled,
+body.dark-theme textarea:disabled,
+body.dark-theme select:disabled {
+  background-color: #161e26 !important;
+  color: #64748b !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+  cursor: not-allowed !important;
+}
+
+/* 3. Select options & dropdown menus in dark mode */
+body.dark-theme select option {
+  background-color: #182028 !important;
+  color: #f1f5f9 !important;
+}
+
+/* 4. Placeholder colors */
+body.dark-theme input::placeholder,
+body.dark-theme textarea::placeholder {
+  color: #64748b !important;
+  opacity: 1 !important;
+}
+
+/* 5. Custom inputs in study spaces, task lists, admin panel */
+body.dark-theme .task-label-mgr-row input.task-label-mgr-name,
+body.dark-theme .shared-task-add-row input,
+body.dark-theme .input-field,
+body.dark-theme .todo-tag-select,
+body.dark-theme #studyGoalInput,
+body.dark-theme #inputQuickJoinCode,
+body.dark-theme #newSharedTaskInput,
+body.dark-theme #newTodoInput {
+  background-color: #11161b !important;
+  border-color: rgba(255, 255, 255, 0.16) !important;
+  color: #f1f5f9 !important;
+}
+
+/* 6. Stepper inputs & select boxes in study settings */
+body.dark-theme .study-settings-modal .stepper-input {
+  background: #182028 !important;
+  border-color: rgba(255, 255, 255, 0.14) !important;
+}
+
+body.dark-theme .study-settings-modal .stepper-input input {
+  background: transparent !important;
+  color: #f1f5f9 !important;
+}
+
+body.dark-theme .study-settings-modal .alarm-field select {
+  background: #182028 !important;
+  border-color: rgba(255, 255, 255, 0.14) !important;
+  color: #f1f5f9 !important;
+}
+
+/* 7. Buttons: button-outline, admin buttons, useful button, switch groups */
+body.dark-theme .button-outline {
+  background: #182028 !important;
+  border-color: rgba(255, 255, 255, 0.14) !important;
+  color: #f1f5f9 !important;
+}
+
+body.dark-theme .button-outline:hover {
+  background: #1e2832 !important;
+  border-color: #34d399 !important;
+}
+
+body.dark-theme .admin-bar-actions .button {
+  background: #182028 !important;
+  border-color: rgba(255, 255, 255, 0.16) !important;
+  color: #f1f5f9 !important;
+}
+
+body.dark-theme .admin-bar-actions .button:hover {
+  background: #1e2832 !important;
+  border-color: #34d399 !important;
+}
+
+body.dark-theme .useful-button {
+  background: #182028 !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+  color: #e2e8f0 !important;
+}
+
+body.dark-theme .useful-button:hover {
+  background: #1e2832 !important;
+  border-color: #34d399 !important;
+}
+
+body.dark-theme .switch-group {
+  background: #11161b !important;
+  border-color: rgba(255, 255, 255, 0.16) !important;
+}
+
+body.dark-theme .identity-choice {
+  color: #94a3b8 !important;
+}
+
+body.dark-theme .identity-choice.selected {
+  background: #34d399 !important;
+  color: #0b1a13 !important;
+}
+
+body.dark-theme .filter-button {
+  background: #182028 !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+  color: #e2e8f0 !important;
+}
+
+body.dark-theme .filter-button:hover {
+  background: #1e2832 !important;
+  border-color: #34d399 !important;
+}
+
+body.dark-theme .filter-chip.selected {
+  background: rgba(52, 211, 153, 0.2) !important;
+  color: #34d399 !important;
+  border-color: rgba(52, 211, 153, 0.4) !important;
+}
+
+/* 8. Study confirmation dialogs in dark mode */
+body.dark-theme dialog.study-confirm-modal,
+body.dark-theme dialog#studyExitConfirmModal,
+body.dark-theme dialog#studyJoinPinModal,
+body.dark-theme dialog#studyCreateMeetingModal,
+body.dark-theme dialog#studySwitchSpaceConfirmModal {
+  background: #182028 !important;
+  border-color: rgba(255, 255, 255, 0.14) !important;
+  color: #f1f5f9 !important;
 }

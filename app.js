@@ -2166,6 +2166,7 @@ async function hydrateServer(force = false) {
           type: d.category || d.type,
           format: d.format || "LINK",
           title: d.title,
+          subtitle: d.subtitle || "",
           desc: d.desc || d.description,
           author: d.submittedBy || d.author,
           authorId: d.submittedById || d.submitted_by || null,
@@ -2283,6 +2284,7 @@ async function hydrateServer(force = false) {
                            </div>
                            <p class="eyebrow">${d.category === "course" ? "TÀI LIỆU MÔN HỌC" : "TÀI LIỆU THAM KHẢO"}</p>
                            <h2>${escapeHTML(d.title)}</h2>
+                           ${d.subtitle ? `<div class="document-subtitle"><span class="doc-sub-icon">📖</span> ${escapeHTML(d.subtitle)}</div>` : ''}
                            <div class="document-desc ql-editor">${DOMPurify.sanitize(d.description)}</div>
                            <div class="document-footer">
                              <div class="document-footer-author">
@@ -2846,7 +2848,8 @@ function renderDocuments() {
               <span class="document-id-badge" title="Mã tài liệu: #TL-${d.id}">#TL-${d.id}</span>
             </div>
             <p class="eyebrow">${d.type === "course" ? "TÀI LIỆU MÔN HỌC" : "TÀI LIỆU THAM KHẢO"}</p>
-            <h2>${d.title}</h2>
+            <h2>${escapeHTML(d.title)}</h2>
+            ${d.subtitle ? `<div class="document-subtitle"><span class="doc-sub-icon">📖</span> ${escapeHTML(d.subtitle)}</div>` : ''}
             <div class="document-desc ql-editor">${DOMPurify.sanitize(d.desc)}</div>
             <div class="document-footer">
               <div class="document-footer-author">
@@ -2947,6 +2950,16 @@ window.viewDocumentById = async function(docId) {
     if (titleEl) {
       titleEl.textContent = doc.title;
       titleEl.setAttribute("title", doc.title);
+    }
+    const subtitleEl = $("#viewerSubtitle");
+    if (subtitleEl) {
+      if (doc.subtitle) {
+        subtitleEl.textContent = doc.subtitle;
+        subtitleEl.style.display = "block";
+      } else {
+        subtitleEl.textContent = "";
+        subtitleEl.style.display = "none";
+      }
     }
     updateDocViewerSaveBtn(doc.id, doc.isSaved);
     const modal = $("#documentViewerModal");
@@ -5748,6 +5761,7 @@ $("#documentForm").addEventListener("submit", async (e) => {
   }
 
   const title = $("#docTitle").value.trim();
+  const subtitle = $("#docSubtitle") ? $("#docSubtitle").value.trim() : "";
   const rawText = docDescEditor ? docDescEditor.getText().trim() : "";
   const desc = docDescEditor ? docDescEditor.root.innerHTML : "";
   const url = $("#docUrl").value.trim();
@@ -5760,6 +5774,7 @@ $("#documentForm").addEventListener("submit", async (e) => {
         method: "POST",
         body: JSON.stringify({
           title,
+          subtitle,
           description: desc,
           sourceUrl: url,
           category: cat,
@@ -16244,9 +16259,9 @@ function renderGatewayTab(raw) {
     const user = session || (typeof window !== "undefined" && window.session);
     const userClass = getArenaClassByStudentId(user?.studentId || user?.student_id) || raw?.arenaClass || "06";
     if (userClass === "TD") {
-      classBadge.textContent = "🌐 Bảng thi Tự do";
+      classBadge.textContent = "Bảng thi Tự do";
     } else {
-      classBadge.textContent = `🏫 Bảng thi Lớp ${userClass}`;
+      classBadge.textContent = `Bảng thi Lớp ${userClass}`;
     }
   }
   if (gatewayHero) {

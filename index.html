@@ -29,7 +29,7 @@
     <script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js" defer></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" defer></script>
-    <link rel="stylesheet" href="styles.css?v=143" />
+    <link rel="stylesheet" href="styles.css?v=144" />
   </head>
   <body>
     <dialog
@@ -55,9 +55,12 @@
         <div class="modal-head doc-viewer-head">
           <div class="doc-viewer-head-title">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="doc-viewer-icon"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
-            <h2 id="viewerTitle" class="doc-viewer-title">
-              Xem tài liệu
-            </h2>
+            <div class="doc-viewer-title-group" style="min-width: 0; flex: 1;">
+              <h2 id="viewerTitle" class="doc-viewer-title">
+                Xem tài liệu
+              </h2>
+              <div id="viewerSubtitle" class="doc-viewer-subtitle" style="display: none;"></div>
+            </div>
           </div>
           <div class="doc-viewer-head-actions">
             <button
@@ -1607,7 +1610,7 @@
                       <span id="gatewayStatusText">ĐANG MỞ CỔNG</span>
                     </span>
                     <span class="comp-phase-tag" id="gatewayPhaseTag">Chặng 1</span>
-                    <span class="comp-class-badge" id="gatewayClassBadge">Bảng thi: Lớp 06</span>
+                    <span class="comp-class-badge" id="gatewayClassBadge">Bảng thi Lớp 06</span>
                   </div>
                   <h3 id="gatewayPhaseTitle">Phương pháp &amp; Thiết kế Nghiên cứu Khoa học</h3>
                   <p id="gatewayWeekTitle">Chủ đề tuần: Phương pháp Nghiên cứu &amp; Xử lý Dữ liệu Khoa học</p>
@@ -2406,6 +2409,13 @@
             minlength="3"
             maxlength="140"
             placeholder="Ví dụ: Sách Hướng dẫn nghiên cứu APA" /></label
+        >
+        <label
+          >Tác giả &amp; Năm xuất bản (Trích nguồn)<input
+            id="docSubtitle"
+            maxlength="160"
+            placeholder="Ví dụ: GS. Nguyễn Văn A (2024) hoặc Creswell &amp; Creswell (2018)" /></label
+        >
         <label style="display:block; margin-bottom:4px; font-weight: 600;">Mô tả ngắn</label>
         <div id="docDescContainer" style="height: 100px; border-radius: 8px;"></div>
         <input type="hidden" id="docDesc" />
@@ -5314,6 +5324,6 @@
       </div>
     </dialog>
 
-    <script src="app.js?v=143" defer></script>
+    <script src="app.js?v=144" defer></script>
   </body>
 </html>
