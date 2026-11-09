@@ -470,13 +470,35 @@ try {
 } catch (e) { }
 
 try {
-  // Dọn dẹp các bản ghi giữ chuỗi bị trùng lặp trong cùng một ngày (chỉ giữ lại 1 bản ghi duy nhất)
+  // Dọn dẹp các bản ghi giữ chuỗi:
+  // 1. Xoá mọi lượt post_read / document_read trong các ngày mà người dùng đã có hoạt động 5 phút (web_active)
   db.exec(`
     DELETE FROM contribution_events 
-    WHERE event_type IN ('post_read', 'document_read', 'web_active')
+    WHERE event_type IN ('post_read', 'document_read')
+      AND EXISTS (
+        SELECT 1 FROM contribution_events w
+        WHERE w.user_id = contribution_events.user_id
+          AND w.event_type = 'web_active'
+          AND date(datetime(w.created_at, '+7 hours')) = date(datetime(contribution_events.created_at, '+7 hours'))
+      );
+  `);
+  // 2. Với các ngày chỉ có post_read / document_read mà chưa có web_active, chỉ giữ lại đúng 1 bản ghi đầu tiên
+  db.exec(`
+    DELETE FROM contribution_events 
+    WHERE event_type IN ('post_read', 'document_read')
       AND id NOT IN (
         SELECT min(id) FROM contribution_events 
-        WHERE event_type IN ('post_read', 'document_read', 'web_active')
+        WHERE event_type IN ('post_read', 'document_read')
+        GROUP BY user_id, date(datetime(created_at, '+7 hours'))
+      );
+  `);
+  // 3. Với web_active, nếu có nhiều bản ghi trong cùng 1 ngày cũng chỉ giữ lại 1 bản ghi đầu tiên
+  db.exec(`
+    DELETE FROM contribution_events 
+    WHERE event_type = 'web_active'
+      AND id NOT IN (
+        SELECT min(id) FROM contribution_events 
+        WHERE event_type = 'web_active'
         GROUP BY user_id, date(datetime(created_at, '+7 hours'))
       );
   `);
@@ -2998,21 +3020,28 @@ async function api(request, response, url) {
     db.prepare("INSERT OR IGNORE INTO activity_days(user_id,activity_date) VALUES (?,?)").run(user.id, todayVN);
     recordUserActivity(user.id);
 
-    // Kiểm tra xem đã ghi nhận bất kỳ hoạt động giữ chuỗi nào hôm nay chưa (đọc bài hoặc hoạt động web)
-    const alreadyLoggedToday = db.prepare(`
+    // Kiểm tra xem đã ghi nhận web_active hôm nay chưa
+    const alreadyLoggedWebActive = db.prepare(`
       SELECT 1 FROM contribution_events 
-      WHERE user_id = ? AND event_type IN ('post_read', 'document_read', 'web_active') 
+      WHERE user_id = ? AND event_type = 'web_active' 
         AND date(datetime(created_at, '+7 hours')) = ?
       LIMIT 1
     `).get(user.id, todayVN);
 
     let isNewToday = false;
-    if (!alreadyLoggedToday) {
+    if (!alreadyLoggedWebActive) {
       db.prepare(
         "INSERT INTO contribution_events(user_id,event_type,points,reference_type,reference_id,reason) VALUES (?,?,?,?,?,?)"
       ).run(user.id, "web_active", 0, "web", 0, "Hoạt động sôi nổi trên web 5 phút để thắp sáng chuỗi");
       isNewToday = true;
     }
+
+    // Khi người dùng đã giữ chuỗi bởi hoạt động 5 phút (web_active), xoá các lượt đọc bài/xem tài liệu trong ngày hôm nay để không gây rác mục đóng góp gần đây
+    db.prepare(`
+      DELETE FROM contribution_events
+      WHERE user_id = ? AND event_type IN ('post_read', 'document_read')
+        AND date(datetime(created_at, '+7 hours')) = ?
+    `).run(user.id, todayVN);
 
     const streakInfo = calculateUserStreak(user.id);
     return json(response, 200, {
@@ -3389,18 +3418,28 @@ async function api(request, response, url) {
       // Luôn ghi nhận ngày hoạt động để duy trì chuỗi
       db.prepare("INSERT OR IGNORE INTO activity_days(user_id,activity_date) VALUES (?,?)").run(viewer.id, todayVN);
 
-      // Chỉ ghi lại nếu hôm nay chưa có bất kỳ hoạt động giữ chuỗi nào (tránh trùng lặp với đọc tài liệu hoặc hoạt động web 5 phút)
-      const alreadyLoggedToday = db.prepare(`
+      // Nếu đã giữ chuỗi bởi hoạt động 5 phút (web_active), không ghi nhận đọc bài nữa
+      const hasWebActiveToday = db.prepare(`
         SELECT 1 FROM contribution_events 
-        WHERE user_id = ? AND event_type IN ('post_read', 'document_read', 'web_active') 
+        WHERE user_id = ? AND event_type = 'web_active' 
           AND date(datetime(created_at, '+7 hours')) = ?
         LIMIT 1
       `).get(viewer.id, todayVN);
 
-      if (!alreadyLoggedToday) {
-        db.prepare(
-          "INSERT INTO contribution_events(user_id,event_type,points,reference_type,reference_id,reason) VALUES (?,?,?,?,?,?)"
-        ).run(viewer.id, "post_read", 0, "post", postId, "Đọc bài đăng giữ chuỗi");
+      if (!hasWebActiveToday) {
+        // Chỉ ghi lại 1 lượt đọc bài đầu tiên trong ngày để ghi nhận giữ chuỗi
+        const hasReadToday = db.prepare(`
+          SELECT 1 FROM contribution_events 
+          WHERE user_id = ? AND event_type IN ('post_read', 'document_read') 
+            AND date(datetime(created_at, '+7 hours')) = ?
+          LIMIT 1
+        `).get(viewer.id, todayVN);
+
+        if (!hasReadToday) {
+          db.prepare(
+            "INSERT INTO contribution_events(user_id,event_type,points,reference_type,reference_id,reason) VALUES (?,?,?,?,?,?)"
+          ).run(viewer.id, "post_read", 0, "post", postId, "Đọc bài đăng giữ chuỗi");
+        }
       }
     }
     if (canRecordRead(identifier, postId)) {
@@ -4942,18 +4981,28 @@ async function api(request, response, url) {
       // Luôn ghi nhận ngày hoạt động để duy trì chuỗi
       db.prepare("INSERT OR IGNORE INTO activity_days(user_id,activity_date) VALUES (?,?)").run(viewer.id, todayVN);
 
-      // Chỉ ghi lại nếu hôm nay chưa có bất kỳ hoạt động giữ chuỗi nào (tránh trùng lặp với đọc bài đăng hoặc hoạt động web 5 phút)
-      const alreadyLoggedToday = db.prepare(`
+      // Nếu đã giữ chuỗi bởi hoạt động 5 phút (web_active), không ghi nhận đọc tài liệu nữa
+      const hasWebActiveToday = db.prepare(`
         SELECT 1 FROM contribution_events 
-        WHERE user_id = ? AND event_type IN ('post_read', 'document_read', 'web_active') 
+        WHERE user_id = ? AND event_type = 'web_active' 
           AND date(datetime(created_at, '+7 hours')) = ?
         LIMIT 1
       `).get(viewer.id, todayVN);
 
-      if (!alreadyLoggedToday) {
-        db.prepare(
-          "INSERT INTO contribution_events(user_id,event_type,points,reference_type,reference_id,reason) VALUES (?,?,?,?,?,?)"
-        ).run(viewer.id, "document_read", 0, "document", docId, "Xem tài liệu giữ chuỗi");
+      if (!hasWebActiveToday) {
+        // Chỉ ghi lại 1 lượt đọc bài/xem tài liệu đầu tiên trong ngày để giữ chuỗi
+        const hasReadToday = db.prepare(`
+          SELECT 1 FROM contribution_events 
+          WHERE user_id = ? AND event_type IN ('post_read', 'document_read') 
+            AND date(datetime(created_at, '+7 hours')) = ?
+          LIMIT 1
+        `).get(viewer.id, todayVN);
+
+        if (!hasReadToday) {
+          db.prepare(
+            "INSERT INTO contribution_events(user_id,event_type,points,reference_type,reference_id,reason) VALUES (?,?,?,?,?,?)"
+          ).run(viewer.id, "document_read", 0, "document", docId, "Xem tài liệu giữ chuỗi");
+        }
       }
     }
     return json(response, 200, { success: true });

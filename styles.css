@@ -11,6 +11,10 @@
   --muted: #66746d;
   --orange: #c58536;
   --danger: #ae4c3f;
+  --surface: #ffffff;
+  --surface-2: #f8fafc;
+  --surface-card: #ffffff;
+  --surface-hover: #f1f5f2;
   --serif: Georgia, serif;
   --sans: Inter, sans-serif;
   --unbounded: "Unbounded", sans-serif;
@@ -32,6 +36,10 @@ body.dark-theme {
   --orange: #fbbf24;
   --danger: #f87171;
   --surface-bg: #161f28;
+  --surface: #182028;
+  --surface-2: #1e2832;
+  --surface-card: #182028;
+  --surface-hover: #222e3b;
   --text: #e2e8f0;
   color-scheme: dark;
 }
@@ -23007,31 +23015,129 @@ body.dark-theme .button-dark:hover {
 
 /* 9. Quill Editor in Dark Mode */
 body.dark-theme .ql-toolbar.ql-snow {
-  background: #182028;
-  border-color: rgba(255, 255, 255, 0.14);
+  background: #182028 !important;
+  border: 1px solid rgba(255, 255, 255, 0.14) !important;
+  border-bottom: none !important;
 }
 
 body.dark-theme .ql-container.ql-snow {
-  background: #11161b;
-  border-color: rgba(255, 255, 255, 0.14);
-  color: #e2e8f0;
+  background: #11161b !important;
+  border: 1px solid rgba(255, 255, 255, 0.14) !important;
+  color: #f1f5f9 !important;
+}
+
+body.dark-theme .ql-editor {
+  color: #f1f5f9 !important;
+}
+
+body.dark-theme .ql-snow .ql-editor.ql-blank::before {
+  color: #64748b !important;
 }
 
 body.dark-theme .ql-snow .ql-stroke {
-  stroke: #94a3b8;
+  stroke: #94a3b8 !important;
 }
 
 body.dark-theme .ql-snow .ql-fill {
-  fill: #94a3b8;
+  fill: #94a3b8 !important;
 }
 
 body.dark-theme .ql-snow .ql-picker {
-  color: #94a3b8;
+  color: #94a3b8 !important;
 }
 
-body.dark-theme .ql-snow .ql-picker-options {
-  background-color: #182028;
-  border-color: rgba(255, 255, 255, 0.14);
+body.dark-theme .ql-snow .ql-picker-label {
+  color: #94a3b8 !important;
+}
+
+body.dark-theme .ql-snow .ql-picker.ql-expanded .ql-picker-label {
+  background-color: #1e2832 !important;
+  border-color: rgba(255, 255, 255, 0.2) !important;
+  color: #34d399 !important;
+}
+
+body.dark-theme .ql-snow .ql-picker.ql-expanded .ql-picker-label .ql-stroke {
+  stroke: #34d399 !important;
+}
+
+body.dark-theme .ql-snow .ql-picker-options,
+body.dark-theme .ql-toolbar.ql-snow .ql-picker-options,
+body.dark-theme .ql-snow .ql-color-picker .ql-picker-options,
+body.dark-theme .ql-snow .ql-icon-picker .ql-picker-options {
+  background-color: #182028 !important;
+  border: 1px solid rgba(255, 255, 255, 0.14) !important;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.6) !important;
+  color: #f1f5f9 !important;
+}
+
+body.dark-theme .ql-snow .ql-picker-item {
+  color: #e2e8f0 !important;
+}
+
+body.dark-theme .ql-snow .ql-picker-item:hover,
+body.dark-theme .ql-snow .ql-picker-item.ql-selected {
+  color: #34d399 !important;
+}
+
+body.dark-theme .ql-snow.ql-toolbar button:hover,
+body.dark-theme .ql-snow .ql-toolbar button:hover,
+body.dark-theme .ql-snow.ql-toolbar button:focus,
+body.dark-theme .ql-snow .ql-toolbar button:focus,
+body.dark-theme .ql-snow.ql-toolbar button.ql-active,
+body.dark-theme .ql-snow .ql-toolbar button.ql-active {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border-radius: 4px;
+}
+
+body.dark-theme .ql-snow.ql-toolbar button:hover .ql-stroke,
+body.dark-theme .ql-snow .ql-toolbar button:hover .ql-stroke,
+body.dark-theme .ql-snow.ql-toolbar button:focus .ql-stroke,
+body.dark-theme .ql-snow .ql-toolbar button:focus .ql-stroke,
+body.dark-theme .ql-snow.ql-toolbar button.ql-active .ql-stroke,
+body.dark-theme .ql-snow .ql-toolbar button.ql-active .ql-stroke {
+  stroke: #34d399 !important;
+}
+
+body.dark-theme .ql-snow.ql-toolbar button:hover .ql-fill,
+body.dark-theme .ql-snow .ql-toolbar button:hover .ql-fill,
+body.dark-theme .ql-snow.ql-toolbar button:focus .ql-fill,
+body.dark-theme .ql-snow .ql-toolbar button:focus .ql-fill,
+body.dark-theme .ql-snow.ql-toolbar button.ql-active .ql-fill,
+body.dark-theme .ql-snow .ql-toolbar button.ql-active .ql-fill {
+  fill: #34d399 !important;
+}
+
+body.dark-theme .ql-snow .ql-tooltip {
+  background-color: #182028 !important;
+  border: 1px solid rgba(255, 255, 255, 0.16) !important;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.6) !important;
+  color: #e2e8f0 !important;
+}
+
+body.dark-theme .ql-snow .ql-tooltip input[type=text] {
+  background-color: #11161b !important;
+  border: 1px solid rgba(255, 255, 255, 0.16) !important;
+  color: #f1f5f9 !important;
+}
+
+body.dark-theme .ql-snow .ql-tooltip a.ql-action {
+  color: #34d399 !important;
+}
+
+body.dark-theme .ql-snow .ql-tooltip a.ql-remove {
+  color: #f87171 !important;
+}
+
+body.dark-theme .reply-bar.expanded .ql-toolbar {
+  background: #182028 !important;
+  border: 1px solid rgba(255, 255, 255, 0.14) !important;
+  border-bottom: none !important;
+}
+
+body.dark-theme .reply-bar.expanded .ql-container {
+  background: #11161b !important;
+  border: 1px solid rgba(255, 255, 255, 0.14) !important;
+  color: #f1f5f9 !important;
 }
 
 /* 10. Code & Pre Blocks */
@@ -27050,4 +27156,184 @@ body.dark-theme dialog#studySwitchSpaceConfirmModal {
   background: #182028 !important;
   border-color: rgba(255, 255, 255, 0.14) !important;
   color: #f1f5f9 !important;
+}
+
+/* ==========================================================================
+   21. KHU VỰC ĐĂNG BÀI THẢO LUẬN & ĐỀ XUẤT TÀI LIỆU TRONG DARK MODE
+   ========================================================================== */
+
+/* 1. Modal đăng bài (#questionModal) & Modal chỉnh sửa (#editModal) */
+body.dark-theme #questionModal,
+body.dark-theme #editModal,
+body.dark-theme #documentModal {
+  background: #182028 !important;
+  border: 1px solid rgba(255, 255, 255, 0.14) !important;
+  color: #f1f5f9 !important;
+  box-shadow: 0 25px 75px rgba(0, 0, 0, 0.8) !important;
+}
+
+body.dark-theme #questionModal .modal-head h2,
+body.dark-theme #editModal .modal-head h2,
+body.dark-theme #documentModal .modal-head h2 {
+  color: #f1f5f9 !important;
+}
+
+body.dark-theme #questionModal label,
+body.dark-theme #editModal label,
+body.dark-theme #documentModal label {
+  color: #34d399 !important;
+}
+
+body.dark-theme #questionModal small,
+body.dark-theme #editModal small,
+body.dark-theme #documentModal small {
+  color: #94a3b8 !important;
+}
+
+/* 2. Anonymous Choice container & switch */
+body.dark-theme .anonymous-choice {
+  background: #11161b !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+}
+
+body.dark-theme .anonymous-choice strong {
+  color: #f1f5f9 !important;
+}
+
+body.dark-theme .anonymous-choice span {
+  color: #94a3b8 !important;
+}
+
+/* 3. Document attachment box & items */
+body.dark-theme .doc-attach-box {
+  background: #11161b !important;
+  border-color: rgba(255, 255, 255, 0.16) !important;
+}
+
+body.dark-theme .doc-attach-box:hover {
+  background: #182028 !important;
+  border-color: #34d399 !important;
+}
+
+body.dark-theme .doc-attach-empty-title {
+  color: #f1f5f9 !important;
+}
+
+body.dark-theme .doc-attach-empty-desc {
+  color: #94a3b8 !important;
+}
+
+body.dark-theme .doc-attach-empty-icon {
+  background: rgba(52, 211, 153, 0.15) !important;
+  color: #34d399 !important;
+}
+
+body.dark-theme .doc-attach-item {
+  background: #182028 !important;
+  border-color: rgba(255, 255, 255, 0.14) !important;
+}
+
+body.dark-theme .doc-attach-item:hover {
+  background: #202b36 !important;
+  border-color: #34d399 !important;
+}
+
+body.dark-theme .doc-attach-item-title {
+  color: #f1f5f9 !important;
+}
+
+body.dark-theme .doc-attach-item-meta {
+  color: #94a3b8 !important;
+}
+
+body.dark-theme .doc-attach-add-row {
+  background: #11161b !important;
+  border-top: 1px dashed rgba(255, 255, 255, 0.14) !important;
+}
+
+/* 4. Proposal / Select buttons */
+body.dark-theme #proposeTopicBtn {
+  background: #11161b !important;
+  border-color: rgba(255, 255, 255, 0.16) !important;
+  color: #34d399 !important;
+}
+
+body.dark-theme #proposeTopicBtn:hover {
+  background: #182028 !important;
+  border-color: #34d399 !important;
+}
+
+/* 5. Document Modal guideline banner */
+body.dark-theme #documentModal div[style*="background: var(--sage-2)"] {
+  background: #11161b !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  color: #e2e8f0 !important;
+}
+
+body.dark-theme #documentModal div[style*="background: var(--sage-2)"] strong {
+  color: #34d399 !important;
+}
+
+body.dark-theme #documentModal div[style*="background: var(--sage-2)"] a {
+  color: #4ade80 !important;
+}
+
+/* 6. Document Picker Modal (#documentPickerModal) */
+body.dark-theme #documentPickerModal,
+body.dark-theme #documentPickerModal .doc-picker-container {
+  background: #182028 !important;
+  border: 1px solid rgba(255, 255, 255, 0.14) !important;
+  color: #f1f5f9 !important;
+}
+
+body.dark-theme #documentPickerModal .doc-picker-head {
+  background: #182028 !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12) !important;
+}
+
+body.dark-theme #documentPickerModal .doc-picker-toolbar {
+  background: #11161b !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12) !important;
+}
+
+body.dark-theme #documentPickerModal #docPickerSearch {
+  background: #182028 !important;
+  border: 1px solid rgba(255, 255, 255, 0.16) !important;
+  color: #f1f5f9 !important;
+}
+
+body.dark-theme #documentPickerModal #docPickerSearch::placeholder {
+  color: #64748b !important;
+}
+
+body.dark-theme #documentPickerModal .doc-picker-footer {
+  background: #182028 !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.12) !important;
+}
+
+body.dark-theme #documentPickerModal .doc-picker-item {
+  background: #11161b !important;
+  border-color: rgba(255, 255, 255, 0.14) !important;
+}
+
+body.dark-theme #documentPickerModal .doc-picker-item:hover {
+  background: #1e2832 !important;
+  border-color: #34d399 !important;
+}
+
+body.dark-theme #documentPickerModal .doc-picker-item.is-selected {
+  background: rgba(52, 211, 153, 0.12) !important;
+  border-color: #34d399 !important;
+}
+
+body.dark-theme #documentPickerModal .doc-picker-item-title {
+  color: #f1f5f9 !important;
+}
+
+body.dark-theme #documentPickerModal .doc-picker-item-desc {
+  color: #94a3b8 !important;
+}
+
+body.dark-theme #documentPickerModal .doc-picker-item-meta {
+  color: #64748b !important;
 }
