@@ -4825,12 +4825,12 @@ async function openDetail(id, updateHash = true, isBack = false, targetScrollY =
       : (post.linkedDocument ? [post.linkedDocument] : []);
 
     const linkedDocCard = linkedDocs.length > 0 ? `
-      <div class="post-linked-docs-block" style="margin: 18px 0 20px 0;">
-        <div class="post-linked-docs-header" style="font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--primary); margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
+      <div class="post-linked-docs-block" style="margin: 14px 0 16px 0;">
+        <div class="post-linked-docs-header" style="font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--primary); margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
           <span>Tài liệu đính kèm (${linkedDocs.length})</span>
         </div>
-        <div class="post-linked-docs-list" style="display: flex; flex-direction: column; gap: 8px;">
+        <div class="post-linked-docs-list" style="display: flex; flex-direction: column; gap: 7px;">
           ${linkedDocs.map(doc => `
             <div class="post-linked-doc-card">
               <div class="post-linked-doc-icon">
