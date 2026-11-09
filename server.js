@@ -4207,8 +4207,7 @@ async function api(request, response, url) {
     const studyDays = studyDaysRow?.days || 0;
 
     const studyMinsRow = db.prepare("SELECT coalesce(sum(duration_minutes), 0) as totalMinutes FROM study_logs WHERE user_id = ?").get(targetUser.id);
-    const studyContribMins = db.prepare("SELECT coalesce(sum(CASE WHEN points > 0 THEN 45 ELSE 25 END), 0) as approxMinutes FROM contribution_events WHERE user_id = ? AND event_type = 'study_session'").get(targetUser.id);
-    const totalStudyMinutes = Math.max(studyMinsRow?.totalMinutes || 0, studyContribMins?.approxMinutes || 0);
+    const totalStudyMinutes = Number(studyMinsRow?.totalMinutes || 0);
 
     // Khung Thành tích thi đua
     const weeksParticipatedRow = db.prepare(`
