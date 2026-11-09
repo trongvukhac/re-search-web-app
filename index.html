@@ -29,7 +29,7 @@
     <script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js" defer></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" defer></script>
-    <link rel="stylesheet" href="styles.css?v=145" />
+    <link rel="stylesheet" href="styles.css?v=146" />
   </head>
   <body>
     <dialog
@@ -759,12 +759,13 @@
                   </button>
 
                   <div class="lb-title-container" onclick="cycleLeaderboardTab(1)" title="Nhấn để đổi bảng xếp hạng">
-                    <span class="lb-active-title" id="lbActiveTitle">Top đóng góp</span>
+                    <span class="lb-active-title" id="lbActiveTitle">Đại sứ tri thức</span>
                     <div class="lb-dots" id="lbDots">
                       <span class="lb-dot active" data-tab="contributions" onclick="event.stopPropagation(); switchLeaderboardTab('contributions')"></span>
                       <span class="lb-dot" data-tab="streak" onclick="event.stopPropagation(); switchLeaderboardTab('streak')"></span>
                       <span class="lb-dot" data-tab="competition" onclick="event.stopPropagation(); switchLeaderboardTab('competition')"></span>
                       <span class="lb-dot" data-tab="likes" onclick="event.stopPropagation(); switchLeaderboardTab('likes')"></span>
+                      <span class="lb-dot" data-tab="study" onclick="event.stopPropagation(); switchLeaderboardTab('study')"></span>
                     </div>
                   </div>
 
@@ -5324,6 +5325,6 @@
       </div>
     </dialog>
 
-    <script src="app.js?v=145" defer></script>
+    <script src="app.js?v=146" defer></script>
   </body>
 </html>

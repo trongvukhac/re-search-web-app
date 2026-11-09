@@ -1679,7 +1679,7 @@ function applySession(user) {
 }
 
 let currentLeaderboardTab = "contributions";
-let cachedLeaderboardData = { leaderboard: [], streakLeaderboard: [], arenaLeaderboard: [], likesLeaderboard: [], currentUser: null };
+let cachedLeaderboardData = { leaderboard: [], streakLeaderboard: [], arenaLeaderboard: [], likesLeaderboard: [], studyLeaderboard: [], currentUser: null };
 
 function formatLeaderboardRank(rank) {
   if (!rank || rank <= 0) return "--";
@@ -1692,10 +1692,11 @@ function formatLeaderboardRank(rank) {
 }
 
 const LEADERBOARD_TABS = [
-  { id: "contributions", title: "Top đóng góp" },
-  { id: "streak", title: "Top giữ chuỗi" },
-  { id: "competition", title: "Top thi đua" },
-  { id: "likes", title: "Top hấp dẫn" }
+  { id: "contributions", title: "Đại sứ tri thức" },
+  { id: "streak", title: "Người giữ lửa" },
+  { id: "competition", title: "Tinh thông thần tốc" },
+  { id: "likes", title: "Vạn người mê" },
+  { id: "study", title: "Ong chăm chỉ" }
 ];
 
 window.cycleLeaderboardTab = function(direction = 1) {
@@ -1725,6 +1726,7 @@ window.switchLeaderboardTab = function(tab) {
   $("#tabTopStreak")?.classList.toggle("active", tab === "streak");
   $("#tabTopArena")?.classList.toggle("active", tab === "competition");
   $("#tabTopLikes")?.classList.toggle("active", tab === "likes");
+  $("#tabTopStudy")?.classList.toggle("active", tab === "study");
 
   renderLeaderboard();
 };
@@ -1747,6 +1749,7 @@ function renderLeaderboard() {
   const isStreak = currentLeaderboardTab === "streak";
   const isArena = currentLeaderboardTab === "competition";
   const isLikes = currentLeaderboardTab === "likes";
+  const isStudy = currentLeaderboardTab === "study";
 
   let list = [];
   let userRankInfo = null;
@@ -1790,11 +1793,21 @@ function renderLeaderboard() {
         valDisplay: `<span style="display:inline-flex;align-items:center;gap:3px;color:#e11d48;font-weight:700;"><svg width="12" height="12" viewBox="0 0 24 24" fill="#e11d48"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg> ${myLikes.count || 0}</span>`
       };
     }
+  } else if (isStudy) {
+    list = cachedLeaderboardData.studyLeaderboard || [];
+    if (cachedLeaderboardData.currentUser && cachedLeaderboardData.currentUser.study?.isParticipant) {
+      const myStudy = cachedLeaderboardData.currentUser.study;
+      userRankInfo = {
+        ...cachedLeaderboardData.currentUser,
+        rank: myStudy.rank,
+        valDisplay: `${myStudy.hours ?? Math.floor((myStudy.totalMinutes || 0) / 60)}h`
+      };
+    }
   }
 
-  if (!cachedLeaderboardData.leaderboard?.length && !cachedLeaderboardData.arenaLeaderboard?.length && !cachedLeaderboardData.streakLeaderboard?.length && !cachedLeaderboardData.likesLeaderboard?.length) {
+  if (!cachedLeaderboardData.leaderboard?.length && !cachedLeaderboardData.arenaLeaderboard?.length && !cachedLeaderboardData.streakLeaderboard?.length && !cachedLeaderboardData.likesLeaderboard?.length && !cachedLeaderboardData.studyLeaderboard?.length) {
     requestAPI("/api/leaderboard").then(data => {
-      if (data && (data.leaderboard || data.streakLeaderboard || data.arenaLeaderboard || data.likesLeaderboard)) {
+      if (data && (data.leaderboard || data.streakLeaderboard || data.arenaLeaderboard || data.likesLeaderboard || data.studyLeaderboard)) {
         cachedLeaderboardData = data;
         renderLeaderboard();
         updateResponsiveAsidePlacement();
@@ -1807,6 +1820,7 @@ function renderLeaderboard() {
     if (isStreak) emptyMsg = "Chưa có dữ liệu chuỗi.";
     if (isArena) emptyMsg = "Chưa có dữ liệu thi đua từ các tuần đã chốt.";
     if (isLikes) emptyMsg = "Chưa có dữ liệu lượt yêu thích thẻ tên.";
+    if (isStudy) emptyMsg = "Chưa có dữ liệu thời gian tự học.";
     lbEl.innerHTML = `<p style="color: var(--muted); font-size: 13px; text-align: center; padding: 12px 0;">${emptyMsg}</p>`;
     return;
   }
@@ -1824,7 +1838,9 @@ function renderLeaderboard() {
             ? `<span style="display:inline-flex;align-items:center;gap:3px;">${getFlameSVG(user.streakTier || 0, 14)} ${user.streak}n</span>`
             : (isArena
                 ? `⭐ ${user.score || 0}`
-                : `<span style="display:inline-flex;align-items:center;gap:4px;color:#e11d48;font-weight:700;"><svg width="13" height="13" viewBox="0 0 24 24" fill="#e11d48"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg> ${user.likesCount || 0}</span>`));
+                : (isLikes
+                    ? `<span style="display:inline-flex;align-items:center;gap:4px;color:#e11d48;font-weight:700;"><svg width="13" height="13" viewBox="0 0 24 24" fill="#e11d48"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg> ${user.likesCount || 0}</span>`
+                    : `${user.hours ?? Math.floor((user.totalMinutes || 0) / 60)}h`)));
 
       const coverStyle = getMiniCoverStyle(user.coverImage);
 
@@ -1844,13 +1860,13 @@ function renderLeaderboard() {
               ${user.role && user.role !== 'student' ? `<span class="lb-role lb-role-${user.role}">${getRoleDisplay(user.role)}</span>` : ""}
             </div>
           </div>
-          <div class="lb-points ${isLikes ? "lb-points-likes" : ""}">${pointsDisplay}</div>
+          <div class="lb-points ${isLikes ? "lb-points-likes" : (isStudy ? "lb-points-study" : "")}">${pointsDisplay}</div>
         </div>
       `;
     })
     .join("");
 
-  if (!isUserInTop5 && userRankInfo && (userRankInfo.rank || isLikes)) {
+  if (!isUserInTop5 && userRankInfo && (userRankInfo.rank || isLikes || isStudy)) {
     const userCoverStyle = getMiniCoverStyle(userRankInfo.coverImage);
     const userRankDisplay = formatLeaderboardRank(userRankInfo.rank);
 
@@ -1870,7 +1886,7 @@ function renderLeaderboard() {
             ${userRankInfo.role && userRankInfo.role !== 'student' ? `<span class="lb-role lb-role-${userRankInfo.role}">${getRoleDisplay(userRankInfo.role)}</span>` : ""}
           </div>
         </div>
-        <div class="lb-points ${isLikes ? "lb-points-likes" : ""}">${userRankInfo.valDisplay}</div>
+        <div class="lb-points ${isLikes ? "lb-points-likes" : (isStudy ? "lb-points-study" : "")}">${userRankInfo.valDisplay}</div>
       </div>
     `;
   }

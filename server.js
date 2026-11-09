@@ -3776,7 +3776,41 @@ async function api(request, response, url) {
       rank: idx + 1
     }));
 
-    // 5. THÔNG TIN XẾP HẠNG CỦA NGƯỜI DÙNG HIỆN TẠI
+    // 5. TOP ONG CHĂM CHỈ (Xếp hạng theo số giờ tự học, chỉ hiển thị số giờ, nếu cùng giờ thì xếp theo phút, cùng phút thì ai đạt sớm hơn xếp cao hơn)
+    const allStudyUsers = db
+      .prepare(`
+        SELECT 
+          u.id, 
+          u.display_name as displayName, 
+          u.avatar, 
+          u.role,
+          u.cover_image as coverImage,
+          coalesce(sum(s.duration_minutes), 0) as totalMinutes,
+          max(s.completed_at) as reachedAt
+        FROM users u
+        JOIN study_logs s ON u.id = s.user_id
+        WHERE u.role NOT IN ('admin', 'lecturer') AND u.id != 89
+        GROUP BY u.id
+        HAVING totalMinutes > 0
+        ORDER BY totalMinutes DESC, reachedAt ASC, u.id ASC
+      `)
+      .all();
+
+    const topStudyUsers = allStudyUsers.slice(0, 5).map((u, idx) => ({
+      id: u.id,
+      displayName: u.displayName,
+      avatar: u.avatar,
+      initials: u.avatar || getAvatarEmoji(u.displayName),
+      role: u.role,
+      coverImage: u.coverImage || "default",
+      totalMinutes: Number(u.totalMinutes),
+      hours: Math.floor(Number(u.totalMinutes) / 60),
+      streakTier: getAuthorStreakTier(u.id),
+      reachedAt: u.reachedAt,
+      rank: idx + 1
+    }));
+
+    // 6. THÔNG TIN XẾP HẠNG CỦA NGƯỜI DÙNG HIỆN TẠI
     let currentUserData = null;
     if (user) {
       const isMember = user.role === "member";
@@ -3829,11 +3863,27 @@ async function api(request, response, url) {
         myLikesRank = null;
       }
 
+      const myStudyIdx = allStudyUsers.findIndex(u => u.id === user.id);
+      let myStudyRank = null;
+      let myStudyMinutes = 0;
+      let myStudyHours = 0;
+      if (myStudyIdx !== -1) {
+        myStudyRank = myStudyIdx + 1;
+        myStudyMinutes = Number(allStudyUsers[myStudyIdx].totalMinutes);
+        myStudyHours = Math.floor(myStudyMinutes / 60);
+      } else {
+        const userStudyRow = db.prepare("SELECT coalesce(sum(duration_minutes), 0) as totalMinutes FROM study_logs WHERE user_id = ?").get(user.id);
+        myStudyMinutes = Number(userStudyRow?.totalMinutes || 0);
+        myStudyHours = Math.floor(myStudyMinutes / 60);
+        myStudyRank = null;
+      }
+
       if (user.id === 89) {
         myContribRank = null;
         myStreakRank = null;
         myArenaRank = null;
         myLikesRank = null;
+        myStudyRank = null;
       }
 
       currentUserData = {
@@ -3866,6 +3916,12 @@ async function api(request, response, url) {
           rank: myLikesRank,
           count: myLikesCount,
           isParticipant: true
+        },
+        study: {
+          rank: myStudyRank,
+          totalMinutes: myStudyMinutes,
+          hours: myStudyHours,
+          isParticipant: !isAdmin && !isLecturer
         }
       };
     }
@@ -3875,6 +3931,7 @@ async function api(request, response, url) {
       streakLeaderboard: topStreakUsers,
       arenaLeaderboard: topArenaUsers,
       likesLeaderboard: topLikesUsers,
+      studyLeaderboard: topStudyUsers,
       currentUser: currentUserData
     });
   }
