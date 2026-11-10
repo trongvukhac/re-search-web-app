@@ -4484,8 +4484,8 @@ dialog:not([open]) {
   display: none !important;
 }
 
-.modal:not(.quiz-arena-modal):not(.quiz-start-confirm-modal):not(.quiz-exit-confirm-modal):not(.namecard-modal):not(.full-cover-viewer-modal),
-dialog.modal:not(.quiz-arena-modal):not(.quiz-start-confirm-modal):not(.quiz-exit-confirm-modal):not(.namecard-modal):not(.full-cover-viewer-modal) {
+.modal:not(.quiz-arena-modal):not(.quiz-start-confirm-modal):not(.quiz-exit-confirm-modal):not(.namecard-modal):not(.full-cover-viewer-modal):not(.namecard-studio-modal):not(.confirm-discard-modal),
+dialog.modal:not(.quiz-arena-modal):not(.quiz-start-confirm-modal):not(.quiz-exit-confirm-modal):not(.namecard-modal):not(.full-cover-viewer-modal):not(.namecard-studio-modal):not(.confirm-discard-modal) {
   position: fixed;
   inset: 0;
   margin: auto;
@@ -21234,6 +21234,653 @@ dialog.modal.full-cover-viewer-modal {
 }
 
 /* ========================================================
+   NAMECARD STUDIO: SPLIT-SCREEN REALTIME REDESIGN
+   ======================================================== */
+
+.namecard-studio-modal,
+dialog.modal.namecard-studio-modal {
+  width: min(1080px, calc(100vw - 36px)) !important;
+  max-width: 1080px !important;
+  height: min(86vh, 760px) !important;
+  max-height: 760px !important;
+  border-radius: 20px !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  background: #ffffff !important;
+  border: 1px solid var(--border) !important;
+  box-shadow: 0 25px 70px -15px rgba(15, 23, 42, 0.35) !important;
+}
+
+body.dark-theme .namecard-studio-modal,
+body.dark-theme dialog.modal.namecard-studio-modal {
+  background: #0f172a !important;
+  border-color: #334155 !important;
+  box-shadow: 0 25px 70px -15px rgba(0, 0, 0, 0.6) !important;
+}
+
+.namecard-studio-container {
+  display: flex;
+  flex-direction: row;
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+}
+
+/* LEFT PANE: Editor */
+.namecard-studio-editor {
+  flex: 0 0 520px;
+  width: 520px;
+  max-width: 50%;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  background: #ffffff;
+  overflow: hidden;
+  position: relative;
+  border-right: 1px solid var(--border);
+}
+
+body.dark-theme .namecard-studio-editor {
+  background: #0f172a;
+  border-right-color: #334155;
+}
+
+.namecard-studio-head {
+  padding: 16px 22px 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--border);
+  background: #ffffff;
+  min-width: 0;
+}
+
+body.dark-theme .namecard-studio-head {
+  background: #0f172a;
+  border-color: #334155;
+}
+
+.studio-title-wrap {
+  flex: 1;
+  min-width: 0;
+}
+
+.studio-title-wrap .studio-eyebrow {
+  display: block;
+  font-family: var(--unbounded);
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--primary, #1e3a8a);
+  letter-spacing: 0.8px;
+  margin-bottom: 2px;
+}
+
+.studio-title-wrap h2 {
+  margin: 0;
+  font-family: var(--serif);
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--ink-deep, #0a2a20);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+body.dark-theme .studio-title-wrap h2 {
+  color: #f8fafc;
+}
+
+.studio-close-btn {
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.studio-close-btn:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+body.dark-theme .studio-close-btn:hover {
+  background: #1e293b;
+  color: #f8fafc;
+}
+
+/* NAVIGATION BAR (SVG Icons only, no text) */
+.studio-nav-bar {
+  display: flex;
+  gap: 10px;
+  padding: 10px 24px;
+  background: #f8fafc;
+  border-bottom: 1px solid var(--border);
+  position: relative;
+}
+
+body.dark-theme .studio-nav-bar {
+  background: #111c30;
+  border-color: #334155;
+}
+
+.studio-nav-btn {
+  width: 44px;
+  height: 42px;
+  border-radius: 12px;
+  border: 1.5px solid transparent;
+  background: #ffffff;
+  color: #64748b;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  position: relative;
+}
+
+body.dark-theme .studio-nav-btn {
+  background: #1e293b;
+  color: #94a3b8;
+  border-color: #334155;
+}
+
+.studio-nav-btn:hover {
+  color: var(--primary, #2563eb);
+  border-color: #cbd5e1;
+  transform: translateY(-1px);
+}
+
+.studio-nav-btn.active {
+  background: #eff6ff;
+  color: #2563eb;
+  border-color: #93c5fd;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.16);
+}
+
+body.dark-theme .studio-nav-btn.active {
+  background: #1e3a8a;
+  color: #bfdbfe;
+  border-color: #3b82f6;
+}
+
+/* Tooltip for SVG nav button */
+.studio-nav-btn[data-tooltip]::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%) translateY(6px);
+  background: #0f172a;
+  color: #ffffff;
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 6px;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.18s ease, transform 0.18s ease;
+  z-index: 100;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+}
+
+.studio-nav-btn:hover::after {
+  opacity: 1;
+  transform: translateX(-50%) translateY(8px);
+}
+
+/* Form & Panels */
+.studio-form {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px 24px 80px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+.studio-panel {
+  display: none;
+}
+
+.studio-panel.active {
+  display: block;
+  animation: studioFadeIn 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes studioFadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.studio-field {
+  margin-bottom: 20px;
+}
+
+.field-label-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 7px;
+}
+
+.field-label-row label {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--ink-deep, #0a2a20);
+  margin: 0;
+}
+
+body.dark-theme .field-label-row label {
+  color: #f1f5f9;
+}
+
+.field-char-count {
+  font-size: 0.76rem;
+  color: var(--muted);
+  font-family: var(--unbounded);
+}
+
+.avatar-notice-pill {
+  font-size: 0.78rem;
+  color: #15803d;
+  background: #dcfce7;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-weight: 600;
+}
+
+.custom-avatar-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.custom-avatar-row input {
+  flex: 1;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 0.92rem;
+}
+
+/* Sub-tab Pill Group */
+.sub-tab-pill-group {
+  display: flex;
+  width: 100%;
+  gap: 6px;
+  background: #f1f5f9;
+  padding: 4px;
+  border-radius: 12px;
+  margin-bottom: 12px;
+  border: 1px solid var(--border);
+}
+
+body.dark-theme .sub-tab-pill-group {
+  background: #111c30;
+  border-color: #334155;
+}
+
+.sub-tab-pill {
+  flex: 1;
+  border: none;
+  background: transparent;
+  color: #64748b;
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 6px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+}
+
+body.dark-theme .sub-tab-pill {
+  color: #94a3b8;
+}
+
+.sub-tab-pill.active {
+  background: #ffffff;
+  color: var(--primary, #0f172a);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+}
+
+body.dark-theme .sub-tab-pill.active {
+  background: #1e293b;
+  color: #f8fafc;
+}
+
+.studio-section-notice {
+  font-size: 0.82rem;
+  color: var(--muted);
+  margin-bottom: 14px;
+  line-height: 1.4;
+}
+
+.studio-sub-panel {
+  display: none;
+}
+
+.studio-sub-panel.active {
+  display: block;
+}
+
+/* Badges for items */
+.choice-unlock-badge.badge-available {
+  background: #dcfce7 !important;
+  color: #15803d !important;
+  font-weight: 700 !important;
+  border: 1px solid #bbf7d0 !important;
+}
+
+.choice-unlock-badge.badge-countdown {
+  background: #fef3c7 !important;
+  color: #b45309 !important;
+  font-weight: 700 !important;
+  border: 1px solid #fde68a !important;
+}
+
+.choice-unlock-badge.badge-permanent {
+  background: #e0f2fe !important;
+  color: #0369a1 !important;
+  font-weight: 700 !important;
+  border: 1px solid #bae6fd !important;
+}
+
+/* Custom cover upload styling */
+.custom-cover-upload-section {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px dashed var(--border);
+}
+
+.studio-upload-btn {
+  width: 100%;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 14px;
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+
+.custom-cover-preview-box {
+  margin-top: 10px;
+  border-radius: 12px;
+  overflow: hidden;
+  height: 90px;
+  position: relative;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.custom-cover-preview-box img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.custom-cover-preview-box button {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: rgba(15, 23, 42, 0.75);
+  color: #ffffff;
+  border: none;
+  border-radius: 50%;
+  width: 26px;
+  height: 26px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+
+.custom-cover-preview-box button:hover {
+  background: #ef4444;
+}
+
+/* Sticky Action Bar Buttons */
+.studio-actions-btns {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+/* RIGHT PANE: LIVE INTERACTIVE PREVIEW */
+.namecard-studio-preview {
+  flex: 0 0 440px;
+  background: linear-gradient(180deg, #f8fafc 0%, #eef2f6 100%);
+  border-left: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 24px 20px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  position: relative;
+}
+
+body.dark-theme .namecard-studio-preview {
+  background: linear-gradient(180deg, #0b1120 0%, #111827 100%);
+  border-color: #334155;
+}
+
+.studio-preview-head {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  margin-bottom: 20px;
+}
+
+.preview-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(37, 99, 235, 0.08);
+  color: #2563eb;
+  padding: 5px 14px;
+  border-radius: 999px;
+  font-size: 0.74rem;
+  font-weight: 700;
+  font-family: var(--unbounded);
+  border: 1px solid rgba(147, 197, 253, 0.5);
+  letter-spacing: -0.2px;
+}
+
+body.dark-theme .preview-badge {
+  background: rgba(59, 130, 246, 0.15);
+  color: #93c5fd;
+  border-color: rgba(59, 130, 246, 0.3);
+}
+
+.preview-pulse-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #3b82f6;
+  box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.5);
+  animation: studioPulse 1.8s infinite;
+}
+
+@keyframes studioPulse {
+  0% { transform: scale(0.9); box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.6); }
+  70% { transform: scale(1.15); box-shadow: 0 0 0 6px rgba(59, 130, 246, 0); }
+  100% { transform: scale(0.9); box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
+}
+
+.preview-hint {
+  font-size: 0.76rem;
+  color: var(--muted);
+}
+
+/* Scaler for live demo Namecard stage */
+.studio-stage-scaler {
+  --demo-scale: 0.52;
+  width: calc(680px * var(--demo-scale));
+  height: calc(760px * var(--demo-scale));
+  position: relative;
+  margin: 0 auto;
+  flex-shrink: 0;
+  border-radius: calc(60px * var(--demo-scale));
+  box-shadow: 0 20px 50px -15px rgba(15, 23, 42, 0.25);
+}
+
+.studio-stage-scaler .namecard-stage {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform-origin: top left;
+  transform: scale(var(--demo-scale));
+  pointer-events: none;
+}
+
+/* CONFIRM DISCARD MODAL */
+.confirm-discard-modal {
+  border-radius: 20px;
+  padding: 0;
+  max-width: 440px;
+  width: 90vw;
+  background: #ffffff;
+  border: 1px solid var(--border);
+  box-shadow: 0 25px 70px -15px rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+}
+
+body.dark-theme .confirm-discard-modal {
+  background: #0f172a;
+  border-color: #334155;
+}
+
+.confirm-modal-box {
+  padding: 28px 24px 22px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.confirm-modal-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: #fef3c7;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+
+body.dark-theme .confirm-modal-icon {
+  background: rgba(245, 158, 11, 0.15);
+}
+
+.confirm-modal-title {
+  font-family: var(--serif);
+  font-size: 1.22rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 8px;
+  line-height: 1.35;
+}
+
+body.dark-theme .confirm-modal-title {
+  color: #f8fafc;
+}
+
+.confirm-modal-desc {
+  font-size: 0.88rem;
+  color: #64748b;
+  line-height: 1.5;
+  margin: 0 0 24px;
+}
+
+body.dark-theme .confirm-modal-desc {
+  color: #94a3b8;
+}
+
+.confirm-modal-actions {
+  display: flex;
+  gap: 10px;
+  width: 100%;
+}
+
+.confirm-modal-actions button {
+  flex: 1;
+  padding: 10px 14px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  border-radius: 10px;
+}
+
+/* RESPONSIVE LAYOUT */
+@media (max-width: 860px) {
+  .namecard-studio-modal,
+  dialog.modal.namecard-studio-modal {
+    width: 95vw !important;
+    max-width: 480px !important;
+    height: 92vh !important;
+    max-height: 92vh !important;
+  }
+
+  .namecard-studio-container {
+    flex-direction: column;
+    height: 100%;
+    max-height: none;
+  }
+
+  .namecard-studio-preview {
+    order: -1;
+    flex: 0 0 auto;
+    padding: 12px 14px 16px;
+    border-left: none;
+    border-bottom: 1px solid var(--border);
+    max-height: 290px;
+  }
+
+  .studio-preview-head {
+    margin-bottom: 8px;
+  }
+
+  .studio-stage-scaler {
+    --demo-scale: 0.32;
+    box-shadow: 0 10px 30px -10px rgba(15, 23, 42, 0.2);
+  }
+
+  .namecard-studio-editor {
+    flex: 1;
+    width: 100%;
+    max-width: 100%;
+    border-right: none;
+    overflow-y: auto;
+  }
+
+  .namecard-studio-head {
+    padding: 12px 16px 10px;
+  }
+
+  .studio-title-wrap h2 {
+    font-size: 1.15rem;
+    white-space: normal;
+  }
+
+  .studio-form {
+    padding: 14px 16px 80px;
+  }
+}
+
+/* ========================================================
    NAMECARD LIKES / FAVORITES WIDGET
    ======================================================== */
 .namecard-like-btn {
@@ -22983,8 +23630,8 @@ body.dark-theme .lb-tab.active {
 }
 
 /* 8. Modals, Forms & Dialogs in Dark Mode */
-body.dark-theme .modal:not(.quiz-arena-modal):not(.quiz-start-confirm-modal):not(.quiz-exit-confirm-modal):not(.namecard-modal):not(.full-cover-viewer-modal),
-body.dark-theme dialog.modal:not(.quiz-arena-modal):not(.quiz-start-confirm-modal):not(.quiz-exit-confirm-modal):not(.namecard-modal):not(.full-cover-viewer-modal) {
+body.dark-theme .modal:not(.quiz-arena-modal):not(.quiz-start-confirm-modal):not(.quiz-exit-confirm-modal):not(.namecard-modal):not(.full-cover-viewer-modal):not(.namecard-studio-modal):not(.confirm-discard-modal),
+body.dark-theme dialog.modal:not(.quiz-arena-modal):not(.quiz-start-confirm-modal):not(.quiz-exit-confirm-modal):not(.namecard-modal):not(.full-cover-viewer-modal):not(.namecard-studio-modal):not(.confirm-discard-modal) {
   background: #182028;
   color: #e2e8f0;
   border: 1px solid rgba(255, 255, 255, 0.12);
@@ -24797,8 +25444,8 @@ body.dark-theme .reply-bar .dropdown-menu div:hover {
 /* ==========================================================================
    20. ĐỒNG BỘ TOÀN BỘ CỬA SỔ POP-UP (MODAL & DIALOG) TRONG DARK MODE
    ========================================================================== */
-body.dark-theme .modal:not(.quiz-arena-modal):not(.quiz-start-confirm-modal):not(.quiz-exit-confirm-modal):not(.namecard-modal):not(.full-cover-viewer-modal),
-body.dark-theme dialog.modal:not(.quiz-arena-modal):not(.quiz-start-confirm-modal):not(.quiz-exit-confirm-modal):not(.namecard-modal):not(.full-cover-viewer-modal) {
+body.dark-theme .modal:not(.quiz-arena-modal):not(.quiz-start-confirm-modal):not(.quiz-exit-confirm-modal):not(.namecard-modal):not(.full-cover-viewer-modal):not(.namecard-studio-modal):not(.confirm-discard-modal),
+body.dark-theme dialog.modal:not(.quiz-arena-modal):not(.quiz-start-confirm-modal):not(.quiz-exit-confirm-modal):not(.namecard-modal):not(.full-cover-viewer-modal):not(.namecard-studio-modal):not(.confirm-discard-modal) {
   background: #182028 !important;
   color: #e2e8f0 !important;
   border: 1px solid rgba(255, 255, 255, 0.14) !important;

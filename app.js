@@ -7398,30 +7398,258 @@ let namecardInitialState = {
   cover: "default",
 };
 
-function checkNamecardDirty() {
+function isNamecardDirty() {
   const curName = ($("#namecardDisplayNameInput")?.value || "").trim();
   const curBio = ($("#namecardBioInput")?.value || "").trim();
   const curAvatar = currentSelectedAvatar || "🌱";
   const curFrame = currentSelectedFrame || "none";
   const curCover = currentSelectedCover || "default";
 
-  const isDirty = (
-    curName !== namecardInitialState.displayName ||
-    curBio !== namecardInitialState.bio ||
-    curAvatar !== namecardInitialState.avatar ||
-    curFrame !== namecardInitialState.frame ||
-    curCover !== namecardInitialState.cover
+  return (
+    curName !== (namecardInitialState.displayName || "") ||
+    curBio !== (namecardInitialState.bio || "") ||
+    curAvatar !== (namecardInitialState.avatar || "🌱") ||
+    curFrame !== (namecardInitialState.frame || "none") ||
+    curCover !== (namecardInitialState.cover || "default")
   );
+}
+window.isNamecardDirty = isNamecardDirty;
 
+function checkNamecardDirty() {
+  const curName = ($("#namecardDisplayNameInput")?.value || "").trim();
+  const curBio = ($("#namecardBioInput")?.value || "").trim();
+
+  // Cập nhật bộ đếm ký tự
+  const rawNameLen = $("#namecardDisplayNameInput")?.value.length || 0;
+  const nameCounter = $("#displayNameCharCount");
+  if (nameCounter) nameCounter.textContent = `${rawNameLen}/80`;
+
+  const rawBioLen = $("#namecardBioInput")?.value.length || 0;
+  const bioCounter = $("#bioCharCount");
+  if (bioCounter) bioCounter.textContent = `${rawBioLen}/150`;
+
+  const dirty = isNamecardDirty();
   const container = $("#namecardStickyActions");
   if (container) {
-    if (isDirty) {
+    if (dirty) {
       container.classList.add("visible");
     } else {
       container.classList.remove("visible");
     }
   }
+
+  // Cập nhật xem trước live trực tiếp
+  updateLiveDemoPreview();
 }
+
+function updateLiveDemoPreview() {
+  const curName = ($("#namecardDisplayNameInput")?.value || "").trim();
+  const curBio = ($("#namecardBioInput")?.value || "").trim();
+  const curAvatar = currentSelectedAvatar || session?.avatar || "🌱";
+  const curFrame = currentSelectedFrame || "none";
+  const curCover = currentSelectedCover || "default";
+
+  // Tên hiển thị
+  const demoName = $("#demoNamecardDisplayName");
+  if (demoName) demoName.textContent = curName || session?.displayName || "Bạn";
+
+  // Tiểu sử Bio
+  const demoBio = $("#demoNamecardBio");
+  if (demoBio) demoBio.textContent = curBio || (session?.bio ? session.bio : "Hỏi, trao đổi, cùng tiến bộ 🌱\nTìm hiểu sâu hơn, mỗi ngày một chút.");
+
+  // Biểu tượng Avatar
+  const demoAvatar = $("#demoNamecardAvatar");
+  if (demoAvatar) demoAvatar.textContent = curAvatar;
+
+  // Huy hiệu vai trò
+  const demoRole = $("#demoNamecardRoleBadge");
+  if (demoRole) {
+    const roleText = session?.role === "admin" ? "Quản trị viên" : (session?.role === "ta" ? "Trợ giảng" : "Thành viên");
+    demoRole.textContent = roleText;
+    demoRole.className = `namecard-role-badge role-${session?.role || "student"}`;
+  }
+
+  // Huy hiệu mã ID
+  const demoId = $("#demoNamecardIdBadge");
+  if (demoId) {
+    demoId.textContent = session?.studentId ? `ID ${session.studentId}` : `ID ${session?.userCode || String(session?.id || 1).padStart(5, "0")}`;
+  }
+
+  // Chuỗi & Giờ học
+  const demoStreak = $("#demoNamecardStreak");
+  if (demoStreak) demoStreak.textContent = `${session?.streak || 0} ngày`;
+
+  const demoStudy = $("#demoNamecardStudyTime");
+  if (demoStudy) {
+    const hours = session?.hours ?? Math.floor((session?.totalMinutes || session?.studyStats?.totalMinutes || 0) / 60);
+    demoStudy.textContent = `${hours} giờ`;
+  }
+
+  // Ảnh bìa cá nhân
+  const demoCover = $("#demoNamecardCover");
+  if (demoCover) {
+    demoCover.dataset.coverVal = curCover;
+    if (curCover.startsWith("data:image/") || curCover.startsWith("http")) {
+      demoCover.style.background = `url("${curCover}") center / cover no-repeat`;
+    } else if (curCover.startsWith("color:")) {
+      demoCover.style.background = curCover.replace("color:", "");
+    } else {
+      const foundPreset = COVER_PRESETS.find(p => p.id === curCover);
+      if (foundPreset) {
+        if (foundPreset.type === "image") {
+          demoCover.style.background = `url("${foundPreset.value}") center / cover no-repeat`;
+        } else {
+          demoCover.style.background = foundPreset.value;
+        }
+      } else {
+        demoCover.style.background = "linear-gradient(135deg, #1e3a8a 0%, #3b82f6 50%, #93c5fd 100%)";
+      }
+    }
+  }
+
+  // Khung viền Namecard
+  const demoFrame = $("#demoNamecardFrameLayer");
+  if (demoFrame) {
+    demoFrame.setAttribute("data-frame", curFrame || "none");
+  }
+}
+
+// Chuyển đổi tab chính Studio (Tên/Avatar/Bio, Khung, Ảnh bìa)
+window.switchStudioTab = function (tabKey) {
+  const validTabs = ["info", "frame", "cover"];
+  if (!validTabs.includes(tabKey)) tabKey = "info";
+
+  document.querySelectorAll(".studio-nav-btn").forEach(btn => {
+    const isActive = btn.dataset.tab === tabKey;
+    btn.classList.toggle("active", isActive);
+    btn.setAttribute("aria-selected", isActive ? "true" : "false");
+  });
+
+  const panelMap = {
+    info: document.getElementById("studioPanelInfo"),
+    frame: document.getElementById("studioPanelFrame"),
+    cover: document.getElementById("studioPanelCover"),
+  };
+
+  Object.entries(panelMap).forEach(([k, panel]) => {
+    if (!panel) return;
+    if (k === tabKey) {
+      panel.classList.add("active");
+      panel.removeAttribute("hidden");
+    } else {
+      panel.classList.remove("active");
+      panel.setAttribute("hidden", "hidden");
+    }
+  });
+};
+
+// Chuyển đổi tab con Studio (Mặc định vs Giới hạn)
+window.switchStudioSubTab = function (panelType, subtabKey) {
+  const parentId = panelType === "frame" ? "studioPanelFrame" : "studioPanelCover";
+  const parentPanel = document.getElementById(parentId);
+  if (!parentPanel) return;
+
+  parentPanel.querySelectorAll(".sub-tab-pill").forEach(pill => {
+    pill.classList.toggle("active", pill.dataset.subtab === subtabKey);
+  });
+
+  if (panelType === "frame") {
+    const isDefault = subtabKey === "default-frames";
+    const defaultSub = document.getElementById("subPanelDefaultFrames");
+    const limitedSub = document.getElementById("subPanelLimitedFrames");
+    if (defaultSub) {
+      defaultSub.classList.toggle("active", isDefault);
+      if (isDefault) defaultSub.removeAttribute("hidden"); else defaultSub.setAttribute("hidden", "hidden");
+    }
+    if (limitedSub) {
+      limitedSub.classList.toggle("active", !isDefault);
+      if (!isDefault) limitedSub.removeAttribute("hidden"); else limitedSub.setAttribute("hidden", "hidden");
+    }
+  } else if (panelType === "cover") {
+    const isDefault = subtabKey === "default-covers";
+    const defaultSub = document.getElementById("subPanelDefaultCovers");
+    const limitedSub = document.getElementById("subPanelLimitedCovers");
+    if (defaultSub) {
+      defaultSub.classList.toggle("active", isDefault);
+      if (isDefault) defaultSub.removeAttribute("hidden"); else defaultSub.setAttribute("hidden", "hidden");
+    }
+    if (limitedSub) {
+      limitedSub.classList.toggle("active", !isDefault);
+      if (!isDefault) limitedSub.removeAttribute("hidden"); else limitedSub.setAttribute("hidden", "hidden");
+    }
+  }
+};
+
+// Xác nhận thoát khi có thay đổi chưa lưu
+window.requestCloseEditNamecard = function () {
+  if (isNamecardDirty()) {
+    const confirmModal = document.getElementById("namecardExitConfirmModal");
+    if (confirmModal && typeof confirmModal.showModal === "function") {
+      confirmModal.showModal();
+      return;
+    }
+  }
+  revertAndCloseEditNamecard();
+};
+
+window.revertAndCloseEditNamecard = function () {
+  const confirmModal = document.getElementById("namecardExitConfirmModal");
+  if (confirmModal && confirmModal.open) {
+    confirmModal.close();
+  }
+  const editModal = document.getElementById("editNamecardModal");
+  if (editModal && editModal.open) {
+    editModal.close();
+  }
+  // Khôi phục giá trị ban đầu
+  if (namecardInitialState) {
+    if ($("#namecardDisplayNameInput")) $("#namecardDisplayNameInput").value = namecardInitialState.displayName || "";
+    if ($("#namecardBioInput")) $("#namecardBioInput").value = namecardInitialState.bio || "";
+    currentSelectedAvatar = namecardInitialState.avatar || "🌱";
+    currentSelectedFrame = namecardInitialState.frame || "none";
+    currentSelectedCover = namecardInitialState.cover || "default";
+    checkNamecardDirty();
+  }
+};
+
+// Hook events cho nút đóng và modal xác nhận
+const btnCancelExit = document.getElementById("btnCancelExitConfirm");
+if (btnCancelExit) {
+  btnCancelExit.onclick = () => {
+    const confirmModal = document.getElementById("namecardExitConfirmModal");
+    if (confirmModal && confirmModal.open) confirmModal.close();
+  };
+}
+
+const btnConfirmExit = document.getElementById("btnConfirmExitDiscard");
+if (btnConfirmExit) {
+  btnConfirmExit.onclick = () => {
+    revertAndCloseEditNamecard();
+  };
+}
+
+const editNamecardModalEl = document.getElementById("editNamecardModal");
+if (editNamecardModalEl) {
+  editNamecardModalEl.addEventListener("cancel", (e) => {
+    if (isNamecardDirty()) {
+      e.preventDefault();
+      requestCloseEditNamecard();
+    }
+  });
+}
+
+// Gắn lắng nghe sự kiện chuyển tab cho Studio
+document.querySelectorAll(".studio-nav-btn").forEach(btn => {
+  btn.onclick = () => switchStudioTab(btn.dataset.tab);
+});
+
+document.querySelectorAll("#studioPanelFrame .sub-tab-pill").forEach(pill => {
+  pill.onclick = () => switchStudioSubTab("frame", pill.dataset.subtab);
+});
+
+document.querySelectorAll("#studioPanelCover .sub-tab-pill").forEach(pill => {
+  pill.onclick = () => switchStudioSubTab("cover", pill.dataset.subtab);
+});
 
 if ($("#namecardDisplayNameInput")) {
   $("#namecardDisplayNameInput").oninput = checkNamecardDirty;
@@ -7460,36 +7688,33 @@ window.openEditNamecardModal = function (section = "all") {
     frame: currentSelectedFrame,
     cover: currentSelectedCover,
   };
-  checkNamecardDirty();
 
   // Render Pickers
   renderAvatarPicker();
   renderFramePicker();
   renderCoverPicker();
 
-  // Custom cover button status
-  const userStreak = Math.max(Number(session.streak || 0), Number(session.maxStreak || 0));
-  const isEligibleCover = userStreak >= 30 || session.role === "admin" || session.role === "ta";
-  const uploadBtn = $("#btnUploadCustomCover");
-  if (uploadBtn) {
-    if (isEligibleCover) {
-      uploadBtn.disabled = false;
-      uploadBtn.innerHTML = `<span>📷</span> Tải ảnh bìa từ thiết bị lên (Tối đa 150KB)`;
-      uploadBtn.onclick = () => $("#coverFileInput")?.click();
-    } else {
-      uploadBtn.disabled = true;
-      uploadBtn.innerHTML = `<span>🔒</span> Tải ảnh riêng (Yêu cầu chuỗi 30+ ngày, hiện có: ${userStreak} ngày)`;
-    }
-  }
+  checkNamecardDirty();
 
-  // Cover preview if custom
-  const previewBox = $("#coverUploadPreview");
-  const previewImg = $("#coverUploadImg");
-  if (currentSelectedCover.startsWith("data:image/") || currentSelectedCover.startsWith("http")) {
-    if (previewBox) previewBox.style.display = "block";
-    if (previewImg) previewImg.src = currentSelectedCover;
+  // Tab activation theo section
+  if (section === "frame") {
+    switchStudioTab("frame");
+    const frameObj = FRAME_OPTIONS.find(f => f.id === currentSelectedFrame);
+    if (frameObj?.isLimited) {
+      switchStudioSubTab("frame", "limited-frames");
+    } else {
+      switchStudioSubTab("frame", "default-frames");
+    }
+  } else if (section === "cover") {
+    switchStudioTab("cover");
+    const coverObj = COVER_PRESETS.find(p => p.id === currentSelectedCover);
+    if (coverObj?.isLimited) {
+      switchStudioSubTab("cover", "limited-covers");
+    } else {
+      switchStudioSubTab("cover", "default-covers");
+    }
   } else {
-    if (previewBox) previewBox.style.display = "none";
+    switchStudioTab("info");
   }
 
   const modal = $("#editNamecardModal");
@@ -7499,8 +7724,6 @@ window.openEditNamecardModal = function (section = "all") {
       setTimeout(() => $("#namecardDisplayNameInput").focus(), 100);
     } else if (section === "avatar" && $("#profileAvatarPicker")) {
       setTimeout(() => $("#profileAvatarPicker").scrollIntoView({ behavior: "smooth", block: "center" }), 100);
-    } else if (section === "cover" && $("#profileCoverPicker")) {
-      setTimeout(() => $("#profileCoverPicker").scrollIntoView({ behavior: "smooth", block: "center" }), 100);
     }
   }
 };
@@ -7556,22 +7779,24 @@ function renderAvatarPicker() {
 }
 
 function renderFramePicker() {
-  const container = $("#profileFramePicker");
-  if (!container) return;
-  const longestStreak = Math.max(Number(session?.maxStreak || 0), Number(session?.streak || 0));
+  const defaultContainer = $("#profileDefaultFramesPicker");
+  const limitedContainer = $("#profileLimitedFramesPicker");
+  if (!defaultContainer && !limitedContainer) return;
+
+  const curStreak = Number(session?.streak || 0);
   const isPrivileged = session?.role === "admin" || session?.role === "ta";
   const limitedFrames = session?.limitedItems?.frames || {};
+
   const frameNotice = $("#namecardFrameNotice");
   if (frameNotice) {
-    const nextFrame = FRAME_OPTIONS.filter(frame => frame.minDays > 0).find(frame => frame.minDays > longestStreak);
-    frameNotice.textContent = nextFrame && !isPrivileged
-      ? `Mở khóa khung ${nextFrame.name}: chuỗi ${nextFrame.minDays}+ ngày`
-      : "Tất cả khung hiện có đã mở khóa";
+    frameNotice.textContent = isPrivileged
+      ? "Đặc quyền Quản trị viên: Toàn bộ khung khả dụng vĩnh viễn"
+      : `Duy trì chuỗi ngày để giữ khung đặc quyền (Chuỗi hiện tại: ${curStreak} ngày)`;
     frameNotice.style.color = "var(--muted)";
     frameNotice.style.fontWeight = "500";
   }
 
-  container.innerHTML = FRAME_OPTIONS.map(f => {
+  const renderFrameItem = (f) => {
     let isUnlocked = false;
     let lockTooltip = "";
     let badgeHtml = "";
@@ -7581,21 +7806,38 @@ function renderFramePicker() {
       isUnlocked = isPrivileged || Boolean(limStatus && limStatus.isUnlocked);
       if (isPrivileged || limStatus?.isPermanent) {
         lockTooltip = `${f.name} (Đặc quyền Quản trị viên: Vĩnh viễn)`;
-        badgeHtml = `<span class="choice-unlock-badge" style="background:#e0f2fe;color:#0369a1;font-weight:700;"><svg class="ui-icon" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px; margin-right:2px;"><path d="m2 4 3 12h14l3-12-6 7-4-7-4 7-6-7zm3 16h14"/></svg>Vĩnh viễn</span>`;
+        badgeHtml = `<span class="choice-unlock-badge badge-permanent"><svg class="ui-icon" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px; margin-right:2px;"><path d="m2 4 3 12h14l3-12-6 7-4-7-4 7-6-7zm3 16h14"/></svg>Vĩnh viễn</span>`;
       } else if (isUnlocked) {
         const remDays = limStatus?.remainingDays || 30;
         lockTooltip = `${f.name} (Hạn dùng còn ${remDays} ngày)`;
-        badgeHtml = `<span class="choice-unlock-badge" style="background:#fef3c7;color:#b45309;font-weight:700;"><svg class="ui-icon" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px; margin-right:2px;"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>${remDays}d</span>`;
+        badgeHtml = `<span class="choice-unlock-badge badge-countdown"><svg class="ui-icon" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px; margin-right:2px;"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>${remDays}d</span>`;
       } else {
         lockTooltip = f.lockNote || "Khung nhận được qua hoạt động giới hạn";
         badgeHtml = `<span class="choice-lock-badge" title="${lockTooltip}"><svg class="ui-icon" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px; margin-right:2px;"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>Sự kiện</span>`;
       }
+    } else if (f.minDays > 0) {
+      const perkStatus = limitedFrames[f.id];
+      isUnlocked = isPrivileged || Boolean(perkStatus && perkStatus.isUnlocked);
+      if (isPrivileged || perkStatus?.isPermanent) {
+        lockTooltip = `${f.name} (Đặc quyền Quản trị viên: Vĩnh viễn)`;
+        badgeHtml = `<span class="choice-unlock-badge badge-permanent">Vĩnh viễn</span>`;
+      } else if (isUnlocked) {
+        if (perkStatus?.isMaintaining) {
+          lockTooltip = `${f.name} (Chuỗi ${f.minDays}+ ngày: Khả dụng)`;
+          badgeHtml = `<span class="choice-unlock-badge badge-available">Khả dụng</span>`;
+        } else {
+          const remDays = perkStatus?.remainingDays || f.minDays;
+          lockTooltip = `${f.name} (Đứt chuỗi - Gia hạn còn ${remDays} ngày)`;
+          badgeHtml = `<span class="choice-unlock-badge badge-countdown"><svg class="ui-icon" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px; margin-right:2px;"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>${remDays}d</span>`;
+        }
+      } else {
+        lockTooltip = `Mở khóa khi đạt chuỗi ${f.minDays}+ ngày`;
+        badgeHtml = `<span class="choice-lock-badge" title="Cần chuỗi ${f.minDays}+ ngày"><svg class="ui-icon" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px; margin-right:2px;"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>${f.minDays}</span>`;
+      }
     } else {
-      isUnlocked = isPrivileged || longestStreak >= (f.minDays || 0);
-      lockTooltip = isUnlocked ? f.name : `Cần chuỗi ${f.minDays}+ ngày`;
-      badgeHtml = isUnlocked
-        ? `<span class="choice-unlock-badge">${f.minDays ? `${f.minDays} ngày` : "Có sẵn"}</span>`
-        : `<span class="choice-lock-badge" title="Cần chuỗi ${f.minDays}+ ngày"><svg class="ui-icon" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px; margin-right:2px;"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>${f.minDays}</span>`;
+      isUnlocked = true;
+      lockTooltip = f.name;
+      badgeHtml = `<span class="choice-unlock-badge">Có sẵn</span>`;
     }
 
     const isActive = f.id === currentSelectedFrame;
@@ -7606,35 +7848,55 @@ function renderFramePicker() {
         ${badgeHtml}
       </div>
     `;
-  }).join("");
+  };
 
-  container.querySelectorAll(".frame-choice-item").forEach(item => {
-    item.onclick = () => {
-      const f = FRAME_OPTIONS.find(frame => frame.id === item.dataset.frameId);
-      if (item.classList.contains("locked")) {
-        if (f?.isLimited) {
-          toast(f.lockNote || "Khung nhận được qua hoạt động giới hạn");
-        } else {
-          toast(`Khung này mở khóa khi bạn đạt chuỗi ${f?.minDays || 0}+ ngày.`);
+  const defaultFrames = FRAME_OPTIONS.filter(f => !f.isLimited);
+  const limitedFramesList = FRAME_OPTIONS.filter(f => f.isLimited);
+
+  if (defaultContainer) defaultContainer.innerHTML = defaultFrames.map(renderFrameItem).join("");
+  if (limitedContainer) limitedContainer.innerHTML = limitedFramesList.map(renderFrameItem).join("");
+
+  [defaultContainer, limitedContainer].forEach(cnt => {
+    if (!cnt) return;
+    cnt.querySelectorAll(".frame-choice-item").forEach(item => {
+      item.onclick = () => {
+        const f = FRAME_OPTIONS.find(frame => frame.id === item.dataset.frameId);
+        if (item.classList.contains("locked")) {
+          if (f?.isLimited) {
+            toast(f.lockNote || "Khung nhận được qua hoạt động giới hạn");
+          } else {
+            toast(`Khung này mở khóa khi bạn đạt chuỗi ${f?.minDays || 0}+ ngày.`);
+          }
+          return;
         }
-        return;
-      }
-      container.querySelectorAll(".frame-choice-item").forEach(i => i.classList.remove("active"));
-      item.classList.add("active");
-      currentSelectedFrame = item.dataset.frameId;
-      checkNamecardDirty();
-    };
+        document.querySelectorAll(".frame-choice-item").forEach(i => i.classList.remove("active"));
+        item.classList.add("active");
+        currentSelectedFrame = item.dataset.frameId;
+        checkNamecardDirty();
+      };
+    });
   });
 }
 
 function renderCoverPicker() {
-  const container = $("#profileCoverPicker");
-  if (!container) return;
-  const longestStreak = Math.max(Number(session?.maxStreak || 0), Number(session?.streak || 0));
+  const defaultContainer = $("#profileDefaultCoversPicker");
+  const limitedContainer = $("#profileLimitedCoversPicker");
+  if (!defaultContainer && !limitedContainer) return;
+
+  const curStreak = Number(session?.streak || 0);
   const isPrivileged = session?.role === "admin" || session?.role === "ta";
   const limitedCovers = session?.limitedItems?.covers || {};
 
-  container.innerHTML = COVER_PRESETS.map(p => {
+  const coverNotice = $("#namecardCoverNotice");
+  if (coverNotice) {
+    coverNotice.textContent = isPrivileged
+      ? "Đặc quyền Quản trị viên: Toàn bộ ảnh bìa & tải ảnh riêng khả dụng vĩnh viễn"
+      : `Duy trì chuỗi ngày để giữ ảnh bìa đặc quyền (Chuỗi hiện tại: ${curStreak} ngày)`;
+    coverNotice.style.color = "var(--muted)";
+    coverNotice.style.fontWeight = "500";
+  }
+
+  const renderCoverItem = (p) => {
     let isUnlocked = false;
     let lockTooltip = "";
     let badgeHtml = "";
@@ -7644,21 +7906,38 @@ function renderCoverPicker() {
       isUnlocked = isPrivileged || Boolean(limStatus && limStatus.isUnlocked);
       if (isPrivileged || limStatus?.isPermanent) {
         lockTooltip = `${p.name} (Đặc quyền Quản trị viên: Vĩnh viễn)`;
-        badgeHtml = `<span class="choice-unlock-badge" style="background:#e0f2fe;color:#0369a1;font-weight:700;"><svg class="ui-icon" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px; margin-right:2px;"><path d="m2 4 3 12h14l3-12-6 7-4-7-4 7-6-7zm3 16h14"/></svg>Vĩnh viễn</span>`;
+        badgeHtml = `<span class="choice-unlock-badge badge-permanent"><svg class="ui-icon" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px; margin-right:2px;"><path d="m2 4 3 12h14l3-12-6 7-4-7-4 7-6-7zm3 16h14"/></svg>Vĩnh viễn</span>`;
       } else if (isUnlocked) {
         const remDays = limStatus?.remainingDays || 30;
         lockTooltip = `${p.name} (Hạn dùng còn ${remDays} ngày)`;
-        badgeHtml = `<span class="choice-unlock-badge" style="background:#fef3c7;color:#b45309;font-weight:700;"><svg class="ui-icon" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px; margin-right:2px;"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>${remDays}d</span>`;
+        badgeHtml = `<span class="choice-unlock-badge badge-countdown"><svg class="ui-icon" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px; margin-right:2px;"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>${remDays}d</span>`;
       } else {
         lockTooltip = p.lockNote || "Ảnh bìa nhận được qua hoạt động giới hạn";
         badgeHtml = `<span class="choice-lock-badge" title="${lockTooltip}"><svg class="ui-icon" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px; margin-right:2px;"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>Sự kiện</span>`;
       }
+    } else if (p.minDays > 0) {
+      const perkStatus = limitedCovers[p.id];
+      isUnlocked = isPrivileged || Boolean(perkStatus && perkStatus.isUnlocked);
+      if (isPrivileged || perkStatus?.isPermanent) {
+        lockTooltip = `${p.name} (Đặc quyền Quản trị viên: Vĩnh viễn)`;
+        badgeHtml = `<span class="choice-unlock-badge badge-permanent">Vĩnh viễn</span>`;
+      } else if (isUnlocked) {
+        if (perkStatus?.isMaintaining) {
+          lockTooltip = `${p.name} (Chuỗi ${p.minDays}+ ngày: Khả dụng)`;
+          badgeHtml = `<span class="choice-unlock-badge badge-available">Khả dụng</span>`;
+        } else {
+          const remDays = perkStatus?.remainingDays || p.minDays;
+          lockTooltip = `${p.name} (Đứt chuỗi - Gia hạn còn ${remDays} ngày)`;
+          badgeHtml = `<span class="choice-unlock-badge badge-countdown"><svg class="ui-icon" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px; margin-right:2px;"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>${remDays}d</span>`;
+        }
+      } else {
+        lockTooltip = `Mở khóa khi đạt chuỗi ${p.minDays}+ ngày`;
+        badgeHtml = `<span class="choice-lock-badge" title="Cần chuỗi ${p.minDays}+ ngày"><svg class="ui-icon" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px; margin-right:2px;"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>${p.minDays}</span>`;
+      }
     } else {
-      isUnlocked = isPrivileged || longestStreak >= (p.minDays || 0);
-      lockTooltip = isUnlocked ? p.name : `Cần chuỗi ${p.minDays}+ ngày`;
-      badgeHtml = isUnlocked
-        ? (p.minDays ? `<span class="choice-unlock-badge">${p.minDays} ngày</span>` : '')
-        : `<span class="choice-lock-badge" title="Cần chuỗi ${p.minDays}+ ngày">🔒 ${p.minDays}</span>`;
+      isUnlocked = true;
+      lockTooltip = p.name;
+      badgeHtml = `<span class="choice-unlock-badge">Có sẵn</span>`;
     }
 
     const isActive = p.id === currentSelectedCover;
@@ -7674,28 +7953,71 @@ function renderCoverPicker() {
         ${badgeHtml}
       </div>
     `;
-  }).join("");
+  };
 
-  container.querySelectorAll(".cover-choice-item").forEach(item => {
-    item.onclick = () => {
-      const p = COVER_PRESETS.find(preset => preset.id === item.dataset.coverId);
-      if (item.classList.contains("locked")) {
-        if (p?.isLimited) {
-          toast(p.lockNote || "Ảnh bìa nhận được qua hoạt động giới hạn");
-        } else {
-          toast(`Ảnh bìa này mở khóa khi bạn đạt chuỗi ${p?.minDays || 0}+ ngày.`);
+  const defaultCovers = COVER_PRESETS.filter(p => !p.isLimited);
+  const limitedCoversList = COVER_PRESETS.filter(p => p.isLimited);
+
+  if (defaultContainer) defaultContainer.innerHTML = defaultCovers.map(renderCoverItem).join("");
+  if (limitedContainer) limitedContainer.innerHTML = limitedCoversList.map(renderCoverItem).join("");
+
+  [defaultContainer, limitedContainer].forEach(cnt => {
+    if (!cnt) return;
+    cnt.querySelectorAll(".cover-choice-item").forEach(item => {
+      item.onclick = () => {
+        const p = COVER_PRESETS.find(preset => preset.id === item.dataset.coverId);
+        if (item.classList.contains("locked")) {
+          if (p?.isLimited) {
+            toast(p.lockNote || "Ảnh bìa nhận được qua hoạt động giới hạn");
+          } else {
+            toast(`Ảnh bìa này mở khóa khi bạn đạt chuỗi ${p?.minDays || 0}+ ngày.`);
+          }
+          return;
         }
-        return;
-      }
-      container.querySelectorAll(".cover-choice-item").forEach(i => i.classList.remove("active"));
-      item.classList.add("active");
-      currentSelectedCover = item.dataset.coverId;
-      // Hide custom image preview if preset picked
-      const previewBox = $("#coverUploadPreview");
-      if (previewBox) previewBox.style.display = "none";
-      checkNamecardDirty();
-    };
+        document.querySelectorAll(".cover-choice-item").forEach(i => i.classList.remove("active"));
+        item.classList.add("active");
+        currentSelectedCover = item.dataset.coverId;
+        const previewBox = $("#coverUploadPreview");
+        if (previewBox) previewBox.style.display = "none";
+        checkNamecardDirty();
+      };
+    });
   });
+
+  // Custom cover button status
+  const customCoverInfo = session?.limitedItems?.canUploadCustomCover;
+  const isEligibleCover = isPrivileged || Boolean(customCoverInfo);
+  const uploadBtn = $("#btnUploadCustomCover");
+  if (uploadBtn) {
+    if (isPrivileged || session?.limitedItems?.isPermanent) {
+      uploadBtn.disabled = false;
+      uploadBtn.innerHTML = `<span>📷</span> Tải ảnh bìa từ thiết bị lên (Tối đa 150KB) - <strong style="color:#0369a1;">Vĩnh viễn</strong>`;
+      uploadBtn.onclick = () => $("#coverFileInput")?.click();
+    } else if (isEligibleCover) {
+      uploadBtn.disabled = false;
+      if (session?.limitedItems?.customCoverMaintaining) {
+        uploadBtn.innerHTML = `<span>📷</span> Tải ảnh bìa từ thiết bị lên (Tối đa 150KB) - <strong style="color:#15803d;">Khả dụng</strong>`;
+      } else {
+        const remDays = session?.limitedItems?.customCoverRemainingDays || 30;
+        uploadBtn.innerHTML = `<span>📷</span> Tải ảnh bìa từ thiết bị lên (Tối đa 150KB) - <strong style="color:#b45309;">${remDays}d</strong>`;
+      }
+      uploadBtn.onclick = () => $("#coverFileInput")?.click();
+    } else {
+      uploadBtn.disabled = true;
+      uploadBtn.innerHTML = `<span>🔒</span> Tải ảnh riêng (Yêu cầu duy trì chuỗi 30+ ngày, hiện có: ${curStreak} ngày)`;
+      uploadBtn.onclick = null;
+    }
+  }
+
+  // Cover preview if custom
+  const previewBox = $("#coverUploadPreview");
+  const previewImg = $("#coverUploadImg");
+  if (currentSelectedCover.startsWith("data:image/") || currentSelectedCover.startsWith("http")) {
+    if (previewBox) previewBox.style.display = "block";
+    if (previewImg) previewImg.src = currentSelectedCover;
+  } else {
+    if (previewBox) previewBox.style.display = "none";
+  }
 }
 
 // Client compression for custom cover

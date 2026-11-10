@@ -2918,117 +2918,338 @@
       </div>
     </dialog>
 
-    <!-- MODAL 1: CHỈNH SỬA THẺ TÊN & TRANG TRÍ -->
-    <dialog class="modal profile-settings-modal" id="editNamecardModal">
-      <form id="editNamecardForm">
-        <div class="modal-head">
-          <div>
-            <p class="eyebrow">NAMECARD RE:SEARCH</p>
-            <h2>Chỉnh sửa thẻ tên & Trang trí</h2>
-          </div>
-          <button
-            class="close-modal"
-            type="button"
-            onclick="this.closest('dialog').close()"
-            aria-label="Đóng"
-          >
-            <svg class="ui-icon modal-close-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-          </button>
-        </div>
-        <label>
-          Tên hiển thị (Công khai)
-          <input
-            id="namecardDisplayNameInput"
-            required
-            minlength="2"
-            maxlength="80"
-            placeholder="Tên hiển thị của bạn"
-          />
-        </label>
+    <!-- MODAL 1: CHỈNH SỬA THẺ TÊN & TRANG TRÍ (NAMECARD STUDIO) -->
+    <dialog class="modal namecard-studio-modal" id="editNamecardModal" aria-labelledby="editNamecardTitle">
+      <div class="namecard-studio-container">
         
-        <label style="margin-top: 12px;">
-          Tiểu sử (Bio ngắn gọn)
-          <textarea
-            id="namecardBioInput"
-            rows="2"
-            maxlength="150"
-            placeholder="Hỏi, trao đổi, cùng tiến bộ 🌱..."
-            style="width: 100%; border: 1px solid var(--border); border-radius: 8px; padding: 10px; font-family: inherit; font-size: 0.95rem; resize: vertical;"
-          ></textarea>
-        </label>
+        <!-- CỘT TRÁI: KHU VỰC ĐIỀU KHIỂN & CHỈNH SỬA -->
+        <div class="namecard-studio-editor">
+          <!-- Studio Header -->
+          <div class="namecard-studio-head">
+            <div class="studio-title-wrap">
+              <span class="studio-eyebrow">NAMECARD STUDIO</span>
+              <h2 id="editNamecardTitle">Chỉnh sửa thẻ tên</h2>
+            </div>
+            <button
+              class="studio-close-btn"
+              type="button"
+              id="btnStudioClose"
+              aria-label="Đóng cửa sổ"
+              onclick="if (typeof requestCloseEditNamecard === 'function') { requestCloseEditNamecard(); } else { this.closest('dialog').close(); }"
+            >
+              <svg class="ui-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+            </button>
+          </div>
 
-        <!-- Biểu tượng Avatar cá nhân (Đổi 1 lần mỗi 7 ngày) -->
-        <div style="margin-top: 16px;">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-            <label style="font-weight: 600; margin: 0;">Biểu tượng Avatar</label>
-            <span style="font-size: 0.8rem; color: var(--muted);" id="namecardAvatarNotice">1 lần mỗi 7 ngày</span>
-          </div>
-          <div class="avatar-selection-grid" id="profileAvatarPicker">
-            <!-- Render avatar emojis -->
-          </div>
-          <div style="display: flex; gap: 8px; margin-top: 8px;">
-            <input
-              id="namecardCustomAvatarInput"
-              type="text"
-              maxlength="4"
-              placeholder="Hoặc nhập emoji tuỳ chọn..."
-              style="flex: 1; padding: 6px 10px; border: 1px solid var(--border); border-radius: 8px; font-size: 0.9rem;"
-            />
+          <!-- Studio Navigation Bar: Sử dụng SVG Icons làm nút chọn, không dùng icon hệ thống -->
+          <nav class="studio-nav-bar" role="tablist" aria-label="Bộ công cụ chỉnh sửa">
             <button
               type="button"
-              id="applyCustomAvatarBtn"
-              class="button button-outline"
-              style="padding: 6px 12px; font-size: 0.85rem;"
+              class="studio-nav-btn active"
+              role="tab"
+              id="studioTabBtnInfo"
+              aria-selected="true"
+              aria-controls="studioPanelInfo"
+              data-tab="info"
+              data-tooltip="Thông tin cá nhân (Tên, Avatar, Bio)"
+              aria-label="Thông tin cá nhân"
             >
-              Áp dụng
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                <circle cx="12" cy="7" r="4"></circle>
+              </svg>
             </button>
-          </div>
+
+            <button
+              type="button"
+              class="studio-nav-btn"
+              role="tab"
+              id="studioTabBtnFrame"
+              aria-selected="false"
+              aria-controls="studioPanelFrame"
+              data-tab="frame"
+              data-tooltip="Khung viền Namecard"
+              aria-label="Khung viền Namecard"
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="3" width="18" height="18" rx="4" ry="4"></rect>
+                <rect x="7" y="7" width="10" height="10" rx="2" ry="2" stroke-dasharray="2 2"></rect>
+              </svg>
+            </button>
+
+            <button
+              type="button"
+              class="studio-nav-btn"
+              role="tab"
+              id="studioTabBtnCover"
+              aria-selected="false"
+              aria-controls="studioPanelCover"
+              data-tab="cover"
+              data-tooltip="Ảnh bìa cá nhân"
+              aria-label="Ảnh bìa cá nhân"
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                <polyline points="21 15 16 10 5 21"></polyline>
+              </svg>
+            </button>
+          </nav>
+
+          <!-- Form chỉnh sửa thẻ tên -->
+          <form id="editNamecardForm" class="studio-form">
+            
+            <!-- PANEL 1: THÔNG TIN CÁ NHÂN -->
+            <div class="studio-panel active" id="studioPanelInfo" role="tabpanel" aria-labelledby="studioTabBtnInfo">
+              <div class="studio-field">
+                <div class="field-label-row">
+                  <label for="namecardDisplayNameInput">Tên hiển thị (Công khai)</label>
+                  <span class="field-char-count" id="displayNameCharCount">0/80</span>
+                </div>
+                <input
+                  id="namecardDisplayNameInput"
+                  required
+                  minlength="2"
+                  maxlength="80"
+                  placeholder="Tên hiển thị của bạn..."
+                />
+              </div>
+
+              <!-- Biểu tượng Avatar cá nhân (Đổi 1 lần mỗi 7 ngày) -->
+              <div class="studio-field">
+                <div class="field-label-row">
+                  <label>Biểu tượng Avatar</label>
+                  <span class="avatar-notice-pill" id="namecardAvatarNotice">1 lần mỗi 7 ngày</span>
+                </div>
+                <div class="avatar-selection-grid" id="profileAvatarPicker">
+                  <!-- Render avatar emojis -->
+                </div>
+                <div class="custom-avatar-row">
+                  <input
+                    id="namecardCustomAvatarInput"
+                    type="text"
+                    maxlength="4"
+                    placeholder="Hoặc nhập emoji tuỳ chọn..."
+                  />
+                  <button
+                    type="button"
+                    id="applyCustomAvatarBtn"
+                    class="button button-outline"
+                  >
+                    Áp dụng
+                  </button>
+                </div>
+              </div>
+
+              <!-- Tiểu sử ngắn gọn -->
+              <div class="studio-field">
+                <div class="field-label-row">
+                  <label for="namecardBioInput">Tiểu sử (Bio ngắn gọn)</label>
+                  <span class="field-char-count" id="bioCharCount">0/150</span>
+                </div>
+                <textarea
+                  id="namecardBioInput"
+                  rows="3"
+                  maxlength="150"
+                  placeholder="Hỏi, trao đổi, cùng tiến bộ 🌱... Chia sẻ định hướng học tập của bạn"
+                ></textarea>
+              </div>
+            </div>
+
+            <!-- PANEL 2: KHUNG NAMECARD -->
+            <div class="studio-panel" id="studioPanelFrame" role="tabpanel" aria-labelledby="studioTabBtnFrame" hidden>
+              <div class="sub-tab-pill-group">
+                <button type="button" class="sub-tab-pill active" data-subtab="default-frames">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px; margin-right:4px;"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/></svg>Mặc định & Chuỗi
+                </button>
+                <button type="button" class="sub-tab-pill" data-subtab="limited-frames">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px; margin-right:4px;"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>Sự kiện giới hạn
+                </button>
+              </div>
+
+              <div class="studio-section-notice" id="namecardFrameNotice">Mở khóa theo chuỗi ngày hoạt động</div>
+
+              <!-- Mục Mặc định & Chuỗi -->
+              <div class="studio-sub-panel active" id="subPanelDefaultFrames">
+                <div class="frame-selection-grid" id="profileDefaultFramesPicker">
+                  <!-- Render frames: none, basic frames, leaves, sakura, ice, stars, gold -->
+                </div>
+              </div>
+
+              <!-- Mục Giới hạn -->
+              <div class="studio-sub-panel" id="subPanelLimitedFrames" hidden>
+                <div class="frame-selection-grid" id="profileLimitedFramesPicker">
+                  <!-- Render limited event frames -->
+                </div>
+              </div>
+            </div>
+
+            <!-- PANEL 3: ẢNH BÌA -->
+            <div class="studio-panel" id="studioPanelCover" role="tabpanel" aria-labelledby="studioTabBtnCover" hidden>
+              <div class="sub-tab-pill-group">
+                <button type="button" class="sub-tab-pill active" data-subtab="default-covers">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px; margin-right:4px;"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/></svg>Mặc định & Chuỗi
+                </button>
+                <button type="button" class="sub-tab-pill" data-subtab="limited-covers">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px; margin-right:4px;"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>Sự kiện giới hạn
+                </button>
+              </div>
+
+              <div class="studio-section-notice" id="namecardCoverNotice">Chuỗi 30+ ngày để mở khóa tính năng tải ảnh bìa riêng</div>
+
+              <!-- Mục Mặc định & Chuỗi -->
+              <div class="studio-sub-panel active" id="subPanelDefaultCovers">
+                <div class="cover-selection-grid" id="profileDefaultCoversPicker">
+                  <!-- Render default presets, colors & streak covers -->
+                </div>
+
+                <!-- Tải ảnh máy (Client compress WebP < 150KB) -->
+                <div class="custom-cover-upload-section">
+                  <input type="file" id="coverFileInput" accept="image/*" style="display: none;" />
+                  <button type="button" class="button button-outline studio-upload-btn" id="btnUploadCustomCover">
+                    <svg class="ui-btn-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+                      <circle cx="12" cy="13" r="4"></circle>
+                    </svg>
+                    Tải ảnh bìa từ thiết bị lên (Tối đa 150KB)
+                  </button>
+                  <div id="coverUploadPreview" style="display: none;" class="custom-cover-preview-box">
+                    <img id="coverUploadImg" src="" alt="Preview ảnh bìa tải lên" />
+                    <button type="button" id="btnRemoveCustomCover" title="Bỏ ảnh tải lên">✕</button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Mục Giới hạn -->
+              <div class="studio-sub-panel" id="subPanelLimitedCovers" hidden>
+                <div class="cover-selection-grid" id="profileLimitedCoversPicker">
+                  <!-- Render limited event covers -->
+                </div>
+              </div>
+            </div>
+
+            <!-- Sticky Action Bar -->
+            <div class="namecard-sticky-actions" id="namecardStickyActions">
+              <div class="namecard-dirty-indicator">
+                <span class="dirty-dot"></span>
+                <span>Có thay đổi chưa lưu</span>
+              </div>
+              <div class="studio-actions-btns">
+                <button
+                  type="button"
+                  class="button button-ghost"
+                  id="btnStudioDiscard"
+                  onclick="if (typeof requestCloseEditNamecard === 'function') { requestCloseEditNamecard(); } else { document.getElementById('editNamecardModal').close(); }"
+                >
+                  Hủy bỏ
+                </button>
+                <button class="button button-primary namecard-save-floating-btn" type="submit" id="saveNamecardBtn">
+                  Lưu thay đổi
+                </button>
+              </div>
+            </div>
+
+          </form>
         </div>
 
-        <!-- Khung viền Namecard -->
-        <div style="margin-top: 16px;">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-            <label style="font-weight: 600; margin: 0;">Khung viền Namecard</label>
-            <span style="font-size: 0.8rem; color: var(--muted);" id="namecardFrameNotice">Mở khóa theo chuỗi</span>
-          </div>
-          <div class="frame-selection-grid" id="profileFramePicker">
-            <!-- Render frames: default, leaves, stars, gold, sakura, ice -->
-          </div>
-        </div>
-
-        <!-- Chọn ảnh bìa -->
-        <div style="margin-top: 16px;">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-            <label style="font-weight: 600; margin: 0;">Ảnh bìa cá nhân</label>
-            <span style="font-size: 0.8rem; color: var(--muted);" id="namecardCoverNotice">Chuỗi 30+ để tải ảnh riêng</span>
-          </div>
-          <div class="cover-selection-grid" id="profileCoverPicker">
-            <!-- Render preset covers & colors -->
+        <!-- CỘT PHẢI: XEM TRƯỚC DEMO TRỰC TIẾP (LIVE INTERACTIVE PREVIEW) -->
+        <div class="namecard-studio-preview">
+          <div class="studio-preview-head">
+            <div class="preview-badge">
+              <span class="preview-pulse-dot"></span>
+              Xem trước trực tiếp (Chưa lưu)
+            </div>
+            <span class="preview-hint">Tự động cập nhật theo mọi thay đổi</span>
           </div>
 
-          <!-- Nút tải ảnh máy (Client compress WebP < 150KB) -->
-          <div style="margin-top: 12px;">
-            <input type="file" id="coverFileInput" accept="image/*" style="display: none;" />
-            <button type="button" class="button button-outline" id="btnUploadCustomCover" style="width: 100%; justify-content: center; gap: 8px;">
-              <svg class="ui-btn-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg> Tải ảnh bìa từ thiết bị lên (Tối đa 150KB)
-            </button>
-            <div id="coverUploadPreview" style="display: none; margin-top: 10px; border-radius: 8px; overflow: hidden; height: 80px; position: relative;">
-              <img id="coverUploadImg" src="" style="width: 100%; height: 100%; object-fit: cover;" alt="Preview ảnh bìa" />
-              <button type="button" id="btnRemoveCustomCover" style="position: absolute; top: 6px; right: 6px; background: rgba(0,0,0,0.6); color: #fff; border: none; border-radius: 50%; width: 24px; height: 24px; cursor: pointer;">×</button>
+          <!-- Scaled Namecard Stage Container -->
+          <div class="studio-stage-scaler">
+            <div class="namecard-stage" id="demoNamecardStage">
+              <!-- Canvas với bo góc 60px chuẩn -->
+              <div class="namecard-canvas" id="demoNamecardCanvas">
+                <!-- Cover ảnh bìa demo -->
+                <div class="namecard-cover" id="demoNamecardCover"></div>
+
+                <!-- Thân thẻ demo -->
+                <div class="namecard-card" id="demoNamecardCard">
+                  <div class="namecard-cover-spacer"></div>
+                  <div class="namecard-content-wrap">
+                    
+                    <!-- Header -->
+                    <div class="namecard-header">
+                      <div class="namecard-profile-row">
+                        <div class="namecard-avatar-wrap">
+                          <div class="namecard-avatar-circle" id="demoNamecardAvatarCircle">
+                            <span id="demoNamecardAvatar">🌱</span>
+                          </div>
+                        </div>
+                        <div class="namecard-identity">
+                          <h2 class="namecard-display-name" id="demoNamecardDisplayName">Bạn</h2>
+                          <div class="namecard-badges">
+                            <span class="namecard-role-badge" id="demoNamecardRoleBadge">Thành viên</span>
+                            <span class="namecard-id-badge" id="demoNamecardIdBadge">ID: 00000</span>
+                          </div>
+                        </div>
+                      </div>
+                      <p class="namecard-bio" id="demoNamecardBio">Hỏi, trao đổi, cùng tiến bộ 🌱</p>
+                    </div>
+
+                    <!-- Thống kê demo mô phỏng cấu trúc thực tế -->
+                    <div class="namecard-body">
+                      <div class="namecard-block">
+                        <div class="namecard-block-header">
+                          <div class="namecard-block-title">
+                            <h3>Thống kê tự học & Thi đua</h3>
+                          </div>
+                        </div>
+                        <div class="namecard-tiles namecard-tiles-2">
+                          <div class="namecard-tile">
+                            <div class="nc-tile-icon">🔥</div>
+                            <span class="nc-tile-value" id="demoNamecardStreak">0 ngày</span>
+                            <span class="nc-tile-label">Chuỗi học tập</span>
+                          </div>
+                          <div class="namecard-tile">
+                            <div class="nc-tile-icon">⏱️</div>
+                            <span class="nc-tile-value" id="demoNamecardStudyTime">0 giờ</span>
+                            <span class="nc-tile-label">Tổng giờ tự học</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                  </div>
+                </div>
+              </div>
+
+              <!-- Frame layer demo -->
+              <div class="namecard-frame-layer" id="demoNamecardFrameLayer" data-frame="none"></div>
             </div>
           </div>
         </div>
 
-        <div class="namecard-sticky-actions" id="namecardStickyActions">
-          <div class="namecard-dirty-indicator">
-            <span class="dirty-dot"></span>
-            <span>Có thay đổi chưa lưu</span>
-          </div>
-          <button class="button button-primary namecard-save-floating-btn" type="submit" id="saveNamecardBtn">
-            Lưu
-          </button>
+      </div>
+    </dialog>
+
+    <!-- HỘP THOẠI XÁC NHẬN KHI THOÁT CÓ THAY ĐỔI CHƯA LƯU -->
+    <dialog class="modal confirm-discard-modal" id="namecardExitConfirmModal">
+      <div class="confirm-modal-box">
+        <div class="confirm-modal-icon">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path>
+            <line x1="12" y1="9" x2="12" y2="13"></line>
+            <line x1="12" y1="17" x2="12.01" y2="17"></line>
+          </svg>
         </div>
-      </form>
+        <h3 class="confirm-modal-title">Chắc chắn xác nhận huỷ bỏ các chỉnh sửa chứ?</h3>
+        <p class="confirm-modal-desc">Các thay đổi vừa thiết lập của bạn chưa được lưu và sẽ bị mất nếu bạn thoát ngay lúc này.</p>
+        <div class="confirm-modal-actions">
+          <button type="button" class="button button-outline" id="btnCancelExitConfirm">Tiếp tục chỉnh sửa</button>
+          <button type="button" class="button button-danger" id="btnConfirmExitDiscard">Xác nhận huỷ</button>
+        </div>
+      </div>
     </dialog>
 
     <!-- MODAL 2: CHỈNH SỬA HỒ SƠ (THÔNG TIN NỘI BỘ BẢO MẬT) -->

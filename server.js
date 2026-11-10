@@ -1470,6 +1470,15 @@ function getAuthorStreakTier(userId) {
 
 function publicUser(user, streakInfo = null) {
   const isAnonymized = Boolean((user.email && user.email.includes("@deleted.")) || user.display_name === "Vô danh");
+  if (user.id && !isAnonymized) {
+    checkAndGrantLimitedItems(user.id);
+    checkAndRevertExpiredUserDecorations(user.id);
+    const refreshed = db.prepare("SELECT cover_image, namecard_frame FROM users WHERE id=?").get(user.id);
+    if (refreshed) {
+      user.cover_image = refreshed.cover_image;
+      user.namecard_frame = refreshed.namecard_frame;
+    }
+  }
   const info = isAnonymized ? { streak: 0, streakTier: 0, shields: 0 } : (streakInfo || (user.id ? calculateUserStreak(user.id) : { streak: 0, streakTier: 0, shields: 0 }));
   const lastChange = user.avatar_last_changed ? Number(user.avatar_last_changed) : 0;
   const now = Date.now();
@@ -2068,6 +2077,18 @@ function formatDMY(date) {
 const LIMITED_COVER_IDS = new Set(["ton_vinh_phai_dep", "bua_tiec_ma_mi", "chinh_phuc_bau_troi"]);
 const LIMITED_FRAME_IDS = new Set(["ton_vinh_phai_dep", "bua_tiec_ma_mi", "chinh_phuc_bau_troi"]);
 
+// Đặc quyền khung và ảnh bìa theo chuỗi (Mở khóa theo ngày, duy trì thì "Khả dụng", đứt chuỗi thì đếm ngược hạn giờ)
+const STREAK_PERK_ITEMS = [
+  { minStreak: 3, graceDays: 3, frameId: "leaves", coverId: "khu_rung_tri_thuc" },
+  { minStreak: 7, graceDays: 7, frameId: "sakura", coverId: "mua_anh_dao_no" },
+  { minStreak: 14, graceDays: 14, frameId: "ice", coverId: "vuong_quoc_mua_dong" },
+  { minStreak: 30, graceDays: 30, frameId: "stars", coverId: "tinh_tu_sao_troi", customCover: true },
+  { minStreak: 50, graceDays: 45, frameId: "gold", coverId: "ky_nguyen_hoang_kim" },
+];
+
+const STREAK_FRAME_IDS = new Set(STREAK_PERK_ITEMS.map(p => p.frameId));
+const STREAK_COVER_IDS = new Set(STREAK_PERK_ITEMS.map(p => p.coverId));
+
 const LIMITED_THEMES = [
   {
     id: "ton_vinh_phai_dep",
@@ -2206,6 +2227,52 @@ function checkAndGrantArenaSkyLimitedItems(userId, vnNow) {
   }
 }
 
+function syncUserStreakPerkItems(userId, vnNow = getVietnamNow()) {
+  if (!userId) return;
+  const userRow = db.prepare("SELECT id, role FROM users WHERE id=?").get(userId);
+  if (!userRow) return;
+  const isPrivileged = userRow.role === "admin" || userRow.role === "ta";
+
+  const streakInfo = calculateUserStreak(userId);
+  const curStreak = Number(streakInfo?.streak || 0);
+  const nowMs = vnNow.getTime();
+
+  for (const perk of STREAK_PERK_ITEMS) {
+    if (isPrivileged || curStreak >= perk.minStreak) {
+      // Đang duy trì chuỗi đạt mốc: Tự động duy trì gia hạn = now + perk.graceDays
+      const expiresAt = new Date(nowMs + perk.graceDays * 24 * 60 * 60 * 1000).toISOString();
+      const unlockedAt = vnNow.toISOString();
+
+      const itemsToSync = [
+        { type: "frame", id: perk.frameId },
+        { type: "cover", id: perk.coverId }
+      ];
+      if (perk.customCover) {
+        itemsToSync.push({ type: "custom_cover", id: "custom_upload" });
+      }
+
+      for (const it of itemsToSync) {
+        const existing = db.prepare(
+          "SELECT expires_at FROM user_limited_items WHERE user_id=? AND item_type=? AND item_id=?"
+        ).get(userId, it.type, it.id);
+
+        if (!existing) {
+          db.prepare(`
+            INSERT INTO user_limited_items (user_id, item_type, item_id, unlocked_at, expires_at)
+            VALUES (?, ?, ?, ?, ?)
+          `).run(userId, it.type, it.id, unlockedAt, expiresAt);
+        } else {
+          db.prepare(`
+            UPDATE user_limited_items
+            SET expires_at=?
+            WHERE user_id=? AND item_type=? AND item_id=?
+          `).run(expiresAt, userId, it.type, it.id);
+        }
+      }
+    }
+  }
+}
+
 function checkAndRevertExpiredUserDecorations(userId) {
   if (!userId) return;
   const userRow = db.prepare("SELECT id, role, cover_image, namecard_frame FROM users WHERE id=?").get(userId);
@@ -2219,7 +2286,8 @@ function checkAndRevertExpiredUserDecorations(userId) {
   let newFrame = userRow.namecard_frame;
   let newCover = userRow.cover_image;
 
-  if (LIMITED_FRAME_IDS.has(userRow.namecard_frame)) {
+  // Kiểm tra khung (sự kiện & chuỗi)
+  if (LIMITED_FRAME_IDS.has(userRow.namecard_frame) || STREAK_FRAME_IDS.has(userRow.namecard_frame)) {
     const frameStatus = limitedStatus.frames[userRow.namecard_frame];
     if (!frameStatus || !frameStatus.isUnlocked) {
       newFrame = "none";
@@ -2227,9 +2295,15 @@ function checkAndRevertExpiredUserDecorations(userId) {
     }
   }
 
-  if (LIMITED_COVER_IDS.has(userRow.cover_image)) {
+  // Kiểm tra ảnh bìa (sự kiện, chuỗi, hoặc ảnh tải lên)
+  if (LIMITED_COVER_IDS.has(userRow.cover_image) || STREAK_COVER_IDS.has(userRow.cover_image)) {
     const coverStatus = limitedStatus.covers[userRow.cover_image];
     if (!coverStatus || !coverStatus.isUnlocked) {
+      newCover = "default";
+      updated = true;
+    }
+  } else if (userRow.cover_image && (userRow.cover_image.startsWith("data:image/") || userRow.cover_image.startsWith("http"))) {
+    if (!limitedStatus.canUploadCustomCover) {
       newCover = "default";
       updated = true;
     }
@@ -2243,14 +2317,17 @@ function checkAndRevertExpiredUserDecorations(userId) {
 
 function sweepExpiredUserDecorations() {
   try {
-    const usersWithLimited = db.prepare(`
+    const usersWithSpecial = db.prepare(`
       SELECT id FROM users 
       WHERE role NOT IN ('admin', 'ta') 
-        AND (namecard_frame IN ('ton_vinh_phai_dep', 'bua_tiec_ma_mi', 'chinh_phuc_bau_troi')
-          OR cover_image IN ('ton_vinh_phai_dep', 'bua_tiec_ma_mi', 'chinh_phuc_bau_troi'))
+        AND (
+          namecard_frame IN ('ton_vinh_phai_dep', 'bua_tiec_ma_mi', 'chinh_phuc_bau_troi', 'leaves', 'sakura', 'ice', 'stars', 'gold')
+          OR cover_image IN ('ton_vinh_phai_dep', 'bua_tiec_ma_mi', 'chinh_phuc_bau_troi', 'khu_rung_tri_thuc', 'mua_anh_dao_no', 'vuong_quoc_mua_dong', 'tinh_tu_sao_troi', 'ky_nguyen_hoang_kim')
+          OR cover_image LIKE 'data:image/%'
+        )
     `).all();
 
-    for (const u of usersWithLimited) {
+    for (const u of usersWithSpecial) {
       checkAndRevertExpiredUserDecorations(u.id);
     }
   } catch (err) {
@@ -2262,15 +2339,13 @@ function checkAndGrantLimitedItems(userId) {
   if (!userId) return;
   const vnNow = getVietnamNow();
 
-  // Kiểm tra vật phẩm sự kiện thông thường
+  // 1. Kiểm tra vật phẩm sự kiện thông thường
   for (const theme of LIMITED_THEMES) {
     if (typeof theme.isEligible === "function" && theme.isEligible(vnNow)) {
-      // Tính hạn dùng 30 ngày kể từ hiện tại
       const expDate = new Date(vnNow.getTime() + theme.durationDays * 24 * 60 * 60 * 1000);
       const expiresAt = expDate.toISOString();
       const unlockedAt = vnNow.toISOString();
 
-      // Cấp/gia hạn cả khung và cover
       const itemsToGrant = [
         { type: "frame", id: theme.frameId },
         { type: "cover", id: theme.coverId }
@@ -2287,7 +2362,6 @@ function checkAndGrantLimitedItems(userId) {
             VALUES (?, ?, ?, ?, ?)
           `).run(userId, item.type, item.id, unlockedAt, expiresAt);
         } else {
-          // Nếu đã có nhưng ngày hết hạn mới xa hơn thì cập nhật
           if (new Date(expiresAt) > new Date(existing.expires_at)) {
             db.prepare(`
               UPDATE user_limited_items
@@ -2300,54 +2374,115 @@ function checkAndGrantLimitedItems(userId) {
     }
   }
 
-  // Kiểm tra cấp vật phẩm Đấu trường Chinh phục bầu trời (Top 10 khung, Top 3 ảnh bìa)
+  // 2. Kiểm tra cấp vật phẩm Đấu trường Chinh phục bầu trời (Top 10 khung, Top 3 ảnh bìa)
   checkAndGrantArenaSkyLimitedItems(userId, vnNow);
 
-  // Thu hồi tự động nếu vật phẩm đeo trên người đã hết hạn
+  // 3. Đồng bộ đặc quyền chuỗi theo ngày (duy trì -> "Khả dụng", đứt chuỗi -> đếm ngược hạn giờ)
+  syncUserStreakPerkItems(userId, vnNow);
+
+  // 4. Thu hồi tự động nếu vật phẩm đeo trên người đã hết hạn
   checkAndRevertExpiredUserDecorations(userId);
 }
 
 function getUserLimitedItemsStatus(userId) {
-  if (!userId) return { frames: {}, covers: {} };
+  if (!userId) return { frames: {}, covers: {}, canUploadCustomCover: false, customCoverRemainingDays: 0, customCoverMaintaining: false };
 
   // Kiểm tra quyền Admin / TA: có quyền sử dụng vĩnh viễn
   const userRow = db.prepare("SELECT role FROM users WHERE id=?").get(userId);
   const isPrivileged = userRow && (userRow.role === "admin" || userRow.role === "ta");
 
+  const streakInfo = calculateUserStreak(userId);
+  const curStreak = Number(streakInfo?.streak || 0);
+
   const rows = db.prepare(
     "SELECT item_type, item_id, unlocked_at, expires_at FROM user_limited_items WHERE user_id=?"
   ).all(userId);
   const now = getVietnamNow().getTime();
-  const res = { frames: {}, covers: {} };
+  const res = { frames: {}, covers: {}, canUploadCustomCover: false, customCoverRemainingDays: 0, customCoverMaintaining: false };
 
+  const rowMap = new Map();
   for (const r of rows) {
-    const expTime = new Date(r.expires_at).getTime();
-    const isUnlocked = isPrivileged || expTime > now;
-    const remainingDays = isPrivileged ? 9999 : (isUnlocked ? Math.ceil((expTime - now) / (24 * 60 * 60 * 1000)) : 0);
-    const info = {
-      isUnlocked,
-      expiresAt: r.expires_at,
-      remainingDays,
-      isPermanent: Boolean(isPrivileged)
-    };
-    if (r.item_type === "frame") res.frames[r.item_id] = info;
-    else if (r.item_type === "cover") res.covers[r.item_id] = info;
+    rowMap.set(`${r.item_type}:${r.item_id}`, r);
   }
 
-  // Đối với Admin / TA, nếu chưa có dòng trong user_limited_items thì mặc định luôn mở vĩnh viễn tất cả các item giới hạn
-  if (isPrivileged) {
-    for (const theme of LIMITED_THEMES) {
-      if (!res.frames[theme.frameId]) {
-        res.frames[theme.frameId] = { isUnlocked: true, expiresAt: null, remainingDays: 9999, isPermanent: true };
-      } else {
-        res.frames[theme.frameId].isUnlocked = true;
-        res.frames[theme.frameId].isPermanent = true;
-      }
-      if (!res.covers[theme.coverId]) {
-        res.covers[theme.coverId] = { isUnlocked: true, expiresAt: null, remainingDays: 9999, isPermanent: true };
-      } else {
-        res.covers[theme.coverId].isUnlocked = true;
-        res.covers[theme.coverId].isPermanent = true;
+  // 1. Vật phẩm sự kiện giới hạn
+  for (const theme of LIMITED_THEMES) {
+    const frameRow = rowMap.get(`frame:${theme.frameId}`);
+    if (isPrivileged) {
+      res.frames[theme.frameId] = { isUnlocked: true, expiresAt: null, remainingDays: 9999, isPermanent: true, isMaintaining: false };
+    } else if (frameRow) {
+      const expTime = new Date(frameRow.expires_at).getTime();
+      const isUnlocked = expTime > now;
+      const remainingDays = isUnlocked ? Math.ceil((expTime - now) / (24 * 60 * 60 * 1000)) : 0;
+      res.frames[theme.frameId] = { isUnlocked, expiresAt: frameRow.expires_at, remainingDays, isPermanent: false, isMaintaining: false };
+    } else {
+      res.frames[theme.frameId] = { isUnlocked: false, expiresAt: null, remainingDays: 0, isPermanent: false, isMaintaining: false };
+    }
+
+    const coverRow = rowMap.get(`cover:${theme.coverId}`);
+    if (isPrivileged) {
+      res.covers[theme.coverId] = { isUnlocked: true, expiresAt: null, remainingDays: 9999, isPermanent: true, isMaintaining: false };
+    } else if (coverRow) {
+      const expTime = new Date(coverRow.expires_at).getTime();
+      const isUnlocked = expTime > now;
+      const remainingDays = isUnlocked ? Math.ceil((expTime - now) / (24 * 60 * 60 * 1000)) : 0;
+      res.covers[theme.coverId] = { isUnlocked, expiresAt: coverRow.expires_at, remainingDays, isPermanent: false, isMaintaining: false };
+    } else {
+      res.covers[theme.coverId] = { isUnlocked: false, expiresAt: null, remainingDays: 0, isPermanent: false, isMaintaining: false };
+    }
+  }
+
+  // 2. Vật phẩm đặc quyền chuỗi theo ngày (Khả dụng khi duy trì, đếm ngược khi đứt chuỗi)
+  for (const perk of STREAK_PERK_ITEMS) {
+    const isMaintaining = isPrivileged || curStreak >= perk.minStreak;
+
+    // Frame chuỗi
+    const frameRow = rowMap.get(`frame:${perk.frameId}`);
+    if (isPrivileged) {
+      res.frames[perk.frameId] = { isUnlocked: true, expiresAt: null, remainingDays: 9999, isPermanent: true, isMaintaining: true, minDays: perk.minStreak, graceDays: perk.graceDays };
+    } else if (isMaintaining) {
+      res.frames[perk.frameId] = { isUnlocked: true, expiresAt: frameRow?.expires_at, remainingDays: perk.graceDays, isPermanent: false, isMaintaining: true, minDays: perk.minStreak, graceDays: perk.graceDays };
+    } else if (frameRow) {
+      const expTime = new Date(frameRow.expires_at).getTime();
+      const isUnlocked = expTime > now;
+      const remainingDays = isUnlocked ? Math.ceil((expTime - now) / (24 * 60 * 60 * 1000)) : 0;
+      res.frames[perk.frameId] = { isUnlocked, expiresAt: frameRow.expires_at, remainingDays, isPermanent: false, isMaintaining: false, minDays: perk.minStreak, graceDays: perk.graceDays };
+    } else {
+      res.frames[perk.frameId] = { isUnlocked: false, expiresAt: null, remainingDays: 0, isPermanent: false, isMaintaining: false, minDays: perk.minStreak, graceDays: perk.graceDays };
+    }
+
+    // Cover chuỗi
+    const coverRow = rowMap.get(`cover:${perk.coverId}`);
+    if (isPrivileged) {
+      res.covers[perk.coverId] = { isUnlocked: true, expiresAt: null, remainingDays: 9999, isPermanent: true, isMaintaining: true, minDays: perk.minStreak, graceDays: perk.graceDays };
+    } else if (isMaintaining) {
+      res.covers[perk.coverId] = { isUnlocked: true, expiresAt: coverRow?.expires_at, remainingDays: perk.graceDays, isPermanent: false, isMaintaining: true, minDays: perk.minStreak, graceDays: perk.graceDays };
+    } else if (coverRow) {
+      const expTime = new Date(coverRow.expires_at).getTime();
+      const isUnlocked = expTime > now;
+      const remainingDays = isUnlocked ? Math.ceil((expTime - now) / (24 * 60 * 60 * 1000)) : 0;
+      res.covers[perk.coverId] = { isUnlocked, expiresAt: coverRow.expires_at, remainingDays, isPermanent: false, isMaintaining: false, minDays: perk.minStreak, graceDays: perk.graceDays };
+    } else {
+      res.covers[perk.coverId] = { isUnlocked: false, expiresAt: null, remainingDays: 0, isPermanent: false, isMaintaining: false, minDays: perk.minStreak, graceDays: perk.graceDays };
+    }
+
+    // Tải ảnh riêng (chuỗi 30+)
+    if (perk.customCover) {
+      const customRow = rowMap.get("custom_cover:custom_upload");
+      if (isPrivileged) {
+        res.canUploadCustomCover = true;
+        res.customCoverRemainingDays = 9999;
+        res.customCoverMaintaining = true;
+      } else if (isMaintaining) {
+        res.canUploadCustomCover = true;
+        res.customCoverRemainingDays = perk.graceDays;
+        res.customCoverMaintaining = true;
+      } else if (customRow) {
+        const expTime = new Date(customRow.expires_at).getTime();
+        const isUnlocked = expTime > now;
+        res.canUploadCustomCover = isUnlocked;
+        res.customCoverRemainingDays = isUnlocked ? Math.ceil((expTime - now) / (24 * 60 * 60 * 1000)) : 0;
+        res.customCoverMaintaining = false;
       }
     }
   }
@@ -4680,28 +4815,26 @@ async function api(request, response, url) {
     if (typeof coverImage === "string") {
       const trimmedCover = coverImage.trim();
       if (trimmedCover.startsWith("data:image/")) {
-        const canUpload = streakInfo.streak >= 30 || maxStreak >= 30 || isPrivileged;
+        const canUpload = userLimited.canUploadCustomCover || isPrivileged;
         if (!canUpload) {
-          return error(response, 403, "Bạn cần đạt chuỗi hoạt động từ 30 ngày trở lên để tải ảnh bìa riêng từ thiết bị.");
+          return error(response, 403, "Bạn cần đạt chuỗi hoạt động từ 30 ngày trở lên để tải ảnh bìa riêng từ thiết bị (hoặc hạn dùng đã hết).");
         }
         if (trimmedCover.length > 250000) {
           return error(response, 400, "Dung lượng ảnh bìa quá lớn (tối đa ~150KB). Vui lòng nén hoặc chọn ảnh nhỏ hơn.");
         }
         newCoverImage = trimmedCover;
-      } else if (LIMITED_COVER_IDS.has(trimmedCover)) {
+      } else if (LIMITED_COVER_IDS.has(trimmedCover) || STREAK_COVER_IDS.has(trimmedCover)) {
         const coverStatus = userLimited.covers[trimmedCover];
         const isCoverUnlocked = isPrivileged || (coverStatus && coverStatus.isUnlocked);
         if (!isCoverUnlocked) {
+          const perk = STREAK_PERK_ITEMS.find(p => p.coverId === trimmedCover);
+          if (perk) {
+            return error(response, 403, `Ảnh bìa này yêu cầu chuỗi hoạt động ${perk.minStreak}+ ngày (hoặc hạn dùng sau đứt chuỗi đã hết).`);
+          }
           return error(response, 403, "Ảnh bìa này nhận được qua hoạt động giới hạn và hiện đang bị khóa.");
         }
         newCoverImage = trimmedCover;
       } else {
-        const reqDays = COVER_DAYS_MAP.get(trimmedCover);
-        if (reqDays !== undefined) {
-          if (!isPrivileged && unlockedStreak < reqDays) {
-            return error(response, 403, `Ảnh bìa này yêu cầu chuỗi hoạt động từ ${reqDays}+ ngày.`);
-          }
-        }
         newCoverImage = trimmedCover;
       }
     }
@@ -4732,17 +4865,19 @@ async function api(request, response, url) {
       ["leaves", 3], ["sakura", 7], ["ice", 14], ["stars", 30], ["gold", 50],
     ]);
     const requestedFrame = typeof namecardFrame === "string" ? namecardFrame.trim() : (currentUser.namecard_frame || "none");
-    if (LIMITED_FRAME_IDS.has(requestedFrame)) {
+    if (LIMITED_FRAME_IDS.has(requestedFrame) || STREAK_FRAME_IDS.has(requestedFrame)) {
       const frameStatus = userLimited.frames[requestedFrame];
       const isFrameUnlocked = isPrivileged || (frameStatus && frameStatus.isUnlocked);
       if (!isFrameUnlocked) {
+        const perk = STREAK_PERK_ITEMS.find(p => p.frameId === requestedFrame);
+        if (perk) {
+          return error(response, 403, `Khung này yêu cầu chuỗi hoạt động ${perk.minStreak}+ ngày (hoặc hạn dùng sau đứt chuỗi đã hết).`);
+        }
         return error(response, 403, "Khung này nhận được qua hoạt động giới hạn và hiện đang bị khóa.");
       }
     } else {
       const frameRequirement = allowedFrames.get(requestedFrame);
       if (frameRequirement === undefined) return error(response, 400, "Khung Namecard không hợp lệ.");
-      const canUseRequestedFrame = isPrivileged || unlockedStreak >= frameRequirement;
-      if (!canUseRequestedFrame) return error(response, 403, `Khung này yêu cầu chuỗi hoạt động ${frameRequirement}+ ngày.`);
     }
     const newFrame = requestedFrame;
     const newTheme = typeof namecardTheme === "string" ? namecardTheme.trim() : (currentUser.namecard_theme || "default");
