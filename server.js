@@ -7946,21 +7946,17 @@ async function api(request, response, url) {
     const phaseTitle = `Bảng xếp hạng - ${classTitle}`;
 
     let canShow = false;
-    if (isPrivileged || isMember || url.searchParams.get("admin_preview") === "true") {
+    if (isPrivileged || url.searchParams.get("admin_preview") === "true") {
       canShow = true;
     } else if (isWeekPhase) {
-      // Cho phép xem bảng xếp hạng tuần (BXH tích lũy)
-      canShow = true;
+      // Bảng xếp hạng toàn tuần: chỉ xuất hiện vào chủ nhật
+      canShow = Boolean(isSunday);
     } else {
-      const pNum = Math.min(3, Math.max(1, Number(phaseParam) || 1));
-      if (isSunday) {
+      // Bảng xếp hạng từng chặng: chỉ xuất hiện vào khung giờ tổng kết/chuẩn bị, đóng lúc đếm ngược và mở cổng
+      if (timeState.state === "upcoming" || timeState.state === "open") {
+        canShow = false;
+      } else if (timeState.state === "reviewing" || timeState.state === "summary" || isSunday) {
         canShow = true;
-      } else if (pNum < timeState.phase) {
-        canShow = true;
-      } else if (pNum === timeState.phase) {
-        // Nếu là giai đoạn hiện tại: người đã thi xong hoặc hệ thống đang tổng kết đều xem được BXH
-        const hasFinishedPhase = user ? Boolean(db.prepare("SELECT 1 FROM competition_phase_results WHERE user_id = ? AND competition_id = ? AND phase = ?").get(user.id, comp.id, pNum)) : false;
-        canShow = (timeState.state === "reviewing" || timeState.state === "summary") || hasFinishedPhase;
       } else {
         canShow = false;
       }
@@ -7980,7 +7976,7 @@ async function api(request, response, url) {
       isPrivileged,
       isMember,
       isSpectator: isMember,
-      message: canShow ? null : "Chờ chút nhé",
+      message: canShow ? null : "Bảng xếp hạng chỉ hiển thị khi đến khung giờ tổng kết",
       totalParticipants: canShow ? formatted.length : 0,
       top10: canShow ? top10 : [],
       currentUserEntry: canShow ? currentUserEntry : null,

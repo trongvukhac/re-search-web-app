@@ -16234,6 +16234,9 @@ function switchCompTab(tabName) {
     const lEl = $("#compTabLeaderboard");
     if (lEl) lEl.style.display = "block";
     const norm = normalizeCompData(compState.overview || compState.status);
+    const userRole = (typeof session !== "undefined" && session?.role) || "";
+    const isPrivilegedUser = (userRole === "admin" || userRole === "lecturer" || userRole === "ta");
+
     if (norm.isSunday) {
       // Ngày chủ nhật: chỉ hiển thị BXH toàn tuần (ẩn các tab GĐ 1, GĐ 2, GĐ 3)
       $$(".lb-phase-btn").forEach(btn => {
@@ -16249,8 +16252,19 @@ function switchCompTab(tabName) {
       stopArenaLeaderboardAutoRefresh();
       launchSundayCeremonyAnimation();
     } else {
+      // Các ngày trong tuần (T2 - T7): BXH toàn tuần chỉ xuất hiện vào chủ nhật (chỉ hiện nút cho admin/giảng viên để quản trị)
       $$(".lb-phase-btn").forEach(btn => {
-        btn.style.display = "inline-flex";
+        if (btn.dataset.lbPhase === "week") {
+          btn.style.display = isPrivilegedUser ? "inline-flex" : "none";
+        } else {
+          btn.style.display = "inline-flex";
+        }
+      });
+      if (!compState.activeLbPhase || compState.activeLbPhase === "week") {
+        compState.activeLbPhase = String(norm.phase || 1);
+      }
+      $$(".lb-phase-btn").forEach(btn => {
+        btn.classList.toggle("active", btn.dataset.lbPhase === String(compState.activeLbPhase));
       });
       const banner = $("#sundayCeremonyBanner");
       if (banner) banner.style.display = "none";
@@ -16663,7 +16677,7 @@ function startArenaLeaderboardAutoRefresh() {
   stopArenaLeaderboardAutoRefresh();
 
   // Bảng xếp hạng: trong khung giờ tổng kết và chủ nhật, không tự động làm mới dữ liệu,
-  // chỉ tự động làm mới dữ liệu liên tục khi ở giai đoạn mở cổng.
+  // chỉ tự động làm mới dữ liệu liên tục khi ở giai đoạn mở cổng nếu BXH được phép hiển thị.
   if (typeof currentActiveRoute !== "undefined" && currentActiveRoute !== "arena") return;
   if (compState.activeTab !== "leaderboard") return;
 
@@ -16674,7 +16688,15 @@ function startArenaLeaderboardAutoRefresh() {
     return;
   }
 
-  // Tự động làm mới liên tục mỗi 15 giây khi đang ở giai đoạn mở cổng
+  // Nếu BXH đang đóng (canShow === false) thì không khởi tạo polling
+  const targetPhase = compState.activeLbPhase || 1;
+  const targetClass = compState.activeLbClass || "06";
+  const cacheKey = `${targetPhase}_${targetClass}`;
+  if (compState.cachedLeaderboard?.[cacheKey]?.canShow === false) {
+    return;
+  }
+
+  // Tự động làm mới liên tục mỗi 15 giây khi đang ở giai đoạn mở cổng và BXH cho phép xem
   compState.lbAutoRefreshInterval = setInterval(async () => {
     if ((typeof currentActiveRoute !== "undefined" && currentActiveRoute !== "arena") || compState.activeTab !== "leaderboard") {
       stopArenaLeaderboardAutoRefresh();
@@ -16687,16 +16709,19 @@ function startArenaLeaderboardAutoRefresh() {
     }
 
     try {
-      const targetPhase = compState.activeLbPhase || 1;
-      const targetClass = compState.activeLbClass || "06";
-      const cacheKey = `${targetPhase}_${targetClass}`;
-      const data = await requestAPI(`/api/competition/leaderboard?phase=${targetPhase}&class=${targetClass}`);
+      const curTargetPhase = compState.activeLbPhase || 1;
+      const curTargetClass = compState.activeLbClass || "06";
+      const curCacheKey = `${curTargetPhase}_${curTargetClass}`;
+      const data = await requestAPI(`/api/competition/leaderboard?phase=${curTargetPhase}&class=${curTargetClass}`);
       if (data && data.ok) {
-        compState.cachedLeaderboard[cacheKey] = data;
+        compState.cachedLeaderboard[curCacheKey] = data;
         if (data.resultsVersion) compState.lastResultsVersion = data.resultsVersion;
         const noticeEl = $("#lbSummaryNotice");
-        renderLeaderboardNotice(noticeEl, targetPhase, data);
+        renderLeaderboardNotice(noticeEl, curTargetPhase, data);
         renderLeaderboardUI(data);
+        if (data.canShow === false) {
+          stopArenaLeaderboardAutoRefresh();
+        }
       }
     } catch (e) {
       // Bỏ qua lỗi ngầm khi auto poll
@@ -16712,6 +16737,11 @@ function renderLeaderboardNotice(noticeEl, phase, data) {
 
   const classCode = data?.classCode || compState.activeLbClass || "06";
   const baseTitle = classCode === "TD" ? "Bảng xếp hạng - Bảng thi Tự do" : `Bảng xếp hạng - Bảng thi lớp ${classCode}`;
+
+  if (data && data.canShow === false) {
+    noticeEl.innerHTML = `<span>${baseTitle}</span> <span class="lb-status-badge closed" style="margin-left: 8px; font-size: 11.5px; color: #ef4444; font-weight: 600;"><svg class="ui-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:4px; vertical-align:-1px;"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>Tạm đóng (Chờ khung giờ tổng kết)</span>`;
+    return;
+  }
 
   if (isOpen) {
     noticeEl.innerHTML = `<span>${baseTitle}</span> <span class="lb-status-badge live" style="margin-left: 8px; font-size: 11.5px; color: #22c55e; font-weight: 600;"><svg class="ui-icon" width="10" height="10" viewBox="0 0 24 24" fill="#22c55e" style="margin-right:4px; vertical-align:-1px;"><circle cx="12" cy="12" r="10"/></svg>Tự động cập nhật trực tiếp</span>`;
@@ -16919,7 +16949,7 @@ function renderLeaderboardUI(data) {
         <div style="margin-bottom: 12px; color: var(--primary);"><svg class="ui-icon" width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
         <div style="font-size: 20px; font-weight: 700; color: var(--text); margin-bottom: 8px;">Chờ chút nhé</div>
         <div style="font-size: 14px; color: var(--muted); max-width: 420px; margin: 0 auto; line-height: 1.6;">
-          Bảng xếp hạng chỉ xuất hiện thông tin khi tới khung giờ chuẩn bị sau khi đóng cổng thi.
+          ${escapeHTML(data.message || "Bảng xếp hạng chỉ hiển thị khi đến khung giờ tổng kết")}
         </div>
       </div>
     `;
