@@ -28043,9 +28043,7 @@ body.dark-theme #documentPickerModal .doc-picker-item-meta {
   height: 100%;
 }
 
-.nav-spacer,
-.desktop-nav-compact-trigger,
-.compact-nav-popover {
+.desktop-nav-compact-trigger {
   display: none;
 }
 
@@ -28102,8 +28100,8 @@ body.dark-theme #documentPickerModal .doc-picker-item-meta {
     --glass-badge-bg: rgba(16, 185, 129, 0.12);
     --glass-badge-ink: #047857;
     --glass-popover-bg: rgba(255, 255, 255, 0.92);
-    --glass-ease: cubic-bezier(0.22, 1, 0.36, 1);
-    --glass-dur: 0.46s;
+    --glass-ease: cubic-bezier(0.32, 0.72, 0, 1);
+    --glass-dur: 0.38s;
 
     position: fixed;
     top: 14px;
@@ -28113,7 +28111,7 @@ body.dark-theme #documentPickerModal .doc-picker-item-meta {
     width: 100%;
     max-width: 100%;
     margin: 0 auto;
-    padding: 0 max(28px, calc((100% - 1208px) / 2));
+    padding: 0 28px;
     background: transparent !important;
     border-bottom: none !important;
     box-shadow: none !important;
@@ -28229,16 +28227,20 @@ body.dark-theme #documentPickerModal .doc-picker-item-meta {
 
   header#siteHeader .site-header-inner {
     width: 100%;
+    max-width: 1208px;
     height: 48px;
+    margin: 0 auto;
+    position: relative;
     display: flex;
     align-items: center;
-    justify-content: flex-start;
+    justify-content: space-between;
     pointer-events: none;
   }
 
   /* 1. Left Glass Pill: Brand Logo */
   header#siteHeader .brand {
     pointer-events: auto;
+    flex: 0 0 auto;
     height: 48px;
     padding: 0 18px 0 9px;
     border-radius: 9999px;
@@ -28284,74 +28286,63 @@ body.dark-theme #documentPickerModal .doc-picker-item-meta {
     color: var(--glass-colon) !important;
   }
 
-  /* Animated Spacers driving Center -> Right Dock glide */
-  header#siteHeader .nav-spacer {
-    display: block;
-    height: 1px;
-    pointer-events: none;
-    transition:
-      flex-grow var(--glass-dur) var(--glass-ease),
-      min-width var(--glass-dur) var(--glass-ease);
-  }
-
-  header#siteHeader .nav-spacer-left {
-    flex: var(--spacer-left-grow, 1.35) 1 0%;
-    min-width: 12px;
-  }
-
-  header#siteHeader .nav-spacer-right {
-    flex: 1 1 0%;
-    min-width: 12px;
-  }
-
-  header#siteHeader.is-compact .nav-spacer-left {
-    flex: 1 1 0%;
-  }
-
-  header#siteHeader.is-compact .nav-spacer-right {
-    flex: 0.0001 1 0%;
-    min-width: 10px;
-  }
-
-  /* 2. Center Glass Pill -> Compact Circular Navigation Orb */
+  /* 2. Center Glass Pill <-> Right-Docked Feature Icon Orb (Peek-Expand Horizontal) */
   header#siteHeader .desktop-nav {
-    position: relative;
+    position: absolute;
+    top: 0;
+    right: var(--nav-dock-right, 146px);
+    height: 48px;
     display: flex;
     align-items: center;
+    justify-content: flex-end;
     flex: 0 0 auto;
     margin-left: 0 !important;
-    pointer-events: auto;
+    pointer-events: none;
     z-index: 1002;
+    transform: translate3d(var(--nav-shift-x, 0px), 0, 0);
+    will-change: transform;
+    transition: transform var(--glass-dur) var(--glass-ease);
+  }
+
+  header#siteHeader.is-compact .desktop-nav {
+    transform: translate3d(0px, 0, 0);
   }
 
   header#siteHeader .desktop-nav-shell {
     position: relative;
     display: flex;
     align-items: center;
-    justify-content: center;
+    justify-content: flex-end;
     height: 48px;
     width: var(--nav-expanded-w, auto);
-    min-width: 0;
+    max-width: calc(var(--header-inner-w, 1208px) - var(--brand-w, 180px) - var(--nav-dock-right, 146px) - 12px);
+    min-width: 48px;
     padding: 4px;
     border-radius: 9999px;
     overflow: hidden;
     box-sizing: border-box;
+    pointer-events: auto;
+    contain: layout style;
     background: var(--glass-bg);
     backdrop-filter: blur(22px) saturate(185%);
     -webkit-backdrop-filter: blur(22px) saturate(185%);
     border: 1px solid var(--glass-border);
     box-shadow: inset 0 1px 0 var(--glass-highlight), var(--glass-shadow);
+    will-change: width;
     transition:
       width var(--glass-dur) var(--glass-ease),
-      padding var(--glass-dur) var(--glass-ease),
-      background 0.25s ease,
-      border-color 0.25s ease,
-      box-shadow 0.25s ease;
+      background 0.22s ease,
+      border-color 0.22s ease,
+      box-shadow 0.22s ease;
   }
 
-  header#siteHeader.is-compact .desktop-nav-shell {
+  header#siteHeader.is-compact:not(.is-nav-peek) .desktop-nav-shell {
     width: 48px;
-    padding: 0;
+  }
+
+  header#siteHeader.is-compact:not(.is-nav-peek) .desktop-nav-shell:hover {
+    background: var(--glass-bg-elevated);
+    border-color: var(--glass-border-strong);
   }
 
   header#siteHeader .desktop-nav-links {
@@ -28359,26 +28350,27 @@ body.dark-theme #documentPickerModal .doc-picker-item-meta {
     align-items: center;
     gap: 4px;
     flex: 0 0 auto;
+    width: max-content;
     opacity: 1;
     transform: scale(1);
-    transform-origin: center center;
+    transform-origin: right center;
     pointer-events: auto;
     visibility: visible;
     transition:
-      opacity 0.22s ease 0.1s,
-      transform 0.38s var(--glass-ease) 0.04s,
+      opacity 0.24s ease 0.1s,
+      transform 0.34s var(--glass-ease) 0.04s,
       visibility 0s linear 0s;
   }
 
-  header#siteHeader.is-compact .desktop-nav-links {
+  header#siteHeader.is-compact:not(.is-nav-peek) .desktop-nav-links {
     opacity: 0;
-    transform: scale(0.82);
+    transform: scale(0.9);
     pointer-events: none;
     visibility: hidden;
     transition:
-      opacity 0.16s ease,
-      transform 0.26s var(--glass-ease),
-      visibility 0s linear 0.18s;
+      opacity 0.14s ease,
+      transform 0.24s var(--glass-ease),
+      visibility 0s linear 0.15s;
   }
 
   header#siteHeader .desktop-nav-links .nav-link {
@@ -28423,7 +28415,7 @@ body.dark-theme #documentPickerModal .doc-picker-item-meta {
     vertical-align: middle;
   }
 
-  /* Compact Circular Icon Button inside Desktop Nav */
+  /* Compact Circular Active-Feature Icon Trigger */
   header#siteHeader .desktop-nav-compact-trigger {
     position: absolute;
     inset: 0;
@@ -28433,7 +28425,7 @@ body.dark-theme #documentPickerModal .doc-picker-item-meta {
     border: none;
     border-radius: 9999px;
     background: transparent;
-    color: var(--glass-nav-ink-hover) !important;
+    color: var(--glass-nav-active-ink) !important;
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -28441,127 +28433,40 @@ body.dark-theme #documentPickerModal .doc-picker-item-meta {
     opacity: 0;
     visibility: hidden;
     pointer-events: none;
-    transform: scale(0.6) rotate(-25deg);
+    transform: scale(0.68);
     transition:
-      opacity 0.16s ease,
-      transform 0.24s var(--glass-ease),
+      opacity 0.12s ease,
+      transform 0.2s var(--glass-ease),
       background 0.2s ease,
       color 0.2s ease,
-      visibility 0s linear 0.2s;
+      visibility 0s linear 0.14s;
   }
 
-  header#siteHeader.is-compact .desktop-nav-compact-trigger {
+  header#siteHeader.is-compact:not(.is-nav-peek) .desktop-nav-compact-trigger {
     opacity: 1;
     visibility: visible;
     pointer-events: auto;
-    transform: scale(1) rotate(0deg);
+    transform: scale(1);
     transition:
-      opacity 0.24s ease 0.14s,
-      transform 0.38s var(--glass-ease) 0.1s,
+      opacity 0.22s ease 0.14s,
+      transform 0.32s var(--glass-ease) 0.1s,
       background 0.2s ease,
       color 0.2s ease,
       visibility 0s linear 0s;
   }
 
-  header#siteHeader.is-compact .desktop-nav-compact-trigger:hover,
-  header#siteHeader.is-compact .desktop-nav.popover-open .desktop-nav-compact-trigger {
+  header#siteHeader.is-compact:not(.is-nav-peek) .desktop-nav-compact-trigger:hover {
     background: var(--glass-nav-hover-bg);
-    color: var(--glass-nav-active-ink);
+    transform: scale(1.06);
   }
 
-  header#siteHeader.is-compact .desktop-nav.popover-open .compact-nav-icon {
-    transform: rotate(45deg) scale(0.94);
+  header#siteHeader.is-compact:not(.is-nav-peek) .desktop-nav-compact-trigger:active {
+    transform: scale(0.95);
   }
 
   header#siteHeader .compact-nav-icon {
-    transition: transform 0.28s var(--glass-ease);
-  }
-
-  /* Quick Route Popover anchored below the Compact Nav Circle */
-  header#siteHeader .compact-nav-popover {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    position: absolute;
-    top: calc(100% + 10px);
-    right: 0;
-    min-width: 212px;
-    padding: 8px;
-    border-radius: 20px;
-    background: var(--glass-popover-bg);
-    backdrop-filter: blur(26px) saturate(190%);
-    -webkit-backdrop-filter: blur(26px) saturate(190%);
-    border: 1px solid var(--glass-border-strong);
-    box-shadow:
-      inset 0 1px 0 var(--glass-highlight),
-      0 20px 48px -12px rgba(15, 23, 42, 0.26);
-    opacity: 0;
-    visibility: hidden;
-    transform: translateY(-8px) scale(0.96);
-    transform-origin: top right;
-    pointer-events: none;
-    z-index: 1010;
-    transition:
-      opacity 0.18s ease,
-      transform 0.22s var(--glass-ease),
-      visibility 0s linear 0.22s;
-  }
-
-  header#siteHeader.is-compact .desktop-nav.popover-open .compact-nav-popover {
-    opacity: 1;
-    visibility: visible;
-    transform: translateY(0) scale(1);
-    pointer-events: auto;
-    transition:
-      opacity 0.2s ease,
-      transform 0.24s var(--glass-ease),
-      visibility 0s linear 0s;
-  }
-
-  header#siteHeader .compact-nav-item {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 9px 12px;
-    border-radius: 13px;
-    border: 1px solid transparent;
-    text-decoration: none;
-    color: var(--glass-nav-ink) !important;
-    font-size: 13.5px;
-    font-weight: 600;
-    white-space: nowrap;
-    transition:
-      background 0.18s ease,
-      color 0.18s ease,
-      border-color 0.18s ease;
-  }
-
-  header#siteHeader .compact-nav-item:hover {
-    background: var(--glass-nav-hover-bg);
-    color: var(--glass-nav-ink-hover) !important;
-  }
-
-  header#siteHeader .compact-nav-item.active {
-    background: var(--glass-nav-pill-bg);
-    border-color: var(--glass-nav-pill-border);
-    color: var(--glass-nav-active-ink);
-    font-weight: 700;
-  }
-
-  header#siteHeader .compact-nav-item.active::after {
-    content: "";
-    width: 6px;
-    height: 6px;
-    border-radius: 9999px;
-    background: var(--glass-accent-dot);
-    margin-left: auto;
-    box-shadow: 0 0 8px var(--glass-accent-dot);
-  }
-
-  header#siteHeader .compact-nav-item-icon {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
+    width: 18px;
+    height: 18px;
     flex-shrink: 0;
   }
 
@@ -28575,8 +28480,10 @@ body.dark-theme #documentPickerModal .doc-picker-item-meta {
     padding: 5px 6px;
     border-radius: 9999px;
     flex: 0 0 auto;
+    margin-left: auto;
     pointer-events: auto;
     overflow: visible;
+    contain: layout style;
     background: var(--glass-bg);
     backdrop-filter: blur(22px) saturate(185%);
     -webkit-backdrop-filter: blur(22px) saturate(185%);
@@ -28626,6 +28533,7 @@ body.dark-theme #documentPickerModal .doc-picker-item-meta {
     font-size: 13px;
     font-weight: 600;
     opacity: 1;
+    will-change: width, margin-left, opacity;
     transition:
       width var(--glass-dur) var(--glass-ease),
       margin-left var(--glass-dur) var(--glass-ease),
@@ -28724,12 +28632,10 @@ body.dark-theme #documentPickerModal .doc-picker-item-meta {
 
 @media (prefers-reduced-motion: reduce) {
   header#siteHeader .brand,
-  header#siteHeader .nav-spacer,
+  header#siteHeader .desktop-nav,
   header#siteHeader .desktop-nav-shell,
   header#siteHeader .desktop-nav-links,
   header#siteHeader .desktop-nav-compact-trigger,
-  header#siteHeader .compact-nav-icon,
-  header#siteHeader .compact-nav-popover,
   header#siteHeader .profile-chip,
   header#siteHeader .profile-chip .profile-chip-text,
   header#siteHeader .desktop-search,

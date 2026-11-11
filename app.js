@@ -3119,8 +3119,11 @@ function go(rawRoute, scrollToTop = true) {
       a.removeAttribute("aria-current");
     }
   });
-  if (typeof window.closeCompactNavPopover === "function") {
-    window.closeCompactNavPopover();
+  if (typeof window.syncCompactNavActiveIcon === "function") {
+    window.syncCompactNavActiveIcon(baseRoute);
+  }
+  if (typeof window.closeNavPeek === "function") {
+    window.closeNavPeek({ scrollingToTop: Boolean(scrollToTop) });
   }
   if (location.hash !== `#${route}`) {
     history.replaceState(null, "", `#${route}`);
@@ -3421,7 +3424,7 @@ function initTapToScrollTop() {
   if (header) {
     header.addEventListener("click", (e) => {
       // Bỏ qua nếu bấm vào các nút chức năng, liên kết hoặc ô tìm kiếm
-      if (e.target.closest("button, input, select, textarea, a, .icon-button, .profile-chip, .nav-link, .compact-nav-popover, #quickMenuDropdown")) {
+      if (e.target.closest("button, input, select, textarea, a, .icon-button, .profile-chip, .nav-link, .desktop-nav-shell, #quickMenuDropdown")) {
         return;
       }
       window.scrollTo({ top: 0, behavior: "smooth" });
@@ -4612,9 +4615,21 @@ async function openDetail(id, updateHash = true, isBack = false, targetScrollY =
   $$(".page").forEach((p) =>
     p.classList.toggle("active-page", p.dataset.page === "post-detail"),
   );
-  $$("[data-route]").forEach((a) =>
-    a.classList.toggle("active", a.dataset.route === "forum"),
-  );
+  $$("[data-route]").forEach((a) => {
+    const isMatch = a.dataset.route === "forum";
+    a.classList.toggle("active", isMatch);
+    if (isMatch) {
+      a.setAttribute("aria-current", "page");
+    } else {
+      a.removeAttribute("aria-current");
+    }
+  });
+  if (typeof window.syncCompactNavActiveIcon === "function") {
+    window.syncCompactNavActiveIcon("forum");
+  }
+  if (typeof window.closeNavPeek === "function") {
+    window.closeNavPeek({ scrollingToTop: !isBack || !targetScrollY });
+  }
   currentActiveRoute = "post-detail";
   if (!isBack || !targetScrollY) {
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -5207,8 +5222,8 @@ window.toggleQuickUserMenu = function (e) {
   btn.classList.toggle("active", isOpen);
   btn.setAttribute("aria-expanded", String(isOpen));
   if (isOpen) {
-    if (typeof window.closeCompactNavPopover === "function") {
-      window.closeCompactNavPopover();
+    if (typeof window.closeNavPeek === "function") {
+      window.closeNavPeek();
     }
     updateQuickMenuUser(session);
   }
@@ -15405,35 +15420,103 @@ function initAdaptiveGlassHeader() {
   const desktopNav = document.getElementById("desktopNav");
   const navLinks = document.getElementById("desktopNavLinks");
   const compactBtn = document.getElementById("desktopNavCompactBtn");
-  const popover = document.getElementById("compactNavPopover");
-  const headerActions = header ? header.querySelector(".header-actions") : null;
+  const headerActions = document.getElementById("headerActions") || (header ? header.querySelector(".header-actions") : null);
   const profileChip = document.getElementById("navProfileChip");
   const profileChipText = profileChip ? profileChip.querySelector(".profile-chip-text") : null;
 
-  if (!header || !headerInner || !brand || !desktopNav || !navLinks || !compactBtn || !popover || !headerActions) {
+  if (!header || !headerInner || !brand || !desktopNav || !navLinks || !compactBtn || !headerActions) {
     return;
   }
 
   let isCompact = false;
-  let lastActionsExpandedW = 0;
+  let isPeeking = false;
+  let peekScrollY = 0;
+  let suppressPeekAutoCloseUntil = 0;
+  let scrollTopPeekTimer = null;
+  let lastSyncedCompactKey = "";
+
+  const NAV_ROUTE_META = {
+    home: { label: "Trang chủ" },
+    forum: { label: "Diễn đàn" },
+    documents: { label: "Tài liệu" },
+    study: { label: "Phòng tự học" },
+    arena: { label: "Thi đua" },
+    account: {
+      label: "Tài khoản",
+      svg: '<svg class="compact-nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M5 20a7 7 0 0 1 14 0"/></svg>',
+    },
+  };
 
   function isDesktopGlassViewport() {
     return window.innerWidth > 800 && window.innerHeight > 520;
   }
 
-  function setCompactPopoverOpen(open) {
-    const nextOpen = Boolean(open) && isCompact && isDesktopGlassViewport();
-    desktopNav.classList.toggle("popover-open", nextOpen);
-    compactBtn.setAttribute("aria-expanded", String(nextOpen));
+  function mapRouteToNavKey(rawRoute) {
+    const raw = String(rawRoute || "").trim().toLowerCase();
+    const base = raw.split("?")[0].split("&")[0] || "";
+    if (!base || base === "home") return "home";
+    if (base === "forum" || base === "post-detail" || base.startsWith("post-") || base.startsWith("post/")) return "forum";
+    if (base === "documents" || base.startsWith("doc-") || base.startsWith("doc/")) return "documents";
+    if (base === "study") return "study";
+    if (base === "arena") return "arena";
+    if (base === "account") return "account";
+    return "home";
   }
 
-  window.closeCompactNavPopover = () => setCompactPopoverOpen(false);
+  function syncCompactNavActiveIcon(routeOverride) {
+    let raw = routeOverride;
+    if (!raw) {
+      const activeLink = navLinks.querySelector(".nav-link.active[data-route]");
+      raw = activeLink
+        ? activeLink.dataset.route
+        : (typeof currentActiveRoute !== "undefined" && currentActiveRoute
+          ? currentActiveRoute
+          : (location.hash || "").replace(/^#/, ""));
+    }
+    const key = mapRouteToNavKey(raw);
+    if (key === lastSyncedCompactKey && compactBtn.dataset.activeRoute === key) {
+      return;
+    }
+    lastSyncedCompactKey = key;
+    const meta = NAV_ROUTE_META[key] || NAV_ROUTE_META.home;
+    let svgMarkup = meta.svg || "";
+    if (!svgMarkup) {
+      const sourceSvg = navLinks.querySelector(`.nav-link[data-route="${key}"] .nav-link-icon svg`);
+      if (sourceSvg) {
+        const clone = sourceSvg.cloneNode(true);
+        clone.setAttribute("class", "compact-nav-icon");
+        clone.setAttribute("aria-hidden", "true");
+        svgMarkup = clone.outerHTML;
+      }
+    }
+    if (!svgMarkup) {
+      const fallbackSvg = navLinks.querySelector('.nav-link[data-route="home"] .nav-link-icon svg');
+      if (fallbackSvg) {
+        const clone = fallbackSvg.cloneNode(true);
+        clone.setAttribute("class", "compact-nav-icon");
+        clone.setAttribute("aria-hidden", "true");
+        svgMarkup = clone.outerHTML;
+      }
+    }
+    if (svgMarkup) {
+      compactBtn.innerHTML = svgMarkup;
+    }
+    compactBtn.dataset.activeRoute = key;
+    const tip = `${meta.label} — Mở thanh điều hướng`;
+    compactBtn.setAttribute("title", tip);
+    compactBtn.setAttribute("aria-label", tip);
+  }
 
-  function syncFocusOrder(compactState) {
-    const activeDesktop = compactState && isDesktopGlassViewport();
-    compactBtn.setAttribute("tabindex", activeDesktop ? "0" : "-1");
+  window.syncCompactNavActiveIcon = syncCompactNavActiveIcon;
+
+  function syncFocusOrder() {
+    const desktop = isDesktopGlassViewport();
+    const compactCollapsed = desktop && isCompact && !isPeeking;
+    compactBtn.setAttribute("tabindex", compactCollapsed ? "0" : "-1");
+    compactBtn.setAttribute("aria-hidden", String(!compactCollapsed));
+    compactBtn.setAttribute("aria-expanded", String(Boolean(desktop && isCompact && isPeeking)));
     navLinks.querySelectorAll("a").forEach((link) => {
-      if (activeDesktop) {
+      if (compactCollapsed) {
         link.setAttribute("tabindex", "-1");
       } else {
         link.removeAttribute("tabindex");
@@ -15441,69 +15524,96 @@ function initAdaptiveGlassHeader() {
     });
   }
 
+  function setNavPeekOpen(open) {
+    if (scrollTopPeekTimer) {
+      clearTimeout(scrollTopPeekTimer);
+      scrollTopPeekTimer = null;
+    }
+    const nextPeek = Boolean(open) && isCompact && isDesktopGlassViewport();
+    isPeeking = nextPeek;
+    if (nextPeek) {
+      peekScrollY = window.scrollY || window.pageYOffset || 0;
+    }
+    header.classList.toggle("is-nav-peek", nextPeek);
+    syncFocusOrder();
+  }
+
+  window.closeNavPeek = function closeNavPeek(opts) {
+    if (!isPeeking) return;
+    const scrollingToTop = Boolean(opts && opts.scrollingToTop) && (window.scrollY || window.pageYOffset || 0) >= 24;
+    if (scrollingToTop) {
+      suppressPeekAutoCloseUntil = Date.now() + 750;
+      if (scrollTopPeekTimer) clearTimeout(scrollTopPeekTimer);
+      scrollTopPeekTimer = setTimeout(() => {
+        scrollTopPeekTimer = null;
+        if (isCompact && (window.scrollY || window.pageYOffset || 0) >= 24) {
+          setNavPeekOpen(false);
+        }
+      }, 680);
+      return;
+    }
+    suppressPeekAutoCloseUntil = 0;
+    setNavPeekOpen(false);
+  };
+
+  function measureCompactActionsWidth() {
+    const avatarEl = profileChip ? profileChip.querySelector(".avatar") : null;
+    const searchBtn = headerActions.querySelector(".desktop-search");
+    const quickBtn = headerActions.querySelector(".quick-menu-btn");
+    // Compact right pill: 6px L/R padding (12) + 2px border + 2 gaps (12) = 26px + 3 circular controls
+    const avatarW = avatarEl ? Math.max(30, avatarEl.offsetWidth) : 31;
+    const chipCompactW = Math.max(36, Math.ceil(avatarW + 6));
+    const searchW = searchBtn ? searchBtn.offsetWidth : 36;
+    const quickW = quickBtn ? quickBtn.offsetWidth : 36;
+    return Math.max(122, chipCompactW + searchW + quickW + 26);
+  }
+
   function syncAdaptiveGlassHeaderMetrics() {
     if (!isDesktopGlassViewport()) {
-      header.classList.remove("is-compact");
+      header.classList.remove("is-compact", "is-nav-peek");
       isCompact = false;
-      setCompactPopoverOpen(false);
-      syncFocusOrder(false);
+      isPeeking = false;
+      syncFocusOrder();
       return;
     }
 
-    // 1. Measure intrinsic desktop nav links width (immune to CSS transforms)
     const navExpandedW = Math.ceil(navLinks.offsetWidth + 10);
     if (navExpandedW > 60) {
       header.style.setProperty("--nav-expanded-w", `${navExpandedW}px`);
     }
 
-    // 2. Measure intrinsic profile chip text width (even if currently collapsed)
-    let measuredChipTextW = 0;
+    let chipTextW = 0;
     if (profileChipText) {
-      if (header.classList.contains("is-compact")) {
-        const prevTransition = profileChipText.style.transition;
-        const prevWidth = profileChipText.style.width;
-        profileChipText.style.transition = "none";
-        profileChipText.style.width = "auto";
-        measuredChipTextW = Math.min(240, Math.ceil(profileChipText.scrollWidth));
-        profileChipText.style.width = prevWidth;
-        void profileChipText.offsetWidth;
-        profileChipText.style.transition = prevTransition;
-      } else {
-        profileChipText.style.width = "";
-        measuredChipTextW = Math.min(240, Math.ceil(profileChipText.scrollWidth));
-      }
-      header.style.setProperty("--chip-text-w", `${measuredChipTextW}px`);
+      const maxChipW = window.innerWidth <= 1080 ? 130 : 240;
+      chipTextW = Math.min(maxChipW, Math.ceil(profileChipText.scrollWidth));
+      header.style.setProperty("--chip-text-w", `${chipTextW}px`);
     }
 
-    // 3. Measure right capsule width in Expanded state cleanly (without waiting for width transitions)
-    let actionsExpandedW = lastActionsExpandedW;
-    if (!header.classList.contains("is-compact")) {
-      if (profileChipText) {
-        const prevTransition = profileChipText.style.transition;
-        const prevWidth = profileChipText.style.width;
-        profileChipText.style.transition = "none";
-        profileChipText.style.width = `${measuredChipTextW}px`;
-        actionsExpandedW = headerActions.offsetWidth;
-        profileChipText.style.width = prevWidth;
-        void profileChipText.offsetWidth;
-        profileChipText.style.transition = prevTransition;
-      } else {
-        actionsExpandedW = headerActions.offsetWidth;
-      }
-      lastActionsExpandedW = actionsExpandedW;
-    } else if (!actionsExpandedW) {
-      actionsExpandedW = headerActions.offsetWidth + (measuredChipTextW ? measuredChipTextW + 18 : 0);
-    }
+    const compactActionsW = measureCompactActionsWidth();
+    const chipDelta = chipTextW > 0 ? chipTextW + 19 : 0;
+    const expandedActionsW = !header.classList.contains("is-compact")
+      ? Math.max(compactActionsW, headerActions.offsetWidth || compactActionsW + chipDelta)
+      : compactActionsW + chipDelta;
+
     const innerW = headerInner.clientWidth;
     const brandW = brand.offsetWidth;
 
-    if (innerW > 0 && navExpandedW > 0 && brandW > 0) {
-      const rem = Math.max(24, innerW - brandW - navExpandedW - actionsExpandedW);
-      let rightSpace = (rem - actionsExpandedW + brandW) / 2;
-      rightSpace = Math.max(12, Math.min(rem - 12, rightSpace));
-      const leftSpace = Math.max(12, rem - rightSpace);
-      const leftGrow = Math.max(1, Math.min(4.5, leftSpace / Math.max(12, rightSpace)));
-      header.style.setProperty("--spacer-left-grow", leftGrow.toFixed(3));
+    if (innerW > 0 && navExpandedW > 60 && brandW > 0) {
+      header.style.setProperty("--header-inner-w", `${innerW}px`);
+      header.style.setProperty("--brand-w", `${brandW}px`);
+
+      const dockRight = Math.round(compactActionsW + 10);
+      header.style.setProperty("--nav-dock-right", `${dockRight}px`);
+
+      const idealRightEdge = innerW / 2 + navExpandedW / 2;
+      const minRightEdge = brandW + 14 + navExpandedW;
+      const maxRightEdge = innerW - expandedActionsW - 14;
+      const targetRightEdge = minRightEdge <= maxRightEdge
+        ? Math.max(minRightEdge, Math.min(maxRightEdge, idealRightEdge))
+        : (minRightEdge + maxRightEdge) / 2;
+      const dockRightEdge = innerW - dockRight;
+      const shiftX = Math.round(targetRightEdge - dockRightEdge);
+      header.style.setProperty("--nav-shift-x", `${shiftX}px`);
     }
   }
 
@@ -15513,10 +15623,11 @@ function initAdaptiveGlassHeader() {
     if (nextCompact === isCompact) return;
     isCompact = nextCompact;
     if (!nextCompact) {
-      setCompactPopoverOpen(false);
+      suppressPeekAutoCloseUntil = 0;
+      setNavPeekOpen(false);
     }
     header.classList.toggle("is-compact", nextCompact);
-    syncFocusOrder(nextCompact);
+    syncFocusOrder();
   }
 
   function evaluateScrollState() {
@@ -15529,6 +15640,8 @@ function initAdaptiveGlassHeader() {
       applyCompactState(true);
     } else if (isCompact && y < 24) {
       applyCompactState(false);
+    } else if (isCompact && isPeeking && Date.now() > suppressPeekAutoCloseUntil && Math.abs(y - peekScrollY) > 56) {
+      setNavPeekOpen(false);
     }
   }
 
@@ -15546,30 +15659,24 @@ function initAdaptiveGlassHeader() {
   compactBtn.addEventListener("click", (e) => {
     e.preventDefault();
     e.stopPropagation();
-    const opening = !desktopNav.classList.contains("popover-open");
-    if (opening && typeof window.closeQuickUserMenu === "function") {
+    if (!isCompact || !isDesktopGlassViewport()) return;
+    if (typeof window.closeQuickUserMenu === "function") {
       window.closeQuickUserMenu();
     }
-    setCompactPopoverOpen(opening);
+    setNavPeekOpen(true);
   });
 
   document.addEventListener("click", (e) => {
-    if (desktopNav.classList.contains("popover-open") && !desktopNav.contains(e.target)) {
-      setCompactPopoverOpen(false);
+    if (isPeeking && !desktopNav.contains(e.target)) {
+      setNavPeekOpen(false);
     }
   });
 
   document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape" && desktopNav.classList.contains("popover-open")) {
-      setCompactPopoverOpen(false);
+    if (e.key === "Escape" && isPeeking) {
+      setNavPeekOpen(false);
       compactBtn.focus();
     }
-  });
-
-  popover.querySelectorAll(".compact-nav-item").forEach((item) => {
-    item.addEventListener("click", () => {
-      setCompactPopoverOpen(false);
-    });
   });
 
   if (typeof ResizeObserver === "function") {
@@ -15577,10 +15684,8 @@ function initAdaptiveGlassHeader() {
       syncAdaptiveGlassHeaderMetrics();
       evaluateScrollState();
     });
+    // Only observe outer container so inner transition widths never re-trigger ResizeObserver mid-flight
     ro.observe(headerInner);
-    ro.observe(navLinks);
-    ro.observe(brand);
-    ro.observe(headerActions);
   }
 
   window.addEventListener("resize", () => {
@@ -15595,6 +15700,7 @@ function initAdaptiveGlassHeader() {
     }).catch(() => {});
   }
 
+  syncCompactNavActiveIcon();
   syncAdaptiveGlassHeaderMetrics();
   evaluateScrollState();
 }
