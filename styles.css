@@ -28031,3 +28031,710 @@ body.dark-theme #documentPickerModal .doc-picker-item-desc {
 body.dark-theme #documentPickerModal .doc-picker-item-meta {
   color: #64748b !important;
 }
+
+/* ==========================================================================
+   MODERN GLASSMORPHISM - FLOATING & ADAPTIVE DESKTOP NAVIGATION BAR
+   ========================================================================== */
+.site-header-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  height: 100%;
+}
+
+.nav-spacer,
+.desktop-nav-compact-trigger,
+.compact-nav-popover {
+  display: none;
+}
+
+.desktop-nav-shell {
+  display: flex;
+  align-items: center;
+}
+
+.desktop-nav-links {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  white-space: nowrap;
+}
+
+@media (min-width: 801px) and (min-height: 521px) {
+  html {
+    scroll-padding-top: 84px;
+  }
+
+  main {
+    padding-top: 76px;
+  }
+
+  body.study-zen-fullscreen main {
+    padding-top: 0 !important;
+  }
+
+  .post-detail-top-nav {
+    top: 76px;
+  }
+
+  header#siteHeader.site-header {
+    --glass-bg: rgba(255, 255, 255, 0.72);
+    --glass-bg-elevated: rgba(255, 255, 255, 0.9);
+    --glass-border: rgba(15, 23, 42, 0.08);
+    --glass-border-strong: rgba(15, 23, 42, 0.14);
+    --glass-highlight: rgba(255, 255, 255, 0.94);
+    --glass-shadow:
+      0 12px 32px -10px rgba(10, 44, 30, 0.14),
+      0 4px 12px -4px rgba(10, 44, 30, 0.06);
+    --glass-brand-ink: #0f172a;
+    --glass-colon: #059669;
+    --glass-nav-ink: #475569;
+    --glass-nav-ink-hover: #0a2c1e;
+    --glass-nav-hover-bg: rgba(15, 23, 42, 0.055);
+    --glass-nav-pill-bg: linear-gradient(135deg, rgba(16, 185, 129, 0.17), rgba(5, 150, 105, 0.1));
+    --glass-nav-pill-border: rgba(5, 150, 105, 0.28);
+    --glass-nav-active-ink: #064e3b;
+    --glass-accent-dot: #10b981;
+    --glass-control-bg: rgba(255, 255, 255, 0.62);
+    --glass-control-hover-bg: rgba(255, 255, 255, 0.96);
+    --glass-control-border: rgba(15, 23, 42, 0.08);
+    --glass-badge-bg: rgba(16, 185, 129, 0.12);
+    --glass-badge-ink: #047857;
+    --glass-popover-bg: rgba(255, 255, 255, 0.92);
+    --glass-ease: cubic-bezier(0.22, 1, 0.36, 1);
+    --glass-dur: 0.46s;
+
+    position: fixed;
+    top: 14px;
+    left: 0;
+    right: 0;
+    height: 48px;
+    width: 100%;
+    max-width: 100%;
+    margin: 0 auto;
+    padding: 0 max(28px, calc((100% - 1208px) / 2));
+    background: transparent !important;
+    border-bottom: none !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    pointer-events: none;
+    cursor: default;
+    z-index: 1000;
+  }
+
+  /* Theme-specific Frosted Glass Palettes (Light + Dark) */
+  [data-user-theme="ruby"] header#siteHeader.site-header {
+    --glass-bg: rgba(255, 245, 247, 0.74);
+    --glass-bg-elevated: rgba(255, 249, 250, 0.92);
+    --glass-border: rgba(225, 29, 72, 0.15);
+    --glass-border-strong: rgba(225, 29, 72, 0.24);
+    --glass-shadow:
+      0 12px 32px -10px rgba(159, 18, 57, 0.15),
+      0 4px 12px -4px rgba(159, 18, 57, 0.06);
+    --glass-colon: #e11d48;
+    --glass-nav-ink-hover: #881337;
+    --glass-nav-hover-bg: rgba(225, 29, 72, 0.06);
+    --glass-nav-pill-bg: linear-gradient(135deg, rgba(225, 29, 72, 0.16), rgba(244, 63, 94, 0.1));
+    --glass-nav-pill-border: rgba(225, 29, 72, 0.3);
+    --glass-nav-active-ink: #881337;
+    --glass-accent-dot: #e11d48;
+    --glass-badge-bg: rgba(225, 29, 72, 0.12);
+    --glass-badge-ink: #be123c;
+    --glass-popover-bg: rgba(255, 248, 250, 0.94);
+  }
+
+  [data-user-theme="mythic"] header#siteHeader.site-header {
+    --glass-bg: rgba(250, 245, 255, 0.74);
+    --glass-bg-elevated: rgba(252, 249, 255, 0.92);
+    --glass-border: rgba(124, 58, 237, 0.17);
+    --glass-border-strong: rgba(124, 58, 237, 0.26);
+    --glass-shadow:
+      0 12px 32px -10px rgba(109, 40, 217, 0.16),
+      0 4px 12px -4px rgba(109, 40, 217, 0.07);
+    --glass-colon: #7c3aed;
+    --glass-nav-ink-hover: #4c1d95;
+    --glass-nav-hover-bg: rgba(124, 58, 237, 0.07);
+    --glass-nav-pill-bg: linear-gradient(135deg, rgba(139, 92, 246, 0.18), rgba(168, 85, 247, 0.11));
+    --glass-nav-pill-border: rgba(124, 58, 237, 0.3);
+    --glass-nav-active-ink: #4c1d95;
+    --glass-accent-dot: #7c3aed;
+    --glass-badge-bg: rgba(124, 58, 237, 0.12);
+    --glass-badge-ink: #6d28d9;
+    --glass-popover-bg: rgba(250, 246, 255, 0.94);
+  }
+
+  body.dark-theme header#siteHeader.site-header {
+    --glass-bg: rgba(17, 24, 31, 0.68);
+    --glass-bg-elevated: rgba(22, 31, 41, 0.86);
+    --glass-border: rgba(255, 255, 255, 0.14);
+    --glass-border-strong: rgba(255, 255, 255, 0.2);
+    --glass-highlight: rgba(255, 255, 255, 0.12);
+    --glass-shadow:
+      0 14px 36px -8px rgba(0, 0, 0, 0.54),
+      0 2px 8px rgba(0, 0, 0, 0.28);
+    --glass-brand-ink: #f8fafc;
+    --glass-colon: #34d399;
+    --glass-nav-ink: #94a3b8;
+    --glass-nav-ink-hover: #f8fafc;
+    --glass-nav-hover-bg: rgba(255, 255, 255, 0.08);
+    --glass-nav-pill-bg: linear-gradient(135deg, rgba(52, 211, 153, 0.22), rgba(16, 185, 129, 0.12));
+    --glass-nav-pill-border: rgba(52, 211, 153, 0.36);
+    --glass-nav-active-ink: #a7f3d0;
+    --glass-accent-dot: #34d399;
+    --glass-control-bg: rgba(255, 255, 255, 0.06);
+    --glass-control-hover-bg: rgba(255, 255, 255, 0.15);
+    --glass-control-border: rgba(255, 255, 255, 0.13);
+    --glass-badge-bg: rgba(52, 211, 153, 0.18);
+    --glass-badge-ink: #6ee7b7;
+    --glass-popover-bg: rgba(15, 21, 28, 0.92);
+  }
+
+  [data-user-theme="ruby"] body.dark-theme header#siteHeader.site-header {
+    --glass-bg: rgba(24, 15, 20, 0.72);
+    --glass-bg-elevated: rgba(33, 20, 27, 0.88);
+    --glass-border: rgba(244, 63, 94, 0.24);
+    --glass-border-strong: rgba(251, 113, 133, 0.34);
+    --glass-shadow:
+      0 14px 36px -8px rgba(0, 0, 0, 0.58),
+      0 2px 12px rgba(244, 63, 94, 0.16);
+    --glass-colon: #fb7185;
+    --glass-nav-pill-bg: linear-gradient(135deg, rgba(244, 63, 94, 0.24), rgba(225, 29, 72, 0.14));
+    --glass-nav-pill-border: rgba(251, 113, 133, 0.38);
+    --glass-nav-active-ink: #fecdd3;
+    --glass-accent-dot: #fb7185;
+    --glass-badge-bg: rgba(244, 63, 94, 0.2);
+    --glass-badge-ink: #fda4af;
+    --glass-popover-bg: rgba(22, 13, 18, 0.94);
+  }
+
+  [data-user-theme="mythic"] body.dark-theme header#siteHeader.site-header {
+    --glass-bg: rgba(21, 15, 36, 0.72);
+    --glass-bg-elevated: rgba(30, 21, 50, 0.88);
+    --glass-border: rgba(167, 139, 250, 0.25);
+    --glass-border-strong: rgba(196, 181, 253, 0.35);
+    --glass-shadow:
+      0 14px 36px -8px rgba(0, 0, 0, 0.6),
+      0 2px 12px rgba(139, 92, 246, 0.22);
+    --glass-colon: #a78bfa;
+    --glass-nav-pill-bg: linear-gradient(135deg, rgba(167, 139, 250, 0.24), rgba(139, 92, 246, 0.14));
+    --glass-nav-pill-border: rgba(196, 181, 253, 0.38);
+    --glass-nav-active-ink: #ede9fe;
+    --glass-accent-dot: #c4b5fd;
+    --glass-badge-bg: rgba(167, 139, 250, 0.2);
+    --glass-badge-ink: #ddd6fe;
+    --glass-popover-bg: rgba(19, 13, 33, 0.94);
+  }
+
+  header#siteHeader .site-header-inner {
+    width: 100%;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    pointer-events: none;
+  }
+
+  /* 1. Left Glass Pill: Brand Logo */
+  header#siteHeader .brand {
+    pointer-events: auto;
+    height: 48px;
+    padding: 0 18px 0 9px;
+    border-radius: 9999px;
+    gap: 8px;
+    font-size: 16px;
+    color: var(--glass-brand-ink) !important;
+    background: var(--glass-bg);
+    backdrop-filter: blur(22px) saturate(185%);
+    -webkit-backdrop-filter: blur(22px) saturate(185%);
+    border: 1px solid var(--glass-border);
+    box-shadow: inset 0 1px 0 var(--glass-highlight), var(--glass-shadow);
+    transition:
+      background 0.25s ease,
+      border-color 0.25s ease,
+      box-shadow 0.25s ease,
+      transform 0.25s var(--glass-ease);
+  }
+
+  header#siteHeader .brand:hover {
+    background: var(--glass-bg-elevated);
+    transform: translateY(-1px);
+  }
+
+  header#siteHeader .brand-mark {
+    width: 30px;
+    height: 30px;
+    border-radius: 9999px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    flex-shrink: 0;
+  }
+
+  header#siteHeader .brand-mark img {
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    object-fit: cover;
+  }
+
+  header#siteHeader .brand-colon {
+    color: var(--glass-colon) !important;
+  }
+
+  /* Animated Spacers driving Center -> Right Dock glide */
+  header#siteHeader .nav-spacer {
+    display: block;
+    height: 1px;
+    pointer-events: none;
+    transition:
+      flex-grow var(--glass-dur) var(--glass-ease),
+      min-width var(--glass-dur) var(--glass-ease);
+  }
+
+  header#siteHeader .nav-spacer-left {
+    flex: var(--spacer-left-grow, 1.35) 1 0%;
+    min-width: 12px;
+  }
+
+  header#siteHeader .nav-spacer-right {
+    flex: 1 1 0%;
+    min-width: 12px;
+  }
+
+  header#siteHeader.is-compact .nav-spacer-left {
+    flex: 1 1 0%;
+  }
+
+  header#siteHeader.is-compact .nav-spacer-right {
+    flex: 0.0001 1 0%;
+    min-width: 10px;
+  }
+
+  /* 2. Center Glass Pill -> Compact Circular Navigation Orb */
+  header#siteHeader .desktop-nav {
+    position: relative;
+    display: flex;
+    align-items: center;
+    flex: 0 0 auto;
+    margin-left: 0 !important;
+    pointer-events: auto;
+    z-index: 1002;
+  }
+
+  header#siteHeader .desktop-nav-shell {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 48px;
+    width: var(--nav-expanded-w, auto);
+    min-width: 0;
+    padding: 4px;
+    border-radius: 9999px;
+    overflow: hidden;
+    box-sizing: border-box;
+    background: var(--glass-bg);
+    backdrop-filter: blur(22px) saturate(185%);
+    -webkit-backdrop-filter: blur(22px) saturate(185%);
+    border: 1px solid var(--glass-border);
+    box-shadow: inset 0 1px 0 var(--glass-highlight), var(--glass-shadow);
+    transition:
+      width var(--glass-dur) var(--glass-ease),
+      padding var(--glass-dur) var(--glass-ease),
+      background 0.25s ease,
+      border-color 0.25s ease,
+      box-shadow 0.25s ease;
+  }
+
+  header#siteHeader.is-compact .desktop-nav-shell {
+    width: 48px;
+    padding: 0;
+  }
+
+  header#siteHeader .desktop-nav-links {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex: 0 0 auto;
+    opacity: 1;
+    transform: scale(1);
+    transform-origin: center center;
+    pointer-events: auto;
+    visibility: visible;
+    transition:
+      opacity 0.22s ease 0.1s,
+      transform 0.38s var(--glass-ease) 0.04s,
+      visibility 0s linear 0s;
+  }
+
+  header#siteHeader.is-compact .desktop-nav-links {
+    opacity: 0;
+    transform: scale(0.82);
+    pointer-events: none;
+    visibility: hidden;
+    transition:
+      opacity 0.16s ease,
+      transform 0.26s var(--glass-ease),
+      visibility 0s linear 0.18s;
+  }
+
+  header#siteHeader .desktop-nav-links .nav-link {
+    height: 38px;
+    padding: 0 14px;
+    border-radius: 9999px;
+    border: 1px solid transparent;
+    font-size: 13.5px;
+    font-weight: 600;
+    color: var(--glass-nav-ink) !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+    text-decoration: none;
+    transition:
+      color 0.2s ease,
+      background 0.2s ease,
+      border-color 0.2s ease,
+      box-shadow 0.2s ease;
+  }
+
+  header#siteHeader .desktop-nav-links .nav-link:hover {
+    color: var(--glass-nav-ink-hover) !important;
+    background: var(--glass-nav-hover-bg) !important;
+  }
+
+  header#siteHeader .desktop-nav-links .nav-link.active {
+    color: var(--glass-nav-active-ink) !important;
+    font-weight: 700;
+    background: var(--glass-nav-pill-bg) !important;
+    border-color: var(--glass-nav-pill-border) !important;
+    box-shadow:
+      inset 0 1px 0 var(--glass-highlight),
+      0 2px 10px -2px rgba(0, 0, 0, 0.08) !important;
+  }
+
+  header#siteHeader .desktop-nav-links .nav-link-arena svg {
+    margin-right: 0;
+    vertical-align: middle;
+  }
+
+  /* Compact Circular Icon Button inside Desktop Nav */
+  header#siteHeader .desktop-nav-compact-trigger {
+    position: absolute;
+    inset: 0;
+    margin: auto;
+    width: 46px;
+    height: 46px;
+    border: none;
+    border-radius: 9999px;
+    background: transparent;
+    color: var(--glass-nav-ink-hover) !important;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transform: scale(0.6) rotate(-25deg);
+    transition:
+      opacity 0.16s ease,
+      transform 0.24s var(--glass-ease),
+      background 0.2s ease,
+      color 0.2s ease,
+      visibility 0s linear 0.2s;
+  }
+
+  header#siteHeader.is-compact .desktop-nav-compact-trigger {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transform: scale(1) rotate(0deg);
+    transition:
+      opacity 0.24s ease 0.14s,
+      transform 0.38s var(--glass-ease) 0.1s,
+      background 0.2s ease,
+      color 0.2s ease,
+      visibility 0s linear 0s;
+  }
+
+  header#siteHeader.is-compact .desktop-nav-compact-trigger:hover,
+  header#siteHeader.is-compact .desktop-nav.popover-open .desktop-nav-compact-trigger {
+    background: var(--glass-nav-hover-bg);
+    color: var(--glass-nav-active-ink);
+  }
+
+  header#siteHeader.is-compact .desktop-nav.popover-open .compact-nav-icon {
+    transform: rotate(45deg) scale(0.94);
+  }
+
+  header#siteHeader .compact-nav-icon {
+    transition: transform 0.28s var(--glass-ease);
+  }
+
+  /* Quick Route Popover anchored below the Compact Nav Circle */
+  header#siteHeader .compact-nav-popover {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    position: absolute;
+    top: calc(100% + 10px);
+    right: 0;
+    min-width: 212px;
+    padding: 8px;
+    border-radius: 20px;
+    background: var(--glass-popover-bg);
+    backdrop-filter: blur(26px) saturate(190%);
+    -webkit-backdrop-filter: blur(26px) saturate(190%);
+    border: 1px solid var(--glass-border-strong);
+    box-shadow:
+      inset 0 1px 0 var(--glass-highlight),
+      0 20px 48px -12px rgba(15, 23, 42, 0.26);
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-8px) scale(0.96);
+    transform-origin: top right;
+    pointer-events: none;
+    z-index: 1010;
+    transition:
+      opacity 0.18s ease,
+      transform 0.22s var(--glass-ease),
+      visibility 0s linear 0.22s;
+  }
+
+  header#siteHeader.is-compact .desktop-nav.popover-open .compact-nav-popover {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0) scale(1);
+    pointer-events: auto;
+    transition:
+      opacity 0.2s ease,
+      transform 0.24s var(--glass-ease),
+      visibility 0s linear 0s;
+  }
+
+  header#siteHeader .compact-nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 12px;
+    border-radius: 13px;
+    border: 1px solid transparent;
+    text-decoration: none;
+    color: var(--glass-nav-ink) !important;
+    font-size: 13.5px;
+    font-weight: 600;
+    white-space: nowrap;
+    transition:
+      background 0.18s ease,
+      color 0.18s ease,
+      border-color 0.18s ease;
+  }
+
+  header#siteHeader .compact-nav-item:hover {
+    background: var(--glass-nav-hover-bg);
+    color: var(--glass-nav-ink-hover) !important;
+  }
+
+  header#siteHeader .compact-nav-item.active {
+    background: var(--glass-nav-pill-bg);
+    border-color: var(--glass-nav-pill-border);
+    color: var(--glass-nav-active-ink);
+    font-weight: 700;
+  }
+
+  header#siteHeader .compact-nav-item.active::after {
+    content: "";
+    width: 6px;
+    height: 6px;
+    border-radius: 9999px;
+    background: var(--glass-accent-dot);
+    margin-left: auto;
+    box-shadow: 0 0 8px var(--glass-accent-dot);
+  }
+
+  header#siteHeader .compact-nav-item-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  /* 3. Right Glass Pill: Profile + Search + Hamburger */
+  header#siteHeader .header-actions {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    height: 48px;
+    padding: 5px 6px;
+    border-radius: 9999px;
+    flex: 0 0 auto;
+    pointer-events: auto;
+    overflow: visible;
+    background: var(--glass-bg);
+    backdrop-filter: blur(22px) saturate(185%);
+    -webkit-backdrop-filter: blur(22px) saturate(185%);
+    border: 1px solid var(--glass-border);
+    box-shadow: inset 0 1px 0 var(--glass-highlight), var(--glass-shadow);
+    z-index: 1003;
+    transition:
+      background 0.25s ease,
+      border-color 0.25s ease,
+      box-shadow 0.25s ease;
+  }
+
+  header#siteHeader .profile-chip {
+    display: inline-flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 0;
+    height: 36px;
+    min-width: 36px;
+    padding: 2px 12px 2px 2.5px;
+    border-radius: 9999px;
+    background: var(--glass-control-bg) !important;
+    border: 1px solid var(--glass-control-border) !important;
+    box-shadow: none !important;
+    color: var(--glass-brand-ink) !important;
+    overflow: visible;
+    transition:
+      padding var(--glass-dur) var(--glass-ease),
+      background 0.22s ease,
+      border-color 0.22s ease;
+  }
+
+  header#siteHeader .profile-chip:hover {
+    background: var(--glass-control-hover-bg) !important;
+  }
+
+  header#siteHeader .profile-chip .profile-chip-text {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    width: var(--chip-text-w, auto);
+    max-width: 240px;
+    margin-left: 8px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 13px;
+    font-weight: 600;
+    opacity: 1;
+    transition:
+      width var(--glass-dur) var(--glass-ease),
+      margin-left var(--glass-dur) var(--glass-ease),
+      opacity 0.22s ease 0.08s;
+  }
+
+  header#siteHeader .profile-chip .profile-chip-text b {
+    font-size: 11px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 9999px;
+    background: var(--glass-badge-bg) !important;
+    color: var(--glass-badge-ink) !important;
+    flex-shrink: 0;
+  }
+
+  header#siteHeader.is-compact .profile-chip {
+    padding: 2px;
+    background: transparent !important;
+    border-color: transparent !important;
+  }
+
+  header#siteHeader.is-compact .profile-chip .profile-chip-text {
+    width: 0 !important;
+    margin-left: 0 !important;
+    opacity: 0;
+    pointer-events: none;
+    transition:
+      width var(--glass-dur) var(--glass-ease),
+      margin-left var(--glass-dur) var(--glass-ease),
+      opacity 0.16s ease;
+  }
+
+  header#siteHeader .desktop-search,
+  header#siteHeader .quick-menu-btn {
+    width: 36px;
+    height: 36px;
+    min-width: 36px;
+    padding: 0;
+    border-radius: 9999px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    background: var(--glass-control-bg) !important;
+    border: 1px solid var(--glass-control-border) !important;
+    color: var(--glass-nav-ink-hover) !important;
+    box-shadow: none !important;
+    transition:
+      background 0.2s ease,
+      border-color 0.2s ease,
+      transform 0.2s var(--glass-ease);
+  }
+
+  header#siteHeader .desktop-search:hover,
+  header#siteHeader .quick-menu-btn:hover,
+  header#siteHeader .quick-menu-btn.active {
+    background: var(--glass-control-hover-bg) !important;
+    border-color: var(--glass-border-strong) !important;
+    transform: translateY(-1px);
+  }
+
+  header#siteHeader .quick-menu-btn .hamburger-line {
+    background: currentColor;
+  }
+
+  header#siteHeader .quick-menu-dropdown {
+    top: calc(100% + 14px);
+    right: -6px;
+    background: var(--glass-popover-bg);
+    backdrop-filter: blur(26px) saturate(190%);
+    -webkit-backdrop-filter: blur(26px) saturate(190%);
+    border-color: var(--glass-border-strong);
+  }
+}
+
+@media (min-width: 801px) and (max-width: 1080px) and (min-height: 521px) {
+  header#siteHeader .desktop-nav-links .nav-link-text {
+    display: none;
+  }
+
+  header#siteHeader .desktop-nav-links .nav-link-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  header#siteHeader .desktop-nav-links .nav-link {
+    padding: 0 11px;
+  }
+
+  header#siteHeader .profile-chip .profile-chip-text {
+    max-width: 130px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  header#siteHeader .brand,
+  header#siteHeader .nav-spacer,
+  header#siteHeader .desktop-nav-shell,
+  header#siteHeader .desktop-nav-links,
+  header#siteHeader .desktop-nav-compact-trigger,
+  header#siteHeader .compact-nav-icon,
+  header#siteHeader .compact-nav-popover,
+  header#siteHeader .profile-chip,
+  header#siteHeader .profile-chip .profile-chip-text,
+  header#siteHeader .desktop-search,
+  header#siteHeader .quick-menu-btn {
+    transition-duration: 0.01ms !important;
+    transition-delay: 0ms !important;
+  }
+}

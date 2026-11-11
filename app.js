@@ -1535,6 +1535,9 @@ function applySession(user) {
       ? `<span class="${getNameClass(streakTier)}">${escapeHTML(user.displayName)}</span> <b>${roleDisplay}</b>`
       : "Đăng nhập"),
   );
+  if (typeof window.syncAdaptiveGlassHeaderMetrics === "function") {
+    window.syncAdaptiveGlassHeaderMetrics();
+  }
 
   const accountName = $(".account-header h1");
   if (accountName) {
@@ -3107,9 +3110,18 @@ function go(rawRoute, scrollToTop = true) {
   $$(".page").forEach((p) =>
     p.classList.toggle("active-page", p.dataset.page === baseRoute),
   );
-  $$("[data-route]").forEach((a) =>
-    a.classList.toggle("active", a.dataset.route === baseRoute),
-  );
+  $$("[data-route]").forEach((a) => {
+    const isMatch = a.dataset.route === baseRoute;
+    a.classList.toggle("active", isMatch);
+    if (isMatch) {
+      a.setAttribute("aria-current", "page");
+    } else {
+      a.removeAttribute("aria-current");
+    }
+  });
+  if (typeof window.closeCompactNavPopover === "function") {
+    window.closeCompactNavPopover();
+  }
   if (location.hash !== `#${route}`) {
     history.replaceState(null, "", `#${route}`);
   }
@@ -3409,7 +3421,7 @@ function initTapToScrollTop() {
   if (header) {
     header.addEventListener("click", (e) => {
       // Bỏ qua nếu bấm vào các nút chức năng, liên kết hoặc ô tìm kiếm
-      if (e.target.closest("button, input, select, textarea, a, .icon-button, .profile-chip, .nav-link")) {
+      if (e.target.closest("button, input, select, textarea, a, .icon-button, .profile-chip, .nav-link, .compact-nav-popover, #quickMenuDropdown")) {
         return;
       }
       window.scrollTo({ top: 0, behavior: "smooth" });
@@ -5195,6 +5207,9 @@ window.toggleQuickUserMenu = function (e) {
   btn.classList.toggle("active", isOpen);
   btn.setAttribute("aria-expanded", String(isOpen));
   if (isOpen) {
+    if (typeof window.closeCompactNavPopover === "function") {
+      window.closeCompactNavPopover();
+    }
     updateQuickMenuUser(session);
   }
 };
@@ -15379,6 +15394,212 @@ initStudyLoungeEvents();
 initMobileNavScrollHandler();
 initPostDetailNavScrollHandler();
 initTapToScrollTop();
+
+/* ==========================================================================
+   DESKTOP FLOATING & ADAPTIVE GLASSMORPHISM NAVIGATION BAR
+   ========================================================================== */
+function initAdaptiveGlassHeader() {
+  const header = document.getElementById("siteHeader");
+  const headerInner = header ? header.querySelector(".site-header-inner") : null;
+  const brand = header ? header.querySelector(".brand") : null;
+  const desktopNav = document.getElementById("desktopNav");
+  const navLinks = document.getElementById("desktopNavLinks");
+  const compactBtn = document.getElementById("desktopNavCompactBtn");
+  const popover = document.getElementById("compactNavPopover");
+  const headerActions = header ? header.querySelector(".header-actions") : null;
+  const profileChip = document.getElementById("navProfileChip");
+  const profileChipText = profileChip ? profileChip.querySelector(".profile-chip-text") : null;
+
+  if (!header || !headerInner || !brand || !desktopNav || !navLinks || !compactBtn || !popover || !headerActions) {
+    return;
+  }
+
+  let isCompact = false;
+  let lastActionsExpandedW = 0;
+
+  function isDesktopGlassViewport() {
+    return window.innerWidth > 800 && window.innerHeight > 520;
+  }
+
+  function setCompactPopoverOpen(open) {
+    const nextOpen = Boolean(open) && isCompact && isDesktopGlassViewport();
+    desktopNav.classList.toggle("popover-open", nextOpen);
+    compactBtn.setAttribute("aria-expanded", String(nextOpen));
+  }
+
+  window.closeCompactNavPopover = () => setCompactPopoverOpen(false);
+
+  function syncFocusOrder(compactState) {
+    const activeDesktop = compactState && isDesktopGlassViewport();
+    compactBtn.setAttribute("tabindex", activeDesktop ? "0" : "-1");
+    navLinks.querySelectorAll("a").forEach((link) => {
+      if (activeDesktop) {
+        link.setAttribute("tabindex", "-1");
+      } else {
+        link.removeAttribute("tabindex");
+      }
+    });
+  }
+
+  function syncAdaptiveGlassHeaderMetrics() {
+    if (!isDesktopGlassViewport()) {
+      header.classList.remove("is-compact");
+      isCompact = false;
+      setCompactPopoverOpen(false);
+      syncFocusOrder(false);
+      return;
+    }
+
+    // 1. Measure intrinsic desktop nav links width (immune to CSS transforms)
+    const navExpandedW = Math.ceil(navLinks.offsetWidth + 10);
+    if (navExpandedW > 60) {
+      header.style.setProperty("--nav-expanded-w", `${navExpandedW}px`);
+    }
+
+    // 2. Measure intrinsic profile chip text width (even if currently collapsed)
+    let measuredChipTextW = 0;
+    if (profileChipText) {
+      if (header.classList.contains("is-compact")) {
+        const prevTransition = profileChipText.style.transition;
+        const prevWidth = profileChipText.style.width;
+        profileChipText.style.transition = "none";
+        profileChipText.style.width = "auto";
+        measuredChipTextW = Math.min(240, Math.ceil(profileChipText.scrollWidth));
+        profileChipText.style.width = prevWidth;
+        void profileChipText.offsetWidth;
+        profileChipText.style.transition = prevTransition;
+      } else {
+        profileChipText.style.width = "";
+        measuredChipTextW = Math.min(240, Math.ceil(profileChipText.scrollWidth));
+      }
+      header.style.setProperty("--chip-text-w", `${measuredChipTextW}px`);
+    }
+
+    // 3. Measure right capsule width in Expanded state cleanly (without waiting for width transitions)
+    let actionsExpandedW = lastActionsExpandedW;
+    if (!header.classList.contains("is-compact")) {
+      if (profileChipText) {
+        const prevTransition = profileChipText.style.transition;
+        const prevWidth = profileChipText.style.width;
+        profileChipText.style.transition = "none";
+        profileChipText.style.width = `${measuredChipTextW}px`;
+        actionsExpandedW = headerActions.offsetWidth;
+        profileChipText.style.width = prevWidth;
+        void profileChipText.offsetWidth;
+        profileChipText.style.transition = prevTransition;
+      } else {
+        actionsExpandedW = headerActions.offsetWidth;
+      }
+      lastActionsExpandedW = actionsExpandedW;
+    } else if (!actionsExpandedW) {
+      actionsExpandedW = headerActions.offsetWidth + (measuredChipTextW ? measuredChipTextW + 18 : 0);
+    }
+    const innerW = headerInner.clientWidth;
+    const brandW = brand.offsetWidth;
+
+    if (innerW > 0 && navExpandedW > 0 && brandW > 0) {
+      const rem = Math.max(24, innerW - brandW - navExpandedW - actionsExpandedW);
+      let rightSpace = (rem - actionsExpandedW + brandW) / 2;
+      rightSpace = Math.max(12, Math.min(rem - 12, rightSpace));
+      const leftSpace = Math.max(12, rem - rightSpace);
+      const leftGrow = Math.max(1, Math.min(4.5, leftSpace / Math.max(12, rightSpace)));
+      header.style.setProperty("--spacer-left-grow", leftGrow.toFixed(3));
+    }
+  }
+
+  window.syncAdaptiveGlassHeaderMetrics = syncAdaptiveGlassHeaderMetrics;
+
+  function applyCompactState(nextCompact) {
+    if (nextCompact === isCompact) return;
+    isCompact = nextCompact;
+    if (!nextCompact) {
+      setCompactPopoverOpen(false);
+    }
+    header.classList.toggle("is-compact", nextCompact);
+    syncFocusOrder(nextCompact);
+  }
+
+  function evaluateScrollState() {
+    if (!isDesktopGlassViewport() || document.body.classList.contains("study-zen-fullscreen")) {
+      applyCompactState(false);
+      return;
+    }
+    const y = window.scrollY || window.pageYOffset || 0;
+    if (!isCompact && y > 48) {
+      applyCompactState(true);
+    } else if (isCompact && y < 24) {
+      applyCompactState(false);
+    }
+  }
+
+  let scrollTicking = false;
+  window.addEventListener("scroll", () => {
+    if (!scrollTicking) {
+      scrollTicking = true;
+      window.requestAnimationFrame(() => {
+        scrollTicking = false;
+        evaluateScrollState();
+      });
+    }
+  }, { passive: true });
+
+  compactBtn.addEventListener("click", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const opening = !desktopNav.classList.contains("popover-open");
+    if (opening && typeof window.closeQuickUserMenu === "function") {
+      window.closeQuickUserMenu();
+    }
+    setCompactPopoverOpen(opening);
+  });
+
+  document.addEventListener("click", (e) => {
+    if (desktopNav.classList.contains("popover-open") && !desktopNav.contains(e.target)) {
+      setCompactPopoverOpen(false);
+    }
+  });
+
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && desktopNav.classList.contains("popover-open")) {
+      setCompactPopoverOpen(false);
+      compactBtn.focus();
+    }
+  });
+
+  popover.querySelectorAll(".compact-nav-item").forEach((item) => {
+    item.addEventListener("click", () => {
+      setCompactPopoverOpen(false);
+    });
+  });
+
+  if (typeof ResizeObserver === "function") {
+    const ro = new ResizeObserver(() => {
+      syncAdaptiveGlassHeaderMetrics();
+      evaluateScrollState();
+    });
+    ro.observe(headerInner);
+    ro.observe(navLinks);
+    ro.observe(brand);
+    ro.observe(headerActions);
+  }
+
+  window.addEventListener("resize", () => {
+    syncAdaptiveGlassHeaderMetrics();
+    evaluateScrollState();
+  });
+
+  if (document.fonts && document.fonts.ready) {
+    document.fonts.ready.then(() => {
+      syncAdaptiveGlassHeaderMetrics();
+      evaluateScrollState();
+    }).catch(() => {});
+  }
+
+  syncAdaptiveGlassHeaderMetrics();
+  evaluateScrollState();
+}
+
+initAdaptiveGlassHeader();
 
 // =========================================================================
 // HOME SHOWCASE: ROTATING BANNER STACK & ARENA CARD (15s Auto-Rotate & Swipe)
