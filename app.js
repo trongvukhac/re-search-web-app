@@ -27,6 +27,23 @@ const christmasSnowState = {
   isDark: false
 };
 
+const christmasTreeState = {
+  rafId: null,
+  canvas: null,
+  ctx: null,
+  width: 0,
+  height: 0,
+  isDark: false,
+  rotation: 0.38,
+  starRotation: 0.25,
+  timeSec: 0,
+  lastMs: 0,
+  items: [],
+  projected: [],
+  sprites: null,
+  spriteThemeKey: ""
+};
+
 const christmasBgmState = {
   audio: null,
   userWantsPlay: false,
@@ -16018,7 +16035,7 @@ function initAdaptiveGlassHeader() {
     document.fonts.ready.then(() => {
       syncAdaptiveGlassHeaderMetrics();
       evaluateScrollState();
-    }).catch(() => {});
+    }).catch(() => { });
   }
 
   syncCompactNavActiveIcon();
@@ -19847,7 +19864,7 @@ async function adminHandleExcelUpload(event) {
 
     if (window.XLSX) {
       const wb = XLSX.read(data, { type: "array" });
-      
+
       // Đọc toàn bộ các sheet trong workbook
       wb.SheetNames.forEach(sheetName => {
         const sheet = wb.Sheets[sheetName];
@@ -20805,6 +20822,7 @@ function getChristmasEffectsEnabled() {
 function updateChristmasSnowTheme() {
   const isDark = typeof isDarkModeActive === "function" ? isDarkModeActive() : false;
   christmasSnowState.isDark = Boolean(isDark);
+  christmasTreeState.isDark = Boolean(isDark);
 }
 window.updateChristmasSnowTheme = updateChristmasSnowTheme;
 
@@ -20972,6 +20990,7 @@ function resizeChristmasSnowCanvas() {
   }
   ensureSnowPile(w);
   renderChristmasHeaderGarland();
+  resizeChristmasTreeCanvas();
   const targetCount = w <= 760 ? 34 : 76;
   while (christmasSnowState.flakes.length < targetCount) {
     christmasSnowState.flakes.push(createSnowFlake(w, h, false));
@@ -21073,6 +21092,513 @@ function drawBottomSnowPile(ctx, w, h, pile, isDark) {
   ctx.lineWidth = 1.2;
   ctx.stroke();
   ctx.restore();
+}
+
+function createSeededTreeRng(seed) {
+  let state = seed >>> 0;
+  return function nextRand() {
+    state = (Math.imul(state, 1664525) + 1013904223) >>> 0;
+    return state / 4294967296;
+  };
+}
+
+function getChristmasTreeLayout(w, h) {
+  const isMobile = w <= 760;
+  if (isMobile) {
+    const treeH = Math.round(Math.min(310, Math.max(220, h * 0.37)));
+    const treeR = Math.round(treeH * 0.245);
+    return {
+      isMobile: true,
+      anchorX: w - 40,
+      baseY: h - 76,
+      treeH,
+      treeR
+    };
+  }
+  const gutterRight = Math.max(0, (w - 1208) * 0.5);
+  const edgeOffset = gutterRight >= 82 ? Math.min(92, gutterRight * 0.78) : Math.max(40, Math.min(68, w * 0.048));
+  const treeH = Math.round(Math.min(485, Math.max(305, h * 0.55)));
+  const treeR = Math.round(Math.min(118, Math.max(78, treeH * 0.244)));
+  return {
+    isMobile: false,
+    anchorX: w - edgeOffset,
+    baseY: h - 24,
+    treeH,
+    treeR
+  };
+}
+
+function buildGlowSprite(innerColor, midColor, outerColor, size) {
+  const c = document.createElement("canvas");
+  c.width = size;
+  c.height = size;
+  const gctx = c.getContext("2d");
+  if (!gctx) return c;
+  const half = size * 0.5;
+  const grad = gctx.createRadialGradient(half, half, 0, half, half, half);
+  grad.addColorStop(0, innerColor);
+  grad.addColorStop(0.28, midColor);
+  grad.addColorStop(1, outerColor);
+  gctx.fillStyle = grad;
+  gctx.fillRect(0, 0, size, size);
+  return c;
+}
+
+function getChristmasTreeSprites(isDark) {
+  const key = isDark ? "dark" : "light";
+  if (christmasTreeState.sprites && christmasTreeState.spriteThemeKey === key) {
+    return christmasTreeState.sprites;
+  }
+  const starGlow = buildGlowSprite(
+    "rgba(255, 251, 214, 0.96)",
+    isDark ? "rgba(255, 215, 0, 0.42)" : "rgba(245, 158, 11, 0.34)",
+    "rgba(255, 215, 0, 0)",
+    72
+  );
+  const bulbSpecs = isDark
+    ? {
+        gold: ["rgba(255, 253, 224, 1)", "rgba(255, 213, 79, 0.52)", "rgba(255, 213, 79, 0)"],
+        red: ["rgba(255, 232, 232, 1)", "rgba(255, 59, 48, 0.48)", "rgba(255, 59, 48, 0)"],
+        green: ["rgba(220, 255, 232, 1)", "rgba(34, 197, 94, 0.46)", "rgba(34, 197, 94, 0)"],
+        blue: ["rgba(224, 244, 255, 1)", "rgba(56, 189, 248, 0.48)", "rgba(56, 189, 248, 0)"],
+        yellow: ["rgba(255, 255, 220, 1)", "rgba(250, 204, 21, 0.5)", "rgba(250, 204, 21, 0)"]
+      }
+    : {
+        gold: ["rgba(255, 252, 225, 1)", "rgba(245, 158, 11, 0.44)", "rgba(245, 158, 11, 0)"],
+        red: ["rgba(255, 235, 235, 1)", "rgba(220, 38, 38, 0.42)", "rgba(220, 38, 38, 0)"],
+        green: ["rgba(220, 252, 231, 1)", "rgba(22, 163, 74, 0.4)", "rgba(22, 163, 74, 0)"],
+        blue: ["rgba(224, 242, 254, 1)", "rgba(37, 99, 235, 0.42)", "rgba(37, 99, 235, 0)"],
+        yellow: ["rgba(254, 249, 195, 1)", "rgba(234, 179, 8, 0.44)", "rgba(234, 179, 8, 0)"]
+      };
+  const bulbs = {};
+  Object.keys(bulbSpecs).forEach((k) => {
+    const s = bulbSpecs[k];
+    bulbs[k] = buildGlowSprite(s[0], s[1], s[2], 32);
+  });
+  christmasTreeState.sprites = { starGlow, bulbs };
+  christmasTreeState.spriteThemeKey = key;
+  return christmasTreeState.sprites;
+}
+
+function coneRadiusAtHeight(u) {
+  const taper = Math.max(0.02, Math.pow(1 - u, 0.94));
+  const whorl = (1 - u) * 7.5;
+  const frac = whorl - Math.floor(whorl);
+  const boughFlare = 0.84 + 0.25 * (1 - frac);
+  return taper * boughFlare;
+}
+
+function buildChristmasTreeGeometry(isMobile) {
+  const rng = createSeededTreeRng(20261225);
+  const items = [];
+  const goldenAngle = 2.399963229728653;
+
+  // 1. Conical layered emerald foliage particles (#004225 .. #4CAF50 + frost hints)
+  const foliageCount = isMobile ? 480 : 980;
+  for (let i = 0; i < foliageCount; i++) {
+    const u = Math.pow(i / foliageCount, 0.74);
+    const angle = i * goldenAngle + (rng() - 0.5) * 0.26;
+    const shell = 0.24 + 0.76 * Math.pow(rng(), 0.42);
+    const rNorm = coneRadiusAtHeight(u) * shell;
+    const toneRoll = rng();
+    const tone = toneRoll < 0.42 ? 0 : (toneRoll < 0.74 ? 1 : (toneRoll < 0.93 ? 2 : 3));
+    items.push({
+      kind: "needle",
+      u: Math.max(0.01, Math.min(0.99, u + (rng() - 0.5) * 0.025)),
+      rNorm,
+      angle,
+      size: (isMobile ? 2.1 : 2.35) + rng() * 2.35,
+      tone,
+      phase: rng() * Math.PI * 2
+    });
+  }
+
+  // 2. Spiraling multicolor FairyLights (#FF0000, #00FF00, #0000FF, #FFFF00, warm #FFD54F)
+  const bulbKeys = ["gold", "red", "yellow", "blue", "green"];
+  const bulbColors = { gold: "#FFD54F", red: "#FF2D2D", yellow: "#FFEB3B", blue: "#38BDF8", green: "#22C55E" };
+  const lightCount = isMobile ? 48 : 96;
+  const strandTurns = 5.2;
+  for (let i = 0; i < lightCount; i++) {
+    const strand = i % 2;
+    const u = 0.045 + (i / lightCount) * 0.9;
+    const angle = u * Math.PI * 2 * strandTurns + strand * Math.PI + (rng() - 0.5) * 0.14;
+    const rNorm = coneRadiusAtHeight(u) * 1.035;
+    const key = bulbKeys[i % bulbKeys.length];
+    items.push({
+      kind: "light",
+      u,
+      rNorm,
+      angle,
+      key,
+      coreColor: bulbColors[key],
+      size: isMobile ? 2.2 + rng() * 0.8 : 2.6 + rng() * 1.1,
+      phase: rng() * Math.PI * 2,
+      speed: 2.0 + rng() * 2.2
+    });
+  }
+
+  // 3. Orbiting Polaroid photo cards (#FFFAF0 frame + pastel interior memory)
+  const polaroidCount = isMobile ? 6 : 12;
+  const pastelColors = ["#F0E68C", "#E6E6FA", "#FFB6C1", "#98FB98", "#B0E0E6", "#FFE4E1"];
+  for (let i = 0; i < polaroidCount; i++) {
+    const u = 0.14 + (i / polaroidCount) * 0.66;
+    const angle = i * 2.15 + 0.4;
+    const rNorm = coneRadiusAtHeight(u) * 1.11;
+    items.push({
+      kind: "polaroid",
+      u,
+      rNorm,
+      angle,
+      innerColor: pastelColors[i % pastelColors.length],
+      swayPhase: rng() * Math.PI * 2,
+      baseTilt: (rng() - 0.5) * 0.34,
+      scale: isMobile ? 0.72 : (0.88 + rng() * 0.24)
+    });
+  }
+
+  // 4. Gifts at the skirt + Luxury Baubles
+  const giftPalettes = [
+    { box: "#D32F2F", lid: "#EF4444", ribbon: "#FFD700" },
+    { box: "#1976D2", lid: "#3B82F6", ribbon: "#FFD700" },
+    { box: "#D97706", lid: "#FBBF24", ribbon: "#D32F2F" },
+    { box: "#15803D", lid: "#22C55E", ribbon: "#FFFBEB" }
+  ];
+  const baseGiftCount = isMobile ? 5 : 9;
+  for (let i = 0; i < baseGiftCount; i++) {
+    const angle = (i / baseGiftCount) * Math.PI * 2 + 0.25;
+    const rNorm = 0.68 + rng() * 0.36;
+    items.push({
+      kind: "gift",
+      u: 0.02 + rng() * 0.055,
+      rNorm,
+      angle,
+      palette: giftPalettes[i % giftPalettes.length],
+      size: isMobile ? 6.5 + rng() * 2.2 : 8.5 + rng() * 3.5,
+      bobPhase: rng() * Math.PI * 2
+    });
+  }
+  const baubleColors = ["#D32F2F", "#FFD700", "#1976D2", "#F59E0B"];
+  const baubleCount = isMobile ? 10 : 20;
+  for (let i = 0; i < baubleCount; i++) {
+    const u = 0.14 + (i / baubleCount) * 0.74;
+    const angle = i * 2.72 + 1.1;
+    items.push({
+      kind: "bauble",
+      u,
+      rNorm: coneRadiusAtHeight(u) * 0.98,
+      angle,
+      color: baubleColors[i % baubleColors.length],
+      size: isMobile ? 3.2 : 4.2 + rng() * 1.1
+    });
+  }
+
+  // 5. Ambient floating silver/gold sparkles
+  const sparkleCount = isMobile ? 12 : 24;
+  for (let i = 0; i < sparkleCount; i++) {
+    items.push({
+      kind: "sparkle",
+      u: rng() * 1.04,
+      rNorm: (0.45 + rng() * 0.88) * Math.max(0.24, coneRadiusAtHeight(Math.min(0.95, rng()))),
+      angle: rng() * Math.PI * 2,
+      speedY: 0.055 + rng() * 0.075,
+      size: 1.4 + rng() * 1.7,
+      phase: rng() * Math.PI * 2,
+      isGold: rng() > 0.42
+    });
+  }
+
+  christmasTreeState.items = items;
+  christmasTreeState.projected = new Array(items.length);
+}
+
+function drawFacetedTopStar(ctx, cx, cy, outerR, rotY, isDark, sprites) {
+  const glowSize = outerR * 4.6;
+  ctx.save();
+  ctx.globalAlpha = isDark ? 0.92 : 0.78;
+  ctx.drawImage(sprites.starGlow, cx - glowSize * 0.5, cy - glowSize * 0.5, glowSize, glowSize);
+
+  const cosY = Math.cos(rotY);
+  const scaleX = Math.sign(cosY || 1) * Math.max(0.28, Math.abs(cosY));
+  const innerR = outerR * 0.44;
+
+  // Compute rotated 5-point star perimeter around apex
+  const pts = [];
+  for (let i = 0; i < 10; i++) {
+    const a = (i * Math.PI) / 5 - Math.PI / 2;
+    const r = (i % 2 === 0) ? outerR : innerR;
+    pts.push({
+      x: cx + Math.cos(a) * r * scaleX,
+      y: cy + Math.sin(a) * r
+    });
+  }
+
+  // Extruded side depth offset gives chunky 3D luxury gold silhouette
+  const depthShift = -Math.sin(rotY) * outerR * 0.18;
+  ctx.globalAlpha = 1;
+  ctx.beginPath();
+  for (let i = 0; i < pts.length; i++) {
+    const p = pts[i];
+    if (i === 0) ctx.moveTo(p.x + depthShift, p.y);
+    else ctx.lineTo(p.x + depthShift, p.y);
+  }
+  ctx.closePath();
+  ctx.fillStyle = "#B45309";
+  ctx.fill();
+
+  // Faceted gold front planes alternating bright pure gold & warm amber gold
+  for (let i = 0; i < 10; i++) {
+    const p1 = pts[i];
+    const p2 = pts[(i + 1) % 10];
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.lineTo(p1.x, p1.y);
+    ctx.lineTo(p2.x, p2.y);
+    ctx.closePath();
+    const bright = (i % 2 === 0);
+    ctx.fillStyle = bright ? "#FFD700" : "#F59E0B";
+    ctx.fill();
+  }
+
+  // Crisp gold specular outline + center pinpoint gleam
+  ctx.strokeStyle = isDark ? "#FFFBEB" : "#D97706";
+  ctx.lineWidth = isDark ? 0.8 : 0.9;
+  ctx.lineJoin = "round";
+  ctx.beginPath();
+  pts.forEach((p, idx) => (idx === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y)));
+  ctx.closePath();
+  ctx.stroke();
+
+  ctx.fillStyle = "#FFFBEB";
+  ctx.beginPath();
+  ctx.arc(cx, cy, Math.max(1.5, outerR * 0.16), 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+}
+
+function resizeChristmasTreeCanvas() {
+  const canvas = christmasTreeState.canvas;
+  if (!canvas) return;
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const w = window.innerWidth;
+  const h = window.innerHeight;
+  const wasMobile = christmasTreeState.width > 0 && christmasTreeState.width <= 760;
+  const isMobile = w <= 760;
+  christmasTreeState.width = w;
+  christmasTreeState.height = h;
+  canvas.width = Math.max(1, Math.floor(w * dpr));
+  canvas.height = Math.max(1, Math.floor(h * dpr));
+  const ctx = canvas.getContext("2d");
+  if (ctx) {
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    christmasTreeState.ctx = ctx;
+  }
+  if (!christmasTreeState.items.length || wasMobile !== isMobile) {
+    buildChristmasTreeGeometry(isMobile);
+  }
+}
+
+function renderChristmasTreeFrame(nowMs) {
+  if (!isChristmas2026Season() || !christmasSnowState.enabled || christmasSnowState.reducedMotion || document.hidden) {
+    christmasTreeState.rafId = null;
+    christmasTreeState.lastMs = 0;
+    if (christmasTreeState.ctx && christmasTreeState.width && christmasTreeState.height) {
+      christmasTreeState.ctx.clearRect(0, 0, christmasTreeState.width, christmasTreeState.height);
+    }
+    return;
+  }
+
+  const ctx = christmasTreeState.ctx;
+  const w = christmasTreeState.width;
+  const h = christmasTreeState.height;
+  if (!ctx || !w || !h) {
+    christmasTreeState.rafId = requestAnimationFrame(renderChristmasTreeFrame);
+    return;
+  }
+
+  const dt = christmasTreeState.lastMs ? Math.min(0.05, Math.max(0.004, (nowMs - christmasTreeState.lastMs) / 1000)) : 0.016;
+  christmasTreeState.lastMs = nowMs;
+  christmasTreeState.timeSec += dt;
+  christmasTreeState.rotation = (christmasTreeState.rotation + dt * 0.32) % (Math.PI * 2);
+  christmasTreeState.starRotation = (christmasTreeState.starRotation + dt * 0.92) % (Math.PI * 2);
+
+  ctx.clearRect(0, 0, w, h);
+
+  const isDark = christmasTreeState.isDark;
+  const layout = getChristmasTreeLayout(w, h);
+  const { anchorX, baseY, treeH, treeR } = layout;
+  const sprites = getChristmasTreeSprites(isDark);
+  const rot = christmasTreeState.rotation;
+  const t = christmasTreeState.timeSec;
+  const fov = 560;
+  const tiltSin = 0.11;
+  const tiltCos = 0.9939;
+
+  // Grounding emerald/gold shadow aura underneath base skirt
+  const baseAura = ctx.createRadialGradient(anchorX, baseY + 2, 4, anchorX, baseY + 2, treeR * 1.18);
+  if (isDark) {
+    baseAura.addColorStop(0, "rgba(0, 66, 37, 0.38)");
+    baseAura.addColorStop(0.55, "rgba(255, 213, 79, 0.1)");
+    baseAura.addColorStop(1, "rgba(0, 0, 0, 0)");
+  } else {
+    baseAura.addColorStop(0, "rgba(15, 23, 42, 0.14)");
+    baseAura.addColorStop(0.6, "rgba(0, 66, 37, 0.07)");
+    baseAura.addColorStop(1, "rgba(15, 23, 42, 0)");
+  }
+  ctx.save();
+  ctx.scale(1, 0.32);
+  ctx.fillStyle = baseAura;
+  ctx.beginPath();
+  ctx.arc(anchorX, (baseY + 2) / 0.32, treeR * 1.18, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+
+  // Soft volumetric emerald inner axis shadow (organic core without hard geometric triangle edges)
+  const coreGlow = ctx.createRadialGradient(anchorX, baseY - treeH * 0.42, treeR * 0.12, anchorX, baseY - treeH * 0.4, treeH * 0.52);
+  if (isDark) {
+    coreGlow.addColorStop(0, "rgba(0, 66, 37, 0.36)");
+    coreGlow.addColorStop(0.6, "rgba(255, 213, 79, 0.05)");
+    coreGlow.addColorStop(1, "rgba(0, 0, 0, 0)");
+  } else {
+    coreGlow.addColorStop(0, "rgba(0, 66, 37, 0.12)");
+    coreGlow.addColorStop(1, "rgba(0, 66, 37, 0)");
+  }
+  ctx.fillStyle = coreGlow;
+  ctx.beginPath();
+  ctx.ellipse(anchorX, baseY - treeH * 0.42, treeR * 0.85, treeH * 0.48, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // 3D project all items with Y-rotation + slight forward downward camera tilt
+  const items = christmasTreeState.items;
+  const proj = christmasTreeState.projected;
+  const foliagePaletteDark = ["#004225", "#146c43", "#2E7D32", "#81C784"];
+  const foliagePaletteLight = ["#003820", "#004D2B", "#15683E", "#2E7D32"];
+  const foliagePalette = isDark ? foliagePaletteDark : foliagePaletteLight;
+
+  for (let i = 0; i < items.length; i++) {
+    const it = items[i];
+    const u = it.kind === "sparkle" ? ((it.u + t * it.speedY) % 1.05) : it.u;
+    const swayAngle = it.angle + rot + (it.kind === "sparkle" ? t * 0.22 : 0);
+    const radius = it.rNorm * treeR;
+    const x3 = Math.cos(swayAngle) * radius;
+    const z3 = Math.sin(swayAngle) * radius;
+    const yRel = (0.42 - u) * treeH;
+    const y3Tilt = yRel * tiltCos - z3 * tiltSin;
+    const z3Tilt = yRel * tiltSin + z3 * tiltCos;
+    const persp = fov / (fov + z3Tilt);
+    const sx = anchorX + x3 * persp;
+    const sy = (baseY - treeH * 0.42) + y3Tilt * persp;
+
+    let slot = proj[i];
+    if (!slot) {
+      slot = {};
+      proj[i] = slot;
+    }
+    slot.item = it;
+    slot.sx = sx;
+    slot.sy = sy;
+    slot.z = z3Tilt;
+    slot.persp = persp;
+    slot.angle = swayAngle;
+  }
+
+  proj.sort((a, b) => b.z - a.z);
+
+  for (let i = 0; i < proj.length; i++) {
+    const p = proj[i];
+    const it = p.item;
+    const persp = p.persp;
+    const depthNorm = Math.max(0.32, Math.min(1, 0.72 - p.z / (treeR * 2.2)));
+
+    if (it.kind === "needle") {
+      const r = it.size * persp;
+      const shimmer = it.tone === 3 ? (0.65 + 0.35 * Math.sin(t * 2.4 + it.phase)) : 1;
+      ctx.globalAlpha = (isDark ? 0.88 : 0.86) * depthNorm * shimmer;
+      ctx.fillStyle = foliagePalette[it.tone];
+      ctx.beginPath();
+      ctx.arc(p.sx, p.sy, r, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (it.kind === "light") {
+      const pulse = 0.42 + 0.58 * Math.pow(0.5 + 0.5 * Math.sin(t * it.speed + it.phase), 1.4);
+      const glowRadius = it.size * (3.8 + pulse * 1.4) * persp;
+      const sprite = sprites.bulbs[it.key];
+      ctx.globalAlpha = (isDark ? 0.9 : 0.78) * depthNorm * (0.55 + pulse * 0.45);
+      ctx.drawImage(sprite, p.sx - glowRadius, p.sy - glowRadius, glowRadius * 2, glowRadius * 2);
+      ctx.fillStyle = it.coreColor;
+      ctx.beginPath();
+      ctx.arc(p.sx, p.sy, Math.max(1.2, it.size * 0.58 * persp), 0, Math.PI * 2);
+      ctx.fill();
+    } else if (it.kind === "polaroid") {
+      const pw = (layout.isMobile ? 9 : 11.5) * it.scale * persp;
+      const ph = pw * 1.24;
+      const sway = it.baseTilt + Math.sin(t * 1.45 + it.swayPhase) * 0.14;
+      ctx.save();
+      ctx.translate(p.sx, p.sy);
+      ctx.rotate(sway);
+      ctx.globalAlpha = (0.76 + 0.24 * depthNorm);
+      ctx.fillStyle = isDark ? "rgba(0, 0, 0, 0.35)" : "rgba(15, 23, 42, 0.18)";
+      ctx.fillRect(-pw * 0.5 + 1.2, -ph * 0.5 + 1.5, pw, ph);
+      ctx.fillStyle = "#FFFAF0";
+      ctx.fillRect(-pw * 0.5, -ph * 0.5, pw, ph);
+      if (!isDark) {
+        ctx.strokeStyle = "rgba(15, 23, 42, 0.16)";
+        ctx.lineWidth = 0.6;
+        ctx.strokeRect(-pw * 0.5, -ph * 0.5, pw, ph);
+      }
+      ctx.fillStyle = it.innerColor;
+      const pad = pw * 0.12;
+      ctx.fillRect(-pw * 0.5 + pad, -ph * 0.5 + pad, pw - pad * 2, ph * 0.68);
+      ctx.restore();
+    } else if (it.kind === "gift") {
+      const s = it.size * persp;
+      const bob = Math.sin(t * 1.6 + it.bobPhase) * 1.2;
+      const gx = p.sx - s * 0.5;
+      const gy = p.sy - s * 0.5 + bob;
+      ctx.save();
+      ctx.globalAlpha = 0.76 + 0.24 * depthNorm;
+      ctx.fillStyle = it.palette.box;
+      ctx.fillRect(gx, gy + s * 0.2, s, s * 0.8);
+      ctx.fillStyle = it.palette.lid;
+      ctx.fillRect(gx - 0.8, gy, s + 1.6, s * 0.26);
+      ctx.fillStyle = it.palette.ribbon;
+      ctx.fillRect(p.sx - s * 0.11, gy, s * 0.22, s);
+      ctx.fillRect(gx, gy + s * 0.52, s, s * 0.16);
+      ctx.restore();
+    } else if (it.kind === "bauble") {
+      const r = it.size * persp;
+      ctx.save();
+      ctx.globalAlpha = (0.78 + 0.22 * depthNorm);
+      ctx.fillStyle = it.color;
+      ctx.beginPath();
+      ctx.arc(p.sx, p.sy, r, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "rgba(255, 255, 255, 0.72)";
+      ctx.beginPath();
+      ctx.arc(p.sx - r * 0.32, p.sy - r * 0.34, Math.max(0.8, r * 0.32), 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    } else if (it.kind === "sparkle") {
+      const tw = 0.35 + 0.65 * Math.abs(Math.sin(t * 2.8 + it.phase));
+      ctx.globalAlpha = tw * (isDark ? 0.85 : 0.72);
+      ctx.fillStyle = it.isGold ? "#FFD700" : (isDark ? "#ECEFF1" : "#94A3B8");
+      const r = it.size * persp * tw;
+      ctx.beginPath();
+      ctx.moveTo(p.sx, p.sy - r * 1.6);
+      ctx.lineTo(p.sx + r * 0.55, p.sy);
+      ctx.lineTo(p.sx, p.sy + r * 1.6);
+      ctx.lineTo(p.sx - r * 0.55, p.sy);
+      ctx.closePath();
+      ctx.fill();
+    }
+  }
+  ctx.globalAlpha = 1;
+
+  // Faceted rotating #FFD700 TopStar crowning apex
+  const starYOffset = Math.sin(t * 2.0) * 2.2;
+  const starY = (baseY - treeH) - (layout.isMobile ? 9 : 13) + starYOffset;
+  const starOuterR = layout.isMobile ? 14 : 21;
+  drawFacetedTopStar(ctx, anchorX, starY, starOuterR, christmasTreeState.starRotation, isDark, sprites);
+
+  christmasTreeState.rafId = requestAnimationFrame(renderChristmasTreeFrame);
 }
 
 function renderChristmasSnowFrame() {
@@ -21212,6 +21738,17 @@ function startOrStopChristmasSnowLoop() {
     christmasSnowState.rafId = null;
     if (christmasSnowState.ctx && christmasSnowState.width && christmasSnowState.height) {
       christmasSnowState.ctx.clearRect(0, 0, christmasSnowState.width, christmasSnowState.height);
+    }
+  }
+  if (shouldRun && !christmasTreeState.rafId && christmasTreeState.canvas) {
+    christmasTreeState.lastMs = 0;
+    christmasTreeState.rafId = requestAnimationFrame(renderChristmasTreeFrame);
+  } else if (!shouldRun && christmasTreeState.rafId) {
+    cancelAnimationFrame(christmasTreeState.rafId);
+    christmasTreeState.rafId = null;
+    christmasTreeState.lastMs = 0;
+    if (christmasTreeState.ctx && christmasTreeState.width && christmasTreeState.height) {
+      christmasTreeState.ctx.clearRect(0, 0, christmasTreeState.width, christmasTreeState.height);
     }
   }
 }
@@ -21453,6 +21990,7 @@ function initChristmasSeasonEffects() {
   christmasSnowState.initialized = true;
 
   christmasSnowState.canvas = $("#christmasSnowCanvas");
+  christmasTreeState.canvas = $("#christmasTreeCanvas");
   christmasSnowState.enabled = getChristmasEffectsEnabled();
   updateChristmasSnowTheme();
 
@@ -21521,5 +22059,4 @@ function initChristmasSeasonEffects() {
 }
 
 initChristmasSeasonEffects();
-
 
