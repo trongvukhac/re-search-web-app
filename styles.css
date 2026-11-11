@@ -716,6 +716,7 @@ select:focus-visible {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 10px;
   padding: 7px 10px;
   border-radius: 8px;
   cursor: pointer;
@@ -15083,6 +15084,12 @@ body.dark-theme .doc-viewer-save-btn.is-saved {
   background-size: 100% 100%;
 }
 
+.mini-card-frame-layer[data-frame="phep_mau_mua_dong"] {
+  background-image: url("frames/v2/phep_mau_mua_dong.png?v=1");
+  inset: calc(-66px * var(--mini-scale)) calc(-60px * var(--mini-scale)) calc(-86px * var(--mini-scale)) calc(-62px * var(--mini-scale));
+  background-size: 100% 100%;
+}
+
 /* Khung cơ bản miễn phí - Scale độ dày viền theo chuẩn công thức 12px * scale, bo góc 60px * scale */
 .mini-card-frame-layer[data-frame^="basic_"] {
   inset: 0px;
@@ -15206,7 +15213,8 @@ body.dark-theme .doc-viewer-save-btn.is-saved {
 }
 
 /* Khi có khung nghệ thuật vươn ra ngoài, nâng huy chương lên cao hơn để nằm ngoài hẳn hoa văn của khung */
-.arena-champion-card.mini-namecard[data-frame="gold"] .champ-top-medal-anchor {
+.arena-champion-card.mini-namecard[data-frame="gold"] .champ-top-medal-anchor,
+.arena-champion-card.mini-namecard[data-frame="phep_mau_mua_dong"] .champ-top-medal-anchor {
   margin-bottom: calc(68px * var(--mini-scale));
 }
 .arena-champion-card.mini-namecard[data-frame="stars"] .champ-top-medal-anchor,
@@ -17117,7 +17125,8 @@ body.dark-theme .comp-tab-btn.active {
     margin-bottom: 6px !important;
   }
 
-  .arena-champion-card.mini-namecard[data-frame="gold"] .champ-top-medal-anchor {
+  .arena-champion-card.mini-namecard[data-frame="gold"] .champ-top-medal-anchor,
+  .arena-champion-card.mini-namecard[data-frame="phep_mau_mua_dong"] .champ-top-medal-anchor {
     margin-bottom: calc(68px * var(--mini-scale)) !important;
   }
   .arena-champion-card.mini-namecard[data-frame="stars"] .champ-top-medal-anchor,
@@ -20110,6 +20119,12 @@ dialog.modal.namecard-modal {
   background-size: 100% 100%;
 }
 
+.namecard-frame-layer[data-frame="phep_mau_mua_dong"] {
+  background-image: url("frames/v2/phep_mau_mua_dong.png?v=1");
+  inset: -66px -60px -86px -62px;
+  background-size: 100% 100%;
+}
+
 /* Khung cơ bản miễn phí (độ dày 12px, bo góc ngoài 60px - bo góc trong chuẩn công thức: 60px - 12px = 48px) */
 .namecard-frame-layer[data-frame^="basic_"] {
   inset: 0px;
@@ -20258,6 +20273,11 @@ dialog.modal.namecard-modal {
 
 .frame-choice-preview[data-frame-preview="bua_tiec_ma_mi"] {
   background-image: url("frames/v2/thumbs/bua_tiec_ma_mi.png?v=1");
+  background-size: 100% 100%;
+}
+
+.frame-choice-preview[data-frame-preview="phep_mau_mua_dong"] {
+  background-image: url("frames/v2/thumbs/phep_mau_mua_dong.png?v=1");
   background-size: 100% 100%;
 }
 
@@ -28059,6 +28079,149 @@ body.dark-theme #documentPickerModal .doc-picker-item-meta {
   white-space: nowrap;
 }
 
+/* Shared Frosted Glass Theme Tokens (Header Pills + Post Detail Capsules) */
+header#siteHeader.site-header,
+#postDetail .post-detail-top-nav,
+#postDetail .post-detail-pinned-reply {
+  --glass-bg: rgba(255, 255, 255, 0.72);
+  --glass-bg-elevated: rgba(255, 255, 255, 0.9);
+  --glass-border: rgba(15, 23, 42, 0.08);
+  --glass-border-strong: rgba(15, 23, 42, 0.14);
+  --glass-highlight: rgba(255, 255, 255, 0.94);
+  --glass-shadow:
+    0 12px 32px -10px rgba(10, 44, 30, 0.14),
+    0 4px 12px -4px rgba(10, 44, 30, 0.06);
+  --glass-brand-ink: #0f172a;
+  --glass-colon: #059669;
+  --glass-nav-ink: #475569;
+  --glass-nav-ink-hover: #0a2c1e;
+  --glass-nav-hover-bg: rgba(15, 23, 42, 0.055);
+  --glass-nav-pill-bg: linear-gradient(135deg, rgba(16, 185, 129, 0.17), rgba(5, 150, 105, 0.1));
+  --glass-nav-pill-border: rgba(5, 150, 105, 0.28);
+  --glass-nav-active-ink: #064e3b;
+  --glass-accent-dot: #10b981;
+  --glass-control-bg: rgba(255, 255, 255, 0.62);
+  --glass-control-hover-bg: rgba(255, 255, 255, 0.96);
+  --glass-control-border: rgba(15, 23, 42, 0.08);
+  --glass-badge-bg: rgba(16, 185, 129, 0.12);
+  --glass-badge-ink: #047857;
+  --glass-popover-bg: rgba(255, 255, 255, 0.92);
+  --glass-ease: cubic-bezier(0.32, 0.72, 0, 1);
+  --glass-dur: 0.38s;
+}
+
+[data-user-theme="ruby"] header#siteHeader.site-header,
+[data-user-theme="ruby"] #postDetail .post-detail-top-nav,
+[data-user-theme="ruby"] #postDetail .post-detail-pinned-reply {
+  --glass-bg: rgba(255, 245, 247, 0.74);
+  --glass-bg-elevated: rgba(255, 249, 250, 0.92);
+  --glass-border: rgba(225, 29, 72, 0.15);
+  --glass-border-strong: rgba(225, 29, 72, 0.24);
+  --glass-shadow:
+    0 12px 32px -10px rgba(159, 18, 57, 0.15),
+    0 4px 12px -4px rgba(159, 18, 57, 0.06);
+  --glass-colon: #e11d48;
+  --glass-nav-ink-hover: #881337;
+  --glass-nav-hover-bg: rgba(225, 29, 72, 0.06);
+  --glass-nav-pill-bg: linear-gradient(135deg, rgba(225, 29, 72, 0.16), rgba(244, 63, 94, 0.1));
+  --glass-nav-pill-border: rgba(225, 29, 72, 0.3);
+  --glass-nav-active-ink: #881337;
+  --glass-accent-dot: #e11d48;
+  --glass-badge-bg: rgba(225, 29, 72, 0.12);
+  --glass-badge-ink: #be123c;
+  --glass-popover-bg: rgba(255, 248, 250, 0.94);
+}
+
+[data-user-theme="mythic"] header#siteHeader.site-header,
+[data-user-theme="mythic"] #postDetail .post-detail-top-nav,
+[data-user-theme="mythic"] #postDetail .post-detail-pinned-reply {
+  --glass-bg: rgba(250, 245, 255, 0.74);
+  --glass-bg-elevated: rgba(252, 249, 255, 0.92);
+  --glass-border: rgba(124, 58, 237, 0.17);
+  --glass-border-strong: rgba(124, 58, 237, 0.26);
+  --glass-shadow:
+    0 12px 32px -10px rgba(109, 40, 217, 0.16),
+    0 4px 12px -4px rgba(109, 40, 217, 0.07);
+  --glass-colon: #7c3aed;
+  --glass-nav-ink-hover: #4c1d95;
+  --glass-nav-hover-bg: rgba(124, 58, 237, 0.07);
+  --glass-nav-pill-bg: linear-gradient(135deg, rgba(139, 92, 246, 0.18), rgba(168, 85, 247, 0.11));
+  --glass-nav-pill-border: rgba(124, 58, 237, 0.3);
+  --glass-nav-active-ink: #4c1d95;
+  --glass-accent-dot: #7c3aed;
+  --glass-badge-bg: rgba(124, 58, 237, 0.12);
+  --glass-badge-ink: #6d28d9;
+  --glass-popover-bg: rgba(250, 246, 255, 0.94);
+}
+
+body.dark-theme header#siteHeader.site-header,
+body.dark-theme #postDetail .post-detail-top-nav,
+body.dark-theme #postDetail .post-detail-pinned-reply {
+  --glass-bg: rgba(17, 24, 31, 0.68);
+  --glass-bg-elevated: rgba(22, 31, 41, 0.86);
+  --glass-border: rgba(255, 255, 255, 0.14);
+  --glass-border-strong: rgba(255, 255, 255, 0.2);
+  --glass-highlight: rgba(255, 255, 255, 0.12);
+  --glass-shadow:
+    0 14px 36px -8px rgba(0, 0, 0, 0.54),
+    0 2px 8px rgba(0, 0, 0, 0.28);
+  --glass-brand-ink: #f8fafc;
+  --glass-colon: #34d399;
+  --glass-nav-ink: #94a3b8;
+  --glass-nav-ink-hover: #f8fafc;
+  --glass-nav-hover-bg: rgba(255, 255, 255, 0.08);
+  --glass-nav-pill-bg: linear-gradient(135deg, rgba(52, 211, 153, 0.22), rgba(16, 185, 129, 0.12));
+  --glass-nav-pill-border: rgba(52, 211, 153, 0.36);
+  --glass-nav-active-ink: #a7f3d0;
+  --glass-accent-dot: #34d399;
+  --glass-control-bg: rgba(255, 255, 255, 0.06);
+  --glass-control-hover-bg: rgba(255, 255, 255, 0.15);
+  --glass-control-border: rgba(255, 255, 255, 0.13);
+  --glass-badge-bg: rgba(52, 211, 153, 0.18);
+  --glass-badge-ink: #6ee7b7;
+  --glass-popover-bg: rgba(15, 21, 28, 0.92);
+}
+
+[data-user-theme="ruby"] body.dark-theme header#siteHeader.site-header,
+[data-user-theme="ruby"] body.dark-theme #postDetail .post-detail-top-nav,
+[data-user-theme="ruby"] body.dark-theme #postDetail .post-detail-pinned-reply {
+  --glass-bg: rgba(24, 15, 20, 0.72);
+  --glass-bg-elevated: rgba(33, 20, 27, 0.88);
+  --glass-border: rgba(244, 63, 94, 0.24);
+  --glass-border-strong: rgba(251, 113, 133, 0.34);
+  --glass-shadow:
+    0 14px 36px -8px rgba(0, 0, 0, 0.58),
+    0 2px 12px rgba(244, 63, 94, 0.16);
+  --glass-colon: #fb7185;
+  --glass-nav-pill-bg: linear-gradient(135deg, rgba(244, 63, 94, 0.24), rgba(225, 29, 72, 0.14));
+  --glass-nav-pill-border: rgba(251, 113, 133, 0.38);
+  --glass-nav-active-ink: #fecdd3;
+  --glass-accent-dot: #fb7185;
+  --glass-badge-bg: rgba(244, 63, 94, 0.2);
+  --glass-badge-ink: #fda4af;
+  --glass-popover-bg: rgba(22, 13, 18, 0.94);
+}
+
+[data-user-theme="mythic"] body.dark-theme header#siteHeader.site-header,
+[data-user-theme="mythic"] body.dark-theme #postDetail .post-detail-top-nav,
+[data-user-theme="mythic"] body.dark-theme #postDetail .post-detail-pinned-reply {
+  --glass-bg: rgba(21, 15, 36, 0.72);
+  --glass-bg-elevated: rgba(30, 21, 50, 0.88);
+  --glass-border: rgba(167, 139, 250, 0.25);
+  --glass-border-strong: rgba(196, 181, 253, 0.35);
+  --glass-shadow:
+    0 14px 36px -8px rgba(0, 0, 0, 0.6),
+    0 2px 12px rgba(139, 92, 246, 0.22);
+  --glass-colon: #a78bfa;
+  --glass-nav-pill-bg: linear-gradient(135deg, rgba(167, 139, 250, 0.24), rgba(139, 92, 246, 0.14));
+  --glass-nav-pill-border: rgba(196, 181, 253, 0.38);
+  --glass-nav-active-ink: #ede9fe;
+  --glass-accent-dot: #c4b5fd;
+  --glass-badge-bg: rgba(167, 139, 250, 0.2);
+  --glass-badge-ink: #ddd6fe;
+  --glass-popover-bg: rgba(19, 13, 33, 0.94);
+}
+
 @media (min-width: 801px) and (min-height: 521px) {
   html {
     scroll-padding-top: 84px;
@@ -28072,37 +28235,7 @@ body.dark-theme #documentPickerModal .doc-picker-item-meta {
     padding-top: 0 !important;
   }
 
-  .post-detail-top-nav {
-    top: 76px;
-  }
-
   header#siteHeader.site-header {
-    --glass-bg: rgba(255, 255, 255, 0.72);
-    --glass-bg-elevated: rgba(255, 255, 255, 0.9);
-    --glass-border: rgba(15, 23, 42, 0.08);
-    --glass-border-strong: rgba(15, 23, 42, 0.14);
-    --glass-highlight: rgba(255, 255, 255, 0.94);
-    --glass-shadow:
-      0 12px 32px -10px rgba(10, 44, 30, 0.14),
-      0 4px 12px -4px rgba(10, 44, 30, 0.06);
-    --glass-brand-ink: #0f172a;
-    --glass-colon: #059669;
-    --glass-nav-ink: #475569;
-    --glass-nav-ink-hover: #0a2c1e;
-    --glass-nav-hover-bg: rgba(15, 23, 42, 0.055);
-    --glass-nav-pill-bg: linear-gradient(135deg, rgba(16, 185, 129, 0.17), rgba(5, 150, 105, 0.1));
-    --glass-nav-pill-border: rgba(5, 150, 105, 0.28);
-    --glass-nav-active-ink: #064e3b;
-    --glass-accent-dot: #10b981;
-    --glass-control-bg: rgba(255, 255, 255, 0.62);
-    --glass-control-hover-bg: rgba(255, 255, 255, 0.96);
-    --glass-control-border: rgba(15, 23, 42, 0.08);
-    --glass-badge-bg: rgba(16, 185, 129, 0.12);
-    --glass-badge-ink: #047857;
-    --glass-popover-bg: rgba(255, 255, 255, 0.92);
-    --glass-ease: cubic-bezier(0.32, 0.72, 0, 1);
-    --glass-dur: 0.38s;
-
     position: fixed;
     top: 14px;
     left: 0;
@@ -28120,109 +28253,6 @@ body.dark-theme #documentPickerModal .doc-picker-item-meta {
     pointer-events: none;
     cursor: default;
     z-index: 1000;
-  }
-
-  /* Theme-specific Frosted Glass Palettes (Light + Dark) */
-  [data-user-theme="ruby"] header#siteHeader.site-header {
-    --glass-bg: rgba(255, 245, 247, 0.74);
-    --glass-bg-elevated: rgba(255, 249, 250, 0.92);
-    --glass-border: rgba(225, 29, 72, 0.15);
-    --glass-border-strong: rgba(225, 29, 72, 0.24);
-    --glass-shadow:
-      0 12px 32px -10px rgba(159, 18, 57, 0.15),
-      0 4px 12px -4px rgba(159, 18, 57, 0.06);
-    --glass-colon: #e11d48;
-    --glass-nav-ink-hover: #881337;
-    --glass-nav-hover-bg: rgba(225, 29, 72, 0.06);
-    --glass-nav-pill-bg: linear-gradient(135deg, rgba(225, 29, 72, 0.16), rgba(244, 63, 94, 0.1));
-    --glass-nav-pill-border: rgba(225, 29, 72, 0.3);
-    --glass-nav-active-ink: #881337;
-    --glass-accent-dot: #e11d48;
-    --glass-badge-bg: rgba(225, 29, 72, 0.12);
-    --glass-badge-ink: #be123c;
-    --glass-popover-bg: rgba(255, 248, 250, 0.94);
-  }
-
-  [data-user-theme="mythic"] header#siteHeader.site-header {
-    --glass-bg: rgba(250, 245, 255, 0.74);
-    --glass-bg-elevated: rgba(252, 249, 255, 0.92);
-    --glass-border: rgba(124, 58, 237, 0.17);
-    --glass-border-strong: rgba(124, 58, 237, 0.26);
-    --glass-shadow:
-      0 12px 32px -10px rgba(109, 40, 217, 0.16),
-      0 4px 12px -4px rgba(109, 40, 217, 0.07);
-    --glass-colon: #7c3aed;
-    --glass-nav-ink-hover: #4c1d95;
-    --glass-nav-hover-bg: rgba(124, 58, 237, 0.07);
-    --glass-nav-pill-bg: linear-gradient(135deg, rgba(139, 92, 246, 0.18), rgba(168, 85, 247, 0.11));
-    --glass-nav-pill-border: rgba(124, 58, 237, 0.3);
-    --glass-nav-active-ink: #4c1d95;
-    --glass-accent-dot: #7c3aed;
-    --glass-badge-bg: rgba(124, 58, 237, 0.12);
-    --glass-badge-ink: #6d28d9;
-    --glass-popover-bg: rgba(250, 246, 255, 0.94);
-  }
-
-  body.dark-theme header#siteHeader.site-header {
-    --glass-bg: rgba(17, 24, 31, 0.68);
-    --glass-bg-elevated: rgba(22, 31, 41, 0.86);
-    --glass-border: rgba(255, 255, 255, 0.14);
-    --glass-border-strong: rgba(255, 255, 255, 0.2);
-    --glass-highlight: rgba(255, 255, 255, 0.12);
-    --glass-shadow:
-      0 14px 36px -8px rgba(0, 0, 0, 0.54),
-      0 2px 8px rgba(0, 0, 0, 0.28);
-    --glass-brand-ink: #f8fafc;
-    --glass-colon: #34d399;
-    --glass-nav-ink: #94a3b8;
-    --glass-nav-ink-hover: #f8fafc;
-    --glass-nav-hover-bg: rgba(255, 255, 255, 0.08);
-    --glass-nav-pill-bg: linear-gradient(135deg, rgba(52, 211, 153, 0.22), rgba(16, 185, 129, 0.12));
-    --glass-nav-pill-border: rgba(52, 211, 153, 0.36);
-    --glass-nav-active-ink: #a7f3d0;
-    --glass-accent-dot: #34d399;
-    --glass-control-bg: rgba(255, 255, 255, 0.06);
-    --glass-control-hover-bg: rgba(255, 255, 255, 0.15);
-    --glass-control-border: rgba(255, 255, 255, 0.13);
-    --glass-badge-bg: rgba(52, 211, 153, 0.18);
-    --glass-badge-ink: #6ee7b7;
-    --glass-popover-bg: rgba(15, 21, 28, 0.92);
-  }
-
-  [data-user-theme="ruby"] body.dark-theme header#siteHeader.site-header {
-    --glass-bg: rgba(24, 15, 20, 0.72);
-    --glass-bg-elevated: rgba(33, 20, 27, 0.88);
-    --glass-border: rgba(244, 63, 94, 0.24);
-    --glass-border-strong: rgba(251, 113, 133, 0.34);
-    --glass-shadow:
-      0 14px 36px -8px rgba(0, 0, 0, 0.58),
-      0 2px 12px rgba(244, 63, 94, 0.16);
-    --glass-colon: #fb7185;
-    --glass-nav-pill-bg: linear-gradient(135deg, rgba(244, 63, 94, 0.24), rgba(225, 29, 72, 0.14));
-    --glass-nav-pill-border: rgba(251, 113, 133, 0.38);
-    --glass-nav-active-ink: #fecdd3;
-    --glass-accent-dot: #fb7185;
-    --glass-badge-bg: rgba(244, 63, 94, 0.2);
-    --glass-badge-ink: #fda4af;
-    --glass-popover-bg: rgba(22, 13, 18, 0.94);
-  }
-
-  [data-user-theme="mythic"] body.dark-theme header#siteHeader.site-header {
-    --glass-bg: rgba(21, 15, 36, 0.72);
-    --glass-bg-elevated: rgba(30, 21, 50, 0.88);
-    --glass-border: rgba(167, 139, 250, 0.25);
-    --glass-border-strong: rgba(196, 181, 253, 0.35);
-    --glass-shadow:
-      0 14px 36px -8px rgba(0, 0, 0, 0.6),
-      0 2px 12px rgba(139, 92, 246, 0.22);
-    --glass-colon: #a78bfa;
-    --glass-nav-pill-bg: linear-gradient(135deg, rgba(167, 139, 250, 0.24), rgba(139, 92, 246, 0.14));
-    --glass-nav-pill-border: rgba(196, 181, 253, 0.38);
-    --glass-nav-active-ink: #ede9fe;
-    --glass-accent-dot: #c4b5fd;
-    --glass-badge-bg: rgba(167, 139, 250, 0.2);
-    --glass-badge-ink: #ddd6fe;
-    --glass-popover-bg: rgba(19, 13, 33, 0.94);
   }
 
   header#siteHeader .site-header-inner {
@@ -28893,6 +28923,741 @@ body.dark-theme #documentPickerModal .doc-picker-item-meta {
   header#siteHeader .quick-menu-btn {
     transition-property: color, background-color, border-color;
     transition-duration: 0.14s;
+    transform: none !important;
+  }
+}
+
+/* ==========================================================================
+   CHRISTMAS 2026 SEASONAL DECORATIONS, SNOW CANVAS & SITE-WIDE BGM WIDGET
+   Active from 2026-11-11 until 2026-12-31 23:59:59+07:00
+   ========================================================================== */
+
+body:not(.christmas-season) .xmas-seasonal-control,
+body:not(.christmas-season) #christmasSnowCanvas,
+body:not(.christmas-season) .christmas-santa-hat,
+body:not(.christmas-season) .christmas-header-garland {
+  display: none !important;
+}
+
+/* Fullscreen non-blocking snow layer sits above regular cards/bg, strictly below headers/nav/modals */
+#christmasSnowCanvas.christmas-snow-canvas {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 45;
+  opacity: 1;
+  transition: opacity 0.35s ease;
+}
+
+body.christmas-effects-off #christmasSnowCanvas.christmas-snow-canvas {
+  display: none;
+}
+
+html.study-mode-active #christmasSnowCanvas.christmas-snow-canvas {
+  opacity: 0.45;
+}
+
+body.arena-quiz-active #christmasSnowCanvas.christmas-snow-canvas {
+  opacity: 0.22;
+}
+
+/* Header Santa hat on brand logo without triggering overflow:hidden clip */
+.brand-mark {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+body.christmas-season:not(.christmas-effects-off) header#siteHeader .brand-mark,
+body.christmas-season:not(.christmas-effects-off) .brand-mark {
+  overflow: visible !important;
+}
+
+body.christmas-season:not(.christmas-effects-off) .brand-mark img {
+  border-radius: 9999px;
+}
+
+.christmas-santa-hat {
+  display: none;
+}
+
+body.christmas-season:not(.christmas-effects-off) .christmas-santa-hat {
+  display: block;
+  position: absolute;
+  top: -11px;
+  left: -5px;
+  width: 24px;
+  height: 18px;
+  transform: rotate(-16deg);
+  pointer-events: none;
+  z-index: 4;
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.22));
+}
+
+body.christmas-effects-off .christmas-santa-hat,
+body.christmas-effects-off .christmas-header-garland {
+  display: none !important;
+}
+
+/* Subtle header fairy garland along bottom edge of header (GPU opacity-only) */
+.christmas-header-garland {
+  display: none;
+}
+
+body.christmas-season:not(.christmas-effects-off) .christmas-header-garland {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  top: 0;
+  width: min(92vw, 1120px);
+  height: 12px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 2px 26px 0;
+  pointer-events: none;
+  z-index: 2;
+  opacity: 0.92;
+}
+
+.christmas-header-garland .xmas-bulb {
+  width: 5px;
+  height: 7px;
+  border-radius: 50% 50% 60% 60%;
+  opacity: 0.65;
+  will-change: opacity;
+}
+
+.christmas-header-garland .xmas-bulb.b1 {
+  background: #f59e0b;
+  box-shadow: 0 2px 6px rgba(245, 158, 11, 0.55);
+}
+
+.christmas-header-garland .xmas-bulb.b2 {
+  background: #ef4444;
+  box-shadow: 0 2px 6px rgba(239, 68, 68, 0.5);
+}
+
+.christmas-header-garland .xmas-bulb.b3 {
+  background: #10b981;
+  box-shadow: 0 2px 6px rgba(16, 185, 129, 0.5);
+}
+
+.christmas-header-garland .xmas-bulb.b4 {
+  background: #7dd3fc;
+  box-shadow: 0 2px 6px rgba(125, 211, 252, 0.55);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  body.christmas-season:not(.christmas-effects-off) .christmas-header-garland .xmas-bulb.b1,
+  body.christmas-season:not(.christmas-effects-off) .christmas-header-garland .xmas-bulb.b3 {
+    animation: xmasBulbBreathe 4.2s ease-in-out infinite alternate;
+  }
+
+  body.christmas-season:not(.christmas-effects-off) .christmas-header-garland .xmas-bulb.b2,
+  body.christmas-season:not(.christmas-effects-off) .christmas-header-garland .xmas-bulb.b4 {
+    animation: xmasBulbBreathe 4.8s ease-in-out 1.4s infinite alternate;
+  }
+}
+
+@keyframes xmasBulbBreathe {
+  0% {
+    opacity: 0.42;
+  }
+  100% {
+    opacity: 0.95;
+  }
+}
+
+/* Subtle festive winter frost accent on Home spotlight cards (zero click blocking) */
+body.christmas-season:not(.christmas-effects-off) #homeContributionCard,
+body.christmas-season:not(.christmas-effects-off) #weeklyCompetitionModule {
+  position: relative;
+}
+
+body.christmas-season:not(.christmas-effects-off) #homeContributionCard::before,
+body.christmas-season:not(.christmas-effects-off) #weeklyCompetitionModule::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 14px;
+  right: 14px;
+  height: 3px;
+  border-radius: 0 0 6px 6px;
+  background: linear-gradient(
+    90deg,
+    rgba(220, 38, 38, 0.72) 0%,
+    rgba(255, 255, 255, 0.9) 25%,
+    rgba(16, 185, 129, 0.72) 50%,
+    rgba(251, 191, 36, 0.85) 75%,
+    rgba(220, 38, 38, 0.72) 100%
+  );
+  pointer-events: none;
+  z-index: 2;
+  opacity: 0.85;
+}
+
+body.christmas-season:not(.christmas-effects-off) #bannerStackCard {
+  box-shadow: 0 12px 30px -10px rgba(18, 63, 49, 0.2), 0 0 0 1px rgba(248, 113, 113, 0.18);
+}
+
+html.dark-theme body.christmas-season:not(.christmas-effects-off) #bannerStackCard,
+body.dark-theme.christmas-season:not(.christmas-effects-off) #bannerStackCard {
+  box-shadow: 0 14px 34px -8px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(125, 211, 252, 0.2);
+}
+
+/* Mobile Floating Island frosted winter highlight (stays transparent to taps) */
+@media (max-width: 760px) {
+  body.christmas-season:not(.christmas-effects-off) .christmas-header-garland {
+    width: calc(100vw - 24px);
+    padding: 2px 12px 0;
+  }
+
+  body.christmas-season:not(.christmas-effects-off) .christmas-santa-hat {
+    top: -10px;
+    left: -4px;
+    width: 22px;
+    height: 16px;
+  }
+
+  body.christmas-season:not(.christmas-effects-off) .mobile-nav {
+    box-shadow: 0 -1px 0 rgba(255, 255, 255, 0.65) inset, 0 12px 32px rgba(18, 61, 48, 0.16);
+  }
+}
+
+/* Persistent Site-Wide Christmas BGM & Snow Controller (Liquid Glass Pill) */
+.christmas-floating-widget {
+  position: fixed;
+  left: max(18px, env(safe-area-inset-left, 0px));
+  bottom: calc(18px + env(safe-area-inset-bottom, 0px));
+  z-index: 98;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 4px;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.84);
+  backdrop-filter: blur(18px) saturate(165%);
+  -webkit-backdrop-filter: blur(18px) saturate(165%);
+  border: 1px solid rgba(220, 38, 38, 0.2);
+  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.85);
+  color: var(--ink, #123d30);
+  transition: opacity 0.22s ease, transform 0.22s ease, background 0.2s ease, border-color 0.2s ease;
+}
+
+.christmas-floating-widget.is-hidden-for-context {
+  opacity: 0;
+  transform: translateY(16px);
+  pointer-events: none;
+}
+
+html.dark-theme .christmas-floating-widget,
+body.dark-theme .christmas-floating-widget {
+  background: rgba(18, 25, 34, 0.84);
+  border-color: rgba(125, 211, 252, 0.22);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.48), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  color: #f1f5f9;
+}
+
+.xmas-widget-music-btn,
+.xmas-widget-snow-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border: none;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  border-radius: 9999px;
+  min-height: 36px;
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  transition: background 0.18s ease, color 0.18s ease, transform 0.15s ease;
+}
+
+.xmas-widget-music-btn {
+  padding: 0 12px;
+}
+
+.xmas-widget-snow-btn {
+  width: 36px;
+  padding: 0;
+  color: var(--muted, #64748b);
+}
+
+.xmas-widget-music-btn:hover,
+.xmas-widget-snow-btn:hover {
+  background: rgba(18, 61, 48, 0.08);
+}
+
+html.dark-theme .xmas-widget-music-btn:hover,
+html.dark-theme .xmas-widget-snow-btn:hover,
+body.dark-theme .xmas-widget-music-btn:hover,
+body.dark-theme .xmas-widget-snow-btn:hover {
+  background: rgba(255, 255, 255, 0.09);
+}
+
+.xmas-widget-music-btn.is-playing {
+  background: linear-gradient(135deg, rgba(220, 38, 38, 0.14), rgba(16, 185, 129, 0.14));
+  color: #b91c1c;
+}
+
+html.dark-theme .xmas-widget-music-btn.is-playing,
+body.dark-theme .xmas-widget-music-btn.is-playing {
+  background: linear-gradient(135deg, rgba(248, 113, 113, 0.22), rgba(52, 211, 153, 0.18));
+  color: #fda4af;
+}
+
+.xmas-widget-snow-btn.active {
+  color: #0284c7;
+  background: rgba(14, 165, 233, 0.1);
+}
+
+html.dark-theme .xmas-widget-snow-btn.active,
+body.dark-theme .xmas-widget-snow-btn.active {
+  color: #7dd3fc;
+  background: rgba(125, 211, 252, 0.14);
+}
+
+.xmas-widget-sep {
+  width: 1px;
+  height: 20px;
+  background: rgba(100, 116, 139, 0.22);
+  flex-shrink: 0;
+}
+
+.xmas-music-eq {
+  display: none;
+  align-items: flex-end;
+  gap: 2px;
+  height: 12px;
+}
+
+.xmas-widget-music-btn.is-playing .xmas-music-icon {
+  display: none;
+}
+
+.xmas-widget-music-btn.is-playing .xmas-music-eq {
+  display: inline-flex;
+}
+
+.xmas-music-eq span {
+  width: 2.5px;
+  border-radius: 2px;
+  background: currentColor;
+  height: 6px;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .xmas-widget-music-btn.is-playing .xmas-music-eq span:nth-child(1) {
+    animation: xmasEqBar 0.9s ease-in-out infinite alternate;
+  }
+  .xmas-widget-music-btn.is-playing .xmas-music-eq span:nth-child(2) {
+    animation: xmasEqBar 0.65s ease-in-out 0.2s infinite alternate;
+  }
+  .xmas-widget-music-btn.is-playing .xmas-music-eq span:nth-child(3) {
+    animation: xmasEqBar 0.8s ease-in-out 0.35s infinite alternate;
+  }
+}
+
+@keyframes xmasEqBar {
+  0% { transform: scaleY(0.45); opacity: 0.7; }
+  100% { transform: scaleY(1.3); opacity: 1; }
+}
+
+.xmas-theme-preset-btn {
+  border-color: rgba(220, 38, 38, 0.35) !important;
+  color: #b91c1c !important;
+}
+
+html.dark-theme .xmas-theme-preset-btn,
+body.dark-theme .xmas-theme-preset-btn {
+  border-color: rgba(248, 113, 113, 0.38) !important;
+  color: #fca5a5 !important;
+}
+
+/* Mobile Layout & WCAG Touch Targets (44x44 minimum, clear of Floating Island .mobile-nav & .mobile-fab) */
+@media (max-width: 760px), (pointer: coarse) {
+  .xmas-widget-music-btn,
+  .xmas-widget-snow-btn {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
+
+@media (max-width: 760px) {
+  .christmas-floating-widget {
+    left: max(14px, env(safe-area-inset-left, 0px));
+    bottom: calc(86px + env(safe-area-inset-bottom, 0px));
+    padding: 3px;
+  }
+
+  html.study-mode-active .christmas-floating-widget {
+    bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .xmas-widget-label {
+    max-width: 116px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 12px;
+  }
+
+  .xmas-widget-music-btn {
+    padding: 0 11px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .christmas-header-garland .xmas-bulb,
+  .xmas-music-eq span {
+    animation: none !important;
+  }
+}
+
+/* ==========================================================================
+   POST DETAIL: LIQUID GLASS & FULL-PILL COHESIVE SYSTEM
+   Harmonizes top toolbar, docked reading bar, card actions & reply capsule
+   ========================================================================== */
+#postDetail .post-detail-top-nav-slot {
+  position: relative;
+  width: 100%;
+  margin-bottom: 16px;
+  overflow-anchor: none;
+}
+
+#postDetail .post-detail-top-nav {
+  margin: 0 !important;
+  padding: 5px 6px !important;
+  min-height: 48px;
+  height: 48px;
+  gap: 8px;
+  border-radius: 9999px !important;
+  display: flex;
+  align-items: center;
+  align-items: safe center;
+  justify-content: space-between;
+  background: var(--glass-bg) !important;
+  backdrop-filter: blur(22px) saturate(185%);
+  -webkit-backdrop-filter: blur(22px) saturate(185%);
+  border: 1px solid var(--glass-border) !important;
+  box-shadow: inset 0 1px 0 var(--glass-highlight), var(--glass-shadow) !important;
+  box-sizing: border-box;
+  will-change: transform, opacity;
+}
+
+#postDetail .post-detail-breadcrumb {
+  min-width: 0;
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 12px;
+  border-radius: 9999px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--glass-nav-ink);
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+#postDetail .post-detail-breadcrumb .bc-prefix {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+#postDetail #postDetailBreadcrumbTopic {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--glass-nav-ink-hover);
+  font-weight: 600;
+}
+
+#postDetail .post-detail-top-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: 0 0 auto;
+}
+
+#postDetail .post-detail-top-nav button,
+#postDetail .back-to-forum-btn,
+#postDetail .post-detail-share-btn,
+#postDetail .post-detail-save-btn {
+  height: 36px;
+  min-height: 36px;
+  padding: 0 14px;
+  border-radius: 9999px !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  flex-shrink: 0;
+  background: var(--glass-control-bg) !important;
+  border: 1px solid var(--glass-control-border) !important;
+  color: var(--glass-nav-ink-hover) !important;
+  box-shadow: none !important;
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease,
+    transform 0.18s ease-out;
+}
+
+#postDetail .post-detail-top-nav button:hover,
+#postDetail .back-to-forum-btn:hover,
+#postDetail .post-detail-share-btn:hover,
+#postDetail .post-detail-save-btn:hover {
+  background: var(--glass-control-hover-bg) !important;
+  border-color: var(--glass-border-strong) !important;
+  color: var(--glass-nav-active-ink) !important;
+  transform: translateY(-1px);
+}
+
+#postDetail .back-to-forum-btn:hover .back-arrow {
+  transform: translateX(-2px);
+}
+
+#postDetail .back-to-forum-btn .back-arrow {
+  transition: transform 0.2s ease-out;
+}
+
+#postDetail .post-detail-top-nav button:active,
+#postDetail .back-to-forum-btn:active,
+#postDetail .post-detail-share-btn:active,
+#postDetail .post-detail-save-btn:active {
+  transform: scale(0.95) !important;
+}
+
+#postDetail .post-detail-top-nav button:focus-visible,
+#postDetail .back-to-forum-btn:focus-visible,
+#postDetail .post-detail-share-btn:focus-visible,
+#postDetail .post-detail-save-btn:focus-visible {
+  outline: 2px solid var(--glass-accent-dot);
+  outline-offset: 2px;
+}
+
+#postDetail .post-detail-save-btn.is-saved {
+  background: var(--glass-nav-pill-bg) !important;
+  border-color: var(--glass-nav-pill-border) !important;
+  color: var(--glass-nav-active-ink) !important;
+}
+
+/* Softly round post detail card, card action pills & floating composer */
+#postDetail .post-detail-card {
+  border-radius: 22px;
+}
+
+#postDetail .detail-actions .button-sm,
+#postDetail .detail-actions .button-outline,
+#postDetail .detail-action-frame,
+#postDetail .post-linked-doc-actions .button {
+  border-radius: 9999px;
+}
+
+#postDetail .post-detail-pinned-reply {
+  border-radius: 9999px;
+  padding: 6px 8px;
+  background: var(--glass-bg) !important;
+  backdrop-filter: blur(22px) saturate(185%);
+  -webkit-backdrop-filter: blur(22px) saturate(185%);
+  border: 1px solid var(--glass-border) !important;
+  box-shadow: inset 0 1px 0 var(--glass-highlight), var(--glass-shadow) !important;
+  transition:
+    border-radius 0.28s ease-out,
+    padding 0.24s ease-out,
+    background 0.24s ease,
+    border-color 0.24s ease,
+    box-shadow 0.24s ease;
+}
+
+#postDetail .post-detail-pinned-reply:has(.reply-bar.expanded) {
+  border-radius: 22px;
+  padding: 14px 16px;
+}
+
+#postDetail .post-detail-pinned-reply .reply-bar.collapsed .reply-pill {
+  border-radius: 9999px;
+  background: var(--glass-control-bg) !important;
+  border: 1px solid var(--glass-control-border) !important;
+}
+
+#postDetail .post-detail-pinned-reply .reply-bar.collapsed .ql-container {
+  border-radius: 9999px;
+}
+
+#postDetail .post-detail-pinned-reply .reply-avatar-dropdown {
+  margin-bottom: 0;
+  padding-left: 2px;
+}
+
+#postDetail .post-detail-pinned-reply .reply-bar.collapsed {
+  align-items: center;
+}
+
+#postDetail .post-detail-pinned-reply .btn-send {
+  border-radius: 9999px;
+}
+
+#postDetail .post-detail-pinned-reply .btn-expand-tools,
+#postDetail .post-detail-pinned-reply .btn-collapse-tools {
+  border-radius: 9999px;
+}
+
+/* Desktop Floating Header Integration (aligns cleanly at top: 14px when compact) */
+@media (min-width: 801px) and (min-height: 521px) {
+  #postDetail.post-detail-page {
+    padding-top: 16px !important;
+  }
+
+  #postDetail .post-detail-top-nav-slot {
+    min-height: 48px;
+    height: 48px;
+    margin-bottom: 16px;
+  }
+
+  #postDetail .post-detail-top-nav:not(.is-header-docked) {
+    position: relative;
+    top: auto;
+    left: auto;
+    width: 100%;
+    transform: none;
+    z-index: 90;
+  }
+
+  #postDetail .post-detail-top-nav.is-header-docked {
+    position: fixed;
+    top: 14px;
+    left: var(--detail-dock-cx, 50%);
+    width: var(--detail-dock-w, min(740px, calc(100vw - 440px)));
+    max-width: calc(100vw - 44px);
+    transform: translate3d(-50%, 0, 0) scale(1);
+    z-index: 1001;
+    pointer-events: auto;
+    opacity: 1;
+    transition:
+      opacity 0.22s ease,
+      transform 0.36s cubic-bezier(0.22, 1, 0.36, 1),
+      width 0.24s ease-out,
+      background 0.24s ease,
+      border-color 0.24s ease;
+  }
+
+  #postDetail .post-detail-top-nav.is-header-docked.is-peek-suppressed {
+    opacity: 0 !important;
+    pointer-events: none !important;
+    transform: translate3d(-50%, -10px, 0) scale(0.95) !important;
+  }
+
+  body.detail-dock-tight #postDetail .post-detail-top-nav.is-header-docked .post-detail-breadcrumb .bc-prefix {
+    display: none;
+  }
+
+  body.detail-dock-tight #postDetail .post-detail-top-nav.is-header-docked button {
+    padding: 0 11px;
+    font-size: 12.5px;
+  }
+
+  body.detail-dock-compact-bc #postDetail .post-detail-top-nav.is-header-docked .post-detail-breadcrumb {
+    display: none;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    #postDetail .post-detail-top-nav.is-header-docked {
+      transition:
+        opacity 0.22s ease,
+        transform 0.44s cubic-bezier(0.22, 1, 0.36, 1),
+        width 0.28s ease-out,
+        background 0.24s ease,
+        border-color 0.24s ease;
+      transition:
+        opacity 0.22s ease,
+        transform 0.44s linear(0, 0.24, 0.68, 0.96, 1.03, 1.01, 0.997, 1),
+        width 0.28s ease-out,
+        background 0.24s ease,
+        border-color 0.24s ease;
+      animation: detailDockPop 0.42s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+    }
+  }
+}
+
+/* Mobile Sticky Full-Pill Post Detail Top Bar */
+@media (max-width: 800px), (max-height: 520px) {
+  #postDetail .post-detail-top-nav-slot {
+    margin-bottom: 12px;
+  }
+
+  #postDetail .post-detail-top-nav {
+    position: sticky;
+    top: calc(70px + env(safe-area-inset-top, 0px));
+    height: 44px;
+    min-height: 44px;
+    padding: 4px 5px !important;
+    z-index: 500;
+  }
+
+  #postDetail .post-detail-breadcrumb {
+    display: none;
+  }
+
+  #postDetail .post-detail-top-nav button,
+  #postDetail .back-to-forum-btn,
+  #postDetail .post-detail-share-btn,
+  #postDetail .post-detail-save-btn {
+    height: 34px;
+    min-height: 34px;
+    padding: 0 12px;
+    font-size: 12px;
+  }
+
+  #postDetail .post-detail-card {
+    border-radius: 16px;
+  }
+
+  #postDetail .post-detail-pinned-reply {
+    padding: 6px 8px;
+  }
+}
+
+@keyframes detailDockPop {
+  0% {
+    opacity: 0;
+    transform: translate3d(-50%, -12px, 0) scale(0.96);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(-50%, 0, 0) scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #postDetail .post-detail-top-nav,
+  #postDetail .post-detail-top-nav.is-header-docked,
+  #postDetail .post-detail-top-nav button,
+  #postDetail .post-detail-pinned-reply {
+    animation: none !important;
+    transition-property: opacity, color, background-color, border-color;
+    transition-duration: 0.14s;
+  }
+
+  #postDetail .post-detail-top-nav button:hover,
+  #postDetail .post-detail-top-nav button:active {
     transform: none !important;
   }
 }

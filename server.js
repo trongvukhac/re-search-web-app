@@ -208,6 +208,13 @@ db.exec(`
     expires_at TEXT NOT NULL,
     PRIMARY KEY (user_id, item_type, item_id)
   );
+  CREATE TABLE IF NOT EXISTS user_event_login_days (
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    event_id TEXT NOT NULL,
+    login_date TEXT NOT NULL,
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (user_id, event_id, login_date)
+  );
   CREATE TABLE IF NOT EXISTS study_sessions (
     user_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
     goal TEXT,
@@ -2075,8 +2082,51 @@ function formatDMY(date) {
 // KHUNG & ẢNH BÌA HOẠT ĐỘNG GIỚI HẠN (LIMITED EVENT ITEMS)
 // =========================================================================
 
-const LIMITED_COVER_IDS = new Set(["ton_vinh_phai_dep", "bua_tiec_ma_mi", "chinh_phuc_bau_troi"]);
-const LIMITED_FRAME_IDS = new Set(["ton_vinh_phai_dep", "bua_tiec_ma_mi", "chinh_phuc_bau_troi"]);
+const CHRISTMAS_2026_START_YMD = "2026-11-11";
+const CHRISTMAS_2026_END_YMD = "2026-12-31";
+const CHRISTMAS_2026_EXPIRES_AT = "2026-12-31T23:59:59+07:00";
+
+function isChristmas2026Window(vnDate = getVietnamNow()) {
+  const ymd = formatYMD(vnDate);
+  return ymd >= CHRISTMAS_2026_START_YMD && ymd <= CHRISTMAS_2026_END_YMD;
+}
+
+function isChristmas2026Expired(vnDate = getVietnamNow()) {
+  return formatYMD(vnDate) > CHRISTMAS_2026_END_YMD;
+}
+
+const recordedEventLoginCache = new Set();
+
+function recordEventLoginDay(userId, eventId = "phep_mau_mua_dong") {
+  if (!userId) return 0;
+  const vnNow = getVietnamNow();
+  const ymd = formatYMD(vnNow);
+  if (ymd >= CHRISTMAS_2026_START_YMD && ymd <= CHRISTMAS_2026_END_YMD) {
+    const cacheKey = `${userId}:${eventId}:${ymd}`;
+    if (!recordedEventLoginCache.has(cacheKey)) {
+      db.prepare(`
+        INSERT OR IGNORE INTO user_event_login_days (user_id, event_id, login_date)
+        VALUES (?, ?, ?)
+      `).run(userId, eventId, ymd);
+      recordedEventLoginCache.add(cacheKey);
+      if (recordedEventLoginCache.size > 10000) recordedEventLoginCache.clear();
+    }
+  }
+  return getEventLoginDaysCount(userId, eventId);
+}
+
+function getEventLoginDaysCount(userId, eventId = "phep_mau_mua_dong") {
+  if (!userId) return 0;
+  const row = db.prepare(`
+    SELECT COUNT(*) AS cnt
+    FROM user_event_login_days
+    WHERE user_id = ? AND event_id = ? AND login_date >= ? AND login_date <= ?
+  `).get(userId, eventId, CHRISTMAS_2026_START_YMD, CHRISTMAS_2026_END_YMD);
+  return Number(row?.cnt || 0);
+}
+
+const LIMITED_COVER_IDS = new Set(["ton_vinh_phai_dep", "bua_tiec_ma_mi", "chinh_phuc_bau_troi", "phep_mau_mua_dong"]);
+const LIMITED_FRAME_IDS = new Set(["ton_vinh_phai_dep", "bua_tiec_ma_mi", "chinh_phuc_bau_troi", "phep_mau_mua_dong"]);
 
 // Đặc quyền khung và ảnh bìa theo chuỗi (Mở khóa theo ngày, duy trì thì "Khả dụng", đứt chuỗi thì đếm ngược hạn giờ)
 const STREAK_PERK_ITEMS = [
@@ -2128,6 +2178,17 @@ const LIMITED_THEMES = [
     frameId: "chinh_phuc_bau_troi",
     durationDays: 30,
     isEligible: () => false // Kích hoạt có điều kiện qua Đấu trường tuần 09/11 - 15/11 lúc 01:00 CN 15/11
+  },
+  {
+    id: "phep_mau_mua_dong",
+    name: "Phép màu mùa đông",
+    coverId: "phep_mau_mua_dong",
+    frameId: "phep_mau_mua_dong",
+    fixedExpiresAt: CHRISTMAS_2026_EXPIRES_AT,
+    isEligible: (vnDate, userId) => {
+      if (!isChristmas2026Window(vnDate)) return false;
+      return getEventLoginDaysCount(userId, "phep_mau_mua_dong") >= 3;
+    }
   }
 ];
 
@@ -2322,8 +2383,8 @@ function sweepExpiredUserDecorations() {
       SELECT id FROM users 
       WHERE role NOT IN ('admin', 'ta') 
         AND (
-          namecard_frame IN ('ton_vinh_phai_dep', 'bua_tiec_ma_mi', 'chinh_phuc_bau_troi', 'leaves', 'sakura', 'ice', 'stars', 'gold')
-          OR cover_image IN ('ton_vinh_phai_dep', 'bua_tiec_ma_mi', 'chinh_phuc_bau_troi', 'khu_rung_tri_thuc', 'mua_anh_dao_no', 'vuong_quoc_mua_dong', 'tinh_tu_sao_troi', 'ky_nguyen_hoang_kim')
+          namecard_frame IN ('ton_vinh_phai_dep', 'bua_tiec_ma_mi', 'chinh_phuc_bau_troi', 'phep_mau_mua_dong', 'leaves', 'sakura', 'ice', 'stars', 'gold')
+          OR cover_image IN ('ton_vinh_phai_dep', 'bua_tiec_ma_mi', 'chinh_phuc_bau_troi', 'phep_mau_mua_dong', 'khu_rung_tri_thuc', 'mua_anh_dao_no', 'vuong_quoc_mua_dong', 'tinh_tu_sao_troi', 'ky_nguyen_hoang_kim')
           OR cover_image LIKE 'data:image/%'
         )
     `).all();
@@ -2342,10 +2403,11 @@ function checkAndGrantLimitedItems(userId) {
 
   // 1. Kiểm tra vật phẩm sự kiện thông thường
   for (const theme of LIMITED_THEMES) {
-    if (typeof theme.isEligible === "function" && theme.isEligible(vnNow)) {
-      const expDate = new Date(vnNow.getTime() + theme.durationDays * 24 * 60 * 60 * 1000);
-      const expiresAt = expDate.toISOString();
-      const unlockedAt = vnNow.toISOString();
+    if (typeof theme.isEligible === "function" && theme.isEligible(vnNow, userId)) {
+      const expiresAt = theme.fixedExpiresAt
+        ? theme.fixedExpiresAt
+        : new Date(vnNow.getTime() + theme.durationDays * 24 * 60 * 60 * 1000).toISOString();
+      const unlockedAt = new Date(getVietnamTimestampMs()).toISOString();
 
       const itemsToGrant = [
         { type: "frame", id: theme.frameId },
@@ -2398,8 +2460,26 @@ function getUserLimitedItemsStatus(userId) {
   const rows = db.prepare(
     "SELECT item_type, item_id, unlocked_at, expires_at FROM user_limited_items WHERE user_id=?"
   ).all(userId);
-  const now = getVietnamNow().getTime();
-  const res = { frames: {}, covers: {}, canUploadCustomCover: false, customCoverRemainingDays: 0, customCoverMaintaining: false };
+  const vnNow = getVietnamNow();
+  const now = getVietnamTimestampMs();
+  const xmasLoginDays = getEventLoginDaysCount(userId, "phep_mau_mua_dong");
+  const xmasExpired = isChristmas2026Expired(vnNow);
+  const res = {
+    frames: {},
+    covers: {},
+    canUploadCustomCover: false,
+    customCoverRemainingDays: 0,
+    customCoverMaintaining: false,
+    eventProgress: {
+      phep_mau_mua_dong: {
+        loginDays: xmasLoginDays,
+        requiredDays: 3,
+        isExpired: xmasExpired,
+        isWindowActive: isChristmas2026Window(vnNow),
+        expiresAt: CHRISTMAS_2026_EXPIRES_AT
+      }
+    }
+  };
 
   const rowMap = new Map();
   for (const r of rows) {
@@ -2408,28 +2488,29 @@ function getUserLimitedItemsStatus(userId) {
 
   // 1. Vật phẩm sự kiện giới hạn
   for (const theme of LIMITED_THEMES) {
+    const isFixedThemeExpired = Boolean(theme.fixedExpiresAt) && (new Date(theme.fixedExpiresAt).getTime() <= now);
     const frameRow = rowMap.get(`frame:${theme.frameId}`);
     if (isPrivileged) {
       res.frames[theme.frameId] = { isUnlocked: true, expiresAt: null, remainingDays: 9999, isPermanent: true, isMaintaining: false };
-    } else if (frameRow) {
+    } else if (frameRow && !isFixedThemeExpired) {
       const expTime = new Date(frameRow.expires_at).getTime();
       const isUnlocked = expTime > now;
       const remainingDays = isUnlocked ? Math.ceil((expTime - now) / (24 * 60 * 60 * 1000)) : 0;
       res.frames[theme.frameId] = { isUnlocked, expiresAt: frameRow.expires_at, remainingDays, isPermanent: false, isMaintaining: false };
     } else {
-      res.frames[theme.frameId] = { isUnlocked: false, expiresAt: null, remainingDays: 0, isPermanent: false, isMaintaining: false };
+      res.frames[theme.frameId] = { isUnlocked: false, expiresAt: frameRow?.expires_at || null, remainingDays: 0, isPermanent: false, isMaintaining: false };
     }
 
     const coverRow = rowMap.get(`cover:${theme.coverId}`);
     if (isPrivileged) {
       res.covers[theme.coverId] = { isUnlocked: true, expiresAt: null, remainingDays: 9999, isPermanent: true, isMaintaining: false };
-    } else if (coverRow) {
+    } else if (coverRow && !isFixedThemeExpired) {
       const expTime = new Date(coverRow.expires_at).getTime();
       const isUnlocked = expTime > now;
       const remainingDays = isUnlocked ? Math.ceil((expTime - now) / (24 * 60 * 60 * 1000)) : 0;
       res.covers[theme.coverId] = { isUnlocked, expiresAt: coverRow.expires_at, remainingDays, isPermanent: false, isMaintaining: false };
     } else {
-      res.covers[theme.coverId] = { isUnlocked: false, expiresAt: null, remainingDays: 0, isPermanent: false, isMaintaining: false };
+      res.covers[theme.coverId] = { isUnlocked: false, expiresAt: coverRow?.expires_at || null, remainingDays: 0, isPermanent: false, isMaintaining: false };
     }
   }
 
@@ -3372,6 +3453,7 @@ async function api(request, response, url) {
       if (!warning) {
         recordUserActivity(session.id);
       }
+      recordEventLoginDay(session.id);
       checkAndGrantLimitedItems(session.id);
     }
     return json(response, 200, {
@@ -3560,8 +3642,11 @@ async function api(request, response, url) {
         .get(result.lastInsertRowid);
       db.prepare("INSERT OR IGNORE INTO user_streak_shields (user_id, shields, last_milestone_rewarded) VALUES (?, 1, 0)").run(user.id);
       logShieldTransaction(user.id, 'add', 1, 1, 'Tặng 1 khiên khởi đầu chào đón thành viên mới');
+      recordEventLoginDay(user.id);
+      checkAndGrantLimitedItems(user.id);
       const csrfToken = createSession(response, user.id, request);
-      return json(response, 201, { user: publicUser(user), csrfToken });
+      const freshRegUser = db.prepare("SELECT * FROM users WHERE id=?").get(user.id);
+      return json(response, 201, { user: publicUser(freshRegUser), csrfToken });
     } catch (e) {
       return error(
         response,
@@ -3595,6 +3680,7 @@ async function api(request, response, url) {
     if (!warning) {
       recordUserActivity(user.id);
     }
+    recordEventLoginDay(user.id);
     checkAndGrantLimitedItems(user.id);
     const csrfToken = createSession(response, user.id, request);
     const freshUser = db.prepare("SELECT * FROM users WHERE id=?").get(user.id);
@@ -9450,7 +9536,39 @@ function serveStatic(request, response, url) {
   } else if ([".css", ".js"].includes(extension)) {
     headers["Cache-Control"] = "public, max-age=3600";
   }
+  const stat = fs.statSync(file);
+  const fileSize = stat.size;
+  const isRangeMedia = [".mp3", ".m4a", ".wav", ".ogg", ".webm"].includes(extension);
+  if (isRangeMedia) {
+    headers["Accept-Ranges"] = "bytes";
+  }
+  const rangeHeader = request.headers.range;
+  if (isRangeMedia && rangeHeader && typeof rangeHeader === "string" && rangeHeader.startsWith("bytes=")) {
+    const parts = rangeHeader.replace(/bytes=/, "").split("-");
+    const start = parts[0] ? parseInt(parts[0], 10) : 0;
+    const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
+    if (Number.isNaN(start) || Number.isNaN(end) || start < 0 || start >= fileSize || end >= fileSize || start > end) {
+      response.writeHead(416, { "Content-Range": `bytes */${fileSize}` });
+      response.end();
+      return;
+    }
+    const chunkSize = (end - start) + 1;
+    headers["Content-Range"] = `bytes ${start}-${end}/${fileSize}`;
+    headers["Content-Length"] = chunkSize;
+    response.writeHead(206, headers);
+    if (request.method === "HEAD") {
+      response.end();
+      return;
+    }
+    fs.createReadStream(file, { start, end }).pipe(response);
+    return;
+  }
+  headers["Content-Length"] = fileSize;
   response.writeHead(200, headers);
+  if (request.method === "HEAD") {
+    response.end();
+    return;
+  }
   fs.createReadStream(file).pipe(response);
 }
 const server = http.createServer(async (request, response) => {

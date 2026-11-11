@@ -29,9 +29,10 @@
     <script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js" defer></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" defer></script>
-    <link rel="stylesheet" href="styles.css?v=153" />
+    <link rel="stylesheet" href="styles.css?v=155" />
   </head>
   <body>
+    <canvas id="christmasSnowCanvas" class="christmas-snow-canvas" aria-hidden="true"></canvas>
     <dialog
       id="documentViewerModal"
       class="doc-viewer-dialog"
@@ -304,11 +305,22 @@
     </dialog>
     <div class="toast" id="toast" popover="manual"></div>
     <header class="site-header" id="siteHeader">
+      <div class="christmas-header-garland" id="christmasHeaderGarland" aria-hidden="true">
+        <span class="xmas-bulb b1"></span><span class="xmas-bulb b2"></span><span class="xmas-bulb b3"></span><span class="xmas-bulb b4"></span>
+        <span class="xmas-bulb b1"></span><span class="xmas-bulb b2"></span><span class="xmas-bulb b3"></span><span class="xmas-bulb b4"></span>
+        <span class="xmas-bulb b1"></span><span class="xmas-bulb b2"></span><span class="xmas-bulb b3"></span><span class="xmas-bulb b4"></span>
+      </div>
       <div class="site-header-inner">
         <a class="brand" href="#home" aria-label="RE:SEARCH Trang chủ">
-          <span class="brand-mark"
-            ><img src="public/assets/research-logo.png" alt=""
-          /></span>
+          <span class="brand-mark">
+            <img src="public/assets/research-logo.png" alt="" />
+            <svg class="christmas-santa-hat" aria-hidden="true" viewBox="0 0 36 28" fill="none">
+              <path d="M5 19C6 10 14 4 24 6C28 7 31 10 31 14C26 12 20 14 17 18L5 19Z" fill="#dc2626"/>
+              <path d="M5 19C12 16 19 15 24 18C20 19 11 20 5 19Z" fill="#b91c1c"/>
+              <rect x="3" y="17.5" width="21" height="5" rx="2.5" fill="#ffffff"/>
+              <circle cx="31.5" cy="14" r="3.2" fill="#ffffff"/>
+            </svg>
+          </span>
           <span>RE<span class="brand-colon">:</span>SEARCH</span>
         </a>
 
@@ -452,6 +464,35 @@
               </div>
             </div>
 
+            <!-- Tùy chọn Không khí & Nhạc Giáng sinh -->
+            <div class="quick-menu-divider xmas-seasonal-control"></div>
+            <div class="quick-menu-theme-row xmas-seasonal-control" id="quickMenuXmasMusicRow" onclick="toggleChristmasMusic(event)" role="menuitem" tabindex="0">
+              <div class="quick-menu-theme-info">
+                <span class="quick-menu-icon theme-icon-indicator" id="quickMenuXmasMusicIcon" aria-hidden="true">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg>
+                </span>
+                <span class="quick-menu-label" id="quickMenuXmasMusicLabel">Nhạc Noel: Tắt</span>
+              </div>
+              <div class="theme-toggle-switch" id="quickMenuXmasMusicToggle" role="switch" aria-checked="false" aria-label="Bật hoặc tắt nhạc nền Giáng sinh">
+                <span class="theme-switch-slider">
+                  <span class="theme-switch-thumb"></span>
+                </span>
+              </div>
+            </div>
+            <div class="quick-menu-theme-row xmas-seasonal-control" id="quickMenuXmasSnowRow" onclick="toggleChristmasEffects(event)" role="menuitem" tabindex="0">
+              <div class="quick-menu-theme-info">
+                <span class="quick-menu-icon theme-icon-indicator" id="quickMenuXmasSnowIcon" aria-hidden="true">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="2" x2="12" y2="22"></line><path d="m17 5-5 5-5-5"></path><path d="m17 19-5-5-5 5"></path><line x1="2" y1="12" x2="22" y2="12"></line><path d="m5 7 5 5-5 5"></path><path d="m19 7-5 5 5 5"></path></svg>
+                </span>
+                <span class="quick-menu-label" id="quickMenuXmasSnowLabel">Tuyết rơi: Bật</span>
+              </div>
+              <div class="theme-toggle-switch active" id="quickMenuXmasSnowToggle" role="switch" aria-checked="true" aria-label="Bật hoặc tắt hiệu ứng tuyết rơi và trang trí Giáng sinh">
+                <span class="theme-switch-slider">
+                  <span class="theme-switch-thumb"></span>
+                </span>
+              </div>
+            </div>
+
             <!-- Vùng đăng xuất dành cho thành viên -->
             <div class="quick-menu-footer" id="quickMenuAuthFooter">
               <div class="quick-menu-divider"></div>
@@ -569,8 +610,12 @@
           <!-- CỘT PHẢI: NGĂN XẾP BANNER THÔNG BÁO (Kích thước chuẩn 430 x 240 px, luân phiên 15s) -->
           <div id="bannerStackCard" class="banner-stack-card" aria-label="Ngăn xếp banner thông báo" title="Kéo ngang để xem các banner khác">
             <div class="banner-track" id="bannerTrack">
+              <!-- Slide 0: Cập nhật Giáng sinh 2026 & Sự kiện Món quà mùa đông (Từ 11/11 đến hết ngày 31/12/2026, không tương tác) -->
+              <div class="banner-slide active no-action" data-banner-id="christmas-2026" data-index="0" style="cursor: default;">
+                <img src="public/assets/banner-christmas-2026.jpg?v=20261111_1" class="banner-image" alt="Giáng sinh an lành RE:SEARCH 2026 — Sự kiện Món quà mùa đông: Phép màu mùa đông" />
+              </div>
               <!-- Slide 1: Bảng Vàng Toàn Đoàn Tuần 04 — Mô Hình Nghiên Cứu (Từ 09/11 đến hết ngày 15/11/2026) -->
-              <div class="banner-slide active no-action" data-banner-id="leaderboard-w04" data-index="0" style="cursor: default;">
+              <div class="banner-slide no-action" data-banner-id="leaderboard-w04" data-index="1" style="cursor: default;">
                 <img src="public/assets/banner-leaderboard-w04.jpg?v=20261109_1" class="banner-image" alt="Bảng Vàng Toàn Đoàn Tuần 04 — Mô Hình Nghiên Cứu" />
               </div>
               <!-- Slide 2: RE:SEARCH Arena Tuần 05 — Mô hình nghiên cứu và tư duy lý thuyết (Từ 09/11 đến hết ngày 15/11/2026) -->
@@ -2182,20 +2227,26 @@
       <!-- POST DETAIL PAGE (TRANG XEM BÀI ĐĂNG RIÊNG BIỆT) -->
       <section id="postDetail" class="page post-detail-page" data-page="post-detail">
         <div class="post-detail-container">
-          <div class="post-detail-top-nav" id="postDetailTopNav">
-            <button type="button" class="button button-outline back-to-forum-btn" id="postDetailBackBtn">
-              <span class="back-arrow">←</span> Quay lại
-            </button>
-            <div class="post-detail-breadcrumb" id="postDetailBreadcrumb">
-              <span>Diễn đàn</span> <span class="bc-sep">/</span> <span id="postDetailBreadcrumbTopic">Thảo luận</span>
-            </div>
-            <div class="post-detail-top-actions">
-              <button type="button" class="button button-outline button-sm post-detail-share-btn" id="postDetailShareBtn" title="Sao chép liên kết bài viết">
-                🔗 Sao chép link
+          <div class="post-detail-top-nav-slot" id="postDetailTopNavSlot">
+            <div class="post-detail-top-nav" id="postDetailTopNav">
+              <button type="button" class="button button-outline back-to-forum-btn" id="postDetailBackBtn">
+                <svg class="back-arrow ui-btn-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+                <span class="detail-btn-label">Quay lại</span>
               </button>
-              <button type="button" class="button button-outline button-sm post-detail-save-btn" id="postDetailSaveBtn" title="Lưu bài viết">
-                ☆ Lưu
-              </button>
+              <div class="post-detail-breadcrumb" id="postDetailBreadcrumb">
+                <span class="bc-prefix"><span>Diễn đàn</span> <span class="bc-sep">/</span></span>
+                <span id="postDetailBreadcrumbTopic">Thảo luận</span>
+              </div>
+              <div class="post-detail-top-actions">
+                <button type="button" class="button button-outline button-sm post-detail-share-btn" id="postDetailShareBtn" title="Sao chép liên kết bài viết">
+                  <svg class="ui-btn-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+                  <span class="detail-btn-label">Sao chép link</span>
+                </button>
+                <button type="button" class="button button-outline button-sm post-detail-save-btn" id="postDetailSaveBtn" title="Lưu bài viết">
+                  <svg class="ui-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                  <span class="detail-btn-label">Lưu</span>
+                </button>
+              </div>
             </div>
           </div>
           <div class="post-detail-card" id="detailContent">
@@ -4482,6 +4533,7 @@
                   <option value="singingbowl">Chuông xoay thiền định</option>
                   <option value="chime">Chuông gió vui tươi</option>
                   <option value="marimba">Mộc cầm ngân vang</option>
+                  <option value="christmas" id="settingAlarmChristmasOption">Chuông Giáng sinh (Celesta)</option>
                 </select>
                 <button type="button" class="button button-sm button-outline" onclick="previewSelectedAlarm()">
                   <svg class="ui-btn-icon" width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg> Nghe thử
@@ -4723,7 +4775,10 @@
                   <h4 style="margin: 0; font-size: 13.5px; font-weight: 700;">Bộ phối màu giao diện &amp; Đồng hồ</h4>
                   <span style="font-size: 11.5px; color: var(--muted);">Tùy chỉnh 3 bộ màu độc lập (Mặc định cả 3 là Xanh lá)</span>
                 </div>
-                <button type="button" class="button button-xs button-ghost" onclick="resetStudyColorRoles()" title="Khôi phục mặc định 3 màu xanh lá">Mặc định xanh lá</button>
+                <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap; justify-content: flex-end;">
+                  <button type="button" id="btnChristmasThemePreset" class="button button-xs button-outline xmas-seasonal-control" onclick="applyChristmasStudyColors()" title="Áp dụng bộ màu Giáng sinh (Đỏ Berry - Xanh Thông - Vàng Ấm)">🎄 Giáng sinh</button>
+                  <button type="button" class="button button-xs button-ghost" onclick="resetStudyColorRoles()" title="Khôi phục mặc định 3 màu xanh lá">Mặc định xanh lá</button>
+                </div>
               </div>
 
               <!-- 1. Màu chính -->
@@ -5575,6 +5630,21 @@
       </div>
     </dialog>
 
-    <script src="app.js?v=153" defer></script>
+    <!-- Bộ điều khiển Nhạc nền & Tuyết rơi Giáng sinh toàn web -->
+    <div class="christmas-floating-widget xmas-seasonal-control" id="christmasMusicWidget" role="region" aria-label="Điều khiển không khí và nhạc Giáng sinh">
+      <button type="button" class="xmas-widget-music-btn" id="christmasMusicToggleBtn" aria-pressed="false" aria-label="Bật nhạc nền Giáng sinh: Ikson - Christmas" title="Bật/tắt nhạc nền Giáng sinh (Ikson - Christmas)">
+        <span class="xmas-music-icon" aria-hidden="true">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg>
+        </span>
+        <span class="xmas-music-eq" aria-hidden="true"><span></span><span></span><span></span></span>
+        <span class="xmas-widget-label" id="christmasMusicStatusText">Nhạc Noel</span>
+      </button>
+      <span class="xmas-widget-sep" aria-hidden="true"></span>
+      <button type="button" class="xmas-widget-snow-btn active" id="christmasSnowToggleBtn" aria-pressed="true" aria-label="Tạm dừng hiệu ứng tuyết rơi Giáng sinh" title="Bật/tắt tuyết rơi và trang trí Giáng sinh">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="2" x2="12" y2="22"></line><path d="m17 5-5 5-5-5"></path><path d="m17 19-5-5-5 5"></path><line x1="2" y1="12" x2="22" y2="12"></line><path d="m5 7 5 5-5 5"></path><path d="m19 7-5 5 5 5"></path></svg>
+      </button>
+    </div>
+
+    <script src="app.js?v=155" defer></script>
   </body>
 </html>

@@ -1,3 +1,36 @@
+const CHRISTMAS_2026_START_MS = new Date("2026-11-11T00:00:00+07:00").getTime();
+const CHRISTMAS_2026_END_MS = new Date("2026-12-31T23:59:59+07:00").getTime();
+const CHRISTMAS_BGM_URL = "/public/Ikson%20-%20Christmas%20(Vlog%20No%20Copyright%20Music).mp3";
+const XMAS_MUSIC_STORAGE_KEY = "re_search_xmas_music";
+const XMAS_EFFECTS_STORAGE_KEY = "re_search_xmas_effects";
+
+function isChristmas2026Season() {
+  const now = Date.now();
+  return now >= CHRISTMAS_2026_START_MS && now <= CHRISTMAS_2026_END_MS;
+}
+window.isChristmas2026Season = isChristmas2026Season;
+
+const christmasSnowState = {
+  rafId: null,
+  canvas: null,
+  ctx: null,
+  flakes: [],
+  width: 0,
+  height: 0,
+  enabled: true,
+  reducedMotion: false,
+  initialized: false,
+  isDark: false
+};
+
+const christmasBgmState = {
+  audio: null,
+  userWantsPlay: false,
+  pausedByStudy: false,
+  initialized: false,
+  gestureArmed: false
+};
+
 let topics = [];
 let allTopics = [];
 const seedPosts = [];
@@ -1117,6 +1150,7 @@ function getMiniCoverStyle(coverVal) {
     "chinh_phuc_bau_troi": "/covers/chinh-phuc-bau-troi.png",
     "ton_vinh_phai_dep": "/covers/ton-vinh-phai-dep.png",
     "bua_tiec_ma_mi": "/covers/bua-tiec-ma-mi.png",
+    "phep_mau_mua_dong": "/covers/phepmaumuadong.png",
     "khu_rung_tri_thuc": "/covers/khu-rung-tri-thuc.png",
     "mua_anh_dao_no": "/covers/mua-anh-dao-no.png",
     "vuong_quoc_mua_dong": "/covers/vuong-quoc-mua-dong.png",
@@ -1414,7 +1448,9 @@ function triggerMilestoneCelebration(streak, tier) {
   const ctx = canvas.getContext("2d");
 
   const particles = [];
-  const colors = ["#ffd43b", "#f783ac", "#7048e8", "#4dabf7", "#ff6b6b", "#69db7c"];
+  const colors = isChristmas2026Season()
+    ? ["#dc2626", "#16a34a", "#fbbf24", "#e0f2fe", "#ffffff", "#f43f5e"]
+    : ["#ffd43b", "#f783ac", "#7048e8", "#4dabf7", "#ff6b6b", "#69db7c"];
   for (let i = 0; i < 70; i++) {
     particles.push({
       x: canvas.width * 0.5 + (Math.random() - 0.5) * 200,
@@ -3128,6 +3164,9 @@ function go(rawRoute, scrollToTop = true) {
   if (typeof window.closeNavPeek === "function") {
     window.closeNavPeek({ scrollingToTop: Boolean(scrollToTop) });
   }
+  if (typeof window.syncPostDetailTopNavState === "function") {
+    window.syncPostDetailTopNavState();
+  }
   if (location.hash !== `#${route}`) {
     history.replaceState(null, "", `#${route}`);
   }
@@ -3187,16 +3226,22 @@ let isMobileNavSuspended = true;
 function hideMobileNav() {
   const nav = document.querySelector(".mobile-nav");
   const fab = document.querySelector(".mobile-fab");
+  const xmasWidget = document.getElementById("christmasMusicWidget");
   if (nav) nav.classList.add("nav-hidden");
   if (fab) fab.classList.add("nav-hidden");
+  if (xmasWidget && !document.documentElement.classList.contains("study-mode-active")) {
+    xmasWidget.classList.add("is-hidden-for-context");
+  }
   isMobileNavHidden = true;
 }
 
 function showMobileNav() {
   const nav = document.querySelector(".mobile-nav");
   const fab = document.querySelector(".mobile-fab");
+  const xmasWidget = document.getElementById("christmasMusicWidget");
   if (nav) nav.classList.remove("nav-hidden");
   if (fab) fab.classList.remove("nav-hidden");
+  if (xmasWidget) xmasWidget.classList.remove("is-hidden-for-context");
   isMobileNavHidden = false;
 }
 
@@ -3345,6 +3390,10 @@ function initPostDetailNavScrollHandler() {
     const postDetailPage = document.getElementById("postDetail");
     if (!postDetailPage || !postDetailPage.classList.contains("active-page")) return;
     if (document.querySelector("dialog[open]")) return;
+    if (window.innerWidth > 800 && window.innerHeight > 520) {
+      showPostDetailTopNav();
+      return;
+    }
 
     const currentY = Math.max(
       0,
@@ -4636,6 +4685,9 @@ async function openDetail(id, updateHash = true, isBack = false, targetScrollY =
   if (typeof window.closeNavPeek === "function") {
     window.closeNavPeek({ scrollingToTop: !isBack || !targetScrollY });
   }
+  if (typeof window.syncPostDetailTopNavState === "function") {
+    window.syncPostDetailTopNavState();
+  }
   currentActiveRoute = "post-detail";
   if (!isBack || !targetScrollY) {
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -4848,8 +4900,8 @@ async function openDetail(id, updateHash = true, isBack = false, targetScrollY =
     if (saveBtn) {
       saveBtn.className = `button button-outline button-sm post-detail-save-btn ${post.isSaved ? "is-saved" : ""}`;
       saveBtn.innerHTML = post.isSaved
-        ? `<svg class="ui-icon" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg> Đã lưu`
-        : `<svg class="ui-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg> Lưu`;
+        ? `<svg class="ui-icon" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg> <span class="detail-btn-label">Đã lưu</span>`
+        : `<svg class="ui-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg> <span class="detail-btn-label">Lưu</span>`;
       saveBtn.onclick = () => toggleSavePost(post.id);
     }
 
@@ -5150,6 +5202,9 @@ function applyDarkMode(enable, save = true) {
   }
 
   updateDarkModeUI(isDark);
+  if (typeof window.updateChristmasSnowTheme === "function") {
+    window.updateChristmasSnowTheme();
+  }
 }
 window.applyDarkMode = applyDarkMode;
 
@@ -5169,9 +5224,25 @@ window.toggleDarkMode = toggleDarkMode;
 function initDarkMode() {
   try {
     const saved = localStorage.getItem("re_search_theme") || localStorage.getItem("theme");
-    const prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+    const mql = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)");
+    const prefersDark = Boolean(mql && mql.matches);
     const shouldBeDark = saved === "dark" || (!saved && prefersDark);
     applyDarkMode(shouldBeDark, false);
+
+    if (mql && !window._reSearchColorSchemeBound) {
+      window._reSearchColorSchemeBound = true;
+      const handleOsThemeChange = (ev) => {
+        const currentSaved = localStorage.getItem("re_search_theme") || localStorage.getItem("theme");
+        if (!currentSaved) {
+          applyDarkMode(Boolean(ev.matches), false);
+        }
+      };
+      if (typeof mql.addEventListener === "function") {
+        mql.addEventListener("change", handleOsThemeChange);
+      } else if (typeof mql.addListener === "function") {
+        mql.addListener(handleOsThemeChange);
+      }
+    }
   } catch (e) {
     applyDarkMode(false, false);
   }
@@ -6805,14 +6876,34 @@ const FRAME_OPTIONS = [
   { id: "stars", name: "Tinh tú sao trời", minDays: 30 },
   { id: "gold", name: "Kỷ nguyên hoàng kim", minDays: 50 },
 
-  // Khung hữu hạn nhận qua hoạt động giới hạn (thời hạn 30 ngày)
+  // Khung hữu hạn nhận qua hoạt động giới hạn
+  {
+    id: "phep_mau_mua_dong",
+    name: "Phép màu mùa đông",
+    isLimited: true,
+    eventId: "phep_mau_mua_dong",
+    expiresAt: "2026-12-31T23:59:59+07:00",
+    lockNote: "Đăng nhập 3 ngày từ sau cập nhật Giáng sinh để mở khóa (Hiệu lực đến hết 31/12/2026)",
+    expiredLockNote: "Khung kỷ niệm Lễ hội Giáng sinh 2026"
+  },
   { id: "chinh_phuc_bau_troi", name: "Chinh phục bầu trời", isLimited: true, lockNote: "Khung dành cho Top 10 Đấu trường tuần 09/11 - 15/11 (Kích hoạt 01:00 CN 15/11, hạn dùng 30 ngày)" },
   { id: "ton_vinh_phai_dep", name: "Tôn vinh phái đẹp", isLimited: true, lockNote: "Khung nhận được qua hoạt động giới hạn" },
   { id: "bua_tiec_ma_mi", name: "Bữa tiệc ma mị", isLimited: true, lockNote: "Khung nhận được qua hoạt động giới hạn" },
 ];
 
 const COVER_PRESETS = [
-  // Ảnh bìa hữu hạn nhận qua hoạt động giới hạn (thời hạn 30 ngày)
+  // Ảnh bìa hữu hạn nhận qua hoạt động giới hạn
+  {
+    id: "phep_mau_mua_dong",
+    name: "Phép màu mùa đông",
+    type: "image",
+    value: "covers/phepmaumuadong.png",
+    isLimited: true,
+    eventId: "phep_mau_mua_dong",
+    expiresAt: "2026-12-31T23:59:59+07:00",
+    lockNote: "Đăng nhập 3 ngày từ sau cập nhật Giáng sinh để mở khóa (Hiệu lực đến hết 31/12/2026)",
+    expiredLockNote: "Ảnh bìa kỷ niệm Lễ hội Giáng sinh 2026"
+  },
   { id: "chinh_phuc_bau_troi", name: "Chinh phục bầu trời", type: "image", value: "covers/chinh-phuc-bau-troi.png", isLimited: true, lockNote: "Ảnh bìa dành cho Top 3 Đấu trường tuần 09/11 - 15/11 (Kích hoạt 01:00 CN 15/11, hạn dùng 30 ngày)" },
   { id: "ton_vinh_phai_dep", name: "Tôn vinh phái đẹp", type: "image", value: "covers/ton-vinh-phai-dep.png", isLimited: true, lockNote: "Ảnh bìa nhận được qua hoạt động giới hạn" },
   { id: "bua_tiec_ma_mi", name: "Bữa tiệc ma mị", type: "image", value: "covers/bua-tiec-ma-mi.png", isLimited: true, lockNote: "Ảnh bìa nhận được qua hoạt động giới hạn" },
@@ -7814,6 +7905,29 @@ function renderAvatarPicker() {
   }
 }
 
+function getLimitedItemLockInfo(item, limitedItemsObj) {
+  if (!item) return { message: "", badgeLabel: "Sự kiện" };
+  if (item.eventId === "phep_mau_mua_dong") {
+    const prog = limitedItemsObj?.eventProgress?.phep_mau_mua_dong;
+    const isExpired = Boolean(prog?.isExpired) || (item.expiresAt && Date.now() > new Date(item.expiresAt).getTime());
+    if (isExpired) {
+      return {
+        message: item.expiredLockNote || "Kỷ niệm Lễ hội Giáng sinh 2026",
+        badgeLabel: "Kỷ niệm 2026"
+      };
+    }
+    const done = Math.min(3, Number(prog?.loginDays || 0));
+    return {
+      message: `${item.lockNote || "Đăng nhập 3 ngày để nhận"} (Tiến độ: ${done}/3 ngày)`,
+      badgeLabel: `${done}/3 ngày`
+    };
+  }
+  return {
+    message: item.lockNote || "Nhận được qua hoạt động giới hạn",
+    badgeLabel: "Sự kiện"
+  };
+}
+
 function renderFramePicker() {
   const defaultContainer = $("#profileDefaultFramesPicker");
   const limitedContainer = $("#profileLimitedFramesPicker");
@@ -7821,7 +7935,8 @@ function renderFramePicker() {
 
   const curStreak = Number(session?.streak || 0);
   const isPrivileged = session?.role === "admin" || session?.role === "ta";
-  const limitedFrames = session?.limitedItems?.frames || {};
+  const limitedItems = session?.limitedItems || null;
+  const limitedFrames = limitedItems?.frames || {};
 
   const frameNotice = $("#namecardFrameNotice");
   if (frameNotice) {
@@ -7848,8 +7963,9 @@ function renderFramePicker() {
         lockTooltip = `${f.name} (Hạn dùng còn ${remDays} ngày)`;
         badgeHtml = `<span class="choice-unlock-badge badge-countdown"><svg class="ui-icon" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px; margin-right:2px;"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>${remDays}d</span>`;
       } else {
-        lockTooltip = f.lockNote || "Khung nhận được qua hoạt động giới hạn";
-        badgeHtml = `<span class="choice-lock-badge" title="${lockTooltip}"><svg class="ui-icon" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px; margin-right:2px;"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>Sự kiện</span>`;
+        const lockInfo = getLimitedItemLockInfo(f, limitedItems);
+        lockTooltip = lockInfo.message;
+        badgeHtml = `<span class="choice-lock-badge" title="${escapeHTML(lockTooltip)}"><svg class="ui-icon" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px; margin-right:2px;"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>${escapeHTML(lockInfo.badgeLabel)}</span>`;
       }
     } else if (f.minDays > 0) {
       const perkStatus = limitedFrames[f.id];
@@ -7899,7 +8015,8 @@ function renderFramePicker() {
         const f = FRAME_OPTIONS.find(frame => frame.id === item.dataset.frameId);
         if (item.classList.contains("locked")) {
           if (f?.isLimited) {
-            toast(f.lockNote || "Khung nhận được qua hoạt động giới hạn");
+            const lockInfo = getLimitedItemLockInfo(f, limitedItems);
+            toast(lockInfo.message);
           } else {
             toast(`Khung này mở khóa khi bạn đạt chuỗi ${f?.minDays || 0}+ ngày.`);
           }
@@ -7921,7 +8038,8 @@ function renderCoverPicker() {
 
   const curStreak = Number(session?.streak || 0);
   const isPrivileged = session?.role === "admin" || session?.role === "ta";
-  const limitedCovers = session?.limitedItems?.covers || {};
+  const limitedItems = session?.limitedItems || null;
+  const limitedCovers = limitedItems?.covers || {};
 
   const coverNotice = $("#namecardCoverNotice");
   if (coverNotice) {
@@ -7948,8 +8066,9 @@ function renderCoverPicker() {
         lockTooltip = `${p.name} (Hạn dùng còn ${remDays} ngày)`;
         badgeHtml = `<span class="choice-unlock-badge badge-countdown"><svg class="ui-icon" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px; margin-right:2px;"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>${remDays}d</span>`;
       } else {
-        lockTooltip = p.lockNote || "Ảnh bìa nhận được qua hoạt động giới hạn";
-        badgeHtml = `<span class="choice-lock-badge" title="${lockTooltip}"><svg class="ui-icon" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px; margin-right:2px;"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>Sự kiện</span>`;
+        const lockInfo = getLimitedItemLockInfo(p, limitedItems);
+        lockTooltip = lockInfo.message;
+        badgeHtml = `<span class="choice-lock-badge" title="${escapeHTML(lockTooltip)}"><svg class="ui-icon" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px; margin-right:2px;"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>${escapeHTML(lockInfo.badgeLabel)}</span>`;
       }
     } else if (p.minDays > 0) {
       const perkStatus = limitedCovers[p.id];
@@ -8004,7 +8123,8 @@ function renderCoverPicker() {
         const p = COVER_PRESETS.find(preset => preset.id === item.dataset.coverId);
         if (item.classList.contains("locked")) {
           if (p?.isLimited) {
-            toast(p.lockNote || "Ảnh bìa nhận được qua hoạt động giới hạn");
+            const lockInfo = getLimitedItemLockInfo(p, limitedItems);
+            toast(lockInfo.message);
           } else {
             toast(`Ảnh bìa này mở khóa khi bạn đạt chuỗi ${p?.minDays || 0}+ ngày.`);
           }
@@ -8911,6 +9031,21 @@ const STUDY_QUOTES = [
     en: "Believe you can do, and you’re halfway done.",
     author: "Khuyết danh",
     vi: "Tin vào bản thân mình, bạn đã thành công được một nửa."
+  },
+  {
+    en: "Even the darkest winter night melts into a warm morning when you keep your focus alight.",
+    author: "RE:SEARCH Winter Note",
+    vi: "Ngay cả đêm đông lạnh giá nhất cũng trở nên ấm áp khi bạn giữ vững ngọn lửa tri thức."
+  },
+  {
+    en: "Small steps through the final days of the year build the breakthroughs of the next.",
+    author: "RE:SEARCH Season",
+    vi: "Những bước tiến bền bỉ vào những ngày cuối năm chính là nền móng cho bước ngoặt bứt phá sắp tới."
+  },
+  {
+    en: "Give yourself the quiet gift of deep focus today; future you will unwrap the reward.",
+    author: "RE:SEARCH Study Lounge",
+    vi: "Hãy tự tặng cho mình món quà của sự tập trung hôm nay, phiên bản tốt hơn của bạn sẽ mở quà vào ngày mai."
   }
 ];
 
@@ -9605,6 +9740,22 @@ window.resetStudyColorRoles = function () {
   updateTimerDisplay();
   updateDailyGoalUI();
   toast("Đã khôi phục 3 bộ màu mặc định: Xanh lá!");
+};
+
+window.applyChristmasStudyColors = function () {
+  if (!isChristmas2026Season()) {
+    toast("Bảng màu Giáng sinh giới hạn đã kết thúc sau 31/12/2026.");
+    return;
+  }
+  studySettings.primaryColor = "#dc2626";
+  studySettings.secondaryColor = "#10b981";
+  studySettings.accessoryColor = "#f59e0b";
+  saveStudySettings(false);
+  applyStudyColorRoles();
+  updateStaticStudyControlsUI();
+  updateTimerDisplay();
+  updateDailyGoalUI();
+  toast("🎄 Đã áp dụng bộ phối màu Giáng sinh cho Phòng tự học!");
 };
 
 // Hoạt ảnh lật lá cơ học (Split-flap leaf flip animation)
@@ -11120,7 +11271,8 @@ const WALLPAPER_CARD_GRADIENTS = {
   sunset: 'linear-gradient(135deg, #521e2d 0%, #35101d 50%, #1e0710 100%)', // Sunset dusk burgundy rose
   lofi: 'linear-gradient(135deg, #371a4f 0%, #220e33 50%, #11051c 100%)', // Lo-fi twilight neon purple
   zen: 'linear-gradient(135deg, #1e3822 0%, #112315 50%, #061309 100%)', // Zen tranquil bamboo green
-  space: 'linear-gradient(135deg, #131a44 0%, #090e29 50%, #030514 100%)' // Space cosmic midnight navy
+  space: 'linear-gradient(135deg, #131a44 0%, #090e29 50%, #030514 100%)', // Space cosmic midnight navy
+  christmas_2026: 'linear-gradient(135deg, #5c191e 0%, #163a2a 55%, #0c1f17 100%)' // Cozy Christmas cabin hearth & pine
 };
 
 function getWallpaperCardInfo(wallId, isSelf) {
@@ -13096,8 +13248,6 @@ function stopAllStudyAudio() {
 }
 
 function updateMasterAmbientButtonState() {
-  const masterBtn = $("#toggleAmbientMaster");
-  if (!masterBtn) return;
   const anyActive = (studyState.activeEnvTrack !== null) ||
     (studyState.activeMusicTrack !== null) ||
     (studyState.activeCustomEnvId !== null) ||
@@ -13105,6 +13255,12 @@ function updateMasterAmbientButtonState() {
     Object.values(studyState.activeMixSounds).some(v => v) ||
     Object.values(studyState.activeCustomMixSounds).some(v => v);
 
+  if (typeof syncChristmasBgmWithStudyAudio === "function") {
+    syncChristmasBgmWithStudyAudio(anyActive);
+  }
+
+  const masterBtn = $("#toggleAmbientMaster");
+  if (!masterBtn) return;
   masterBtn.textContent = anyActive ? "Tắt tất cả" : "Bật tất cả";
 }
 
@@ -13185,6 +13341,28 @@ function playAlarmSound(alarmType = "bell", customVol = null) {
         gain.connect(ctx.destination);
         osc.start(start);
         osc.stop(start + 0.65);
+      });
+    } else if (alarmType === "christmas") {
+      // Synthesized winter celesta chime: G5 -> B5 -> D6 -> G6
+      const notes = [783.99, 987.77, 1174.66, 1567.98];
+      notes.forEach((freq, i) => {
+        const osc = ctx.createOscillator();
+        const overtone = ctx.createOscillator();
+        const gain = ctx.createGain();
+        const start = now + (i * 0.13);
+        osc.type = "sine";
+        overtone.type = "triangle";
+        osc.frequency.setValueAtTime(freq, start);
+        overtone.frequency.setValueAtTime(freq * 2, start);
+        gain.gain.setValueAtTime(0.24 * baseVol, start);
+        gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.95);
+        osc.connect(gain);
+        overtone.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(start);
+        overtone.start(start);
+        osc.stop(start + 1.0);
+        overtone.stop(start + 1.0);
       });
     } else {
       [587.33, 1174.66, 1761.99].forEach((freq, i) => {
@@ -13784,6 +13962,7 @@ window.handleCustomMusicAudioUpload = (file) => handleCustomAudioUpload(file, 'm
 /* --- 9. WALLPAPER PRESETS, CLOCK COLOR & EXCLUSIVE COLOR GRADIENTS --- */
 const WALLPAPER_PRESETS = [
   { id: 'default', name: 'Mặc định RE:SEARCH', type: 'gradient', src: '', style: 'linear-gradient(135deg, rgba(20,24,22,0.95), rgba(12,16,14,0.98))' },
+  { id: 'christmas_2026', name: 'Giáng sinh ấm áp (31/12)', type: 'image', src: '/public/assets/wallpapers/christmas-2026.jpg', style: 'url(/public/assets/wallpapers/christmas-2026.jpg)', isChristmasFree: true },
   { id: 'library', name: 'Thư viện cổ Oxford', type: 'image', src: '/public/assets/wallpapers/library.jpg', style: 'url(/public/assets/wallpapers/library.jpg)' },
   { id: 'cafe', name: 'Góc Cafe ấm áp', type: 'image', src: '/public/assets/wallpapers/cafe.jpg', style: 'url(/public/assets/wallpapers/cafe.jpg)' },
   { id: 'mountain', name: 'Sương mù trên núi', type: 'image', src: '/public/assets/wallpapers/mountain.jpg', style: 'url(/public/assets/wallpapers/mountain.jpg)' },
@@ -13793,18 +13972,38 @@ const WALLPAPER_PRESETS = [
   { id: 'space', name: 'Vũ trụ & Ngàn sao', type: 'image', src: '/public/assets/wallpapers/space.jpg', style: 'url(/public/assets/wallpapers/space.jpg)' }
 ];
 
+function getVisibleWallpaperPresets() {
+  const xmasActive = typeof isChristmas2026Season === "function" ? isChristmas2026Season() : false;
+  return WALLPAPER_PRESETS.filter(p => !p.isChristmasFree || xmasActive);
+}
+
+function isWallpaperPresetUnlocked(p, streak) {
+  if (!p) return false;
+  if (p.id === 'default') return true;
+  if (p.isChristmasFree) {
+    return typeof isChristmas2026Season === "function" ? isChristmas2026Season() : false;
+  }
+  return streak >= 14;
+}
+
 function renderWallpaperPresets() {
   const cont = $("#wallpaperPresetsList");
   if (!cont) return;
   const streak = getUserStudyStreak();
+  const visiblePresets = getVisibleWallpaperPresets();
+
+  if (studySettings.activeWallpaper === 'christmas_2026' && !(typeof isChristmas2026Season === "function" && isChristmas2026Season())) {
+    studySettings.activeWallpaper = 'default';
+    saveStudySettings(false);
+  }
 
   const existingCards = cont.querySelectorAll(".preset-thumb-card");
-  if (existingCards.length === WALLPAPER_PRESETS.length) {
+  if (existingCards.length === visiblePresets.length) {
     existingCards.forEach((card, idx) => {
-      const p = WALLPAPER_PRESETS[idx];
+      const p = visiblePresets[idx];
       if (!p) return;
       const isSelected = studySettings.activeWallpaper === p.id;
-      const isUnlocked = (p.id === 'default' || streak >= 14);
+      const isUnlocked = isWallpaperPresetUnlocked(p, streak);
       const clickAction = isUnlocked
         ? `applyStudyWallpaperPreset('${p.id}')`
         : `notifyPerkLocked(14, 'Kho hình nền cơ bản')`;
@@ -13812,7 +14011,9 @@ function renderWallpaperPresets() {
       card.classList.toggle("selected", isSelected);
       card.classList.toggle("locked", !isUnlocked);
       card.setAttribute("onclick", clickAction);
-      card.title = `${p.name}${!isUnlocked ? ' (Mở khóa ở Chuỗi 14 ngày)' : ''}`;
+      card.title = p.isChristmasFree
+        ? `${p.name} — Mở khóa miễn phí cho tất cả mọi người đến hết 31/12/2026`
+        : `${p.name}${!isUnlocked ? ' (Mở khóa ở Chuỗi 14 ngày)' : ''}`;
 
       let indicator = card.querySelector(".preset-active-indicator");
       if (isSelected && !indicator) {
@@ -13824,18 +14025,21 @@ function renderWallpaperPresets() {
     return;
   }
 
-  cont.innerHTML = WALLPAPER_PRESETS.map(p => {
+  cont.innerHTML = visiblePresets.map(p => {
     const isSelected = studySettings.activeWallpaper === p.id;
-    const isUnlocked = (p.id === 'default' || streak >= 14);
+    const isUnlocked = isWallpaperPresetUnlocked(p, streak);
     const thumbStyle = (p.type === 'image' && p.src)
       ? `background-image: url('${p.src}'); background-size: cover; background-position: center;`
       : `background: ${p.style};`;
     const clickAction = isUnlocked
       ? `applyStudyWallpaperPreset('${p.id}')`
       : `notifyPerkLocked(14, 'Kho hình nền cơ bản')`;
+    const titleAttr = p.isChristmasFree
+      ? `${p.name} — Mở khóa miễn phí cho tất cả mọi người đến hết 31/12/2026`
+      : `${p.name}${!isUnlocked ? ' (Mở khóa ở Chuỗi 14 ngày)' : ''}`;
 
     return `
-      <div class="preset-thumb-card ${isSelected ? 'selected' : ''} ${!isUnlocked ? 'locked' : ''}" data-preset-id="${p.id}" onclick="${clickAction}" title="${escapeHTML(p.name)}${!isUnlocked ? ' (Mở khóa ở Chuỗi 14 ngày)' : ''}">
+      <div class="preset-thumb-card ${isSelected ? 'selected' : ''} ${!isUnlocked ? 'locked' : ''}" data-preset-id="${p.id}" onclick="${clickAction}" title="${escapeHTML(titleAttr)}">
         <div class="preset-thumb-color" style="${thumbStyle}"></div>
         <span class="preset-thumb-name">${escapeHTML(p.name)}</span>
         ${isSelected ? '<span class="preset-active-indicator">✓</span>' : ''}
@@ -13846,19 +14050,30 @@ function renderWallpaperPresets() {
 
 function applyStudyWallpaperPreset(presetId) {
   const streak = getUserStudyStreak();
-  if (presetId !== 'default' && streak < 14) {
+  const visiblePresets = getVisibleWallpaperPresets();
+  let targetId = presetId;
+  let p = visiblePresets.find(x => x.id === targetId);
+  if (!p) {
+    if (targetId === 'christmas_2026') {
+      targetId = 'default';
+      p = visiblePresets.find(x => x.id === 'default');
+      studySettings.activeWallpaper = 'default';
+      saveStudySettings(false);
+    } else {
+      return;
+    }
+  }
+  if (!isWallpaperPresetUnlocked(p, streak)) {
     notifyPerkLocked(14, "Kho hình nền cơ bản");
     return;
   }
 
-  const p = WALLPAPER_PRESETS.find(x => x.id === presetId);
-  if (!p) return;
-  studySettings.activeWallpaper = presetId;
+  studySettings.activeWallpaper = targetId;
   saveStudySettings(false);
 
   const studyEl = $("#study");
   const bgLayer = $("#studyBackgroundLayer");
-  if (presetId === 'default') {
+  if (targetId === 'default') {
     if (studyEl) studyEl.classList.remove("has-custom-bg");
     if (bgLayer) bgLayer.style.backgroundImage = "";
   } else {
@@ -13882,7 +14097,9 @@ function applyStudyWallpaperPreset(presetId) {
   if (typeof renderCoStudyList === 'function') {
     renderCoStudyList(lastFetchedLearners);
   }
-  toast(`Đã chọn hình nền: ${p.name}`);
+  if (targetId !== 'default' || presetId === 'default') {
+    toast(`Đã chọn hình nền: ${p.name}`);
+  }
 }
 
 /* --- CLOCK COLOR CUSTOMIZATION (Streak >= 14) --- */
@@ -15576,6 +15793,25 @@ function initAdaptiveGlassHeader() {
     }, 680);
   }
 
+  function syncPostDetailTopNavState() {
+    const postDetailPage = document.getElementById("postDetail");
+    const topNav = document.getElementById("postDetailTopNav");
+    if (!topNav) return;
+    const isDetailActive = Boolean(postDetailPage && postDetailPage.classList.contains("active-page"));
+    const desktopDock =
+      isDetailActive &&
+      isDesktopGlassViewport() &&
+      isCompact &&
+      !document.body.classList.contains("study-zen-fullscreen");
+    topNav.classList.toggle("is-header-docked", desktopDock);
+    topNav.classList.toggle("is-peek-suppressed", desktopDock && isPeeking);
+    if (desktopDock) {
+      topNav.classList.remove("top-nav-hidden");
+    }
+  }
+
+  window.syncPostDetailTopNavState = syncPostDetailTopNavState;
+
   function setNavPeekOpen(open) {
     if (scrollTopPeekTimer) {
       clearTimeout(scrollTopPeekTimer);
@@ -15589,6 +15825,7 @@ function initAdaptiveGlassHeader() {
     }
     header.classList.toggle("is-nav-peek", nextPeek);
     syncFocusOrder();
+    syncPostDetailTopNavState();
     if (changed && isCompact) {
       triggerNavMorph(nextPeek ? "expand" : "compact");
       if (nextPeek) {
@@ -15630,9 +15867,11 @@ function initAdaptiveGlassHeader() {
   function syncAdaptiveGlassHeaderMetrics() {
     if (!isDesktopGlassViewport()) {
       header.classList.remove("is-compact", "is-nav-peek");
+      document.body.classList.remove("detail-dock-tight", "detail-dock-compact-bc");
       isCompact = false;
       isPeeking = false;
       syncFocusOrder();
+      syncPostDetailTopNavState();
       return;
     }
 
@@ -15672,8 +15911,22 @@ function initAdaptiveGlassHeader() {
       const dockRightEdge = innerW - dockRight;
       const shiftX = Math.round(targetRightEdge - dockRightEdge);
       header.style.setProperty("--nav-shift-x", `${shiftX}px`);
+
+      // Exact clear center channel when scrolled compact for docked post-detail pill
+      const docClientW = document.documentElement.clientWidth || window.innerWidth;
+      const innerLeft = Math.max(28, (docClientW - innerW) / 2);
+      const slotLeft = innerLeft + brandW + 14;
+      const slotRight = innerLeft + innerW - dockRight - 48 - 14;
+      const slotFreeW = Math.max(0, slotRight - slotLeft);
+      const detailDockW = Math.max(240, Math.min(740, Math.floor(slotFreeW)));
+      const detailDockCenterX = Math.round((slotLeft + slotRight) / 2);
+      document.documentElement.style.setProperty("--detail-dock-cx", `${detailDockCenterX}px`);
+      document.documentElement.style.setProperty("--detail-dock-w", `${detailDockW}px`);
+      document.body.classList.toggle("detail-dock-tight", slotFreeW < 580);
+      document.body.classList.toggle("detail-dock-compact-bc", slotFreeW < 470);
     }
     syncNavActiveGlider(true);
+    syncPostDetailTopNavState();
   }
 
   window.syncAdaptiveGlassHeaderMetrics = syncAdaptiveGlassHeaderMetrics;
@@ -15687,6 +15940,7 @@ function initAdaptiveGlassHeader() {
     }
     header.classList.toggle("is-compact", nextCompact);
     syncFocusOrder();
+    syncPostDetailTopNavState();
     triggerNavMorph(nextCompact ? "compact" : "expand");
     if (!nextCompact) {
       syncNavActiveGlider(true);
@@ -15767,6 +16021,7 @@ function initAdaptiveGlassHeader() {
   syncAdaptiveGlassHeaderMetrics();
   syncNavActiveGlider(true);
   evaluateScrollState();
+  syncPostDetailTopNavState();
 }
 
 initAdaptiveGlassHeader();
@@ -15775,6 +16030,15 @@ initAdaptiveGlassHeader();
 // HOME SHOWCASE: ROTATING BANNER STACK & ARENA CARD (15s Auto-Rotate & Swipe)
 // =========================================================================
 const HOME_BANNERS_CONFIG = [
+  {
+    id: "christmas-2026",
+    title: "Cập nhật Giáng sinh 2026 — Sự kiện Món quà mùa đông: Phép màu mùa đông",
+    image: "public/assets/banner-christmas-2026.jpg?v=20261111_1",
+    // Thời gian xuất hiện: 11/11 đến hết 31/12/2026, banner cập nhật không tương tác
+    startsAt: new Date("2026-11-11T00:00:00+07:00").getTime(),
+    expiresAt: new Date("2026-12-31T23:59:59+07:00").getTime(),
+    action: null
+  },
   {
     id: "leaderboard-w04",
     title: "Bảng Vàng Toàn Đoàn Tuần 04 — Mô Hình Nghiên Cứu",
@@ -15932,8 +16196,12 @@ function initHomeBannerStack() {
   const activeBanners = getActiveHomeBanners();
   const totalBanners = activeBanners.length;
 
-  // Nếu không còn banner nào còn hạn -> ẩn banner stack và mở rộng card Arena
+  // Nếu không còn banner nào còn hạn -> xóa các slide tĩnh fallback, ẩn banner stack và mở rộng card Arena
   if (totalBanners === 0) {
+    const bannerTrack = $("#bannerTrack");
+    if (bannerTrack) {
+      bannerTrack.querySelectorAll(".banner-slide").forEach((el) => el.remove());
+    }
     stackCard.style.display = "none";
     if (arenaCard) {
       if (arenaCard.parentElement !== showcaseRow) {
@@ -16296,7 +16564,9 @@ function launchQuizConfetti() {
   canvas.height = parent.clientHeight || 500;
 
   const particles = [];
-  const colors = ["#246247", "#f59e0b", "#10b981", "#3b82f6", "#ec4899", "#8b5cf6", "#eab308"];
+  const colors = isChristmas2026Season()
+    ? ["#dc2626", "#10b981", "#f59e0b", "#ffffff", "#e0f2fe", "#f43f5e", "#eab308"]
+    : ["#246247", "#f59e0b", "#10b981", "#3b82f6", "#ec4899", "#8b5cf6", "#eab308"];
   for (let i = 0; i < 80; i++) {
     particles.push({
       x: canvas.width / 2,
@@ -20516,5 +20786,447 @@ if (initialRequestedBase === "study" && serverMode) {
   go(initialRequestedRoute, false);
 }
 hydrateServer();
+
+/* ==========================================================================
+   CHRISTMAS 2026 SEASONAL SUITE (Snowfall, Site-Wide BGM & Study Audio Handoff)
+   ========================================================================== */
+function getChristmasEffectsEnabled() {
+  try {
+    return localStorage.getItem(XMAS_EFFECTS_STORAGE_KEY) !== "off";
+  } catch (e) {
+    return true;
+  }
+}
+
+function updateChristmasSnowTheme() {
+  const isDark = typeof isDarkModeActive === "function" ? isDarkModeActive() : false;
+  christmasSnowState.isDark = Boolean(isDark);
+}
+window.updateChristmasSnowTheme = updateChristmasSnowTheme;
+
+function syncChristmasSeasonalControlsVisibility() {
+  const active = isChristmas2026Season();
+  document.body.classList.toggle("christmas-season", active);
+  const effectsOn = active && christmasSnowState.enabled && !christmasSnowState.reducedMotion;
+  document.body.classList.toggle("christmas-effects-off", !effectsOn);
+
+  const alarmOpt = $("#settingAlarmChristmasOption");
+  if (alarmOpt) {
+    alarmOpt.hidden = !active;
+    alarmOpt.disabled = !active;
+    const sel = $("#settingEndAlarm");
+    if (!active && sel && sel.value === "christmas") {
+      sel.value = "bell";
+    }
+  }
+}
+
+function createSnowFlake(width, height, spawnAtTop = false) {
+  const isSparkle = Math.random() < 0.22;
+  return {
+    x: Math.random() * width,
+    y: spawnAtTop ? (-10 - Math.random() * 40) : (Math.random() * height),
+    r: isSparkle ? (Math.random() * 1.4 + 2.2) : (Math.random() * 2.1 + 1.1),
+    speedY: Math.random() * 0.85 + 0.55,
+    phase: Math.random() * Math.PI * 2,
+    swayAmp: Math.random() * 0.45 + 0.15,
+    swayFreq: Math.random() * 0.014 + 0.008,
+    alpha: Math.random() * 0.45 + 0.35,
+    isSparkle
+  };
+}
+
+function resizeChristmasSnowCanvas() {
+  const canvas = christmasSnowState.canvas;
+  if (!canvas) return;
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const w = window.innerWidth;
+  const h = window.innerHeight;
+  christmasSnowState.width = w;
+  christmasSnowState.height = h;
+  canvas.width = Math.max(1, Math.floor(w * dpr));
+  canvas.height = Math.max(1, Math.floor(h * dpr));
+  const ctx = canvas.getContext("2d");
+  if (ctx) {
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    christmasSnowState.ctx = ctx;
+  }
+  const targetCount = w <= 760 ? 18 : 38;
+  while (christmasSnowState.flakes.length < targetCount) {
+    christmasSnowState.flakes.push(createSnowFlake(w, h, false));
+  }
+  if (christmasSnowState.flakes.length > targetCount) {
+    christmasSnowState.flakes.length = targetCount;
+  }
+}
+
+function drawSixPointStar(ctx, x, y, r) {
+  ctx.beginPath();
+  for (let i = 0; i < 3; i++) {
+    const angle = (i * Math.PI) / 3;
+    const dx = Math.cos(angle) * r;
+    const dy = Math.sin(angle) * r;
+    ctx.moveTo(x - dx, y - dy);
+    ctx.lineTo(x + dx, y + dy);
+  }
+  ctx.stroke();
+}
+
+function renderChristmasSnowFrame() {
+  if (!isChristmas2026Season() || !christmasSnowState.enabled || christmasSnowState.reducedMotion || document.hidden) {
+    christmasSnowState.rafId = null;
+    if (christmasSnowState.ctx && christmasSnowState.width && christmasSnowState.height) {
+      christmasSnowState.ctx.clearRect(0, 0, christmasSnowState.width, christmasSnowState.height);
+    }
+    return;
+  }
+  const ctx = christmasSnowState.ctx;
+  const w = christmasSnowState.width;
+  const h = christmasSnowState.height;
+  if (!ctx || !w || !h) {
+    christmasSnowState.rafId = requestAnimationFrame(renderChristmasSnowFrame);
+    return;
+  }
+
+  ctx.clearRect(0, 0, w, h);
+  const isDark = christmasSnowState.isDark;
+  const fillColor = isDark ? "#ffffff" : "#7dc4ea";
+  const strokeColor = isDark ? "#e0f2fe" : "#5eb4e2";
+  const bottomFadeStart = h - 46;
+
+  for (let i = 0; i < christmasSnowState.flakes.length; i++) {
+    const f = christmasSnowState.flakes[i];
+    f.phase += f.swayFreq;
+    f.x += Math.sin(f.phase) * f.swayAmp;
+    f.y += f.speedY;
+
+    if (f.x < -10) f.x = w + 10;
+    if (f.x > w + 10) f.x = -10;
+    if (f.y > h + 8) {
+      christmasSnowState.flakes[i] = createSnowFlake(w, h, true);
+      continue;
+    }
+
+    // Fade gently near bottom so flakes never obstruct footer, .mobile-nav, or .mobile-fab
+    const edgeFade = f.y > bottomFadeStart ? Math.max(0, 1 - (f.y - bottomFadeStart) / 54) : 1;
+    const alpha = f.alpha * edgeFade * (isDark ? 0.9 : 0.72);
+    if (alpha <= 0.01) continue;
+
+    ctx.globalAlpha = alpha;
+    if (f.isSparkle) {
+      ctx.strokeStyle = strokeColor;
+      ctx.lineWidth = 1.1;
+      drawSixPointStar(ctx, f.x, f.y, f.r);
+    } else {
+      ctx.fillStyle = fillColor;
+      ctx.beginPath();
+      ctx.arc(f.x, f.y, f.r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+  ctx.globalAlpha = 1;
+  christmasSnowState.rafId = requestAnimationFrame(renderChristmasSnowFrame);
+}
+
+function startOrStopChristmasSnowLoop() {
+  syncChristmasSeasonalControlsVisibility();
+  updateChristmasEffectsToggleUI();
+  const shouldRun = isChristmas2026Season() && christmasSnowState.enabled && !christmasSnowState.reducedMotion && !document.hidden;
+  if (shouldRun && !christmasSnowState.rafId) {
+    christmasSnowState.rafId = requestAnimationFrame(renderChristmasSnowFrame);
+  } else if (!shouldRun && christmasSnowState.rafId) {
+    cancelAnimationFrame(christmasSnowState.rafId);
+    christmasSnowState.rafId = null;
+    if (christmasSnowState.ctx && christmasSnowState.width && christmasSnowState.height) {
+      christmasSnowState.ctx.clearRect(0, 0, christmasSnowState.width, christmasSnowState.height);
+    }
+  }
+}
+
+function updateChristmasEffectsToggleUI() {
+  const isActive = Boolean(isChristmas2026Season() && christmasSnowState.enabled && !christmasSnowState.reducedMotion);
+  const labelEl = $("#quickMenuXmasSnowLabel");
+  const switchEl = $("#quickMenuXmasSnowToggle");
+  const widgetBtn = $("#christmasSnowToggleBtn");
+
+  if (labelEl) {
+    if (christmasSnowState.reducedMotion) {
+      labelEl.textContent = "Tuyết rơi: Giảm CĐ";
+    } else {
+      labelEl.textContent = christmasSnowState.enabled ? "Tuyết rơi: Bật" : "Tuyết rơi: Tắt";
+    }
+  }
+  if (switchEl) {
+    switchEl.classList.toggle("active", isActive);
+    switchEl.setAttribute("aria-checked", String(isActive));
+  }
+  if (widgetBtn) {
+    widgetBtn.classList.toggle("active", isActive);
+    widgetBtn.setAttribute("aria-pressed", String(isActive));
+    widgetBtn.setAttribute("aria-label", isActive ? "Tạm dừng hiệu ứng tuyết rơi Giáng sinh" : "Bật hiệu ứng tuyết rơi Giáng sinh");
+    widgetBtn.title = isActive ? "Tạm dừng tuyết rơi" : "Bật hiệu ứng tuyết rơi Giáng sinh";
+  }
+}
+
+window.toggleChristmasEffects = function (e) {
+  if (e) {
+    e.preventDefault();
+    e.stopPropagation();
+  }
+  if (!isChristmas2026Season()) return;
+  if (christmasSnowState.reducedMotion) {
+    toast("Thiết bị đang bật chế độ Giảm chuyển động (Reduced Motion).");
+    return;
+  }
+  christmasSnowState.enabled = !christmasSnowState.enabled;
+  try {
+    localStorage.setItem(XMAS_EFFECTS_STORAGE_KEY, christmasSnowState.enabled ? "on" : "off");
+  } catch (err) { }
+  startOrStopChristmasSnowLoop();
+  toast(christmasSnowState.enabled ? "❄️ Đã bật hiệu ứng Giáng sinh" : "Đã tạm dừng hiệu ứng tuyết rơi");
+};
+
+function ensureChristmasAudioElement() {
+  if (christmasBgmState.audio) return christmasBgmState.audio;
+  const audio = new Audio(CHRISTMAS_BGM_URL);
+  audio.loop = true;
+  audio.preload = "none";
+  audio.volume = 0.24;
+  audio.addEventListener("play", updateChristmasMusicUI);
+  audio.addEventListener("pause", updateChristmasMusicUI);
+  audio.addEventListener("error", () => {
+    console.warn("Không thể tải tệp nhạc nền Giáng sinh.");
+    updateChristmasMusicUI();
+  });
+  christmasBgmState.audio = audio;
+  return audio;
+}
+
+function updateChristmasMusicUI() {
+  const audio = christmasBgmState.audio;
+  const isPlaying = Boolean(audio && !audio.paused && isChristmas2026Season());
+  const btn = $("#christmasMusicToggleBtn");
+  const statusEl = $("#christmasMusicStatusText");
+  const rowLabel = $("#quickMenuXmasMusicLabel");
+  const rowSwitch = $("#quickMenuXmasMusicToggle");
+
+  if (btn) {
+    btn.classList.toggle("is-playing", isPlaying);
+    btn.setAttribute("aria-pressed", String(isPlaying));
+    btn.setAttribute("aria-label", isPlaying ? "Tạm dừng nhạc nền Giáng sinh" : "Bật nhạc nền Giáng sinh: Ikson - Christmas");
+  }
+  if (statusEl) {
+    if (christmasBgmState.pausedByStudy && christmasBgmState.userWantsPlay) {
+      statusEl.textContent = "Đang nhường Study";
+    } else {
+      statusEl.textContent = isPlaying ? "Đang phát Noel" : "Nhạc Noel";
+    }
+  }
+  if (rowLabel) {
+    if (christmasBgmState.pausedByStudy && christmasBgmState.userWantsPlay) {
+      rowLabel.textContent = "Nhạc Noel: Study";
+    } else {
+      rowLabel.textContent = isPlaying ? "Nhạc Noel: Bật" : "Nhạc Noel: Tắt";
+    }
+  }
+  if (rowSwitch) {
+    rowSwitch.classList.toggle("active", isPlaying);
+    rowSwitch.setAttribute("aria-checked", String(isPlaying));
+  }
+}
+
+function syncChristmasBgmWithStudyAudio(studyAudioActive) {
+  if (!christmasBgmState.initialized) return;
+  const audio = christmasBgmState.audio;
+  if (studyAudioActive) {
+    if (audio && !audio.paused) {
+      audio.pause();
+      christmasBgmState.pausedByStudy = true;
+      toast("🎧 Đã tạm dừng nhạc Giáng sinh để ưu tiên âm thanh Phòng tự học.");
+    } else if (christmasBgmState.userWantsPlay) {
+      christmasBgmState.pausedByStudy = true;
+    }
+    updateChristmasMusicUI();
+  } else if (christmasBgmState.pausedByStudy) {
+    christmasBgmState.pausedByStudy = false;
+    if (christmasBgmState.userWantsPlay && isChristmas2026Season()) {
+      const targetAudio = ensureChristmasAudioElement();
+      const p = targetAudio.play();
+      if (p && typeof p.catch === "function") {
+        p.catch(() => updateChristmasMusicUI());
+      }
+    } else {
+      updateChristmasMusicUI();
+    }
+  }
+}
+window.syncChristmasBgmWithStudyAudio = syncChristmasBgmWithStudyAudio;
+
+function isStudyAudioCurrentlyPlaying() {
+  if (typeof studyState === "undefined" || !studyState) return false;
+  return Boolean(
+    studyState.activeEnvTrack !== null ||
+    studyState.activeMusicTrack !== null ||
+    studyState.activeCustomEnvId !== null ||
+    studyState.activeCustomMusicId !== null ||
+    Object.values(studyState.activeMixSounds || {}).some(Boolean) ||
+    Object.values(studyState.activeCustomMixSounds || {}).some(Boolean)
+  );
+}
+
+window.toggleChristmasMusic = async function (e) {
+  if (e) {
+    e.preventDefault();
+    e.stopPropagation();
+  }
+  if (!isChristmas2026Season()) return;
+  const audio = ensureChristmasAudioElement();
+
+  if (!audio.paused) {
+    audio.pause();
+    christmasBgmState.userWantsPlay = false;
+    christmasBgmState.pausedByStudy = false;
+    try { localStorage.setItem(XMAS_MUSIC_STORAGE_KEY, "off"); } catch (err) { }
+    updateChristmasMusicUI();
+    toast("🔇 Đã tắt nhạc nền Giáng sinh.");
+    return;
+  }
+
+  // User clicked while Study Room audio is active: stop Study audio cleanly so streams never clash
+  if (isStudyAudioCurrentlyPlaying() && typeof stopAllStudyAudio === "function") {
+    stopAllStudyAudio();
+  }
+
+  christmasBgmState.userWantsPlay = true;
+  christmasBgmState.pausedByStudy = false;
+  try { localStorage.setItem(XMAS_MUSIC_STORAGE_KEY, "on"); } catch (err) { }
+
+  try {
+    await audio.play();
+    updateChristmasMusicUI();
+    toast("🎄 Đang phát nhạc Giáng sinh: Ikson - Christmas");
+  } catch (err) {
+    if (err && err.name !== "AbortError") {
+      console.warn("Christmas BGM play blocked:", err);
+      toast("Nhấn lại nút Nhạc Noel để cho phép trình duyệt phát âm thanh.");
+    }
+    updateChristmasMusicUI();
+  }
+};
+
+function armFirstGestureAutoResume() {
+  if (christmasBgmState.gestureArmed) return;
+  christmasBgmState.gestureArmed = true;
+
+  const tryResumeOnGesture = (ev) => {
+    const target = ev && ev.target;
+    if (target && target.closest && (target.closest("#christmasMusicWidget") || target.closest("#quickMenuXmasMusicRow") || target.closest(".ambient-grid") || target.closest("#paneSettingsAudio"))) {
+      document.removeEventListener("pointerdown", tryResumeOnGesture, true);
+      document.removeEventListener("keydown", tryResumeOnGesture, true);
+      christmasBgmState.gestureArmed = false;
+      return;
+    }
+    document.removeEventListener("pointerdown", tryResumeOnGesture, true);
+    document.removeEventListener("keydown", tryResumeOnGesture, true);
+    christmasBgmState.gestureArmed = false;
+
+    if (!isChristmas2026Season() || !christmasBgmState.userWantsPlay || isStudyAudioCurrentlyPlaying()) {
+      return;
+    }
+    const audio = ensureChristmasAudioElement();
+    if (audio.paused) {
+      audio.play().then(updateChristmasMusicUI).catch(() => updateChristmasMusicUI());
+    }
+  };
+
+  document.addEventListener("pointerdown", tryResumeOnGesture, { capture: true, passive: true });
+  document.addEventListener("keydown", tryResumeOnGesture, { capture: true, passive: true });
+}
+
+function initChristmasMusicPlayer() {
+  if (christmasBgmState.initialized) return;
+  christmasBgmState.initialized = true;
+
+  const musicBtn = $("#christmasMusicToggleBtn");
+  if (musicBtn) {
+    musicBtn.addEventListener("click", window.toggleChristmasMusic);
+  }
+  const snowBtn = $("#christmasSnowToggleBtn");
+  if (snowBtn) {
+    snowBtn.addEventListener("click", window.toggleChristmasEffects);
+  }
+
+  let savedPref = null;
+  try { savedPref = localStorage.getItem(XMAS_MUSIC_STORAGE_KEY); } catch (e) { }
+  christmasBgmState.userWantsPlay = (savedPref !== "off");
+
+  if (isChristmas2026Season() && christmasBgmState.userWantsPlay && !isStudyAudioCurrentlyPlaying()) {
+    const audio = ensureChristmasAudioElement();
+    const playPromise = audio.play();
+    if (playPromise && typeof playPromise.then === "function") {
+      playPromise.then(() => {
+        updateChristmasMusicUI();
+      }).catch(() => {
+        // Browsers block unmuted autoplay until first interaction; arm gentle resume if not opted out
+        armFirstGestureAutoResume();
+        updateChristmasMusicUI();
+      });
+    }
+  } else {
+    updateChristmasMusicUI();
+  }
+}
+
+function initChristmasSeasonEffects() {
+  if (christmasSnowState.initialized) return;
+  christmasSnowState.initialized = true;
+
+  christmasSnowState.canvas = $("#christmasSnowCanvas");
+  christmasSnowState.enabled = getChristmasEffectsEnabled();
+  updateChristmasSnowTheme();
+
+  const motionQuery = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)");
+  christmasSnowState.reducedMotion = Boolean(motionQuery && motionQuery.matches);
+  if (motionQuery) {
+    const onMotionChange = (ev) => {
+      christmasSnowState.reducedMotion = Boolean(ev.matches);
+      startOrStopChristmasSnowLoop();
+    };
+    if (typeof motionQuery.addEventListener === "function") {
+      motionQuery.addEventListener("change", onMotionChange);
+    } else if (typeof motionQuery.addListener === "function") {
+      motionQuery.addListener(onMotionChange);
+    }
+  }
+
+  if (christmasSnowState.canvas) {
+    resizeChristmasSnowCanvas();
+    window.addEventListener("resize", resizeChristmasSnowCanvas, { passive: true });
+  }
+  document.addEventListener("visibilitychange", startOrStopChristmasSnowLoop);
+
+  startOrStopChristmasSnowLoop();
+  initChristmasMusicPlayer();
+
+  // Re-evaluate holiday boundary once per minute (clean auto-disable after 31/12/2026)
+  setInterval(() => {
+    const stillActive = isChristmas2026Season();
+    if (!stillActive) {
+      if (christmasBgmState.audio && !christmasBgmState.audio.paused) {
+        christmasBgmState.audio.pause();
+      }
+      startOrStopChristmasSnowLoop();
+      updateChristmasMusicUI();
+      if (typeof studySettings !== "undefined" && studySettings.activeWallpaper === "christmas_2026") {
+        applyStudyWallpaperPreset("default");
+      }
+      if (typeof renderWallpaperPresets === "function") {
+        renderWallpaperPresets();
+      }
+    }
+  }, 60000);
+}
+
+initChristmasSeasonEffects();
 
 
