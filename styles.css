@@ -28286,7 +28286,7 @@ body.dark-theme #documentPickerModal .doc-picker-item-meta {
     color: var(--glass-colon) !important;
   }
 
-  /* 2. Center Glass Pill <-> Right-Docked Feature Icon Orb (Peek-Expand Horizontal) */
+  /* 2. Center-Left Optical Glass Pill <-> Right-Docked Feature Icon Orb */
   header#siteHeader .desktop-nav {
     position: absolute;
     top: 0;
@@ -28301,7 +28301,16 @@ body.dark-theme #documentPickerModal .doc-picker-item-meta {
     z-index: 1002;
     transform: translate3d(var(--nav-shift-x, 0px), 0, 0);
     will-change: transform;
-    transition: transform var(--glass-dur) var(--glass-ease);
+    transition: transform 0.44s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    header#siteHeader .desktop-nav {
+      transition-timing-function: linear(
+        0, 0.088 4%, 0.304 10%, 0.618 18%, 0.896 27%, 1.032 37%,
+        1.052 44%, 1.032 53%, 1.005 66%, 0.996 78%, 1.002 90%, 1
+      );
+    }
   }
 
   header#siteHeader.is-compact .desktop-nav {
@@ -28330,22 +28339,80 @@ body.dark-theme #documentPickerModal .doc-picker-item-meta {
     box-shadow: inset 0 1px 0 var(--glass-highlight), var(--glass-shadow);
     will-change: width;
     transition:
-      width var(--glass-dur) var(--glass-ease),
+      width 0.42s cubic-bezier(0.22, 1, 0.36, 1),
       background 0.22s ease,
       border-color 0.22s ease,
       box-shadow 0.22s ease;
   }
 
+  @media (prefers-reduced-motion: no-preference) {
+    /* Specular glass sheen layer sweeping across the capsule on state morph */
+    header#siteHeader .desktop-nav-shell::after {
+      content: "";
+      position: absolute;
+      inset: -2px;
+      background: linear-gradient(
+        112deg,
+        transparent 22%,
+        rgba(255, 255, 255, 0.38) 48%,
+        rgba(255, 255, 255, 0.12) 56%,
+        transparent 78%
+      );
+      transform: translate3d(-120%, 0, 0);
+      opacity: 0;
+      pointer-events: none;
+      z-index: 4;
+    }
+
+    body.dark-theme header#siteHeader .desktop-nav-shell::after {
+      background: linear-gradient(
+        112deg,
+        transparent 24%,
+        rgba(255, 255, 255, 0.16) 49%,
+        rgba(196, 181, 253, 0.08) 57%,
+        transparent 78%
+      );
+    }
+
+    header#siteHeader:not(.is-compact) .desktop-nav-shell,
+    header#siteHeader.is-nav-peek .desktop-nav-shell {
+      transition-timing-function:
+        linear(0, 0.095 5%, 0.34 12%, 0.69 21%, 0.96 31%, 1.036 42%, 1.042 49%, 1.018 61%, 0.998 76%, 1.002 90%, 1),
+        ease, ease, ease;
+    }
+
+    header#siteHeader.is-morph-to-expand .desktop-nav-shell::after {
+      animation: navGlassSheen 0.62s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    }
+
+    header#siteHeader.is-morph-to-compact .desktop-nav-shell {
+      animation: navOrbSquish 0.56s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    header#siteHeader.is-morph-to-compact .desktop-nav-shell::after {
+      animation: navGlassSheenReverse 0.48s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    }
+  }
+
   header#siteHeader.is-compact:not(.is-nav-peek) .desktop-nav-shell {
     width: 48px;
+    box-shadow:
+      inset 0 1px 0 var(--glass-highlight),
+      0 10px 26px -8px rgba(15, 23, 42, 0.2),
+      0 0 0 1px var(--glass-nav-pill-border);
   }
 
   header#siteHeader.is-compact:not(.is-nav-peek) .desktop-nav-shell:hover {
     background: var(--glass-bg-elevated);
     border-color: var(--glass-border-strong);
+    box-shadow:
+      inset 0 1px 0 var(--glass-highlight),
+      0 14px 32px -8px rgba(15, 23, 42, 0.26),
+      0 0 18px -4px var(--glass-accent-dot);
   }
 
   header#siteHeader .desktop-nav-links {
+    position: relative;
     display: flex;
     align-items: center;
     gap: 4px;
@@ -28357,23 +28424,68 @@ body.dark-theme #documentPickerModal .doc-picker-item-meta {
     pointer-events: auto;
     visibility: visible;
     transition:
-      opacity 0.24s ease 0.1s,
-      transform 0.34s var(--glass-ease) 0.04s,
+      opacity 0.24s ease 0.08s,
+      transform 0.36s cubic-bezier(0.22, 1, 0.36, 1) 0.04s,
       visibility 0s linear 0s;
   }
 
   header#siteHeader.is-compact:not(.is-nav-peek) .desktop-nav-links {
     opacity: 0;
-    transform: scale(0.9);
+    transform: scale(0.86);
     pointer-events: none;
     visibility: hidden;
     transition:
-      opacity 0.14s ease,
-      transform 0.24s var(--glass-ease),
-      visibility 0s linear 0.15s;
+      opacity 0.13s ease,
+      transform 0.24s cubic-bezier(0.22, 1, 0.36, 1),
+      visibility 0s linear 0.14s;
+  }
+
+  /* Sliding Liquid Glass Active Indicator */
+  header#siteHeader .nav-active-glider {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 38px;
+    width: var(--glider-w, 0px);
+    border-radius: 9999px;
+    background: var(--glass-nav-pill-bg);
+    border: 1px solid var(--glass-nav-pill-border);
+    box-shadow:
+      inset 0 1px 0 var(--glass-highlight),
+      0 4px 14px -3px rgba(0, 0, 0, 0.1);
+    pointer-events: none;
+    opacity: 0;
+    z-index: 0;
+    transform: translate3d(var(--glider-x, 0px), 0, 0);
+    will-change: transform, width;
+    transition:
+      transform 0.44s cubic-bezier(0.22, 1, 0.36, 1),
+      width 0.36s cubic-bezier(0.22, 1, 0.36, 1),
+      opacity 0.18s ease,
+      background 0.25s ease,
+      border-color 0.25s ease;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    header#siteHeader .nav-active-glider {
+      transition-timing-function:
+        linear(0, 0.095 5%, 0.34 12%, 0.68 21%, 0.96 31%, 1.048 42%, 1.055 49%, 1.022 61%, 0.996 76%, 1.002 90%, 1),
+        cubic-bezier(0.22, 1, 0.36, 1),
+        ease, ease, ease;
+    }
+  }
+
+  header#siteHeader .nav-active-glider.is-instant {
+    transition: none !important;
+  }
+
+  header#siteHeader .nav-active-glider.is-ready {
+    opacity: 1;
   }
 
   header#siteHeader .desktop-nav-links .nav-link {
+    position: relative;
+    z-index: 1;
     height: 38px;
     padding: 0 14px;
     border-radius: 9999px;
@@ -28392,12 +28504,28 @@ body.dark-theme #documentPickerModal .doc-picker-item-meta {
       color 0.2s ease,
       background 0.2s ease,
       border-color 0.2s ease,
-      box-shadow 0.2s ease;
+      box-shadow 0.2s ease,
+      transform 0.2s cubic-bezier(0.22, 1, 0.36, 1);
   }
 
   header#siteHeader .desktop-nav-links .nav-link:hover {
     color: var(--glass-nav-ink-hover) !important;
     background: var(--glass-nav-hover-bg) !important;
+    transform: translateY(-1px);
+  }
+
+  header#siteHeader .desktop-nav-links .nav-link:active {
+    transform: scale(0.95);
+  }
+
+  header#siteHeader .desktop-nav-links .nav-link:focus-visible,
+  header#siteHeader .desktop-nav-compact-trigger:focus-visible,
+  header#siteHeader .brand:focus-visible,
+  header#siteHeader .profile-chip:focus-visible,
+  header#siteHeader .desktop-search:focus-visible,
+  header#siteHeader .quick-menu-btn:focus-visible {
+    outline: 2px solid var(--glass-accent-dot);
+    outline-offset: 2px;
   }
 
   header#siteHeader .desktop-nav-links .nav-link.active {
@@ -28408,6 +28536,28 @@ body.dark-theme #documentPickerModal .doc-picker-item-meta {
     box-shadow:
       inset 0 1px 0 var(--glass-highlight),
       0 2px 10px -2px rgba(0, 0, 0, 0.08) !important;
+  }
+
+  header#siteHeader .desktop-nav-links.has-glider .nav-link.active {
+    background: transparent !important;
+    border-color: transparent !important;
+    box-shadow: none !important;
+  }
+
+  header#siteHeader .desktop-nav-links .nav-link .nav-link-icon svg {
+    transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  header#siteHeader .desktop-nav-links .nav-link:hover .nav-link-icon svg,
+  header#siteHeader .desktop-nav-links .nav-link.active .nav-link-icon svg {
+    transform: scale(1.08);
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    header#siteHeader.is-morph-to-expand .desktop-nav-links .nav-link {
+      animation: navLinkBloomIn 0.44s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+      animation-delay: calc((4 - var(--nav-i, 0)) * 28ms);
+    }
   }
 
   header#siteHeader .desktop-nav-links .nav-link-arena svg {
@@ -28433,10 +28583,10 @@ body.dark-theme #documentPickerModal .doc-picker-item-meta {
     opacity: 0;
     visibility: hidden;
     pointer-events: none;
-    transform: scale(0.68);
+    transform: scale(0.55);
     transition:
       opacity 0.12s ease,
-      transform 0.2s var(--glass-ease),
+      transform 0.22s cubic-bezier(0.22, 1, 0.36, 1),
       background 0.2s ease,
       color 0.2s ease,
       visibility 0s linear 0.14s;
@@ -28448,20 +28598,33 @@ body.dark-theme #documentPickerModal .doc-picker-item-meta {
     pointer-events: auto;
     transform: scale(1);
     transition:
-      opacity 0.22s ease 0.14s,
-      transform 0.32s var(--glass-ease) 0.1s,
+      opacity 0.22s ease 0.12s,
+      transform 0.4s cubic-bezier(0.22, 1, 0.36, 1) 0.08s,
       background 0.2s ease,
       color 0.2s ease,
       visibility 0s linear 0s;
   }
 
+  @media (prefers-reduced-motion: no-preference) {
+    header#siteHeader.is-compact:not(.is-nav-peek) .desktop-nav-compact-trigger {
+      transition-timing-function:
+        ease,
+        linear(0, 0.22 8%, 0.71 21%, 1.06 36%, 1.09 45%, 1.03 60%, 0.992 76%, 1.003 90%, 1),
+        ease, ease, linear;
+    }
+
+    header#siteHeader.is-morph-to-compact .desktop-nav-compact-trigger .compact-nav-icon {
+      animation: compactIconBloom 0.42s cubic-bezier(0.22, 1, 0.36, 1) 0.08s backwards;
+    }
+  }
+
   header#siteHeader.is-compact:not(.is-nav-peek) .desktop-nav-compact-trigger:hover {
-    background: var(--glass-nav-hover-bg);
-    transform: scale(1.06);
+    background: var(--glass-nav-pill-bg);
+    transform: scale(1.08) translateY(-1px);
   }
 
   header#siteHeader.is-compact:not(.is-nav-peek) .desktop-nav-compact-trigger:active {
-    transform: scale(0.95);
+    transform: scale(0.92);
   }
 
   header#siteHeader .compact-nav-icon {
@@ -28596,6 +28759,13 @@ body.dark-theme #documentPickerModal .doc-picker-item-meta {
     transform: translateY(-1px);
   }
 
+  header#siteHeader .desktop-search:active,
+  header#siteHeader .quick-menu-btn:active,
+  header#siteHeader .brand:active,
+  header#siteHeader .profile-chip:active {
+    transform: scale(0.95);
+  }
+
   header#siteHeader .quick-menu-btn .hamburger-line {
     background: currentColor;
   }
@@ -28630,17 +28800,99 @@ body.dark-theme #documentPickerModal .doc-picker-item-meta {
   }
 }
 
+@keyframes navGlassSheen {
+  0% {
+    opacity: 0;
+    transform: translate3d(-120%, 0, 0);
+  }
+  20% {
+    opacity: 1;
+  }
+  85% {
+    opacity: 0.7;
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(130%, 0, 0);
+  }
+}
+
+@keyframes navGlassSheenReverse {
+  0% {
+    opacity: 0;
+    transform: translate3d(120%, 0, 0);
+  }
+  25% {
+    opacity: 0.9;
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(-130%, 0, 0);
+  }
+}
+
+@keyframes navOrbSquish {
+  0%, 42% {
+    transform: scale(1);
+  }
+  62% {
+    transform: scale(0.91, 1.06);
+  }
+  82% {
+    transform: scale(1.06, 0.96);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes navLinkBloomIn {
+  from {
+    opacity: 0;
+    transform: translate3d(10px, 0, 0) scale(0.88);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@keyframes compactIconBloom {
+  from {
+    opacity: 0;
+    transform: scale(0.6);
+    filter: blur(4px);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.1);
+    filter: blur(0);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+    filter: blur(0);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
-  header#siteHeader .brand,
   header#siteHeader .desktop-nav,
   header#siteHeader .desktop-nav-shell,
-  header#siteHeader .desktop-nav-links,
+  header#siteHeader .nav-active-glider,
   header#siteHeader .desktop-nav-compact-trigger,
   header#siteHeader .profile-chip,
-  header#siteHeader .profile-chip .profile-chip-text,
+  header#siteHeader .profile-chip .profile-chip-text {
+    transition-property: opacity, color, background-color, border-color;
+    transition-duration: 0.14s;
+    transition-delay: 0ms;
+  }
+
+  header#siteHeader .brand,
+  header#siteHeader .desktop-nav-links .nav-link,
   header#siteHeader .desktop-search,
   header#siteHeader .quick-menu-btn {
-    transition-duration: 0.01ms !important;
-    transition-delay: 0ms !important;
+    transition-property: color, background-color, border-color;
+    transition-duration: 0.14s;
+    transform: none !important;
   }
 }

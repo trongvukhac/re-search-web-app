@@ -3122,6 +3122,9 @@ function go(rawRoute, scrollToTop = true) {
   if (typeof window.syncCompactNavActiveIcon === "function") {
     window.syncCompactNavActiveIcon(baseRoute);
   }
+  if (typeof window.syncNavActiveGlider === "function") {
+    window.syncNavActiveGlider(false);
+  }
   if (typeof window.closeNavPeek === "function") {
     window.closeNavPeek({ scrollingToTop: Boolean(scrollToTop) });
   }
@@ -4626,6 +4629,9 @@ async function openDetail(id, updateHash = true, isBack = false, targetScrollY =
   });
   if (typeof window.syncCompactNavActiveIcon === "function") {
     window.syncCompactNavActiveIcon("forum");
+  }
+  if (typeof window.syncNavActiveGlider === "function") {
+    window.syncNavActiveGlider(false);
   }
   if (typeof window.closeNavPeek === "function") {
     window.closeNavPeek({ scrollingToTop: !isBack || !targetScrollY });
@@ -15419,6 +15425,7 @@ function initAdaptiveGlassHeader() {
   const brand = header ? header.querySelector(".brand") : null;
   const desktopNav = document.getElementById("desktopNav");
   const navLinks = document.getElementById("desktopNavLinks");
+  const navGlider = document.getElementById("desktopNavGlider");
   const compactBtn = document.getElementById("desktopNavCompactBtn");
   const headerActions = document.getElementById("headerActions") || (header ? header.querySelector(".header-actions") : null);
   const profileChip = document.getElementById("navProfileChip");
@@ -15428,11 +15435,16 @@ function initAdaptiveGlassHeader() {
     return;
   }
 
+  navLinks.querySelectorAll(".nav-link").forEach((link, idx) => {
+    link.style.setProperty("--nav-i", String(idx));
+  });
+
   let isCompact = false;
   let isPeeking = false;
   let peekScrollY = 0;
   let suppressPeekAutoCloseUntil = 0;
   let scrollTopPeekTimer = null;
+  let morphEffectTimer = null;
   let lastSyncedCompactKey = "";
 
   const NAV_ROUTE_META = {
@@ -15524,18 +15536,65 @@ function initAdaptiveGlassHeader() {
     });
   }
 
+  function syncNavActiveGlider(instant) {
+    if (!navGlider) return;
+    const activeLink = navLinks.querySelector(".nav-link.active");
+    if (!activeLink || activeLink.offsetWidth <= 0) {
+      navGlider.classList.remove("is-ready");
+      navLinks.classList.remove("has-glider");
+      return;
+    }
+    const x = activeLink.offsetLeft;
+    const w = activeLink.offsetWidth;
+    if (instant) {
+      navGlider.classList.add("is-instant");
+    }
+    navLinks.classList.add("has-glider");
+    navLinks.style.setProperty("--glider-x", `${x}px`);
+    navLinks.style.setProperty("--glider-w", `${w}px`);
+    navGlider.classList.add("is-ready");
+    if (instant) {
+      void navGlider.offsetWidth;
+      navGlider.classList.remove("is-instant");
+    }
+  }
+
+  window.syncNavActiveGlider = syncNavActiveGlider;
+
+  function triggerNavMorph(mode) {
+    if (morphEffectTimer) {
+      clearTimeout(morphEffectTimer);
+      morphEffectTimer = null;
+    }
+    header.classList.remove("is-morph-to-expand", "is-morph-to-compact");
+    void header.offsetWidth;
+    const cls = mode === "expand" ? "is-morph-to-expand" : "is-morph-to-compact";
+    header.classList.add(cls);
+    morphEffectTimer = setTimeout(() => {
+      morphEffectTimer = null;
+      header.classList.remove("is-morph-to-expand", "is-morph-to-compact");
+    }, 680);
+  }
+
   function setNavPeekOpen(open) {
     if (scrollTopPeekTimer) {
       clearTimeout(scrollTopPeekTimer);
       scrollTopPeekTimer = null;
     }
     const nextPeek = Boolean(open) && isCompact && isDesktopGlassViewport();
+    const changed = nextPeek !== isPeeking;
     isPeeking = nextPeek;
     if (nextPeek) {
       peekScrollY = window.scrollY || window.pageYOffset || 0;
     }
     header.classList.toggle("is-nav-peek", nextPeek);
     syncFocusOrder();
+    if (changed && isCompact) {
+      triggerNavMorph(nextPeek ? "expand" : "compact");
+      if (nextPeek) {
+        syncNavActiveGlider(true);
+      }
+    }
   }
 
   window.closeNavPeek = function closeNavPeek(opts) {
@@ -15591,9 +15650,7 @@ function initAdaptiveGlassHeader() {
 
     const compactActionsW = measureCompactActionsWidth();
     const chipDelta = chipTextW > 0 ? chipTextW + 19 : 0;
-    const expandedActionsW = !header.classList.contains("is-compact")
-      ? Math.max(compactActionsW, headerActions.offsetWidth || compactActionsW + chipDelta)
-      : compactActionsW + chipDelta;
+    const expandedActionsW = compactActionsW + chipDelta;
 
     const innerW = headerInner.clientWidth;
     const brandW = brand.offsetWidth;
@@ -15605,16 +15662,18 @@ function initAdaptiveGlassHeader() {
       const dockRight = Math.round(compactActionsW + 10);
       header.style.setProperty("--nav-dock-right", `${dockRight}px`);
 
-      const idealRightEdge = innerW / 2 + navExpandedW / 2;
+      // Optical 44/56 split across free channel so narrower left logo and wider right capsule look visually balanced
       const minRightEdge = brandW + 14 + navExpandedW;
       const maxRightEdge = innerW - expandedActionsW - 14;
+      const freeSpan = Math.max(0, maxRightEdge - minRightEdge);
       const targetRightEdge = minRightEdge <= maxRightEdge
-        ? Math.max(minRightEdge, Math.min(maxRightEdge, idealRightEdge))
-        : (minRightEdge + maxRightEdge) / 2;
+        ? Math.round(minRightEdge + freeSpan * 0.44)
+        : Math.round((minRightEdge + maxRightEdge) / 2);
       const dockRightEdge = innerW - dockRight;
       const shiftX = Math.round(targetRightEdge - dockRightEdge);
       header.style.setProperty("--nav-shift-x", `${shiftX}px`);
     }
+    syncNavActiveGlider(true);
   }
 
   window.syncAdaptiveGlassHeaderMetrics = syncAdaptiveGlassHeaderMetrics;
@@ -15628,6 +15687,10 @@ function initAdaptiveGlassHeader() {
     }
     header.classList.toggle("is-compact", nextCompact);
     syncFocusOrder();
+    triggerNavMorph(nextCompact ? "compact" : "expand");
+    if (!nextCompact) {
+      syncNavActiveGlider(true);
+    }
   }
 
   function evaluateScrollState() {
@@ -15702,6 +15765,7 @@ function initAdaptiveGlassHeader() {
 
   syncCompactNavActiveIcon();
   syncAdaptiveGlassHeaderMetrics();
+  syncNavActiveGlider(true);
   evaluateScrollState();
 }
 
