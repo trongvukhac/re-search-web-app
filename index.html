@@ -3,6 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover, interactive-widget=resizes-content" />
+    <meta name="color-scheme" content="light dark" />
     <meta name="theme-color" content="#123f31" />
     <script>
       (function () {
@@ -29,7 +30,7 @@
     <script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js" defer></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" defer></script>
-    <link rel="stylesheet" href="styles.css?v=155" />
+    <link rel="stylesheet" href="styles.css?v=157" />
   </head>
   <body>
     <canvas id="christmasSnowCanvas" class="christmas-snow-canvas" aria-hidden="true"></canvas>
@@ -305,20 +306,19 @@
     </dialog>
     <div class="toast" id="toast" popover="manual"></div>
     <header class="site-header" id="siteHeader">
-      <div class="christmas-header-garland" id="christmasHeaderGarland" aria-hidden="true">
-        <span class="xmas-bulb b1"></span><span class="xmas-bulb b2"></span><span class="xmas-bulb b3"></span><span class="xmas-bulb b4"></span>
-        <span class="xmas-bulb b1"></span><span class="xmas-bulb b2"></span><span class="xmas-bulb b3"></span><span class="xmas-bulb b4"></span>
-        <span class="xmas-bulb b1"></span><span class="xmas-bulb b2"></span><span class="xmas-bulb b3"></span><span class="xmas-bulb b4"></span>
-      </div>
+      <div class="christmas-header-garland" id="christmasHeaderGarland" aria-hidden="true"></div>
       <div class="site-header-inner">
         <a class="brand" href="#home" aria-label="RE:SEARCH Trang chủ">
           <span class="brand-mark">
             <img src="public/assets/research-logo.png" alt="" />
-            <svg class="christmas-santa-hat" aria-hidden="true" viewBox="0 0 36 28" fill="none">
-              <path d="M5 19C6 10 14 4 24 6C28 7 31 10 31 14C26 12 20 14 17 18L5 19Z" fill="#dc2626"/>
-              <path d="M5 19C12 16 19 15 24 18C20 19 11 20 5 19Z" fill="#b91c1c"/>
-              <rect x="3" y="17.5" width="21" height="5" rx="2.5" fill="#ffffff"/>
-              <circle cx="31.5" cy="14" r="3.2" fill="#ffffff"/>
+            <svg class="christmas-santa-hat" aria-hidden="true" viewBox="0 0 40 32" fill="none">
+              <path d="M7 22C8.5 10.5 17.5 3.5 28 6.5C32.5 7.8 35.5 11.2 35 16C30 13.5 23.5 14.5 19.5 20.5L7 22Z" fill="#dc2626"/>
+              <path d="M9 21.5C14 14.5 22 10 29.5 10.5C25 14 21 17 19.5 20.5L9 21.5Z" fill="#991b1b" opacity="0.55"/>
+              <path d="M12.5 12.5C16.5 8.5 21.5 7.2 26 7.8" stroke="#fca5a5" stroke-width="1.3" stroke-linecap="round" opacity="0.7"/>
+              <rect x="4.5" y="19.5" width="22" height="6" rx="3" fill="#ffffff"/>
+              <rect x="4.5" y="23" width="22" height="2.5" rx="1.25" fill="#e2e8f0" opacity="0.8"/>
+              <circle cx="35" cy="16" r="4" fill="#ffffff"/>
+              <circle cx="34.2" cy="15.2" r="1.4" fill="#f8fafc"/>
             </svg>
           </span>
           <span>RE<span class="brand-colon">:</span>SEARCH</span>
@@ -5632,7 +5632,7 @@
 
     <!-- Bộ điều khiển Nhạc nền & Tuyết rơi Giáng sinh toàn web -->
     <div class="christmas-floating-widget xmas-seasonal-control" id="christmasMusicWidget" role="region" aria-label="Điều khiển không khí và nhạc Giáng sinh">
-      <button type="button" class="xmas-widget-music-btn" id="christmasMusicToggleBtn" aria-pressed="false" aria-label="Bật nhạc nền Giáng sinh: Ikson - Christmas" title="Bật/tắt nhạc nền Giáng sinh (Ikson - Christmas)">
+      <button type="button" class="xmas-widget-music-btn" id="christmasMusicToggleBtn" aria-pressed="false" aria-label="Nhạc nền Giáng sinh: Ikson - Christmas" title="Bật/tắt nhạc nền Giáng sinh (Ikson - Christmas)">
         <span class="xmas-music-icon" aria-hidden="true">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg>
         </span>
@@ -5640,11 +5640,11 @@
         <span class="xmas-widget-label" id="christmasMusicStatusText">Nhạc Noel</span>
       </button>
       <span class="xmas-widget-sep" aria-hidden="true"></span>
-      <button type="button" class="xmas-widget-snow-btn active" id="christmasSnowToggleBtn" aria-pressed="true" aria-label="Tạm dừng hiệu ứng tuyết rơi Giáng sinh" title="Bật/tắt tuyết rơi và trang trí Giáng sinh">
+      <button type="button" class="xmas-widget-snow-btn active" id="christmasSnowToggleBtn" aria-pressed="true" aria-label="Hiệu ứng tuyết rơi và trang trí Giáng sinh" title="Bật/tắt tuyết rơi và trang trí Giáng sinh">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="2" x2="12" y2="22"></line><path d="m17 5-5 5-5-5"></path><path d="m17 19-5-5-5 5"></path><line x1="2" y1="12" x2="22" y2="12"></line><path d="m5 7 5 5-5 5"></path><path d="m19 7-5 5 5 5"></path></svg>
       </button>
     </div>
 
-    <script src="app.js?v=155" defer></script>
+    <script src="app.js?v=157" defer></script>
   </body>
 </html>

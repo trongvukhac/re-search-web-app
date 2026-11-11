@@ -15,6 +15,10 @@ const christmasSnowState = {
   canvas: null,
   ctx: null,
   flakes: [],
+  sparkles: [],
+  snowPile: [],
+  pileColWidth: 4,
+  windAngle: 0,
   width: 0,
   height: 0,
   enabled: true,
@@ -20821,18 +20825,133 @@ function syncChristmasSeasonalControlsVisibility() {
   }
 }
 
+function buildChristmasGarlandTileSvg(idx) {
+  const shift = (idx % 2) * 0.45;
+  const bulbs = [
+    { x: 20, y: 12.2, rot: -11, color: "#f59e0b", tip: "#fde68a", glow: "#fbbf24", core: "#fffbeb", cls: "xmas-lamp-a" },
+    { x: 60, y: 18.4, rot: 2, color: "#dc2626", tip: "#fca5a5", glow: "#ef4444", core: "#fff1f2", cls: "xmas-lamp-b" },
+    { x: 100, y: 12.8, rot: 12, color: "#059669", tip: "#6ee7b7", glow: "#34d399", core: "#ecfdf5", cls: "xmas-lamp-c" },
+    { x: 140, y: 12.8, rot: -12, color: "#0284c7", tip: "#7dd3fc", glow: "#38bdf8", core: "#f0f9ff", cls: "xmas-lamp-d" },
+    { x: 180, y: 18.4, rot: -2, color: "#f59e0b", tip: "#fde68a", glow: "#fbbf24", core: "#fffbeb", cls: "xmas-lamp-a" },
+    { x: 220, y: 12.2, rot: 11, color: "#dc2626", tip: "#fca5a5", glow: "#ef4444", core: "#fff1f2", cls: "xmas-lamp-c" }
+  ];
+  const bulbsMarkup = bulbs.map((b) => {
+    const by = (b.y + shift).toFixed(1);
+    return `
+      <g class="xmas-lamp ${b.cls}" transform="translate(${b.x}, ${by}) rotate(${b.rot})">
+        <circle cx="0" cy="12.5" r="11.5" fill="${b.glow}" opacity="0.22"/>
+        <circle cx="0" cy="12" r="6.8" fill="${b.glow}" opacity="0.34"/>
+        <rect x="-2.4" y="-1.2" width="4.8" height="4.4" rx="1.1" fill="#1b4332" stroke="#d97706" stroke-width="0.65"/>
+        <line x1="-2" y1="0.8" x2="2" y2="0.8" stroke="#f59e0b" stroke-width="0.5" opacity="0.8"/>
+        <path d="M-2.5 3.2 C-4.3 6.6 -4.9 10.6 -3.2 13.8 C-1.9 16.1 1.9 16.1 3.2 13.8 C4.9 10.6 4.3 6.6 2.5 3.2 Z" fill="${b.color}"/>
+        <path d="M-1.5 4.4 C-2.5 7.4 -2.6 10.6 -1.5 13 C-0.5 14.3 0.8 14.3 1.5 12.8 C2.4 10.5 2.2 7.2 1.4 4.4 Z" fill="${b.tip}" opacity="0.48"/>
+        <ellipse cx="0" cy="9.8" rx="1.5" ry="3.2" fill="${b.core}" opacity="0.92"/>
+        <path d="M-2.1 5.6 C-2.8 8.1 -2.7 10.4 -1.6 12" stroke="#ffffff" stroke-width="0.9" stroke-linecap="round" opacity="0.78"/>
+      </g>`;
+  }).join("");
+
+  return `<svg class="xmas-garland-unit" viewBox="0 0 240 44" width="240" height="44" fill="none" aria-hidden="true">
+    <path d="M0 7 Q60 27 120 8 Q180 27 240 7" stroke="#0d3b26" stroke-width="4.2" stroke-linecap="round"/>
+    <path d="M0 7 Q60 27 120 8 Q180 27 240 7" stroke="#1b5e3f" stroke-width="2.2" stroke-linecap="round"/>
+    <path d="M0 7 Q60 27 120 8 Q180 27 240 7" stroke="#eab308" stroke-width="0.95" stroke-dasharray="3 6" stroke-linecap="round" opacity="0.8"/>
+    <g stroke="#14532d" stroke-width="1.55" stroke-linecap="round" opacity="0.92">
+      <path d="M8 8 L3 14 M15 10 L11 16 M28 13 L25 19 M40 16 L37 22 M52 17 L50 23 M68 17 L71 23 M82 15 L85 21 M96 12 L100 18 M112 9 L115 15"/>
+      <path d="M128 9 L125 15 M144 12 L140 18 M158 15 L155 21 M172 17 L169 23 M188 17 L190 23 M200 16 L203 22 M212 13 L215 19 M225 10 L229 16 M232 8 L237 14"/>
+      <path d="M12 7 L16 2 M36 13 L39 8 M84 13 L81 8 M156 13 L159 8 M204 13 L201 8 M228 7 L224 2" stroke="#1e6b46" stroke-width="1.25"/>
+    </g>
+    <g stroke="#f0f9ff" stroke-width="0.9" stroke-linecap="round" opacity="0.7">
+      <path d="M38 15 L42 18 M76 15 L73 18 M160 15 L163 18 M198 15 L195 18"/>
+    </g>
+    <g>
+      <path d="M114 7 C110 11 115 14 120 10 C125 14 130 11 126 7 Z" fill="#15803d"/>
+      <circle cx="118.2" cy="9.4" r="1.85" fill="#dc2626"/>
+      <circle cx="121.8" cy="9.4" r="1.85" fill="#b91c1c"/>
+      <circle cx="120" cy="7.4" r="1.75" fill="#ef4444"/>
+      <circle cx="119.4" cy="6.8" r="0.55" fill="#fecaca"/>
+    </g>
+    ${bulbsMarkup}
+  </svg>`;
+}
+
+function renderChristmasHeaderGarland() {
+  const garland = $("#christmasHeaderGarland");
+  if (!garland) return;
+  const neededUnits = Math.max(4, Math.ceil((window.innerWidth || 1440) / 240) + 1);
+  if (garland.dataset.units === String(neededUnits) && garland.children.length > 0) return;
+  let html = "";
+  for (let i = 0; i < neededUnits; i++) {
+    html += buildChristmasGarlandTileSvg(i);
+  }
+  garland.innerHTML = html;
+  garland.dataset.units = String(neededUnits);
+}
+
+function ensureSnowPile(width) {
+  const colW = christmasSnowState.pileColWidth || 4;
+  const cols = Math.max(24, Math.ceil(width / colW) + 1);
+  const maxHeight = width <= 760 ? 18 : 26;
+  const prev = christmasSnowState.snowPile;
+
+  if (!prev || prev.length === 0) {
+    const arr = new Array(cols);
+    for (let i = 0; i < cols; i++) {
+      const t = i / Math.max(1, cols - 1);
+      // Organic low rolling dunes subtly taller toward viewport corners
+      const cornerLift = Math.pow(Math.abs(t - 0.5) * 2, 1.8) * (width <= 760 ? 4.5 : 7.5);
+      const drift = 6.5 + cornerLift + Math.sin(t * Math.PI * 2.2 + 0.5) * 2.6 + Math.cos(t * Math.PI * 4.7) * 1.4;
+      arr[i] = Math.max(4, Math.min(maxHeight, drift));
+    }
+    christmasSnowState.snowPile = arr;
+    return;
+  }
+
+  if (prev.length !== cols) {
+    const next = new Array(cols);
+    for (let i = 0; i < cols; i++) {
+      const srcIdx = Math.min(prev.length - 1, Math.round((i / Math.max(1, cols - 1)) * (prev.length - 1)));
+      next[i] = Math.min(maxHeight, prev[srcIdx] || 7);
+    }
+    christmasSnowState.snowPile = next;
+  }
+}
+
+function relaxSnowPile(pile, maxHeight) {
+  const n = pile.length;
+  if (n < 3) return;
+  let prev = pile[0];
+  let sum = 0;
+  for (let i = 1; i < n - 1; i++) {
+    const cur = pile[i];
+    const smoothed = prev * 0.18 + cur * 0.64 + pile[i + 1] * 0.18;
+    prev = cur;
+    pile[i] = Math.min(maxHeight, Math.max(4, smoothed));
+    sum += pile[i];
+  }
+  // Softly settle when nearing cap so falling snow keeps animating landings gracefully
+  if (sum / n > maxHeight * 0.88) {
+    for (let i = 0; i < n; i++) {
+      pile[i] = Math.max(5, pile[i] - 0.008);
+    }
+  }
+}
+
 function createSnowFlake(width, height, spawnAtTop = false) {
-  const isSparkle = Math.random() < 0.22;
+  const roll = Math.random();
+  // layer 0: far frost dust, layer 1: soft radial snow puff, layer 2: rotating 6-arm crystal
+  const layer = roll < 0.24 ? 2 : (roll < 0.68 ? 1 : 0);
+  const r = layer === 2 ? (Math.random() * 3.8 + 5.2) : (layer === 1 ? (Math.random() * 2.4 + 2.6) : (Math.random() * 1.1 + 1.1));
   return {
-    x: Math.random() * width,
-    y: spawnAtTop ? (-10 - Math.random() * 40) : (Math.random() * height),
-    r: isSparkle ? (Math.random() * 1.4 + 2.2) : (Math.random() * 2.1 + 1.1),
-    speedY: Math.random() * 0.85 + 0.55,
+    layer,
+    x: Math.random() * (width + 40) - 20,
+    y: spawnAtTop ? (-12 - Math.random() * 60) : (Math.random() * height),
+    r,
+    speedY: layer === 2 ? (Math.random() * 0.55 + 0.72) : (layer === 1 ? (Math.random() * 0.75 + 0.68) : (Math.random() * 0.6 + 0.42)),
     phase: Math.random() * Math.PI * 2,
-    swayAmp: Math.random() * 0.45 + 0.15,
-    swayFreq: Math.random() * 0.014 + 0.008,
-    alpha: Math.random() * 0.45 + 0.35,
-    isSparkle
+    swayAmp: layer === 2 ? (Math.random() * 0.55 + 0.3) : (Math.random() * 0.35 + 0.12),
+    swayFreq: Math.random() * 0.016 + 0.007,
+    rot: Math.random() * Math.PI * 2,
+    rotSpeed: (Math.random() - 0.5) * 0.018,
+    alpha: layer === 2 ? (Math.random() * 0.25 + 0.72) : (layer === 1 ? (Math.random() * 0.28 + 0.64) : (Math.random() * 0.35 + 0.45))
   };
 }
 
@@ -20851,7 +20970,9 @@ function resizeChristmasSnowCanvas() {
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     christmasSnowState.ctx = ctx;
   }
-  const targetCount = w <= 760 ? 18 : 38;
+  ensureSnowPile(w);
+  renderChristmasHeaderGarland();
+  const targetCount = w <= 760 ? 34 : 76;
   while (christmasSnowState.flakes.length < targetCount) {
     christmasSnowState.flakes.push(createSnowFlake(w, h, false));
   }
@@ -20860,16 +20981,98 @@ function resizeChristmasSnowCanvas() {
   }
 }
 
-function drawSixPointStar(ctx, x, y, r) {
+function drawDendriticSnowflake(ctx, x, y, r, rot) {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(rot);
   ctx.beginPath();
-  for (let i = 0; i < 3; i++) {
-    const angle = (i * Math.PI) / 3;
-    const dx = Math.cos(angle) * r;
-    const dy = Math.sin(angle) * r;
-    ctx.moveTo(x - dx, y - dy);
-    ctx.lineTo(x + dx, y + dy);
+  for (let i = 0; i < 6; i++) {
+    const a = (i * Math.PI) / 3;
+    const cos = Math.cos(a);
+    const sin = Math.sin(a);
+    ctx.moveTo(0, 0);
+    ctx.lineTo(cos * r, sin * r);
+    // V-shaped crystal barbs at ~58% arm length
+    const bx = cos * r * 0.58;
+    const by = sin * r * 0.58;
+    const bLen = r * 0.32;
+    const a1 = a + Math.PI / 5;
+    const a2 = a - Math.PI / 5;
+    ctx.moveTo(bx, by);
+    ctx.lineTo(bx + Math.cos(a1) * bLen, by + Math.sin(a1) * bLen);
+    ctx.moveTo(bx, by);
+    ctx.lineTo(bx + Math.cos(a2) * bLen, by + Math.sin(a2) * bLen);
   }
   ctx.stroke();
+  ctx.restore();
+}
+
+function drawBottomSnowPile(ctx, w, h, pile, isDark) {
+  if (!pile || pile.length < 3) return;
+  const colW = christmasSnowState.pileColWidth || 4;
+
+  ctx.save();
+
+  // Gentle distant snow slope behind foreground bank for winter depth
+  ctx.beginPath();
+  ctx.moveTo(0, h + 2);
+  for (let x = 0; x <= w + 32; x += 32) {
+    const backH = 12 + Math.sin(x * 0.006 + 0.9) * 4.5 + Math.cos(x * 0.013) * 2.2;
+    ctx.lineTo(x, h - backH);
+  }
+  ctx.lineTo(w + 2, h + 2);
+  ctx.closePath();
+  ctx.fillStyle = isDark ? "rgba(148, 163, 184, 0.2)" : "rgba(219, 234, 254, 0.48)";
+  ctx.fill();
+
+  // Dynamic accumulated foreground snowbank built by landing snowflakes (soft shadow, zero wave border)
+  ctx.beginPath();
+  ctx.moveTo(0, h + 2);
+  ctx.lineTo(0, h - pile[0]);
+  for (let i = 1; i < pile.length - 1; i++) {
+    const xCur = i * colW;
+    const yCur = h - pile[i];
+    const xNext = (i + 1) * colW;
+    const yNext = h - pile[i + 1];
+    ctx.quadraticCurveTo(xCur, yCur, (xCur + xNext) * 0.5, (yCur + yNext) * 0.5);
+  }
+  const lastY = h - pile[pile.length - 1];
+  ctx.lineTo(w + 2, lastY);
+  ctx.lineTo(w + 2, h + 2);
+  ctx.closePath();
+
+  const grad = ctx.createLinearGradient(0, h - 28, 0, h);
+  if (isDark) {
+    grad.addColorStop(0, "rgba(248, 250, 252, 0.96)");
+    grad.addColorStop(0.55, "rgba(203, 213, 225, 0.9)");
+    grad.addColorStop(1, "rgba(148, 163, 184, 0.84)");
+  } else {
+    grad.addColorStop(0, "rgba(255, 255, 255, 0.98)");
+    grad.addColorStop(0.65, "rgba(239, 246, 255, 0.95)");
+    grad.addColorStop(1, "rgba(219, 234, 254, 0.92)");
+  }
+  ctx.fillStyle = grad;
+  ctx.shadowColor = isDark ? "rgba(186, 230, 253, 0.25)" : "rgba(100, 150, 200, 0.16)";
+  ctx.shadowBlur = 10;
+  ctx.shadowOffsetY = -2;
+  ctx.fill();
+
+  // Whisper-soft pure white rim light (no harsh blue water-like stroke)
+  ctx.shadowColor = "transparent";
+  ctx.beginPath();
+  ctx.moveTo(0, h - pile[0]);
+  for (let i = 1; i < pile.length - 1; i++) {
+    const xCur = i * colW;
+    const yCur = h - pile[i];
+    const xNext = (i + 1) * colW;
+    const yNext = h - pile[i + 1];
+    ctx.quadraticCurveTo(xCur, yCur, (xCur + xNext) * 0.5, (yCur + yNext) * 0.5);
+  }
+  ctx.lineTo(w + 2, lastY);
+  ctx.strokeStyle = isDark ? "rgba(255, 255, 255, 0.68)" : "rgba(255, 255, 255, 0.94)";
+  ctx.lineWidth = 1.2;
+  ctx.stroke();
+  ctx.restore();
 }
 
 function renderChristmasSnowFrame() {
@@ -20890,47 +21093,117 @@ function renderChristmasSnowFrame() {
 
   ctx.clearRect(0, 0, w, h);
   const isDark = christmasSnowState.isDark;
-  const fillColor = isDark ? "#ffffff" : "#7dc4ea";
-  const strokeColor = isDark ? "#e0f2fe" : "#5eb4e2";
-  const bottomFadeStart = h - 46;
+  const isQuietMode = document.documentElement.classList.contains("study-mode-active") || document.body.classList.contains("arena-quiz-active");
+  const pile = christmasSnowState.snowPile;
+  const colW = christmasSnowState.pileColWidth || 4;
+  const maxHeight = w <= 760 ? 18 : 26;
+
+  christmasSnowState.windAngle += 0.008;
+  const globalBreeze = Math.sin(christmasSnowState.windAngle) * 0.28 + 0.14;
 
   for (let i = 0; i < christmasSnowState.flakes.length; i++) {
     const f = christmasSnowState.flakes[i];
     f.phase += f.swayFreq;
-    f.x += Math.sin(f.phase) * f.swayAmp;
+    f.rot += f.rotSpeed;
+    f.x += Math.sin(f.phase) * f.swayAmp + globalBreeze * (f.layer === 0 ? 0.5 : 1);
     f.y += f.speedY;
 
-    if (f.x < -10) f.x = w + 10;
-    if (f.x > w + 10) f.x = -10;
-    if (f.y > h + 8) {
+    if (f.x < -16) f.x = w + 16;
+    if (f.x > w + 16) f.x = -16;
+
+    const colIdx = Math.max(0, Math.min(pile.length - 1, Math.round(f.x / colW)));
+    const groundY = (!isQuietMode && pile.length) ? (h - pile[colIdx]) : (h + 10);
+
+    if (f.y + f.r * 0.45 >= groundY) {
+      if (!isQuietMode && pile.length) {
+        const deposit = f.layer === 2 ? 0.48 : (f.layer === 1 ? 0.3 : 0.14);
+        const weights = [0.22, 0.5, 0.82, 1, 0.82, 0.5, 0.22];
+        for (let k = -3; k <= 3; k++) {
+          const idx = colIdx + k;
+          if (idx >= 0 && idx < pile.length) {
+            pile[idx] = Math.min(maxHeight, pile[idx] + deposit * weights[k + 3] * 0.32);
+          }
+        }
+        if (christmasSnowState.sparkles.length < 44 && f.layer > 0) {
+          christmasSnowState.sparkles.push({
+            x: f.x,
+            y: groundY - 1,
+            vx: (Math.random() - 0.5) * 1.4,
+            vy: -Math.random() * 1.3 - 0.4,
+            r: Math.random() * 1.6 + 1,
+            life: 1
+          });
+        }
+      }
       christmasSnowState.flakes[i] = createSnowFlake(w, h, true);
       continue;
     }
 
-    // Fade gently near bottom so flakes never obstruct footer, .mobile-nav, or .mobile-fab
-    const edgeFade = f.y > bottomFadeStart ? Math.max(0, 1 - (f.y - bottomFadeStart) / 54) : 1;
-    const alpha = f.alpha * edgeFade * (isDark ? 0.9 : 0.72);
-    if (alpha <= 0.01) continue;
-
+    const alpha = f.alpha * (isDark ? 0.94 : 0.88);
     ctx.globalAlpha = alpha;
-    if (f.isSparkle) {
-      ctx.strokeStyle = strokeColor;
-      ctx.lineWidth = 1.1;
-      drawSixPointStar(ctx, f.x, f.y, f.r);
+    if (f.layer === 2) {
+      ctx.strokeStyle = isDark ? "#bae6fd" : "#3485bf";
+      ctx.lineWidth = isDark ? 1.25 : 1.35;
+      ctx.lineCap = "round";
+      drawDendriticSnowflake(ctx, f.x, f.y, f.r, f.rot);
+      ctx.strokeStyle = "#ffffff";
+      ctx.lineWidth = 0.78;
+      drawDendriticSnowflake(ctx, f.x, f.y, f.r * 0.76, f.rot);
+    } else if (f.layer === 1) {
+      // Soft pillowy snow puff via radial gradient (avoids hollow bubble stroke rings on cream backgrounds)
+      const puff = ctx.createRadialGradient(f.x, f.y, 0, f.x, f.y, f.r * 1.45);
+      if (isDark) {
+        puff.addColorStop(0, "rgba(255, 255, 255, 0.98)");
+        puff.addColorStop(0.55, "rgba(224, 242, 254, 0.78)");
+        puff.addColorStop(1, "rgba(186, 230, 253, 0)");
+      } else {
+        puff.addColorStop(0, "rgba(255, 255, 255, 0.98)");
+        puff.addColorStop(0.52, "rgba(186, 226, 252, 0.72)");
+        puff.addColorStop(1, "rgba(125, 195, 240, 0)");
+      }
+      ctx.fillStyle = puff;
+      ctx.beginPath();
+      ctx.arc(f.x, f.y, f.r * 1.45, 0, Math.PI * 2);
+      ctx.fill();
     } else {
-      ctx.fillStyle = fillColor;
+      ctx.fillStyle = isDark ? "#e0f2fe" : "#7dc1ea";
       ctx.beginPath();
       ctx.arc(f.x, f.y, f.r, 0, Math.PI * 2);
       ctx.fill();
     }
   }
+
+  // Update & render subtle landing sparkles
+  for (let i = christmasSnowState.sparkles.length - 1; i >= 0; i--) {
+    const s = christmasSnowState.sparkles[i];
+    s.x += s.vx;
+    s.y += s.vy;
+    s.vy += 0.04;
+    s.life -= 0.045;
+    if (s.life <= 0) {
+      christmasSnowState.sparkles.splice(i, 1);
+      continue;
+    }
+    ctx.globalAlpha = s.life * 0.85;
+    ctx.fillStyle = isDark ? "#ffffff" : "#7dd3fc";
+    ctx.beginPath();
+    ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+    ctx.fill();
+  }
   ctx.globalAlpha = 1;
+
+  if (!isQuietMode && pile.length) {
+    relaxSnowPile(pile, maxHeight);
+    drawBottomSnowPile(ctx, w, h, pile, isDark);
+  }
+
   christmasSnowState.rafId = requestAnimationFrame(renderChristmasSnowFrame);
 }
 
 function startOrStopChristmasSnowLoop() {
   syncChristmasSeasonalControlsVisibility();
   updateChristmasEffectsToggleUI();
+  renderChristmasHeaderGarland();
   const shouldRun = isChristmas2026Season() && christmasSnowState.enabled && !christmasSnowState.reducedMotion && !document.hidden;
   if (shouldRun && !christmasSnowState.rafId) {
     christmasSnowState.rafId = requestAnimationFrame(renderChristmasSnowFrame);
@@ -20963,7 +21236,6 @@ function updateChristmasEffectsToggleUI() {
   if (widgetBtn) {
     widgetBtn.classList.toggle("active", isActive);
     widgetBtn.setAttribute("aria-pressed", String(isActive));
-    widgetBtn.setAttribute("aria-label", isActive ? "Tạm dừng hiệu ứng tuyết rơi Giáng sinh" : "Bật hiệu ứng tuyết rơi Giáng sinh");
     widgetBtn.title = isActive ? "Tạm dừng tuyết rơi" : "Bật hiệu ứng tuyết rơi Giáng sinh";
   }
 }
@@ -21013,7 +21285,6 @@ function updateChristmasMusicUI() {
   if (btn) {
     btn.classList.toggle("is-playing", isPlaying);
     btn.setAttribute("aria-pressed", String(isPlaying));
-    btn.setAttribute("aria-label", isPlaying ? "Tạm dừng nhạc nền Giáng sinh" : "Bật nhạc nền Giáng sinh: Ikson - Christmas");
   }
   if (statusEl) {
     if (christmasBgmState.pausedByStudy && christmasBgmState.userWantsPlay) {
@@ -21199,11 +21470,33 @@ function initChristmasSeasonEffects() {
     }
   }
 
+  renderChristmasHeaderGarland();
   if (christmasSnowState.canvas) {
     resizeChristmasSnowCanvas();
     window.addEventListener("resize", resizeChristmasSnowCanvas, { passive: true });
   }
   document.addEventListener("visibilitychange", startOrStopChristmasSnowLoop);
+  document.addEventListener("pointerdown", (ev) => {
+    if (!isChristmas2026Season() || !christmasSnowState.enabled || christmasSnowState.reducedMotion) return;
+    if (document.documentElement.classList.contains("study-mode-active") || document.body.classList.contains("arena-quiz-active")) return;
+    const target = ev && ev.target;
+    if (target && target.closest && target.closest("input, textarea, select, [contenteditable='true']")) return;
+    const x = typeof ev.clientX === "number" ? ev.clientX : 0;
+    const y = typeof ev.clientY === "number" ? ev.clientY : 0;
+    if (!x && !y) return;
+    for (let k = 0; k < 5 && christmasSnowState.sparkles.length < 44; k++) {
+      const a = (Math.PI * 2 * k) / 5 + Math.random() * 0.6;
+      const spd = 0.8 + Math.random() * 1.4;
+      christmasSnowState.sparkles.push({
+        x,
+        y,
+        vx: Math.cos(a) * spd,
+        vy: Math.sin(a) * spd - 0.5,
+        r: Math.random() * 1.7 + 1.1,
+        life: 1
+      });
+    }
+  }, { passive: true });
 
   startOrStopChristmasSnowLoop();
   initChristmasMusicPlayer();
