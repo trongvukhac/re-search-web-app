@@ -18176,6 +18176,7 @@ function renderQuizQuestion() {
   const disabledOpts = compState.initialDisabledOptions || [];
   $$(".quiz-option-btn").forEach(btn => {
     const opt = btn.getAttribute("data-option");
+    btn.onclick = () => submitQuizAnswer(opt);
     if (disabledOpts.includes(opt)) {
       btn.disabled = true;
       btn.className = "quiz-option-btn opt-wrong";

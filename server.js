@@ -722,6 +722,7 @@ try { db.exec("ALTER TABLE competition_sessions ADD COLUMN paused_remaining_seco
 try { db.exec("ALTER TABLE competition_sessions ADD COLUMN exit_count INTEGER NOT NULL DEFAULT 0;"); } catch (e) { }
 try { db.exec("ALTER TABLE competition_sessions ADD COLUMN is_on_time INTEGER NOT NULL DEFAULT 0;"); } catch (e) { }
 try { db.exec("ALTER TABLE competition_sessions ADD COLUMN on_time_bonus INTEGER NOT NULL DEFAULT 0;"); } catch (e) { }
+try { db.exec("ALTER TABLE competition_sessions ADD COLUMN is_shuffled INTEGER NOT NULL DEFAULT 0;"); } catch (e) { }
 try { db.exec("ALTER TABLE competition_phase_results ADD COLUMN on_time_bonus INTEGER NOT NULL DEFAULT 0;"); } catch (e) { }
 try { db.exec("ALTER TABLE posts ADD COLUMN deleted_at TEXT;"); } catch (e) { }
 try { db.exec("ALTER TABLE responses ADD COLUMN deleted_at TEXT;"); } catch (e) { }
@@ -2855,6 +2856,134 @@ function seedSampleCompetitionQuestions(competitionId, track = "main") {
       );
     }
   }
+}
+
+const ARENA_POSITIONAL_OPTION_RE = /(?:cả\s+(?:a\s*(?:và|&|,)\s*b|hai\s+(?:đáp\s+án|phương\s+án|ý)\s+trên|2\s+(?:đáp\s+án|phương\s+án|ý)\s+trên)|tất\s+cả\s+(?:các\s+)?(?:đáp\s+án|phương\s+án|câu|ý)\s+trên|tất\s+cả\s+đều\s+đúng)/i;
+
+/**
+ * Create a deterministic PRNG (sfc32) seeded from a SHA-256 digest of seedStr.
+ */
+function createSeededRng(seedStr) {
+  const hash = crypto.createHash("sha256").update(String(seedStr)).digest();
+  let a = hash.readUInt32LE(0);
+  let b = hash.readUInt32LE(4);
+  let c = hash.readUInt32LE(8);
+  let d = hash.readUInt32LE(12);
+  const next = () => {
+    a |= 0; b |= 0; c |= 0; d |= 0;
+    const t = ((a + b) | 0) + d | 0;
+    d = (d + 1) | 0;
+    a = b ^ (b >>> 9);
+    b = (c + (c << 3)) | 0;
+    c = (c << 21) | (c >>> 11);
+    c = (c + t) | 0;
+    return (t >>> 0) / 4294967296;
+  };
+  for (let i = 0; i < 15; i++) next();
+  return next;
+}
+
+/**
+ * Return a deterministically shuffled shallow copy of items using Fisher-Yates.
+ */
+function deterministicShuffle(items, seedStr) {
+  const arr = [...items];
+  const rng = createSeededRng(seedStr);
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(rng() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+/**
+ * Fetch canonical raw questions for a competition phase/track ordered by question_index.
+ */
+function getCompetitionPhaseRawQuestions(competitionId, phase, track) {
+  return db.prepare(
+    "SELECT id, question_index, question_text, option_a, option_b, option_c, correct_option, explanation FROM competition_questions WHERE competition_id = ? AND phase = ? AND track = ? ORDER BY question_index ASC"
+  ).all(competitionId, phase, track);
+}
+
+/**
+ * Format a normalized question object for the nextQuestion quiz response payload.
+ */
+function formatNextQuestionPayload(q) {
+  if (!q) return null;
+  return {
+    id: q.id,
+    index: q.questionIndex,
+    text: q.questionText,
+    optionA: q.optionA,
+    optionB: q.optionB,
+    optionC: q.optionC,
+    explanation: q.explanation || ""
+  };
+}
+
+/**
+ * Fetch and normalize (and optionally deterministically shuffle per user account)
+ * the official competition questions and their A/B/C answer options.
+ */
+function getCompetitionQuestionsForUser(rawQuestions, { userId, competitionId, phase, track, isShuffled }) {
+  const sorted = [...rawQuestions].sort((a, b) => (a.question_index - b.question_index) || (a.id - b.id));
+  if (!isShuffled) {
+    return sorted.map((q, idx) => ({
+      id: q.id,
+      questionIndex: idx + 1,
+      originalQuestionIndex: q.question_index,
+      questionText: q.question_text,
+      optionA: q.option_a,
+      optionB: q.option_b,
+      optionC: q.option_c,
+      correctOption: String(q.correct_option || "A").toUpperCase(),
+      explanation: q.explanation || ""
+    }));
+  }
+
+  // Deterministic per-account shuffle so mid-quiz exits/resumes preserve exact order & options
+  const orderedQuestions = deterministicShuffle(
+    sorted,
+    `arena:q_order:v1:user=${userId}:comp=${competitionId}:phase=${phase}:track=${track}`
+  );
+
+  return orderedQuestions.map((q, idx) => {
+    const origCorrect = String(q.correct_option || "A").toUpperCase();
+    const optEntries = [
+      { key: "A", text: q.option_a },
+      { key: "B", text: q.option_b },
+      { key: "C", text: q.option_c }
+    ];
+
+    let shuffledOpts = optEntries;
+    const aPositional = ARENA_POSITIONAL_OPTION_RE.test(q.option_a || "");
+    const bPositional = ARENA_POSITIONAL_OPTION_RE.test(q.option_b || "");
+    const cPositional = ARENA_POSITIONAL_OPTION_RE.test(q.option_c || "");
+    const optSeed = `arena:opt_order:v1:user=${userId}:comp=${competitionId}:phase=${phase}:track=${track}:qidx=${q.question_index}`;
+
+    if (!aPositional && !bPositional && !cPositional) {
+      shuffledOpts = deterministicShuffle(optEntries, optSeed);
+    } else if (!aPositional && !bPositional && cPositional) {
+      // Preserve positional "all/both of the above" option C while still shuffling A & B
+      const ab = deterministicShuffle([optEntries[0], optEntries[1]], optSeed);
+      shuffledOpts = [ab[0], ab[1], optEntries[2]];
+    }
+
+    const correctPos = shuffledOpts.findIndex(opt => opt.key === origCorrect);
+    const mappedCorrect = ["A", "B", "C"][correctPos >= 0 ? correctPos : 0];
+
+    return {
+      id: q.id,
+      questionIndex: idx + 1,
+      originalQuestionIndex: q.question_index,
+      questionText: q.question_text,
+      optionA: shuffledOpts[0].text,
+      optionB: shuffledOpts[1].text,
+      optionC: shuffledOpts[2].text,
+      correctOption: mappedCorrect,
+      explanation: q.explanation || ""
+    };
+  });
 }
 
 function getOrCreateCurrentCompetition(vnDate) {
@@ -8198,18 +8327,14 @@ async function api(request, response, url) {
     }
 
     const phase = sessionPhase;
-    let questions = db.prepare(
-      "SELECT id, question_index, question_text, option_a, option_b, option_c, explanation FROM competition_questions WHERE competition_id = ? AND phase = ? AND track = ? ORDER BY question_index ASC"
-    ).all(comp.id, phase, track);
+    let rawQuestions = getCompetitionPhaseRawQuestions(comp.id, phase, track);
 
-    if (questions.length < 10 && track === "free") {
+    if (rawQuestions.length < 10 && track === "free") {
       seedSampleCompetitionQuestions(comp.id, "free");
-      questions = db.prepare(
-        "SELECT id, question_index, question_text, option_a, option_b, option_c, explanation FROM competition_questions WHERE competition_id = ? AND phase = ? AND track = ? ORDER BY question_index ASC"
-      ).all(comp.id, phase, track);
+      rawQuestions = getCompetitionPhaseRawQuestions(comp.id, phase, track);
     }
 
-    if (questions.length < 10) {
+    if (rawQuestions.length < 10) {
       return error(response, 400, "Bộ câu hỏi cho chặng này chưa sẵn sàng.");
     }
 
@@ -8244,25 +8369,33 @@ async function api(request, response, url) {
 
       db.prepare(`
         INSERT INTO competition_sessions (
-          session_token, user_id, competition_id, phase, attempt_number, server_start_timestamp_ms, initial_seconds, remaining_seconds, is_paused, exit_count, is_on_time, on_time_bonus, status
-        ) VALUES (?, ?, ?, ?, ?, ?, 600, 600, 0, 0, ?, 0, 'in_progress')
+          session_token, user_id, competition_id, phase, attempt_number, server_start_timestamp_ms, initial_seconds, remaining_seconds, is_paused, exit_count, is_on_time, on_time_bonus, status, is_shuffled
+        ) VALUES (?, ?, ?, ?, ?, ?, 600, 600, 0, 0, ?, 0, 'in_progress', 1)
       `).run(sessionToken, user.id, comp.id, phase, attemptNumber, nowMs, isOnTime);
 
       activeSession = db.prepare("SELECT * FROM competition_sessions WHERE session_token = ?").get(sessionToken);
     }
 
-    const currentQIndex = activeSession.current_question_index || 1;
-    const currentQ = questions.find(q => q.question_index === currentQIndex) || questions[0];
+    const questions = getCompetitionQuestionsForUser(rawQuestions, {
+      userId: user.id,
+      competitionId: comp.id,
+      phase,
+      track,
+      isShuffled: Boolean(activeSession.is_shuffled)
+    });
 
-    const answerRow = db.prepare("SELECT tries_count, is_correct, is_finalized, history_json FROM competition_answers WHERE session_id = ? AND question_index = ?").get(activeSession.id, currentQ.question_index);
+    const currentQIndex = Math.min(questions.length, Math.max(1, Number(activeSession.current_question_index) || 1));
+    const currentQ = questions[currentQIndex - 1] || questions[0];
+
+    const answerRow = db.prepare("SELECT tries_count, is_correct, is_finalized, history_json FROM competition_answers WHERE session_id = ? AND question_index = ?").get(activeSession.id, currentQ.questionIndex);
 
     const formattedQuestions = questions.map(q => ({
       id: q.id,
-      questionIndex: q.question_index,
-      questionText: q.question_text,
-      optionA: q.option_a,
-      optionB: q.option_b,
-      optionC: q.option_c,
+      questionIndex: q.questionIndex,
+      questionText: q.questionText,
+      optionA: q.optionA,
+      optionB: q.optionB,
+      optionC: q.optionC,
       explanation: q.explanation || ""
     }));
 
@@ -8283,8 +8416,8 @@ async function api(request, response, url) {
       potentialOnTimeBonus: isSessionOnTime ? 50 : 0,
       isCatchUp: phase < currentPhase || !isSessionOnTime,
       attemptNumber: activeSession.attempt_number,
-      totalQuestions: 10,
-      currentQuestionIndex: currentQ.question_index,
+      totalQuestions: questions.length,
+      currentQuestionIndex: currentQ.questionIndex,
       remainingSeconds: activeSession.remaining_seconds,
       durationSeconds: activeSession.remaining_seconds,
       initialSeconds: 600,
@@ -8300,11 +8433,11 @@ async function api(request, response, url) {
       questions: formattedQuestions,
       question: {
         id: currentQ.id,
-        index: currentQ.question_index,
-        text: currentQ.question_text,
-        optionA: currentQ.option_a,
-        optionB: currentQ.option_b,
-        optionC: currentQ.option_c
+        index: currentQ.questionIndex,
+        text: currentQ.questionText,
+        optionA: currentQ.optionA,
+        optionB: currentQ.optionB,
+        optionC: currentQ.optionC
       }
     });
   }
@@ -8406,17 +8539,22 @@ async function api(request, response, url) {
       });
     }
 
+    const normalizedOption = String(selectedOption).toUpperCase().trim();
+    if (!["A", "B", "C"].includes(normalizedOption)) {
+      return error(response, 400, "Đáp án không hợp lệ.");
+    }
+
     const studentClass = getArenaClassByStudentId(user.student_id);
     const track = (studentClass === "TD") ? "free" : "main";
-    let question = null;
-    if (body.questionId) {
-      question = db.prepare("SELECT * FROM competition_questions WHERE id = ?").get(body.questionId);
-    }
-    if (!question) {
-      question = db.prepare(
-        "SELECT * FROM competition_questions WHERE competition_id = ? AND phase = ? AND question_index = ? AND track = ?"
-      ).get(session.competition_id, session.phase, questionIndex, track);
-    }
+    const rawQuestions = getCompetitionPhaseRawQuestions(session.competition_id, session.phase, track);
+    const shuffledQuestions = getCompetitionQuestionsForUser(rawQuestions, {
+      userId: user.id,
+      competitionId: session.competition_id,
+      phase: session.phase,
+      track,
+      isShuffled: Boolean(session.is_shuffled)
+    });
+    const question = shuffledQuestions[questionIndex - 1] || null;
 
     if (!question) return error(response, 404, "Không tìm thấy câu hỏi.");
     if (body.questionId && Number(body.questionId) !== question.id) {
@@ -8440,13 +8578,13 @@ async function api(request, response, url) {
     }
 
     const history = JSON.parse(answerRow.history_json || "[]");
-    if (history.includes(selectedOption)) {
+    if (history.includes(normalizedOption)) {
       return error(response, 400, "Bạn đã chọn đáp án này rồi.");
     }
 
-    history.push(selectedOption);
+    history.push(normalizedOption);
     const triesCount = answerRow.tries_count + 1;
-    const isCorrect = (selectedOption === question.correct_option);
+    const isCorrect = (normalizedOption === question.correctOption);
 
     if (isCorrect) {
       const isFirstTry = (triesCount === 1) ? 1 : 0;
@@ -8467,7 +8605,7 @@ async function api(request, response, url) {
 
       const nextQIndex = questionIndex + 1;
 
-      if (nextQIndex > 10) {
+      if (nextQIndex > shuffledQuestions.length) {
         const timeBonus = effectiveRemaining;
         const vnNow = getVietnamNow();
         const comp = db.prepare("SELECT * FROM weekly_competitions WHERE id = ?").get(session.competition_id);
@@ -8477,7 +8615,7 @@ async function api(request, response, url) {
 
         db.prepare(`
           UPDATE competition_sessions
-          SET current_question_index = 10,
+          SET current_question_index = ?,
               correct_count = ?,
               first_try_correct_count = ?,
               correct_points = ?,
@@ -8490,7 +8628,7 @@ async function api(request, response, url) {
               status = 'completed',
               finished_at = CURRENT_TIMESTAMP
           WHERE id = ?
-        `).run(newCorrectCount, newFirstTryCount, newCorrectPoints, newFirstTryBonus, timeBonus, onTimeBonus > 0 ? 1 : 0, onTimeBonus, totalScore, effectiveRemaining, session.id);
+        `).run(shuffledQuestions.length, newCorrectCount, newFirstTryCount, newCorrectPoints, newFirstTryBonus, timeBonus, onTimeBonus > 0 ? 1 : 0, onTimeBonus, totalScore, effectiveRemaining, session.id);
 
         const bestScore = updateUserPhaseBestScore(user.id, session.competition_id, session.phase, totalScore, session.id, onTimeBonus);
 
@@ -8515,7 +8653,7 @@ async function api(request, response, url) {
           isFirstTry: Boolean(isFirstTry),
           isFirstTryBonus: Boolean(isFirstTry),
           pointsEarned,
-          correctOption: question.correct_option,
+          correctOption: question.correctOption,
           explanation: question.explanation,
           sessionCompleted: true,
           isQuizCompleted: true,
@@ -8538,16 +8676,14 @@ async function api(request, response, url) {
           WHERE id = ?
         `).run(nextQIndex, newCorrectCount, newFirstTryCount, newCorrectPoints, newFirstTryBonus, effectiveRemaining, nowMs, session.id);
 
-        const nextQ = db.prepare(
-          "SELECT id, question_index, question_text, option_a, option_b, option_c, explanation FROM competition_questions WHERE competition_id = ? AND phase = ? AND question_index = ? AND track = ?"
-        ).get(session.competition_id, session.phase, nextQIndex, track);
+        const nextQ = shuffledQuestions[nextQIndex - 1] || null;
 
         return json(response, 200, {
           isCorrect: true,
           isFirstTry: Boolean(isFirstTry),
           isFirstTryBonus: Boolean(isFirstTry),
           pointsEarned,
-          correctOption: question.correct_option,
+          correctOption: question.correctOption,
           explanation: question.explanation,
           sessionCompleted: false,
           isQuizCompleted: false,
@@ -8558,15 +8694,7 @@ async function api(request, response, url) {
           firstTryCorrectCount: newFirstTryCount,
           correctPoints: newCorrectPoints,
           firstTryBonus: newFirstTryBonus,
-          nextQuestion: nextQ ? {
-            id: nextQ.id,
-            index: nextQ.question_index,
-            text: nextQ.question_text,
-            optionA: nextQ.option_a,
-            optionB: nextQ.option_b,
-            optionC: nextQ.option_c,
-            explanation: nextQ.explanation || ""
-          } : null
+          nextQuestion: formatNextQuestionPayload(nextQ)
         });
       }
     } else {
@@ -8660,7 +8788,7 @@ async function api(request, response, url) {
 
         const nextQIndex = questionIndex + 1;
 
-        if (nextQIndex > 10) {
+        if (nextQIndex > shuffledQuestions.length) {
           const timeBonus = effectiveRemaining;
           const vnNow = getVietnamNow();
           const comp = db.prepare("SELECT * FROM weekly_competitions WHERE id = ?").get(session.competition_id);
@@ -8670,7 +8798,7 @@ async function api(request, response, url) {
 
           db.prepare(`
             UPDATE competition_sessions 
-            SET current_question_index = 10,
+            SET current_question_index = ?,
                 accumulated_penalty_seconds = ?,
                 time_points = ?,
                 is_on_time = ?,
@@ -8680,7 +8808,7 @@ async function api(request, response, url) {
                 status = 'completed',
                 finished_at = CURRENT_TIMESTAMP
             WHERE id = ?
-          `).run(newPenaltyTotal, timeBonus, onTimeBonus > 0 ? 1 : 0, onTimeBonus, totalScore, effectiveRemaining, session.id);
+          `).run(shuffledQuestions.length, newPenaltyTotal, timeBonus, onTimeBonus > 0 ? 1 : 0, onTimeBonus, totalScore, effectiveRemaining, session.id);
 
           const bestScore = updateUserPhaseBestScore(user.id, session.competition_id, session.phase, totalScore, session.id, onTimeBonus);
 
@@ -8704,7 +8832,7 @@ async function api(request, response, url) {
             isCorrect: false,
             triesCount: 3,
             penaltySeconds: penalty,
-            correctOption: question.correct_option,
+            correctOption: question.correctOption,
             explanation: question.explanation,
             sessionCompleted: true,
             isQuizCompleted: true,
@@ -8723,31 +8851,21 @@ async function api(request, response, url) {
             WHERE id = ?
           `).run(nextQIndex, effectiveRemaining, nowMs, session.id);
 
-          const nextQ = db.prepare(
-            "SELECT id, question_index, question_text, option_a, option_b, option_c, explanation FROM competition_questions WHERE competition_id = ? AND phase = ? AND question_index = ? AND track = ?"
-          ).get(session.competition_id, session.phase, nextQIndex, track);
+          const nextQ = shuffledQuestions[nextQIndex - 1] || null;
 
           return json(response, 200, {
             isCorrect: false,
             triesCount: 3,
             penaltySeconds: penalty,
             isLocked: true,
-            correctOption: question.correct_option,
+            correctOption: question.correctOption,
             explanation: question.explanation,
             sessionCompleted: false,
             isQuizCompleted: false,
             currentQuestionIndex: nextQIndex,
             remainingSeconds: effectiveRemaining,
             remainingTime: effectiveRemaining,
-            nextQuestion: nextQ ? {
-              id: nextQ.id,
-              index: nextQ.question_index,
-              text: nextQ.question_text,
-              optionA: nextQ.option_a,
-              optionB: nextQ.option_b,
-              optionC: nextQ.option_c,
-              explanation: nextQ.explanation || ""
-            } : null
+            nextQuestion: formatNextQuestionPayload(nextQ)
           });
         }
       }
