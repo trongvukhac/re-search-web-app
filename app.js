@@ -17,7 +17,8 @@ const christmasSnowState = {
   flakes: [],
   sparkles: [],
   snowPile: [],
-  pileColWidth: 4,
+  snowGlints: [],
+  pileColWidth: 3,
   windAngle: 0,
   width: 0,
   height: 0,
@@ -39,10 +40,50 @@ const christmasTreeState = {
   timeSec: 0,
   lastMs: 0,
   items: [],
+  baseItems: [],
   projected: [],
   sprites: null,
   spriteThemeKey: ""
 };
+
+const christmasTreeEventState = {
+  loaded: false,
+  loading: false,
+  active: true,
+  items: [],
+  stats: { totalItems: 0, contributors: 0, polaroids: 0, accessories: 0 },
+  expiresAt: CHRISTMAS_2026_END_MS
+};
+
+const christmasTreeStudioState = {
+  initialized: false,
+  isOpen: false,
+  rafId: null,
+  canvas: null,
+  ctx: null,
+  width: 0,
+  height: 0,
+  rotation: 0.42,
+  starRotation: 0.25,
+  timeSec: 0,
+  lastMs: 0,
+  autoSpin: true,
+  dragging: false,
+  dragMoved: false,
+  dragStartX: 0,
+  dragLastX: 0,
+  selectedId: null,
+  hoverId: null,
+  hitBoxes: [],
+  projected: [],
+  activeTab: "decorate",
+  activeSlot: "polaroid",
+  polaroidPhotoData: "",
+  pendingReopenModal: false,
+  lastSessionUserId: undefined
+};
+
+const christmasTreeMediaCache = new Map();
 
 const christmasBgmState = {
   audio: null,
@@ -1736,6 +1777,9 @@ function applySession(user) {
     }
   } else {
     if (typeof stopWebActivityTracker === "function") stopWebActivityTracker();
+  }
+  if (typeof renderChristmasTreeStudioUI === "function") {
+    renderChristmasTreeStudioUI(false);
   }
 }
 
@@ -3649,7 +3693,8 @@ window.addEventListener("click", (e) => {
       "quizExitConfirmModal",
       "namecardModal",
       "editNamecardModal",
-      "editProfileModal"
+      "editProfileModal",
+      "christmasTreeModal"
     ];
     if (noBackdropCloseIds.includes(e.target.id)) return;
 
@@ -20904,51 +20949,89 @@ function renderChristmasHeaderGarland() {
   garland.dataset.units = String(neededUnits);
 }
 
+function getSnowPileMaxHeight(width) {
+  return width <= 760 ? 22 : 34;
+}
+
 function ensureSnowPile(width) {
-  const colW = christmasSnowState.pileColWidth || 4;
-  const cols = Math.max(24, Math.ceil(width / colW) + 1);
-  const maxHeight = width <= 760 ? 18 : 26;
+  const colW = christmasSnowState.pileColWidth || 3;
+  const cols = Math.max(32, Math.ceil(width / colW) + 1);
+  const maxHeight = getSnowPileMaxHeight(width);
   const prev = christmasSnowState.snowPile;
 
   if (!prev || prev.length === 0) {
     const arr = new Array(cols);
+    const glints = [];
     for (let i = 0; i < cols; i++) {
       const t = i / Math.max(1, cols - 1);
-      // Organic low rolling dunes subtly taller toward viewport corners
-      const cornerLift = Math.pow(Math.abs(t - 0.5) * 2, 1.8) * (width <= 760 ? 4.5 : 7.5);
-      const drift = 6.5 + cornerLift + Math.sin(t * Math.PI * 2.2 + 0.5) * 2.6 + Math.cos(t * Math.PI * 4.7) * 1.4;
-      arr[i] = Math.max(4, Math.min(maxHeight, drift));
+      // Wind-swept asymmetric dusting deeper toward corners/sides (~2–8.5px), light sheen near center
+      const edgeWeight = Math.pow(Math.abs(t - 0.5) * 2, 1.85);
+      const microNoise = Math.sin(t * 25.7 + 0.4) * 0.85 + Math.cos(t * 59.3 + 1.1) * 0.45;
+      const baseDust = 1.8 + edgeWeight * (width <= 760 ? 4.2 : 7.4) + microNoise;
+      arr[i] = Math.max(0.8, Math.min(maxHeight, baseDust));
+      if (i % 4 === 0) {
+        glints.push({
+          col: i,
+          yFrac: 0.14 + ((i * 37) % 100) / 145,
+          r: 0.55 + ((i * 19) % 10) * 0.08,
+          phase: (i * 0.93) % (Math.PI * 2)
+        });
+      }
     }
     christmasSnowState.snowPile = arr;
+    christmasSnowState.snowGlints = glints;
     return;
   }
 
   if (prev.length !== cols) {
     const next = new Array(cols);
+    const glints = [];
     for (let i = 0; i < cols; i++) {
       const srcIdx = Math.min(prev.length - 1, Math.round((i / Math.max(1, cols - 1)) * (prev.length - 1)));
-      next[i] = Math.min(maxHeight, prev[srcIdx] || 7);
+      next[i] = Math.min(maxHeight, Math.max(0.6, prev[srcIdx] || 1.2));
+      if (i % 4 === 0) {
+        glints.push({
+          col: i,
+          yFrac: 0.14 + ((i * 37) % 100) / 145,
+          r: 0.55 + ((i * 19) % 10) * 0.08,
+          phase: (i * 0.93) % (Math.PI * 2)
+        });
+      }
     }
     christmasSnowState.snowPile = next;
+    christmasSnowState.snowGlints = glints;
   }
 }
 
 function relaxSnowPile(pile, maxHeight) {
   const n = pile.length;
   if (n < 3) return;
-  let prev = pile[0];
+  // Granular angle-of-repose slumping (preserves organic powdery mounds instead of uniform sine waves)
+  const maxSlope = 0.72;
   let sum = 0;
-  for (let i = 1; i < n - 1; i++) {
-    const cur = pile[i];
-    const smoothed = prev * 0.18 + cur * 0.64 + pile[i + 1] * 0.18;
-    prev = cur;
-    pile[i] = Math.min(maxHeight, Math.max(4, smoothed));
+  for (let pass = 0; pass < 2; pass++) {
+    const forward = pass % 2 === 0;
+    const start = forward ? 0 : n - 2;
+    const end = forward ? n - 1 : -1;
+    const step = forward ? 1 : -1;
+    for (let i = start; i !== end; i += step) {
+      const next = i + 1;
+      const diff = pile[i] - pile[next];
+      if (Math.abs(diff) > maxSlope) {
+        const transfer = (diff - Math.sign(diff) * maxSlope) * 0.24;
+        pile[i] -= transfer;
+        pile[next] += transfer;
+      }
+    }
+  }
+  for (let i = 0; i < n; i++) {
+    pile[i] = Math.min(maxHeight, Math.max(0.5, pile[i]));
     sum += pile[i];
   }
-  // Softly settle when nearing cap so falling snow keeps animating landings gracefully
-  if (sum / n > maxHeight * 0.88) {
+  // Slow natural settling/compaction once drifts reach upper thickness
+  if (sum / n > maxHeight * 0.8) {
     for (let i = 0; i < n; i++) {
-      pile[i] = Math.max(5, pile[i] - 0.008);
+      pile[i] = Math.max(1.2, pile[i] * 0.9994);
     }
   }
 }
@@ -21028,23 +21111,27 @@ function drawDendriticSnowflake(ctx, x, y, r, rot) {
 
 function drawBottomSnowPile(ctx, w, h, pile, isDark) {
   if (!pile || pile.length < 3) return;
-  const colW = christmasSnowState.pileColWidth || 4;
+  const colW = christmasSnowState.pileColWidth || 3;
 
   ctx.save();
 
-  // Gentle distant snow slope behind foreground bank for winter depth
+  // 1. Subtle distant winter frost haze right behind foreground powder drifts (zero stroke outline)
   ctx.beginPath();
   ctx.moveTo(0, h + 2);
-  for (let x = 0; x <= w + 32; x += 32) {
-    const backH = 12 + Math.sin(x * 0.006 + 0.9) * 4.5 + Math.cos(x * 0.013) * 2.2;
-    ctx.lineTo(x, h - backH);
+  for (let i = 0; i < pile.length; i += 4) {
+    const x = i * colW;
+    const hazeH = Math.max(1.5, pile[i] * 0.72 + Math.sin(x * 0.011 + 1.4) * 1.4);
+    ctx.lineTo(x, h - hazeH);
   }
   ctx.lineTo(w + 2, h + 2);
   ctx.closePath();
-  ctx.fillStyle = isDark ? "rgba(148, 163, 184, 0.2)" : "rgba(219, 234, 254, 0.48)";
+  const backGrad = ctx.createLinearGradient(0, h - 22, 0, h);
+  backGrad.addColorStop(0, isDark ? "rgba(186, 230, 253, 0.06)" : "rgba(226, 240, 252, 0.26)");
+  backGrad.addColorStop(1, isDark ? "rgba(148, 163, 184, 0.14)" : "rgba(219, 234, 254, 0.42)");
+  ctx.fillStyle = backGrad;
   ctx.fill();
 
-  // Dynamic accumulated foreground snowbank built by landing snowflakes (soft shadow, zero wave border)
+  // 2. Smooth accumulated powder snowdrift (subsurface alpha shadow glow, no vector outline border)
   ctx.beginPath();
   ctx.moveTo(0, h + 2);
   ctx.lineTo(0, h - pile[0]);
@@ -21060,39 +21147,82 @@ function drawBottomSnowPile(ctx, w, h, pile, isDark) {
   ctx.lineTo(w + 2, h + 2);
   ctx.closePath();
 
-  const grad = ctx.createLinearGradient(0, h - 28, 0, h);
+  const maxDepth = getSnowPileMaxHeight(w);
+  const grad = ctx.createLinearGradient(0, h - maxDepth, 0, h);
   if (isDark) {
-    grad.addColorStop(0, "rgba(248, 250, 252, 0.96)");
-    grad.addColorStop(0.55, "rgba(203, 213, 225, 0.9)");
-    grad.addColorStop(1, "rgba(148, 163, 184, 0.84)");
+    grad.addColorStop(0, "rgba(248, 250, 252, 0.94)");
+    grad.addColorStop(0.5, "rgba(203, 213, 225, 0.86)");
+    grad.addColorStop(1, "rgba(148, 163, 184, 0.78)");
   } else {
     grad.addColorStop(0, "rgba(255, 255, 255, 0.98)");
-    grad.addColorStop(0.65, "rgba(239, 246, 255, 0.95)");
-    grad.addColorStop(1, "rgba(219, 234, 254, 0.92)");
+    grad.addColorStop(0.45, "rgba(229, 241, 252, 0.94)");
+    grad.addColorStop(1, "rgba(203, 225, 246, 0.9)");
   }
   ctx.fillStyle = grad;
-  ctx.shadowColor = isDark ? "rgba(186, 230, 253, 0.25)" : "rgba(100, 150, 200, 0.16)";
+  ctx.shadowColor = isDark ? "rgba(186, 230, 253, 0.22)" : "rgba(125, 174, 219, 0.28)";
   ctx.shadowBlur = 10;
   ctx.shadowOffsetY = -2;
   ctx.fill();
-
-  // Whisper-soft pure white rim light (no harsh blue water-like stroke)
   ctx.shadowColor = "transparent";
-  ctx.beginPath();
-  ctx.moveTo(0, h - pile[0]);
-  for (let i = 1; i < pile.length - 1; i++) {
-    const xCur = i * colW;
-    const yCur = h - pile[i];
-    const xNext = (i + 1) * colW;
-    const yNext = h - pile[i + 1];
-    ctx.quadraticCurveTo(xCur, yCur, (xCur + xNext) * 0.5, (yCur + yNext) * 0.5);
+  ctx.shadowBlur = 0;
+
+  // 3. Organic crystalline powder grains & subtle ice sparkles along upper drifts (no hard edge)
+  const glints = christmasSnowState.snowGlints || [];
+  const tPhase = christmasSnowState.windAngle * 3.2;
+  for (let i = 0; i < glints.length; i++) {
+    const g = glints[i];
+    const colH = pile[g.col];
+    if (!colH || colH < 2.2) continue;
+    const gx = g.col * colW;
+    const gy = h - colH * g.yFrac + 1;
+    const shimmer = 0.25 + 0.75 * Math.pow(0.5 + 0.5 * Math.sin(tPhase + g.phase), 2);
+    ctx.globalAlpha = shimmer * (isDark ? 0.55 : 0.78);
+    ctx.fillStyle = "#ffffff";
+    ctx.beginPath();
+    ctx.arc(gx, gy, g.r, 0, Math.PI * 2);
+    ctx.fill();
   }
-  ctx.lineTo(w + 2, lastY);
-  ctx.strokeStyle = isDark ? "rgba(255, 255, 255, 0.68)" : "rgba(255, 255, 255, 0.94)";
-  ctx.lineWidth = 1.2;
-  ctx.stroke();
   ctx.restore();
 }
+
+const TREE_POLAROID_FRAME_MAP = {
+  classic: "#FFFAF0",
+  warm_gold: "#FEF3C7",
+  blush: "#FFE4E6",
+  lavender: "#EDE9FE",
+  mint: "#DCFCE7"
+};
+
+const TREE_GIFT_PALETTE_MAP = {
+  gift_red: { box: "#D32F2F", lid: "#EF4444", ribbon: "#FFD700" },
+  gift_blue: { box: "#1D4ED8", lid: "#3B82F6", ribbon: "#FDE047" },
+  gift_gold: { box: "#D97706", lid: "#FBBF24", ribbon: "#DC2626" },
+  gift_emerald: { box: "#15803D", lid: "#22C55E", ribbon: "#FFFBEB" }
+};
+
+const TREE_BAUBLE_COLOR_MAP = {
+  bauble_ruby: "#E11D48",
+  bauble_gold: "#F59E0B",
+  bauble_sapphire: "#2563EB",
+  bauble_emerald: "#10B981"
+};
+
+const TREE_STYLE_LABELS = {
+  classic: "Polaroid Kem sứ",
+  warm_gold: "Polaroid Vàng ấm",
+  blush: "Polaroid Hồng phấn",
+  lavender: "Polaroid Oải hương",
+  mint: "Polaroid Bạc hà",
+  gift_red: "Hộp quà Đỏ ruy-băng vàng",
+  gift_blue: "Hộp quà Xanh lam",
+  gift_gold: "Hộp quà Vàng kim",
+  gift_emerald: "Hộp quà Ngọc lục bảo",
+  bauble_ruby: "Trái châu Ruby",
+  bauble_gold: "Trái châu Vàng kim",
+  bauble_sapphire: "Trái châu Sapphire",
+  bauble_emerald: "Trái châu Lục bảo",
+  fairy_garland: "Dây đèn Giáng sinh đa sắc"
+};
 
 function createSeededTreeRng(seed) {
   let state = seed >>> 0;
@@ -21105,24 +21235,42 @@ function createSeededTreeRng(seed) {
 function getChristmasTreeLayout(w, h) {
   const isMobile = w <= 760;
   if (isMobile) {
-    const treeH = Math.round(Math.min(310, Math.max(220, h * 0.37)));
-    const treeR = Math.round(treeH * 0.245);
+    const treeH = Math.round(Math.min(305, Math.max(218, h * 0.36)));
+    const treeR = Math.round(treeH * 0.25);
     return {
       isMobile: true,
-      anchorX: w - 40,
+      anchorX: w - 42,
       baseY: h - 76,
       treeH,
       treeR
     };
   }
   const gutterRight = Math.max(0, (w - 1208) * 0.5);
-  const edgeOffset = gutterRight >= 82 ? Math.min(92, gutterRight * 0.78) : Math.max(40, Math.min(68, w * 0.048));
-  const treeH = Math.round(Math.min(485, Math.max(305, h * 0.55)));
-  const treeR = Math.round(Math.min(118, Math.max(78, treeH * 0.244)));
+  const edgeOffset = gutterRight >= 92 ? Math.min(108, gutterRight * 0.72) : Math.max(58, Math.min(88, w * 0.06));
+  const treeH = Math.round(Math.min(470, Math.max(305, h * 0.54)));
+  const treeR = Math.round(Math.min(116, Math.max(76, treeH * 0.246)));
   return {
     isMobile: false,
     anchorX: w - edgeOffset,
-    baseY: h - 24,
+    baseY: h - 22,
+    treeH,
+    treeR
+  };
+}
+
+function getChristmasTreeStudioLayout(w, h) {
+  const safeW = Math.max(260, w);
+  const safeH = Math.max(280, h);
+  // Keep summit star safely below top floating milestone pill & spin controls on mobile & desktop
+  const topClearance = safeH <= 360 ? 52 : 44;
+  const baseY = Math.round(safeH * 0.91);
+  const maxTreeHByHeight = Math.max(180, baseY - topClearance - 14);
+  const treeH = Math.round(Math.min(maxTreeHByHeight, safeW * 0.9));
+  const treeR = Math.round(treeH * 0.285);
+  return {
+    isMobile: safeW <= 440,
+    anchorX: Math.round(safeW * 0.5),
+    baseY,
     treeH,
     treeR
   };
@@ -21150,30 +21298,30 @@ function getChristmasTreeSprites(isDark) {
     return christmasTreeState.sprites;
   }
   const starGlow = buildGlowSprite(
-    "rgba(255, 251, 214, 0.96)",
-    isDark ? "rgba(255, 215, 0, 0.42)" : "rgba(245, 158, 11, 0.34)",
+    "rgba(255, 251, 214, 0.94)",
+    isDark ? "rgba(255, 215, 0, 0.34)" : "rgba(245, 158, 11, 0.26)",
     "rgba(255, 215, 0, 0)",
-    72
+    56
   );
   const bulbSpecs = isDark
     ? {
-        gold: ["rgba(255, 253, 224, 1)", "rgba(255, 213, 79, 0.52)", "rgba(255, 213, 79, 0)"],
-        red: ["rgba(255, 232, 232, 1)", "rgba(255, 59, 48, 0.48)", "rgba(255, 59, 48, 0)"],
-        green: ["rgba(220, 255, 232, 1)", "rgba(34, 197, 94, 0.46)", "rgba(34, 197, 94, 0)"],
-        blue: ["rgba(224, 244, 255, 1)", "rgba(56, 189, 248, 0.48)", "rgba(56, 189, 248, 0)"],
-        yellow: ["rgba(255, 255, 220, 1)", "rgba(250, 204, 21, 0.5)", "rgba(250, 204, 21, 0)"]
+        gold: ["rgba(255, 253, 224, 1)", "rgba(255, 213, 79, 0.44)", "rgba(255, 213, 79, 0)"],
+        red: ["rgba(255, 232, 232, 1)", "rgba(255, 59, 48, 0.42)", "rgba(255, 59, 48, 0)"],
+        green: ["rgba(220, 255, 232, 1)", "rgba(34, 197, 94, 0.4)", "rgba(34, 197, 94, 0)"],
+        blue: ["rgba(224, 244, 255, 1)", "rgba(56, 189, 248, 0.42)", "rgba(56, 189, 248, 0)"],
+        yellow: ["rgba(255, 255, 220, 1)", "rgba(250, 204, 21, 0.42)", "rgba(250, 204, 21, 0)"]
       }
     : {
-        gold: ["rgba(255, 252, 225, 1)", "rgba(245, 158, 11, 0.44)", "rgba(245, 158, 11, 0)"],
-        red: ["rgba(255, 235, 235, 1)", "rgba(220, 38, 38, 0.42)", "rgba(220, 38, 38, 0)"],
-        green: ["rgba(220, 252, 231, 1)", "rgba(22, 163, 74, 0.4)", "rgba(22, 163, 74, 0)"],
-        blue: ["rgba(224, 242, 254, 1)", "rgba(37, 99, 235, 0.42)", "rgba(37, 99, 235, 0)"],
-        yellow: ["rgba(254, 249, 195, 1)", "rgba(234, 179, 8, 0.44)", "rgba(234, 179, 8, 0)"]
+        gold: ["rgba(255, 252, 225, 1)", "rgba(245, 158, 11, 0.34)", "rgba(245, 158, 11, 0)"],
+        red: ["rgba(255, 235, 235, 1)", "rgba(220, 38, 38, 0.34)", "rgba(220, 38, 38, 0)"],
+        green: ["rgba(220, 252, 231, 1)", "rgba(22, 163, 74, 0.32)", "rgba(22, 163, 74, 0)"],
+        blue: ["rgba(224, 242, 254, 1)", "rgba(37, 99, 235, 0.34)", "rgba(37, 99, 235, 0)"],
+        yellow: ["rgba(254, 249, 195, 1)", "rgba(234, 179, 8, 0.36)", "rgba(234, 179, 8, 0)"]
       };
   const bulbs = {};
   Object.keys(bulbSpecs).forEach((k) => {
     const s = bulbSpecs[k];
-    bulbs[k] = buildGlowSprite(s[0], s[1], s[2], 32);
+    bulbs[k] = buildGlowSprite(s[0], s[1], s[2], 24);
   });
   christmasTreeState.sprites = { starGlow, bulbs };
   christmasTreeState.spriteThemeKey = key;
@@ -21181,11 +21329,125 @@ function getChristmasTreeSprites(isDark) {
 }
 
 function coneRadiusAtHeight(u) {
-  const taper = Math.max(0.02, Math.pow(1 - u, 0.94));
-  const whorl = (1 - u) * 7.5;
+  // Foliage starts cleanly above wooden trunk at u >= 0.16 up to tip u = 0.99
+  if (u < 0.16) return 0.15;
+  const relU = Math.max(0, Math.min(1, (u - 0.16) / 0.83));
+  const taper = Math.max(0.02, Math.pow(1 - relU, 0.9));
+  const whorl = (1 - relU) * 6.5;
   const frac = whorl - Math.floor(whorl);
   const boughFlare = 0.84 + 0.25 * (1 - frac);
   return taper * boughFlare;
+}
+
+function buildPresetThumbnailCanvas(presetKey) {
+  const c = document.createElement("canvas");
+  c.width = 72;
+  c.height = 72;
+  const ctx = c.getContext("2d");
+  if (!ctx) return c;
+
+  if (presetKey === "preset:aurora") {
+    const g = ctx.createLinearGradient(0, 0, 72, 72);
+    g.addColorStop(0, "#091529");
+    g.addColorStop(0.55, "#0f766e");
+    g.addColorStop(1, "#38bdf8");
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, 72, 72);
+    ctx.fillStyle = "rgba(167, 243, 208, 0.48)";
+    ctx.beginPath();
+    ctx.ellipse(36, 26, 30, 11, -0.35, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#082f49";
+    ctx.beginPath();
+    ctx.moveTo(0, 72);
+    ctx.lineTo(14, 48);
+    ctx.lineTo(28, 60);
+    ctx.lineTo(44, 44);
+    ctx.lineTo(72, 62);
+    ctx.lineTo(72, 72);
+    ctx.closePath();
+    ctx.fill();
+  } else if (presetKey === "preset:fireplace") {
+    const g = ctx.createLinearGradient(0, 0, 0, 72);
+    g.addColorStop(0, "#451a03");
+    g.addColorStop(0.6, "#9a3412");
+    g.addColorStop(1, "#fbbf24");
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, 72, 72);
+    ctx.fillStyle = "#292524";
+    ctx.fillRect(10, 28, 52, 44);
+    ctx.fillStyle = "#1c1917";
+    ctx.fillRect(18, 36, 36, 36);
+    ctx.fillStyle = "#fb923c";
+    ctx.beginPath();
+    ctx.arc(36, 56, 12, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#fef08a";
+    ctx.beginPath();
+    ctx.arc(36, 58, 7, 0, Math.PI * 2);
+    ctx.fill();
+  } else if (presetKey === "preset:snowman") {
+    const g = ctx.createLinearGradient(0, 0, 0, 72);
+    g.addColorStop(0, "#1e3a8a");
+    g.addColorStop(0.75, "#60a5fa");
+    g.addColorStop(1, "#f8fafc");
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, 72, 72);
+    ctx.fillStyle = "#ffffff";
+    ctx.beginPath();
+    ctx.arc(36, 52, 13, 0, Math.PI * 2);
+    ctx.arc(36, 33, 9, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#dc2626";
+    ctx.fillRect(27, 40, 18, 4);
+    ctx.fillStyle = "#f97316";
+    ctx.beginPath();
+    ctx.moveTo(36, 33);
+    ctx.lineTo(44, 35);
+    ctx.lineTo(36, 37);
+    ctx.closePath();
+    ctx.fill();
+  } else {
+    const g = ctx.createRadialGradient(36, 26, 4, 36, 36, 48);
+    g.addColorStop(0, "#fef08a");
+    g.addColorStop(0.35, "#312e81");
+    g.addColorStop(1, "#0f172a");
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, 72, 72);
+    ctx.fillStyle = "#ffffff";
+    [
+      [14, 14], [56, 18], [22, 52], [58, 46], [42, 12]
+    ].forEach(([sx, sy]) => {
+      ctx.beginPath();
+      ctx.arc(sx, sy, 1.5, 0, Math.PI * 2);
+      ctx.fill();
+    });
+  }
+  return c;
+}
+
+function getChristmasTreePhotoAsset(photoData) {
+  if (!photoData) return null;
+  if (christmasTreeMediaCache.has(photoData)) {
+    return christmasTreeMediaCache.get(photoData);
+  }
+  if (photoData.startsWith("preset:")) {
+    const canvas = buildPresetThumbnailCanvas(photoData);
+    const entry = { ready: true, drawable: canvas, dataUrl: canvas.toDataURL("image/png") };
+    christmasTreeMediaCache.set(photoData, entry);
+    return entry;
+  }
+  if (photoData.startsWith("data:image/")) {
+    const img = new Image();
+    const entry = { ready: false, drawable: img, dataUrl: photoData };
+    img.onload = () => {
+      entry.ready = true;
+    };
+    img.src = photoData;
+    christmasTreeMediaCache.set(photoData, entry);
+    return entry;
+  }
+  return null;
 }
 
 function buildChristmasTreeGeometry(isMobile) {
@@ -21193,159 +21455,262 @@ function buildChristmasTreeGeometry(isMobile) {
   const items = [];
   const goldenAngle = 2.399963229728653;
 
-  // 1. Conical layered emerald foliage particles (#004225 .. #4CAF50 + frost hints)
-  const foliageCount = isMobile ? 480 : 980;
+  // Depth-sorted wooden trunk marker centered on axis (behind front needles/gifts, in front of rear ones)
+  items.push({ kind: "trunk", u: 0.11, rNorm: 0, angle: 0 });
+
+  // 1. Conical evergreen pine needles starting cleanly above trunk (u = 0.16..0.985)
+  const foliageCount = isMobile ? 490 : 980;
   for (let i = 0; i < foliageCount; i++) {
-    const u = Math.pow(i / foliageCount, 0.74);
-    const angle = i * goldenAngle + (rng() - 0.5) * 0.26;
-    const shell = 0.24 + 0.76 * Math.pow(rng(), 0.42);
+    const uLin = Math.pow(i / foliageCount, 0.78);
+    const u = 0.162 + uLin * 0.822;
+    const angle = i * goldenAngle + (rng() - 0.5) * 0.24;
+    const shell = 0.14 + 0.86 * Math.pow(rng(), 0.42);
     const rNorm = coneRadiusAtHeight(u) * shell;
     const toneRoll = rng();
-    const tone = toneRoll < 0.42 ? 0 : (toneRoll < 0.74 ? 1 : (toneRoll < 0.93 ? 2 : 3));
+    const tone = toneRoll < 0.42 ? 0 : (toneRoll < 0.74 ? 1 : (toneRoll < 0.94 ? 2 : 3));
     items.push({
       kind: "needle",
-      u: Math.max(0.01, Math.min(0.99, u + (rng() - 0.5) * 0.025)),
+      u: Math.max(0.16, Math.min(0.99, u + (rng() - 0.5) * 0.018)),
       rNorm,
       angle,
-      size: (isMobile ? 2.1 : 2.35) + rng() * 2.35,
+      size: (isMobile ? 2.1 : 2.3) + rng() * 2.1,
       tone,
       phase: rng() * Math.PI * 2
     });
   }
 
-  // 2. Spiraling multicolor FairyLights (#FF0000, #00FF00, #0000FF, #FFFF00, warm #FFD54F)
-  const bulbKeys = ["gold", "red", "yellow", "blue", "green"];
-  const bulbColors = { gold: "#FFD54F", red: "#FF2D2D", yellow: "#FFEB3B", blue: "#38BDF8", green: "#22C55E" };
-  const lightCount = isMobile ? 48 : 96;
-  const strandTurns = 5.2;
+  // 2. Humble starter state: ONLY gentle warm golden fairy pinpoints (community items add Polaroids, gifts, baubles & rainbow lights)
+  const lightCount = isMobile ? 18 : 26;
+  const strandTurns = 3.8;
   for (let i = 0; i < lightCount; i++) {
-    const strand = i % 2;
-    const u = 0.045 + (i / lightCount) * 0.9;
-    const angle = u * Math.PI * 2 * strandTurns + strand * Math.PI + (rng() - 0.5) * 0.14;
-    const rNorm = coneRadiusAtHeight(u) * 1.035;
-    const key = bulbKeys[i % bulbKeys.length];
+    const u = 0.2 + (i / lightCount) * 0.74;
+    const angle = u * Math.PI * 2 * strandTurns + (rng() - 0.5) * 0.22;
     items.push({
       kind: "light",
       u,
-      rNorm,
+      rNorm: coneRadiusAtHeight(u) * 1.02,
       angle,
-      key,
-      coreColor: bulbColors[key],
-      size: isMobile ? 2.2 + rng() * 0.8 : 2.6 + rng() * 1.1,
+      key: "gold",
+      coreColor: "#FDE68A",
+      size: isMobile ? 1.85 : 2.15,
       phase: rng() * Math.PI * 2,
-      speed: 2.0 + rng() * 2.2
+      speed: 1.6 + rng() * 1.6
     });
   }
 
-  // 3. Orbiting Polaroid photo cards (#FFFAF0 frame + pastel interior memory)
-  const polaroidCount = isMobile ? 6 : 12;
-  const pastelColors = ["#F0E68C", "#E6E6FA", "#FFB6C1", "#98FB98", "#B0E0E6", "#FFE4E1"];
-  for (let i = 0; i < polaroidCount; i++) {
-    const u = 0.14 + (i / polaroidCount) * 0.66;
-    const angle = i * 2.15 + 0.4;
-    const rNorm = coneRadiusAtHeight(u) * 1.11;
-    items.push({
-      kind: "polaroid",
-      u,
-      rNorm,
-      angle,
-      innerColor: pastelColors[i % pastelColors.length],
-      swayPhase: rng() * Math.PI * 2,
-      baseTilt: (rng() - 0.5) * 0.34,
-      scale: isMobile ? 0.72 : (0.88 + rng() * 0.24)
-    });
-  }
-
-  // 4. Gifts at the skirt + Luxury Baubles
-  const giftPalettes = [
-    { box: "#D32F2F", lid: "#EF4444", ribbon: "#FFD700" },
-    { box: "#1976D2", lid: "#3B82F6", ribbon: "#FFD700" },
-    { box: "#D97706", lid: "#FBBF24", ribbon: "#D32F2F" },
-    { box: "#15803D", lid: "#22C55E", ribbon: "#FFFBEB" }
-  ];
-  const baseGiftCount = isMobile ? 5 : 9;
-  for (let i = 0; i < baseGiftCount; i++) {
-    const angle = (i / baseGiftCount) * Math.PI * 2 + 0.25;
-    const rNorm = 0.68 + rng() * 0.36;
-    items.push({
-      kind: "gift",
-      u: 0.02 + rng() * 0.055,
-      rNorm,
-      angle,
-      palette: giftPalettes[i % giftPalettes.length],
-      size: isMobile ? 6.5 + rng() * 2.2 : 8.5 + rng() * 3.5,
-      bobPhase: rng() * Math.PI * 2
-    });
-  }
-  const baubleColors = ["#D32F2F", "#FFD700", "#1976D2", "#F59E0B"];
-  const baubleCount = isMobile ? 10 : 20;
-  for (let i = 0; i < baubleCount; i++) {
-    const u = 0.14 + (i / baubleCount) * 0.74;
-    const angle = i * 2.72 + 1.1;
-    items.push({
-      kind: "bauble",
-      u,
-      rNorm: coneRadiusAtHeight(u) * 0.98,
-      angle,
-      color: baubleColors[i % baubleColors.length],
-      size: isMobile ? 3.2 : 4.2 + rng() * 1.1
-    });
-  }
-
-  // 5. Ambient floating silver/gold sparkles
-  const sparkleCount = isMobile ? 12 : 24;
+  // 3. Soft subtle dust sparkles
+  const sparkleCount = isMobile ? 6 : 12;
   for (let i = 0; i < sparkleCount; i++) {
     items.push({
       kind: "sparkle",
-      u: rng() * 1.04,
-      rNorm: (0.45 + rng() * 0.88) * Math.max(0.24, coneRadiusAtHeight(Math.min(0.95, rng()))),
+      u: 0.14 + rng() * 0.88,
+      rNorm: (0.45 + rng() * 0.75) * Math.max(0.24, coneRadiusAtHeight(0.2 + rng() * 0.72)),
       angle: rng() * Math.PI * 2,
-      speedY: 0.055 + rng() * 0.075,
-      size: 1.4 + rng() * 1.7,
+      speedY: 0.045 + rng() * 0.055,
+      size: 1.3 + rng() * 1.3,
       phase: rng() * Math.PI * 2,
-      isGold: rng() > 0.42
+      isGold: rng() > 0.35
     });
   }
 
-  christmasTreeState.items = items;
-  christmasTreeState.projected = new Array(items.length);
+  christmasTreeState.baseItems = items;
+  syncCombinedChristmasTreeItems();
+}
+
+function buildCommunityOrnamentNodes(communityItems) {
+  if (!Array.isArray(communityItems) || !communityItems.length) return [];
+  const nodes = [];
+  for (let i = 0; i < communityItems.length; i++) {
+    const item = communityItems[i];
+    if (!item || !item.id) continue;
+    const uClamped = Math.max(0.22, Math.min(0.84, Number(item.posU) || 0.48));
+    const angle = Number(item.posAngle) || (i * 2.15);
+
+    if (item.slotKind === "polaroid") {
+      nodes.push({
+        kind: "community_polaroid",
+        data: item,
+        u: uClamped,
+        rNorm: coneRadiusAtHeight(uClamped) * 1.13,
+        angle,
+        frameColor: item.frameColor || TREE_POLAROID_FRAME_MAP[item.itemStyle] || "#FFFAF0",
+        accentColor: item.accentColor || "#F0E68C",
+        photoData: item.photoData || "",
+        swayPhase: ((item.id * 1.37) % (Math.PI * 2)),
+        baseTilt: (((item.id % 5) - 2) * 0.08),
+        scale: 1.05
+      });
+    } else if (String(item.itemStyle || "").startsWith("gift_")) {
+      const palette = TREE_GIFT_PALETTE_MAP[item.itemStyle] || TREE_GIFT_PALETTE_MAP.gift_red;
+      nodes.push({
+        kind: "community_gift",
+        data: item,
+        u: 0.025 + ((item.id % 5) * 0.009),
+        rNorm: 0.34 + ((item.id * 19) % 28) * 0.01,
+        angle,
+        palette,
+        size: 11,
+        bobPhase: (item.id * 0.77) % (Math.PI * 2)
+      });
+    } else if (item.itemStyle === "fairy_garland") {
+      const garlandKeys = ["red", "gold", "blue", "green"];
+      const bulbColors = { gold: "#FFD54F", red: "#FF2D2D", blue: "#38BDF8", green: "#22C55E" };
+      const bandCenter = Math.max(0.26, Math.min(0.8, uClamped));
+      for (let b = 0; b < 9; b++) {
+        const offsetFrac = (b - 4) / 4;
+        const bu = Math.max(0.19, Math.min(0.91, bandCenter + offsetFrac * 0.11));
+        const key = garlandKeys[(item.id + b) % garlandKeys.length];
+        nodes.push({
+          kind: "community_garland_bulb",
+          data: item,
+          u: bu,
+          rNorm: coneRadiusAtHeight(bu) * 1.05,
+          angle: angle + offsetFrac * 1.15,
+          key,
+          coreColor: bulbColors[key],
+          size: 2.55,
+          phase: b * 0.8 + item.id,
+          speed: 2.4 + (b % 3) * 0.45
+        });
+      }
+    } else {
+      const color = TREE_BAUBLE_COLOR_MAP[item.itemStyle] || item.accentColor || "#E11D48";
+      nodes.push({
+        kind: "community_bauble",
+        data: item,
+        u: uClamped,
+        rNorm: coneRadiusAtHeight(uClamped) * 1.02,
+        angle,
+        color,
+        size: 4.8
+      });
+    }
+  }
+  return nodes;
+}
+
+function syncCombinedChristmasTreeItems() {
+  const base = christmasTreeState.baseItems || [];
+  const community = buildCommunityOrnamentNodes(christmasTreeEventState.items);
+  const combined = base.concat(community);
+  christmasTreeState.items = combined;
+  christmasTreeState.projected = new Array(combined.length);
+}
+
+function drawTreeBaseAndMound(ctx, anchorX, baseY, treeR, isDark) {
+  // Compact contact shadow & sculpted snow-dusted mound directly under trunk base (no giant edge aura)
+  ctx.save();
+  const shadowGrad = ctx.createRadialGradient(anchorX, baseY + 3, 2, anchorX, baseY + 3, treeR * 0.64);
+  shadowGrad.addColorStop(0, isDark ? "rgba(0, 0, 0, 0.46)" : "rgba(15, 23, 42, 0.2)");
+  shadowGrad.addColorStop(0.65, isDark ? "rgba(0, 0, 0, 0.18)" : "rgba(15, 23, 42, 0.06)");
+  shadowGrad.addColorStop(1, "rgba(0, 0, 0, 0)");
+  ctx.fillStyle = shadowGrad;
+  ctx.beginPath();
+  ctx.ellipse(anchorX, baseY + 3, treeR * 0.64, treeR * 0.17, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  const moundW = treeR * 0.56;
+  const moundH = Math.max(8, treeR * 0.16);
+  const moundGrad = ctx.createLinearGradient(anchorX, baseY - moundH, anchorX, baseY + 5);
+  if (isDark) {
+    moundGrad.addColorStop(0, "#f1f5f9");
+    moundGrad.addColorStop(0.6, "#94a3b8");
+    moundGrad.addColorStop(1, "#475569");
+  } else {
+    moundGrad.addColorStop(0, "#ffffff");
+    moundGrad.addColorStop(0.62, "#e2e8f0");
+    moundGrad.addColorStop(1, "#cbd5e1");
+  }
+  ctx.fillStyle = moundGrad;
+  ctx.beginPath();
+  ctx.moveTo(anchorX - moundW, baseY + 2);
+  ctx.quadraticCurveTo(anchorX - moundW * 0.52, baseY - moundH * 1.15, anchorX, baseY - moundH);
+  ctx.quadraticCurveTo(anchorX + moundW * 0.52, baseY - moundH * 1.15, anchorX + moundW, baseY + 2);
+  ctx.quadraticCurveTo(anchorX, baseY + 6, anchorX - moundW, baseY + 2);
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
+}
+
+function drawTreeWoodenTrunk(ctx, anchorX, baseY, treeH, treeR, rot, isDark) {
+  const yBot = baseY - treeH * 0.015;
+  const yTop = baseY - treeH * 0.235;
+  const botHalfW = Math.max(4.5, treeR * 0.115);
+  const topHalfW = Math.max(2.6, treeR * 0.062);
+
+  ctx.save();
+  // 3D Cylindrical hardwood shading
+  const trunkGrad = ctx.createLinearGradient(anchorX - botHalfW, yBot, anchorX + botHalfW, yBot);
+  if (isDark) {
+    trunkGrad.addColorStop(0, "#27160c");
+    trunkGrad.addColorStop(0.32, "#5c3824");
+    trunkGrad.addColorStop(0.55, "#7c4f35");
+    trunkGrad.addColorStop(1, "#21120a");
+  } else {
+    trunkGrad.addColorStop(0, "#3d2415");
+    trunkGrad.addColorStop(0.34, "#794c31");
+    trunkGrad.addColorStop(0.56, "#9a6343");
+    trunkGrad.addColorStop(1, "#331c0f");
+  }
+
+  ctx.beginPath();
+  ctx.moveTo(anchorX - botHalfW, yBot);
+  ctx.quadraticCurveTo(anchorX - botHalfW * 0.85, (yBot + yTop) * 0.52, anchorX - topHalfW, yTop);
+  ctx.lineTo(anchorX + topHalfW, yTop);
+  ctx.quadraticCurveTo(anchorX + botHalfW * 0.85, (yBot + yTop) * 0.52, anchorX + botHalfW, yBot);
+  ctx.closePath();
+  ctx.fillStyle = trunkGrad;
+  ctx.fill();
+
+  // Clip & draw rotating vertical bark ridges + bough overhang ambient shadow
+  ctx.clip();
+  ctx.strokeStyle = isDark ? "rgba(18, 9, 4, 0.48)" : "rgba(44, 24, 12, 0.36)";
+  ctx.lineWidth = Math.max(0.8, botHalfW * 0.14);
+  for (let b = 0; b < 4; b++) {
+    const barkPhase = rot + b * 1.4;
+    const sinA = Math.sin(barkPhase);
+    if (Math.cos(barkPhase) > -0.2) {
+      const bxBot = anchorX + sinA * botHalfW * 0.72;
+      const bxTop = anchorX + sinA * topHalfW * 0.72;
+      ctx.beginPath();
+      ctx.moveTo(bxBot, yBot);
+      ctx.lineTo(bxTop, yTop);
+      ctx.stroke();
+    }
+  }
+
+  const collarShadow = ctx.createLinearGradient(anchorX, yTop, anchorX, baseY - treeH * 0.11);
+  collarShadow.addColorStop(0, "rgba(0, 0, 0, 0.62)");
+  collarShadow.addColorStop(1, "rgba(0, 0, 0, 0)");
+  ctx.fillStyle = collarShadow;
+  ctx.fillRect(anchorX - botHalfW - 2, yTop - 2, (botHalfW + 2) * 2, (baseY - treeH * 0.1) - yTop + 4);
+  ctx.restore();
 }
 
 function drawFacetedTopStar(ctx, cx, cy, outerR, rotY, isDark, sprites) {
-  const glowSize = outerR * 4.6;
+  const glowSize = outerR * 3.8;
   ctx.save();
-  ctx.globalAlpha = isDark ? 0.92 : 0.78;
+  ctx.globalAlpha = isDark ? 0.88 : 0.74;
   ctx.drawImage(sprites.starGlow, cx - glowSize * 0.5, cy - glowSize * 0.5, glowSize, glowSize);
 
   const cosY = Math.cos(rotY);
   const scaleX = Math.sign(cosY || 1) * Math.max(0.28, Math.abs(cosY));
   const innerR = outerR * 0.44;
-
-  // Compute rotated 5-point star perimeter around apex
   const pts = [];
   for (let i = 0; i < 10; i++) {
     const a = (i * Math.PI) / 5 - Math.PI / 2;
     const r = (i % 2 === 0) ? outerR : innerR;
-    pts.push({
-      x: cx + Math.cos(a) * r * scaleX,
-      y: cy + Math.sin(a) * r
-    });
+    pts.push({ x: cx + Math.cos(a) * r * scaleX, y: cy + Math.sin(a) * r });
   }
 
-  // Extruded side depth offset gives chunky 3D luxury gold silhouette
   const depthShift = -Math.sin(rotY) * outerR * 0.18;
   ctx.globalAlpha = 1;
   ctx.beginPath();
-  for (let i = 0; i < pts.length; i++) {
-    const p = pts[i];
-    if (i === 0) ctx.moveTo(p.x + depthShift, p.y);
-    else ctx.lineTo(p.x + depthShift, p.y);
-  }
+  pts.forEach((p, i) => (i === 0 ? ctx.moveTo(p.x + depthShift, p.y) : ctx.lineTo(p.x + depthShift, p.y)));
   ctx.closePath();
   ctx.fillStyle = "#B45309";
   ctx.fill();
 
-  // Faceted gold front planes alternating bright pure gold & warm amber gold
   for (let i = 0; i < 10; i++) {
     const p1 = pts[i];
     const p2 = pts[(i + 1) % 10];
@@ -21354,14 +21719,12 @@ function drawFacetedTopStar(ctx, cx, cy, outerR, rotY, isDark, sprites) {
     ctx.lineTo(p1.x, p1.y);
     ctx.lineTo(p2.x, p2.y);
     ctx.closePath();
-    const bright = (i % 2 === 0);
-    ctx.fillStyle = bright ? "#FFD700" : "#F59E0B";
+    ctx.fillStyle = (i % 2 === 0) ? "#FFD700" : "#F59E0B";
     ctx.fill();
   }
 
-  // Crisp gold specular outline + center pinpoint gleam
   ctx.strokeStyle = isDark ? "#FFFBEB" : "#D97706";
-  ctx.lineWidth = isDark ? 0.8 : 0.9;
+  ctx.lineWidth = 0.85;
   ctx.lineJoin = "round";
   ctx.beginPath();
   pts.forEach((p, idx) => (idx === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y)));
@@ -21370,9 +21733,246 @@ function drawFacetedTopStar(ctx, cx, cy, outerR, rotY, isDark, sprites) {
 
   ctx.fillStyle = "#FFFBEB";
   ctx.beginPath();
-  ctx.arc(cx, cy, Math.max(1.5, outerR * 0.16), 0, Math.PI * 2);
+  ctx.arc(cx, cy, Math.max(1.4, outerR * 0.16), 0, Math.PI * 2);
   ctx.fill();
   ctx.restore();
+}
+
+function renderChristmasTreeScene(ctx, layout, projBuffer, sceneParams) {
+  const { anchorX, baseY, treeH, treeR, isMobile } = layout;
+  const {
+    items,
+    rot,
+    starRotation,
+    timeSec,
+    isDark,
+    interactive = false,
+    selectedId = null,
+    hoverId = null,
+    hitBoxes = null
+  } = sceneParams;
+
+  const sprites = getChristmasTreeSprites(isDark);
+  const t = timeSec;
+  const fov = 560;
+  const tiltSin = 0.11;
+  const tiltCos = 0.9939;
+
+  drawTreeBaseAndMound(ctx, anchorX, baseY, treeR, isDark);
+
+  const foliagePalette = isDark
+    ? ["#004225", "#146c43", "#2E7D32", "#81C784"]
+    : ["#003820", "#004D2B", "#15683E", "#2E7D32"];
+
+  if (projBuffer.length !== items.length) {
+    projBuffer.length = items.length;
+  }
+
+  for (let i = 0; i < items.length; i++) {
+    const it = items[i];
+    const u = it.kind === "sparkle" ? ((it.u + t * it.speedY) % 1.03) : it.u;
+    const swayAngle = it.kind === "trunk" ? 0 : (it.angle + rot + (it.kind === "sparkle" ? t * 0.2 : 0));
+    const radius = it.rNorm * treeR;
+    const x3 = Math.cos(swayAngle) * radius;
+    const z3 = it.kind === "trunk" ? 0 : Math.sin(swayAngle) * radius;
+    const yRel = (0.44 - u) * treeH;
+    const y3Tilt = yRel * tiltCos - z3 * tiltSin;
+    const z3Tilt = yRel * tiltSin + z3 * tiltCos;
+    const persp = fov / (fov + z3Tilt);
+    const sx = anchorX + x3 * persp;
+    const sy = (baseY - treeH * 0.44) + y3Tilt * persp;
+
+    let slot = projBuffer[i];
+    if (!slot) {
+      slot = {};
+      projBuffer[i] = slot;
+    }
+    slot.item = it;
+    slot.sx = sx;
+    slot.sy = sy;
+    slot.z = it.kind === "trunk" ? 0 : z3Tilt;
+    slot.persp = persp;
+    slot.angle = swayAngle;
+  }
+
+  projBuffer.sort((a, b) => b.z - a.z);
+  if (hitBoxes) hitBoxes.length = 0;
+
+  const scaleBoost = interactive ? 1.18 : 1;
+
+  for (let i = 0; i < projBuffer.length; i++) {
+    const p = projBuffer[i];
+    const it = p.item;
+    const persp = p.persp;
+    const depthNorm = Math.max(0.34, Math.min(1, 0.72 - p.z / (treeR * 2.2)));
+
+    if (it.kind === "trunk") {
+      drawTreeWoodenTrunk(ctx, anchorX, baseY, treeH, treeR, rot, isDark);
+      continue;
+    }
+
+    if (it.kind === "needle") {
+      const r = it.size * persp;
+      const shimmer = it.tone === 3 ? (0.65 + 0.35 * Math.sin(t * 2.2 + it.phase)) : 1;
+      ctx.globalAlpha = (isDark ? 0.9 : 0.88) * depthNorm * shimmer;
+      ctx.fillStyle = foliagePalette[it.tone];
+      ctx.beginPath();
+      ctx.arc(p.sx, p.sy, r, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (it.kind === "light" || it.kind === "community_garland_bulb") {
+      const pulse = 0.42 + 0.58 * Math.pow(0.5 + 0.5 * Math.sin(t * it.speed + it.phase), 1.4);
+      const glowRadius = it.size * (3.1 + pulse * 1.1) * persp * scaleBoost;
+      const sprite = sprites.bulbs[it.key] || sprites.bulbs.gold;
+      const isSelected = it.data && (it.data.id === selectedId || it.data.id === hoverId);
+      ctx.globalAlpha = (isDark ? 0.88 : 0.76) * depthNorm * (0.55 + pulse * 0.45);
+      ctx.drawImage(sprite, p.sx - glowRadius, p.sy - glowRadius, glowRadius * 2, glowRadius * 2);
+      ctx.fillStyle = it.coreColor;
+      ctx.beginPath();
+      ctx.arc(p.sx, p.sy, Math.max(1.2, it.size * 0.56 * persp * scaleBoost), 0, Math.PI * 2);
+      ctx.fill();
+      if (interactive && it.data) {
+        if (isSelected) {
+          ctx.save();
+          ctx.strokeStyle = "#FACC15";
+          ctx.lineWidth = 1.6;
+          ctx.beginPath();
+          ctx.arc(p.sx, p.sy, Math.max(7, it.size * 2.6 * persp), 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.restore();
+        }
+        if (hitBoxes) {
+          hitBoxes.push({ item: it.data, x: p.sx, y: p.sy, r: Math.max(14, it.size * 3.8 * persp) });
+        }
+      }
+    } else if (it.kind === "community_polaroid") {
+      const baseW = isMobile ? 13.5 : (interactive ? 24 : 15.5);
+      const pw = baseW * it.scale * persp;
+      const ph = pw * 1.24;
+      const sway = it.baseTilt + Math.sin(t * 1.45 + it.swayPhase) * 0.12;
+      const isSelected = it.data && (it.data.id === selectedId || it.data.id === hoverId);
+      ctx.save();
+      ctx.translate(p.sx, p.sy);
+      ctx.rotate(sway);
+      ctx.globalAlpha = 0.82 + 0.18 * depthNorm;
+
+      // Delicate gold hanging loop string
+      ctx.strokeStyle = "#EAB308";
+      ctx.lineWidth = Math.max(0.7, pw * 0.045);
+      ctx.beginPath();
+      ctx.moveTo(0, -ph * 0.5);
+      ctx.lineTo(0, -ph * 0.5 - Math.max(4, pw * 0.24));
+      ctx.stroke();
+
+      ctx.fillStyle = isDark ? "rgba(0, 0, 0, 0.38)" : "rgba(15, 23, 42, 0.2)";
+      ctx.fillRect(-pw * 0.5 + 1.4, -ph * 0.5 + 1.8, pw, ph);
+
+      ctx.fillStyle = it.frameColor || "#FFFAF0";
+      ctx.fillRect(-pw * 0.5, -ph * 0.5, pw, ph);
+      if (isSelected || !isDark) {
+        ctx.strokeStyle = isSelected ? "#F59E0B" : "rgba(15, 23, 42, 0.2)";
+        ctx.lineWidth = isSelected ? 2 : 0.7;
+        ctx.strokeRect(-pw * 0.5, -ph * 0.5, pw, ph);
+      }
+
+      const pad = pw * 0.12;
+      const imgW = pw - pad * 2;
+      const imgH = ph * 0.66;
+      const imgX = -pw * 0.5 + pad;
+      const imgY = -ph * 0.5 + pad;
+      const asset = getChristmasTreePhotoAsset(it.photoData);
+      if (asset && asset.ready) {
+        ctx.drawImage(asset.drawable, imgX, imgY, imgW, imgH);
+      } else {
+        ctx.fillStyle = it.accentColor || "#F0E68C";
+        ctx.fillRect(imgX, imgY, imgW, imgH);
+      }
+
+      // Handwritten caption hint lines on Polaroid lower chin
+      if (it.data && it.data.message && pw >= 15) {
+        ctx.fillStyle = "rgba(51, 65, 85, 0.52)";
+        ctx.fillRect(-pw * 0.34, ph * 0.31, pw * 0.68, Math.max(1.2, pw * 0.05));
+      }
+      ctx.restore();
+      if (interactive && it.data && hitBoxes) {
+        hitBoxes.push({ item: it.data, x: p.sx, y: p.sy, r: Math.max(18, ph * 0.64) });
+      }
+    } else if (it.kind === "community_gift") {
+      const s = it.size * persp * scaleBoost;
+      const bob = Math.sin(t * 1.4 + it.bobPhase) * 0.7;
+      const gx = p.sx - s * 0.5;
+      const gy = p.sy - s * 0.5 + bob;
+      const isSelected = it.data && (it.data.id === selectedId || it.data.id === hoverId);
+      ctx.save();
+      ctx.globalAlpha = 0.84 + 0.16 * depthNorm;
+      ctx.fillStyle = it.palette.box;
+      ctx.fillRect(gx, gy + s * 0.22, s, s * 0.78);
+      ctx.fillStyle = it.palette.lid;
+      ctx.fillRect(gx - 0.9, gy, s + 1.8, s * 0.27);
+      ctx.fillStyle = it.palette.ribbon;
+      ctx.fillRect(p.sx - s * 0.12, gy, s * 0.24, s);
+      ctx.fillRect(gx, gy + s * 0.54, s, s * 0.16);
+      // Small gift bow loop
+      ctx.strokeStyle = it.palette.ribbon;
+      ctx.lineWidth = Math.max(1, s * 0.11);
+      ctx.beginPath();
+      ctx.ellipse(p.sx - s * 0.16, gy - s * 0.07, s * 0.14, s * 0.09, -0.35, 0, Math.PI * 2);
+      ctx.ellipse(p.sx + s * 0.16, gy - s * 0.07, s * 0.14, s * 0.09, 0.35, 0, Math.PI * 2);
+      ctx.stroke();
+      if (isSelected) {
+        ctx.strokeStyle = "#FACC15";
+        ctx.lineWidth = 2;
+        ctx.strokeRect(gx - 2.5, gy - 2.5, s + 5, s + 5);
+      }
+      ctx.restore();
+      if (interactive && it.data && hitBoxes) {
+        hitBoxes.push({ item: it.data, x: p.sx, y: p.sy + bob, r: Math.max(16, s * 0.85) });
+      }
+    } else if (it.kind === "community_bauble") {
+      const r = it.size * persp * scaleBoost;
+      const isSelected = it.data && (it.data.id === selectedId || it.data.id === hoverId);
+      ctx.save();
+      ctx.globalAlpha = 0.84 + 0.16 * depthNorm;
+      ctx.fillStyle = "#F59E0B";
+      ctx.fillRect(p.sx - r * 0.28, p.sy - r * 1.18, r * 0.56, r * 0.28);
+      ctx.fillStyle = it.color;
+      ctx.beginPath();
+      ctx.arc(p.sx, p.sy, r, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "rgba(255, 255, 255, 0.72)";
+      ctx.beginPath();
+      ctx.arc(p.sx - r * 0.32, p.sy - r * 0.34, Math.max(0.9, r * 0.32), 0, Math.PI * 2);
+      ctx.fill();
+      if (isSelected) {
+        ctx.strokeStyle = "#FACC15";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(p.sx, p.sy, r + 3, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+      ctx.restore();
+      if (interactive && it.data && hitBoxes) {
+        hitBoxes.push({ item: it.data, x: p.sx, y: p.sy, r: Math.max(15, r * 1.8) });
+      }
+    } else if (it.kind === "sparkle") {
+      const tw = 0.3 + 0.7 * Math.abs(Math.sin(t * 2.4 + it.phase));
+      ctx.globalAlpha = tw * (isDark ? 0.78 : 0.62);
+      ctx.fillStyle = it.isGold ? "#FFD700" : (isDark ? "#ECEFF1" : "#94A3B8");
+      const r = it.size * persp * tw;
+      ctx.beginPath();
+      ctx.moveTo(p.sx, p.sy - r * 1.5);
+      ctx.lineTo(p.sx + r * 0.5, p.sy);
+      ctx.lineTo(p.sx, p.sy + r * 1.5);
+      ctx.lineTo(p.sx - r * 0.5, p.sy);
+      ctx.closePath();
+      ctx.fill();
+    }
+  }
+  ctx.globalAlpha = 1;
+
+  const starYOffset = Math.sin(t * 2.0) * 1.8;
+  const starY = (baseY - treeH) - (isMobile ? 8 : 11) + starYOffset;
+  const starOuterR = interactive ? 21 : (isMobile ? 12 : 16);
+  drawFacetedTopStar(ctx, anchorX, starY, starOuterR, starRotation, isDark, sprites);
 }
 
 function resizeChristmasTreeCanvas() {
@@ -21392,7 +21992,7 @@ function resizeChristmasTreeCanvas() {
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     christmasTreeState.ctx = ctx;
   }
-  if (!christmasTreeState.items.length || wasMobile !== isMobile) {
+  if (!christmasTreeState.baseItems.length || wasMobile !== isMobile) {
     buildChristmasTreeGeometry(isMobile);
   }
 }
@@ -21418,185 +22018,19 @@ function renderChristmasTreeFrame(nowMs) {
   const dt = christmasTreeState.lastMs ? Math.min(0.05, Math.max(0.004, (nowMs - christmasTreeState.lastMs) / 1000)) : 0.016;
   christmasTreeState.lastMs = nowMs;
   christmasTreeState.timeSec += dt;
-  christmasTreeState.rotation = (christmasTreeState.rotation + dt * 0.32) % (Math.PI * 2);
-  christmasTreeState.starRotation = (christmasTreeState.starRotation + dt * 0.92) % (Math.PI * 2);
+  christmasTreeState.rotation = (christmasTreeState.rotation + dt * 0.28) % (Math.PI * 2);
+  christmasTreeState.starRotation = (christmasTreeState.starRotation + dt * 0.85) % (Math.PI * 2);
 
   ctx.clearRect(0, 0, w, h);
-
-  const isDark = christmasTreeState.isDark;
   const layout = getChristmasTreeLayout(w, h);
-  const { anchorX, baseY, treeH, treeR } = layout;
-  const sprites = getChristmasTreeSprites(isDark);
-  const rot = christmasTreeState.rotation;
-  const t = christmasTreeState.timeSec;
-  const fov = 560;
-  const tiltSin = 0.11;
-  const tiltCos = 0.9939;
-
-  // Grounding emerald/gold shadow aura underneath base skirt
-  const baseAura = ctx.createRadialGradient(anchorX, baseY + 2, 4, anchorX, baseY + 2, treeR * 1.18);
-  if (isDark) {
-    baseAura.addColorStop(0, "rgba(0, 66, 37, 0.38)");
-    baseAura.addColorStop(0.55, "rgba(255, 213, 79, 0.1)");
-    baseAura.addColorStop(1, "rgba(0, 0, 0, 0)");
-  } else {
-    baseAura.addColorStop(0, "rgba(15, 23, 42, 0.14)");
-    baseAura.addColorStop(0.6, "rgba(0, 66, 37, 0.07)");
-    baseAura.addColorStop(1, "rgba(15, 23, 42, 0)");
-  }
-  ctx.save();
-  ctx.scale(1, 0.32);
-  ctx.fillStyle = baseAura;
-  ctx.beginPath();
-  ctx.arc(anchorX, (baseY + 2) / 0.32, treeR * 1.18, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.restore();
-
-  // Soft volumetric emerald inner axis shadow (organic core without hard geometric triangle edges)
-  const coreGlow = ctx.createRadialGradient(anchorX, baseY - treeH * 0.42, treeR * 0.12, anchorX, baseY - treeH * 0.4, treeH * 0.52);
-  if (isDark) {
-    coreGlow.addColorStop(0, "rgba(0, 66, 37, 0.36)");
-    coreGlow.addColorStop(0.6, "rgba(255, 213, 79, 0.05)");
-    coreGlow.addColorStop(1, "rgba(0, 0, 0, 0)");
-  } else {
-    coreGlow.addColorStop(0, "rgba(0, 66, 37, 0.12)");
-    coreGlow.addColorStop(1, "rgba(0, 66, 37, 0)");
-  }
-  ctx.fillStyle = coreGlow;
-  ctx.beginPath();
-  ctx.ellipse(anchorX, baseY - treeH * 0.42, treeR * 0.85, treeH * 0.48, 0, 0, Math.PI * 2);
-  ctx.fill();
-
-  // 3D project all items with Y-rotation + slight forward downward camera tilt
-  const items = christmasTreeState.items;
-  const proj = christmasTreeState.projected;
-  const foliagePaletteDark = ["#004225", "#146c43", "#2E7D32", "#81C784"];
-  const foliagePaletteLight = ["#003820", "#004D2B", "#15683E", "#2E7D32"];
-  const foliagePalette = isDark ? foliagePaletteDark : foliagePaletteLight;
-
-  for (let i = 0; i < items.length; i++) {
-    const it = items[i];
-    const u = it.kind === "sparkle" ? ((it.u + t * it.speedY) % 1.05) : it.u;
-    const swayAngle = it.angle + rot + (it.kind === "sparkle" ? t * 0.22 : 0);
-    const radius = it.rNorm * treeR;
-    const x3 = Math.cos(swayAngle) * radius;
-    const z3 = Math.sin(swayAngle) * radius;
-    const yRel = (0.42 - u) * treeH;
-    const y3Tilt = yRel * tiltCos - z3 * tiltSin;
-    const z3Tilt = yRel * tiltSin + z3 * tiltCos;
-    const persp = fov / (fov + z3Tilt);
-    const sx = anchorX + x3 * persp;
-    const sy = (baseY - treeH * 0.42) + y3Tilt * persp;
-
-    let slot = proj[i];
-    if (!slot) {
-      slot = {};
-      proj[i] = slot;
-    }
-    slot.item = it;
-    slot.sx = sx;
-    slot.sy = sy;
-    slot.z = z3Tilt;
-    slot.persp = persp;
-    slot.angle = swayAngle;
-  }
-
-  proj.sort((a, b) => b.z - a.z);
-
-  for (let i = 0; i < proj.length; i++) {
-    const p = proj[i];
-    const it = p.item;
-    const persp = p.persp;
-    const depthNorm = Math.max(0.32, Math.min(1, 0.72 - p.z / (treeR * 2.2)));
-
-    if (it.kind === "needle") {
-      const r = it.size * persp;
-      const shimmer = it.tone === 3 ? (0.65 + 0.35 * Math.sin(t * 2.4 + it.phase)) : 1;
-      ctx.globalAlpha = (isDark ? 0.88 : 0.86) * depthNorm * shimmer;
-      ctx.fillStyle = foliagePalette[it.tone];
-      ctx.beginPath();
-      ctx.arc(p.sx, p.sy, r, 0, Math.PI * 2);
-      ctx.fill();
-    } else if (it.kind === "light") {
-      const pulse = 0.42 + 0.58 * Math.pow(0.5 + 0.5 * Math.sin(t * it.speed + it.phase), 1.4);
-      const glowRadius = it.size * (3.8 + pulse * 1.4) * persp;
-      const sprite = sprites.bulbs[it.key];
-      ctx.globalAlpha = (isDark ? 0.9 : 0.78) * depthNorm * (0.55 + pulse * 0.45);
-      ctx.drawImage(sprite, p.sx - glowRadius, p.sy - glowRadius, glowRadius * 2, glowRadius * 2);
-      ctx.fillStyle = it.coreColor;
-      ctx.beginPath();
-      ctx.arc(p.sx, p.sy, Math.max(1.2, it.size * 0.58 * persp), 0, Math.PI * 2);
-      ctx.fill();
-    } else if (it.kind === "polaroid") {
-      const pw = (layout.isMobile ? 9 : 11.5) * it.scale * persp;
-      const ph = pw * 1.24;
-      const sway = it.baseTilt + Math.sin(t * 1.45 + it.swayPhase) * 0.14;
-      ctx.save();
-      ctx.translate(p.sx, p.sy);
-      ctx.rotate(sway);
-      ctx.globalAlpha = (0.76 + 0.24 * depthNorm);
-      ctx.fillStyle = isDark ? "rgba(0, 0, 0, 0.35)" : "rgba(15, 23, 42, 0.18)";
-      ctx.fillRect(-pw * 0.5 + 1.2, -ph * 0.5 + 1.5, pw, ph);
-      ctx.fillStyle = "#FFFAF0";
-      ctx.fillRect(-pw * 0.5, -ph * 0.5, pw, ph);
-      if (!isDark) {
-        ctx.strokeStyle = "rgba(15, 23, 42, 0.16)";
-        ctx.lineWidth = 0.6;
-        ctx.strokeRect(-pw * 0.5, -ph * 0.5, pw, ph);
-      }
-      ctx.fillStyle = it.innerColor;
-      const pad = pw * 0.12;
-      ctx.fillRect(-pw * 0.5 + pad, -ph * 0.5 + pad, pw - pad * 2, ph * 0.68);
-      ctx.restore();
-    } else if (it.kind === "gift") {
-      const s = it.size * persp;
-      const bob = Math.sin(t * 1.6 + it.bobPhase) * 1.2;
-      const gx = p.sx - s * 0.5;
-      const gy = p.sy - s * 0.5 + bob;
-      ctx.save();
-      ctx.globalAlpha = 0.76 + 0.24 * depthNorm;
-      ctx.fillStyle = it.palette.box;
-      ctx.fillRect(gx, gy + s * 0.2, s, s * 0.8);
-      ctx.fillStyle = it.palette.lid;
-      ctx.fillRect(gx - 0.8, gy, s + 1.6, s * 0.26);
-      ctx.fillStyle = it.palette.ribbon;
-      ctx.fillRect(p.sx - s * 0.11, gy, s * 0.22, s);
-      ctx.fillRect(gx, gy + s * 0.52, s, s * 0.16);
-      ctx.restore();
-    } else if (it.kind === "bauble") {
-      const r = it.size * persp;
-      ctx.save();
-      ctx.globalAlpha = (0.78 + 0.22 * depthNorm);
-      ctx.fillStyle = it.color;
-      ctx.beginPath();
-      ctx.arc(p.sx, p.sy, r, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillStyle = "rgba(255, 255, 255, 0.72)";
-      ctx.beginPath();
-      ctx.arc(p.sx - r * 0.32, p.sy - r * 0.34, Math.max(0.8, r * 0.32), 0, Math.PI * 2);
-      ctx.fill();
-      ctx.restore();
-    } else if (it.kind === "sparkle") {
-      const tw = 0.35 + 0.65 * Math.abs(Math.sin(t * 2.8 + it.phase));
-      ctx.globalAlpha = tw * (isDark ? 0.85 : 0.72);
-      ctx.fillStyle = it.isGold ? "#FFD700" : (isDark ? "#ECEFF1" : "#94A3B8");
-      const r = it.size * persp * tw;
-      ctx.beginPath();
-      ctx.moveTo(p.sx, p.sy - r * 1.6);
-      ctx.lineTo(p.sx + r * 0.55, p.sy);
-      ctx.lineTo(p.sx, p.sy + r * 1.6);
-      ctx.lineTo(p.sx - r * 0.55, p.sy);
-      ctx.closePath();
-      ctx.fill();
-    }
-  }
-  ctx.globalAlpha = 1;
-
-  // Faceted rotating #FFD700 TopStar crowning apex
-  const starYOffset = Math.sin(t * 2.0) * 2.2;
-  const starY = (baseY - treeH) - (layout.isMobile ? 9 : 13) + starYOffset;
-  const starOuterR = layout.isMobile ? 14 : 21;
-  drawFacetedTopStar(ctx, anchorX, starY, starOuterR, christmasTreeState.starRotation, isDark, sprites);
+  renderChristmasTreeScene(ctx, layout, christmasTreeState.projected, {
+    items: christmasTreeState.items,
+    rot: christmasTreeState.rotation,
+    starRotation: christmasTreeState.starRotation,
+    timeSec: christmasTreeState.timeSec,
+    isDark: christmasTreeState.isDark,
+    interactive: false
+  });
 
   christmasTreeState.rafId = requestAnimationFrame(renderChristmasTreeFrame);
 }
@@ -21621,8 +22055,8 @@ function renderChristmasSnowFrame() {
   const isDark = christmasSnowState.isDark;
   const isQuietMode = document.documentElement.classList.contains("study-mode-active") || document.body.classList.contains("arena-quiz-active");
   const pile = christmasSnowState.snowPile;
-  const colW = christmasSnowState.pileColWidth || 4;
-  const maxHeight = w <= 760 ? 18 : 26;
+  const colW = christmasSnowState.pileColWidth || 3;
+  const maxHeight = getSnowPileMaxHeight(w);
 
   christmasSnowState.windAngle += 0.008;
   const globalBreeze = Math.sin(christmasSnowState.windAngle) * 0.28 + 0.14;
@@ -21642,21 +22076,23 @@ function renderChristmasSnowFrame() {
 
     if (f.y + f.r * 0.45 >= groundY) {
       if (!isQuietMode && pile.length) {
-        const deposit = f.layer === 2 ? 0.48 : (f.layer === 1 ? 0.3 : 0.14);
-        const weights = [0.22, 0.5, 0.82, 1, 0.82, 0.5, 0.22];
-        for (let k = -3; k <= 3; k++) {
-          const idx = colIdx + k;
+        // Real granular deposition shaped softly by flake size & gentle downwind drift
+        const deposit = (f.layer === 2 ? 0.52 : (f.layer === 1 ? 0.34 : 0.16)) * (0.65 + f.r * 0.08);
+        const windBias = Math.round(globalBreeze * 1.4);
+        for (let k = -4; k <= 4; k++) {
+          const idx = colIdx + k + windBias;
           if (idx >= 0 && idx < pile.length) {
-            pile[idx] = Math.min(maxHeight, pile[idx] + deposit * weights[k + 3] * 0.32);
+            const bell = Math.exp(-(k * k) / 4.2);
+            pile[idx] = Math.min(maxHeight, pile[idx] + deposit * bell * 0.44);
           }
         }
         if (christmasSnowState.sparkles.length < 44 && f.layer > 0) {
           christmasSnowState.sparkles.push({
             x: f.x,
             y: groundY - 1,
-            vx: (Math.random() - 0.5) * 1.4,
-            vy: -Math.random() * 1.3 - 0.4,
-            r: Math.random() * 1.6 + 1,
+            vx: (Math.random() - 0.5) * 1.25 + globalBreeze * 0.4,
+            vy: -Math.random() * 1.15 - 0.3,
+            r: Math.random() * 1.4 + 0.85,
             life: 1
           });
         }
@@ -21676,7 +22112,6 @@ function renderChristmasSnowFrame() {
       ctx.lineWidth = 0.78;
       drawDendriticSnowflake(ctx, f.x, f.y, f.r * 0.76, f.rot);
     } else if (f.layer === 1) {
-      // Soft pillowy snow puff via radial gradient (avoids hollow bubble stroke rings on cream backgrounds)
       const puff = ctx.createRadialGradient(f.x, f.y, 0, f.x, f.y, f.r * 1.45);
       if (isDark) {
         puff.addColorStop(0, "rgba(255, 255, 255, 0.98)");
@@ -21699,7 +22134,6 @@ function renderChristmasSnowFrame() {
     }
   }
 
-  // Update & render subtle landing sparkles
   for (let i = christmasSnowState.sparkles.length - 1; i >= 0; i--) {
     const s = christmasSnowState.sparkles[i];
     s.x += s.vx;
@@ -21985,6 +22419,771 @@ function initChristmasMusicPlayer() {
   }
 }
 
+function focusChristmasTreeItemOnStage(itemId) {
+  const item = (christmasTreeEventState.items || []).find((it) => Number(it.id) === Number(itemId));
+  if (!item) return;
+  christmasTreeStudioState.selectedId = item.id;
+  christmasTreeStudioState.autoSpin = false;
+  christmasTreeStudioState.rotation = -Math.PI * 0.5 - Number(item.posAngle || 0);
+  const spinBtn = $("#xmasTreeAutoSpinBtn");
+  if (spinBtn) {
+    spinBtn.setAttribute("aria-pressed", "false");
+    spinBtn.textContent = "▶ Tự xoay";
+  }
+  showChristmasTreeInspector(item);
+  renderChristmasTreeGallery();
+  if (!christmasTreeStudioState.rafId && christmasTreeStudioState.isOpen) {
+    christmasTreeStudioState.rafId = requestAnimationFrame(renderStudioChristmasTreeFrame);
+  }
+}
+
+function hideChristmasTreeInspector() {
+  christmasTreeStudioState.selectedId = null;
+  const card = $("#xmasTreeInspectorCard");
+  if (card) card.hidden = true;
+}
+
+function buildOrnamentThumbnailHtml(item) {
+  if (item.slotKind === "polaroid") {
+    const asset = getChristmasTreePhotoAsset(item.photoData || "");
+    if (asset && asset.dataUrl) {
+      return `<img src="${asset.dataUrl}" alt="" />`;
+    }
+    return `<span aria-hidden="true">📷</span>`;
+  }
+  const style = String(item.itemStyle || "");
+  if (style.startsWith("gift_")) return `<span aria-hidden="true">🎁</span>`;
+  if (style === "fairy_garland") return `<span aria-hidden="true">✨</span>`;
+  if (style === "bauble_gold") return `<span aria-hidden="true">🟡</span>`;
+  if (style === "bauble_sapphire") return `<span aria-hidden="true">🔵</span>`;
+  if (style === "bauble_emerald") return `<span aria-hidden="true">🟢</span>`;
+  return `<span aria-hidden="true">🔴</span>`;
+}
+
+function showChristmasTreeInspector(item) {
+  const card = $("#xmasTreeInspectorCard");
+  const body = $("#xmasTreeInspectorBody");
+  if (!card || !body || !item) return;
+  const typeLabel = TREE_STYLE_LABELS[item.itemStyle] || "Trang trí Giáng sinh";
+  const wishText = item.message ? escapeHTML(item.message) : "<em>Không có lời nhắn kèm theo.</em>";
+  const deleteBtnHtml = item.canDelete
+    ? `<button type="button" class="xmas-gallery-delete-btn" data-tree-delete-id="${item.id}" style="margin-top:8px;">Gỡ món này</button>`
+    : "";
+  body.innerHTML = `
+    <div class="xmas-inspector-content">
+      <div class="xmas-inspector-thumb" style="${item.slotKind === "polaroid" ? `background:${escapeHTML(item.frameColor || "#FFFAF0")};` : ""}">
+        ${buildOrnamentThumbnailHtml(item)}
+      </div>
+      <div class="xmas-inspector-meta">
+        <button type="button" class="xmas-inspector-author" data-open-namecard="${item.userId}">
+          ${escapeHTML(item.authorName || "Thành viên RE:SEARCH")}
+        </button>
+        <div class="xmas-inspector-type">${escapeHTML(typeLabel)}</div>
+        <p class="xmas-inspector-wish">${wishText}</p>
+        ${deleteBtnHtml}
+      </div>
+    </div>
+  `;
+  card.hidden = false;
+}
+
+function updateChristmasTreeBadges() {
+  const stats = christmasTreeEventState.stats || { totalItems: 0, contributors: 0 };
+  const total = Number(stats.totalItems || 0);
+  const contributors = Number(stats.contributors || 0);
+  const widgetBadge = $("#christmasTreeWidgetCount");
+  if (widgetBadge) widgetBadge.textContent = String(total);
+  const heroBadge = $("#heroTreeCountBadge");
+  if (heroBadge) heroBadge.textContent = String(total);
+  const qmCount = $("#quickMenuTreeCount");
+  if (qmCount) qmCount.textContent = `(${total})`;
+
+  const summary = $("#xmasTreeStatsSummary");
+  if (summary) {
+    if (total === 0) {
+      summary.textContent = "Khởi đầu từ cây thông mộc mạc — hãy treo ảnh kỷ niệm, hộp quà hoặc trái châu của bạn (tối đa 2 món/người).";
+    } else {
+      summary.textContent = `Hiện có ${total} món trang trí từ ${contributors} thành viên (tối đa 1 khung Polaroid + 1 phụ kiện mỗi người).`;
+    }
+  }
+
+  const milestone = $("#xmasTreeMilestoneBar");
+  if (milestone) {
+    if (total === 0) {
+      milestone.textContent = "🌱 Trạng thái: Cây thông khởi đầu · Mời bạn treo món đầu tiên!";
+    } else if (total < 5) {
+      milestone.textContent = `✨ Cây thông bắt đầu lên đèn (${total} món từ ${contributors} bạn)`;
+    } else if (total < 15) {
+      milestone.textContent = `🎄 Cây thông đang rực rỡ sắc màu (${total} món trang trí)`;
+    } else {
+      milestone.textContent = `🌟 Cây thông đại lễ hội RE:SEARCH (${contributors} người chung tay!)`;
+    }
+  }
+}
+
+function renderPolaroidFormPreview() {
+  const previewCard = $("#xmasPolaroidLivePreview");
+  const photoBox = $("#xmasPreviewPhotoBox");
+  const captionBox = $("#xmasPreviewCaption");
+  const msgInput = $("#xmasPolaroidMsg");
+  const charCount = $("#xmasPolaroidCharCount");
+  const checkedStyle = document.querySelector('input[name="polaroidStyle"]:checked');
+  const styleVal = checkedStyle ? checkedStyle.value : "classic";
+
+  if (previewCard) {
+    previewCard.style.background = TREE_POLAROID_FRAME_MAP[styleVal] || "#FFFAF0";
+  }
+  const msgVal = msgInput ? msgInput.value : "";
+  if (charCount) charCount.textContent = String(msgVal.length);
+  if (captionBox) {
+    captionBox.textContent = msgVal.trim() || "Lời chúc Giáng sinh...";
+  }
+  const photoData = christmasTreeStudioState.polaroidPhotoData || "";
+  if (photoBox) {
+    if (photoData) {
+      const asset = getChristmasTreePhotoAsset(photoData);
+      if (asset && asset.dataUrl) {
+        photoBox.innerHTML = `<img src="${asset.dataUrl}" alt="" />`;
+      } else {
+        photoBox.textContent = "📷";
+      }
+    } else {
+      photoBox.textContent = "✨";
+    }
+  }
+  $$("#christmasTreeModal .xmas-preset-chip[data-photo-preset]").forEach((btn) => {
+    btn.classList.toggle("active", btn.dataset.photoPreset === photoData);
+  });
+}
+
+function renderChristmasTreeGallery() {
+  const listEl = $("#xmasTreeGalleryList");
+  const galleryCount = $("#xmasGalleryCount");
+  const items = christmasTreeEventState.items || [];
+  if (galleryCount) galleryCount.textContent = String(items.length);
+  if (!listEl) return;
+
+  if (!items.length) {
+    listEl.innerHTML = `<div class="xmas-tree-guest-box"><p>Cây thông hiện chưa có món trang trí nào từ cộng đồng. Hãy là người đầu tiên treo khung ảnh Polaroid hoặc đặt hộp quà dưới gốc thông!</p></div>`;
+    return;
+  }
+
+  listEl.innerHTML = items.map((item) => {
+    const typeLabel = TREE_STYLE_LABELS[item.itemStyle] || "Trang trí";
+    const isSel = Number(christmasTreeStudioState.selectedId) === Number(item.id);
+    const msgHtml = item.message ? `<p class="xmas-gallery-msg">“${escapeHTML(item.message)}”</p>` : "";
+    const delBtn = item.canDelete
+      ? `<button type="button" class="xmas-gallery-delete-btn" data-tree-delete-id="${item.id}">Gỡ</button>`
+      : "";
+    return `
+      <div class="xmas-gallery-item${isSel ? " is-selected" : ""}">
+        <div class="xmas-gallery-icon" style="${item.slotKind === "polaroid" ? `background:${escapeHTML(item.frameColor || "#FFFAF0")};` : ""}">
+          ${buildOrnamentThumbnailHtml(item)}
+        </div>
+        <div class="xmas-gallery-info">
+          <div class="xmas-gallery-head">
+            <button type="button" class="xmas-inspector-author" data-open-namecard="${item.userId}">
+              ${escapeHTML(item.authorName || "Thành viên")}
+            </button>
+            <span class="xmas-inspector-type">· ${escapeHTML(typeLabel)}</span>
+          </div>
+          ${msgHtml}
+        </div>
+        <div class="xmas-gallery-actions">
+          <button type="button" class="xmas-gallery-locate-btn" data-tree-focus-id="${item.id}">Xem</button>
+          ${delBtn}
+        </div>
+      </div>
+    `;
+  }).join("");
+}
+
+function populateUserTreeFormsFromItems() {
+  const myItems = (christmasTreeEventState.items || []).filter((it) => it.isSelf);
+  const myPolaroid = myItems.find((it) => it.slotKind === "polaroid") || null;
+  const myAccessory = myItems.find((it) => it.slotKind === "accessory") || null;
+
+  const slotCountEl = $("#xmasMySlotCount");
+  if (slotCountEl) slotCountEl.textContent = String(myItems.length);
+
+  // Sync Polaroid form fields
+  const polMsg = $("#xmasPolaroidMsg");
+  const polSubmit = $("#xmasPolaroidSubmitBtn");
+  const polDelete = $("#xmasPolaroidDeleteBtn");
+  if (myPolaroid) {
+    if (polMsg) polMsg.value = myPolaroid.message || "";
+    const radio = document.querySelector(`input[name="polaroidStyle"][value="${myPolaroid.itemStyle}"]`);
+    if (radio) radio.checked = true;
+    christmasTreeStudioState.polaroidPhotoData = myPolaroid.photoData || "";
+    if (polSubmit) polSubmit.textContent = "Cập nhật khung ảnh";
+    if (polDelete) {
+      polDelete.hidden = false;
+      polDelete.dataset.deleteId = String(myPolaroid.id);
+    }
+  } else {
+    if (polMsg && !polMsg.matches(":focus")) polMsg.value = "";
+    christmasTreeStudioState.polaroidPhotoData = "";
+    if (polSubmit) polSubmit.textContent = "Treo khung ảnh lên cây";
+    if (polDelete) {
+      polDelete.hidden = true;
+      delete polDelete.dataset.deleteId;
+    }
+  }
+  renderPolaroidFormPreview();
+
+  // Sync Accessory form fields
+  const accMsg = $("#xmasAccMsg");
+  const accSubmit = $("#xmasAccSubmitBtn");
+  const accDelete = $("#xmasAccDeleteBtn");
+  if (myAccessory) {
+    if (accMsg) accMsg.value = myAccessory.message || "";
+    const radio = document.querySelector(`input[name="accessoryStyle"][value="${myAccessory.itemStyle}"]`);
+    if (radio) radio.checked = true;
+    if (accSubmit) accSubmit.textContent = "Cập nhật phụ kiện";
+    if (accDelete) {
+      accDelete.hidden = false;
+      accDelete.dataset.deleteId = String(myAccessory.id);
+    }
+  } else {
+    if (accMsg && !accMsg.matches(":focus")) accMsg.value = "";
+    if (accSubmit) accSubmit.textContent = "Treo phụ kiện lên cây";
+    if (accDelete) {
+      accDelete.hidden = true;
+      delete accDelete.dataset.deleteId;
+    }
+  }
+}
+
+function renderChristmasTreeStudioUI(syncForms = true) {
+  updateChristmasTreeBadges();
+  renderChristmasTreeGallery();
+
+  const guestBox = $("#xmasTreeGuestBox");
+  const formsWrap = $("#xmasTreeFormsWrap");
+  const loggedIn = Boolean(typeof session !== "undefined" && session && session.id);
+  const currentUid = loggedIn ? session.id : null;
+  if (guestBox) guestBox.hidden = loggedIn;
+  if (formsWrap) formsWrap.hidden = !loggedIn;
+
+  if (christmasTreeStudioState.initialized && christmasTreeStudioState.lastSessionUserId !== currentUid) {
+    christmasTreeStudioState.lastSessionUserId = currentUid;
+    fetchChristmasTreeData(true);
+  }
+
+  if (loggedIn && syncForms) {
+    populateUserTreeFormsFromItems();
+  } else {
+    const myItems = (christmasTreeEventState.items || []).filter((it) => it.isSelf);
+    const slotCountEl = $("#xmasMySlotCount");
+    if (slotCountEl) slotCountEl.textContent = String(loggedIn ? myItems.length : 0);
+  }
+
+  if (loggedIn && christmasTreeStudioState.pendingReopenModal) {
+    christmasTreeStudioState.pendingReopenModal = false;
+    setTimeout(() => {
+      if (isChristmas2026Season()) openChristmasTreeModal();
+    }, 180);
+  }
+}
+
+function applyChristmasTreeServerPayload(data, syncForms = true) {
+  if (!data) return;
+  christmasTreeEventState.loaded = true;
+  christmasTreeEventState.active = data.active !== false;
+  christmasTreeEventState.expiresAt = Number(data.expiresAt || CHRISTMAS_2026_END_MS);
+  christmasTreeEventState.items = Array.isArray(data.items) ? data.items : [];
+  christmasTreeEventState.stats = data.stats || { totalItems: 0, contributors: 0, polaroids: 0, accessories: 0 };
+  syncCombinedChristmasTreeItems();
+  renderChristmasTreeStudioUI(syncForms);
+}
+
+async function fetchChristmasTreeData(syncForms = true) {
+  if (christmasTreeEventState.loading) return;
+  christmasTreeEventState.loading = true;
+  try {
+    const data = await requestAPI("/api/christmas-tree", { method: "GET" });
+    applyChristmasTreeServerPayload(data, syncForms);
+  } catch (err) {
+    console.warn("Không thể tải dữ liệu cây thông Giáng sinh:", err);
+  } finally {
+    christmasTreeEventState.loading = false;
+  }
+}
+window.fetchChristmasTreeData = fetchChristmasTreeData;
+
+function setChristmasTreeStatus(msg, isError = false) {
+  const el = $("#xmasTreeFormStatus");
+  if (!el) return;
+  el.textContent = msg || "";
+  el.classList.toggle("is-error", Boolean(isError));
+}
+
+async function compressPolaroidImageFile(file) {
+  if (!file || !/^image\/(png|jpeg|jpg|webp)$/i.test(file.type || "")) {
+    throw new Error("Chỉ hỗ trợ ảnh PNG, JPG hoặc WEBP.");
+  }
+  const objectUrl = URL.createObjectURL(file);
+  try {
+    const img = await new Promise((resolve, reject) => {
+      const i = new Image();
+      i.onload = () => resolve(i);
+      i.onerror = () => reject(new Error("Không thể đọc ảnh này."));
+      i.src = objectUrl;
+    });
+    const maxSide = 260;
+    const scale = Math.min(1, maxSide / Math.max(1, img.width, img.height));
+    const tw = Math.max(32, Math.round(img.width * scale));
+    const th = Math.max(32, Math.round(img.height * scale));
+    const c = document.createElement("canvas");
+    c.width = tw;
+    c.height = th;
+    const g = c.getContext("2d");
+    g.drawImage(img, 0, 0, tw, th);
+    let dataUrl = c.toDataURL("image/webp", 0.78);
+    if (!dataUrl.startsWith("data:image/webp") || dataUrl.length > 120000) {
+      dataUrl = c.toDataURL("image/jpeg", 0.76);
+    }
+    if (dataUrl.length > 135000) {
+      dataUrl = c.toDataURL("image/jpeg", 0.56);
+    }
+    if (dataUrl.length > 138000) {
+      throw new Error("Ảnh quá lớn, vui lòng chọn ảnh nhẹ hơn.");
+    }
+    return dataUrl;
+  } finally {
+    URL.revokeObjectURL(objectUrl);
+  }
+}
+
+function resizeChristmasTreeStudioCanvas() {
+  const canvas = christmasTreeStudioState.canvas;
+  if (!canvas) return;
+  const wrap = canvas.parentElement;
+  const rect = wrap ? wrap.getBoundingClientRect() : canvas.getBoundingClientRect();
+  const w = Math.max(260, Math.round(rect.width || 440));
+  const h = Math.max(280, Math.round(rect.height || 440));
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  christmasTreeStudioState.width = w;
+  christmasTreeStudioState.height = h;
+  canvas.width = Math.floor(w * dpr);
+  canvas.height = Math.floor(h * dpr);
+  const ctx = canvas.getContext("2d");
+  if (ctx) {
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    christmasTreeStudioState.ctx = ctx;
+  }
+}
+
+function renderStudioChristmasTreeFrame(nowMs) {
+  const modal = $("#christmasTreeModal");
+  if (!christmasTreeStudioState.isOpen || !modal || !modal.open) {
+    christmasTreeStudioState.rafId = null;
+    christmasTreeStudioState.lastMs = 0;
+    return;
+  }
+  const ctx = christmasTreeStudioState.ctx;
+  const w = christmasTreeStudioState.width;
+  const h = christmasTreeStudioState.height;
+  if (!ctx || !w || !h) {
+    christmasTreeStudioState.rafId = requestAnimationFrame(renderStudioChristmasTreeFrame);
+    return;
+  }
+
+  const dt = christmasTreeStudioState.lastMs
+    ? Math.min(0.05, Math.max(0.004, (nowMs - christmasTreeStudioState.lastMs) / 1000))
+    : 0.016;
+  christmasTreeStudioState.lastMs = nowMs;
+  christmasTreeStudioState.timeSec += dt;
+
+  if (christmasTreeStudioState.autoSpin && !christmasTreeStudioState.dragging && !christmasSnowState.reducedMotion) {
+    christmasTreeStudioState.rotation = (christmasTreeStudioState.rotation + dt * 0.28) % (Math.PI * 2);
+  }
+  christmasTreeStudioState.starRotation = (christmasTreeStudioState.starRotation + dt * 0.72) % (Math.PI * 2);
+
+  if (!christmasTreeState.baseItems.length) {
+    buildChristmasTreeGeometry(w <= 440);
+  }
+
+  ctx.clearRect(0, 0, w, h);
+  const layout = getChristmasTreeStudioLayout(w, h);
+  renderChristmasTreeScene(ctx, layout, christmasTreeStudioState.projected, {
+    items: christmasTreeState.items,
+    rot: christmasTreeStudioState.rotation,
+    starRotation: christmasTreeStudioState.starRotation,
+    timeSec: christmasTreeStudioState.timeSec,
+    isDark: christmasTreeState.isDark,
+    interactive: true,
+    selectedId: christmasTreeStudioState.selectedId,
+    hoverId: christmasTreeStudioState.hoverId,
+    hitBoxes: christmasTreeStudioState.hitBoxes
+  });
+
+  christmasTreeStudioState.rafId = requestAnimationFrame(renderStudioChristmasTreeFrame);
+}
+
+function findHitTreeOrnament(clientX, clientY) {
+  const canvas = christmasTreeStudioState.canvas;
+  if (!canvas) return null;
+  const rect = canvas.getBoundingClientRect();
+  const lx = clientX - rect.left;
+  const ly = clientY - rect.top;
+  const boxes = christmasTreeStudioState.hitBoxes;
+  for (let i = boxes.length - 1; i >= 0; i--) {
+    const b = boxes[i];
+    const dx = lx - b.x;
+    const dy = ly - b.y;
+    if ((dx * dx + dy * dy) <= b.r * b.r) {
+      return b.item;
+    }
+  }
+  return null;
+}
+
+function initChristmasTreeStudio() {
+  if (christmasTreeStudioState.initialized) return;
+  christmasTreeStudioState.initialized = true;
+
+  const modal = $("#christmasTreeModal");
+  const canvas = $("#christmasTreeStudioCanvas");
+  christmasTreeStudioState.canvas = canvas;
+
+  const openTriggers = [$("#christmasTreeOpenBtn"), $("#heroChristmasTreeBtn")];
+  openTriggers.forEach((btn) => {
+    if (btn) btn.addEventListener("click", (e) => openChristmasTreeModal(e));
+  });
+
+  if (!modal) return;
+
+  // Light-dismiss fallback for browsers without HTMLDialogElement.prototype.closedBy (e.g. Safari)
+  if (!("closedBy" in HTMLDialogElement.prototype)) {
+    let downOnBackdrop = false;
+    modal.addEventListener("pointerdown", (ev) => {
+      downOnBackdrop = ev.target === modal;
+    });
+    modal.addEventListener("pointerup", (ev) => {
+      if (downOnBackdrop && ev.target === modal) {
+        modal.close();
+      }
+      downOnBackdrop = false;
+    });
+  }
+
+  modal.addEventListener("close", () => {
+    christmasTreeStudioState.isOpen = false;
+    if (christmasTreeStudioState.rafId) {
+      cancelAnimationFrame(christmasTreeStudioState.rafId);
+      christmasTreeStudioState.rafId = null;
+    }
+  });
+
+  const authModal = $("#authModal");
+  if (authModal) {
+    authModal.addEventListener("close", () => {
+      if (!session) christmasTreeStudioState.pendingReopenModal = false;
+    });
+  }
+
+  $("#xmasInspectorCloseBtn")?.addEventListener("click", hideChristmasTreeInspector);
+
+  $("#xmasTreeRotateLeftBtn")?.addEventListener("click", () => {
+    christmasTreeStudioState.rotation -= 0.62;
+  });
+  $("#xmasTreeRotateRightBtn")?.addEventListener("click", () => {
+    christmasTreeStudioState.rotation += 0.62;
+  });
+  $("#xmasTreeAutoSpinBtn")?.addEventListener("click", () => {
+    christmasTreeStudioState.autoSpin = !christmasTreeStudioState.autoSpin;
+    const btn = $("#xmasTreeAutoSpinBtn");
+    if (btn) {
+      btn.setAttribute("aria-pressed", String(christmasTreeStudioState.autoSpin));
+      btn.textContent = christmasTreeStudioState.autoSpin ? "⏸ Tự xoay" : "▶ Tự xoay";
+    }
+  });
+
+  const tabDecorate = $("#xmasTabDecorate");
+  const tabGallery = $("#xmasTabGallery");
+  const panelDecorate = $("#xmasPanelDecorate");
+  const panelGallery = $("#xmasPanelGallery");
+  const switchTab = (tab) => {
+    christmasTreeStudioState.activeTab = tab;
+    const isDec = tab === "decorate";
+    if (tabDecorate) {
+      tabDecorate.classList.toggle("active", isDec);
+      tabDecorate.setAttribute("aria-selected", String(isDec));
+    }
+    if (tabGallery) {
+      tabGallery.classList.toggle("active", !isDec);
+      tabGallery.setAttribute("aria-selected", String(!isDec));
+    }
+    if (panelDecorate) panelDecorate.hidden = !isDec;
+    if (panelGallery) panelGallery.hidden = isDec;
+  };
+  tabDecorate?.addEventListener("click", () => switchTab("decorate"));
+  tabGallery?.addEventListener("click", () => switchTab("gallery"));
+
+  const slotPol = $("#xmasSlotBtnPolaroid");
+  const slotAcc = $("#xmasSlotBtnAccessory");
+  const formPol = $("#xmasPolaroidForm");
+  const formAcc = $("#xmasAccessoryForm");
+  const switchSlot = (slot) => {
+    christmasTreeStudioState.activeSlot = slot;
+    const isPol = slot === "polaroid";
+    slotPol?.classList.toggle("active", isPol);
+    slotAcc?.classList.toggle("active", !isPol);
+    if (formPol) formPol.hidden = !isPol;
+    if (formAcc) formAcc.hidden = isPol;
+    setChristmasTreeStatus("");
+  };
+  slotPol?.addEventListener("click", () => switchSlot("polaroid"));
+  slotAcc?.addEventListener("click", () => switchSlot("accessory"));
+
+  $("#xmasTreeLoginBtn")?.addEventListener("click", () => {
+    christmasTreeStudioState.pendingReopenModal = true;
+    modal.close();
+    if (typeof openAuth === "function") openAuth();
+  });
+
+  // Polaroid form controls
+  $("#xmasPolaroidMsg")?.addEventListener("input", () => {
+    setChristmasTreeStatus("");
+    renderPolaroidFormPreview();
+  });
+  $("#xmasPolaroidMsg")?.addEventListener("blur", () => {
+    const el = $("#xmasPolaroidMsg");
+    if (el && el.value.length > 140) {
+      setChristmasTreeStatus("Lời chúc Polaroid tối đa 140 ký tự.", true);
+    }
+  });
+  $$('input[name="polaroidStyle"]').forEach((r) => {
+    r.addEventListener("change", renderPolaroidFormPreview);
+  });
+  $$('#christmasTreeModal .xmas-preset-chip[data-photo-preset]').forEach((chip) => {
+    chip.addEventListener("click", () => {
+      christmasTreeStudioState.polaroidPhotoData = chip.dataset.photoPreset || "";
+      const fileEl = $("#xmasPolaroidFile");
+      if (fileEl) fileEl.value = "";
+      setChristmasTreeStatus("");
+      renderPolaroidFormPreview();
+    });
+  });
+  $("#xmasClearPhotoBtn")?.addEventListener("click", () => {
+    christmasTreeStudioState.polaroidPhotoData = "";
+    const fileEl = $("#xmasPolaroidFile");
+    if (fileEl) fileEl.value = "";
+    setChristmasTreeStatus("");
+    renderPolaroidFormPreview();
+  });
+  $("#xmasPolaroidFile")?.addEventListener("change", async (ev) => {
+    const file = ev.target && ev.target.files && ev.target.files[0];
+    if (!file) return;
+    try {
+      setChristmasTreeStatus("Đang xử lý ảnh...");
+      const compressed = await compressPolaroidImageFile(file);
+      christmasTreeStudioState.polaroidPhotoData = compressed;
+      setChristmasTreeStatus("Ảnh đã sẵn sàng!");
+      renderPolaroidFormPreview();
+    } catch (err) {
+      setChristmasTreeStatus(err.message || "Không thể xử lý ảnh.", true);
+    }
+  });
+
+  async function saveChristmasTreeOrnament(payload) {
+    setChristmasTreeStatus("Đang treo lên cây thông...");
+    try {
+      const data = await requestAPI("/api/christmas-tree", {
+        method: "PUT",
+        body: JSON.stringify(payload)
+      });
+      applyChristmasTreeServerPayload(data, true);
+      setChristmasTreeStatus("🎄 Đã lưu trang trí của bạn lên cây thông chung!");
+      toast("🎄 Đã cập nhật trang trí lên cây thông Giáng sinh!");
+      const mine = (christmasTreeEventState.items || []).find(
+        (it) => it.isSelf && it.slotKind === payload.slotKind
+      );
+      if (mine) focusChristmasTreeItemOnStage(mine.id);
+    } catch (err) {
+      setChristmasTreeStatus(err.message || "Không thể lưu trang trí.", true);
+    }
+  }
+
+  async function deleteChristmasTreeOrnamentById(id) {
+    if (!id) return;
+    setChristmasTreeStatus("Đang gỡ món trang trí...");
+    try {
+      const data = await requestAPI(`/api/christmas-tree/${id}`, { method: "DELETE" });
+      if (Number(christmasTreeStudioState.selectedId) === Number(id)) {
+        hideChristmasTreeInspector();
+      }
+      applyChristmasTreeServerPayload(data, true);
+      setChristmasTreeStatus("Đã gỡ món trang trí khỏi cây thông.");
+      toast("Đã gỡ khỏi cây thông Giáng sinh.");
+    } catch (err) {
+      setChristmasTreeStatus(err.message || "Không thể gỡ món này.", true);
+    }
+  }
+
+  formPol?.addEventListener("submit", async (ev) => {
+    ev.preventDefault();
+    const styleEl = document.querySelector('input[name="polaroidStyle"]:checked');
+    const msgEl = $("#xmasPolaroidMsg");
+    const shuffleEl = $("#xmasPolaroidShuffle");
+    const msgVal = (msgEl ? msgEl.value : "").trim();
+    if (!msgVal && !christmasTreeStudioState.polaroidPhotoData) {
+      setChristmasTreeStatus("Hãy thêm một tấm ảnh kỷ niệm hoặc viết lời chúc ngắn nhé.", true);
+      return;
+    }
+    await saveChristmasTreeOrnament({
+      slotKind: "polaroid",
+      itemStyle: styleEl ? styleEl.value : "classic",
+      message: msgVal,
+      photoData: christmasTreeStudioState.polaroidPhotoData || "",
+      shufflePosition: Boolean(shuffleEl && shuffleEl.checked)
+    });
+    if (shuffleEl) shuffleEl.checked = false;
+  });
+
+  formAcc?.addEventListener("submit", async (ev) => {
+    ev.preventDefault();
+    const styleEl = document.querySelector('input[name="accessoryStyle"]:checked');
+    const msgEl = $("#xmasAccMsg");
+    const shuffleEl = $("#xmasAccShuffle");
+    await saveChristmasTreeOrnament({
+      slotKind: "accessory",
+      itemStyle: styleEl ? styleEl.value : "gift_red",
+      message: (msgEl ? msgEl.value : "").trim(),
+      shufflePosition: Boolean(shuffleEl && shuffleEl.checked)
+    });
+    if (shuffleEl) shuffleEl.checked = false;
+  });
+
+  $("#xmasPolaroidDeleteBtn")?.addEventListener("click", (ev) => {
+    const id = ev.currentTarget && ev.currentTarget.dataset.deleteId;
+    if (id) deleteChristmasTreeOrnamentById(id);
+  });
+  $("#xmasAccDeleteBtn")?.addEventListener("click", (ev) => {
+    const id = ev.currentTarget && ev.currentTarget.dataset.deleteId;
+    if (id) deleteChristmasTreeOrnamentById(id);
+  });
+
+  // Delegated gallery + inspector actions (focus, delete, open namecard)
+  modal.addEventListener("click", (ev) => {
+    const t = ev.target;
+    if (!t || !t.closest) return;
+    const focusBtn = t.closest("[data-tree-focus-id]");
+    if (focusBtn) {
+      focusChristmasTreeItemOnStage(focusBtn.dataset.treeFocusId);
+      return;
+    }
+    const delBtn = t.closest("[data-tree-delete-id]");
+    if (delBtn) {
+      deleteChristmasTreeOrnamentById(delBtn.dataset.treeDeleteId);
+      return;
+    }
+    const ncBtn = t.closest("[data-open-namecard]");
+    if (ncBtn && typeof openNamecard === "function") {
+      const uid = Number(ncBtn.dataset.openNamecard);
+      if (uid) {
+        modal.close();
+        openNamecard(uid);
+      }
+    }
+  });
+
+  // Canvas 3D drag-to-rotate + tap-to-inspect
+  if (canvas) {
+    canvas.addEventListener("pointerdown", (ev) => {
+      christmasTreeStudioState.dragging = true;
+      christmasTreeStudioState.dragMoved = false;
+      christmasTreeStudioState.dragStartX = ev.clientX;
+      christmasTreeStudioState.dragLastX = ev.clientX;
+      canvas.classList.add("is-dragging");
+    });
+
+    window.addEventListener("pointermove", (ev) => {
+      if (!christmasTreeStudioState.isOpen) return;
+      if (christmasTreeStudioState.dragging) {
+        const dx = ev.clientX - christmasTreeStudioState.dragLastX;
+        christmasTreeStudioState.dragLastX = ev.clientX;
+        if (Math.abs(ev.clientX - christmasTreeStudioState.dragStartX) > 6) {
+          christmasTreeStudioState.dragMoved = true;
+        }
+        christmasTreeStudioState.rotation += dx * 0.012;
+      } else if (ev.target === canvas) {
+        const hit = findHitTreeOrnament(ev.clientX, ev.clientY);
+        christmasTreeStudioState.hoverId = hit ? hit.id : null;
+        canvas.style.cursor = hit ? "pointer" : "grab";
+      }
+    }, { passive: true });
+
+    window.addEventListener("pointerup", (ev) => {
+      if (!christmasTreeStudioState.dragging) return;
+      const wasDrag = christmasTreeStudioState.dragMoved;
+      christmasTreeStudioState.dragging = false;
+      canvas.classList.remove("is-dragging");
+      if (!wasDrag && ev.target === canvas) {
+        const hit = findHitTreeOrnament(ev.clientX, ev.clientY);
+        if (hit) {
+          christmasTreeStudioState.selectedId = hit.id;
+          showChristmasTreeInspector(hit);
+          renderChristmasTreeGallery();
+        } else {
+          hideChristmasTreeInspector();
+          renderChristmasTreeGallery();
+        }
+      }
+    });
+
+    canvas.addEventListener("pointercancel", () => {
+      christmasTreeStudioState.dragging = false;
+      canvas.classList.remove("is-dragging");
+    });
+  }
+
+  window.addEventListener("resize", () => {
+    if (christmasTreeStudioState.isOpen) {
+      resizeChristmasTreeStudioCanvas();
+    }
+  }, { passive: true });
+}
+
+window.openChristmasTreeModal = async function (e) {
+  if (e) {
+    e.preventDefault();
+    e.stopPropagation();
+  }
+  if (!isChristmas2026Season()) {
+    toast("Sự kiện cây thông Giáng sinh 2026 đã kết thúc.");
+    return;
+  }
+  if (typeof window.closeQuickUserMenu === "function") {
+    window.closeQuickUserMenu();
+  }
+  initChristmasTreeStudio();
+  const modal = $("#christmasTreeModal");
+  if (!modal) return;
+
+  if (!modal.open) {
+    modal.showModal();
+  }
+  christmasTreeStudioState.isOpen = true;
+  christmasTreeStudioState.autoSpin = !christmasSnowState.reducedMotion;
+  const spinBtn = $("#xmasTreeAutoSpinBtn");
+  if (spinBtn) {
+    spinBtn.setAttribute("aria-pressed", String(christmasTreeStudioState.autoSpin));
+    spinBtn.textContent = christmasTreeStudioState.autoSpin ? "⏸ Tự xoay" : "▶ Tự xoay";
+  }
+  setChristmasTreeStatus("");
+  renderChristmasTreeStudioUI(true);
+  requestAnimationFrame(() => {
+    resizeChristmasTreeStudioCanvas();
+    if (!christmasTreeStudioState.rafId) {
+      christmasTreeStudioState.lastMs = 0;
+      christmasTreeStudioState.rafId = requestAnimationFrame(renderStudioChristmasTreeFrame);
+    }
+  });
+  await fetchChristmasTreeData(true);
+};
+
 function initChristmasSeasonEffects() {
   if (christmasSnowState.initialized) return;
   christmasSnowState.initialized = true;
@@ -22012,6 +23211,11 @@ function initChristmasSeasonEffects() {
   if (christmasSnowState.canvas) {
     resizeChristmasSnowCanvas();
     window.addEventListener("resize", resizeChristmasSnowCanvas, { passive: true });
+  }
+  initChristmasTreeStudio();
+  christmasTreeStudioState.lastSessionUserId = (typeof session !== "undefined" && session && session.id) ? session.id : null;
+  if (isChristmas2026Season()) {
+    fetchChristmasTreeData(true);
   }
   document.addEventListener("visibilitychange", startOrStopChristmasSnowLoop);
   document.addEventListener("pointerdown", (ev) => {
@@ -22048,6 +23252,8 @@ function initChristmasSeasonEffects() {
       }
       startOrStopChristmasSnowLoop();
       updateChristmasMusicUI();
+      const treeModal = $("#christmasTreeModal");
+      if (treeModal && treeModal.open) treeModal.close();
       if (typeof studySettings !== "undefined" && studySettings.activeWallpaper === "christmas_2026") {
         applyStudyWallpaperPreset("default");
       }

@@ -30,7 +30,7 @@
     <script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js" defer></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" defer></script>
-    <link rel="stylesheet" href="styles.css?v=158" />
+    <link rel="stylesheet" href="styles.css?v=159" />
   </head>
   <body>
     <canvas id="christmasTreeCanvas" class="christmas-tree-edge-canvas" aria-hidden="true"></canvas>
@@ -467,6 +467,10 @@
 
             <!-- Tùy chọn Không khí & Nhạc Giáng sinh -->
             <div class="quick-menu-divider xmas-seasonal-control"></div>
+            <button type="button" class="quick-menu-item xmas-seasonal-control" id="quickMenuXmasTreeBtn" onclick="openChristmasTreeModal(event)" role="menuitem">
+              <span class="quick-menu-icon" aria-hidden="true">🎄</span>
+              <span class="quick-menu-label">Cây thông Giáng sinh <small class="quick-menu-tree-count" id="quickMenuTreeCount">(0)</small></span>
+            </button>
             <div class="quick-menu-theme-row xmas-seasonal-control" id="quickMenuXmasMusicRow" onclick="toggleChristmasMusic(event)" role="menuitem" tabindex="0">
               <div class="quick-menu-theme-info">
                 <span class="quick-menu-icon theme-icon-indicator" id="quickMenuXmasMusicIcon" aria-hidden="true">
@@ -525,6 +529,11 @@
               </button>
               <button class="button button-quiet" data-route="forum">
                 Khám phá diễn đàn <svg class="ui-btn-icon" style="margin-left:6px; margin-right:0;" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+              </button>
+              <button type="button" class="button button-quiet xmas-hero-tree-btn xmas-seasonal-control" id="heroChristmasTreeBtn">
+                <span aria-hidden="true">🎄</span>
+                <span>Trang trí cây thông</span>
+                <span class="xmas-tree-count-badge" id="heroTreeCountBadge">0</span>
               </button>
             </div>
           </div>
@@ -5631,6 +5640,160 @@
       </div>
     </dialog>
 
+    <!-- MODAL SỰ KIỆN CỘNG ĐỒNG: TRANG TRÍ CÂY THÔNG GIÁNG SINH 2026 -->
+    <dialog id="christmasTreeModal" class="modal xmas-tree-modal" closedby="any" aria-labelledby="christmasTreeModalTitle">
+      <div class="xmas-tree-dialog-shell">
+        <header class="xmas-tree-modal-header">
+          <div class="xmas-tree-header-copy">
+            <h2 id="christmasTreeModalTitle">🎄 Cây Thông Giáng Sinh Cộng Đồng 2026</h2>
+            <p class="xmas-tree-header-sub" id="xmasTreeStatsSummary">Khởi đầu từ cây thông mộc mạc — hãy treo ảnh kỷ niệm, hộp quà hoặc trái châu của bạn (tối đa 2 món/người).</p>
+          </div>
+          <form method="dialog" class="xmas-tree-close-form">
+            <button type="submit" class="xmas-tree-close-btn" id="xmasTreeCloseBtn" aria-label="Đóng cửa sổ cây thông">✕</button>
+          </form>
+        </header>
+
+        <div class="xmas-tree-studio-grid">
+          <!-- CỘT TRÁI: SÂN KHẤU 3D TƯƠNG TÁC -->
+          <div class="xmas-tree-stage-col">
+            <div class="xmas-tree-stage-wrap">
+              <canvas id="christmasTreeStudioCanvas" width="520" height="560" aria-label="Mô hình cây thông Giáng sinh 3D cộng đồng"></canvas>
+
+              <div class="xmas-tree-stage-controls">
+                <button type="button" class="xmas-stage-ctrl-btn" id="xmasTreeRotateLeftBtn" aria-label="Xoay cây sang trái" title="Xoay trái">↺</button>
+                <button type="button" class="xmas-stage-ctrl-btn" id="xmasTreeAutoSpinBtn" aria-pressed="true" title="Tạm dừng / tiếp tục xoay tự động">⏸ Tự xoay</button>
+                <button type="button" class="xmas-stage-ctrl-btn" id="xmasTreeRotateRightBtn" aria-label="Xoay cây sang phải" title="Xoay phải">↻</button>
+              </div>
+
+              <div class="xmas-tree-milestone-bar" id="xmasTreeMilestoneBar">
+                🌱 Trạng thái: Cây thông khởi đầu · Mời bạn treo món đầu tiên!
+              </div>
+
+              <!-- Card xem chi tiết Polaroid / Quà khi chạm vào cây -->
+              <div class="xmas-tree-inspector" id="xmasTreeInspectorCard" hidden>
+                <button type="button" class="xmas-inspector-close" id="xmasInspectorCloseBtn" aria-label="Đóng chi tiết">✕</button>
+                <div class="xmas-inspector-body" id="xmasTreeInspectorBody"></div>
+              </div>
+            </div>
+            <p class="xmas-tree-stage-hint">Kéo trái/phải để xoay cây 360° · Bấm vào ảnh Polaroid, trái châu hoặc hộp quà để xem lời chúc.</p>
+          </div>
+
+          <!-- CỘT PHẢI: TÙY CHỈNH TRANG TRÍ & DANH SÁCH CỘNG ĐỒNG -->
+          <div class="xmas-tree-panel-col">
+            <div class="xmas-tree-panel-tabs" role="tablist" aria-label="Bảng điều khiển cây thông">
+              <button type="button" role="tab" class="xmas-panel-tab active" id="xmasTabDecorate" aria-selected="true" aria-controls="xmasPanelDecorate">
+                Treo đồ của tôi (<span id="xmasMySlotCount">0</span>/2)
+              </button>
+              <button type="button" role="tab" class="xmas-panel-tab" id="xmasTabGallery" aria-selected="false" aria-controls="xmasPanelGallery">
+                Tất cả trang trí (<span id="xmasGalleryCount">0</span>)
+              </button>
+            </div>
+
+            <div class="xmas-tree-panel-body" id="xmasPanelDecorate" role="tabpanel" aria-labelledby="xmasTabDecorate">
+              <div class="xmas-tree-guest-box" id="xmasTreeGuestBox" hidden>
+                <p>Đăng nhập để treo <strong>1 khung ảnh Polaroid</strong> kèm lời chúc và <strong>1 phụ kiện / hộp quà</strong> lên cây thông chung của RE:SEARCH.</p>
+                <button type="button" class="button button-primary button-sm" id="xmasTreeLoginBtn">Đăng nhập để trang trí</button>
+              </div>
+
+              <div class="xmas-tree-forms-wrap" id="xmasTreeFormsWrap">
+                <div class="xmas-slot-switcher">
+                  <button type="button" class="xmas-slot-pill active" id="xmasSlotBtnPolaroid" data-slot="polaroid">📷 1. Khung ảnh Polaroid</button>
+                  <button type="button" class="xmas-slot-pill" id="xmasSlotBtnAccessory" data-slot="accessory">🎁 2. Phụ kiện &amp; Quà</button>
+                </div>
+
+                <!-- FORM 1: KHUNG ẢNH POLAROID -->
+                <form id="xmasPolaroidForm" class="xmas-decorate-form">
+                  <div class="xmas-polaroid-preview-row">
+                    <div class="xmas-mini-polaroid-preview" id="xmasPolaroidLivePreview">
+                      <div class="xmas-preview-photo-box" id="xmasPreviewPhotoBox">✨</div>
+                      <div class="xmas-preview-caption" id="xmasPreviewCaption">Lời chúc Giáng sinh...</div>
+                    </div>
+                    <div class="xmas-polaroid-upload-col">
+                      <label for="xmasPolaroidFile" class="xmas-field-label">Ảnh kỷ niệm (PNG/JPG/WEBP, tự nén gọn)</label>
+                      <input type="file" id="xmasPolaroidFile" name="photoFile" accept="image/png,image/jpeg,image/webp" class="xmas-file-input" />
+                      <div class="xmas-preset-photo-row" aria-label="Hoặc chọn ảnh mùa đông có sẵn">
+                        <button type="button" class="xmas-preset-chip" data-photo-preset="preset:aurora">🌌 Bắc cực</button>
+                        <button type="button" class="xmas-preset-chip" data-photo-preset="preset:fireplace">🔥 Lò sưởi</button>
+                        <button type="button" class="xmas-preset-chip" data-photo-preset="preset:snowman">⛄ Người tuyết</button>
+                        <button type="button" class="xmas-preset-chip" data-photo-preset="preset:starlight">⭐ Đêm sao</button>
+                        <button type="button" class="xmas-preset-chip" id="xmasClearPhotoBtn">Bỏ ảnh</button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <fieldset class="xmas-fieldset">
+                    <legend>Màu giấy khung Polaroid</legend>
+                    <div class="xmas-color-radio-row">
+                      <label class="xmas-color-radio"><input type="radio" name="polaroidStyle" value="classic" checked /><span>Kem sứ</span></label>
+                      <label class="xmas-color-radio"><input type="radio" name="polaroidStyle" value="warm_gold" /><span>Vàng ấm</span></label>
+                      <label class="xmas-color-radio"><input type="radio" name="polaroidStyle" value="blush" /><span>Hồng phấn</span></label>
+                      <label class="xmas-color-radio"><input type="radio" name="polaroidStyle" value="lavender" /><span>Oải hương</span></label>
+                      <label class="xmas-color-radio"><input type="radio" name="polaroidStyle" value="mint" /><span>Bạc hà</span></label>
+                    </div>
+                  </fieldset>
+
+                  <div class="xmas-field-group">
+                    <label for="xmasPolaroidMsg" class="xmas-field-label">Lời chúc / Kỷ niệm ngắn (tối đa 140 ký tự)</label>
+                    <textarea id="xmasPolaroidMsg" name="message" rows="2" maxlength="140" aria-describedby="xmasPolaroidHint" placeholder="Ví dụ: Chúc cả lớp mùa thi an lành và rực rỡ!"></textarea>
+                    <span id="xmasPolaroidHint" class="xmas-field-hint"><span id="xmasPolaroidCharCount">0</span>/140 ký tự</span>
+                  </div>
+
+                  <label class="xmas-checkbox-row">
+                    <input type="checkbox" id="xmasPolaroidShuffle" name="shufflePosition" />
+                    <span>Chọn ngẫu nhiên vị trí mới trên tán thông khi lưu</span>
+                  </label>
+
+                  <div class="xmas-form-actions">
+                    <button type="submit" class="button button-primary button-sm" id="xmasPolaroidSubmitBtn">Treo khung ảnh lên cây</button>
+                    <button type="button" class="button button-quiet button-sm xmas-danger-btn" id="xmasPolaroidDeleteBtn" hidden>Gỡ khung ảnh</button>
+                  </div>
+                </form>
+
+                <!-- FORM 2: PHỤ KIỆN / HỘP QUÀ -->
+                <form id="xmasAccessoryForm" class="xmas-decorate-form" hidden>
+                  <fieldset class="xmas-fieldset">
+                    <legend>Chọn hộp quà đặt dưới gốc hoặc phụ kiện treo cành</legend>
+                    <div class="xmas-acc-radio-grid">
+                      <label class="xmas-acc-card"><input type="radio" name="accessoryStyle" value="gift_red" checked /><span>🎁 Hộp quà Đỏ</span></label>
+                      <label class="xmas-acc-card"><input type="radio" name="accessoryStyle" value="gift_blue" /><span>🎁 Quà Xanh lam</span></label>
+                      <label class="xmas-acc-card"><input type="radio" name="accessoryStyle" value="gift_gold" /><span>🎁 Quà Vàng kim</span></label>
+                      <label class="xmas-acc-card"><input type="radio" name="accessoryStyle" value="gift_emerald" /><span>🎁 Quà Ngọc lục</span></label>
+                      <label class="xmas-acc-card"><input type="radio" name="accessoryStyle" value="bauble_ruby" /><span>🔴 Châu Ruby</span></label>
+                      <label class="xmas-acc-card"><input type="radio" name="accessoryStyle" value="bauble_gold" /><span>🟡 Châu Vàng</span></label>
+                      <label class="xmas-acc-card"><input type="radio" name="accessoryStyle" value="bauble_sapphire" /><span>🔵 Châu Sapphire</span></label>
+                      <label class="xmas-acc-card"><input type="radio" name="accessoryStyle" value="bauble_emerald" /><span>🟢 Châu Lục bảo</span></label>
+                      <label class="xmas-acc-card"><input type="radio" name="accessoryStyle" value="fairy_garland" /><span>✨ Dây đèn phụ</span></label>
+                    </div>
+                  </fieldset>
+
+                  <div class="xmas-field-group">
+                    <label for="xmasAccMsg" class="xmas-field-label">Lời nhắn gửi kèm phụ kiện (tùy chọn, tối đa 100 ký tự)</label>
+                    <input type="text" id="xmasAccMsg" name="message" maxlength="100" placeholder="Gửi chút ấm áp cho RE:SEARCH!" />
+                  </div>
+
+                  <label class="xmas-checkbox-row">
+                    <input type="checkbox" id="xmasAccShuffle" name="shufflePosition" />
+                    <span>Chọn lại vị trí mới khi lưu</span>
+                  </label>
+
+                  <div class="xmas-form-actions">
+                    <button type="submit" class="button button-primary button-sm" id="xmasAccSubmitBtn">Treo phụ kiện lên cây</button>
+                    <button type="button" class="button button-quiet button-sm xmas-danger-btn" id="xmasAccDeleteBtn" hidden>Gỡ phụ kiện</button>
+                  </div>
+                </form>
+
+                <div class="xmas-tree-status-banner" id="xmasTreeFormStatus" role="status" aria-live="polite"></div>
+              </div>
+            </div>
+
+            <div class="xmas-tree-panel-body" id="xmasPanelGallery" role="tabpanel" aria-labelledby="xmasTabGallery" hidden>
+              <div class="xmas-tree-gallery-list" id="xmasTreeGalleryList"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </dialog>
+
     <!-- Bộ điều khiển Nhạc nền & Tuyết rơi Giáng sinh toàn web -->
     <div class="christmas-floating-widget xmas-seasonal-control" id="christmasMusicWidget" role="region" aria-label="Điều khiển không khí và nhạc Giáng sinh">
       <button type="button" class="xmas-widget-music-btn" id="christmasMusicToggleBtn" aria-pressed="false" aria-label="Nhạc nền Giáng sinh: Ikson - Christmas" title="Bật/tắt nhạc nền Giáng sinh (Ikson - Christmas)">
@@ -5644,8 +5807,13 @@
       <button type="button" class="xmas-widget-snow-btn active" id="christmasSnowToggleBtn" aria-pressed="true" aria-label="Hiệu ứng tuyết rơi và trang trí Giáng sinh" title="Bật/tắt tuyết rơi và trang trí Giáng sinh">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="2" x2="12" y2="22"></line><path d="m17 5-5 5-5-5"></path><path d="m17 19-5-5-5 5"></path><line x1="2" y1="12" x2="22" y2="12"></line><path d="m5 7 5 5-5 5"></path><path d="m19 7-5 5 5 5"></path></svg>
       </button>
+      <span class="xmas-widget-sep" aria-hidden="true"></span>
+      <button type="button" class="xmas-widget-tree-btn" id="christmasTreeOpenBtn" aria-label="Mở sự kiện trang trí cây thông Giáng sinh chung" title="Sự kiện cộng đồng: Xem & trang trí cây thông Noel">
+        <span aria-hidden="true">🎄</span>
+        <span class="xmas-tree-widget-badge" id="christmasTreeWidgetCount">0</span>
+      </button>
     </div>
 
-    <script src="app.js?v=158" defer></script>
+    <script src="app.js?v=159" defer></script>
   </body>
 </html>

@@ -784,6 +784,29 @@ try {
   console.error("[DB Schema namecard_likes]", e);
 }
 
+try {
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS christmas_tree_ornaments (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      slot_kind TEXT NOT NULL CHECK (slot_kind IN ('polaroid', 'accessory')),
+      item_style TEXT NOT NULL,
+      message TEXT NOT NULL DEFAULT '',
+      photo_data TEXT NOT NULL DEFAULT '',
+      frame_color TEXT NOT NULL DEFAULT '#FFFAF0',
+      accent_color TEXT NOT NULL DEFAULT '#FFD700',
+      pos_u REAL NOT NULL,
+      pos_angle REAL NOT NULL,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE(user_id, slot_kind)
+    );
+    CREATE INDEX IF NOT EXISTS idx_christmas_tree_created ON christmas_tree_ornaments(created_at DESC);
+  `);
+} catch (e) {
+  console.error("[DB Schema christmas_tree_ornaments]", e);
+}
+
 
 
 function cleanupExpiredTrash() {
@@ -5467,6 +5490,238 @@ async function api(request, response, url) {
 
     db.prepare("DELETE FROM site_reviews WHERE id = ?").run(reviewId);
     return json(response, 200, { ok: true, message: "Đã xóa đánh giá thành công." });
+  }
+
+  // =========================================================================
+  // SỰ KIỆN CỘNG ĐỒNG: CÂY THÔNG GIÁNG SINH 2026 (MỖI TÀI KHOẢN TỐI ĐA 2 MÓN)
+  // =========================================================================
+  const TREE_POLAROID_FRAMES = new Map([
+    ["classic", { frameColor: "#FFFAF0", accentColor: "#F0E68C" }],
+    ["warm_gold", { frameColor: "#FEF3C7", accentColor: "#F59E0B" }],
+    ["blush", { frameColor: "#FFE4E6", accentColor: "#FB7185" }],
+    ["lavender", { frameColor: "#EDE9FE", accentColor: "#A78BFA" }],
+    ["mint", { frameColor: "#DCFCE7", accentColor: "#34D399" }]
+  ]);
+
+  const TREE_ACCESSORY_COLORS = new Map([
+    ["gift_red", { frameColor: "#D32F2F", accentColor: "#FFD700" }],
+    ["gift_blue", { frameColor: "#1976D2", accentColor: "#FFD700" }],
+    ["gift_gold", { frameColor: "#D97706", accentColor: "#D32F2F" }],
+    ["gift_emerald", { frameColor: "#15803D", accentColor: "#FFFBEB" }],
+    ["bauble_ruby", { frameColor: "#DC2626", accentColor: "#FEE2E2" }],
+    ["bauble_gold", { frameColor: "#F59E0B", accentColor: "#FEF3C7" }],
+    ["bauble_sapphire", { frameColor: "#2563EB", accentColor: "#DBEAFE" }],
+    ["bauble_emerald", { frameColor: "#10B981", accentColor: "#D1FAE5" }],
+    ["fairy_garland", { frameColor: "#FFD54F", accentColor: "#38BDF8" }]
+  ]);
+
+  const TREE_PHOTO_PRESETS = new Set([
+    "preset:aurora",
+    "preset:fireplace",
+    "preset:snowman",
+    "preset:starlight"
+  ]);
+
+  function buildChristmasTreePayload(viewer) {
+    const rows = db.prepare(`
+      SELECT o.*, u.display_name, u.avatar, u.role
+      FROM christmas_tree_ornaments o
+      JOIN users u ON u.id = o.user_id
+      ORDER BY o.updated_at DESC, o.id DESC
+    `).all();
+    const isAdminOrTa = Boolean(viewer && (viewer.role === "admin" || viewer.role === "ta"));
+    const items = rows.map((r) => ({
+      id: r.id,
+      userId: r.user_id,
+      authorName: r.display_name || "Thành viên",
+      authorAvatar: r.avatar || getAvatarEmoji(r.display_name || "R"),
+      authorRole: r.role || "student",
+      slotKind: r.slot_kind,
+      itemStyle: r.item_style,
+      message: r.message || "",
+      photoData: r.photo_data || "",
+      frameColor: r.frame_color || "#FFFAF0",
+      accentColor: r.accent_color || "#FFD700",
+      posU: Number(r.pos_u),
+      posAngle: Number(r.pos_angle),
+      createdAt: (r.created_at || "").replace(" ", "T") + "Z",
+      updatedAt: (r.updated_at || "").replace(" ", "T") + "Z",
+      isSelf: Boolean(viewer && r.user_id === viewer.id),
+      canDelete: Boolean(viewer && (r.user_id === viewer.id || isAdminOrTa))
+    }));
+    const uniqueUsers = new Set(items.map((x) => x.userId));
+    return {
+      active: isChristmas2026Window(),
+      expiresAt: CHRISTMAS_2026_EXPIRES_AT,
+      stats: {
+        totalItems: items.length,
+        contributors: uniqueUsers.size,
+        polaroids: items.filter((x) => x.slotKind === "polaroid").length,
+        accessories: items.filter((x) => x.slotKind === "accessory").length
+      },
+      items
+    };
+  }
+
+  function pickChristmasTreeSpot(slotKind, itemStyle, existingRows) {
+    const isBaseGift = slotKind === "accessory" && itemStyle.startsWith("gift_");
+    const minU = isBaseGift ? 0.015 : (slotKind === "polaroid" ? 0.24 : 0.22);
+    const maxU = isBaseGift ? 0.115 : (slotKind === "polaroid" ? 0.80 : 0.86);
+    let bestU = minU + Math.random() * (maxU - minU);
+    let bestAngle = Math.random() * Math.PI * 2;
+    let bestScore = -1;
+    for (let k = 0; k < 28; k++) {
+      const candU = minU + Math.random() * (maxU - minU);
+      const candA = Math.random() * Math.PI * 2;
+      let minDist = 99;
+      for (const r of existingRows) {
+        const du = candU - Number(r.pos_u);
+        let da = Math.abs(candA - Number(r.pos_angle));
+        if (da > Math.PI) da = Math.PI * 2 - da;
+        const d = Math.hypot(du * 1.8, da * 0.45);
+        if (d < minDist) minDist = d;
+      }
+      if (minDist > bestScore) {
+        bestScore = minDist;
+        bestU = candU;
+        bestAngle = candA;
+      }
+    }
+    return { posU: Number(bestU.toFixed(4)), posAngle: Number(bestAngle.toFixed(4)) };
+  }
+
+  if (method === "GET" && pathName === "/api/christmas-tree") {
+    try {
+      const viewer = sessionFrom(request);
+      return json(response, 200, { ok: true, ...buildChristmasTreePayload(viewer) });
+    } catch (e) {
+      console.error("[Christmas Tree GET Error]", e);
+      return error(response, 500, "Không thể tải cây thông cộng đồng.");
+    }
+  }
+
+  if ((method === "PUT" || method === "POST") && pathName === "/api/christmas-tree") {
+    const user = requireUser(request, response);
+    if (!user || !requireCsrf(request, response, user)) return;
+    if (!isChristmas2026Window()) {
+      return error(response, 403, "Sự kiện trang trí cây thông Giáng sinh 2026 đã kết thúc.");
+    }
+
+    try {
+      const body = await readJSON(request);
+      const slotKind = body.slotKind === "polaroid" ? "polaroid" : (body.slotKind === "accessory" ? "accessory" : "");
+      if (!slotKind) {
+        return error(response, 400, "Loại trang trí không hợp lệ.");
+      }
+
+      const rawStyle = typeof body.itemStyle === "string" ? body.itemStyle.trim() : "";
+      const shufflePosition = Boolean(body.shufflePosition);
+
+      let frameColor = "#FFFAF0";
+      let accentColor = "#FFD700";
+      let message = typeof body.message === "string" ? body.message.trim().slice(0, slotKind === "polaroid" ? 140 : 100) : "";
+      let photoData = "";
+
+      if (slotKind === "polaroid") {
+        const styleSpec = TREE_POLAROID_FRAMES.get(rawStyle);
+        if (!styleSpec) {
+          return error(response, 400, "Kiểu khung Polaroid không hợp lệ.");
+        }
+        frameColor = styleSpec.frameColor;
+        accentColor = styleSpec.accentColor;
+
+        const rawPhoto = typeof body.photoData === "string" ? body.photoData.trim() : "";
+        if (rawPhoto) {
+          if (TREE_PHOTO_PRESETS.has(rawPhoto)) {
+            photoData = rawPhoto;
+          } else if (/^data:image\/(png|jpeg|jpg|webp);base64,[A-Za-z0-9+/=]+$/i.test(rawPhoto)) {
+            if (rawPhoto.length > 140000) {
+              return error(response, 400, "Ảnh Polaroid vượt quá dung lượng cho phép (~100KB). Vui lòng chọn ảnh khác.");
+            }
+            photoData = rawPhoto;
+          } else {
+            return error(response, 400, "Định dạng ảnh Polaroid không hợp lệ (chỉ hỗ trợ PNG, JPG, WEBP).");
+          }
+        }
+        if (!photoData && message.length < 2) {
+          return error(response, 400, "Hãy chọn ảnh kỷ niệm hoặc viết ít nhất 2 ký tự lời chúc cho khung Polaroid.");
+        }
+      } else {
+        const accSpec = TREE_ACCESSORY_COLORS.get(rawStyle);
+        if (!accSpec) {
+          return error(response, 400, "Loại phụ kiện không hợp lệ.");
+        }
+        frameColor = accSpec.frameColor;
+        accentColor = accSpec.accentColor;
+      }
+
+      const existing = db.prepare("SELECT * FROM christmas_tree_ornaments WHERE user_id = ? AND slot_kind = ?").get(user.id, slotKind);
+      const others = db.prepare("SELECT pos_u, pos_angle FROM christmas_tree_ornaments WHERE slot_kind = ? AND user_id != ?").all(slotKind, user.id);
+
+      let spot;
+      if (existing && !shufflePosition) {
+        const wasGift = existing.item_style.startsWith("gift_");
+        const nowGift = rawStyle.startsWith("gift_");
+        if (wasGift === nowGift) {
+          spot = { posU: existing.pos_u, posAngle: existing.pos_angle };
+        } else {
+          spot = pickChristmasTreeSpot(slotKind, rawStyle, others);
+        }
+      } else {
+        spot = pickChristmasTreeSpot(slotKind, rawStyle, others);
+      }
+
+      db.prepare(`
+        INSERT INTO christmas_tree_ornaments (
+          user_id, slot_kind, item_style, message, photo_data, frame_color, accent_color, pos_u, pos_angle, created_at, updated_at
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+        ON CONFLICT(user_id, slot_kind) DO UPDATE SET
+          item_style = excluded.item_style,
+          message = excluded.message,
+          photo_data = excluded.photo_data,
+          frame_color = excluded.frame_color,
+          accent_color = excluded.accent_color,
+          pos_u = excluded.pos_u,
+          pos_angle = excluded.pos_angle,
+          updated_at = CURRENT_TIMESTAMP
+      `).run(user.id, slotKind, rawStyle, message, photoData, frameColor, accentColor, spot.posU, spot.posAngle);
+
+      return json(response, 200, {
+        ok: true,
+        message: existing ? "Đã cập nhật đồ trang trí trên cây thông!" : "Đã treo lên cây thông Giáng sinh chung!",
+        ...buildChristmasTreePayload(user)
+      });
+    } catch (e) {
+      if (e && e.message === "PAYLOAD_TOO_LARGE") {
+        return error(response, 413, "Dữ liệu tải lên quá lớn.");
+      }
+      console.error("[Christmas Tree PUT Error]", e);
+      return error(response, 500, "Không thể lưu đồ trang trí lên cây thông.");
+    }
+  }
+
+  if (method === "DELETE" && pathName.startsWith("/api/christmas-tree/")) {
+    const user = requireUser(request, response);
+    if (!user || !requireCsrf(request, response, user)) return;
+
+    const itemId = parseInt(pathName.replace("/api/christmas-tree/", ""), 10);
+    if (!itemId) return error(response, 400, "Mã vật trang trí không hợp lệ.");
+
+    const existing = db.prepare("SELECT * FROM christmas_tree_ornaments WHERE id = ?").get(itemId);
+    if (!existing) return error(response, 404, "Không tìm thấy vật trang trí.");
+
+    const isModerator = user.role === "admin" || user.role === "ta";
+    if (existing.user_id !== user.id && !isModerator) {
+      return error(response, 403, "Bạn chỉ có thể gỡ vật trang trí của chính mình.");
+    }
+
+    db.prepare("DELETE FROM christmas_tree_ornaments WHERE id = ?").run(itemId);
+    return json(response, 200, {
+      ok: true,
+      message: "Đã gỡ khỏi cây thông Giáng sinh.",
+      ...buildChristmasTreePayload(user)
+    });
   }
 
   if (method === "GET" && pathName === "/api/documents") {
