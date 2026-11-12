@@ -22001,8 +22001,22 @@ function buildChristmasTreeGeometry(isMobile) {
   const items = [];
   const goldenAngle = 2.399963229728653;
 
-  // Depth-sorted wooden trunk marker centered on tilted axis
-  items.push({ kind: "trunk", u: 0.115, rNorm: 0, angle: 0 });
+  // Depth-sorted segmented wooden trunk running continuously from snow base up to summit star
+  const trunkSegments = 48;
+  for (let k = 0; k < trunkSegments; k++) {
+    const u0 = k / trunkSegments;
+    const u1 = (k + 1) / trunkSegments;
+    items.push({
+      kind: "trunk_seg",
+      segIdx: k,
+      segTotal: trunkSegments,
+      u0,
+      u1,
+      u: (u0 + u1) * 0.5,
+      rNorm: 0,
+      angle: 0
+    });
+  }
 
   // 1. Conical evergreen pine needles starting cleanly above trunk (u = 0.215..0.985)
   const foliageCount = isMobile ? 490 : 980;
@@ -22287,15 +22301,45 @@ function drawTreeBaseAndMound(ctx, anchorX, baseY, treeR, isDark) {
   ctx.restore();
 }
 
-function drawTreeWoodenTrunk(ctx, anchorX, baseY, treeH, treeR, rot, isDark) {
-  const yBot = baseY - treeH * 0.004;
-  const yTop = baseY - treeH * 0.248;
-  const botHalfW = Math.max(5.5, treeR * 0.125);
-  const topHalfW = Math.max(3.1, treeR * 0.068);
+function projectTreeAxisY(u, baseY, treeH) {
+  const fov = 560;
+  const tiltSin = 0.11;
+  const tiltCos = 0.9939;
+  const yRel = (0.44 - u) * treeH;
+  const y3Tilt = yRel * tiltCos;
+  const z3Tilt = yRel * tiltSin;
+  const persp = fov / (fov + z3Tilt);
+  return (baseY - treeH * 0.44) + y3Tilt * persp;
+}
+
+function getTreeTrunkHalfWidth(u, treeR) {
+  const uc = Math.max(0, Math.min(1, u));
+  const rootHalfW = Math.max(5.5, treeR * 0.125);
+  const skirtHalfW = Math.max(3.6, treeR * 0.072);
+  const tipHalfW = Math.max(2.0, treeR * 0.023);
+  if (uc <= 0.215) {
+    const p = uc / 0.215;
+    return rootHalfW + (skirtHalfW - rootHalfW) * Math.pow(p, 0.72);
+  }
+  const upperP = (uc - 0.215) / 0.785;
+  return skirtHalfW + (tipHalfW - skirtHalfW) * upperP;
+}
+
+function drawTreeTrunkSegment(ctx, it, anchorX, baseY, treeH, treeR, starY, rot, isDark) {
+  const k = it.segIdx;
+  const isBase = k === 0;
+  const isTop = k === it.segTotal - 1;
+  const y0 = isBase ? (baseY - treeH * 0.004) : projectTreeAxisY(it.u0, baseY, treeH);
+  const y1 = isTop ? starY : projectTreeAxisY(it.u1, baseY, treeH);
+  const yTopDraw = isTop ? y1 : (y1 - 1.4);
+  const hw0 = getTreeTrunkHalfWidth(it.u0, treeR) * (isBase ? 1.04 : 1);
+  const hw1 = getTreeTrunkHalfWidth(it.u1, treeR);
+  const gradHalfW = Math.max(hw0, hw1, 2.2);
 
   ctx.save();
-  // 3D Cylindrical hardwood shading with flared root base
-  const trunkGrad = ctx.createLinearGradient(anchorX - botHalfW, yBot, anchorX + botHalfW, yBot);
+  ctx.globalAlpha = 1;
+
+  const trunkGrad = ctx.createLinearGradient(anchorX - gradHalfW, 0, anchorX + gradHalfW, 0);
   if (isDark) {
     trunkGrad.addColorStop(0, "#27160c");
     trunkGrad.addColorStop(0.32, "#5c3824");
@@ -22309,51 +22353,73 @@ function drawTreeWoodenTrunk(ctx, anchorX, baseY, treeH, treeR, rot, isDark) {
   }
 
   ctx.beginPath();
-  ctx.moveTo(anchorX - botHalfW * 1.04, yBot - 0.8);
-  ctx.quadraticCurveTo(anchorX - botHalfW * 0.82, (yBot + yTop) * 0.56, anchorX - topHalfW, yTop);
-  ctx.lineTo(anchorX + topHalfW, yTop);
-  ctx.quadraticCurveTo(anchorX + botHalfW * 0.82, (yBot + yTop) * 0.56, anchorX + botHalfW * 1.04, yBot - 0.8);
-  ctx.quadraticCurveTo(anchorX, yBot + 0.8, anchorX - botHalfW * 1.04, yBot - 0.8);
+  ctx.moveTo(anchorX - hw0, y0);
+  ctx.lineTo(anchorX - hw1, yTopDraw);
+  ctx.lineTo(anchorX + hw1, yTopDraw);
+  ctx.lineTo(anchorX + hw0, y0);
+  if (isBase) {
+    ctx.quadraticCurveTo(anchorX, y0 + 1.4, anchorX - hw0, y0);
+  }
   ctx.closePath();
   ctx.fillStyle = trunkGrad;
   ctx.fill();
 
-  // Clip & draw rotating vertical bark ridges + bough overhang ambient shadow
+  // Smooth rotating bark ridges (alpha faded by cos(angle) so zero pop/flicker)
+  ctx.save();
   ctx.clip();
-  ctx.strokeStyle = isDark ? "rgba(18, 9, 4, 0.48)" : "rgba(44, 24, 12, 0.36)";
-  ctx.lineWidth = Math.max(0.85, botHalfW * 0.14);
+  ctx.strokeStyle = isDark ? "rgb(18, 9, 4)" : "rgb(44, 24, 12)";
+  ctx.lineWidth = Math.max(0.75, gradHalfW * 0.13);
   for (let b = 0; b < 4; b++) {
-    const barkPhase = rot + b * 1.4;
-    const sinA = Math.sin(barkPhase);
-    if (Math.cos(barkPhase) > -0.2) {
-      const bxBot = anchorX + sinA * botHalfW * 0.72;
-      const bxTop = anchorX + sinA * topHalfW * 0.72;
+    const barkPhase = rot + b * (Math.PI * 0.5);
+    const cosA = Math.cos(barkPhase);
+    if (cosA > 0.02) {
+      const sinA = Math.sin(barkPhase);
+      ctx.globalAlpha = Math.min(1, cosA * 1.15) * (isDark ? 0.48 : 0.36);
       ctx.beginPath();
-      ctx.moveTo(bxBot, yBot);
-      ctx.lineTo(bxTop, yTop);
+      ctx.moveTo(anchorX + sinA * hw0 * 0.72, y0);
+      ctx.lineTo(anchorX + sinA * hw1 * 0.72, yTopDraw);
       ctx.stroke();
     }
   }
 
-  const collarShadow = ctx.createLinearGradient(anchorX, yTop, anchorX, baseY - treeH * 0.145);
-  collarShadow.addColorStop(0, "rgba(0, 0, 0, 0.64)");
-  collarShadow.addColorStop(1, "rgba(0, 0, 0, 0)");
-  ctx.fillStyle = collarShadow;
-  ctx.fillRect(anchorX - botHalfW * 1.2 - 2, yTop - 2, (botHalfW * 1.2 + 2) * 2, (baseY - treeH * 0.14) - yTop + 4);
+  // Subtle ambient shadow under the lowest foliage skirt (u around 0.14..0.24)
+  if (it.u >= 0.12 && it.u <= 0.25) {
+    const shadeAlpha = it.u < 0.215
+      ? Math.max(0, (it.u - 0.12) / 0.095) * 0.42
+      : 0.42 * (1 - (it.u - 0.215) / 0.045);
+    if (shadeAlpha > 0.01) {
+      ctx.globalAlpha = shadeAlpha;
+      ctx.fillStyle = "#000000";
+      ctx.fillRect(anchorX - hw0 - 1, yTopDraw - 1, (hw0 + 1) * 2, (y0 - yTopDraw) + 2);
+    }
+  }
+  ctx.restore();
   ctx.restore();
 
-  // Soft grounded shadow right below snow collar + seamless front snow collar covering root bottom
-  ctx.save();
-  ctx.fillStyle = isDark ? "rgba(2, 12, 24, 0.32)" : "rgba(71, 85, 105, 0.14)";
-  ctx.beginPath();
-  ctx.ellipse(anchorX, yBot + 1.6, botHalfW * 1.45, Math.max(2.4, botHalfW * 0.36), 0, 0, Math.PI * 2);
-  ctx.fill();
+  if (isBase) {
+    // Grounded contact shadow & soft radial snow collar tucked over trunk root
+    ctx.save();
+    ctx.globalAlpha = 1;
+    const collarRx = hw0 * 1.48;
+    const collarRy = Math.max(3.0, hw0 * 0.42);
+    const contactGrad = ctx.createRadialGradient(anchorX, y0 + 1.2, 1, anchorX, y0 + 1.2, collarRx * 1.15);
+    contactGrad.addColorStop(0, isDark ? "rgba(2, 12, 24, 0.34)" : "rgba(71, 85, 105, 0.14)");
+    contactGrad.addColorStop(1, "rgba(0, 0, 0, 0)");
+    ctx.fillStyle = contactGrad;
+    ctx.beginPath();
+    ctx.ellipse(anchorX, y0 + 1.2, collarRx * 1.15, collarRy * 1.1, 0, 0, Math.PI * 2);
+    ctx.fill();
 
-  ctx.fillStyle = isDark ? "rgba(226, 232, 240, 0.9)" : "rgba(255, 255, 255, 0.98)";
-  ctx.beginPath();
-  ctx.ellipse(anchorX, yBot - 0.6, botHalfW * 1.34, Math.max(2.6, botHalfW * 0.34), 0, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.restore();
+    const snowGrad = ctx.createRadialGradient(anchorX, y0 - 0.6, 1, anchorX, y0 - 0.6, collarRx);
+    snowGrad.addColorStop(0, isDark ? "rgba(236, 244, 255, 0.96)" : "rgba(255, 255, 255, 0.98)");
+    snowGrad.addColorStop(0.68, isDark ? "rgba(218, 232, 248, 0.85)" : "rgba(248, 252, 255, 0.88)");
+    snowGrad.addColorStop(1, isDark ? "rgba(203, 222, 242, 0)" : "rgba(241, 247, 255, 0)");
+    ctx.fillStyle = snowGrad;
+    ctx.beginPath();
+    ctx.ellipse(anchorX, y0 - 0.6, collarRx, collarRy, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
 }
 
 function drawFacetedTopStar(ctx, cx, cy, outerR, rotY, isDark, sprites) {
@@ -22893,13 +22959,18 @@ function renderChristmasTreeScene(ctx, layout, projBuffer, sceneParams) {
     projBuffer.length = items.length;
   }
 
+  const starYOffset = Math.sin(t * 2.0) * 1.8;
+  const starY = (baseY - treeH) - (isMobile ? 8 : 11) + starYOffset;
+  const starOuterR = interactive ? 21 : (isMobile ? 12 : 16);
+
   for (let i = 0; i < items.length; i++) {
     const it = items[i];
     const u = it.kind === "sparkle" ? ((it.u + t * it.speedY) % 1.03) : it.u;
-    const swayAngle = it.kind === "trunk" ? 0 : (it.angle + rot + (it.kind === "sparkle" ? t * 0.2 : 0));
+    const isTrunkSeg = it.kind === "trunk_seg";
+    const swayAngle = isTrunkSeg ? 0 : (it.angle + rot + (it.kind === "sparkle" ? t * 0.2 : 0));
     const radius = it.rNorm * treeR;
     const x3 = Math.cos(swayAngle) * radius;
-    const z3 = it.kind === "trunk" ? 0 : Math.sin(swayAngle) * radius;
+    const z3 = isTrunkSeg ? 0 : Math.sin(swayAngle) * radius;
     const yRel = (0.44 - u) * treeH;
     const y3Tilt = yRel * tiltCos - z3 * tiltSin;
     const z3Tilt = yRel * tiltSin + z3 * tiltCos;
@@ -22931,8 +23002,10 @@ function renderChristmasTreeScene(ctx, layout, projBuffer, sceneParams) {
     const persp = p.persp;
     const depthNorm = Math.max(0.34, Math.min(1, 0.72 - p.z / (treeR * 2.2)));
 
-    if (it.kind === "trunk") {
-      drawTreeWoodenTrunk(ctx, anchorX, baseY, treeH, treeR, rot, isDark);
+    ctx.globalAlpha = 1;
+
+    if (it.kind === "trunk_seg") {
+      drawTreeTrunkSegment(ctx, it, anchorX, baseY, treeH, treeR, starY, rot, isDark);
       continue;
     }
 
@@ -23093,10 +23166,6 @@ function renderChristmasTreeScene(ctx, layout, projBuffer, sceneParams) {
     }
   }
   ctx.globalAlpha = 1;
-
-  const starYOffset = Math.sin(t * 2.0) * 1.8;
-  const starY = (baseY - treeH) - (isMobile ? 8 : 11) + starYOffset;
-  const starOuterR = interactive ? 21 : (isMobile ? 12 : 16);
   drawFacetedTopStar(ctx, anchorX, starY, starOuterR, starRotation, isDark, sprites);
 }
 
