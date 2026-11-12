@@ -887,8 +887,20 @@ try {
     db.exec("ALTER TABLE christmas_tree_ornaments ADD COLUMN card_name TEXT NOT NULL DEFAULT ''");
   }
   if (!treeCols.some((c) => c.name === "card_year")) {
-    db.exec("ALTER TABLE christmas_tree_ornaments ADD COLUMN card_year TEXT NOT NULL DEFAULT '2026'");
+    db.exec("ALTER TABLE christmas_tree_ornaments ADD COLUMN card_year TEXT NOT NULL DEFAULT ''");
   }
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS christmas_tree_likes (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      ornament_id INTEGER NOT NULL REFERENCES christmas_tree_ornaments(id) ON DELETE CASCADE,
+      from_user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      liked_date TEXT NOT NULL,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE(ornament_id, from_user_id)
+    );
+    CREATE INDEX IF NOT EXISTS idx_christmas_tree_likes_ornament ON christmas_tree_likes(ornament_id);
+    CREATE INDEX IF NOT EXISTS idx_christmas_tree_likes_daily ON christmas_tree_likes(from_user_id, liked_date);
+  `);
 } catch (e) {
   console.error("[DB Schema christmas_tree_ornaments]", e);
 }
@@ -5597,22 +5609,48 @@ async function api(request, response, url) {
   ]);
 
   const TREE_CARD_TEMPLATES = new Map([
-    ["card_reindeer", { frameColor: "#E8F1FB", accentColor: "#C8102E", minTier: 0 }],
-    ["card_lights", { frameColor: "#FAF5ED", accentColor: "#B91C1C", minTier: 0 }],
-    ["card_snowglobe", { frameColor: "#6CA3D8", accentColor: "#C8102E", minTier: 0 }],
-    ["card_envelope", { frameColor: "#FFFFFF", accentColor: "#B91C1C", minTier: 0 }],
-    ["card_midnight_gold", { frameColor: "#091E52", accentColor: "#F5C451", minTier: 0 }],
-    ["card_santa_letter", { frameColor: "#FFFDF8", accentColor: "#C81E1E", minTier: 0 }]
+    ["card_sparkle", { label: "Lấp lánh", frameColor: "#FFFFFF", accentColor: "#D97706", maxChars: 340, minTier: 0 }],
+    ["card_gift", { label: "Món quà Giáng sinh", frameColor: "#FFFFFF", accentColor: "#15803D", maxChars: 300, minTier: 0 }],
+    ["card_ribbon", { label: "Nơ nhỏ nhắn", frameColor: "#FFFFFF", accentColor: "#B91C1C", maxChars: 210, minTier: 0 }],
+    ["card_snowglobe", { label: "Quả cầu tuyết", frameColor: "#FFFFFF", accentColor: "#0284C7", maxChars: 300, minTier: 0 }],
+    ["card_santa_letter", { label: "Thư gửi Ông già Noel", frameColor: "#FFFFFF", accentColor: "#DC2626", maxChars: 340, minTier: 0 }],
+    ["card_reindeer", { label: "Tuần lộc", frameColor: "#FFFFFF", accentColor: "#15803D", maxChars: 340, minTier: 0 }]
   ]);
 
+  const LEGACY_CARD_TEMPLATE_MAP = {
+    card_lights: "card_sparkle",
+    card_envelope: "card_gift",
+    card_midnight_gold: "card_ribbon"
+  };
+
+  function normalizeCardTemplateKey(style) {
+    if (TREE_CARD_TEMPLATES.has(style)) return style;
+    return LEGACY_CARD_TEMPLATE_MAP[style] || "card_sparkle";
+  }
+
   const TREE_CARD_FINISHES = new Map([
-    ["classic", { label: "Cổ điển", gradientStops: null, minTier: 0 }],
-    ["grad_frost_sky", { label: "Băng Lam", gradientStops: ["#EFF6FF", "#7DD3FC", "#0284C7"], minTier: 1 }],
-    ["grad_champagne_gold", { label: "Ánh Kim", gradientStops: ["#FFFBEB", "#FDE047", "#D97706"], minTier: 2 }],
-    ["grad_aurora_borealis", { label: "Cực Quang", gradientStops: ["#34D399", "#38BDF8", "#A855F7"], minTier: 3 }],
-    ["grad_crimson_velvet", { label: "Nhung Đỏ", gradientStops: ["#FDA4AF", "#E11D48", "#881337"], minTier: 4 }],
-    ["grad_mythic_prism", { label: "Đa Sắc Cầu Vồng", gradientStops: ["#F43F5E", "#F59E0B", "#10B981", "#3B82F6", "#A855F7"], minTier: 5 }]
+    ["pastel_white", { label: "Trắng tinh khôi", bgColor: "#FFFFFF", gradientStops: null, minTier: 0 }],
+    ["pastel_green", { label: "Xanh lá pastel", bgColor: "#DCFCE7", gradientStops: null, minTier: 0 }],
+    ["pastel_cream", { label: "Kem vani", bgColor: "#FEF9E7", gradientStops: null, minTier: 0 }],
+    ["pastel_pink", { label: "Hồng phấn", bgColor: "#FFE4E6", gradientStops: null, minTier: 0 }],
+    ["pastel_sky", { label: "Xanh băng", bgColor: "#E0F2FE", gradientStops: null, minTier: 0 }],
+    ["pastel_lavender", { label: "Tím oải hương", bgColor: "#F3E8FF", gradientStops: null, minTier: 0 }],
+    ["grad_frost_sky", { label: "Băng Lam", bgColor: "#E0F2FE", gradientStops: ["#E0F2FE", "#DBEAFE", "#F3E8FF"], minTier: 1 }],
+    ["grad_champagne_gold", { label: "Ánh Kim", bgColor: "#FEF9C3", gradientStops: ["#FFFBEB", "#FEF3C7", "#FDE68A"], minTier: 2 }],
+    ["grad_aurora_borealis", { label: "Cực Quang", bgColor: "#D1FAE5", gradientStops: ["#D1FAE5", "#CCFBF1", "#E0F2FE"], minTier: 3 }],
+    ["grad_crimson_velvet", { label: "Hồng Ngọc", bgColor: "#FFE4E6", gradientStops: ["#FFE4E6", "#FECDD3", "#FEF3C7"], minTier: 4 }],
+    ["grad_mythic_prism", { label: "Đa sắc", bgColor: "#F3E8FF", gradientStops: ["#F3E8FF", "#FFE4E6", "#DCFCE7"], minTier: 5 }]
   ]);
+
+  function normalizeCardFinishKey(finish) {
+    if (TREE_CARD_FINISHES.has(finish)) return finish;
+    if (finish === "classic" || !finish) return "pastel_white";
+    return "pastel_white";
+  }
+
+  function xmasTodayDateVN() {
+    return new Date(Date.now() + 7 * 3600 * 1000).toISOString().slice(0, 10);
+  }
 
   const TREE_GIFT_STYLES = new Map([
     ["gift_red", { frameColor: "#D32F2F", accentColor: "#FFD700", gradientStops: null, minTier: 0 }],
@@ -5657,7 +5695,8 @@ async function api(request, response, url) {
       return (TREE_POLAROID_FRAMES.get(itemStyle) || {}).gradientStops || null;
     }
     if (slotKind === "card") {
-      return (TREE_CARD_FINISHES.get(itemFinish || "classic") || {}).gradientStops || null;
+      const fin = TREE_CARD_FINISHES.get(normalizeCardFinishKey(itemFinish));
+      return (fin && fin.gradientStops) || null;
     }
     if (slotKind === "gift") {
       return (TREE_GIFT_STYLES.get(itemStyle) || {}).gradientStops || null;
@@ -5675,6 +5714,17 @@ async function api(request, response, url) {
       JOIN users u ON u.id = o.user_id
       ORDER BY o.updated_at DESC, o.id DESC
     `).all();
+    const likesCountMap = new Map();
+    db.prepare("SELECT ornament_id, COUNT(*) AS cnt FROM christmas_tree_likes GROUP BY ornament_id").all().forEach((lr) => {
+      likesCountMap.set(Number(lr.ornament_id), Number(lr.cnt || 0));
+    });
+    const viewerLikedSet = new Set();
+    if (viewer && viewer.id) {
+      db.prepare("SELECT ornament_id FROM christmas_tree_likes WHERE from_user_id = ?").all(viewer.id).forEach((lr) => {
+        viewerLikedSet.add(Number(lr.ornament_id));
+      });
+    }
+
     const isAdmin = Boolean(viewer && viewer.role === "admin");
     const isRevealed = Date.now() >= CHRISTMAS_2026_REVEAL_MS;
     const viewerStreakInfo = viewer && viewer.id ? calculateUserStreak(viewer.id) : null;
@@ -5687,8 +5737,11 @@ async function api(request, response, url) {
       const isAccessory = slotKind === "accessory";
       const isSealed = isAccessory ? false : Boolean(Number(r.is_sealed));
       const isMysteryLocked = !isAccessory && isSealed && !isRevealed;
-      const itemFinish = r.item_finish || "classic";
-      const gradientStops = resolveOrnamentGradientStops(slotKind, r.item_style, itemFinish);
+      const normStyle = slotKind === "card" ? normalizeCardTemplateKey(r.item_style) : r.item_style;
+      const normFinish = slotKind === "card" ? normalizeCardFinishKey(r.item_finish) : (r.item_finish || "");
+      const gradientStops = resolveOrnamentGradientStops(slotKind, normStyle, normFinish);
+      const cardFinishSpec = slotKind === "card" ? TREE_CARD_FINISHES.get(normFinish) : null;
+      const resolvedFrameColor = (cardFinishSpec && cardFinishSpec.bgColor) ? cardFinishSpec.bgColor : (r.frame_color || "#FFFAF0");
 
       const item = {
         id: r.id,
@@ -5697,14 +5750,13 @@ async function api(request, response, url) {
         authorAvatar: r.avatar || getAvatarEmoji(r.display_name || "R"),
         authorRole: r.role || "student",
         slotKind,
-        itemStyle: r.item_style,
-        itemFinish,
+        itemStyle: normStyle,
+        itemFinish: normFinish,
         gradientStops,
         message: (isAccessory || isMysteryLocked) ? "" : (r.message || ""),
         photoData: (isAccessory || slotKind !== "polaroid" || isMysteryLocked) ? "" : (r.photo_data || ""),
         cardName: (slotKind === "card" && !isMysteryLocked) ? (r.card_name || r.display_name || "Thành viên") : "",
-        cardYear: (slotKind === "card" && !isMysteryLocked) ? (r.card_year || "2026") : "",
-        frameColor: r.frame_color || "#FFFAF0",
+        frameColor: resolvedFrameColor,
         accentColor: r.accent_color || "#FFD700",
         posU: Number(r.pos_u),
         posAngle: Number(r.pos_angle),
@@ -5712,6 +5764,8 @@ async function api(request, response, url) {
         isMysteryLocked,
         revealAt: CHRISTMAS_2026_REVEAL_AT,
         lockedNotice: isMysteryLocked ? CHRISTMAS_LOCKED_NOTICE : "",
+        likesCount: likesCountMap.get(Number(r.id)) || 0,
+        hasLiked: viewerLikedSet.has(Number(r.id)),
         createdAt: (r.created_at || "").replace(" ", "T") + "Z",
         updatedAt: (r.updated_at || "").replace(" ", "T") + "Z",
         isSelf,
@@ -5722,8 +5776,7 @@ async function api(request, response, url) {
           message: r.message || "",
           photoData: r.photo_data || "",
           cardName: r.card_name || r.display_name || "",
-          cardYear: r.card_year || "2026",
-          itemFinish,
+          itemFinish: normFinish,
           isSealed: true
         };
       }
@@ -5821,18 +5874,19 @@ async function api(request, response, url) {
       const userTier = Number(streakInfo.streakTier || 0);
 
       const rawStyle = typeof body.itemStyle === "string" ? body.itemStyle.trim() : "";
-      const rawFinish = typeof body.itemFinish === "string" ? body.itemFinish.trim() : "classic";
+      const rawFinish = typeof body.itemFinish === "string" ? body.itemFinish.trim() : "pastel_white";
       const shufflePosition = Boolean(body.shufflePosition);
       const isRevealed = Date.now() >= CHRISTMAS_2026_REVEAL_MS;
       let isSealed = (!isRevealed && Boolean(body.isSealed)) ? 1 : 0;
 
       let frameColor = "#FFFAF0";
       let accentColor = "#FFD700";
-      let itemFinish = "classic";
+      let itemFinish = "";
+      let savedStyle = rawStyle;
       let message = "";
       let photoData = "";
       let cardName = "";
-      let cardYear = "2026";
+      const cardYear = "";
 
       if (slotKind === "polaroid") {
         const styleSpec = TREE_POLAROID_FRAMES.get(rawStyle);
@@ -5867,24 +5921,27 @@ async function api(request, response, url) {
           return error(response, 400, "Hãy chọn ảnh minh họa hoặc tải ảnh kỷ niệm cho khung Polaroid.");
         }
       } else if (slotKind === "card") {
-        const tplSpec = TREE_CARD_TEMPLATES.get(rawStyle);
+        const normStyle = TREE_CARD_TEMPLATES.has(rawStyle) ? rawStyle : LEGACY_CARD_TEMPLATE_MAP[rawStyle];
+        const tplSpec = normStyle ? TREE_CARD_TEMPLATES.get(normStyle) : null;
         if (!tplSpec) {
           return error(response, 400, "Mẫu thiệp Giáng sinh không hợp lệ.");
         }
-        const finishSpec = TREE_CARD_FINISHES.get(rawFinish || "classic");
+        const normFinish = normalizeCardFinishKey(rawFinish || "pastel_white");
+        const finishSpec = TREE_CARD_FINISHES.get(normFinish);
         if (!finishSpec) {
-          return error(response, 400, "Kiểu phối viền thiệp không hợp lệ.");
+          return error(response, 400, "Màu nền thiệp không hợp lệ.");
         }
         if (userTier < finishSpec.minTier) {
           const needDays = TREE_STREAK_TIER_REQUIREMENTS[finishSpec.minTier] || 3;
-          return error(response, 403, `Viền thiệp gradient này yêu cầu chuỗi hoạt động từ ${needDays} ngày trở lên.`);
+          return error(response, 403, `Màu nền thiệp gradient này yêu cầu chuỗi hoạt động từ ${needDays} ngày trở lên.`);
         }
-        itemFinish = rawFinish || "classic";
-        frameColor = tplSpec.frameColor;
+        savedStyle = normStyle;
+        itemFinish = normFinish;
+        frameColor = finishSpec.bgColor || "#FFFFFF";
         accentColor = tplSpec.accentColor;
         cardName = (typeof body.cardName === "string" ? body.cardName.trim() : "").slice(0, 40) || (user.display_name || "Thành viên");
-        cardYear = (typeof body.cardYear === "string" ? body.cardYear.trim() : "").replace(/[^0-9A-Za-z-]/g, "").slice(0, 8) || "2026";
-        message = typeof body.message === "string" ? body.message.trim().slice(0, 450) : "";
+        const maxLen = tplSpec.maxChars || 300;
+        message = typeof body.message === "string" ? body.message.trim().slice(0, maxLen) : "";
         if (message.length < 2) {
           return error(response, 400, "Hãy viết lời chúc trên tấm thiệp (ít nhất 2 ký tự).");
         }
@@ -5946,7 +6003,7 @@ async function api(request, response, url) {
       `).run(
         user.id,
         slotKind,
-        rawStyle,
+        savedStyle,
         itemFinish,
         message,
         photoData,
@@ -5973,11 +6030,73 @@ async function api(request, response, url) {
     }
   }
 
-  if (method === "DELETE" && pathName.startsWith("/api/christmas-tree/")) {
+  // --- THẢ TIM TRANG TRÍ CÂY THÔNG (Cơ chế giống tim namecard + tối đa 5 lượt/ngày ngầm) ---
+  const treeLikeMatch = pathName.match(/^\/api\/christmas-tree\/(\d+)\/like$/);
+  if (method === "POST" && treeLikeMatch) {
+    const user = requireUser(request, response);
+    if (!user || !requireCsrf(request, response, user)) return;
+    if (!isChristmas2026Window()) {
+      return error(response, 403, "Sự kiện trang trí cây thông Giáng sinh 2026 đã kết thúc.");
+    }
+    const itemId = Number(treeLikeMatch[1]);
+    const target = db.prepare("SELECT id, user_id FROM christmas_tree_ornaments WHERE id = ?").get(itemId);
+    if (!target) return error(response, 404, "Không tìm thấy món trang trí.");
+    if (target.user_id === user.id) {
+      return error(response, 400, "Không thể tự thả tim trang trí của chính mình.");
+    }
+    const alreadyLiked = db.prepare("SELECT id FROM christmas_tree_likes WHERE ornament_id = ? AND from_user_id = ?").get(itemId, user.id);
+    if (alreadyLiked) {
+      return error(response, 400, "Bạn đã thả tim món trang trí này rồi.");
+    }
+    const todayVN = xmasTodayDateVN();
+    const todayRow = db.prepare("SELECT COUNT(*) AS cnt FROM christmas_tree_likes WHERE from_user_id = ? AND liked_date = ?").get(user.id, todayVN);
+    if (Number(todayRow?.cnt || 0) >= 5) {
+      return error(response, 429, "Hôm nay bạn đã thả tim hết lượt rồi, hẹn ngày mai tiếp tục nhé!");
+    }
+    try {
+      db.prepare("INSERT INTO christmas_tree_likes (ornament_id, from_user_id, liked_date) VALUES (?, ?, ?)").run(itemId, user.id, todayVN);
+    } catch (e) {
+      return error(response, 400, "Không thể thả tim món trang trí.");
+    }
+    const cntRow = db.prepare("SELECT COUNT(*) AS cnt FROM christmas_tree_likes WHERE ornament_id = ?").get(itemId);
+    return json(response, 200, {
+      ok: true,
+      id: itemId,
+      likesCount: Number(cntRow?.cnt || 0),
+      hasLiked: true
+    });
+  }
+
+  // --- DANH SÁCH NGƯỜI ĐÃ THẢ TIM TRANG TRÍ (Chủ nhân hoặc Admin xem được) ---
+  const treeLikesListMatch = pathName.match(/^\/api\/christmas-tree\/(\d+)\/likes$/);
+  if (method === "GET" && treeLikesListMatch) {
+    const user = requireUser(request, response);
+    if (!user) return;
+    const itemId = Number(treeLikesListMatch[1]);
+    const target = db.prepare("SELECT id, user_id FROM christmas_tree_ornaments WHERE id = ?").get(itemId);
+    if (!target) return error(response, 404, "Không tìm thấy món trang trí.");
+    if (target.user_id !== user.id && user.role !== "admin") {
+      return error(response, 403, "Chỉ chủ nhân món trang trí mới có thể xem danh sách này.");
+    }
+    const likes = db.prepare(`
+      SELECT u.id AS userId, u.display_name AS displayName, u.avatar, u.role, l.created_at AS createdAt
+      FROM christmas_tree_likes l
+      JOIN users u ON u.id = l.from_user_id
+      WHERE l.ornament_id = ?
+      ORDER BY l.id DESC
+    `).all(itemId).map((row) => ({
+      ...row,
+      createdAt: (row.createdAt || "").replace(" ", "T") + "Z"
+    }));
+    return json(response, 200, { ok: true, id: itemId, total: likes.length, likes });
+  }
+
+  const treeDeleteMatch = pathName.match(/^\/api\/christmas-tree\/(\d+)$/);
+  if (method === "DELETE" && treeDeleteMatch) {
     const user = requireUser(request, response);
     if (!user || !requireCsrf(request, response, user)) return;
 
-    const itemId = parseInt(pathName.replace("/api/christmas-tree/", ""), 10);
+    const itemId = Number(treeDeleteMatch[1]);
     if (!itemId) return error(response, 400, "Mã vật trang trí không hợp lệ.");
 
     const existing = db.prepare("SELECT * FROM christmas_tree_ornaments WHERE id = ?").get(itemId);

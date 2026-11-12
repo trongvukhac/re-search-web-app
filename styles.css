@@ -30883,7 +30883,7 @@ body.dark-theme #christmasTreeModal .xmas-card-tpl-opt {
 
 .xmas-card-meta-row {
   display: grid;
-  grid-template-columns: 1fr 112px;
+  grid-template-columns: 1fr;
   gap: 8px;
 }
 
@@ -30896,153 +30896,65 @@ body.dark-theme #christmasTreeModal .xmas-card-tpl-opt {
   width: min(100%, 272px);
 }
 
-.xmas-greeting-card {
+#xmasCardCharCount.is-over-limit {
+  color: #dc2626;
+  font-weight: 800;
+}
+
+.xmas-card-sheet {
   position: relative;
   width: 100%;
-  aspect-ratio: 3 / 4;
+  aspect-ratio: 1414 / 2000;
   border-radius: 14px;
-  padding: 14px 14px 12px;
   overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  text-align: center;
-  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.18);
-  border: 2px solid rgba(255, 255, 255, 0.72);
+  container-type: inline-size;
+  color: #1e293b;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.16);
+  border: 1.5px solid rgba(15, 23, 42, 0.08);
   box-sizing: border-box;
+  user-select: none;
 }
 
-.xmas-greeting-card.is-compact {
-  aspect-ratio: auto;
-  min-height: 168px;
-  padding: 11px 12px;
+.xmas-card-sheet.is-viewer {
+  width: min(100%, 440px);
+  border-radius: 18px;
+  box-shadow: 0 24px 56px rgba(15, 23, 42, 0.34);
 }
 
-.xmas-greeting-card .xc-brand-top {
-  font-size: 11px;
-  font-weight: 800;
-  letter-spacing: 0.4px;
-  text-transform: uppercase;
-  position: relative;
+.xmas-card-sheet .xc-tpl-artwork {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.xmas-card-sheet .xc-tpl-name {
+  position: absolute;
   z-index: 2;
-}
-
-.xmas-greeting-card .xc-artwork {
-  position: relative;
-  z-index: 2;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 4px auto;
-}
-
-.xmas-greeting-card .xc-headline {
-  font-size: 15px;
+  font-family: "Fraunces", "Be Vietnam Pro", Georgia, serif;
   font-weight: 800;
   line-height: 1.15;
-  position: relative;
-  z-index: 2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  pointer-events: none;
 }
 
-.xmas-greeting-card .xc-year-pill {
-  display: inline-block;
-  margin: 2px auto 0;
-  padding: 1px 10px;
-  border-radius: 9999px;
-  font-size: 11px;
-  font-weight: 800;
-  position: relative;
+.xmas-card-sheet .xc-tpl-wish {
+  position: absolute;
   z-index: 2;
-}
-
-.xmas-greeting-card .xc-wish-body {
-  font-size: 11.5px;
-  line-height: 1.42;
+  font-family: "Be Vietnam Pro", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-weight: 600;
+  text-align: left;
   word-break: break-word;
   overflow-wrap: anywhere;
-  position: relative;
-  z-index: 2;
-}
-
-.xmas-greeting-card.tpl-card_reindeer {
-  background: linear-gradient(180deg, #eff6ff 0%, #dbeafe 100%);
-  color: #1e3a5f;
-}
-
-.xmas-greeting-card.tpl-card_reindeer .xc-year-pill {
-  background: #c8102e;
-  color: #ffffff;
-}
-
-.xmas-greeting-card.tpl-card_lights {
-  background: linear-gradient(180deg, #b91c1c 0%, #991b1b 100%);
-  color: #fffbeb;
-}
-
-.xmas-greeting-card.tpl-card_lights .xc-parchment {
-  background: #faf5ed;
-  color: #451a03;
-  border-radius: 10px;
-  padding: 10px;
-  margin: 4px 0;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
-}
-
-.xmas-greeting-card.tpl-card_snowglobe {
-  background: linear-gradient(180deg, #bfdbfe 0%, #60a5fa 100%);
-  color: #0f2942;
-}
-
-.xmas-greeting-card.tpl-card_snowglobe .xc-headline {
-  display: inline-block;
-  background: #c8102e;
-  color: #ffffff;
-  padding: 3px 12px;
-  border-radius: 6px;
-  font-size: 13px;
-}
-
-.xmas-greeting-card.tpl-card_envelope {
-  background: #ffffff;
-  color: #991b1b;
-  border-color: #fecaca;
-}
-
-.xmas-greeting-card.tpl-card_envelope .xc-envelope-sheet {
-  background: #fffbeb;
-  border: 1.5px solid #e11d48;
-  border-radius: 8px;
-  padding: 9px 10px;
-  color: #1f2937;
-}
-
-.xmas-greeting-card.tpl-card_midnight_gold {
-  background: linear-gradient(180deg, #071742 0%, #0d2b70 100%);
-  color: #fef3c7;
-}
-
-.xmas-greeting-card.tpl-card_midnight_gold .xc-headline {
-  color: #facc15;
-}
-
-.xmas-greeting-card.tpl-card_santa_letter {
-  background: #fffdf8;
-  color: #7f1d1d;
-  border-color: #fca5a5;
-}
-
-.xmas-greeting-card.tpl-card_santa_letter .xc-santa-hero {
-  width: 100%;
-  height: 76px;
-  object-fit: cover;
-  object-position: top center;
-  border-radius: 8px;
-}
-
-.xmas-greeting-card.tpl-card_santa_letter .xc-wish-body {
-  background: repeating-linear-gradient(transparent, transparent 17px, rgba(220, 38, 38, 0.24) 17px, rgba(220, 38, 38, 0.24) 18px);
-  padding: 4px 6px;
-  color: #374151;
+  white-space: pre-wrap;
+  overflow: hidden;
+  pointer-events: none;
 }
 
 .xmas-danger-btn {
@@ -31125,13 +31037,17 @@ body.dark-theme #christmasTreeModal .xmas-card-tpl-opt {
 
 .xmas-gallery-actions {
   display: flex;
-  flex-direction: column;
-  gap: 4px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 5px;
   flex-shrink: 0;
+  max-width: 170px;
 }
 
 .xmas-gallery-locate-btn,
-.xmas-gallery-delete-btn {
+.xmas-gallery-delete-btn,
+.xmas-open-viewer-btn {
   min-height: 28px;
   padding: 0 9px;
   border-radius: 8px;
@@ -31139,13 +31055,516 @@ body.dark-theme #christmasTreeModal .xmas-card-tpl-opt {
   background: var(--surface, #fff);
   color: var(--ink, #123d30);
   font-size: 11.5px;
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
+  transition: transform 0.14s ease, background 0.14s ease, border-color 0.14s ease;
+}
+
+.xmas-open-viewer-btn {
+  background: rgba(22, 163, 74, 0.12);
+  border-color: rgba(22, 163, 74, 0.34);
+  color: #15803d;
+}
+
+.xmas-open-viewer-btn:hover {
+  background: rgba(22, 163, 74, 0.2);
+}
+
+html.dark-theme .xmas-open-viewer-btn,
+body.dark-theme .xmas-open-viewer-btn {
+  background: rgba(34, 197, 94, 0.18);
+  border-color: rgba(74, 222, 128, 0.38);
+  color: #86efac;
+}
+
+html.dark-theme .xmas-gallery-locate-btn,
+body.dark-theme .xmas-gallery-locate-btn,
+html.dark-theme .xmas-gallery-delete-btn,
+body.dark-theme .xmas-gallery-delete-btn {
+  background: #162230;
+  border-color: rgba(148, 163, 184, 0.28);
+  color: #e2e8f0;
 }
 
 .xmas-gallery-delete-btn {
   color: var(--danger, #ae4c3f);
   border-color: rgba(174, 76, 63, 0.28);
+}
+
+.xmas-gallery-submeta,
+.xmas-inspector-subname {
+  font-size: 12px;
+  color: var(--muted, #64748b);
+  margin-top: 3px;
+}
+
+.xmas-inspector-actions-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+/* Ornament Heart Like Pill */
+.xmas-like-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-height: 28px;
+  padding: 0 9px;
+  border-radius: 9999px;
+  border: 1px solid rgba(244, 63, 94, 0.34);
+  background: rgba(255, 255, 255, 0.92);
+  color: #e11d48;
+  font-size: 11.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.16s ease, background 0.16s ease, border-color 0.16s ease;
+  user-select: none;
+}
+
+.xmas-like-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  background: rgba(244, 63, 94, 0.08);
+}
+
+.xmas-like-btn .xmas-heart-icon {
+  display: block;
+  flex-shrink: 0;
+  transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), fill 0.18s ease;
+}
+
+.xmas-like-btn .xmas-like-count {
+  font-variant-numeric: tabular-nums;
+}
+
+.xmas-like-btn.has-liked {
+  background: rgba(244, 63, 94, 0.14);
+  border-color: #f43f5e;
+}
+
+.xmas-like-btn.has-liked .xmas-heart-icon {
+  fill: #f43f5e;
+  stroke: #f43f5e;
+}
+
+.xmas-like-btn.animate-pop .xmas-heart-icon {
+  animation: heartPop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+html.dark-theme .xmas-like-btn,
+body.dark-theme .xmas-like-btn {
+  background: rgba(30, 41, 59, 0.85);
+  border-color: rgba(251, 113, 133, 0.38);
+  color: #fda4af;
+}
+
+html.dark-theme .xmas-like-btn.has-liked,
+body.dark-theme .xmas-like-btn.has-liked {
+  background: rgba(244, 63, 94, 0.24);
+  border-color: #fb7185;
+}
+
+/* Christmas Countdown Bar */
+.xmas-countdown-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 9px 12px;
+  margin-bottom: 12px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(220, 38, 38, 0.08), rgba(22, 163, 74, 0.1));
+  border: 1px solid rgba(22, 163, 74, 0.22);
+}
+
+.xmas-countdown-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #14532d;
+}
+
+.xmas-countdown-clock {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12.5px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: #b91c1c;
+}
+
+.xmas-countdown-clock span strong {
+  font-size: 13.5px;
+}
+
+html.dark-theme .xmas-countdown-bar,
+body.dark-theme .xmas-countdown-bar {
+  background: linear-gradient(135deg, rgba(220, 38, 38, 0.16), rgba(16, 185, 129, 0.14));
+  border-color: rgba(74, 222, 128, 0.26);
+}
+
+html.dark-theme .xmas-countdown-label,
+body.dark-theme .xmas-countdown-label {
+  color: #bbf7d0;
+}
+
+html.dark-theme .xmas-countdown-clock,
+body.dark-theme .xmas-countdown-clock {
+  color: #fda4af;
+}
+
+/* Mobile Stage Fullscreen Button & State */
+.xmas-stage-fs-btn {
+  display: none;
+  padding: 0 9px;
+}
+
+.xmas-stage-fs-btn .xmas-fs-compress-icon {
+  display: none;
+}
+
+.xmas-stage-fs-btn[aria-pressed="true"] .xmas-fs-expand-icon {
+  display: none;
+}
+
+.xmas-stage-fs-btn[aria-pressed="true"] .xmas-fs-compress-icon {
+  display: block;
+}
+
+dialog#christmasTreeModal.is-stage-fullscreen[open] {
+  width: 100vw;
+  max-width: 100vw;
+  height: 100dvh;
+  max-height: 100dvh;
+  margin: 0;
+  border-radius: 0;
+}
+
+dialog#christmasTreeModal.is-stage-fullscreen .xmas-tree-dialog-shell {
+  height: 100dvh;
+  max-height: 100dvh;
+  overflow: hidden;
+}
+
+dialog#christmasTreeModal.is-stage-fullscreen .xmas-tree-studio-grid {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+dialog#christmasTreeModal.is-stage-fullscreen .xmas-tree-panel-col {
+  display: none;
+}
+
+dialog#christmasTreeModal.is-stage-fullscreen .xmas-tree-stage-col {
+  flex: 1;
+  min-height: 0;
+  border-right: 0;
+  border-bottom: 0;
+  padding: 10px;
+}
+
+dialog#christmasTreeModal.is-stage-fullscreen .xmas-tree-stage-wrap {
+  flex: 1;
+  height: 100%;
+  min-height: 0;
+}
+
+/* Fullscreen Ornament Viewer Modal (Thiep / Polaroid / Gift Reveal) */
+dialog#xmasItemViewerModal[open] {
+  width: min(94vw, 560px);
+  max-width: 560px;
+  max-height: 92dvh;
+  margin: auto;
+  padding: 0;
+  border-radius: 20px;
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  background: var(--surface, #ffffff);
+  color: var(--ink, #123d30);
+  box-shadow: 0 32px 96px rgba(0, 0, 0, 0.45);
+  overflow: hidden;
+}
+
+dialog#xmasItemViewerModal::backdrop {
+  background: rgba(7, 16, 22, 0.72);
+  backdrop-filter: blur(8px);
+}
+
+html.dark-theme dialog#xmasItemViewerModal[open],
+body.dark-theme dialog#xmasItemViewerModal[open] {
+  background: #111820;
+  border-color: rgba(125, 211, 252, 0.24);
+  color: #e2e8f0;
+}
+
+.xmas-item-viewer-shell {
+  display: flex;
+  flex-direction: column;
+  max-height: 92dvh;
+  min-height: 0;
+}
+
+.xmas-item-viewer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--line, #dfe4dc);
+  flex-shrink: 0;
+}
+
+.xmas-item-viewer-meta h3 {
+  margin: 0;
+  font-family: var(--unbounded, "Unbounded", sans-serif);
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.xmas-item-viewer-sub {
+  margin: 3px 0 0;
+  font-size: 12.5px;
+  color: var(--muted, #64748b);
+}
+
+.xmas-item-viewer-head-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.xmas-item-viewer-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 20px 18px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(circle at center, rgba(248, 250, 252, 0.92), rgba(226, 232, 240, 0.5));
+}
+
+html.dark-theme .xmas-item-viewer-body,
+body.dark-theme .xmas-item-viewer-body {
+  background: radial-gradient(circle at center, #13252a, #09121a);
+}
+
+.xmas-viewer-card-stage {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+.xmas-viewer-polaroid-frame {
+  width: min(100%, 360px);
+  padding: 16px 16px 20px;
+  border-radius: 14px;
+  box-shadow: 0 22px 48px rgba(15, 23, 42, 0.25);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.xmas-viewer-polaroid-photo {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #0f172a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.xmas-viewer-polaroid-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.xmas-viewer-polaroid-caption {
+  text-align: center;
+  color: #1e293b;
+}
+
+.xmas-viewer-polaroid-frame.is-dark-frame .xmas-viewer-polaroid-caption {
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+
+.xmas-viewer-polaroid-msg {
+  margin: 0 0 6px;
+  font-size: 14.5px;
+  font-weight: 600;
+  line-height: 1.5;
+  word-break: break-word;
+  white-space: pre-wrap;
+}
+
+.xmas-viewer-polaroid-by {
+  font-size: 12px;
+  color: #475569;
+  font-weight: 600;
+}
+
+.xmas-viewer-gift-box {
+  position: relative;
+  width: min(100%, 420px);
+  padding: 24px 20px 22px;
+  border-radius: 20px;
+  border: 3px solid;
+  box-shadow: 0 24px 52px rgba(15, 23, 42, 0.28);
+  overflow: hidden;
+}
+
+.xmas-viewer-gift-ribbon {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 24px;
+  height: 100%;
+  opacity: 0.34;
+  pointer-events: none;
+}
+
+.xmas-viewer-gift-emblem {
+  position: relative;
+  z-index: 2;
+  width: 68px;
+  height: 68px;
+  margin: 0 auto 14px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.94);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.16);
+}
+
+.xmas-viewer-gift-note {
+  position: relative;
+  z-index: 2;
+  background: rgba(255, 255, 255, 0.95);
+  color: #0f172a;
+  border-radius: 14px;
+  padding: 18px 18px 16px;
+  text-align: center;
+  box-shadow: 0 10px 26px rgba(15, 23, 42, 0.14);
+}
+
+.xmas-viewer-gift-tag {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.45px;
+  margin-bottom: 8px;
+}
+
+.xmas-viewer-gift-msg {
+  margin: 0 0 12px;
+  font-size: 15.5px;
+  line-height: 1.55;
+  font-weight: 600;
+  word-break: break-word;
+  white-space: pre-wrap;
+}
+
+.xmas-viewer-gift-from {
+  font-size: 12.5px;
+  color: #475569;
+}
+
+.xmas-viewer-locked-card {
+  text-align: center;
+  padding: 28px 20px;
+  max-width: 340px;
+}
+
+.xmas-viewer-locked-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 68px;
+  height: 68px;
+  border-radius: 18px;
+  background: rgba(190, 18, 60, 0.14);
+  color: #be123c;
+  margin-bottom: 12px;
+}
+
+.xmas-item-viewer-likes-list {
+  border-top: 1px solid var(--line, #dfe4dc);
+  padding: 12px 18px;
+  max-height: 180px;
+  overflow-y: auto;
+  background: var(--surface-2, #f8fafc);
+}
+
+html.dark-theme .xmas-item-viewer-likes-list,
+body.dark-theme .xmas-item-viewer-likes-list {
+  background: #0d1620;
+  border-top-color: rgba(148, 163, 184, 0.2);
+}
+
+.xmas-likes-list-head {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--muted, #64748b);
+  margin-bottom: 8px;
+}
+
+.xmas-likes-list-rows {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.xmas-liker-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px 4px 4px;
+  border-radius: 9999px;
+  border: 1px solid var(--line, #dfe4dc);
+  background: var(--surface, #fff);
+  color: var(--ink, #123d30);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.xmas-liker-av {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  object-fit: cover;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #16a34a;
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.xmas-likes-empty {
+  font-size: 12.5px;
+  color: var(--muted, #64748b);
 }
 
 @media (max-width: 860px) {
@@ -31159,6 +31578,24 @@ body.dark-theme #christmasTreeModal .xmas-card-tpl-opt {
     max-height: 92dvh;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
+  }
+
+  .xmas-tree-modal-header {
+    position: sticky;
+    top: 0;
+    z-index: 25;
+    padding: 12px 14px 10px;
+    background: rgba(255, 255, 255, 0.96);
+    backdrop-filter: blur(12px);
+  }
+
+  html.dark-theme .xmas-tree-modal-header,
+  body.dark-theme .xmas-tree-modal-header {
+    background: rgba(17, 24, 32, 0.96);
+  }
+
+  .xmas-stage-fs-btn {
+    display: inline-flex;
   }
 
   .xmas-tree-studio-grid {
@@ -31203,6 +31640,17 @@ body.dark-theme #christmasTreeModal .xmas-card-tpl-opt {
 
   .xmas-card-template-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .xmas-gallery-item {
+    flex-wrap: wrap;
+  }
+
+  .xmas-gallery-actions {
+    width: 100%;
+    max-width: none;
+    justify-content: flex-start;
+    padding-left: 54px;
   }
 }
 

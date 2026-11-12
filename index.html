@@ -30,7 +30,7 @@
     <script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js" defer></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" defer></script>
-    <link rel="stylesheet" href="styles.css?v=164" />
+    <link rel="stylesheet" href="styles.css?v=165" />
   </head>
   <body>
     <canvas id="christmasTreeCanvas" class="christmas-tree-edge-canvas" aria-hidden="true"></canvas>
@@ -5652,7 +5652,7 @@
         <header class="xmas-tree-modal-header">
           <div class="xmas-tree-header-copy">
             <h2 id="christmasTreeModalTitle">🎄 Trang trí Cây thông</h2>
-            <p class="xmas-tree-header-sub" id="xmasTreeStatsSummary">Hãy treo ảnh kỷ niệm, thiệp chúc, hộp quà hoặc phụ kiện của bạn để cùng cộng đồng tạo nên một mùa Giáng sinh ấm áp (tối đa 2 trong 4 loại/người).</p>
+            <p class="xmas-tree-header-sub" id="xmasTreeStatsSummary">Trang trí phụ kiện của bạn lên cây thông để cùng tạo nên mùa Giáng sinh ấm áp</p>
           </div>
           <form method="dialog" class="xmas-tree-close-form">
             <button type="submit" class="xmas-tree-close-btn" id="xmasTreeCloseBtn" aria-label="Đóng cửa sổ cây thông">
@@ -5663,8 +5663,8 @@
 
         <div class="xmas-tree-studio-grid">
           <!-- CỘT TRÁI: SÂN KHẤU 3D TƯƠNG TÁC -->
-          <div class="xmas-tree-stage-col">
-            <div class="xmas-tree-stage-wrap">
+          <div class="xmas-tree-stage-col" id="xmasTreeStageCol">
+            <div class="xmas-tree-stage-wrap" id="xmasTreeStageWrap">
               <canvas id="christmasTreeStudioCanvas" width="520" height="560" aria-label="Mô hình cây thông Giáng sinh 3D cộng đồng"></canvas>
 
               <div class="xmas-tree-stage-controls">
@@ -5677,6 +5677,10 @@
                 </button>
                 <button type="button" class="xmas-stage-ctrl-btn" id="xmasTreeRotateRightBtn" aria-label="Xoay cây sang phải" title="Xoay phải">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-3-6.7L21 8"></path><path d="M21 3v5h-5"></path></svg>
+                </button>
+                <button type="button" class="xmas-stage-ctrl-btn xmas-stage-fs-btn" id="xmasTreeFullscreenBtn" aria-pressed="false" aria-label="Xem toàn màn hình cây thông" title="Xem toàn màn hình">
+                  <svg class="xmas-fs-expand-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 3 21 3 21 9"></polyline><polyline points="9 21 3 21 3 15"></polyline><line x1="21" y1="3" x2="14" y2="10"></line><line x1="3" y1="21" x2="10" y2="14"></line></svg>
+                  <svg class="xmas-fs-compress-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="4 14 10 14 10 20"></polyline><polyline points="20 10 14 10 14 4"></polyline><line x1="14" y1="10" x2="21" y2="3"></line><line x1="3" y1="21" x2="10" y2="14"></line></svg>
                 </button>
               </div>
 
@@ -5707,17 +5711,21 @@
             </div>
 
             <div class="xmas-tree-panel-body" id="xmasPanelDecorate" role="tabpanel" aria-labelledby="xmasTabDecorate">
+              <div class="xmas-countdown-bar" id="xmasCountdownBar" aria-live="off">
+                <div class="xmas-countdown-label">
+                  <span aria-hidden="true">🎄</span>
+                  <span id="xmasCountdownLabelText">Đếm ngược Giáng sinh</span>
+                </div>
+                <div class="xmas-countdown-clock" id="xmasCountdownTicker">-- ngày --:--:--</div>
+              </div>
+
               <div class="xmas-tree-guest-box" id="xmasTreeGuestBox" hidden>
                 <p>Đăng nhập để chọn treo tối đa <strong>2 trong 4 loại</strong> trang trí (Polaroid, Thiệp, Hộp quà, Phụ kiện) lên cây thông chung của RE:SEARCH.</p>
                 <button type="button" class="button button-primary button-sm" id="xmasTreeLoginBtn">Đăng nhập để trang trí</button>
               </div>
 
               <div class="xmas-tree-forms-wrap" id="xmasTreeFormsWrap">
-                <div class="xmas-tier-status-strip" id="xmasTierStatusStrip">
-                  <span class="xmas-tier-pill" id="xmasUserTierBadge">
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"></path></svg>
-                    <span id="xmasUserTierText">Chuỗi 0 ngày · Tân binh</span>
-                  </span>
+                <div class="xmas-slot-quota-bar" id="xmasTierStatusStrip">
                   <span class="xmas-slot-quota-note" id="xmasSlotQuotaNote">Đã dùng 0/2 loại</span>
                 </div>
 
@@ -5768,8 +5776,8 @@
                   </div>
 
                   <fieldset class="xmas-fieldset">
-                    <legend>Tranh minh họa mùa đông</legend>
-                    <div class="xmas-preset-gallery" aria-label="Bộ sưu tập ảnh minh họa Giáng sinh">
+                    <legend>Hình ảnh mặc định</legend>
+                    <div class="xmas-preset-gallery" aria-label="Bộ sưu tập hình ảnh mặc định Giáng sinh">
                       <button type="button" class="xmas-preset-card" data-photo-preset="preset:aurora">
                         <span class="xmas-preset-thumb"></span>
                         <span class="xmas-preset-name">Bắc cực quang</span>
@@ -5798,7 +5806,7 @@
                   </fieldset>
 
                   <fieldset class="xmas-fieldset">
-                    <legend>Màu khung &amp; Gradient chuỗi</legend>
+                    <legend>Màu khung ảnh</legend>
                     <div class="xmas-color-radio-row">
                       <label class="xmas-color-radio"><input type="radio" name="polaroidStyle" value="classic" checked /><span class="xmas-swatch-dot" style="background:#FFFAF0;"></span><span>Kem sứ</span></label>
                       <label class="xmas-color-radio"><input type="radio" name="polaroidStyle" value="warm_gold" /><span class="xmas-swatch-dot" style="background:#FEF3C7;"></span><span>Vàng ấm</span></label>
@@ -5839,41 +5847,40 @@
                   <fieldset class="xmas-fieldset">
                     <legend>Chọn mẫu thiệp Giáng sinh</legend>
                     <div class="xmas-card-template-grid" id="xmasCardTemplateGrid">
-                      <label class="xmas-card-tpl-opt"><input type="radio" name="cardStyle" value="card_reindeer" checked /><span class="xmas-tpl-swatch" style="background:linear-gradient(135deg,#E8F1FB,#C8102E);"></span><span>Tuần lộc Đỏ</span></label>
-                      <label class="xmas-card-tpl-opt"><input type="radio" name="cardStyle" value="card_lights" /><span class="xmas-tpl-swatch" style="background:linear-gradient(135deg,#B91C1C,#FAF5ED);"></span><span>Đèn Ánh nến</span></label>
-                      <label class="xmas-card-tpl-opt"><input type="radio" name="cardStyle" value="card_snowglobe" /><span class="xmas-tpl-swatch" style="background:linear-gradient(135deg,#9EC5E8,#1D4ED8);"></span><span>Quả cầu Tuyết</span></label>
-                      <label class="xmas-card-tpl-opt"><input type="radio" name="cardStyle" value="card_envelope" /><span class="xmas-tpl-swatch" style="background:linear-gradient(135deg,#FFFFFF,#B91C1C);"></span><span>Phong thư Thông</span></label>
-                      <label class="xmas-card-tpl-opt"><input type="radio" name="cardStyle" value="card_midnight_gold" /><span class="xmas-tpl-swatch" style="background:linear-gradient(135deg,#071742,#F5C451);"></span><span>Đêm Hoàng kim</span></label>
-                      <label class="xmas-card-tpl-opt"><input type="radio" name="cardStyle" value="card_santa_letter" /><span class="xmas-tpl-swatch" style="background:linear-gradient(135deg,#FFFDF8,#DC2626);"></span><span>Thư Ông già Noel</span></label>
+                      <label class="xmas-card-tpl-opt"><input type="radio" name="cardStyle" value="card_sparkle" checked /><span class="xmas-tpl-swatch" style="background:linear-gradient(135deg,#FEF9C3,#DC2626);"></span><span>Lấp lánh</span></label>
+                      <label class="xmas-card-tpl-opt"><input type="radio" name="cardStyle" value="card_gift" /><span class="xmas-tpl-swatch" style="background:linear-gradient(135deg,#DCFCE7,#EF4444);"></span><span>Món quà Giáng sinh</span></label>
+                      <label class="xmas-card-tpl-opt"><input type="radio" name="cardStyle" value="card_ribbon" /><span class="xmas-tpl-swatch" style="background:linear-gradient(135deg,#FFFFFF,#16A34A,#DC2626);"></span><span>Nơ nhỏ nhắn</span></label>
+                      <label class="xmas-card-tpl-opt"><input type="radio" name="cardStyle" value="card_snowglobe" /><span class="xmas-tpl-swatch" style="background:linear-gradient(135deg,#BAE6FD,#DC2626);"></span><span>Quả cầu tuyết</span></label>
+                      <label class="xmas-card-tpl-opt"><input type="radio" name="cardStyle" value="card_santa_letter" /><span class="xmas-tpl-swatch" style="background:repeating-linear-gradient(135deg,#DC2626 0 4px,#FFFFFF 4px 8px);"></span><span>Thư gửi Ông già Noel</span></label>
+                      <label class="xmas-card-tpl-opt"><input type="radio" name="cardStyle" value="card_reindeer" /><span class="xmas-tpl-swatch" style="background:linear-gradient(135deg,#D1FAE5,#15803D);"></span><span>Tuần lộc</span></label>
                     </div>
                   </fieldset>
 
-                  <div class="xmas-card-meta-row">
-                    <div class="xmas-field-group">
-                      <label for="xmasCardName" class="xmas-field-label">Tên hiển thị trên thiệp</label>
-                      <input type="text" id="xmasCardName" name="cardName" maxlength="40" placeholder="Tên hoặc nhóm của bạn" />
-                    </div>
-                    <div class="xmas-field-group xmas-field-year">
-                      <label for="xmasCardYear" class="xmas-field-label">Năm</label>
-                      <input type="text" id="xmasCardYear" name="cardYear" maxlength="8" value="2026" placeholder="2026" />
-                    </div>
+                  <div class="xmas-field-group">
+                    <label for="xmasCardName" class="xmas-field-label">Tên trên thiệp</label>
+                    <input type="text" id="xmasCardName" name="cardName" maxlength="40" placeholder="Tên hoặc nhóm của bạn" />
                   </div>
 
                   <div class="xmas-field-group">
-                    <label for="xmasCardMsg" class="xmas-field-label">Lời chúc nhắn gửi trên thiệp (tối đa 450 ký tự)</label>
-                    <textarea id="xmasCardMsg" name="message" rows="3" maxlength="450" aria-describedby="xmasCardHint" placeholder="Viết lời chúc dài, kỷ niệm hoặc tâm thư gửi đến mọi người..."></textarea>
-                    <span id="xmasCardHint" class="xmas-field-hint"><span id="xmasCardCharCount">0</span>/450 ký tự</span>
+                    <label for="xmasCardMsg" class="xmas-field-label">Lời chúc nhắn gửi trên thiệp (tối đa <span id="xmasCardMaxLabel">340</span> ký tự)</label>
+                    <textarea id="xmasCardMsg" name="message" rows="3" maxlength="340" aria-describedby="xmasCardHint" placeholder="Viết lời chúc hoặc tâm thư gửi đến mọi người..."></textarea>
+                    <span id="xmasCardHint" class="xmas-field-hint"><span id="xmasCardCharCount">0</span>/<span id="xmasCardLimitCount">340</span> ký tự</span>
                   </div>
 
                   <fieldset class="xmas-fieldset">
-                    <legend>Màu viền thiệp &amp; Đặc quyền chuỗi</legend>
+                    <legend>Màu nền thiệp</legend>
                     <div class="xmas-color-radio-row">
-                      <label class="xmas-color-radio"><input type="radio" name="cardFinish" value="classic" checked /><span class="xmas-swatch-dot" style="background:#FFFFFF;"></span><span>Cổ điển</span></label>
-                      <label class="xmas-color-radio is-tier-option" data-min-tier="1"><input type="radio" name="cardFinish" value="grad_frost_sky" /><span class="xmas-swatch-dot" style="background:linear-gradient(135deg,#EFF6FF,#7DD3FC,#0284C7);"></span><span>Băng Lam</span><span class="xmas-tier-chip">≥3d</span></label>
-                      <label class="xmas-color-radio is-tier-option" data-min-tier="2"><input type="radio" name="cardFinish" value="grad_champagne_gold" /><span class="xmas-swatch-dot" style="background:linear-gradient(135deg,#FFFBEB,#FDE047,#D97706);"></span><span>Ánh Kim</span><span class="xmas-tier-chip">≥7d</span></label>
-                      <label class="xmas-color-radio is-tier-option" data-min-tier="3"><input type="radio" name="cardFinish" value="grad_aurora_borealis" /><span class="xmas-swatch-dot" style="background:linear-gradient(135deg,#34D399,#38BDF8,#A855F7);"></span><span>Cực Quang</span><span class="xmas-tier-chip">≥14d</span></label>
-                      <label class="xmas-color-radio is-tier-option" data-min-tier="4"><input type="radio" name="cardFinish" value="grad_crimson_velvet" /><span class="xmas-swatch-dot" style="background:linear-gradient(135deg,#FDA4AF,#E11D48,#881337);"></span><span>Nhung Đỏ</span><span class="xmas-tier-chip">≥30d</span></label>
-                      <label class="xmas-color-radio is-tier-option" data-min-tier="5"><input type="radio" name="cardFinish" value="grad_mythic_prism" /><span class="xmas-swatch-dot" style="background:linear-gradient(135deg,#F43F5E,#F59E0B,#10B981,#3B82F6,#A855F7);"></span><span>Đa sắc</span><span class="xmas-tier-chip">≥50d</span></label>
+                      <label class="xmas-color-radio"><input type="radio" name="cardFinish" value="pastel_white" checked /><span class="xmas-swatch-dot" style="background:#FFFFFF;"></span><span>Trắng</span></label>
+                      <label class="xmas-color-radio"><input type="radio" name="cardFinish" value="pastel_green" /><span class="xmas-swatch-dot" style="background:#DCFCE7;"></span><span>Xanh lá</span></label>
+                      <label class="xmas-color-radio"><input type="radio" name="cardFinish" value="pastel_cream" /><span class="xmas-swatch-dot" style="background:#FEF9E7;"></span><span>Kem vani</span></label>
+                      <label class="xmas-color-radio"><input type="radio" name="cardFinish" value="pastel_pink" /><span class="xmas-swatch-dot" style="background:#FFE4E6;"></span><span>Hồng phấn</span></label>
+                      <label class="xmas-color-radio"><input type="radio" name="cardFinish" value="pastel_sky" /><span class="xmas-swatch-dot" style="background:#E0F2FE;"></span><span>Xanh băng</span></label>
+                      <label class="xmas-color-radio"><input type="radio" name="cardFinish" value="pastel_lavender" /><span class="xmas-swatch-dot" style="background:#F3E8FF;"></span><span>Tím nhạt</span></label>
+                      <label class="xmas-color-radio is-tier-option" data-min-tier="1"><input type="radio" name="cardFinish" value="grad_frost_sky" /><span class="xmas-swatch-dot" style="background:linear-gradient(135deg,#E0F2FE,#DBEAFE,#F3E8FF);"></span><span>Băng Lam</span><span class="xmas-tier-chip">≥3d</span></label>
+                      <label class="xmas-color-radio is-tier-option" data-min-tier="2"><input type="radio" name="cardFinish" value="grad_champagne_gold" /><span class="xmas-swatch-dot" style="background:linear-gradient(135deg,#FFFBEB,#FEF3C7,#FDE68A);"></span><span>Ánh Kim</span><span class="xmas-tier-chip">≥7d</span></label>
+                      <label class="xmas-color-radio is-tier-option" data-min-tier="3"><input type="radio" name="cardFinish" value="grad_aurora_borealis" /><span class="xmas-swatch-dot" style="background:linear-gradient(135deg,#D1FAE5,#CCFBF1,#E0F2FE);"></span><span>Cực Quang</span><span class="xmas-tier-chip">≥14d</span></label>
+                      <label class="xmas-color-radio is-tier-option" data-min-tier="4"><input type="radio" name="cardFinish" value="grad_crimson_velvet" /><span class="xmas-swatch-dot" style="background:linear-gradient(135deg,#FFE4E6,#FECDD3,#FEF3C7);"></span><span>Hồng Ngọc</span><span class="xmas-tier-chip">≥30d</span></label>
+                      <label class="xmas-color-radio is-tier-option" data-min-tier="5"><input type="radio" name="cardFinish" value="grad_mythic_prism" /><span class="xmas-swatch-dot" style="background:linear-gradient(135deg,#F3E8FF,#FFE4E6,#DCFCE7);"></span><span>Đa sắc</span><span class="xmas-tier-chip">≥50d</span></label>
                     </div>
                   </fieldset>
 
@@ -5899,7 +5906,7 @@
                   </div>
 
                   <fieldset class="xmas-fieldset">
-                    <legend>Chọn màu giấy gói &amp; Gradient chuỗi</legend>
+                    <legend>Chọn màu giấy gói quà</legend>
                     <div class="xmas-acc-radio-grid">
                       <label class="xmas-acc-card"><input type="radio" name="giftStyle" value="gift_red" checked /><span class="xmas-acc-card-emblem" style="background:linear-gradient(135deg,#ef4444,#b91c1c);"></span><span class="xmas-acc-card-name">Quà Đỏ nơ vàng</span></label>
                       <label class="xmas-acc-card"><input type="radio" name="giftStyle" value="gift_blue" /><span class="xmas-acc-card-emblem" style="background:linear-gradient(135deg,#3b82f6,#1d4ed8);"></span><span class="xmas-acc-card-name">Quà Xanh lam</span></label>
@@ -5939,7 +5946,7 @@
                   </div>
 
                   <fieldset class="xmas-fieldset">
-                    <legend>Chọn phụ kiện &amp; Màu chuỗi</legend>
+                    <legend>Chọn phụ kiện</legend>
                     <div class="xmas-acc-radio-grid">
                       <label class="xmas-acc-card"><input type="radio" name="accessoryStyle" value="bauble_ruby" checked /><span class="xmas-acc-card-emblem" style="background:radial-gradient(circle at 32% 30%,#fda4af,#e11d48);"></span><span class="xmas-acc-card-name">Trái châu Đỏ Ruby</span></label>
                       <label class="xmas-acc-card"><input type="radio" name="accessoryStyle" value="bauble_gold" /><span class="xmas-acc-card-emblem" style="background:radial-gradient(circle at 32% 30%,#fef08a,#d97706);"></span><span class="xmas-acc-card-name">Trái châu Vàng Kim</span></label>
@@ -5999,6 +6006,26 @@
       </div>
     </dialog>
 
+    <!-- CỬA SỔ XEM TOÀN MÀN HÌNH: THIỆP / POLAROID / MỞ HỘP QUÀ -->
+    <dialog id="xmasItemViewerModal" class="modal xmas-item-viewer-modal" closedby="any" aria-labelledby="xmasItemViewerTitle">
+      <div class="xmas-item-viewer-shell">
+        <header class="xmas-item-viewer-header">
+          <div class="xmas-item-viewer-meta">
+            <h3 id="xmasItemViewerTitle">Xem trang trí</h3>
+            <p class="xmas-item-viewer-sub" id="xmasItemViewerSub"></p>
+          </div>
+          <div class="xmas-item-viewer-head-actions">
+            <span id="xmasItemViewerLikeSlot"></span>
+            <button type="button" class="xmas-tree-close-btn" id="xmasItemViewerCloseBtn" aria-label="Đóng xem chi tiết">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            </button>
+          </div>
+        </header>
+        <div class="xmas-item-viewer-body" id="xmasItemViewerBody"></div>
+        <div class="xmas-item-viewer-likes-list" id="xmasItemViewerLikesPopover" hidden></div>
+      </div>
+    </dialog>
+
     <!-- Bộ điều khiển Nhạc nền & Không khí Giáng sinh toàn web -->
     <div class="christmas-floating-widget xmas-seasonal-control" id="christmasMusicWidget" role="region" aria-label="Điều khiển không khí và nhạc nền Giáng sinh">
       <button type="button" class="xmas-widget-music-btn" id="christmasMusicToggleBtn" aria-pressed="false" aria-label="Nhạc nền Giáng sinh: Ikson - Christmas" title="Bật hoặc tắt nhạc nền Giáng sinh (Ikson - Christmas)">
@@ -6019,6 +6046,6 @@
       </button>
     </div>
 
-    <script src="app.js?v=164" defer></script>
+    <script src="app.js?v=165" defer></script>
   </body>
 </html>
