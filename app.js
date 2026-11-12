@@ -3167,6 +3167,27 @@ function go(rawRoute, scrollToTop = true) {
     return;
   }
 
+  if (baseRoute === "christmas-tree" && !isChristmas2026Season()) {
+    toast("Sự kiện cây thông Giáng sinh 2026 đã kết thúc.");
+    const activeEl = document.querySelector(".page.active-page");
+    const currentActive = activeEl ? activeEl.dataset.page : null;
+    const fallback = (currentActive && currentActive !== "christmas-tree") ? currentActive : "home";
+    currentActiveRoute = fallback;
+    history.replaceState(null, "", `#${fallback}`);
+    $$(".page").forEach((p) =>
+      p.classList.toggle("active-page", p.dataset.page === fallback),
+    );
+    $$("[data-route]").forEach((a) =>
+      a.classList.toggle("active", a.dataset.route === fallback),
+    );
+    updateResponsiveAsidePlacement();
+    return;
+  }
+
+  if (currentActiveRoute !== "christmas-tree" && baseRoute === "christmas-tree") {
+    window.christmasTreePreviousRoute = currentActiveRoute || "home";
+  }
+
   const replyMatch = baseRoute.match(/^post[-/](\d+)[-/](?:reply|comment)[-/](\d+)$/);
   if (replyMatch) {
     const pId = Number(replyMatch[1]);
@@ -3290,6 +3311,9 @@ function go(rawRoute, scrollToTop = true) {
   else onLeaveStudyLounge();
   if (baseRoute === "arena") onEnterArena();
   else onLeaveArena();
+  document.body.classList.toggle("page-christmas-tree", baseRoute === "christmas-tree");
+  if (baseRoute === "christmas-tree") onEnterChristmasTree();
+  else onLeaveChristmasTree();
   updateResponsiveAsidePlacement();
   showMobileNav();
   if (typeof syncCardSnowCaps === "function") {
@@ -21571,19 +21595,19 @@ function getChristmasTreeSprites(isDark) {
   );
   const bulbSpecs = isDark
     ? {
-        gold: ["rgba(255, 253, 224, 1)", "rgba(255, 213, 79, 0.44)", "rgba(255, 213, 79, 0)"],
-        red: ["rgba(255, 232, 232, 1)", "rgba(255, 59, 48, 0.42)", "rgba(255, 59, 48, 0)"],
-        green: ["rgba(220, 255, 232, 1)", "rgba(34, 197, 94, 0.4)", "rgba(34, 197, 94, 0)"],
-        blue: ["rgba(224, 244, 255, 1)", "rgba(56, 189, 248, 0.42)", "rgba(56, 189, 248, 0)"],
-        yellow: ["rgba(255, 255, 220, 1)", "rgba(250, 204, 21, 0.42)", "rgba(250, 204, 21, 0)"]
-      }
+      gold: ["rgba(255, 253, 224, 1)", "rgba(255, 213, 79, 0.44)", "rgba(255, 213, 79, 0)"],
+      red: ["rgba(255, 232, 232, 1)", "rgba(255, 59, 48, 0.42)", "rgba(255, 59, 48, 0)"],
+      green: ["rgba(220, 255, 232, 1)", "rgba(34, 197, 94, 0.4)", "rgba(34, 197, 94, 0)"],
+      blue: ["rgba(224, 244, 255, 1)", "rgba(56, 189, 248, 0.42)", "rgba(56, 189, 248, 0)"],
+      yellow: ["rgba(255, 255, 220, 1)", "rgba(250, 204, 21, 0.42)", "rgba(250, 204, 21, 0)"]
+    }
     : {
-        gold: ["rgba(255, 252, 225, 1)", "rgba(245, 158, 11, 0.34)", "rgba(245, 158, 11, 0)"],
-        red: ["rgba(255, 235, 235, 1)", "rgba(220, 38, 38, 0.34)", "rgba(220, 38, 38, 0)"],
-        green: ["rgba(220, 252, 231, 1)", "rgba(22, 163, 74, 0.32)", "rgba(22, 163, 74, 0)"],
-        blue: ["rgba(224, 242, 254, 1)", "rgba(37, 99, 235, 0.34)", "rgba(37, 99, 235, 0)"],
-        yellow: ["rgba(254, 249, 195, 1)", "rgba(234, 179, 8, 0.36)", "rgba(234, 179, 8, 0)"]
-      };
+      gold: ["rgba(255, 252, 225, 1)", "rgba(245, 158, 11, 0.34)", "rgba(245, 158, 11, 0)"],
+      red: ["rgba(255, 235, 235, 1)", "rgba(220, 38, 38, 0.34)", "rgba(220, 38, 38, 0)"],
+      green: ["rgba(220, 252, 231, 1)", "rgba(22, 163, 74, 0.32)", "rgba(22, 163, 74, 0)"],
+      blue: ["rgba(224, 242, 254, 1)", "rgba(37, 99, 235, 0.34)", "rgba(37, 99, 235, 0)"],
+      yellow: ["rgba(254, 249, 195, 1)", "rgba(234, 179, 8, 0.36)", "rgba(234, 179, 8, 0)"]
+    };
   const bulbs = {};
   Object.keys(bulbSpecs).forEach((k) => {
     const s = bulbSpecs[k];
@@ -24316,7 +24340,7 @@ function syncChristmasTreeStreakAccess() {
   }
   if (lockNote) lockNote.hidden = canUpload;
 
-  $$("#christmasTreeModal .is-tier-option[data-min-tier]").forEach((opt) => {
+  $$("#christmasTreePage .is-tier-option[data-min-tier], #christmasTreeModal .is-tier-option[data-min-tier]").forEach((opt) => {
     const minTier = Number(opt.dataset.minTier || 0);
     const unlocked = access.streakTier >= minTier;
     opt.classList.toggle("is-locked", !unlocked);
@@ -24375,16 +24399,16 @@ function renderChristmasOrnamentLikesHtml(likes) {
     <div class="xmas-likes-list-head">Người đã thả tim (${likes.length})</div>
     <div class="xmas-likes-list-rows">
       ${likes.map((u) => {
-        const avHtml = u.avatar
-          ? `<img src="${escapeHTML(u.avatar)}" alt="" class="xmas-liker-av" />`
-          : `<span class="xmas-liker-av is-fallback">${escapeHTML((u.displayName || "?").charAt(0).toUpperCase())}</span>`;
-        return `
+    const avHtml = u.avatar
+      ? `<img src="${escapeHTML(u.avatar)}" alt="" class="xmas-liker-av" />`
+      : `<span class="xmas-liker-av is-fallback">${escapeHTML((u.displayName || "?").charAt(0).toUpperCase())}</span>`;
+    return `
           <button type="button" class="xmas-liker-row" data-open-namecard="${Number(u.userId)}">
             ${avHtml}
             <span class="xmas-liker-name">${escapeHTML(u.displayName || "Thành viên RE:SEARCH")}</span>
           </button>
         `;
-      }).join("")}
+  }).join("")}
     </div>
   `;
 }
@@ -24469,13 +24493,13 @@ function openChristmasItemViewer(itemId, options = {}) {
     bodyEl.innerHTML = `
       <div class="xmas-viewer-card-stage">
         ${renderGreetingCardHTML({
-          itemStyle: item.itemStyle,
-          itemFinish: item.itemFinish,
-          gradientStops: item.gradientStops,
-          cardName: item.cardName || item.authorName,
-          message: item.message,
-          viewerMode: true
-        })}
+      itemStyle: item.itemStyle,
+      itemFinish: item.itemFinish,
+      gradientStops: item.gradientStops,
+      cardName: item.cardName || item.authorName,
+      message: item.message,
+      viewerMode: true
+    })}
       </div>
     `;
   } else if (item.slotKind === "polaroid") {
@@ -24720,7 +24744,7 @@ function renderPolaroidFormPreview() {
       photoBox.innerHTML = buildTreeInlineSvgIcon("polaroid", styleVal, 26);
     }
   }
-  $$("#christmasTreeModal .xmas-preset-card[data-photo-preset]").forEach((btn) => {
+  $$("#christmasTreePage .xmas-preset-card[data-photo-preset]").forEach((btn) => {
     btn.classList.toggle("active", btn.dataset.photoPreset === photoData);
   });
 }
@@ -25070,7 +25094,7 @@ function renderChristmasTreeStudioUI(syncForms = true) {
   if (loggedIn && christmasTreeStudioState.pendingReopenModal) {
     christmasTreeStudioState.pendingReopenModal = false;
     setTimeout(() => {
-      if (isChristmas2026Season()) openChristmasTreeModal();
+      if (isChristmas2026Season()) go("christmas-tree");
     }, 180);
   }
 }
@@ -25116,7 +25140,7 @@ function setChristmasTreeStatus(msg, isError = false) {
     if (isError && msg && typeof el.scrollIntoView === "function") {
       try {
         el.scrollIntoView({ behavior: "smooth", block: "nearest" });
-      } catch {}
+      } catch { }
     }
   }
   if (isError && msg && typeof toast === "function") {
@@ -25206,8 +25230,9 @@ function resizeChristmasTreeStudioCanvas() {
 }
 
 function renderStudioChristmasTreeFrame(nowMs) {
-  const modal = $("#christmasTreeModal");
-  if (!christmasTreeStudioState.isOpen || !modal || !modal.open) {
+  const container = $("#christmasTreePage") || $("#christmasTreeModal");
+  const isPageActive = container && (container.classList.contains("active-page") || container.open);
+  if (!christmasTreeStudioState.isOpen || !isPageActive) {
     christmasTreeStudioState.rafId = null;
     christmasTreeStudioState.lastMs = 0;
     return;
@@ -25313,11 +25338,11 @@ function startChristmasCountdownLoop() {
 }
 
 function setChristmasTreeFullscreen(active) {
-  const modal = $("#christmasTreeModal");
+  const container = $("#christmasTreePage") || $("#christmasTreeModal");
   const fsBtn = $("#xmasTreeFullscreenBtn");
   const next = Boolean(active);
   christmasTreeStudioState.stageFullscreen = next;
-  if (modal) modal.classList.toggle("is-stage-fullscreen", next);
+  if (container) container.classList.toggle("is-stage-fullscreen", next);
   if (fsBtn) {
     fsBtn.setAttribute("aria-pressed", String(next));
     fsBtn.setAttribute("title", next ? "Thu gọn cây thông" : "Xem toàn màn hình cây thông");
@@ -25333,31 +25358,59 @@ function initChristmasTreeStudio() {
   if (christmasTreeStudioState.initialized) return;
   christmasTreeStudioState.initialized = true;
 
-  const modal = $("#christmasTreeModal");
+  const container = $("#christmasTreePage") || $("#christmasTreeModal");
   const canvas = $("#christmasTreeStudioCanvas");
   christmasTreeStudioState.canvas = canvas;
 
   const openTriggers = [$("#christmasTreeOpenBtn"), $("#heroChristmasTreeBtn"), $("#quickMenuXmasTreeBtn")];
   openTriggers.forEach((btn) => {
-    if (btn) btn.addEventListener("click", (e) => openChristmasTreeModal(e));
+    if (btn && !btn.getAttribute("onclick")) {
+      btn.addEventListener("click", (e) => openChristmasTreeModal(e));
+    }
   });
 
-  if (!modal) return;
+  $("#xmasTreeBackBtn")?.addEventListener("click", () => exitChristmasTreePage());
+  $("#xmasTreeCloseBtn")?.addEventListener("click", () => exitChristmasTreePage());
 
-  modal.addEventListener("close", () => {
-    christmasTreeStudioState.isOpen = false;
-    stopChristmasCountdownLoop();
-    setChristmasTreeFullscreen(false);
-    if (christmasTreeStudioState.rafId) {
-      cancelAnimationFrame(christmasTreeStudioState.rafId);
-      christmasTreeStudioState.rafId = null;
+  if (!container) return;
+
+  if (container.tagName === "DIALOG") {
+    container.addEventListener("close", () => {
+      onLeaveChristmasTree();
+    });
+  }
+
+  window.addEventListener("keydown", (ev) => {
+    if (ev.key === "Escape" && currentActiveRoute === "christmas-tree") {
+      if (christmasTreeStudioState.stageFullscreen) {
+        setChristmasTreeFullscreen(false);
+        return;
+      }
+      const viewerModal = $("#xmasItemViewerModal");
+      const confirmModal = $("#xmasConfirmHangModal");
+      const authModal = $("#authModal");
+      const namecardModal = $("#namecardModal");
+      if (
+        (viewerModal && viewerModal.open) ||
+        (confirmModal && confirmModal.open) ||
+        (authModal && authModal.open) ||
+        (namecardModal && namecardModal.open)
+      ) {
+        return;
+      }
+      exitChristmasTreePage();
     }
   });
 
   const authModal = $("#authModal");
   if (authModal) {
     authModal.addEventListener("close", () => {
-      if (!session) christmasTreeStudioState.pendingReopenModal = false;
+      if (!session) {
+        christmasTreeStudioState.pendingReopenModal = false;
+      } else if (christmasTreeStudioState.pendingReopenModal) {
+        christmasTreeStudioState.pendingReopenModal = false;
+        go("christmas-tree");
+      }
     });
   }
 
@@ -25439,12 +25492,12 @@ function initChristmasTreeStudio() {
 
   $("#xmasTreeLoginBtn")?.addEventListener("click", () => {
     christmasTreeStudioState.pendingReopenModal = true;
-    modal.close();
+    if (container && container.tagName === "DIALOG" && container.open) container.close();
     if (typeof openAuth === "function") openAuth();
   });
 
   // Notify cleanly when clicking a locked streak-tier option
-  $$("#christmasTreeModal .is-tier-option[data-min-tier]").forEach((opt) => {
+  $$("#christmasTreePage .is-tier-option[data-min-tier], #christmasTreeModal .is-tier-option[data-min-tier]").forEach((opt) => {
     opt.addEventListener("click", () => {
       const minTier = Number(opt.dataset.minTier || 0);
       const access = getEffectiveViewerStreakAccess();
@@ -25485,7 +25538,7 @@ function initChristmasTreeStudio() {
   $$('input[name="accessoryStyle"]').forEach((r) => r.addEventListener("change", renderAccessoryFormPreview));
 
   // Hydrate illustrated postcard thumbnails inside preset cards
-  $$('#christmasTreeModal .xmas-preset-card[data-photo-preset]').forEach((cardBtn) => {
+  $$('#christmasTreePage .xmas-preset-card[data-photo-preset]').forEach((cardBtn) => {
     const presetKey = cardBtn.dataset.photoPreset || "";
     const thumbWrap = cardBtn.querySelector(".xmas-preset-thumb");
     if (thumbWrap && presetKey) {
@@ -25785,7 +25838,7 @@ function initChristmasTreeStudio() {
     });
   });
 
-  modal.addEventListener("click", (ev) => {
+  container?.addEventListener("click", (ev) => {
     const t = ev.target;
     if (!t || !t.closest) return;
     const likeBtn = t.closest("[data-tree-like-id]");
@@ -25812,7 +25865,7 @@ function initChristmasTreeStudio() {
     if (ncBtn && typeof openNamecard === "function") {
       const uid = Number(ncBtn.dataset.openNamecard);
       if (uid) {
-        modal.close();
+        if (container && container.tagName === "DIALOG" && container.open) container.close();
         openNamecard(uid);
       }
     }
@@ -25854,7 +25907,7 @@ function initChristmasTreeStudio() {
         const uid = Number(ncBtn.dataset.openNamecard);
         if (uid) {
           viewerModal.close();
-          modal.close();
+          if (container && container.tagName === "DIALOG" && container.open) container.close();
           openNamecard(uid);
         }
       }
@@ -25917,29 +25970,14 @@ function initChristmasTreeStudio() {
   }, { passive: true });
 }
 
-window.openChristmasTreeModal = async function (e) {
-  if (e) {
-    e.preventDefault();
-    e.stopPropagation();
-  }
-  if (!isChristmas2026Season()) {
-    toast("Sự kiện cây thông Giáng sinh 2026 đã kết thúc.");
-    return;
-  }
-  if (typeof window.closeQuickUserMenu === "function") {
-    window.closeQuickUserMenu();
-  }
-  initChristmasTreeStudio();
-  const modal = $("#christmasTreeModal");
-  if (!modal) return;
+window.exitChristmasTreePage = function () {
+  const prev = window.christmasTreePreviousRoute;
+  const target = (prev && prev !== "christmas-tree") ? prev : "home";
+  go(target);
+};
 
-  if (!modal.open) {
-    try {
-      modal.showModal();
-    } catch (err) {
-      modal.setAttribute("open", "");
-    }
-  }
+function onEnterChristmasTree() {
+  initChristmasTreeStudio();
   christmasTreeStudioState.isOpen = true;
   christmasTreeStudioState.autoSpin = !christmasSnowState.reducedMotion;
   setChristmasTreeFullscreen(false);
@@ -25954,7 +25992,37 @@ window.openChristmasTreeModal = async function (e) {
       christmasTreeStudioState.rafId = requestAnimationFrame(renderStudioChristmasTreeFrame);
     }
   });
-  await fetchChristmasTreeData(true);
+  fetchChristmasTreeData(true);
+}
+
+function onLeaveChristmasTree() {
+  if (!christmasTreeStudioState.isOpen) return;
+  christmasTreeStudioState.isOpen = false;
+  stopChristmasCountdownLoop();
+  setChristmasTreeFullscreen(false);
+  if (christmasTreeStudioState.rafId) {
+    cancelAnimationFrame(christmasTreeStudioState.rafId);
+    christmasTreeStudioState.rafId = null;
+  }
+  const confirmModal = $("#xmasConfirmHangModal");
+  if (confirmModal && confirmModal.open) confirmModal.close();
+  const viewerModal = $("#xmasItemViewerModal");
+  if (viewerModal && viewerModal.open) viewerModal.close();
+}
+
+window.openChristmasTreeModal = function (e) {
+  if (e) {
+    if (typeof e.preventDefault === "function") e.preventDefault();
+    if (typeof e.stopPropagation === "function") e.stopPropagation();
+  }
+  if (!isChristmas2026Season()) {
+    toast("Sự kiện cây thông Giáng sinh 2026 đã kết thúc.");
+    return;
+  }
+  if (typeof window.closeQuickUserMenu === "function") {
+    window.closeQuickUserMenu();
+  }
+  go("christmas-tree");
 };
 
 function initChristmasSeasonEffects() {
@@ -26039,8 +26107,13 @@ function initChristmasSeasonEffects() {
       updateChristmasMusicUI();
       const confirmModal = $("#xmasConfirmHangModal");
       if (confirmModal && confirmModal.open) confirmModal.close();
+      const viewerModal = $("#xmasItemViewerModal");
+      if (viewerModal && viewerModal.open) viewerModal.close();
       const treeModal = $("#christmasTreeModal");
       if (treeModal && treeModal.open) treeModal.close();
+      if (currentActiveRoute === "christmas-tree") {
+        go("home");
+      }
       if (typeof studySettings !== "undefined" && studySettings.activeWallpaper === "christmas_2026") {
         applyStudyWallpaperPreset("default");
       }

@@ -30,7 +30,7 @@
     <script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js" defer></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" defer></script>
-    <link rel="stylesheet" href="styles.css?v=172" />
+    <link rel="stylesheet" href="styles.css?v=173" />
   </head>
   <body>
     <canvas id="christmasTreeCanvas" class="christmas-tree-edge-canvas" aria-hidden="true"></canvas>
@@ -2272,6 +2272,367 @@
             <!-- Nội dung bài viết và phản hồi do app.js render -->
           </div>
           <div id="pinnedReplyContainer" class="pinned-reply post-detail-pinned-reply"></div>
+        </div>
+      </section>
+      <!-- TRANG SỰ KIỆN CỘNG ĐỒNG: TRANG TRÍ CÂY THÔNG GIÁNG SINH 2026 -->
+      <section id="christmasTreePage" class="page xmas-tree-page" data-page="christmas-tree" aria-labelledby="christmasTreePageTitle">
+        <div class="xmas-tree-page-shell">
+          <header class="xmas-tree-page-header">
+            <div class="xmas-tree-header-left">
+              <button type="button" class="button button-outline button-sm xmas-tree-back-btn" id="xmasTreeBackBtn" aria-label="Quay lại">
+                <svg class="back-arrow ui-btn-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+                <span class="detail-btn-label">Quay lại</span>
+              </button>
+              <div class="xmas-tree-header-copy">
+                <h1 id="christmasTreePageTitle" class="xmas-tree-title">🎄 Trang trí Cây thông</h1>
+                <p class="xmas-tree-header-sub" id="xmasTreeStatsSummary">Trang trí phụ kiện của bạn lên cây thông để cùng tạo nên mùa Giáng sinh ấm áp</p>
+              </div>
+            </div>
+            <div class="xmas-tree-header-actions">
+              <button type="button" class="xmas-tree-close-btn" id="xmasTreeCloseBtn" aria-label="Đóng trang trí cây thông" title="Quay lại">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+              </button>
+            </div>
+          </header>
+
+          <div class="xmas-tree-studio-grid">
+            <!-- CỘT TRÁI: SÂN KHẤU 3D TƯƠNG TÁC -->
+            <div class="xmas-tree-stage-col" id="xmasTreeStageCol">
+              <div class="xmas-tree-stage-wrap" id="xmasTreeStageWrap">
+                <canvas id="christmasTreeStudioCanvas" width="520" height="560" aria-label="Mô hình cây thông Giáng sinh 3D cộng đồng"></canvas>
+  
+                <div class="xmas-tree-stage-controls">
+                  <button type="button" class="xmas-stage-ctrl-btn" id="xmasTreeRotateLeftBtn" aria-label="Xoay cây sang trái" title="Xoay trái">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"></path><path d="M3 3v5h5"></path></svg>
+                  </button>
+                  <button type="button" class="xmas-stage-ctrl-btn" id="xmasTreeAutoSpinBtn" aria-pressed="true" title="Tạm dừng / tiếp tục xoay tự động">
+                    <svg class="xmas-spin-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>
+                    <span class="xmas-spin-text">Tự xoay</span>
+                  </button>
+                  <button type="button" class="xmas-stage-ctrl-btn" id="xmasTreeRotateRightBtn" aria-label="Xoay cây sang phải" title="Xoay phải">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-3-6.7L21 8"></path><path d="M21 3v5h-5"></path></svg>
+                  </button>
+                  <button type="button" class="xmas-stage-ctrl-btn xmas-stage-fs-btn" id="xmasTreeFullscreenBtn" aria-pressed="false" aria-label="Xem toàn màn hình cây thông" title="Xem toàn màn hình">
+                    <svg class="xmas-fs-expand-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 3 21 3 21 9"></polyline><polyline points="9 21 3 21 3 15"></polyline><line x1="21" y1="3" x2="14" y2="10"></line><line x1="3" y1="21" x2="10" y2="14"></line></svg>
+                    <svg class="xmas-fs-compress-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="4 14 10 14 10 20"></polyline><polyline points="20 10 14 10 14 4"></polyline><line x1="14" y1="10" x2="21" y2="3"></line><line x1="3" y1="21" x2="10" y2="14"></line></svg>
+                  </button>
+                </div>
+  
+                <div class="xmas-tree-milestone-bar" id="xmasTreeMilestoneBar">
+                  🎄 Cây thông khởi đầu · Mời bạn treo món đầu tiên
+                </div>
+  
+                <!-- Card xem chi tiết trang trí khi chạm vào cây -->
+                <div class="xmas-tree-inspector" id="xmasTreeInspectorCard" hidden>
+                  <button type="button" class="xmas-inspector-close" id="xmasInspectorCloseBtn" aria-label="Đóng chi tiết">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                  </button>
+                  <div class="xmas-inspector-body" id="xmasTreeInspectorBody"></div>
+                </div>
+              </div>
+              <p class="xmas-tree-stage-hint">Kéo trái/phải để xoay cây 360° · Bấm vào trang trí để xem chi tiết.</p>
+            </div>
+  
+            <!-- CỘT PHẢI: TÙY CHỈNH TRANG TRÍ (2 TRONG 4 LOẠI) & DANH SÁCH CỘNG ĐỒNG -->
+            <div class="xmas-tree-panel-col">
+              <div class="xmas-tree-panel-tabs" role="tablist" aria-label="Bảng điều khiển cây thông">
+                <button type="button" role="tab" class="xmas-panel-tab active" id="xmasTabDecorate" aria-selected="true" aria-controls="xmasPanelDecorate">
+                  Treo đồ của tôi (<span id="xmasMySlotCount">0</span>/2)
+                </button>
+                <button type="button" role="tab" class="xmas-panel-tab" id="xmasTabGallery" aria-selected="false" aria-controls="xmasPanelGallery">
+                  Tất cả trang trí (<span id="xmasGalleryCount">0</span>)
+                </button>
+                <button type="button" role="tab" class="xmas-panel-tab" id="xmasTabLeaderboard" aria-selected="false" aria-controls="xmasPanelLeaderboard">
+                  Bảng xếp hạng
+                </button>
+              </div>
+  
+              <div class="xmas-tree-panel-body" id="xmasPanelDecorate" role="tabpanel" aria-labelledby="xmasTabDecorate">
+                <div class="xmas-countdown-bar" id="xmasCountdownBar" aria-live="off">
+                  <div class="xmas-countdown-label">
+                    <span aria-hidden="true">🎄</span>
+                    <span id="xmasCountdownLabelText">Đếm ngược Giáng sinh</span>
+                  </div>
+                  <div class="xmas-countdown-clock" id="xmasCountdownTicker">-- ngày --:--:--</div>
+                </div>
+  
+                <div class="xmas-tree-guest-box" id="xmasTreeGuestBox" hidden>
+                  <p>Đăng nhập để chọn treo tối đa <strong>2 trong 4 loại</strong> trang trí (Polaroid, Thiệp, Hộp quà, Phụ kiện) lên cây thông chung của RE:SEARCH.</p>
+                  <button type="button" class="button button-primary button-sm" id="xmasTreeLoginBtn">Đăng nhập để trang trí</button>
+                </div>
+  
+                <div class="xmas-tree-forms-wrap" id="xmasTreeFormsWrap">
+                  <div class="xmas-slot-quota-bar" id="xmasTierStatusStrip">
+                    <span class="xmas-slot-quota-note" id="xmasSlotQuotaNote">Đã dùng 0/2 loại</span>
+                  </div>
+  
+                  <div class="xmas-slot-switcher xmas-slot-switcher-4" role="tablist" aria-label="Chọn loại trang trí (tối đa 2/4)">
+                    <button type="button" class="xmas-slot-pill active" id="xmasSlotBtnPolaroid" data-slot="polaroid" role="tab" aria-selected="true">
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><path d="m21 15-5-5L5 21"></path></svg>
+                      <span>Polaroid</span>
+                    </button>
+                    <button type="button" class="xmas-slot-pill" id="xmasSlotBtnCard" data-slot="card" role="tab" aria-selected="false">
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="2"></rect><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"></path></svg>
+                      <span>Thiệp</span>
+                    </button>
+                    <button type="button" class="xmas-slot-pill" id="xmasSlotBtnGift" data-slot="gift" role="tab" aria-selected="false">
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 12 20 22 4 22 4 12"></polyline><rect x="2" y="7" width="20" height="5"></rect><line x1="12" y1="22" x2="12" y2="7"></line><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"></path><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"></path></svg>
+                      <span>Hộp quà</span>
+                    </button>
+                    <button type="button" class="xmas-slot-pill" id="xmasSlotBtnAccessory" data-slot="accessory" role="tab" aria-selected="false">
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2v3"></path><circle cx="12" cy="14" r="7"></circle><path d="M9 12a3 3 0 0 1 3-3"></path></svg>
+                      <span>Phụ kiện</span>
+                    </button>
+                  </div>
+  
+                  <!-- FORM 1: POLAROID -->
+                  <form id="xmasPolaroidForm" class="xmas-decorate-form">
+                    <div class="xmas-polaroid-preview-row">
+                      <div class="xmas-mini-polaroid-preview" id="xmasPolaroidLivePreview">
+                        <div class="xmas-preview-seal-badge" id="xmasPreviewSealBadge" hidden>20:00 · 24/12</div>
+                        <div class="xmas-preview-photo-box" id="xmasPreviewPhotoBox"></div>
+                        <div class="xmas-preview-caption" id="xmasPreviewCaption">Kỷ niệm mùa đông...</div>
+                      </div>
+                      <div class="xmas-polaroid-upload-col">
+                        <div class="xmas-upload-head-row">
+                          <span class="xmas-field-label">Tải ảnh từ thiết bị</span>
+                          <span class="xmas-streak-req-tag" id="xmasPolaroidUploadBadge">Chuỗi ≥3 ngày</span>
+                        </div>
+                        <label for="xmasPolaroidFile" class="xmas-upload-dropzone" id="xmasPolaroidDropzone">
+                          <span class="xmas-upload-icon" id="xmasUploadIconWrap" aria-hidden="true">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                          </span>
+                          <span class="xmas-upload-copy">
+                            <strong id="xmasPolaroidUploadTitle">Tải ảnh lên</strong>
+                            <small id="xmasPolaroidFileName">PNG, JPG, WEBP · Kéo thả hoặc bấm chọn</small>
+                          </span>
+                          <input type="file" id="xmasPolaroidFile" name="photoFile" accept="image/png,image/jpeg,image/webp" class="xmas-file-sr" />
+                        </label>
+                        <p class="xmas-upload-lock-note" id="xmasPolaroidLockNote" hidden>Đạt chuỗi hoạt động từ <strong>3 ngày</strong> trở lên để tải ảnh cá nhân. Tranh minh họa bên dưới luôn mở cho mọi thành viên.</p>
+                      </div>
+                    </div>
+  
+                    <fieldset class="xmas-fieldset">
+                      <legend>Hình ảnh mặc định</legend>
+                      <div class="xmas-preset-gallery" aria-label="Bộ sưu tập hình ảnh mặc định Giáng sinh">
+                        <button type="button" class="xmas-preset-card" data-photo-preset="preset:aurora">
+                          <span class="xmas-preset-thumb"></span>
+                          <span class="xmas-preset-name">Bắc cực quang</span>
+                        </button>
+                        <button type="button" class="xmas-preset-card" data-photo-preset="preset:fireplace">
+                          <span class="xmas-preset-thumb"></span>
+                          <span class="xmas-preset-name">Lò sưởi ấm</span>
+                        </button>
+                        <button type="button" class="xmas-preset-card" data-photo-preset="preset:snowman">
+                          <span class="xmas-preset-thumb"></span>
+                          <span class="xmas-preset-name">☃️ Người tuyết</span>
+                        </button>
+                        <button type="button" class="xmas-preset-card" data-photo-preset="preset:starlight">
+                          <span class="xmas-preset-thumb"></span>
+                          <span class="xmas-preset-name">Đêm sao rực rỡ</span>
+                        </button>
+                        <button type="button" class="xmas-preset-card" data-photo-preset="preset:cabin">
+                          <span class="xmas-preset-thumb"></span>
+                          <span class="xmas-preset-name">Nhà gỗ tuyết</span>
+                        </button>
+                        <button type="button" class="xmas-preset-card" data-photo-preset="preset:study_night">
+                          <span class="xmas-preset-thumb"></span>
+                          <span class="xmas-preset-name">Góc tự học Noel</span>
+                        </button>
+                      </div>
+                    </fieldset>
+  
+                    <fieldset class="xmas-fieldset">
+                      <legend>Màu khung ảnh</legend>
+                      <div class="xmas-color-radio-row">
+                        <label class="xmas-color-radio"><input type="radio" name="polaroidStyle" value="classic" checked /><span class="xmas-swatch-dot" style="background:#FFFAF0;"></span><span>Kem sứ</span></label>
+                        <label class="xmas-color-radio"><input type="radio" name="polaroidStyle" value="warm_gold" /><span class="xmas-swatch-dot" style="background:#FEF3C7;"></span><span>Vàng ấm</span></label>
+                        <label class="xmas-color-radio"><input type="radio" name="polaroidStyle" value="blush" /><span class="xmas-swatch-dot" style="background:#FFE4E6;"></span><span>Hồng phấn</span></label>
+                        <label class="xmas-color-radio"><input type="radio" name="polaroidStyle" value="lavender" /><span class="xmas-swatch-dot" style="background:#EDE9FE;"></span><span>Oải hương</span></label>
+                        <label class="xmas-color-radio"><input type="radio" name="polaroidStyle" value="mint" /><span class="xmas-swatch-dot" style="background:#DCFCE7;"></span><span>Bạc hà</span></label>
+                        <label class="xmas-color-radio is-tier-option" data-min-tier="1"><input type="radio" name="polaroidStyle" value="grad_frost_sky" /><span class="xmas-swatch-dot" style="background:linear-gradient(135deg,#EFF6FF,#BAE6FD,#60A5FA);"></span><span>Băng Lam</span><span class="xmas-tier-chip">≥3d</span></label>
+                        <label class="xmas-color-radio is-tier-option" data-min-tier="2"><input type="radio" name="polaroidStyle" value="grad_champagne_gold" /><span class="xmas-swatch-dot" style="background:linear-gradient(135deg,#FFFBEB,#FDE047,#F59E0B);"></span><span>Ánh Kim</span><span class="xmas-tier-chip">≥7d</span></label>
+                        <label class="xmas-color-radio is-tier-option" data-min-tier="3"><input type="radio" name="polaroidStyle" value="grad_aurora_borealis" /><span class="xmas-swatch-dot" style="background:linear-gradient(135deg,#34D399,#38BDF8,#A855F7);"></span><span>Cực Quang</span><span class="xmas-tier-chip">≥14d</span></label>
+                        <label class="xmas-color-radio is-tier-option" data-min-tier="4"><input type="radio" name="polaroidStyle" value="grad_crimson_velvet" /><span class="xmas-swatch-dot" style="background:linear-gradient(135deg,#FFE4E6,#FB7185,#9F1239);"></span><span>Nhung Đỏ</span><span class="xmas-tier-chip">≥30d</span></label>
+                        <label class="xmas-color-radio is-tier-option" data-min-tier="5"><input type="radio" name="polaroidStyle" value="grad_mythic_prism" /><span class="xmas-swatch-dot" style="background:linear-gradient(135deg,#F43F5E,#F59E0B,#10B981,#3B82F6,#A855F7);"></span><span>Đa sắc</span><span class="xmas-tier-chip">≥50d</span></label>
+                      </div>
+                    </fieldset>
+  
+                    <div class="xmas-field-group">
+                      <label for="xmasPolaroidMsg" class="xmas-field-label">Chú thích ngắn dưới ảnh (tùy chọn, tối đa 140 ký tự)</label>
+                      <textarea id="xmasPolaroidMsg" name="message" rows="2" maxlength="140" aria-describedby="xmasPolaroidHint" placeholder="Ví dụ: Đêm ôn thi cùng cả nhóm!"></textarea>
+                      <span id="xmasPolaroidHint" class="xmas-field-hint"><span id="xmasPolaroidCharCount">0</span>/140 ký tự</span>
+                    </div>
+  
+                    <label class="xmas-checkbox-row">
+                      <input type="checkbox" id="xmasPolaroidShuffle" name="shufflePosition" />
+                      <span>Chọn ngẫu nhiên vị trí mới trên tán thông khi lưu</span>
+                    </label>
+  
+                    <div class="xmas-form-actions xmas-form-actions-centered">
+                      <button type="submit" class="button button-primary xmas-hang-cta-btn" id="xmasPolaroidSubmitBtn">Treo lên cây</button>
+                      <button type="button" class="button button-quiet button-sm xmas-danger-btn" id="xmasPolaroidDeleteBtn" hidden>Gỡ Polaroid</button>
+                    </div>
+                  </form>
+  
+                  <!-- FORM 2: THIỆP GIÁNG SINH (Bỏ ảnh Polaroid, lời chúc dài, mẫu Figma & Santa Letter) -->
+                  <form id="xmasCardForm" class="xmas-decorate-form" hidden>
+                    <div class="xmas-card-designer-wrap">
+                      <div class="xmas-card-live-preview" id="xmasCardLivePreview"></div>
+                    </div>
+  
+                    <fieldset class="xmas-fieldset">
+                      <legend>Chọn mẫu thiệp Giáng sinh</legend>
+                      <div class="xmas-card-template-grid" id="xmasCardTemplateGrid">
+                        <label class="xmas-card-tpl-opt"><input type="radio" name="cardStyle" value="card_sparkle" checked /><span class="xmas-tpl-swatch" style="background:linear-gradient(135deg,#FEF9C3,#DC2626);"></span><span>Lấp lánh</span></label>
+                        <label class="xmas-card-tpl-opt"><input type="radio" name="cardStyle" value="card_gift" /><span class="xmas-tpl-swatch" style="background:linear-gradient(135deg,#DCFCE7,#EF4444);"></span><span>Món quà Giáng sinh</span></label>
+                        <label class="xmas-card-tpl-opt"><input type="radio" name="cardStyle" value="card_ribbon" /><span class="xmas-tpl-swatch" style="background:linear-gradient(135deg,#FFFFFF,#16A34A,#DC2626);"></span><span>Nơ nhỏ nhắn</span></label>
+                        <label class="xmas-card-tpl-opt"><input type="radio" name="cardStyle" value="card_snowglobe" /><span class="xmas-tpl-swatch" style="background:linear-gradient(135deg,#BAE6FD,#DC2626);"></span><span>Quả cầu tuyết</span></label>
+                        <label class="xmas-card-tpl-opt"><input type="radio" name="cardStyle" value="card_santa_letter" /><span class="xmas-tpl-swatch" style="background:repeating-linear-gradient(135deg,#DC2626 0 4px,#FFFFFF 4px 8px);"></span><span>Thư gửi Ông già Noel</span></label>
+                        <label class="xmas-card-tpl-opt"><input type="radio" name="cardStyle" value="card_reindeer" /><span class="xmas-tpl-swatch" style="background:linear-gradient(135deg,#D1FAE5,#15803D);"></span><span>Tuần lộc</span></label>
+                      </div>
+                    </fieldset>
+  
+                    <div class="xmas-field-group">
+                      <label for="xmasCardName" class="xmas-field-label">Tên trên thiệp</label>
+                      <input type="text" id="xmasCardName" name="cardName" maxlength="40" placeholder="Tên hoặc nhóm của bạn" />
+                    </div>
+  
+                    <div class="xmas-field-group">
+                      <label for="xmasCardMsg" class="xmas-field-label">Lời chúc nhắn gửi trên thiệp (tối đa <span id="xmasCardMaxLabel">340</span> ký tự)</label>
+                      <textarea id="xmasCardMsg" name="message" rows="3" maxlength="340" aria-describedby="xmasCardHint" placeholder="Viết lời chúc hoặc tâm thư gửi đến mọi người..."></textarea>
+                      <span id="xmasCardHint" class="xmas-field-hint"><span id="xmasCardCharCount">0</span>/<span id="xmasCardLimitCount">340</span> ký tự</span>
+                    </div>
+  
+                    <fieldset class="xmas-fieldset">
+                      <legend>Màu nền thiệp</legend>
+                      <div class="xmas-color-radio-row">
+                        <label class="xmas-color-radio"><input type="radio" name="cardFinish" value="pastel_white" checked /><span class="xmas-swatch-dot" style="background:#FFFFFF;"></span><span>Trắng</span></label>
+                        <label class="xmas-color-radio"><input type="radio" name="cardFinish" value="pastel_green" /><span class="xmas-swatch-dot" style="background:#DCFCE7;"></span><span>Xanh lá</span></label>
+                        <label class="xmas-color-radio"><input type="radio" name="cardFinish" value="pastel_cream" /><span class="xmas-swatch-dot" style="background:#FEF9E7;"></span><span>Kem vani</span></label>
+                        <label class="xmas-color-radio"><input type="radio" name="cardFinish" value="pastel_pink" /><span class="xmas-swatch-dot" style="background:#FFE4E6;"></span><span>Hồng phấn</span></label>
+                        <label class="xmas-color-radio"><input type="radio" name="cardFinish" value="pastel_sky" /><span class="xmas-swatch-dot" style="background:#E0F2FE;"></span><span>Xanh băng</span></label>
+                        <label class="xmas-color-radio"><input type="radio" name="cardFinish" value="pastel_lavender" /><span class="xmas-swatch-dot" style="background:#F3E8FF;"></span><span>Tím nhạt</span></label>
+                        <label class="xmas-color-radio is-tier-option" data-min-tier="1"><input type="radio" name="cardFinish" value="grad_frost_sky" /><span class="xmas-swatch-dot" style="background:linear-gradient(135deg,#E0F2FE,#DBEAFE,#F3E8FF);"></span><span>Băng Lam</span><span class="xmas-tier-chip">≥3d</span></label>
+                        <label class="xmas-color-radio is-tier-option" data-min-tier="2"><input type="radio" name="cardFinish" value="grad_champagne_gold" /><span class="xmas-swatch-dot" style="background:linear-gradient(135deg,#FFFBEB,#FEF3C7,#FDE68A);"></span><span>Ánh Kim</span><span class="xmas-tier-chip">≥7d</span></label>
+                        <label class="xmas-color-radio is-tier-option" data-min-tier="3"><input type="radio" name="cardFinish" value="grad_aurora_borealis" /><span class="xmas-swatch-dot" style="background:linear-gradient(135deg,#D1FAE5,#CCFBF1,#E0F2FE);"></span><span>Cực Quang</span><span class="xmas-tier-chip">≥14d</span></label>
+                        <label class="xmas-color-radio is-tier-option" data-min-tier="4"><input type="radio" name="cardFinish" value="grad_crimson_velvet" /><span class="xmas-swatch-dot" style="background:linear-gradient(135deg,#FFE4E6,#FECDD3,#FEF3C7);"></span><span>Hồng Ngọc</span><span class="xmas-tier-chip">≥30d</span></label>
+                        <label class="xmas-color-radio is-tier-option" data-min-tier="5"><input type="radio" name="cardFinish" value="grad_mythic_prism" /><span class="xmas-swatch-dot" style="background:linear-gradient(135deg,#F3E8FF,#FFE4E6,#DCFCE7);"></span><span>Đa sắc</span><span class="xmas-tier-chip">≥50d</span></label>
+                      </div>
+                    </fieldset>
+  
+                    <label class="xmas-checkbox-row">
+                      <input type="checkbox" id="xmasCardShuffle" name="shufflePosition" />
+                      <span>Chọn ngẫu nhiên vị trí mới trên cây thông khi lưu</span>
+                    </label>
+  
+                    <div class="xmas-form-actions xmas-form-actions-centered">
+                      <button type="submit" class="button button-primary xmas-hang-cta-btn" id="xmasCardSubmitBtn">Treo lên cây</button>
+                      <button type="button" class="button button-quiet button-sm xmas-danger-btn" id="xmasCardDeleteBtn" hidden>Gỡ thiệp</button>
+                    </div>
+                  </form>
+  
+                  <!-- FORM 3: HỘP QUÀ -->
+                  <form id="xmasGiftForm" class="xmas-decorate-form" hidden>
+                    <div class="xmas-acc-preview-strip" id="xmasGiftPreviewStrip">
+                      <span class="xmas-acc-preview-icon" id="xmasGiftPreviewIcon"></span>
+                      <div class="xmas-acc-preview-copy">
+                        <strong id="xmasGiftPreviewLabel">Hộp quà Đỏ Nơ Vàng</strong>
+                        <p id="xmasGiftPreviewWish">Món quà đặt dưới gốc thông</p>
+                      </div>
+                    </div>
+  
+                    <fieldset class="xmas-fieldset">
+                      <legend>Chọn màu giấy gói quà</legend>
+                      <div class="xmas-acc-radio-grid">
+                        <label class="xmas-acc-card"><input type="radio" name="giftStyle" value="gift_red" checked /><span class="xmas-acc-card-emblem" style="background:linear-gradient(135deg,#ef4444,#b91c1c);"></span><span class="xmas-acc-card-name">Quà Đỏ nơ vàng</span></label>
+                        <label class="xmas-acc-card"><input type="radio" name="giftStyle" value="gift_blue" /><span class="xmas-acc-card-emblem" style="background:linear-gradient(135deg,#3b82f6,#1d4ed8);"></span><span class="xmas-acc-card-name">Quà Xanh lam</span></label>
+                        <label class="xmas-acc-card"><input type="radio" name="giftStyle" value="gift_gold" /><span class="xmas-acc-card-emblem" style="background:linear-gradient(135deg,#fbbf24,#d97706);"></span><span class="xmas-acc-card-name">Quà Vàng kim</span></label>
+                        <label class="xmas-acc-card"><input type="radio" name="giftStyle" value="gift_emerald" /><span class="xmas-acc-card-emblem" style="background:linear-gradient(135deg,#22c55e,#15803d);"></span><span class="xmas-acc-card-name">Quà Ngọc lục</span></label>
+                        <label class="xmas-acc-card is-tier-option" data-min-tier="1"><input type="radio" name="giftStyle" value="gift_grad_glacier" /><span class="xmas-acc-card-emblem" style="background:linear-gradient(135deg,#0EA5E9,#2563EB,#93C5FD);"></span><span class="xmas-acc-card-name">Băng Giá <em class="xmas-tier-chip">≥3d</em></span></label>
+                        <label class="xmas-acc-card is-tier-option" data-min-tier="2"><input type="radio" name="giftStyle" value="gift_grad_sunset_gold" /><span class="xmas-acc-card-emblem" style="background:linear-gradient(135deg,#FDE047,#F59E0B,#EA580C);"></span><span class="xmas-acc-card-name">Hoàng Kim <em class="xmas-tier-chip">≥7d</em></span></label>
+                        <label class="xmas-acc-card is-tier-option" data-min-tier="3"><input type="radio" name="giftStyle" value="gift_grad_aurora" /><span class="xmas-acc-card-emblem" style="background:linear-gradient(135deg,#10B981,#06B6D4,#8B5CF6);"></span><span class="xmas-acc-card-name">Cực Quang <em class="xmas-tier-chip">≥14d</em></span></label>
+                        <label class="xmas-acc-card is-tier-option" data-min-tier="4"><input type="radio" name="giftStyle" value="gift_grad_royal_ruby" /><span class="xmas-acc-card-emblem" style="background:linear-gradient(135deg,#9F1239,#DC2626,#F43F5E);"></span><span class="xmas-acc-card-name">Hồng Ngọc <em class="xmas-tier-chip">≥30d</em></span></label>
+                        <label class="xmas-acc-card is-tier-option" data-min-tier="5"><input type="radio" name="giftStyle" value="gift_grad_prism" /><span class="xmas-acc-card-emblem" style="background:linear-gradient(135deg,#EC4899,#8B5CF6,#3B82F6,#10B981,#F59E0B);"></span><span class="xmas-acc-card-name">Đa Sắc <em class="xmas-tier-chip">≥50d</em></span></label>
+                      </div>
+                    </fieldset>
+  
+                    <div class="xmas-field-group">
+                      <label for="xmasGiftMsg" class="xmas-field-label">Thông điệp trong hộp quà (tùy chọn, tối đa 200 ký tự)</label>
+                      <input type="text" id="xmasGiftMsg" name="message" maxlength="200" placeholder="Ví dụ: Gửi chút may mắn cho kỳ thi cuối năm!" />
+                    </div>
+  
+                    <label class="xmas-checkbox-row">
+                      <input type="checkbox" id="xmasGiftShuffle" name="shufflePosition" />
+                      <span>Chọn lại vị trí dưới gốc cây khi lưu</span>
+                    </label>
+  
+                    <div class="xmas-form-actions xmas-form-actions-centered">
+                      <button type="submit" class="button button-primary xmas-hang-cta-btn" id="xmasGiftSubmitBtn">Treo lên cây</button>
+                      <button type="button" class="button button-quiet button-sm xmas-danger-btn" id="xmasGiftDeleteBtn" hidden>Gỡ hộp quà</button>
+                    </div>
+                  </form>
+  
+                  <!-- FORM 4: PHỤ KIỆN (Chỉ hiện tên, không lời chúc, không giải thích, treo trực tiếp) -->
+                  <form id="xmasAccessoryForm" class="xmas-decorate-form" hidden>
+                    <div class="xmas-acc-preview-strip" id="xmasAccPreviewStrip">
+                      <span class="xmas-acc-preview-icon" id="xmasAccPreviewIcon"></span>
+                      <div class="xmas-acc-preview-copy">
+                        <strong id="xmasAccPreviewLabel">Trái châu Đỏ Ruby</strong>
+                      </div>
+                    </div>
+  
+                    <fieldset class="xmas-fieldset">
+                      <legend>Chọn phụ kiện</legend>
+                      <div class="xmas-acc-radio-grid">
+                        <label class="xmas-acc-card"><input type="radio" name="accessoryStyle" value="bauble_ruby" checked /><span class="xmas-acc-card-emblem" style="background:radial-gradient(circle at 32% 30%,#fda4af,#e11d48);"></span><span class="xmas-acc-card-name">Trái châu Đỏ Ruby</span></label>
+                        <label class="xmas-acc-card"><input type="radio" name="accessoryStyle" value="bauble_gold" /><span class="xmas-acc-card-emblem" style="background:radial-gradient(circle at 32% 30%,#fef08a,#d97706);"></span><span class="xmas-acc-card-name">Trái châu Vàng Kim</span></label>
+                        <label class="xmas-acc-card"><input type="radio" name="accessoryStyle" value="bauble_sapphire" /><span class="xmas-acc-card-emblem" style="background:radial-gradient(circle at 32% 30%,#bfdbfe,#2563eb);"></span><span class="xmas-acc-card-name">Trái châu Sapphire</span></label>
+                        <label class="xmas-acc-card"><input type="radio" name="accessoryStyle" value="bauble_emerald" /><span class="xmas-acc-card-emblem" style="background:radial-gradient(circle at 32% 30%,#a7f3d0,#059669);"></span><span class="xmas-acc-card-name">Trái châu Lục Bảo</span></label>
+                        <label class="xmas-acc-card"><input type="radio" name="accessoryStyle" value="fairy_garland" /><span class="xmas-acc-card-emblem" style="background:radial-gradient(circle at center,#fef9c3,#38bdf8);"></span><span class="xmas-acc-card-name">Dây đèn Giáng sinh</span></label>
+                        <label class="xmas-acc-card is-tier-option" data-min-tier="1"><input type="radio" name="accessoryStyle" value="bauble_grad_ice" /><span class="xmas-acc-card-emblem" style="background:linear-gradient(135deg,#E0F2FE,#38BDF8,#1D4ED8);"></span><span class="xmas-acc-card-name">Châu Băng Tuyết <em class="xmas-tier-chip">≥3d</em></span></label>
+                        <label class="xmas-acc-card is-tier-option" data-min-tier="2"><input type="radio" name="accessoryStyle" value="star_grad_gold" /><span class="xmas-acc-card-emblem" style="background:linear-gradient(135deg,#FEF9C3,#FBBF24,#D97706);"></span><span class="xmas-acc-card-name">Ngôi sao Hoàng Kim <em class="xmas-tier-chip">≥7d</em></span></label>
+                        <label class="xmas-acc-card is-tier-option" data-min-tier="3"><input type="radio" name="accessoryStyle" value="bauble_grad_aurora" /><span class="xmas-acc-card-emblem" style="background:linear-gradient(135deg,#34D399,#38BDF8,#A855F7);"></span><span class="xmas-acc-card-name">Châu Cực Quang <em class="xmas-tier-chip">≥14d</em></span></label>
+                        <label class="xmas-acc-card is-tier-option" data-min-tier="4"><input type="radio" name="accessoryStyle" value="ribbon_grad_velvet" /><span class="xmas-acc-card-emblem" style="background:linear-gradient(135deg,#F43F5E,#BE123C,#FBBF24);"></span><span class="xmas-acc-card-name">Nơ Nhung Ruby <em class="xmas-tier-chip">≥30d</em></span></label>
+                        <label class="xmas-acc-card is-tier-option" data-min-tier="5"><input type="radio" name="accessoryStyle" value="prism_multi_garland" /><span class="xmas-acc-card-emblem" style="background:linear-gradient(135deg,#F43F5E,#F59E0B,#10B981,#38BDF8,#C084FC);"></span><span class="xmas-acc-card-name">Chuỗi Pha Lê Đa Sắc <em class="xmas-tier-chip">≥50d</em></span></label>
+                      </div>
+                    </fieldset>
+  
+                    <label class="xmas-checkbox-row">
+                      <input type="checkbox" id="xmasAccShuffle" name="shufflePosition" />
+                      <span>Chọn lại vị trí trên tán cây khi lưu</span>
+                    </label>
+  
+                    <div class="xmas-form-actions xmas-form-actions-centered">
+                      <button type="submit" class="button button-primary xmas-hang-cta-btn" id="xmasAccSubmitBtn">Treo lên cây</button>
+                      <button type="button" class="button button-quiet button-sm xmas-danger-btn" id="xmasAccDeleteBtn" hidden>Gỡ phụ kiện</button>
+                    </div>
+                  </form>
+  
+                  <div class="xmas-tree-status-banner" id="xmasTreeFormStatus" role="status" aria-live="polite"></div>
+                </div>
+              </div>
+  
+              <div class="xmas-tree-panel-body" id="xmasPanelGallery" role="tabpanel" aria-labelledby="xmasTabGallery" hidden>
+                <div class="xmas-tree-gallery-list" id="xmasTreeGalleryList"></div>
+              </div>
+  
+              <div class="xmas-tree-panel-body" id="xmasPanelLeaderboard" role="tabpanel" aria-labelledby="xmasTabLeaderboard" hidden>
+                <div class="lb-summary-notice xmas-lb-summary-notice" id="xmasTreeLbNotice">
+                  Bảng xếp hạng lượt yêu thích trang trí (tính tổng tim từ tối đa 2 món)
+                </div>
+                <div class="comp-podium-wrap xmas-lb-podium-wrap" id="xmasTreeLbPodium"></div>
+                <div class="comp-lb-list-container xmas-lb-list-container" id="xmasTreeLbListWrap" hidden>
+                  <div class="comp-lb-list-header">
+                    <span>Thứ hạng &amp; Thành viên (Top 4 - 10)</span>
+                    <span style="text-align: right;">Lượt tim</span>
+                  </div>
+                  <div class="comp-lb-list" id="xmasTreeLbList"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+  
         </div>
       </section>
     </main>
@@ -5649,361 +6010,6 @@
       </div>
     </dialog>
 
-    <!-- MODAL SỰ KIỆN CỘNG ĐỒNG: TRANG TRÍ CÂY THÔNG GIÁNG SINH 2026 -->
-    <dialog id="christmasTreeModal" class="modal xmas-tree-modal" aria-labelledby="christmasTreeModalTitle">
-      <div class="xmas-tree-dialog-shell">
-        <header class="xmas-tree-modal-header">
-          <div class="xmas-tree-header-copy">
-            <h2 id="christmasTreeModalTitle">🎄 Trang trí Cây thông</h2>
-            <p class="xmas-tree-header-sub" id="xmasTreeStatsSummary">Trang trí phụ kiện của bạn lên cây thông để cùng tạo nên mùa Giáng sinh ấm áp</p>
-          </div>
-          <form method="dialog" class="xmas-tree-close-form">
-            <button type="submit" class="xmas-tree-close-btn" id="xmasTreeCloseBtn" aria-label="Đóng cửa sổ cây thông">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-            </button>
-          </form>
-        </header>
-
-        <div class="xmas-tree-studio-grid">
-          <!-- CỘT TRÁI: SÂN KHẤU 3D TƯƠNG TÁC -->
-          <div class="xmas-tree-stage-col" id="xmasTreeStageCol">
-            <div class="xmas-tree-stage-wrap" id="xmasTreeStageWrap">
-              <canvas id="christmasTreeStudioCanvas" width="520" height="560" aria-label="Mô hình cây thông Giáng sinh 3D cộng đồng"></canvas>
-
-              <div class="xmas-tree-stage-controls">
-                <button type="button" class="xmas-stage-ctrl-btn" id="xmasTreeRotateLeftBtn" aria-label="Xoay cây sang trái" title="Xoay trái">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"></path><path d="M3 3v5h5"></path></svg>
-                </button>
-                <button type="button" class="xmas-stage-ctrl-btn" id="xmasTreeAutoSpinBtn" aria-pressed="true" title="Tạm dừng / tiếp tục xoay tự động">
-                  <svg class="xmas-spin-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>
-                  <span class="xmas-spin-text">Tự xoay</span>
-                </button>
-                <button type="button" class="xmas-stage-ctrl-btn" id="xmasTreeRotateRightBtn" aria-label="Xoay cây sang phải" title="Xoay phải">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-3-6.7L21 8"></path><path d="M21 3v5h-5"></path></svg>
-                </button>
-                <button type="button" class="xmas-stage-ctrl-btn xmas-stage-fs-btn" id="xmasTreeFullscreenBtn" aria-pressed="false" aria-label="Xem toàn màn hình cây thông" title="Xem toàn màn hình">
-                  <svg class="xmas-fs-expand-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 3 21 3 21 9"></polyline><polyline points="9 21 3 21 3 15"></polyline><line x1="21" y1="3" x2="14" y2="10"></line><line x1="3" y1="21" x2="10" y2="14"></line></svg>
-                  <svg class="xmas-fs-compress-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="4 14 10 14 10 20"></polyline><polyline points="20 10 14 10 14 4"></polyline><line x1="14" y1="10" x2="21" y2="3"></line><line x1="3" y1="21" x2="10" y2="14"></line></svg>
-                </button>
-              </div>
-
-              <div class="xmas-tree-milestone-bar" id="xmasTreeMilestoneBar">
-                🎄 Cây thông khởi đầu · Mời bạn treo món đầu tiên
-              </div>
-
-              <!-- Card xem chi tiết trang trí khi chạm vào cây -->
-              <div class="xmas-tree-inspector" id="xmasTreeInspectorCard" hidden>
-                <button type="button" class="xmas-inspector-close" id="xmasInspectorCloseBtn" aria-label="Đóng chi tiết">
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-                </button>
-                <div class="xmas-inspector-body" id="xmasTreeInspectorBody"></div>
-              </div>
-            </div>
-            <p class="xmas-tree-stage-hint">Kéo trái/phải để xoay cây 360° · Bấm vào trang trí để xem chi tiết.</p>
-          </div>
-
-          <!-- CỘT PHẢI: TÙY CHỈNH TRANG TRÍ (2 TRONG 4 LOẠI) & DANH SÁCH CỘNG ĐỒNG -->
-          <div class="xmas-tree-panel-col">
-            <div class="xmas-tree-panel-tabs" role="tablist" aria-label="Bảng điều khiển cây thông">
-              <button type="button" role="tab" class="xmas-panel-tab active" id="xmasTabDecorate" aria-selected="true" aria-controls="xmasPanelDecorate">
-                Treo đồ của tôi (<span id="xmasMySlotCount">0</span>/2)
-              </button>
-              <button type="button" role="tab" class="xmas-panel-tab" id="xmasTabGallery" aria-selected="false" aria-controls="xmasPanelGallery">
-                Tất cả trang trí (<span id="xmasGalleryCount">0</span>)
-              </button>
-              <button type="button" role="tab" class="xmas-panel-tab" id="xmasTabLeaderboard" aria-selected="false" aria-controls="xmasPanelLeaderboard">
-                Bảng xếp hạng
-              </button>
-            </div>
-
-            <div class="xmas-tree-panel-body" id="xmasPanelDecorate" role="tabpanel" aria-labelledby="xmasTabDecorate">
-              <div class="xmas-countdown-bar" id="xmasCountdownBar" aria-live="off">
-                <div class="xmas-countdown-label">
-                  <span aria-hidden="true">🎄</span>
-                  <span id="xmasCountdownLabelText">Đếm ngược Giáng sinh</span>
-                </div>
-                <div class="xmas-countdown-clock" id="xmasCountdownTicker">-- ngày --:--:--</div>
-              </div>
-
-              <div class="xmas-tree-guest-box" id="xmasTreeGuestBox" hidden>
-                <p>Đăng nhập để chọn treo tối đa <strong>2 trong 4 loại</strong> trang trí (Polaroid, Thiệp, Hộp quà, Phụ kiện) lên cây thông chung của RE:SEARCH.</p>
-                <button type="button" class="button button-primary button-sm" id="xmasTreeLoginBtn">Đăng nhập để trang trí</button>
-              </div>
-
-              <div class="xmas-tree-forms-wrap" id="xmasTreeFormsWrap">
-                <div class="xmas-slot-quota-bar" id="xmasTierStatusStrip">
-                  <span class="xmas-slot-quota-note" id="xmasSlotQuotaNote">Đã dùng 0/2 loại</span>
-                </div>
-
-                <div class="xmas-slot-switcher xmas-slot-switcher-4" role="tablist" aria-label="Chọn loại trang trí (tối đa 2/4)">
-                  <button type="button" class="xmas-slot-pill active" id="xmasSlotBtnPolaroid" data-slot="polaroid" role="tab" aria-selected="true">
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><path d="m21 15-5-5L5 21"></path></svg>
-                    <span>Polaroid</span>
-                  </button>
-                  <button type="button" class="xmas-slot-pill" id="xmasSlotBtnCard" data-slot="card" role="tab" aria-selected="false">
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="2"></rect><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"></path></svg>
-                    <span>Thiệp</span>
-                  </button>
-                  <button type="button" class="xmas-slot-pill" id="xmasSlotBtnGift" data-slot="gift" role="tab" aria-selected="false">
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 12 20 22 4 22 4 12"></polyline><rect x="2" y="7" width="20" height="5"></rect><line x1="12" y1="22" x2="12" y2="7"></line><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"></path><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"></path></svg>
-                    <span>Hộp quà</span>
-                  </button>
-                  <button type="button" class="xmas-slot-pill" id="xmasSlotBtnAccessory" data-slot="accessory" role="tab" aria-selected="false">
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2v3"></path><circle cx="12" cy="14" r="7"></circle><path d="M9 12a3 3 0 0 1 3-3"></path></svg>
-                    <span>Phụ kiện</span>
-                  </button>
-                </div>
-
-                <!-- FORM 1: POLAROID -->
-                <form id="xmasPolaroidForm" class="xmas-decorate-form">
-                  <div class="xmas-polaroid-preview-row">
-                    <div class="xmas-mini-polaroid-preview" id="xmasPolaroidLivePreview">
-                      <div class="xmas-preview-seal-badge" id="xmasPreviewSealBadge" hidden>20:00 · 24/12</div>
-                      <div class="xmas-preview-photo-box" id="xmasPreviewPhotoBox"></div>
-                      <div class="xmas-preview-caption" id="xmasPreviewCaption">Kỷ niệm mùa đông...</div>
-                    </div>
-                    <div class="xmas-polaroid-upload-col">
-                      <div class="xmas-upload-head-row">
-                        <span class="xmas-field-label">Tải ảnh từ thiết bị</span>
-                        <span class="xmas-streak-req-tag" id="xmasPolaroidUploadBadge">Chuỗi ≥3 ngày</span>
-                      </div>
-                      <label for="xmasPolaroidFile" class="xmas-upload-dropzone" id="xmasPolaroidDropzone">
-                        <span class="xmas-upload-icon" id="xmasUploadIconWrap" aria-hidden="true">
-                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
-                        </span>
-                        <span class="xmas-upload-copy">
-                          <strong id="xmasPolaroidUploadTitle">Tải ảnh lên</strong>
-                          <small id="xmasPolaroidFileName">PNG, JPG, WEBP · Kéo thả hoặc bấm chọn</small>
-                        </span>
-                        <input type="file" id="xmasPolaroidFile" name="photoFile" accept="image/png,image/jpeg,image/webp" class="xmas-file-sr" />
-                      </label>
-                      <p class="xmas-upload-lock-note" id="xmasPolaroidLockNote" hidden>Đạt chuỗi hoạt động từ <strong>3 ngày</strong> trở lên để tải ảnh cá nhân. Tranh minh họa bên dưới luôn mở cho mọi thành viên.</p>
-                    </div>
-                  </div>
-
-                  <fieldset class="xmas-fieldset">
-                    <legend>Hình ảnh mặc định</legend>
-                    <div class="xmas-preset-gallery" aria-label="Bộ sưu tập hình ảnh mặc định Giáng sinh">
-                      <button type="button" class="xmas-preset-card" data-photo-preset="preset:aurora">
-                        <span class="xmas-preset-thumb"></span>
-                        <span class="xmas-preset-name">Bắc cực quang</span>
-                      </button>
-                      <button type="button" class="xmas-preset-card" data-photo-preset="preset:fireplace">
-                        <span class="xmas-preset-thumb"></span>
-                        <span class="xmas-preset-name">Lò sưởi ấm</span>
-                      </button>
-                      <button type="button" class="xmas-preset-card" data-photo-preset="preset:snowman">
-                        <span class="xmas-preset-thumb"></span>
-                        <span class="xmas-preset-name">☃️ Người tuyết</span>
-                      </button>
-                      <button type="button" class="xmas-preset-card" data-photo-preset="preset:starlight">
-                        <span class="xmas-preset-thumb"></span>
-                        <span class="xmas-preset-name">Đêm sao rực rỡ</span>
-                      </button>
-                      <button type="button" class="xmas-preset-card" data-photo-preset="preset:cabin">
-                        <span class="xmas-preset-thumb"></span>
-                        <span class="xmas-preset-name">Nhà gỗ tuyết</span>
-                      </button>
-                      <button type="button" class="xmas-preset-card" data-photo-preset="preset:study_night">
-                        <span class="xmas-preset-thumb"></span>
-                        <span class="xmas-preset-name">Góc tự học Noel</span>
-                      </button>
-                    </div>
-                  </fieldset>
-
-                  <fieldset class="xmas-fieldset">
-                    <legend>Màu khung ảnh</legend>
-                    <div class="xmas-color-radio-row">
-                      <label class="xmas-color-radio"><input type="radio" name="polaroidStyle" value="classic" checked /><span class="xmas-swatch-dot" style="background:#FFFAF0;"></span><span>Kem sứ</span></label>
-                      <label class="xmas-color-radio"><input type="radio" name="polaroidStyle" value="warm_gold" /><span class="xmas-swatch-dot" style="background:#FEF3C7;"></span><span>Vàng ấm</span></label>
-                      <label class="xmas-color-radio"><input type="radio" name="polaroidStyle" value="blush" /><span class="xmas-swatch-dot" style="background:#FFE4E6;"></span><span>Hồng phấn</span></label>
-                      <label class="xmas-color-radio"><input type="radio" name="polaroidStyle" value="lavender" /><span class="xmas-swatch-dot" style="background:#EDE9FE;"></span><span>Oải hương</span></label>
-                      <label class="xmas-color-radio"><input type="radio" name="polaroidStyle" value="mint" /><span class="xmas-swatch-dot" style="background:#DCFCE7;"></span><span>Bạc hà</span></label>
-                      <label class="xmas-color-radio is-tier-option" data-min-tier="1"><input type="radio" name="polaroidStyle" value="grad_frost_sky" /><span class="xmas-swatch-dot" style="background:linear-gradient(135deg,#EFF6FF,#BAE6FD,#60A5FA);"></span><span>Băng Lam</span><span class="xmas-tier-chip">≥3d</span></label>
-                      <label class="xmas-color-radio is-tier-option" data-min-tier="2"><input type="radio" name="polaroidStyle" value="grad_champagne_gold" /><span class="xmas-swatch-dot" style="background:linear-gradient(135deg,#FFFBEB,#FDE047,#F59E0B);"></span><span>Ánh Kim</span><span class="xmas-tier-chip">≥7d</span></label>
-                      <label class="xmas-color-radio is-tier-option" data-min-tier="3"><input type="radio" name="polaroidStyle" value="grad_aurora_borealis" /><span class="xmas-swatch-dot" style="background:linear-gradient(135deg,#34D399,#38BDF8,#A855F7);"></span><span>Cực Quang</span><span class="xmas-tier-chip">≥14d</span></label>
-                      <label class="xmas-color-radio is-tier-option" data-min-tier="4"><input type="radio" name="polaroidStyle" value="grad_crimson_velvet" /><span class="xmas-swatch-dot" style="background:linear-gradient(135deg,#FFE4E6,#FB7185,#9F1239);"></span><span>Nhung Đỏ</span><span class="xmas-tier-chip">≥30d</span></label>
-                      <label class="xmas-color-radio is-tier-option" data-min-tier="5"><input type="radio" name="polaroidStyle" value="grad_mythic_prism" /><span class="xmas-swatch-dot" style="background:linear-gradient(135deg,#F43F5E,#F59E0B,#10B981,#3B82F6,#A855F7);"></span><span>Đa sắc</span><span class="xmas-tier-chip">≥50d</span></label>
-                    </div>
-                  </fieldset>
-
-                  <div class="xmas-field-group">
-                    <label for="xmasPolaroidMsg" class="xmas-field-label">Chú thích ngắn dưới ảnh (tùy chọn, tối đa 140 ký tự)</label>
-                    <textarea id="xmasPolaroidMsg" name="message" rows="2" maxlength="140" aria-describedby="xmasPolaroidHint" placeholder="Ví dụ: Đêm ôn thi cùng cả nhóm!"></textarea>
-                    <span id="xmasPolaroidHint" class="xmas-field-hint"><span id="xmasPolaroidCharCount">0</span>/140 ký tự</span>
-                  </div>
-
-                  <label class="xmas-checkbox-row">
-                    <input type="checkbox" id="xmasPolaroidShuffle" name="shufflePosition" />
-                    <span>Chọn ngẫu nhiên vị trí mới trên tán thông khi lưu</span>
-                  </label>
-
-                  <div class="xmas-form-actions xmas-form-actions-centered">
-                    <button type="submit" class="button button-primary xmas-hang-cta-btn" id="xmasPolaroidSubmitBtn">Treo lên cây</button>
-                    <button type="button" class="button button-quiet button-sm xmas-danger-btn" id="xmasPolaroidDeleteBtn" hidden>Gỡ Polaroid</button>
-                  </div>
-                </form>
-
-                <!-- FORM 2: THIỆP GIÁNG SINH (Bỏ ảnh Polaroid, lời chúc dài, mẫu Figma & Santa Letter) -->
-                <form id="xmasCardForm" class="xmas-decorate-form" hidden>
-                  <div class="xmas-card-designer-wrap">
-                    <div class="xmas-card-live-preview" id="xmasCardLivePreview"></div>
-                  </div>
-
-                  <fieldset class="xmas-fieldset">
-                    <legend>Chọn mẫu thiệp Giáng sinh</legend>
-                    <div class="xmas-card-template-grid" id="xmasCardTemplateGrid">
-                      <label class="xmas-card-tpl-opt"><input type="radio" name="cardStyle" value="card_sparkle" checked /><span class="xmas-tpl-swatch" style="background:linear-gradient(135deg,#FEF9C3,#DC2626);"></span><span>Lấp lánh</span></label>
-                      <label class="xmas-card-tpl-opt"><input type="radio" name="cardStyle" value="card_gift" /><span class="xmas-tpl-swatch" style="background:linear-gradient(135deg,#DCFCE7,#EF4444);"></span><span>Món quà Giáng sinh</span></label>
-                      <label class="xmas-card-tpl-opt"><input type="radio" name="cardStyle" value="card_ribbon" /><span class="xmas-tpl-swatch" style="background:linear-gradient(135deg,#FFFFFF,#16A34A,#DC2626);"></span><span>Nơ nhỏ nhắn</span></label>
-                      <label class="xmas-card-tpl-opt"><input type="radio" name="cardStyle" value="card_snowglobe" /><span class="xmas-tpl-swatch" style="background:linear-gradient(135deg,#BAE6FD,#DC2626);"></span><span>Quả cầu tuyết</span></label>
-                      <label class="xmas-card-tpl-opt"><input type="radio" name="cardStyle" value="card_santa_letter" /><span class="xmas-tpl-swatch" style="background:repeating-linear-gradient(135deg,#DC2626 0 4px,#FFFFFF 4px 8px);"></span><span>Thư gửi Ông già Noel</span></label>
-                      <label class="xmas-card-tpl-opt"><input type="radio" name="cardStyle" value="card_reindeer" /><span class="xmas-tpl-swatch" style="background:linear-gradient(135deg,#D1FAE5,#15803D);"></span><span>Tuần lộc</span></label>
-                    </div>
-                  </fieldset>
-
-                  <div class="xmas-field-group">
-                    <label for="xmasCardName" class="xmas-field-label">Tên trên thiệp</label>
-                    <input type="text" id="xmasCardName" name="cardName" maxlength="40" placeholder="Tên hoặc nhóm của bạn" />
-                  </div>
-
-                  <div class="xmas-field-group">
-                    <label for="xmasCardMsg" class="xmas-field-label">Lời chúc nhắn gửi trên thiệp (tối đa <span id="xmasCardMaxLabel">340</span> ký tự)</label>
-                    <textarea id="xmasCardMsg" name="message" rows="3" maxlength="340" aria-describedby="xmasCardHint" placeholder="Viết lời chúc hoặc tâm thư gửi đến mọi người..."></textarea>
-                    <span id="xmasCardHint" class="xmas-field-hint"><span id="xmasCardCharCount">0</span>/<span id="xmasCardLimitCount">340</span> ký tự</span>
-                  </div>
-
-                  <fieldset class="xmas-fieldset">
-                    <legend>Màu nền thiệp</legend>
-                    <div class="xmas-color-radio-row">
-                      <label class="xmas-color-radio"><input type="radio" name="cardFinish" value="pastel_white" checked /><span class="xmas-swatch-dot" style="background:#FFFFFF;"></span><span>Trắng</span></label>
-                      <label class="xmas-color-radio"><input type="radio" name="cardFinish" value="pastel_green" /><span class="xmas-swatch-dot" style="background:#DCFCE7;"></span><span>Xanh lá</span></label>
-                      <label class="xmas-color-radio"><input type="radio" name="cardFinish" value="pastel_cream" /><span class="xmas-swatch-dot" style="background:#FEF9E7;"></span><span>Kem vani</span></label>
-                      <label class="xmas-color-radio"><input type="radio" name="cardFinish" value="pastel_pink" /><span class="xmas-swatch-dot" style="background:#FFE4E6;"></span><span>Hồng phấn</span></label>
-                      <label class="xmas-color-radio"><input type="radio" name="cardFinish" value="pastel_sky" /><span class="xmas-swatch-dot" style="background:#E0F2FE;"></span><span>Xanh băng</span></label>
-                      <label class="xmas-color-radio"><input type="radio" name="cardFinish" value="pastel_lavender" /><span class="xmas-swatch-dot" style="background:#F3E8FF;"></span><span>Tím nhạt</span></label>
-                      <label class="xmas-color-radio is-tier-option" data-min-tier="1"><input type="radio" name="cardFinish" value="grad_frost_sky" /><span class="xmas-swatch-dot" style="background:linear-gradient(135deg,#E0F2FE,#DBEAFE,#F3E8FF);"></span><span>Băng Lam</span><span class="xmas-tier-chip">≥3d</span></label>
-                      <label class="xmas-color-radio is-tier-option" data-min-tier="2"><input type="radio" name="cardFinish" value="grad_champagne_gold" /><span class="xmas-swatch-dot" style="background:linear-gradient(135deg,#FFFBEB,#FEF3C7,#FDE68A);"></span><span>Ánh Kim</span><span class="xmas-tier-chip">≥7d</span></label>
-                      <label class="xmas-color-radio is-tier-option" data-min-tier="3"><input type="radio" name="cardFinish" value="grad_aurora_borealis" /><span class="xmas-swatch-dot" style="background:linear-gradient(135deg,#D1FAE5,#CCFBF1,#E0F2FE);"></span><span>Cực Quang</span><span class="xmas-tier-chip">≥14d</span></label>
-                      <label class="xmas-color-radio is-tier-option" data-min-tier="4"><input type="radio" name="cardFinish" value="grad_crimson_velvet" /><span class="xmas-swatch-dot" style="background:linear-gradient(135deg,#FFE4E6,#FECDD3,#FEF3C7);"></span><span>Hồng Ngọc</span><span class="xmas-tier-chip">≥30d</span></label>
-                      <label class="xmas-color-radio is-tier-option" data-min-tier="5"><input type="radio" name="cardFinish" value="grad_mythic_prism" /><span class="xmas-swatch-dot" style="background:linear-gradient(135deg,#F3E8FF,#FFE4E6,#DCFCE7);"></span><span>Đa sắc</span><span class="xmas-tier-chip">≥50d</span></label>
-                    </div>
-                  </fieldset>
-
-                  <label class="xmas-checkbox-row">
-                    <input type="checkbox" id="xmasCardShuffle" name="shufflePosition" />
-                    <span>Chọn ngẫu nhiên vị trí mới trên cây thông khi lưu</span>
-                  </label>
-
-                  <div class="xmas-form-actions xmas-form-actions-centered">
-                    <button type="submit" class="button button-primary xmas-hang-cta-btn" id="xmasCardSubmitBtn">Treo lên cây</button>
-                    <button type="button" class="button button-quiet button-sm xmas-danger-btn" id="xmasCardDeleteBtn" hidden>Gỡ thiệp</button>
-                  </div>
-                </form>
-
-                <!-- FORM 3: HỘP QUÀ -->
-                <form id="xmasGiftForm" class="xmas-decorate-form" hidden>
-                  <div class="xmas-acc-preview-strip" id="xmasGiftPreviewStrip">
-                    <span class="xmas-acc-preview-icon" id="xmasGiftPreviewIcon"></span>
-                    <div class="xmas-acc-preview-copy">
-                      <strong id="xmasGiftPreviewLabel">Hộp quà Đỏ Nơ Vàng</strong>
-                      <p id="xmasGiftPreviewWish">Món quà đặt dưới gốc thông</p>
-                    </div>
-                  </div>
-
-                  <fieldset class="xmas-fieldset">
-                    <legend>Chọn màu giấy gói quà</legend>
-                    <div class="xmas-acc-radio-grid">
-                      <label class="xmas-acc-card"><input type="radio" name="giftStyle" value="gift_red" checked /><span class="xmas-acc-card-emblem" style="background:linear-gradient(135deg,#ef4444,#b91c1c);"></span><span class="xmas-acc-card-name">Quà Đỏ nơ vàng</span></label>
-                      <label class="xmas-acc-card"><input type="radio" name="giftStyle" value="gift_blue" /><span class="xmas-acc-card-emblem" style="background:linear-gradient(135deg,#3b82f6,#1d4ed8);"></span><span class="xmas-acc-card-name">Quà Xanh lam</span></label>
-                      <label class="xmas-acc-card"><input type="radio" name="giftStyle" value="gift_gold" /><span class="xmas-acc-card-emblem" style="background:linear-gradient(135deg,#fbbf24,#d97706);"></span><span class="xmas-acc-card-name">Quà Vàng kim</span></label>
-                      <label class="xmas-acc-card"><input type="radio" name="giftStyle" value="gift_emerald" /><span class="xmas-acc-card-emblem" style="background:linear-gradient(135deg,#22c55e,#15803d);"></span><span class="xmas-acc-card-name">Quà Ngọc lục</span></label>
-                      <label class="xmas-acc-card is-tier-option" data-min-tier="1"><input type="radio" name="giftStyle" value="gift_grad_glacier" /><span class="xmas-acc-card-emblem" style="background:linear-gradient(135deg,#0EA5E9,#2563EB,#93C5FD);"></span><span class="xmas-acc-card-name">Băng Giá <em class="xmas-tier-chip">≥3d</em></span></label>
-                      <label class="xmas-acc-card is-tier-option" data-min-tier="2"><input type="radio" name="giftStyle" value="gift_grad_sunset_gold" /><span class="xmas-acc-card-emblem" style="background:linear-gradient(135deg,#FDE047,#F59E0B,#EA580C);"></span><span class="xmas-acc-card-name">Hoàng Kim <em class="xmas-tier-chip">≥7d</em></span></label>
-                      <label class="xmas-acc-card is-tier-option" data-min-tier="3"><input type="radio" name="giftStyle" value="gift_grad_aurora" /><span class="xmas-acc-card-emblem" style="background:linear-gradient(135deg,#10B981,#06B6D4,#8B5CF6);"></span><span class="xmas-acc-card-name">Cực Quang <em class="xmas-tier-chip">≥14d</em></span></label>
-                      <label class="xmas-acc-card is-tier-option" data-min-tier="4"><input type="radio" name="giftStyle" value="gift_grad_royal_ruby" /><span class="xmas-acc-card-emblem" style="background:linear-gradient(135deg,#9F1239,#DC2626,#F43F5E);"></span><span class="xmas-acc-card-name">Hồng Ngọc <em class="xmas-tier-chip">≥30d</em></span></label>
-                      <label class="xmas-acc-card is-tier-option" data-min-tier="5"><input type="radio" name="giftStyle" value="gift_grad_prism" /><span class="xmas-acc-card-emblem" style="background:linear-gradient(135deg,#EC4899,#8B5CF6,#3B82F6,#10B981,#F59E0B);"></span><span class="xmas-acc-card-name">Đa Sắc <em class="xmas-tier-chip">≥50d</em></span></label>
-                    </div>
-                  </fieldset>
-
-                  <div class="xmas-field-group">
-                    <label for="xmasGiftMsg" class="xmas-field-label">Thông điệp trong hộp quà (tùy chọn, tối đa 200 ký tự)</label>
-                    <input type="text" id="xmasGiftMsg" name="message" maxlength="200" placeholder="Ví dụ: Gửi chút may mắn cho kỳ thi cuối năm!" />
-                  </div>
-
-                  <label class="xmas-checkbox-row">
-                    <input type="checkbox" id="xmasGiftShuffle" name="shufflePosition" />
-                    <span>Chọn lại vị trí dưới gốc cây khi lưu</span>
-                  </label>
-
-                  <div class="xmas-form-actions xmas-form-actions-centered">
-                    <button type="submit" class="button button-primary xmas-hang-cta-btn" id="xmasGiftSubmitBtn">Treo lên cây</button>
-                    <button type="button" class="button button-quiet button-sm xmas-danger-btn" id="xmasGiftDeleteBtn" hidden>Gỡ hộp quà</button>
-                  </div>
-                </form>
-
-                <!-- FORM 4: PHỤ KIỆN (Chỉ hiện tên, không lời chúc, không giải thích, treo trực tiếp) -->
-                <form id="xmasAccessoryForm" class="xmas-decorate-form" hidden>
-                  <div class="xmas-acc-preview-strip" id="xmasAccPreviewStrip">
-                    <span class="xmas-acc-preview-icon" id="xmasAccPreviewIcon"></span>
-                    <div class="xmas-acc-preview-copy">
-                      <strong id="xmasAccPreviewLabel">Trái châu Đỏ Ruby</strong>
-                    </div>
-                  </div>
-
-                  <fieldset class="xmas-fieldset">
-                    <legend>Chọn phụ kiện</legend>
-                    <div class="xmas-acc-radio-grid">
-                      <label class="xmas-acc-card"><input type="radio" name="accessoryStyle" value="bauble_ruby" checked /><span class="xmas-acc-card-emblem" style="background:radial-gradient(circle at 32% 30%,#fda4af,#e11d48);"></span><span class="xmas-acc-card-name">Trái châu Đỏ Ruby</span></label>
-                      <label class="xmas-acc-card"><input type="radio" name="accessoryStyle" value="bauble_gold" /><span class="xmas-acc-card-emblem" style="background:radial-gradient(circle at 32% 30%,#fef08a,#d97706);"></span><span class="xmas-acc-card-name">Trái châu Vàng Kim</span></label>
-                      <label class="xmas-acc-card"><input type="radio" name="accessoryStyle" value="bauble_sapphire" /><span class="xmas-acc-card-emblem" style="background:radial-gradient(circle at 32% 30%,#bfdbfe,#2563eb);"></span><span class="xmas-acc-card-name">Trái châu Sapphire</span></label>
-                      <label class="xmas-acc-card"><input type="radio" name="accessoryStyle" value="bauble_emerald" /><span class="xmas-acc-card-emblem" style="background:radial-gradient(circle at 32% 30%,#a7f3d0,#059669);"></span><span class="xmas-acc-card-name">Trái châu Lục Bảo</span></label>
-                      <label class="xmas-acc-card"><input type="radio" name="accessoryStyle" value="fairy_garland" /><span class="xmas-acc-card-emblem" style="background:radial-gradient(circle at center,#fef9c3,#38bdf8);"></span><span class="xmas-acc-card-name">Dây đèn Giáng sinh</span></label>
-                      <label class="xmas-acc-card is-tier-option" data-min-tier="1"><input type="radio" name="accessoryStyle" value="bauble_grad_ice" /><span class="xmas-acc-card-emblem" style="background:linear-gradient(135deg,#E0F2FE,#38BDF8,#1D4ED8);"></span><span class="xmas-acc-card-name">Châu Băng Tuyết <em class="xmas-tier-chip">≥3d</em></span></label>
-                      <label class="xmas-acc-card is-tier-option" data-min-tier="2"><input type="radio" name="accessoryStyle" value="star_grad_gold" /><span class="xmas-acc-card-emblem" style="background:linear-gradient(135deg,#FEF9C3,#FBBF24,#D97706);"></span><span class="xmas-acc-card-name">Ngôi sao Hoàng Kim <em class="xmas-tier-chip">≥7d</em></span></label>
-                      <label class="xmas-acc-card is-tier-option" data-min-tier="3"><input type="radio" name="accessoryStyle" value="bauble_grad_aurora" /><span class="xmas-acc-card-emblem" style="background:linear-gradient(135deg,#34D399,#38BDF8,#A855F7);"></span><span class="xmas-acc-card-name">Châu Cực Quang <em class="xmas-tier-chip">≥14d</em></span></label>
-                      <label class="xmas-acc-card is-tier-option" data-min-tier="4"><input type="radio" name="accessoryStyle" value="ribbon_grad_velvet" /><span class="xmas-acc-card-emblem" style="background:linear-gradient(135deg,#F43F5E,#BE123C,#FBBF24);"></span><span class="xmas-acc-card-name">Nơ Nhung Ruby <em class="xmas-tier-chip">≥30d</em></span></label>
-                      <label class="xmas-acc-card is-tier-option" data-min-tier="5"><input type="radio" name="accessoryStyle" value="prism_multi_garland" /><span class="xmas-acc-card-emblem" style="background:linear-gradient(135deg,#F43F5E,#F59E0B,#10B981,#38BDF8,#C084FC);"></span><span class="xmas-acc-card-name">Chuỗi Pha Lê Đa Sắc <em class="xmas-tier-chip">≥50d</em></span></label>
-                    </div>
-                  </fieldset>
-
-                  <label class="xmas-checkbox-row">
-                    <input type="checkbox" id="xmasAccShuffle" name="shufflePosition" />
-                    <span>Chọn lại vị trí trên tán cây khi lưu</span>
-                  </label>
-
-                  <div class="xmas-form-actions xmas-form-actions-centered">
-                    <button type="submit" class="button button-primary xmas-hang-cta-btn" id="xmasAccSubmitBtn">Treo lên cây</button>
-                    <button type="button" class="button button-quiet button-sm xmas-danger-btn" id="xmasAccDeleteBtn" hidden>Gỡ phụ kiện</button>
-                  </div>
-                </form>
-
-                <div class="xmas-tree-status-banner" id="xmasTreeFormStatus" role="status" aria-live="polite"></div>
-              </div>
-            </div>
-
-            <div class="xmas-tree-panel-body" id="xmasPanelGallery" role="tabpanel" aria-labelledby="xmasTabGallery" hidden>
-              <div class="xmas-tree-gallery-list" id="xmasTreeGalleryList"></div>
-            </div>
-
-            <div class="xmas-tree-panel-body" id="xmasPanelLeaderboard" role="tabpanel" aria-labelledby="xmasTabLeaderboard" hidden>
-              <div class="lb-summary-notice xmas-lb-summary-notice" id="xmasTreeLbNotice">
-                Bảng xếp hạng lượt yêu thích trang trí (tính tổng tim từ tối đa 2 món)
-              </div>
-              <div class="comp-podium-wrap xmas-lb-podium-wrap" id="xmasTreeLbPodium"></div>
-              <div class="comp-lb-list-container xmas-lb-list-container" id="xmasTreeLbListWrap" hidden>
-                <div class="comp-lb-list-header">
-                  <span>Thứ hạng &amp; Thành viên (Top 4 - 10)</span>
-                  <span style="text-align: right;">Lượt tim</span>
-                </div>
-                <div class="comp-lb-list" id="xmasTreeLbList"></div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </dialog>
-
     <!-- CỬA SỔ XÁC NHẬN GIỮ MÓN QUÀ ĐẾN GIÁNG SINH (render top-layer độc lập trên Studio) -->
     <dialog id="xmasConfirmHangModal" class="xmas-confirm-modal" closedby="any" aria-labelledby="xmasConfirmHangTitle">
       <div class="xmas-confirm-card">
@@ -6065,6 +6071,6 @@
       </button>
     </div>
 
-    <script src="app.js?v=172" defer></script>
+    <script src="app.js?v=173" defer></script>
   </body>
 </html>

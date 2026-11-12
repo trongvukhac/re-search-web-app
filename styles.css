@@ -29563,8 +29563,25 @@ body.dark-theme .xmas-hero-tree-btn {
 }
 
 /* ==========================================================================
-   COMMUNITY CHRISTMAS TREE STUDIO DIALOG (<dialog id="christmasTreeModal">)
+   COMMUNITY CHRISTMAS TREE STUDIO PAGE (<section id="christmasTreePage">)
    ========================================================================== */
+#christmasTreePage.page {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 24px 20px 80px;
+}
+
+#christmasTreePage.active-page {
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+/* Hide corner edge tree when on dedicated Christmas tree page */
+body:has(#christmasTreePage.active-page) #christmasTreeCanvas.christmas-tree-edge-canvas,
+#christmasTreePage.active-page ~ #christmasTreeCanvas {
+  display: none !important;
+}
+
 dialog#christmasTreeModal[open] {
   display: flex !important;
   flex-direction: column !important;
@@ -29572,6 +29589,7 @@ dialog#christmasTreeModal[open] {
   inset: 0 !important;
   width: min(1040px, calc(100vw - 24px));
   max-width: 1040px;
+  height: min(92vh, 840px);
   max-height: min(92vh, 840px);
   margin: auto !important;
   padding: 0;
@@ -29604,33 +29622,92 @@ body.dark-theme dialog#christmasTreeModal[open] {
   box-shadow: 0 30px 90px rgba(0, 0, 0, 0.65);
 }
 
-#christmasTreeModal form {
+#christmasTreePage form {
   padding: 0;
 }
 
-#christmasTreeModal [hidden] {
+#christmasTreePage [hidden] {
   display: none !important;
 }
 
+.xmas-tree-page-shell,
 .xmas-tree-dialog-shell {
   display: flex;
   flex-direction: column;
-  height: 100%;
-  min-height: 0;
-  max-height: min(92vh, 840px);
+  width: 100%;
+  border: 1px solid rgba(20, 83, 45, 0.16);
+  border-radius: 24px;
+  background: var(--surface, #ffffff);
+  color: var(--ink, #123d30);
+  box-shadow: 0 20px 60px rgba(8, 28, 22, 0.16);
   overflow: hidden;
 }
 
+html.dark-theme .xmas-tree-page-shell,
+body.dark-theme .xmas-tree-page-shell {
+  background: #111820;
+  border-color: rgba(125, 211, 252, 0.2);
+  color: #e2e8f0;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.55);
+}
+
+.xmas-tree-page-header,
 .xmas-tree-modal-header {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: 16px;
   padding: 16px 22px 14px;
   border-bottom: 1px solid var(--line, #dfe4dc);
   flex-shrink: 0;
+  background: var(--surface, #ffffff);
 }
 
+html.dark-theme .xmas-tree-page-header,
+body.dark-theme .xmas-tree-page-header,
+html.dark-theme .xmas-tree-modal-header,
+body.dark-theme .xmas-tree-modal-header {
+  background: #111820;
+  border-bottom-color: rgba(125, 211, 252, 0.15);
+}
+
+.xmas-tree-header-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+}
+
+.xmas-tree-back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 38px;
+  padding: 0 14px;
+  border-radius: 9999px;
+  font-size: 13px;
+  font-weight: 600;
+  flex-shrink: 0;
+  cursor: pointer;
+  background: var(--surface-2, #f8fafc);
+  border: 1px solid var(--line, #dfe4dc);
+  color: var(--ink, #123d30);
+  transition: background 0.16s ease, transform 0.15s ease;
+}
+
+.xmas-tree-back-btn:hover {
+  background: var(--surface-hover, #e2e8f0);
+  transform: translateX(-1px);
+}
+
+.xmas-tree-header-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.xmas-tree-header-copy h1,
 .xmas-tree-header-copy h2 {
   margin: 0 0 4px;
   font-family: var(--unbounded, "Unbounded", sans-serif);
@@ -30169,20 +30246,20 @@ body.dark-theme .xmas-slot-pill.active {
   gap: 8px;
 }
 
-#christmasTreeModal label {
+#christmasTreePage label {
   color: inherit;
   margin: 0;
 }
 
-#christmasTreeModal .xmas-field-label {
+#christmasTreePage .xmas-field-label {
   display: block;
   font-size: 12.5px;
   font-weight: 700;
   margin-bottom: 2px;
 }
 
-#christmasTreeModal input[type="radio"],
-#christmasTreeModal input[type="checkbox"] {
+#christmasTreePage input[type="radio"],
+#christmasTreePage input[type="checkbox"] {
   display: inline-block;
   width: 16px;
   height: 16px;
@@ -30194,7 +30271,7 @@ body.dark-theme .xmas-slot-pill.active {
   flex-shrink: 0;
 }
 
-#christmasTreeModal input.xmas-file-sr,
+#christmasTreePage input.xmas-file-sr,
 .xmas-file-sr {
   position: absolute;
   width: 1px !important;
@@ -30211,7 +30288,7 @@ body.dark-theme .xmas-slot-pill.active {
   pointer-events: none;
 }
 
-#christmasTreeModal .xmas-upload-dropzone {
+#christmasTreePage .xmas-upload-dropzone {
   position: relative;
   display: flex;
   align-items: center;
@@ -30225,19 +30302,19 @@ body.dark-theme .xmas-slot-pill.active {
   transition: border-color 0.16s ease, background 0.16s ease, transform 0.15s ease;
 }
 
-#christmasTreeModal .xmas-upload-dropzone:hover,
-#christmasTreeModal .xmas-upload-dropzone.is-dragover {
+#christmasTreePage .xmas-upload-dropzone:hover,
+#christmasTreePage .xmas-upload-dropzone.is-dragover {
   border-color: #16a34a;
   background: rgba(220, 252, 231, 0.85);
 }
 
-#christmasTreeModal .xmas-upload-dropzone:has(input:focus-visible) {
+#christmasTreePage .xmas-upload-dropzone:has(input:focus-visible) {
   outline: 2px solid #0ea5e9;
   outline-offset: 2px;
 }
 
-html.dark-theme #christmasTreeModal .xmas-upload-dropzone,
-body.dark-theme #christmasTreeModal .xmas-upload-dropzone {
+html.dark-theme #christmasTreePage .xmas-upload-dropzone,
+body.dark-theme #christmasTreePage .xmas-upload-dropzone {
   border-color: rgba(52, 211, 153, 0.4);
   background: rgba(16, 42, 34, 0.6);
   color: #ecfdf5;
@@ -30382,7 +30459,7 @@ body.dark-theme .xmas-preset-card.active {
   gap: 7px;
 }
 
-#christmasTreeModal .xmas-color-radio {
+#christmasTreePage .xmas-color-radio {
   position: relative;
   display: inline-flex;
   align-items: center;
@@ -30399,8 +30476,8 @@ body.dark-theme .xmas-preset-card.active {
   transition: border-color 0.15s ease, background 0.15s ease;
 }
 
-#christmasTreeModal .xmas-color-radio input,
-#christmasTreeModal .xmas-acc-card input {
+#christmasTreePage .xmas-color-radio input,
+#christmasTreePage .xmas-acc-card input {
   position: absolute;
   width: 1px;
   height: 1px;
@@ -30482,7 +30559,7 @@ body.dark-theme .xmas-acc-preview-strip {
   gap: 7px;
 }
 
-#christmasTreeModal .xmas-acc-card {
+#christmasTreePage .xmas-acc-card {
   position: relative;
   display: flex;
   align-items: center;
@@ -30499,7 +30576,7 @@ body.dark-theme .xmas-acc-preview-strip {
   transition: border-color 0.15s ease, transform 0.14s ease, background 0.15s ease;
 }
 
-#christmasTreeModal .xmas-acc-card:hover {
+#christmasTreePage .xmas-acc-card:hover {
   transform: translateY(-1px);
   border-color: rgba(22, 163, 74, 0.48);
 }
@@ -30528,8 +30605,8 @@ body.dark-theme .xmas-acc-preview-strip {
   box-shadow: 0 0 0 1px rgba(22, 163, 74, 0.28);
 }
 
-html.dark-theme #christmasTreeModal .xmas-acc-card,
-body.dark-theme #christmasTreeModal .xmas-acc-card {
+html.dark-theme #christmasTreePage .xmas-acc-card,
+body.dark-theme #christmasTreePage .xmas-acc-card {
   background: #13221d;
   border-color: rgba(148, 163, 184, 0.22);
 }
@@ -30684,8 +30761,8 @@ body.dark-theme dialog.xmas-confirm-modal {
   gap: 4px;
 }
 
-#christmasTreeModal .xmas-field-group textarea,
-#christmasTreeModal .xmas-field-group input[type="text"] {
+#christmasTreePage .xmas-field-group textarea,
+#christmasTreePage .xmas-field-group input[type="text"] {
   width: 100%;
   padding: 9px 11px;
   margin: 0;
@@ -30709,7 +30786,7 @@ body.dark-theme dialog.xmas-confirm-modal {
   align-self: flex-end;
 }
 
-#christmasTreeModal .xmas-checkbox-row {
+#christmasTreePage .xmas-checkbox-row {
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -30733,7 +30810,7 @@ body.dark-theme dialog.xmas-confirm-modal {
   margin-top: 4px;
 }
 
-#christmasTreeModal .xmas-hang-cta-btn {
+#christmasTreePage .xmas-hang-cta-btn {
   width: min(100%, 300px);
   min-height: 46px;
   padding: 11px 28px;
@@ -30753,13 +30830,13 @@ body.dark-theme dialog.xmas-confirm-modal {
   transition: transform 0.16s ease, box-shadow 0.16s ease, filter 0.16s ease;
 }
 
-#christmasTreeModal .xmas-hang-cta-btn:hover:not(:disabled) {
+#christmasTreePage .xmas-hang-cta-btn:hover:not(:disabled) {
   transform: translateY(-1px);
   filter: brightness(1.06);
   box-shadow: 0 14px 28px -6px rgba(21, 128, 61, 0.52);
 }
 
-#christmasTreeModal .xmas-hang-cta-btn:disabled {
+#christmasTreePage .xmas-hang-cta-btn:disabled {
   opacity: 0.55;
   cursor: not-allowed;
 }
@@ -30810,7 +30887,7 @@ body.dark-theme .xmas-streak-req-tag.is-unlocked {
   border-color: rgba(52, 211, 153, 0.32);
 }
 
-#christmasTreeModal .xmas-upload-dropzone.is-locked {
+#christmasTreePage .xmas-upload-dropzone.is-locked {
   opacity: 0.62;
   cursor: not-allowed;
   border-style: solid;
@@ -30843,7 +30920,7 @@ body.dark-theme .xmas-upload-lock-note {
   gap: 7px;
 }
 
-#christmasTreeModal .xmas-card-tpl-opt {
+#christmasTreePage .xmas-card-tpl-opt {
   position: relative;
   display: flex;
   align-items: center;
@@ -30858,7 +30935,7 @@ body.dark-theme .xmas-upload-lock-note {
   cursor: pointer;
 }
 
-#christmasTreeModal .xmas-card-tpl-opt input {
+#christmasTreePage .xmas-card-tpl-opt input {
   position: absolute;
   width: 1px;
   height: 1px;
@@ -30872,8 +30949,8 @@ body.dark-theme .xmas-upload-lock-note {
   box-shadow: 0 0 0 1px rgba(22, 163, 74, 0.25);
 }
 
-html.dark-theme #christmasTreeModal .xmas-card-tpl-opt,
-body.dark-theme #christmasTreeModal .xmas-card-tpl-opt {
+html.dark-theme #christmasTreePage .xmas-card-tpl-opt,
+body.dark-theme #christmasTreePage .xmas-card-tpl-opt {
   background: #13221d;
   border-color: rgba(148, 163, 184, 0.22);
   color: #e2e8f0;
@@ -31400,21 +31477,32 @@ body.dark-theme .xmas-countdown-clock {
   display: block;
 }
 
+#christmasTreePage.is-stage-fullscreen,
 dialog#christmasTreeModal.is-stage-fullscreen[open] {
-  width: 100vw;
-  max-width: 100vw;
-  height: 100dvh;
-  max-height: 100dvh;
-  margin: 0;
-  border-radius: 0;
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 100000 !important;
+  width: 100vw !important;
+  max-width: 100vw !important;
+  height: 100dvh !important;
+  max-height: 100dvh !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border-radius: 0 !important;
+  background: var(--surface, #ffffff) !important;
 }
 
+#christmasTreePage.is-stage-fullscreen .xmas-tree-page-shell,
+#christmasTreePage.is-stage-fullscreen .xmas-tree-dialog-shell,
 dialog#christmasTreeModal.is-stage-fullscreen .xmas-tree-dialog-shell {
   height: 100dvh;
   max-height: 100dvh;
+  border-radius: 0;
+  border: none;
   overflow: hidden;
 }
 
+#christmasTreePage.is-stage-fullscreen .xmas-tree-studio-grid,
 dialog#christmasTreeModal.is-stage-fullscreen .xmas-tree-studio-grid {
   display: flex;
   flex-direction: column;
@@ -31423,10 +31511,12 @@ dialog#christmasTreeModal.is-stage-fullscreen .xmas-tree-studio-grid {
   overflow: hidden;
 }
 
+#christmasTreePage.is-stage-fullscreen .xmas-tree-panel-col,
 dialog#christmasTreeModal.is-stage-fullscreen .xmas-tree-panel-col {
   display: none;
 }
 
+#christmasTreePage.is-stage-fullscreen .xmas-tree-stage-col,
 dialog#christmasTreeModal.is-stage-fullscreen .xmas-tree-stage-col {
   flex: 1;
   min-height: 0;
@@ -31435,6 +31525,7 @@ dialog#christmasTreeModal.is-stage-fullscreen .xmas-tree-stage-col {
   padding: 10px;
 }
 
+#christmasTreePage.is-stage-fullscreen .xmas-tree-stage-wrap,
 dialog#christmasTreeModal.is-stage-fullscreen .xmas-tree-stage-wrap {
   flex: 1;
   height: 100%;
@@ -31445,6 +31536,7 @@ dialog#christmasTreeModal.is-stage-fullscreen .xmas-tree-stage-wrap {
 dialog#xmasItemViewerModal[open] {
   width: min(94vw, 560px);
   max-width: 560px;
+  height: auto;
   max-height: 92dvh;
   margin: auto;
   padding: 0;
@@ -31730,6 +31822,34 @@ body.dark-theme .xmas-item-viewer-likes-list {
 }
 
 @media (max-width: 860px) {
+  #christmasTreePage.page {
+    padding: 14px 12px 130px;
+  }
+
+  .xmas-tree-page-shell {
+    height: auto;
+    min-height: 0;
+    max-height: none;
+    overflow: visible;
+    border-radius: 18px;
+  }
+
+  .xmas-tree-page-header {
+    padding: 12px 14px 10px;
+    border-radius: 18px 18px 0 0;
+  }
+
+  .xmas-tree-header-left {
+    gap: 10px;
+    align-items: center;
+  }
+
+  .xmas-tree-back-btn {
+    height: 34px;
+    padding: 0 11px;
+    font-size: 12.5px;
+  }
+
   dialog#christmasTreeModal[open] {
     width: calc(100vw - 16px);
     max-height: 92dvh;

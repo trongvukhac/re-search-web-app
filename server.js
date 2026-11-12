@@ -10557,6 +10557,7 @@ setInterval(checkAndAwardSundayCompetitionRewards, 60000);
 setInterval(sweepExpiredUserDecorations, 60000);
 setInterval(cleanupExpiredTrash, 60 * 60 * 1000);
 
-server.listen(PORT, "::", () =>
-  console.log(`RE:SEARCH đang chạy tại http://[::]:${PORT}`),
+const HOST = process.env.HOST || "0.0.0.0";
+server.listen(PORT, HOST, () =>
+  console.log(`RE:SEARCH đang chạy tại http://${HOST}:${PORT}`),
 );
