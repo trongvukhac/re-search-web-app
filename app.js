@@ -2234,7 +2234,11 @@ async function hydrateServer(force = false) {
 
     // Kích hoạt tất cả API song song ngay từ đầu để loại bỏ hoàn toàn độ trễ waterfall
     const sessionPromise = requestAPI("/api/session", { headers: {} }).catch(() => ({ authenticated: false, user: null }));
-    const contribsPromise = requestAPI("/api/me/contributions").catch(() => null);
+    const hasHintedSession = Boolean(
+      (typeof session !== "undefined" && session) ||
+      (typeof getCachedUser === "function" && getCachedUser())
+    );
+    const contribsPromise = hasHintedSession ? requestAPI("/api/me/contributions").catch(() => null) : null;
     const postsPromise = requestAPI("/api/posts").catch(() => ({ posts: [] }));
     const docsPromise = requestAPI("/api/documents").catch(() => ({ documents: [] }));
     const leaderboardPromise = shouldFetchForumLb ? requestAPI("/api/leaderboard").catch(() => null) : Promise.resolve(null);
@@ -2332,7 +2336,7 @@ async function hydrateServer(force = false) {
       setAuthBtn("#accountLoginBtn", false);
 
       try {
-        const profileData = await contribsPromise;
+        const profileData = await (contribsPromise || requestAPI("/api/me/contributions").catch(() => null));
         if (profileData) {
           setCachedContribs(profileData);
           renderProfileStats(profileData);
@@ -16307,6 +16311,34 @@ function initHomeBannerStack() {
   const bannerTrack = $("#bannerTrack");
   if (!bannerTrack) return;
 
+  let bannerViewport = $("#bannerViewport");
+  if (!bannerViewport && bannerTrack.parentElement === stackCard) {
+    bannerViewport = document.createElement("div");
+    bannerViewport.id = "bannerViewport";
+    bannerViewport.className = "banner-viewport";
+    stackCard.insertBefore(bannerViewport, bannerTrack);
+    bannerViewport.appendChild(bannerTrack);
+  }
+
+  let startX = 0;
+  let startY = 0;
+  let isDragging = false;
+  let diffX = 0;
+  let isHorizontalSwipe = null;
+  let lastDragAt = 0;
+
+  const isInteractionLocked = () =>
+    Math.abs(diffX) > 10 ||
+    (lastDragAt && Date.now() - lastDragAt < 180) ||
+    (window.__xmasSnowSwipeLockUntil && Date.now() < window.__xmasSnowSwipeLockUntil);
+
+  const isStackedCarouselMode = () => {
+    if (typeof window.matchMedia === "function" && window.matchMedia("(max-height: 500px) and (orientation: landscape)").matches) {
+      return false;
+    }
+    return window.innerWidth <= 980;
+  };
+
   // Render động các slide banner (bảo tồn nguyên vẹn #weeklyCompetitionModule)
   bannerTrack.querySelectorAll(".banner-slide").forEach((el) => el.remove());
   activeBanners.forEach((b, idx) => {
@@ -16317,18 +16349,20 @@ function initHomeBannerStack() {
     slide.dataset.index = idx;
     slide.innerHTML = `<img src="${b.image}" class="banner-image" alt="${escapeHTML(b.title)}" />`;
     slide.onclick = (e) => {
-      if (Math.abs(diffX) > 10) return;
+      if (isInteractionLocked()) return;
       if (b && typeof b.action === "function") b.action();
     };
     bannerTrack.appendChild(slide);
   });
 
   const syncLayoutAndTrack = () => {
-    const isMobile = window.innerWidth <= 768;
+    const isMobile = isStackedCarouselMode();
+    let movedArenaCard = false;
     if (isMobile) {
       // Mobile: đưa card Arena vào làm slide đầu tiên trong bannerTrack (ngăn xếp hợp nhất)
       if (arenaCard && arenaCard.parentElement !== bannerTrack) {
         bannerTrack.insertBefore(arenaCard, bannerTrack.firstChild);
+        movedArenaCard = true;
       }
       if (arenaCard) arenaCard.style.display = "flex";
       stackCard.style.display = "block";
@@ -16336,9 +16370,13 @@ function initHomeBannerStack() {
       // Desktop: đưa card Arena về lại cột bên trái của showcaseRow
       if (arenaCard && arenaCard.parentElement !== showcaseRow) {
         showcaseRow.insertBefore(arenaCard, stackCard);
+        movedArenaCard = true;
       }
       if (arenaCard) arenaCard.style.display = "flex";
       stackCard.style.display = "block";
+    }
+    if (movedArenaCard && typeof syncCardSnowCaps === "function") {
+      requestAnimationFrame(() => syncCardSnowCaps());
     }
   };
 
@@ -16367,7 +16405,7 @@ function initHomeBannerStack() {
   };
 
   const updateDisplay = () => {
-    const isMobile = window.innerWidth <= 768;
+    const isMobile = isStackedCarouselMode();
     syncLayoutAndTrack();
 
     if (isMobile) {
@@ -16391,7 +16429,7 @@ function initHomeBannerStack() {
   };
 
   const goToSlide = (idx) => {
-    const isMobile = window.innerWidth <= 768;
+    const isMobile = isStackedCarouselMode();
     if (isMobile) {
       const totalMobileSlides = totalBanners + 1;
       homeBannerState.mobileActiveIndex = ((idx % totalMobileSlides) + totalMobileSlides) % totalMobileSlides;
@@ -16403,7 +16441,7 @@ function initHomeBannerStack() {
   };
 
   const nextBanner = () => {
-    const isMobile = window.innerWidth <= 768;
+    const isMobile = isStackedCarouselMode();
     if (isMobile) {
       const totalMobileSlides = totalBanners + 1;
       homeBannerState.mobileActiveIndex = (homeBannerState.mobileActiveIndex + 1) % totalMobileSlides;
@@ -16415,7 +16453,7 @@ function initHomeBannerStack() {
   };
 
   const prevBanner = () => {
-    const isMobile = window.innerWidth <= 768;
+    const isMobile = isStackedCarouselMode();
     if (isMobile) {
       const totalMobileSlides = totalBanners + 1;
       homeBannerState.mobileActiveIndex = (homeBannerState.mobileActiveIndex - 1 + totalMobileSlides) % totalMobileSlides;
@@ -16431,7 +16469,7 @@ function initHomeBannerStack() {
   };
 
   window.handleHomeArenaClick = (e) => {
-    if (Math.abs(diffX) > 10 || (window.__xmasSnowSwipeLockUntil && Date.now() < window.__xmasSnowSwipeLockUntil)) {
+    if (isInteractionLocked()) {
       e.preventDefault();
       e.stopPropagation();
       return;
@@ -16466,12 +16504,6 @@ function initHomeBannerStack() {
   };
 
   // Kéo ngang chuột & Vuốt cảm ứng với hiệu ứng trượt tương tác thời gian thực
-  let startX = 0;
-  let startY = 0;
-  let isDragging = false;
-  let diffX = 0;
-  let isHorizontalSwipe = null;
-
   const onDragStart = (clientX, clientY) => {
     isDragging = true;
     startX = clientX;
@@ -16483,7 +16515,7 @@ function initHomeBannerStack() {
 
   const onDragMove = (clientX, clientY) => {
     if (!isDragging) return;
-    const isMobile = window.innerWidth <= 768;
+    const isMobile = isStackedCarouselMode();
     const currentIdx = isMobile ? homeBannerState.mobileActiveIndex : homeBannerState.activeBannerIndex;
 
     const deltaX = clientX - startX;
@@ -16506,6 +16538,9 @@ function initHomeBannerStack() {
   const onDragEnd = () => {
     if (!isDragging) return;
     isDragging = false;
+    if (Math.abs(diffX) > 10) {
+      lastDragAt = Date.now();
+    }
     const SWIPE_THRESHOLD = 35;
     if (diffX < -SWIPE_THRESHOLD) {
       nextBanner();
@@ -16526,9 +16561,18 @@ function initHomeBannerStack() {
   if (!homeBannerState.isInitialized) {
     homeBannerState.isInitialized = true;
 
+    // Chặn click vô tình lên CTA/banner sau khi người dùng vừa kéo/vuốt chuyển slide
+    stackCard.addEventListener("click", (e) => {
+      if (isInteractionLocked()) {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        e.stopPropagation();
+      }
+    }, true);
+
     // Chuột kéo trên máy tính
     stackCard.addEventListener("mousedown", (e) => {
-      if (e.target.closest("button") || e.target.closest(".banner-dot") || e.target.closest("a")) return;
+      if (e.target.closest(".banner-floating-controls") || e.target.closest(".banner-dot") || e.target.closest("a")) return;
       e.preventDefault();
       onDragStart(e.clientX, e.clientY);
     });
@@ -16537,7 +16581,7 @@ function initHomeBannerStack() {
 
     // Cảm ứng vuốt trên mobile
     stackCard.addEventListener("touchstart", (e) => {
-      if (e.target.closest("button") || e.target.closest(".banner-dot") || e.target.closest("a")) return;
+      if (e.target.closest(".banner-floating-controls") || e.target.closest(".banner-dot") || e.target.closest("a")) return;
       onDragStart(e.touches[0].clientX, e.touches[0].clientY);
     }, { passive: true });
 
@@ -22528,7 +22572,10 @@ function drawProjected3DPolaroid(ctx, sx, sy, pw, ph, sway, angle, it, { isDark,
       ctx.fillText("?", 0, imgY + imgH * 0.52);
     } else {
       const asset = getChristmasTreePhotoAsset(it.photoData);
-      if (asset && asset.ready) {
+      const canDraw = asset && asset.ready && asset.drawable && (
+        asset.drawable instanceof HTMLCanvasElement || Number(asset.drawable.naturalWidth) > 0
+      );
+      if (canDraw) {
         ctx.drawImage(asset.drawable, imgX, imgY, imgW, imgH);
       } else {
         ctx.fillStyle = it.accentColor || "#F0E68C";
@@ -22623,7 +22670,10 @@ function drawProjected3DGreetingCard(ctx, sx, sy, cw, ch, sway, angle, it, { isD
       const tpl = String(it.itemStyle || "card_reindeer");
       if (tpl === "card_santa_letter") {
         const asset = getChristmasTreePhotoAsset("public/assets/card-santa-letter.webp");
-        if (asset && asset.ready) {
+        const canDraw = asset && asset.ready && asset.drawable && (
+          asset.drawable instanceof HTMLCanvasElement || Number(asset.drawable.naturalWidth) > 0
+        );
+        if (canDraw) {
           ctx.drawImage(asset.drawable, ax, ay, aw, ah);
         } else {
           ctx.fillStyle = "#fffdf8";
@@ -24087,6 +24137,15 @@ function getEffectiveViewerStreakAccess() {
   }
   const s = typeof session !== "undefined" ? session : null;
   if (!s) return { streak: 0, streakTier: 0, canUploadPhoto: false };
+  if (typeof s.streakTier === "number") {
+    const streakVal = Math.max(0, Number(s.streak || 0));
+    const tierVal = Math.max(0, Math.min(5, Number(s.streakTier || 0)));
+    return {
+      streak: streakVal,
+      streakTier: tierVal,
+      canUploadPhoto: typeof s.canUploadPhoto === "boolean" ? s.canUploadPhoto : streakVal >= 3,
+    };
+  }
   if (s.role === "admin" || s.role === "ta") {
     return { streak: Math.max(52, Number(s.streak || 0)), streakTier: 5, canUploadPhoto: true };
   }
@@ -24599,24 +24658,39 @@ function applyChristmasTreeServerPayload(data, syncForms = true) {
 }
 
 async function fetchChristmasTreeData(syncForms = true) {
-  if (christmasTreeEventState.loading) return;
+  const token = (christmasTreeEventState._fetchToken || 0) + 1;
+  christmasTreeEventState._fetchToken = token;
   christmasTreeEventState.loading = true;
   try {
     const data = await requestAPI("/api/christmas-tree", { method: "GET" });
+    if (token !== christmasTreeEventState._fetchToken) return;
     applyChristmasTreeServerPayload(data, syncForms);
   } catch (err) {
-    console.warn("Không thể tải dữ liệu cây thông Giáng sinh:", err);
+    if (token === christmasTreeEventState._fetchToken) {
+      console.warn("Không thể tải dữ liệu cây thông Giáng sinh:", err);
+    }
   } finally {
-    christmasTreeEventState.loading = false;
+    if (token === christmasTreeEventState._fetchToken) {
+      christmasTreeEventState.loading = false;
+    }
   }
 }
 window.fetchChristmasTreeData = fetchChristmasTreeData;
 
 function setChristmasTreeStatus(msg, isError = false) {
   const el = $("#xmasTreeFormStatus");
-  if (!el) return;
-  el.textContent = msg || "";
-  el.classList.toggle("is-error", Boolean(isError));
+  if (el) {
+    el.textContent = msg || "";
+    el.classList.toggle("is-error", Boolean(isError));
+    if (isError && msg && typeof el.scrollIntoView === "function") {
+      try {
+        el.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      } catch {}
+    }
+  }
+  if (isError && msg && typeof toast === "function") {
+    toast(msg);
+  }
 }
 
 async function compressPolaroidImageFile(file) {
@@ -25074,8 +25148,31 @@ function initChristmasTreeStudio() {
     }
   }
 
+  function canSubmitChristmasTreeSlot(slotKind) {
+    if (!(typeof session !== "undefined" && session)) {
+      setChristmasTreeStatus("Vui lòng đăng nhập để trang trí cây thông Giáng sinh.", true);
+      return false;
+    }
+    const ownSlots = new Set(
+      (christmasTreeEventState.items || [])
+        .filter((it) => it && it.isSelf)
+        .map((it) => it.slotKind)
+    );
+    if (!ownSlots.has(slotKind) && ownSlots.size >= 2) {
+      const slotLabels = { polaroid: "Polaroid", card: "Thiệp", gift: "Hộp quà", accessory: "Phụ kiện" };
+      const activeNames = Array.from(ownSlots).map((k) => slotLabels[k] || k).join(" & ");
+      setChristmasTreeStatus(
+        `Bạn đã treo đủ 2/4 loại (${activeNames}). Hãy gỡ bớt 1 món nếu muốn đổi sang ${slotLabels[slotKind] || "mục này"}.`,
+        true
+      );
+      return false;
+    }
+    return true;
+  }
+
   slotForms.polaroid?.addEventListener("submit", async (ev) => {
     ev.preventDefault();
+    if (!canSubmitChristmasTreeSlot("polaroid")) return;
     const styleEl = document.querySelector('input[name="polaroidStyle"]:checked');
     const msgEl = $("#xmasPolaroidMsg");
     const shuffleEl = $("#xmasPolaroidShuffle");
@@ -25099,6 +25196,7 @@ function initChristmasTreeStudio() {
 
   slotForms.card?.addEventListener("submit", async (ev) => {
     ev.preventDefault();
+    if (!canSubmitChristmasTreeSlot("card")) return;
     const tplEl = document.querySelector('input[name="cardStyle"]:checked');
     const finishEl = document.querySelector('input[name="cardFinish"]:checked');
     const nameEl = $("#xmasCardName");
@@ -25127,6 +25225,7 @@ function initChristmasTreeStudio() {
 
   slotForms.gift?.addEventListener("submit", async (ev) => {
     ev.preventDefault();
+    if (!canSubmitChristmasTreeSlot("gift")) return;
     const styleEl = document.querySelector('input[name="giftStyle"]:checked');
     const msgEl = $("#xmasGiftMsg");
     const shuffleEl = $("#xmasGiftShuffle");
@@ -25145,6 +25244,7 @@ function initChristmasTreeStudio() {
   // Accessory hangs directly with zero confirm dialog & zero message
   slotForms.accessory?.addEventListener("submit", async (ev) => {
     ev.preventDefault();
+    if (!canSubmitChristmasTreeSlot("accessory")) return;
     const styleEl = document.querySelector('input[name="accessoryStyle"]:checked');
     const shuffleEl = $("#xmasAccShuffle");
     await saveChristmasTreeOrnament({

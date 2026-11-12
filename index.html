@@ -30,7 +30,7 @@
     <script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js" defer></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" defer></script>
-    <link rel="stylesheet" href="styles.css?v=163" />
+    <link rel="stylesheet" href="styles.css?v=164" />
   </head>
   <body>
     <canvas id="christmasTreeCanvas" class="christmas-tree-edge-canvas" aria-hidden="true"></canvas>
@@ -619,7 +619,8 @@
 
           <!-- CỘT PHẢI: NGĂN XẾP BANNER THÔNG BÁO (Kích thước chuẩn 430 x 240 px, luân phiên 15s) -->
           <div id="bannerStackCard" class="banner-stack-card" aria-label="Ngăn xếp banner thông báo" title="Kéo ngang để xem các banner khác">
-            <div class="banner-track" id="bannerTrack">
+            <div class="banner-viewport" id="bannerViewport">
+              <div class="banner-track" id="bannerTrack">
               <!-- Slide 0: Sự kiện cộng đồng: Trang trí Cây thông Giáng sinh 2026 (đến hết 31/12/2026, tương tác mở modal) -->
               <div class="banner-slide active" data-banner-id="xmas-tree-2026" data-index="0">
                 <img src="public/assets/banner-xmas-tree.png?v=20261112_1" class="banner-image" alt="Trang trí Cây thông Giáng sinh Cộng đồng RE:SEARCH 2026" />
@@ -667,6 +668,7 @@
               <!-- Slide 10: Halloween Cho Kẹo Hay Bị Ghẹo (Sau 01/11/2026 sẽ không hiển thị) -->
               <div class="banner-slide" data-banner-id="halloween" data-index="9">
                 <img src="public/assets/banner-halloween.jpg?v=20261016_2" class="banner-image" alt="Halloween Cho Kẹo Hay Bị Ghẹo" />
+              </div>
               </div>
             </div>
             <!-- Floating Navigation Controls ở góc dưới bên phải -->
@@ -6017,6 +6019,6 @@
       </button>
     </div>
 
-    <script src="app.js?v=163" defer></script>
+    <script src="app.js?v=164" defer></script>
   </body>
 </html>

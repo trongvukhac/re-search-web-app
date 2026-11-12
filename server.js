@@ -815,8 +815,10 @@ try {
     const hasFinish = oldCols.includes("item_finish");
     const hasCardName = oldCols.includes("card_name");
     const hasCardYear = oldCols.includes("card_year");
-    const migrateTx = db.transaction(() => {
+    db.exec("PRAGMA foreign_keys = OFF;");
+    try {
       db.exec(`
+        BEGIN;
         DROP TABLE IF EXISTS christmas_tree_ornaments_v2;
         CREATE TABLE christmas_tree_ornaments_v2 (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -837,9 +839,7 @@ try {
           updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
           UNIQUE(user_id, slot_kind)
         );
-      `);
-      db.exec(`
-        INSERT INTO christmas_tree_ornaments_v2 (
+        INSERT OR IGNORE INTO christmas_tree_ornaments_v2 (
           id, user_id, slot_kind, item_style, item_finish, message, photo_data, card_name, card_year,
           frame_color, accent_color, pos_u, pos_angle, is_sealed, created_at, updated_at
         )
@@ -867,9 +867,14 @@ try {
         DROP TABLE christmas_tree_ornaments;
         ALTER TABLE christmas_tree_ornaments_v2 RENAME TO christmas_tree_ornaments;
         CREATE INDEX IF NOT EXISTS idx_christmas_tree_created ON christmas_tree_ornaments(created_at DESC);
+        COMMIT;
       `);
-    });
-    migrateTx();
+    } catch (err) {
+      try { db.exec("ROLLBACK;"); } catch {}
+      throw err;
+    } finally {
+      try { db.exec("PRAGMA foreign_keys = ON;"); } catch {}
+    }
   }
   const treeCols = db.prepare("PRAGMA table_info(christmas_tree_ornaments)").all();
   if (!treeCols.some((c) => c.name === "is_sealed")) {
