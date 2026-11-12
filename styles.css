@@ -29188,26 +29188,36 @@ body.christmas-season:not(.christmas-effects-off) header#siteHeader .site-header
   }
 }
 
-/* Sculpted Fluffy Snow Caps on Home Spotlight Cards (clipped cleanly to border-radius, zero text overlap) */
-body.christmas-season:not(.christmas-effects-off) #homeContributionCard,
-body.christmas-season:not(.christmas-effects-off) #weeklyCompetitionModule {
+/* Interactive Dynamic Snow Caps on Large Cards (Canvas rendered, swipe-to-clear & regrows gradually) */
+body.christmas-season:not(.christmas-effects-off) .xmas-snow-card {
   position: relative;
 }
 
-body.christmas-season:not(.christmas-effects-off) #homeContributionCard::before,
-body.christmas-season:not(.christmas-effects-off) #weeklyCompetitionModule::before {
-  content: "";
+.xmas-card-snow-canvas {
+  display: none;
   position: absolute;
   top: 0;
   left: 0;
-  right: 0;
-  height: 11px;
+  width: 100%;
+  height: 28px;
   pointer-events: none;
-  z-index: 3;
-  background-repeat: repeat-x;
-  background-size: 260px 11px;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 260 11' preserveAspectRatio='none'%3E%3Cpath d='M0 0 L260 0 L260 4 Q236 10 208 5 Q180 1 152 7 Q126 11 96 4 Q68 1 40 7.5 Q18 11 0 5 Z' fill='rgba(255,255,255,0.92)'/%3E%3Cpath d='M0 4 Q18 10 40 6.5 Q68 1 96 3.5 Q126 10 152 6 Q180 1 208 4 Q236 9 260 3' fill='none' stroke='rgba(224,242,254,0.85)' stroke-width='0.9'/%3E%3C/svg%3E");
-  filter: drop-shadow(0 2px 3px rgba(6, 32, 22, 0.16));
+  z-index: 5;
+  border-top-left-radius: inherit;
+  border-top-right-radius: inherit;
+}
+
+body.christmas-season:not(.christmas-effects-off) .xmas-snow-card>.xmas-card-snow-canvas {
+  display: block;
+}
+
+body.christmas-season:not(.christmas-effects-off) .xmas-snow-card.is-snow-hover {
+  cursor: grab;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .xmas-card-snow-canvas {
+    display: none !important;
+  }
 }
 
 body.christmas-season:not(.christmas-effects-off) #bannerStackCard {
@@ -29611,6 +29621,28 @@ body.dark-theme dialog#christmasTreeModal[open] {
   line-height: 1.45;
 }
 
+.xmas-tree-policy-note {
+  margin: 7px 0 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 11px;
+  border-radius: 12px;
+  font-size: 11.5px;
+  font-weight: 600;
+  line-height: 1.35;
+  background: rgba(15, 118, 110, 0.09);
+  border: 1px solid rgba(15, 118, 110, 0.22);
+  color: #0f766e;
+}
+
+html.dark-theme .xmas-tree-policy-note,
+body.dark-theme .xmas-tree-policy-note {
+  background: rgba(52, 211, 153, 0.11);
+  border-color: rgba(52, 211, 153, 0.28);
+  color: #a7f3d0;
+}
+
 .xmas-tree-close-btn {
   width: 38px;
   height: 38px;
@@ -29972,25 +30004,45 @@ body.dark-theme .xmas-slot-pill.active {
 .xmas-polaroid-preview-row {
   display: flex;
   gap: 14px;
-  align-items: flex-start;
+  align-items: stretch;
 }
 
 .xmas-mini-polaroid-preview {
-  width: 118px;
+  position: relative;
+  width: 124px;
   padding: 8px 8px 12px;
-  border-radius: 8px;
+  border-radius: 10px;
   background: #FFFAF0;
-  border: 1px solid rgba(15, 23, 42, 0.1);
-  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.12);
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.14);
   flex-shrink: 0;
-  transform: rotate(-2deg);
-  transition: background 0.18s ease;
+  transform: rotate(-1.6deg);
+  transition: background 0.18s ease, transform 0.2s ease;
+}
+
+.xmas-preview-seal-badge {
+  position: absolute;
+  top: -8px;
+  left: -6px;
+  right: -6px;
+  padding: 3px 6px;
+  border-radius: 9999px;
+  background: linear-gradient(135deg, #be123c, #9f1239);
+  color: #fef3c7;
+  font-size: 9.5px;
+  font-weight: 700;
+  text-align: center;
+  box-shadow: 0 4px 10px rgba(159, 18, 57, 0.35);
+  z-index: 2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .xmas-preview-photo-box {
   width: 100%;
   aspect-ratio: 1 / 1;
-  border-radius: 4px;
+  border-radius: 5px;
   overflow: hidden;
   display: flex;
   align-items: center;
@@ -30028,7 +30080,8 @@ body.dark-theme .xmas-slot-pill.active {
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 7px;
+  justify-content: space-between;
+  gap: 8px;
 }
 
 #christmasTreeModal label {
@@ -30040,7 +30093,7 @@ body.dark-theme .xmas-slot-pill.active {
   display: block;
   font-size: 12.5px;
   font-weight: 700;
-  margin-bottom: 3px;
+  margin-bottom: 2px;
 }
 
 #christmasTreeModal input[type="radio"],
@@ -30056,44 +30109,163 @@ body.dark-theme .xmas-slot-pill.active {
   flex-shrink: 0;
 }
 
-#christmasTreeModal .xmas-file-input {
-  width: 100%;
-  font-size: 12px;
-  padding: 6px 8px;
-  margin: 0;
-  border-radius: 8px;
-  border: 1px solid var(--line, #dfe4dc);
-  background: var(--surface-2, #f8fafc);
-  color: inherit;
+.xmas-file-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
 }
 
-.xmas-preset-photo-row {
+#christmasTreeModal .xmas-upload-dropzone {
+  position: relative;
   display: flex;
-  flex-wrap: wrap;
-  gap: 5px;
+  align-items: center;
+  gap: 11px;
+  padding: 11px 13px;
+  border-radius: 12px;
+  border: 1.5px dashed rgba(22, 163, 74, 0.42);
+  background: rgba(240, 253, 244, 0.72);
+  color: var(--ink, #123d30);
+  cursor: pointer;
+  transition: border-color 0.16s ease, background 0.16s ease, transform 0.15s ease;
 }
 
-.xmas-preset-chip {
-  border: 1px solid var(--line, #dfe4dc);
-  background: var(--surface-2, #f8fafc);
-  color: var(--ink, #123d30);
-  border-radius: 9999px;
-  padding: 4px 9px;
+#christmasTreeModal .xmas-upload-dropzone:hover,
+#christmasTreeModal .xmas-upload-dropzone.is-dragover {
+  border-color: #16a34a;
+  background: rgba(220, 252, 231, 0.85);
+}
+
+#christmasTreeModal .xmas-upload-dropzone:has(input:focus-visible) {
+  outline: 2px solid #0ea5e9;
+  outline-offset: 2px;
+}
+
+html.dark-theme #christmasTreeModal .xmas-upload-dropzone,
+body.dark-theme #christmasTreeModal .xmas-upload-dropzone {
+  border-color: rgba(52, 211, 153, 0.4);
+  background: rgba(16, 42, 34, 0.6);
+  color: #ecfdf5;
+}
+
+.xmas-upload-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #16a34a, #0f766e);
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.xmas-upload-copy {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: 1px;
+}
+
+.xmas-upload-copy strong {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.xmas-upload-copy small {
+  font-size: 11px;
+  color: var(--muted, #64748b);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.xmas-clear-photo-link {
+  align-self: flex-start;
+  border: 0;
+  padding: 2px 4px;
+  background: transparent;
+  color: var(--muted, #64748b);
+  font-family: inherit;
   font-size: 11.5px;
   font-weight: 600;
   cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
 }
 
-.xmas-preset-chip.active {
+.xmas-clear-photo-link:hover {
+  color: var(--ink, #123d30);
+}
+
+.xmas-preset-gallery {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.xmas-preset-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 5px;
+  border-radius: 11px;
+  border: 1.5px solid var(--line, #dfe4dc);
+  background: var(--surface-2, #f8fafc);
+  color: var(--ink, #123d30);
+  font-family: inherit;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.16s ease, transform 0.15s ease, box-shadow 0.16s ease;
+}
+
+.xmas-preset-card:hover {
+  transform: translateY(-1px);
+  border-color: rgba(22, 163, 74, 0.55);
+}
+
+.xmas-preset-card.active {
   border-color: #16a34a;
-  background: rgba(22, 163, 74, 0.14);
-  color: #14532d;
+  background: rgba(22, 163, 74, 0.1);
+  box-shadow: 0 0 0 1px rgba(22, 163, 74, 0.35);
 }
 
-html.dark-theme .xmas-preset-chip.active,
-body.dark-theme .xmas-preset-chip.active {
+.xmas-preset-thumb {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  border-radius: 7px;
+  overflow: hidden;
+  background: #0f172a;
+}
+
+.xmas-preset-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.xmas-preset-name {
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+html.dark-theme .xmas-preset-card,
+body.dark-theme .xmas-preset-card {
+  background: #13221d;
+  color: #e2e8f0;
+  border-color: rgba(148, 163, 184, 0.2);
+}
+
+html.dark-theme .xmas-preset-card.active,
+body.dark-theme .xmas-preset-card.active {
   border-color: #34d399;
   color: #a7f3d0;
+  background: rgba(52, 211, 153, 0.14);
 }
 
 .xmas-fieldset {
@@ -30113,32 +30285,101 @@ body.dark-theme .xmas-preset-chip.active {
 .xmas-color-radio-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 7px;
 }
 
 #christmasTreeModal .xmas-color-radio {
+  position: relative;
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 5px 11px;
+  gap: 7px;
+  padding: 5px 11px 5px 7px;
   margin: 0;
   border-radius: 9999px;
-  border: 1px solid var(--line, #dfe4dc);
+  border: 1.5px solid var(--line, #dfe4dc);
   background: var(--surface-2, #f8fafc);
   color: inherit;
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+#christmasTreeModal .xmas-color-radio input,
+#christmasTreeModal .xmas-acc-card input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.xmas-swatch-dot {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 1px solid rgba(15, 23, 42, 0.18);
+  flex-shrink: 0;
 }
 
 .xmas-color-radio:has(input:checked) {
   border-color: #16a34a;
   background: rgba(22, 163, 74, 0.12);
+  box-shadow: 0 0 0 1px rgba(22, 163, 74, 0.25);
 }
 
-.xmas-color-radio input,
-.xmas-acc-card input {
-  accent-color: #16a34a;
+.xmas-color-radio:has(input:focus-visible),
+.xmas-acc-card:has(input:focus-visible),
+.xmas-preset-card:focus-visible {
+  outline: 2px solid #0ea5e9;
+  outline-offset: 2px;
+}
+
+.xmas-acc-preview-strip {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 13px;
+  border-radius: 12px;
+  border: 1px solid rgba(22, 163, 74, 0.24);
+  background: linear-gradient(135deg, rgba(240, 253, 244, 0.85), rgba(254, 249, 195, 0.55));
+}
+
+html.dark-theme .xmas-acc-preview-strip,
+body.dark-theme .xmas-acc-preview-strip {
+  background: linear-gradient(135deg, rgba(16, 46, 34, 0.8), rgba(66, 32, 6, 0.45));
+  border-color: rgba(52, 211, 153, 0.28);
+}
+
+.xmas-acc-preview-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 11px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 21px;
+  background: rgba(255, 255, 255, 0.85);
+  box-shadow: 0 4px 10px rgba(15, 23, 42, 0.1);
+  flex-shrink: 0;
+}
+
+.xmas-acc-preview-copy {
+  min-width: 0;
+}
+
+.xmas-acc-preview-copy strong {
+  display: block;
+  font-size: 13px;
+}
+
+.xmas-acc-preview-copy p {
+  margin: 2px 0 0;
+  font-size: 12px;
+  color: var(--muted, #64748b);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .xmas-acc-radio-grid {
@@ -30148,23 +30389,199 @@ body.dark-theme .xmas-preset-chip.active {
 }
 
 #christmasTreeModal .xmas-acc-card {
+  position: relative;
   display: flex;
   align-items: center;
-  gap: 7px;
+  gap: 8px;
   padding: 8px 9px;
   margin: 0;
-  border-radius: 10px;
-  border: 1px solid var(--line, #dfe4dc);
+  border-radius: 11px;
+  border: 1.5px solid var(--line, #dfe4dc);
   background: var(--surface-2, #f8fafc);
   color: inherit;
-  font-size: 12px;
-  font-weight: 600;
+  font-size: 11.5px;
+  font-weight: 700;
   cursor: pointer;
+  transition: border-color 0.15s ease, transform 0.14s ease, background 0.15s ease;
+}
+
+#christmasTreeModal .xmas-acc-card:hover {
+  transform: translateY(-1px);
+  border-color: rgba(22, 163, 74, 0.48);
+}
+
+.xmas-acc-card-emblem {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  color: #fff;
+  flex-shrink: 0;
+  box-shadow: inset 0 -2px 4px rgba(0, 0, 0, 0.22);
+}
+
+.xmas-acc-card-name {
+  min-width: 0;
+  line-height: 1.25;
 }
 
 .xmas-acc-card:has(input:checked) {
   border-color: #16a34a;
   background: rgba(22, 163, 74, 0.12);
+  box-shadow: 0 0 0 1px rgba(22, 163, 74, 0.28);
+}
+
+html.dark-theme #christmasTreeModal .xmas-acc-card,
+body.dark-theme #christmasTreeModal .xmas-acc-card {
+  background: #13221d;
+  border-color: rgba(148, 163, 184, 0.22);
+}
+
+html.dark-theme .xmas-acc-card:has(input:checked),
+body.dark-theme .xmas-acc-card:has(input:checked) {
+  border-color: #34d399;
+  background: rgba(52, 211, 153, 0.15);
+}
+
+/* Sealed Mystery Badge inside Gallery & Inspector */
+.xmas-mystery-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 4px;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  font-size: 11px;
+  font-weight: 700;
+  background: rgba(190, 18, 60, 0.1);
+  color: #be123c;
+  border: 1px solid rgba(190, 18, 60, 0.25);
+}
+
+html.dark-theme .xmas-mystery-tag,
+body.dark-theme .xmas-mystery-tag {
+  background: rgba(251, 113, 133, 0.15);
+  color: #fda4af;
+  border-color: rgba(251, 113, 133, 0.3);
+}
+
+/* Confirmation Modal: "Bạn có muốn giữ món quà này đến Giáng sinh?" */
+dialog.xmas-confirm-modal {
+  margin: auto;
+  padding: 0;
+  border: 1px solid var(--line, #dfe4dc);
+  border-radius: 22px;
+  width: min(440px, calc(100vw - 24px));
+  background: var(--surface, #ffffff);
+  color: var(--ink, #123d30);
+  box-shadow: 0 28px 64px rgba(2, 16, 12, 0.42);
+  overscroll-behavior: contain;
+}
+
+dialog.xmas-confirm-modal:not([open]) {
+  display: none;
+}
+
+dialog.xmas-confirm-modal::backdrop {
+  background: rgba(4, 15, 11, 0.62);
+  backdrop-filter: blur(5px);
+}
+
+html.dark-theme dialog.xmas-confirm-modal,
+body.dark-theme dialog.xmas-confirm-modal {
+  background: #0d1d17;
+  color: #ecfdf5;
+  border-color: rgba(134, 239, 172, 0.22);
+}
+
+.xmas-confirm-card {
+  padding: 24px 22px 20px;
+  text-align: center;
+}
+
+.xmas-confirm-hero {
+  font-size: 28px;
+  line-height: 1;
+  margin-bottom: 10px;
+}
+
+.xmas-confirm-card h3 {
+  margin: 0 0 8px;
+  font-family: var(--unbounded, "Unbounded", sans-serif);
+  font-size: 16.5px;
+  line-height: 1.35;
+}
+
+.xmas-confirm-desc {
+  margin: 0 0 18px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--muted, #64748b);
+}
+
+.xmas-confirm-choices {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.xmas-confirm-choice-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 13px 10px;
+  border-radius: 14px;
+  border: 1.5px solid transparent;
+  font-family: inherit;
+  cursor: pointer;
+  transition: transform 0.14s ease, box-shadow 0.16s ease, border-color 0.16s ease;
+}
+
+.xmas-confirm-choice-btn:hover {
+  transform: translateY(-2px);
+}
+
+.xmas-confirm-choice-btn strong {
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.xmas-confirm-choice-btn span {
+  font-size: 11px;
+  opacity: 0.88;
+}
+
+.xmas-confirm-choice-btn.is-seal {
+  background: linear-gradient(135deg, #be123c, #9f1239);
+  color: #fff7ed;
+  box-shadow: 0 10px 22px rgba(159, 18, 57, 0.28);
+}
+
+.xmas-confirm-choice-btn.is-open {
+  background: linear-gradient(135deg, #16a34a, #0f766e);
+  color: #ffffff;
+  box-shadow: 0 10px 22px rgba(15, 118, 110, 0.28);
+}
+
+.xmas-confirm-cancel-btn {
+  border: 0;
+  background: transparent;
+  color: var(--muted, #64748b);
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  padding: 6px 12px;
+  cursor: pointer;
+}
+
+.xmas-confirm-cancel-btn:hover {
+  color: var(--ink, #123d30);
+  text-decoration: underline;
 }
 
 .xmas-field-group {
@@ -30366,6 +30783,15 @@ body.dark-theme .xmas-preset-chip.active {
 @media (max-width: 480px) {
   .xmas-polaroid-preview-row {
     flex-direction: column;
+    align-items: center;
+  }
+
+  .xmas-preset-gallery {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .xmas-confirm-choices {
+    grid-template-columns: 1fr;
   }
 }
 

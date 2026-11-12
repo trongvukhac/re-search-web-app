@@ -797,12 +797,17 @@ try {
       accent_color TEXT NOT NULL DEFAULT '#FFD700',
       pos_u REAL NOT NULL,
       pos_angle REAL NOT NULL,
+      is_sealed INTEGER NOT NULL DEFAULT 0,
       created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
       updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
       UNIQUE(user_id, slot_kind)
     );
     CREATE INDEX IF NOT EXISTS idx_christmas_tree_created ON christmas_tree_ornaments(created_at DESC);
   `);
+  const treeCols = db.prepare("PRAGMA table_info(christmas_tree_ornaments)").all();
+  if (!treeCols.some((c) => c.name === "is_sealed")) {
+    db.exec("ALTER TABLE christmas_tree_ornaments ADD COLUMN is_sealed INTEGER NOT NULL DEFAULT 0");
+  }
 } catch (e) {
   console.error("[DB Schema christmas_tree_ornaments]", e);
 }
@@ -5515,11 +5520,17 @@ async function api(request, response, url) {
     ["fairy_garland", { frameColor: "#FFD54F", accentColor: "#38BDF8" }]
   ]);
 
+  const CHRISTMAS_2026_REVEAL_AT = "2026-12-24T20:00:00+07:00";
+  const CHRISTMAS_2026_REVEAL_MS = Date.parse(CHRISTMAS_2026_REVEAL_AT);
+  const CHRISTMAS_LOCKED_NOTICE = "Chờ tới Giáng sinh để mở quà nhé!";
+
   const TREE_PHOTO_PRESETS = new Set([
     "preset:aurora",
     "preset:fireplace",
     "preset:snowman",
-    "preset:starlight"
+    "preset:starlight",
+    "preset:cabin",
+    "preset:study_night"
   ]);
 
   function buildChristmasTreePayload(viewer) {
@@ -5529,30 +5540,52 @@ async function api(request, response, url) {
       JOIN users u ON u.id = o.user_id
       ORDER BY o.updated_at DESC, o.id DESC
     `).all();
-    const isAdminOrTa = Boolean(viewer && (viewer.role === "admin" || viewer.role === "ta"));
-    const items = rows.map((r) => ({
-      id: r.id,
-      userId: r.user_id,
-      authorName: r.display_name || "Thành viên",
-      authorAvatar: r.avatar || getAvatarEmoji(r.display_name || "R"),
-      authorRole: r.role || "student",
-      slotKind: r.slot_kind,
-      itemStyle: r.item_style,
-      message: r.message || "",
-      photoData: r.photo_data || "",
-      frameColor: r.frame_color || "#FFFAF0",
-      accentColor: r.accent_color || "#FFD700",
-      posU: Number(r.pos_u),
-      posAngle: Number(r.pos_angle),
-      createdAt: (r.created_at || "").replace(" ", "T") + "Z",
-      updatedAt: (r.updated_at || "").replace(" ", "T") + "Z",
-      isSelf: Boolean(viewer && r.user_id === viewer.id),
-      canDelete: Boolean(viewer && (r.user_id === viewer.id || isAdminOrTa))
-    }));
+    const isAdmin = Boolean(viewer && viewer.role === "admin");
+    const isRevealed = Date.now() >= CHRISTMAS_2026_REVEAL_MS;
+    const items = rows.map((r) => {
+      const isSelf = Boolean(viewer && r.user_id === viewer.id);
+      const isSealed = Boolean(Number(r.is_sealed));
+      const isMysteryLocked = isSealed && !isRevealed;
+      const item = {
+        id: r.id,
+        userId: r.user_id,
+        authorName: r.display_name || "Thành viên",
+        authorAvatar: r.avatar || getAvatarEmoji(r.display_name || "R"),
+        authorRole: r.role || "student",
+        slotKind: r.slot_kind,
+        itemStyle: r.item_style,
+        message: isMysteryLocked ? "" : (r.message || ""),
+        photoData: isMysteryLocked ? "" : (r.photo_data || ""),
+        frameColor: r.frame_color || "#FFFAF0",
+        accentColor: r.accent_color || "#FFD700",
+        posU: Number(r.pos_u),
+        posAngle: Number(r.pos_angle),
+        isSealed,
+        isMysteryLocked,
+        revealAt: CHRISTMAS_2026_REVEAL_AT,
+        lockedNotice: isMysteryLocked ? CHRISTMAS_LOCKED_NOTICE : "",
+        createdAt: (r.created_at || "").replace(" ", "T") + "Z",
+        updatedAt: (r.updated_at || "").replace(" ", "T") + "Z",
+        isSelf,
+        canDelete: Boolean(viewer && (r.user_id === viewer.id || isAdmin))
+      };
+      if (isSelf && isMysteryLocked) {
+        item.ownerDraft = {
+          message: r.message || "",
+          photoData: r.photo_data || "",
+          isSealed: true
+        };
+      }
+      return item;
+    });
     const uniqueUsers = new Set(items.map((x) => x.userId));
     return {
       active: isChristmas2026Window(),
       expiresAt: CHRISTMAS_2026_EXPIRES_AT,
+      revealAt: CHRISTMAS_2026_REVEAL_AT,
+      revealAtMs: CHRISTMAS_2026_REVEAL_MS,
+      isMysteryRevealed: isRevealed,
+      lockedNotice: CHRISTMAS_LOCKED_NOTICE,
       stats: {
         totalItems: items.length,
         contributors: uniqueUsers.size,
@@ -5616,6 +5649,8 @@ async function api(request, response, url) {
 
       const rawStyle = typeof body.itemStyle === "string" ? body.itemStyle.trim() : "";
       const shufflePosition = Boolean(body.shufflePosition);
+      const isRevealed = Date.now() >= CHRISTMAS_2026_REVEAL_MS;
+      const isSealed = (!isRevealed && Boolean(body.isSealed)) ? 1 : 0;
 
       let frameColor = "#FFFAF0";
       let accentColor = "#FFD700";
@@ -5673,9 +5708,9 @@ async function api(request, response, url) {
 
       db.prepare(`
         INSERT INTO christmas_tree_ornaments (
-          user_id, slot_kind, item_style, message, photo_data, frame_color, accent_color, pos_u, pos_angle, created_at, updated_at
+          user_id, slot_kind, item_style, message, photo_data, frame_color, accent_color, pos_u, pos_angle, is_sealed, created_at, updated_at
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
         ON CONFLICT(user_id, slot_kind) DO UPDATE SET
           item_style = excluded.item_style,
           message = excluded.message,
@@ -5684,8 +5719,9 @@ async function api(request, response, url) {
           accent_color = excluded.accent_color,
           pos_u = excluded.pos_u,
           pos_angle = excluded.pos_angle,
+          is_sealed = excluded.is_sealed,
           updated_at = CURRENT_TIMESTAMP
-      `).run(user.id, slotKind, rawStyle, message, photoData, frameColor, accentColor, spot.posU, spot.posAngle);
+      `).run(user.id, slotKind, rawStyle, message, photoData, frameColor, accentColor, spot.posU, spot.posAngle, isSealed);
 
       return json(response, 200, {
         ok: true,
@@ -5711,9 +5747,9 @@ async function api(request, response, url) {
     const existing = db.prepare("SELECT * FROM christmas_tree_ornaments WHERE id = ?").get(itemId);
     if (!existing) return error(response, 404, "Không tìm thấy vật trang trí.");
 
-    const isModerator = user.role === "admin" || user.role === "ta";
-    if (existing.user_id !== user.id && !isModerator) {
-      return error(response, 403, "Bạn chỉ có thể gỡ vật trang trí của chính mình.");
+    const isAdmin = user.role === "admin";
+    if (existing.user_id !== user.id && !isAdmin) {
+      return error(response, 403, "Chỉ chủ nhân món quà và admin mới có quyền gỡ món quà của cá nhân đó.");
     }
 
     db.prepare("DELETE FROM christmas_tree_ornaments WHERE id = ?").run(itemId);
