@@ -21881,11 +21881,12 @@ function buildCommunityOrnamentNodes(communityItems) {
       nodes.push({
         kind: "community_gift",
         data: item,
-        u: 0.025 + ((item.id % 5) * 0.009),
-        rNorm: 0.34 + ((item.id * 19) % 28) * 0.01,
+        u: 0.025 + ((item.id % 5) * 0.008),
+        rNorm: 0.56 + ((item.id * 19) % 24) * 0.01,
         angle,
+        yawOffset: ((item.id * 1.13) % (Math.PI * 2)),
         palette,
-        size: 11,
+        size: 14.8,
         bobPhase: (item.id * 0.77) % (Math.PI * 2)
       });
     } else if (item.itemStyle === "fairy_garland") {
@@ -21933,38 +21934,91 @@ function syncCombinedChristmasTreeItems() {
   christmasTreeState.projected = new Array(combined.length);
 }
 
-function drawTreeBaseAndMound(ctx, anchorX, baseY, treeR, isDark) {
-  // Compact contact shadow & sculpted snow-dusted mound directly under trunk base (no giant edge aura)
+function drawSoftSnowDriftLobe(ctx, cx, cy, rx, ry, isDark) {
   ctx.save();
-  const shadowGrad = ctx.createRadialGradient(anchorX, baseY + 3, 2, anchorX, baseY + 3, treeR * 0.64);
-  shadowGrad.addColorStop(0, isDark ? "rgba(0, 0, 0, 0.46)" : "rgba(15, 23, 42, 0.2)");
-  shadowGrad.addColorStop(0.65, isDark ? "rgba(0, 0, 0, 0.18)" : "rgba(15, 23, 42, 0.06)");
-  shadowGrad.addColorStop(1, "rgba(0, 0, 0, 0)");
-  ctx.fillStyle = shadowGrad;
+  ctx.translate(cx, cy);
+  ctx.scale(1, ry / Math.max(1, rx));
+  const g = ctx.createRadialGradient(0, -rx * 0.14, rx * 0.06, 0, 0, rx);
+  if (isDark) {
+    g.addColorStop(0, "rgba(248, 250, 252, 0.92)");
+    g.addColorStop(0.55, "rgba(226, 232, 240, 0.45)");
+    g.addColorStop(1, "rgba(226, 232, 240, 0)");
+  } else {
+    g.addColorStop(0, "rgba(255, 255, 255, 0.98)");
+    g.addColorStop(0.58, "rgba(248, 252, 255, 0.52)");
+    g.addColorStop(1, "rgba(255, 255, 255, 0)");
+  }
+  ctx.fillStyle = g;
   ctx.beginPath();
-  ctx.ellipse(anchorX, baseY + 3, treeR * 0.64, treeR * 0.17, 0, 0, Math.PI * 2);
+  ctx.arc(0, 0, rx, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+}
+
+function drawTreeBaseAndMound(ctx, anchorX, baseY, treeR, isDark) {
+  // Natural sculpted snowdrift bank tapering softly to alpha=0 along the floor (zero hard saucer outline)
+  ctx.save();
+  const bankHalfW = treeR * 0.78;
+  const moundH = Math.max(9, treeR * 0.19);
+  const steps = 28;
+
+  // Wavy multi-hump snowbank silhouette blending vertically from sunlit snow crest to transparent floor
+  const bankGrad = ctx.createLinearGradient(anchorX, baseY - moundH, anchorX, baseY + moundH * 0.65);
+  if (isDark) {
+    bankGrad.addColorStop(0, "rgba(255, 255, 255, 0.92)");
+    bankGrad.addColorStop(0.45, "rgba(219, 234, 254, 0.68)");
+    bankGrad.addColorStop(0.82, "rgba(148, 163, 184, 0.18)");
+    bankGrad.addColorStop(1, "rgba(148, 163, 184, 0)");
+  } else {
+    bankGrad.addColorStop(0, "rgba(255, 255, 255, 0.98)");
+    bankGrad.addColorStop(0.42, "rgba(241, 248, 255, 0.84)");
+    bankGrad.addColorStop(0.82, "rgba(224, 242, 254, 0.24)");
+    bankGrad.addColorStop(1, "rgba(255, 255, 255, 0)");
+  }
+
+  ctx.beginPath();
+  ctx.moveTo(anchorX - bankHalfW, baseY + moundH * 0.55);
+  for (let i = 0; i <= steps; i++) {
+    const u = i / steps;
+    const x = anchorX - bankHalfW + u * bankHalfW * 2;
+    const env = Math.pow(Math.sin(u * Math.PI), 0.85);
+    const wave =
+      Math.sin(u * Math.PI * 2.7 + 0.55) * 0.22 +
+      Math.cos(u * Math.PI * 4.4 - 0.3) * 0.12 +
+      0.72;
+    const crestY = baseY + 2 - moundH * env * Math.max(0.35, wave);
+    ctx.lineTo(x, crestY);
+  }
+  ctx.lineTo(anchorX + bankHalfW, baseY + moundH * 0.55);
+  ctx.quadraticCurveTo(anchorX, baseY + moundH * 0.82, anchorX - bankHalfW, baseY + moundH * 0.55);
+  ctx.closePath();
+  ctx.fillStyle = bankGrad;
   ctx.fill();
 
-  const moundW = treeR * 0.56;
-  const moundH = Math.max(8, treeR * 0.16);
-  const moundGrad = ctx.createLinearGradient(anchorX, baseY - moundH, anchorX, baseY + 5);
-  if (isDark) {
-    moundGrad.addColorStop(0, "#f1f5f9");
-    moundGrad.addColorStop(0.6, "#94a3b8");
-    moundGrad.addColorStop(1, "#475569");
-  } else {
-    moundGrad.addColorStop(0, "#ffffff");
-    moundGrad.addColorStop(0.62, "#e2e8f0");
-    moundGrad.addColorStop(1, "#cbd5e1");
-  }
-  ctx.fillStyle = moundGrad;
+  // Soft pine-branch contact occlusion tucked into the snow right under the lowest foliage skirt
+  const castGrad = ctx.createRadialGradient(anchorX, baseY - 1, 2, anchorX, baseY + 1, treeR * 0.62);
+  castGrad.addColorStop(0, isDark ? "rgba(2, 16, 18, 0.44)" : "rgba(15, 23, 42, 0.14)");
+  castGrad.addColorStop(0.65, isDark ? "rgba(2, 16, 18, 0.16)" : "rgba(15, 23, 42, 0.04)");
+  castGrad.addColorStop(1, "rgba(0, 0, 0, 0)");
+  ctx.fillStyle = castGrad;
   ctx.beginPath();
-  ctx.moveTo(anchorX - moundW, baseY + 2);
-  ctx.quadraticCurveTo(anchorX - moundW * 0.52, baseY - moundH * 1.15, anchorX, baseY - moundH);
-  ctx.quadraticCurveTo(anchorX + moundW * 0.52, baseY - moundH * 1.15, anchorX + moundW, baseY + 2);
-  ctx.quadraticCurveTo(anchorX, baseY + 6, anchorX - moundW, baseY + 2);
-  ctx.closePath();
+  ctx.ellipse(anchorX, baseY + 1, treeR * 0.62, moundH * 0.58, 0, 0, Math.PI * 2);
   ctx.fill();
+
+  // Powdery snow drifts pillowing organically around foreground & trunk collar
+  drawSoftSnowDriftLobe(ctx, anchorX - treeR * 0.26, baseY + 1, treeR * 0.36, moundH * 0.68, isDark);
+  drawSoftSnowDriftLobe(ctx, anchorX + treeR * 0.24, baseY + 2, treeR * 0.32, moundH * 0.62, isDark);
+  drawSoftSnowDriftLobe(ctx, anchorX, baseY - moundH * 0.34, treeR * 0.22, moundH * 0.54, isDark);
+
+  // Subtle icy surface glints along upper sunlit ridges
+  const glints = [-0.32, -0.12, 0.11, 0.29];
+  ctx.fillStyle = "#ffffff";
+  for (let i = 0; i < glints.length; i++) {
+    ctx.globalAlpha = 0.78 - i * 0.08;
+    ctx.beginPath();
+    ctx.arc(anchorX + treeR * glints[i], baseY - moundH * (0.26 + (i % 2) * 0.22), 1.15, 0, Math.PI * 2);
+    ctx.fill();
+  }
   ctx.restore();
 }
 
@@ -22071,6 +22125,270 @@ function drawFacetedTopStar(ctx, cx, cy, outerR, rotY, isDark, sprites) {
   ctx.beginPath();
   ctx.arc(cx, cy, Math.max(1.4, outerR * 0.16), 0, Math.PI * 2);
   ctx.fill();
+  ctx.restore();
+}
+
+function hexShadeRgb(hex, mult) {
+  const clean = String(hex || "").replace("#", "");
+  if (clean.length !== 6) return String(hex || "#e2e8f0");
+  const r = Math.max(0, Math.min(255, Math.round(parseInt(clean.slice(0, 2), 16) * mult)));
+  const g = Math.max(0, Math.min(255, Math.round(parseInt(clean.slice(2, 4), 16) * mult)));
+  const b = Math.max(0, Math.min(255, Math.round(parseInt(clean.slice(4, 6), 16) * mult)));
+  return `rgb(${r}, ${g}, ${b})`;
+}
+
+function lerpQuadUV(quad, u, v) {
+  const [p0, p1, p2, p3] = quad;
+  const u1 = 1 - u;
+  const v1 = 1 - v;
+  return {
+    x: u1 * v1 * p0.sx + u * v1 * p1.sx + u * v * p2.sx + u1 * v * p3.sx,
+    y: u1 * v1 * p0.sy + u * v1 * p1.sy + u * v * p2.sy + u1 * v * p3.sy
+  };
+}
+
+function drawQuadBandUV(ctx, quad, u0, v0, u1, v1, fillStyle, strokeStyle = "") {
+  const c0 = lerpQuadUV(quad, u0, v0);
+  const c1 = lerpQuadUV(quad, u1, v0);
+  const c2 = lerpQuadUV(quad, u1, v1);
+  const c3 = lerpQuadUV(quad, u0, v1);
+  ctx.beginPath();
+  ctx.moveTo(c0.x, c0.y);
+  ctx.lineTo(c1.x, c1.y);
+  ctx.lineTo(c2.x, c2.y);
+  ctx.lineTo(c3.x, c3.y);
+  ctx.closePath();
+  ctx.fillStyle = fillStyle;
+  ctx.fill();
+  if (strokeStyle) {
+    ctx.strokeStyle = strokeStyle;
+    ctx.lineWidth = 0.7;
+    ctx.stroke();
+  }
+}
+
+function drawProjected3DGiftBox(ctx, cx, cy, s, yaw, palette, { isDark, isMystery, isSelected }) {
+  const cosY = Math.cos(yaw);
+  const sinY = Math.sin(yaw);
+  const pitch = 0.36;
+  const cosP = Math.cos(pitch);
+  const sinP = Math.sin(pitch);
+  const fovLocal = Math.max(24, s * 6.0);
+
+  const projPt = (lx, ly, lz) => {
+    const rx = lx * cosY - lz * sinY;
+    const rz = lx * sinY + lz * cosY;
+    const pl = fovLocal / (fovLocal + rz);
+    return {
+      sx: cx + rx * pl,
+      sy: cy + (ly * cosP - rz * sinP) * pl,
+      rz
+    };
+  };
+
+  const renderPrism = (hx, yTop, yBot, hz, baseHex, lidMode) => {
+    const t0 = projPt(-hx, yTop, -hz);
+    const t1 = projPt(hx, yTop, -hz);
+    const t2 = projPt(hx, yTop, hz);
+    const t3 = projPt(-hx, yTop, hz);
+    const b0 = projPt(-hx, yBot, -hz);
+    const b1 = projPt(hx, yBot, -hz);
+    const b2 = projPt(hx, yBot, hz);
+    const b3 = projPt(-hx, yBot, hz);
+
+    const sides = [
+      { pts: [t0, t1, b1, b0], nx: sinY, nz: -cosY },
+      { pts: [t1, t2, b2, b1], nx: cosY, nz: sinY },
+      { pts: [t2, t3, b3, b2], nx: -sinY, nz: cosY },
+      { pts: [t3, t0, b0, b3], nx: -cosY, nz: -sinY }
+    ].filter((f) => f.nz < -0.001);
+
+    sides.forEach((f) => {
+      f.avgZ = (f.pts[0].rz + f.pts[1].rz + f.pts[2].rz + f.pts[3].rz) * 0.25;
+    });
+    sides.sort((a, b) => b.avgZ - a.avgZ);
+
+    let bestFrontFace = null;
+    for (let i = 0; i < sides.length; i++) {
+      const f = sides[i];
+      if (!bestFrontFace || -f.nz > -bestFrontFace.nz) bestFrontFace = f;
+      const light = 0.72 + 0.34 * Math.max(0, -f.nz * 0.85 - f.nx * 0.42);
+      drawQuadBandUV(ctx, f.pts, 0, 0, 1, 1, hexShadeRgb(baseHex, light), "rgba(255,255,255,0.12)");
+      const ribShade = 0.84 + 0.24 * Math.max(0, -f.nz * 0.85 - f.nx * 0.42);
+      drawQuadBandUV(ctx, f.pts, 0.39, 0, 0.61, 1, hexShadeRgb(palette.ribbon, ribShade));
+      if (!lidMode) {
+        drawQuadBandUV(ctx, f.pts, 0, 0.45, 1, 0.61, hexShadeRgb(palette.ribbon, ribShade));
+        drawQuadBandUV(ctx, f.pts, 0, 0, 1, 0.14, "rgba(0, 0, 0, 0.24)");
+      }
+    }
+
+    const topQuad = [t3, t2, t1, t0];
+    drawQuadBandUV(ctx, topQuad, 0, 0, 1, 1, hexShadeRgb(baseHex, 1.08), "rgba(255,255,255,0.22)");
+    if (lidMode) {
+      drawQuadBandUV(ctx, topQuad, 0.39, 0, 0.61, 1, palette.ribbon);
+      drawQuadBandUV(ctx, topQuad, 0, 0.39, 1, 0.61, palette.ribbon);
+    }
+    return bestFrontFace;
+  };
+
+  ctx.save();
+  // Soft ground/branch contact shadow directly beneath gift
+  ctx.fillStyle = isDark ? "rgba(0, 0, 0, 0.42)" : "rgba(15, 23, 42, 0.22)";
+  ctx.beginPath();
+  ctx.ellipse(cx, cy + s * 0.46, s * 0.56, s * 0.18, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  const hx = s * 0.44;
+  const bodyFace = renderPrism(hx, -s * 0.22, s * 0.44, hx, palette.box, false);
+  renderPrism(hx * 1.11, -s * 0.46, -s * 0.19, hx * 1.11, palette.lid, true);
+
+  // Rotating 3D top ribbon bow centered on lid
+  const bowC = projPt(0, -s * 0.48, 0);
+  const bowSpan = s * 0.24;
+  const dxBow = cosY * bowSpan;
+  const dyBow = -sinY * sinP * bowSpan * 0.85;
+  ctx.strokeStyle = palette.ribbon;
+  ctx.lineWidth = Math.max(1.2, s * 0.12);
+  ctx.beginPath();
+  ctx.ellipse(bowC.sx - dxBow * 0.62, bowC.sy - dyBow * 0.62 - s * 0.05, Math.max(1.5, Math.abs(cosY) * bowSpan * 0.68 + s * 0.08), s * 0.11, yaw * 0.15 - 0.3, 0, Math.PI * 2);
+  ctx.ellipse(bowC.sx + dxBow * 0.62, bowC.sy + dyBow * 0.62 - s * 0.05, Math.max(1.5, Math.abs(cosY) * bowSpan * 0.68 + s * 0.08), s * 0.11, -yaw * 0.15 + 0.3, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.fillStyle = hexShadeRgb(palette.ribbon, 1.08);
+  ctx.beginPath();
+  ctx.arc(bowC.sx, bowC.sy - s * 0.03, Math.max(1.3, s * 0.1), 0, Math.PI * 2);
+  ctx.fill();
+
+  if (isMystery && bodyFace) {
+    const fc = lerpQuadUV(bodyFace.pts, 0.5, 0.55);
+    const faceScale = Math.max(0.28, -bodyFace.nz);
+    const badgeR = Math.max(3.1, s * 0.24);
+    ctx.save();
+    ctx.translate(fc.sx, fc.sy);
+    ctx.scale(faceScale, 1);
+    ctx.fillStyle = "#fde047";
+    ctx.beginPath();
+    ctx.arc(0, 0, badgeR, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#7f1d1d";
+    ctx.font = `900 ${Math.max(6, Math.round(badgeR * 1.35))}px sans-serif`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText("?", 0, badgeR * 0.06);
+    ctx.restore();
+  }
+
+  if (isSelected) {
+    ctx.strokeStyle = "#FACC15";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.ellipse(cx, cy - s * 0.02, s * 0.72, s * 0.68, 0, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+function drawProjected3DPolaroid(ctx, sx, sy, pw, ph, sway, angle, it, { isDark, isSelected }) {
+  // Outward normal faces radial angle: facing=+1 front (-pi/2), 0 edge-on (0 or pi), -1 back (+pi/2)
+  const facing = -Math.sin(angle);
+  const absFacing = Math.abs(facing);
+  const edgeCos = Math.cos(angle);
+  const scaleX = Math.max(0.08, absFacing);
+  const isFront = facing >= 0;
+
+  ctx.save();
+  ctx.translate(sx, sy);
+
+  // Delicate gold string leaning slightly inward toward cone trunk
+  ctx.strokeStyle = "#EAB308";
+  ctx.lineWidth = Math.max(0.7, pw * 0.045);
+  ctx.beginPath();
+  ctx.moveTo(0, -ph * 0.48);
+  ctx.lineTo(-edgeCos * Math.max(1.5, pw * 0.14), -ph * 0.5 - Math.max(4, pw * 0.24));
+  ctx.stroke();
+
+  ctx.rotate(sway * (0.35 + 0.65 * absFacing));
+  // Perspective foreshortening & subtle vertical slant as ornament sweeps around cylinder
+  ctx.transform(scaleX, edgeCos * 0.14, 0, 1, 0, 0);
+
+  // Drop shadow behind Polaroid card
+  ctx.fillStyle = isDark ? "rgba(0, 0, 0, 0.38)" : "rgba(15, 23, 42, 0.2)";
+  ctx.fillRect(-pw * 0.5 + 1.4, -ph * 0.5 + 1.8, pw, ph);
+
+  // Visible 3D cardstock side edge when rotated past ~35 deg
+  if (absFacing < 0.84) {
+    const edgeThick = (1 - absFacing) * Math.max(1.6, pw * 0.16) / scaleX;
+    const edgeDir = edgeCos >= 0 ? -1 : 1;
+    ctx.fillStyle = isDark ? "#94a3b8" : "#cbd5e1";
+    ctx.fillRect(
+      edgeDir < 0 ? -pw * 0.5 - edgeThick : pw * 0.5,
+      -ph * 0.5,
+      edgeThick,
+      ph
+    );
+  }
+
+  if (isFront) {
+    ctx.fillStyle = it.frameColor || "#FFFAF0";
+    ctx.fillRect(-pw * 0.5, -ph * 0.5, pw, ph);
+    if (isSelected || !isDark) {
+      ctx.strokeStyle = isSelected ? "#F59E0B" : "rgba(15, 23, 42, 0.22)";
+      ctx.lineWidth = isSelected ? 2 : 0.7;
+      ctx.strokeRect(-pw * 0.5, -ph * 0.5, pw, ph);
+    }
+
+    const pad = pw * 0.12;
+    const imgW = pw - pad * 2;
+    const imgH = ph * 0.66;
+    const imgX = -pw * 0.5 + pad;
+    const imgY = -ph * 0.5 + pad;
+    const isMystery = Boolean(it.data && it.data.isMysteryLocked);
+    if (isMystery) {
+      const mg = ctx.createLinearGradient(imgX, imgY, imgX + imgW, imgY + imgH);
+      mg.addColorStop(0, "#9f1239");
+      mg.addColorStop(1, "#be123c");
+      ctx.fillStyle = mg;
+      ctx.fillRect(imgX, imgY, imgW, imgH);
+      ctx.strokeStyle = "#fde047";
+      ctx.lineWidth = Math.max(0.8, pw * 0.045);
+      ctx.beginPath();
+      ctx.moveTo(imgX, imgY + imgH * 0.5);
+      ctx.lineTo(imgX + imgW, imgY + imgH * 0.5);
+      ctx.moveTo(imgX + imgW * 0.5, imgY);
+      ctx.lineTo(imgX + imgW * 0.5, imgY + imgH);
+      ctx.stroke();
+      ctx.fillStyle = "#fffbeb";
+      ctx.font = `800 ${Math.max(8, Math.round(imgH * 0.54))}px sans-serif`;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText("?", 0, imgY + imgH * 0.52);
+    } else {
+      const asset = getChristmasTreePhotoAsset(it.photoData);
+      if (asset && asset.ready) {
+        ctx.drawImage(asset.drawable, imgX, imgY, imgW, imgH);
+      } else {
+        ctx.fillStyle = it.accentColor || "#F0E68C";
+        ctx.fillRect(imgX, imgY, imgW, imgH);
+      }
+      if (it.data && it.data.message && pw >= 15) {
+        ctx.fillStyle = "rgba(51, 65, 85, 0.52)";
+        ctx.fillRect(-pw * 0.34, ph * 0.31, pw * 0.68, Math.max(1.2, pw * 0.05));
+      }
+    }
+  } else {
+    // Authentic cardstock back when spun 180 deg behind tree
+    ctx.fillStyle = isDark ? "#e2dcd0" : "#efe6d5";
+    ctx.fillRect(-pw * 0.5, -ph * 0.5, pw, ph);
+    ctx.strokeStyle = isSelected ? "#F59E0B" : "rgba(100, 116, 139, 0.32)";
+    ctx.lineWidth = isSelected ? 2 : 0.75;
+    ctx.strokeRect(-pw * 0.5, -ph * 0.5, pw, ph);
+    // Decorative craft tape + wax seal on reverse
+    ctx.fillStyle = "rgba(217, 119, 6, 0.42)";
+    ctx.fillRect(-pw * 0.16, -ph * 0.54, pw * 0.32, ph * 0.15);
+    ctx.fillStyle = "#b91c1c";
+    ctx.beginPath();
+    ctx.arc(0, 0, Math.max(1.8, pw * 0.14), 0, Math.PI * 2);
+    ctx.fill();
+  }
   ctx.restore();
 }
 
@@ -22187,69 +22505,8 @@ function renderChristmasTreeScene(ctx, layout, projBuffer, sceneParams) {
       const sway = it.baseTilt + Math.sin(t * 1.45 + it.swayPhase) * 0.12;
       const isSelected = it.data && (it.data.id === selectedId || it.data.id === hoverId);
       ctx.save();
-      ctx.translate(p.sx, p.sy);
-      ctx.rotate(sway);
       ctx.globalAlpha = 0.82 + 0.18 * depthNorm;
-
-      // Delicate gold hanging loop string
-      ctx.strokeStyle = "#EAB308";
-      ctx.lineWidth = Math.max(0.7, pw * 0.045);
-      ctx.beginPath();
-      ctx.moveTo(0, -ph * 0.5);
-      ctx.lineTo(0, -ph * 0.5 - Math.max(4, pw * 0.24));
-      ctx.stroke();
-
-      ctx.fillStyle = isDark ? "rgba(0, 0, 0, 0.38)" : "rgba(15, 23, 42, 0.2)";
-      ctx.fillRect(-pw * 0.5 + 1.4, -ph * 0.5 + 1.8, pw, ph);
-
-      ctx.fillStyle = it.frameColor || "#FFFAF0";
-      ctx.fillRect(-pw * 0.5, -ph * 0.5, pw, ph);
-      if (isSelected || !isDark) {
-        ctx.strokeStyle = isSelected ? "#F59E0B" : "rgba(15, 23, 42, 0.2)";
-        ctx.lineWidth = isSelected ? 2 : 0.7;
-        ctx.strokeRect(-pw * 0.5, -ph * 0.5, pw, ph);
-      }
-
-      const pad = pw * 0.12;
-      const imgW = pw - pad * 2;
-      const imgH = ph * 0.66;
-      const imgX = -pw * 0.5 + pad;
-      const imgY = -ph * 0.5 + pad;
-      const isMystery = Boolean(it.data && it.data.isMysteryLocked);
-      if (isMystery) {
-        const mg = ctx.createLinearGradient(imgX, imgY, imgX + imgW, imgY + imgH);
-        mg.addColorStop(0, "#9f1239");
-        mg.addColorStop(1, "#be123c");
-        ctx.fillStyle = mg;
-        ctx.fillRect(imgX, imgY, imgW, imgH);
-        ctx.strokeStyle = "#fde047";
-        ctx.lineWidth = Math.max(0.8, pw * 0.045);
-        ctx.beginPath();
-        ctx.moveTo(imgX, imgY + imgH * 0.5);
-        ctx.lineTo(imgX + imgW, imgY + imgH * 0.5);
-        ctx.moveTo(imgX + imgW * 0.5, imgY);
-        ctx.lineTo(imgX + imgW * 0.5, imgY + imgH);
-        ctx.stroke();
-        ctx.fillStyle = "#fffbeb";
-        ctx.font = `800 ${Math.max(8, Math.round(imgH * 0.54))}px sans-serif`;
-        ctx.textAlign = "center";
-        ctx.textBaseline = "middle";
-        ctx.fillText("?", 0, imgY + imgH * 0.52);
-      } else {
-        const asset = getChristmasTreePhotoAsset(it.photoData);
-        if (asset && asset.ready) {
-          ctx.drawImage(asset.drawable, imgX, imgY, imgW, imgH);
-        } else {
-          ctx.fillStyle = it.accentColor || "#F0E68C";
-          ctx.fillRect(imgX, imgY, imgW, imgH);
-        }
-
-        // Handwritten caption hint lines on Polaroid lower chin
-        if (it.data && it.data.message && pw >= 15) {
-          ctx.fillStyle = "rgba(51, 65, 85, 0.52)";
-          ctx.fillRect(-pw * 0.34, ph * 0.31, pw * 0.68, Math.max(1.2, pw * 0.05));
-        }
-      }
+      drawProjected3DPolaroid(ctx, p.sx, p.sy, pw, ph, sway, p.angle, it, { isDark, isSelected });
       ctx.restore();
       if (interactive && it.data && hitBoxes) {
         hitBoxes.push({ item: it.data, x: p.sx, y: p.sy, r: Math.max(18, ph * 0.64) });
@@ -22257,60 +22514,38 @@ function renderChristmasTreeScene(ctx, layout, projBuffer, sceneParams) {
     } else if (it.kind === "community_gift") {
       const s = it.size * persp * scaleBoost;
       const bob = Math.sin(t * 1.4 + it.bobPhase) * 0.7;
-      const gx = p.sx - s * 0.5;
-      const gy = p.sy - s * 0.5 + bob;
       const isSelected = it.data && (it.data.id === selectedId || it.data.id === hoverId);
       const isMystery = Boolean(it.data && it.data.isMysteryLocked);
       ctx.save();
-      ctx.globalAlpha = 0.84 + 0.16 * depthNorm;
-      ctx.fillStyle = it.palette.box;
-      ctx.fillRect(gx, gy + s * 0.22, s, s * 0.78);
-      ctx.fillStyle = it.palette.lid;
-      ctx.fillRect(gx - 0.9, gy, s + 1.8, s * 0.27);
-      ctx.fillStyle = it.palette.ribbon;
-      ctx.fillRect(p.sx - s * 0.12, gy, s * 0.24, s);
-      ctx.fillRect(gx, gy + s * 0.54, s, s * 0.16);
-      // Small gift bow loop
-      ctx.strokeStyle = it.palette.ribbon;
-      ctx.lineWidth = Math.max(1, s * 0.11);
-      ctx.beginPath();
-      ctx.ellipse(p.sx - s * 0.16, gy - s * 0.07, s * 0.14, s * 0.09, -0.35, 0, Math.PI * 2);
-      ctx.ellipse(p.sx + s * 0.16, gy - s * 0.07, s * 0.14, s * 0.09, 0.35, 0, Math.PI * 2);
-      ctx.stroke();
-      if (isMystery) {
-        ctx.fillStyle = "#fde047";
-        ctx.beginPath();
-        ctx.arc(p.sx, gy + s * 0.6, Math.max(3.5, s * 0.28), 0, Math.PI * 2);
-        ctx.fill();
-        ctx.fillStyle = "#7f1d1d";
-        ctx.font = `900 ${Math.max(6, Math.round(s * 0.34))}px sans-serif`;
-        ctx.textAlign = "center";
-        ctx.textBaseline = "middle";
-        ctx.fillText("?", p.sx, gy + s * 0.62);
-      }
-      if (isSelected) {
-        ctx.strokeStyle = "#FACC15";
-        ctx.lineWidth = 2;
-        ctx.strokeRect(gx - 2.5, gy - 2.5, s + 5, s + 5);
-      }
+      ctx.globalAlpha = 0.86 + 0.14 * depthNorm;
+      drawProjected3DGiftBox(
+        ctx,
+        p.sx,
+        p.sy + bob,
+        s,
+        p.angle + (it.yawOffset || 0),
+        it.palette,
+        { isDark, isMystery, isSelected }
+      );
       ctx.restore();
       if (interactive && it.data && hitBoxes) {
-        hitBoxes.push({ item: it.data, x: p.sx, y: p.sy + bob, r: Math.max(16, s * 0.85) });
+        hitBoxes.push({ item: it.data, x: p.sx, y: p.sy + bob, r: Math.max(17, s * 0.92) });
       }
     } else if (it.kind === "community_bauble") {
       const r = it.size * persp * scaleBoost;
       const isSelected = it.data && (it.data.id === selectedId || it.data.id === hoverId);
+      const specOffsetX = Math.cos(p.angle) * r * 0.22 - r * 0.26;
       ctx.save();
       ctx.globalAlpha = 0.84 + 0.16 * depthNorm;
       ctx.fillStyle = "#F59E0B";
       ctx.fillRect(p.sx - r * 0.28, p.sy - r * 1.18, r * 0.56, r * 0.28);
-      ctx.fillStyle = it.color;
+      const baubleGrad = ctx.createRadialGradient(p.sx + specOffsetX, p.sy - r * 0.34, Math.max(0.5, r * 0.12), p.sx, p.sy, r);
+      baubleGrad.addColorStop(0, "#ffffff");
+      baubleGrad.addColorStop(0.28, it.color);
+      baubleGrad.addColorStop(1, hexShadeRgb(it.color, 0.58 + 0.22 * depthNorm));
+      ctx.fillStyle = baubleGrad;
       ctx.beginPath();
       ctx.arc(p.sx, p.sy, r, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillStyle = "rgba(255, 255, 255, 0.72)";
-      ctx.beginPath();
-      ctx.arc(p.sx - r * 0.32, p.sy - r * 0.34, Math.max(0.9, r * 0.32), 0, Math.PI * 2);
       ctx.fill();
       if (isSelected) {
         ctx.strokeStyle = "#FACC15";
@@ -22388,7 +22623,7 @@ function renderChristmasTreeFrame(nowMs) {
   const dt = christmasTreeState.lastMs ? Math.min(0.05, Math.max(0.004, (nowMs - christmasTreeState.lastMs) / 1000)) : 0.016;
   christmasTreeState.lastMs = nowMs;
   christmasTreeState.timeSec += dt;
-  christmasTreeState.rotation = (christmasTreeState.rotation + dt * 0.28) % (Math.PI * 2);
+  christmasTreeState.rotation = (christmasTreeState.rotation + dt * 0.38) % (Math.PI * 2);
   christmasTreeState.starRotation = (christmasTreeState.starRotation + dt * 0.85) % (Math.PI * 2);
 
   ctx.clearRect(0, 0, w, h);
@@ -22417,15 +22652,27 @@ function buildCardSnowProfile(width, colW, seedOffset) {
   const target = new Float32Array(count);
   for (let i = 0; i < count; i++) {
     const frac = i / Math.max(1, count - 1);
-    const edgeTaper = Math.sin(Math.min(1, frac * 11) * Math.PI * 0.5) * Math.sin(Math.min(1, (1 - frac) * 11) * Math.PI * 0.5);
-    // Scalloped pillowy drifts resting along card rim (fluffy billows without obscuring header text)
-    const billow = Math.abs(Math.sin(frac * Math.PI * 7.5 + seedOffset)) * 3.8;
-    const ripple = Math.sin(frac * 27.0 + seedOffset * 1.9) * 1.15 + Math.cos(frac * 9.5 + seedOffset * 0.8) * 1.6;
-    const h = Math.max(3.5, Math.min(14.5, (6.4 + billow + ripple) * (0.58 + 0.42 * edgeTaper)));
+    const leftEdge = Math.sin(Math.min(1, frac * 9.5) * Math.PI * 0.5);
+    const rightEdge = Math.sin(Math.min(1, (1 - frac) * 9.5) * Math.PI * 0.5);
+    const edgeTaper = Math.pow(leftEdge * rightEdge, 0.78);
+    // Scalloped pillowy snowdrifts piled ABOVE the card's upper rim
+    const billow = Math.abs(Math.sin(frac * Math.PI * 7.2 + seedOffset)) * 4.2;
+    const ripple = Math.sin(frac * 25.0 + seedOffset * 1.9) * 1.2 + Math.cos(frac * 9.2 + seedOffset * 0.8) * 1.65;
+    const rawH = Math.max(4.0, Math.min(15.5, 6.8 + billow + ripple));
+    const h = i === 0 || i === count - 1 ? 0 : rawH * edgeTaper;
     cols[i] = h;
     target[i] = h;
   }
   return { cols, target };
+}
+
+function cardCornerDropY(cardX, cardWidth, effR) {
+  if (!effR || effR <= 1) return 0;
+  let dx = 0;
+  if (cardX < effR) dx = effR - cardX;
+  else if (cardX > cardWidth - effR) dx = cardX - (cardWidth - effR);
+  else return 0;
+  return effR - Math.sqrt(Math.max(0, effR * effR - dx * dx));
 }
 
 function syncCardSnowCaps() {
@@ -22444,64 +22691,64 @@ function syncCardSnowCaps() {
 
   cardEls.forEach((el, idx) => {
     if (!el || !el.isConnected) return;
+    // Remove any legacy inner-card canvas elements if present
+    const legacyCanvas = el.querySelector(":scope > canvas.xmas-card-snow-canvas");
+    if (legacyCanvas) legacyCanvas.remove();
+
     el.classList.add("xmas-snow-card");
-    let canvas = el.querySelector(":scope > canvas.xmas-card-snow-canvas");
-    if (!canvas) {
-      canvas = document.createElement("canvas");
-      canvas.className = "xmas-card-snow-canvas";
-      canvas.setAttribute("aria-hidden", "true");
-      el.appendChild(canvas);
-    }
+    const rectW = Math.round(el.getBoundingClientRect().width || el.clientWidth || 0);
+    const parsedRadius = parseFloat(window.getComputedStyle(el).borderTopLeftRadius || "14") || 14;
+    const cornerR = Math.max(0, Math.min(parsedRadius, Math.max(0, rectW * 0.22)));
+    const insetX = Math.max(4, Math.round(cornerR * 0.36));
+    const usableW = Math.max(0, rectW - insetX * 2);
+
     let entry = registry.get(el);
-    const rectW = Math.round(el.clientWidth || el.getBoundingClientRect().width || 0);
     if (!entry) {
       const colW = 3;
-      const w = Math.max(120, rectW || 320);
-      const prof = buildCardSnowProfile(w, colW, idx * 1.93 + 0.7);
+      const initW = Math.max(120, usableW || 320);
+      const prof = buildCardSnowProfile(initW, colW, idx * 1.93 + 0.7);
       entry = {
         el,
-        canvas,
-        ctx: canvas.getContext("2d"),
-        width: 0,
+        width: usableW > 20 ? usableW : 0,
+        cardWidth: rectW,
+        cornerR,
+        insetX,
         colW,
         cols: prof.cols,
         target: prof.target,
-        dirty: true,
         glints: Array.from({ length: 14 }, (_, gi) => ({
-          frac: (gi + 0.4) / 14,
+          frac: 0.06 + (gi / 13) * 0.88,
           phase: gi * 1.27 + idx
         }))
       };
       registry.set(el, entry);
+    } else {
+      entry.cornerR = cornerR;
+      entry.insetX = insetX;
+      entry.cardWidth = rectW;
     }
-    if (rectW > 20 && Math.abs(rectW - entry.width) > 4) {
-      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+
+    if (usableW > 20 && Math.abs(usableW - entry.width) > 4) {
       const oldCols = entry.cols;
+      const oldTarget = entry.target;
       const oldLen = oldCols ? oldCols.length : 0;
-      const prof = buildCardSnowProfile(rectW, entry.colW, idx * 1.93 + 0.7);
-      if (oldLen > 0) {
+      const prof = buildCardSnowProfile(usableW, entry.colW, idx * 1.93 + 0.7);
+      if (oldLen > 0 && oldTarget) {
         for (let i = 0; i < prof.cols.length; i++) {
           const mapped = Math.min(oldLen - 1, Math.round((i / Math.max(1, prof.cols.length - 1)) * (oldLen - 1)));
-          const ratio = Math.min(1, oldCols[mapped] / Math.max(0.5, entry.target[mapped] || 8));
+          const baseT = oldTarget[mapped];
+          const ratio = baseT > 0.2 ? Math.min(1, oldCols[mapped] / baseT) : 1;
           prof.cols[i] = prof.target[i] * ratio;
         }
       }
       entry.cols = prof.cols;
       entry.target = prof.target;
-      entry.width = rectW;
-      canvas.width = Math.max(1, Math.floor(rectW * dpr));
-      canvas.height = Math.max(1, Math.floor(28 * dpr));
-      const cCtx = canvas.getContext("2d");
-      if (cCtx) {
-        cCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
-        entry.ctx = cCtx;
-      }
-      entry.dirty = true;
+      entry.width = usableW;
     }
   });
 
   // Prune detached DOM elements safely
-  registry.forEach((entry, el) => {
+  registry.forEach((_, el) => {
     if (!el || !el.isConnected) {
       registry.delete(el);
     }
@@ -22509,117 +22756,138 @@ function syncCardSnowCaps() {
 }
 
 function brushCardSnowSegment(entry, rect, localX0, localX1, velX) {
-  const { cols, colW, target } = entry;
-  if (!cols || !cols.length) return 0;
+  const { cols, target, width, insetX, cornerR } = entry;
+  if (!cols || !cols.length || width < 20) return 0;
+  const colStep = width / Math.max(1, cols.length - 1);
   const minX = Math.min(localX0, localX1);
   const maxX = Math.max(localX0, localX1);
-  const brushR = 20;
-  const startCol = Math.max(0, Math.floor((minX - brushR) / colW));
-  const endCol = Math.min(cols.length - 1, Math.ceil((maxX + brushR) / colW));
+  const brushR = 22;
+  const startCol = Math.max(0, Math.floor((minX - brushR) / colStep));
+  const endCol = Math.min(cols.length - 1, Math.ceil((maxX + brushR) / colStep));
   let removedSum = 0;
 
   for (let i = startCol; i <= endCol; i++) {
-    const cx = i * colW;
+    const cx = i * colStep;
     const dist = cx < minX ? minX - cx : (cx > maxX ? cx - maxX : 0);
     const falloff = Math.max(0, Math.cos((dist / brushR) * Math.PI * 0.5));
     if (falloff <= 0.04) continue;
     const prevH = cols[i];
     if (prevH <= 0.45) continue;
-    const clearFloor = Math.max(0.25, target[i] * (1 - falloff) * 0.35);
-    const nextH = Math.max(0.25, Math.min(prevH, prevH * (1 - 0.86 * falloff)));
+    const clearFloor = Math.max(0.2, target[i] * (1 - falloff) * 0.3);
+    const nextH = Math.max(0.2, Math.min(prevH, prevH * (1 - 0.88 * falloff)));
     const newH = Math.max(clearFloor, nextH);
     const diff = prevH - newH;
     if (diff > 0.12) {
       cols[i] = newH;
       removedSum += diff;
-      if (removedSum > 0.6 && (i % 3 === 0) && christmasSnowState.cascades.length < 150) {
+      if (removedSum > 0.55 && (i % 3 === 0) && christmasSnowState.cascades.length < 150) {
+        const dropY = cardCornerDropY(insetX + cx, rect.width, cornerR);
         christmasSnowState.cascades.push({
-          x: rect.left + cx + (Math.random() - 0.5) * 8,
-          y: rect.top + prevH * 0.72 + Math.random() * 4,
+          x: rect.left + insetX + cx + (Math.random() - 0.5) * 8,
+          y: rect.top + dropY - prevH * 0.4 + Math.random() * 4,
           vx: Math.max(-4.2, Math.min(4.2, velX * 0.18 + (Math.random() - 0.5) * 2.1)),
-          vy: 0.8 + Math.random() * 1.9,
+          vy: 0.7 + Math.random() * 1.8,
           r: 1.5 + Math.random() * 2.3,
-          alpha: 0.78 + Math.random() * 0.22,
+          alpha: 0.82 + Math.random() * 0.18,
           life: 1.0
         });
       }
     }
   }
-  if (removedSum > 0.05) {
-    entry.dirty = true;
-  }
   return removedSum;
 }
 
-function renderCardSnowCapCanvas(entry, isDark, tPhase) {
-  const { ctx, width, cols, colW, glints } = entry;
-  if (!ctx || !width || !cols || cols.length < 3) return;
-  ctx.clearRect(0, 0, width, 28);
+function renderCardSnowCapOverlay(ctx, entry, rect, isDark, tPhase) {
+  const { cols, width, insetX, cornerR, glints } = entry;
+  if (!cols || cols.length < 3 || width < 20) return;
 
-  // Check if all columns empty
   let maxCol = 0;
   for (let i = 0; i < cols.length; i++) {
     if (cols[i] > maxCol) maxCol = cols[i];
   }
   if (maxCol < 0.35) return;
 
-  ctx.save();
-  // Soft icicle/drift drop shadow onto the card below
-  ctx.beginPath();
-  ctx.moveTo(-2, -2);
-  ctx.lineTo(width + 2, -2);
-  ctx.lineTo(width + 2, cols[cols.length - 1]);
-  for (let i = cols.length - 2; i >= 1; i--) {
-    const xCur = i * colW;
-    const xPrev = (i - 1) * colW;
-    const yCur = cols[i];
-    const yPrev = cols[i - 1];
-    ctx.quadraticCurveTo(xCur, yCur, (xCur + xPrev) * 0.5, (yCur + yPrev) * 0.5);
+  const spanW = Math.max(20, rect.width - insetX * 2);
+  const lastIdx = cols.length - 1;
+  const ptsX = new Float32Array(cols.length);
+  const ptsBaseY = new Float32Array(cols.length);
+  const ptsTopY = new Float32Array(cols.length);
+  let minTopY = rect.top;
+  let maxBaseY = rect.top;
+
+  for (let i = 0; i < cols.length; i++) {
+    const localX = (i / lastIdx) * spanW;
+    const vx = rect.left + insetX + localX;
+    const drop = cardCornerDropY(insetX + localX, rect.width, cornerR);
+    const by = rect.top + drop + 1.5;
+    const ty = by - cols[i];
+    ptsX[i] = vx;
+    ptsBaseY[i] = by;
+    ptsTopY[i] = ty;
+    if (ty < minTopY) minTopY = ty;
+    if (by > maxBaseY) maxBaseY = by;
   }
-  ctx.lineTo(-2, cols[0]);
+
+  ctx.save();
+  // Smooth closed snowpack resting ABOVE rect.top along rounded top edge
+  ctx.beginPath();
+  ctx.moveTo(ptsX[0], ptsBaseY[0]);
+  for (let i = 0; i < lastIdx; i++) {
+    const midX = (ptsX[i] + ptsX[i + 1]) * 0.5;
+    const midY = (ptsTopY[i] + ptsTopY[i + 1]) * 0.5;
+    ctx.quadraticCurveTo(ptsX[i], ptsTopY[i], midX, midY);
+  }
+  ctx.lineTo(ptsX[lastIdx], ptsTopY[lastIdx]);
+  ctx.lineTo(ptsX[lastIdx], ptsBaseY[lastIdx]);
+  for (let i = lastIdx; i >= 1; i--) {
+    const midX = (ptsX[i] + ptsX[i - 1]) * 0.5;
+    const midY = (ptsBaseY[i] + ptsBaseY[i - 1]) * 0.5;
+    ctx.quadraticCurveTo(ptsX[i], ptsBaseY[i], midX, midY);
+  }
   ctx.closePath();
 
-  const bodyGrad = ctx.createLinearGradient(0, 0, 0, Math.max(6, maxCol + 2));
+  const bodyGrad = ctx.createLinearGradient(0, minTopY - 1, 0, maxBaseY + 1);
   if (isDark) {
-    bodyGrad.addColorStop(0, "rgba(255, 255, 255, 0.96)");
-    bodyGrad.addColorStop(0.58, "rgba(224, 242, 254, 0.9)");
-    bodyGrad.addColorStop(1, "rgba(147, 197, 253, 0.78)");
-  } else {
     bodyGrad.addColorStop(0, "rgba(255, 255, 255, 0.98)");
-    bodyGrad.addColorStop(0.55, "rgba(239, 246, 255, 0.95)");
-    bodyGrad.addColorStop(1, "rgba(186, 224, 252, 0.88)");
+    bodyGrad.addColorStop(0.55, "rgba(224, 242, 254, 0.94)");
+    bodyGrad.addColorStop(1, "rgba(147, 197, 253, 0.86)");
+  } else {
+    bodyGrad.addColorStop(0, "rgba(255, 255, 255, 0.99)");
+    bodyGrad.addColorStop(0.56, "rgba(232, 244, 255, 0.96)");
+    bodyGrad.addColorStop(1, "rgba(186, 224, 252, 0.92)");
   }
   ctx.fillStyle = bodyGrad;
-  ctx.shadowColor = isDark ? "rgba(2, 16, 28, 0.42)" : "rgba(15, 23, 42, 0.16)";
-  ctx.shadowBlur = 5;
-  ctx.shadowOffsetY = 2;
+  ctx.shadowColor = isDark ? "rgba(2, 12, 24, 0.5)" : "rgba(15, 23, 42, 0.17)";
+  ctx.shadowBlur = 4;
+  ctx.shadowOffsetY = 1.5;
   ctx.fill();
 
-  // Crisp fluffy bright edge highlight right along undulating contour bottom
+  // Crisp upper ridge outline so snow stands cleanly off both cream light & dark backdrops
   ctx.shadowColor = "transparent";
   ctx.shadowBlur = 0;
-  ctx.strokeStyle = isDark ? "rgba(255, 255, 255, 0.65)" : "rgba(255, 255, 255, 0.95)";
-  ctx.lineWidth = 1.1;
   ctx.beginPath();
-  ctx.moveTo(0, Math.max(0.5, cols[0] - 0.8));
-  for (let i = 1; i < cols.length - 1; i++) {
-    const xCur = i * colW;
-    const xNext = (i + 1) * colW;
-    ctx.quadraticCurveTo(xCur, Math.max(0.5, cols[i] - 0.8), (xCur + xNext) * 0.5, Math.max(0.5, (cols[i] + cols[i + 1]) * 0.5 - 0.8));
+  ctx.moveTo(ptsX[0], ptsTopY[0]);
+  for (let i = 1; i < lastIdx; i++) {
+    const midX = (ptsX[i] + ptsX[i + 1]) * 0.5;
+    const midY = (ptsTopY[i] + ptsTopY[i + 1]) * 0.5;
+    ctx.quadraticCurveTo(ptsX[i], ptsTopY[i], midX, midY);
   }
+  ctx.lineTo(ptsX[lastIdx], ptsTopY[lastIdx]);
+  ctx.strokeStyle = isDark ? "rgba(224, 242, 254, 0.55)" : "rgba(148, 163, 184, 0.45)";
+  ctx.lineWidth = 0.9;
   ctx.stroke();
 
-  // Twinkling ice crystal glints across plush snow layer
+  // Twinkling ice crystal glints along upper snow ridge
   for (let i = 0; i < glints.length; i++) {
     const g = glints[i];
-    const ci = Math.min(cols.length - 1, Math.floor(g.frac * (cols.length - 1)));
+    const ci = Math.min(lastIdx, Math.floor(g.frac * lastIdx));
     const ch = cols[ci];
     if (ch < 4) continue;
     const shimmer = 0.25 + 0.75 * Math.pow(0.5 + 0.5 * Math.sin(tPhase + g.phase), 2);
-    ctx.globalAlpha = shimmer * 0.8;
+    ctx.globalAlpha = shimmer * 0.85;
     ctx.fillStyle = "#ffffff";
     ctx.beginPath();
-    ctx.arc(ci * colW, ch * 0.45, 1.15, 0, Math.PI * 2);
+    ctx.arc(ptsX[ci], ptsBaseY[ci] - ch * 0.56, 1.15, 0, Math.PI * 2);
     ctx.fill();
   }
   ctx.restore();
@@ -22630,7 +22898,7 @@ function handleCardSnowPointer(ev, isDownClick) {
   if (document.documentElement.classList.contains("study-mode-active") || document.body.classList.contains("arena-quiz-active")) return;
   if (!ev || typeof ev.clientX !== "number" || typeof ev.clientY !== "number") return;
   const target = ev.target;
-  if (target && target.closest && target.closest("dialog[open], .floating-menu, .quick-menu-popover")) return;
+  if (target && target.closest && target.closest("dialog[open], .floating-menu, .quick-menu-popover, .site-header")) return;
 
   const registry = getTrackedCardSnowRegistry();
   const prev = christmasSnowState.pointerPrev;
@@ -22646,11 +22914,13 @@ function handleCardSnowPointer(ev, isDownClick) {
     if (rect.width < 20 || rect.height < 20) return;
     if (rect.bottom < 0 || rect.top > window.innerHeight) return;
 
-    if (cx >= rect.left - 8 && cx <= rect.right + 8 && cy >= rect.top - 10 && cy <= rect.top + 30) {
+    // Snow rests ABOVE rect.top ([rect.top - 16 .. rect.top + 2]), catch comfortable band around top edge
+    if (cx >= rect.left - 8 && cx <= rect.right + 8 && cy >= rect.top - 22 && cy <= rect.top + 14) {
       hoveredCard = el;
-      const localX1 = cx - rect.left;
+      const offsetL = rect.left + (entry.insetX || 0);
+      const localX1 = cx - offsetL;
       const sameCardPrev = prev && prev.card === el;
-      const localX0 = sameCardPrev ? (prev.x - rect.left) : localX1;
+      const localX0 = sameCardPrev ? (prev.x - offsetL) : localX1;
       if (isDownClick || (prev && (Math.hypot(dx, cy - prev.y) > 1.5))) {
         const brushed = brushCardSnowSegment(entry, rect, localX0, localX1, dx);
         if (brushed > 0.2) {
@@ -22819,23 +23089,30 @@ function renderChristmasSnowFrame() {
     drawBottomSnowPile(ctx, w, h, pile, isDark);
   }
 
-  // Sync, gradually regrow & render per-card interactive snow ledges
+  // Sync, regrow & render per-card interactive snow drifts ON TOP OF card upper rims
   christmasSnowState._cardSyncTick = ((christmasSnowState._cardSyncTick || 0) + 1) % 24;
   if (christmasSnowState._cardSyncTick === 1) {
     syncCardSnowCaps();
   }
   const cardRegistry = getTrackedCardSnowRegistry();
   const cardRegrowRate = 0.011;
+  const headerEl = document.querySelector(".site-header");
+  const headerRect = headerEl ? headerEl.getBoundingClientRect() : null;
+  const clipTop = headerRect && headerRect.height > 0 ? Math.max(0, Math.round(headerRect.bottom)) : 0;
+
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(0, clipTop, w, Math.max(0, h - clipTop));
+  ctx.clip();
+
   cardRegistry.forEach((entry) => {
     if (!entry.el || !entry.el.isConnected) return;
     const cols = entry.cols;
     const target = entry.target;
-    let changed = entry.dirty || (christmasSnowState._cardSyncTick % 4 === 0);
     if (cols && target) {
       for (let i = 0; i < cols.length; i++) {
         if (cols[i] < target[i] - 0.02) {
           cols[i] = Math.min(target[i], cols[i] + cardRegrowRate);
-          changed = true;
         }
       }
       // Smooth column slopes gently along card edge so brushed gap closes organically
@@ -22843,15 +23120,16 @@ function renderChristmasSnowFrame() {
         const avg = (cols[i - 1] + cols[i] * 2 + cols[i + 1]) * 0.25;
         if (Math.abs(avg - cols[i]) > 0.08 && cols[i] < target[i]) {
           cols[i] = Math.min(target[i], cols[i] + (avg - cols[i]) * 0.08);
-          changed = true;
         }
       }
     }
-    if (changed) {
-      renderCardSnowCapCanvas(entry, isDark, christmasSnowState.windAngle * 3.2);
-      entry.dirty = false;
-    }
+    const rect = entry.el.getBoundingClientRect();
+    if (rect.width < 20 || rect.height < 20) return;
+    if (rect.top - 22 > h || rect.top + 8 < clipTop) return;
+    renderCardSnowCapOverlay(ctx, entry, rect, isDark, christmasSnowState.windAngle * 3.2);
   });
+
+  ctx.restore();
 
   christmasSnowState.rafId = requestAnimationFrame(renderChristmasSnowFrame);
 }
@@ -23116,16 +23394,18 @@ function initChristmasMusicPlayer() {
   }
 }
 
-function focusChristmasTreeItemOnStage(itemId) {
+function focusChristmasTreeItemOnStage(itemId, options = {}) {
+  const { pauseAutoSpin = true } = options || {};
   const item = (christmasTreeEventState.items || []).find((it) => Number(it.id) === Number(itemId));
   if (!item) return;
   christmasTreeStudioState.selectedId = item.id;
-  christmasTreeStudioState.autoSpin = false;
+  const keepSpinning = !pauseAutoSpin && !christmasSnowState.reducedMotion;
+  christmasTreeStudioState.autoSpin = keepSpinning;
   christmasTreeStudioState.rotation = -Math.PI * 0.5 - Number(item.posAngle || 0);
   const spinBtn = $("#xmasTreeAutoSpinBtn");
   if (spinBtn) {
-    spinBtn.setAttribute("aria-pressed", "false");
-    spinBtn.textContent = "▶ Tự xoay";
+    spinBtn.setAttribute("aria-pressed", keepSpinning ? "true" : "false");
+    spinBtn.textContent = keepSpinning ? "⏸ Tự xoay" : "▶ Tự xoay";
   }
   showChristmasTreeInspector(item);
   renderChristmasTreeGallery();
@@ -23542,7 +23822,7 @@ function renderStudioChristmasTreeFrame(nowMs) {
   christmasTreeStudioState.timeSec += dt;
 
   if (christmasTreeStudioState.autoSpin && !christmasTreeStudioState.dragging && !christmasSnowState.reducedMotion) {
-    christmasTreeStudioState.rotation = (christmasTreeStudioState.rotation + dt * 0.28) % (Math.PI * 2);
+    christmasTreeStudioState.rotation = (christmasTreeStudioState.rotation + dt * 0.38) % (Math.PI * 2);
   }
   christmasTreeStudioState.starRotation = (christmasTreeStudioState.starRotation + dt * 0.72) % (Math.PI * 2);
 
@@ -23858,7 +24138,7 @@ function initChristmasTreeStudio() {
       const mine = (christmasTreeEventState.items || []).find(
         (it) => it.isSelf && it.slotKind === payload.slotKind
       );
-      if (mine) focusChristmasTreeItemOnStage(mine.id);
+      if (mine) focusChristmasTreeItemOnStage(mine.id, { pauseAutoSpin: false });
     } catch (err) {
       setChristmasTreeStatus(err.message || "Không thể lưu trang trí.", true);
     }

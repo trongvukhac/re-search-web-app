@@ -29188,36 +29188,9 @@ body.christmas-season:not(.christmas-effects-off) header#siteHeader .site-header
   }
 }
 
-/* Interactive Dynamic Snow Caps on Large Cards (Canvas rendered, swipe-to-clear & regrows gradually) */
-body.christmas-season:not(.christmas-effects-off) .xmas-snow-card {
-  position: relative;
-}
-
-.xmas-card-snow-canvas {
-  display: none;
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 28px;
-  pointer-events: none;
-  z-index: 5;
-  border-top-left-radius: inherit;
-  border-top-right-radius: inherit;
-}
-
-body.christmas-season:not(.christmas-effects-off) .xmas-snow-card>.xmas-card-snow-canvas {
-  display: block;
-}
-
+/* Interactive Dynamic Snow Drifts Resting ABOVE Large Cards (Viewport-overlay canvas, swipe-to-clear & regrows gradually) */
 body.christmas-season:not(.christmas-effects-off) .xmas-snow-card.is-snow-hover {
   cursor: grab;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .xmas-card-snow-canvas {
-    display: none !important;
-  }
 }
 
 body.christmas-season:not(.christmas-effects-off) #bannerStackCard {
