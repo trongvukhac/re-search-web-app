@@ -32302,16 +32302,24 @@ main:has(#postDetail.active-page) {
 
 body.page-post-detail #postDetail,
 #postDetail.active-page {
+  position: static !important;
+  z-index: auto !important;
+}
+
+body.page-post-detail .post-detail-container,
+#postDetail.active-page .post-detail-container {
   position: relative !important;
-  z-index: 1010 !important;
+  z-index: 1 !important;
 }
 
-body.page-post-detail #postDetail .post-detail-top-nav-slot,
-body.page-post-detail #postDetail .post-detail-top-nav,
-#postDetail.active-page .post-detail-top-nav {
-  z-index: 1025 !important;
+/* Thanh điều hướng ở trạng thái chưa dock */
+body.page-post-detail #postDetail .post-detail-top-nav:not(.is-header-docked),
+#postDetail.active-page .post-detail-top-nav:not(.is-header-docked) {
+  position: relative !important;
+  z-index: 10 !important;
 }
 
+/* Thanh điều hướng ở trạng thái dock vào header */
 body.page-post-detail #postDetail .post-detail-top-nav.is-header-docked,
 #postDetail.active-page .post-detail-top-nav.is-header-docked {
   position: fixed !important;

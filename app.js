@@ -25337,27 +25337,12 @@ function initChristmasTreeStudio() {
   const canvas = $("#christmasTreeStudioCanvas");
   christmasTreeStudioState.canvas = canvas;
 
-  const openTriggers = [$("#christmasTreeOpenBtn"), $("#heroChristmasTreeBtn")];
+  const openTriggers = [$("#christmasTreeOpenBtn"), $("#heroChristmasTreeBtn"), $("#quickMenuXmasTreeBtn")];
   openTriggers.forEach((btn) => {
     if (btn) btn.addEventListener("click", (e) => openChristmasTreeModal(e));
   });
 
   if (!modal) return;
-
-  modal.addEventListener("click", (ev) => {
-    if (ev.target === modal) {
-      const rect = modal.getBoundingClientRect();
-      const isInDialog = (
-        rect.top <= ev.clientY &&
-        ev.clientY <= rect.top + rect.height &&
-        rect.left <= ev.clientX &&
-        ev.clientX <= rect.left + rect.width
-      );
-      if (!isInDialog) {
-        modal.close();
-      }
-    }
-  });
 
   modal.addEventListener("close", () => {
     christmasTreeStudioState.isOpen = false;
