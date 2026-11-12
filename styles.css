@@ -4492,8 +4492,8 @@ dialog:not([open]) {
   display: none !important;
 }
 
-.modal:not(.quiz-arena-modal):not(.quiz-start-confirm-modal):not(.quiz-exit-confirm-modal):not(.namecard-modal):not(.full-cover-viewer-modal):not(.namecard-studio-modal):not(.confirm-discard-modal),
-dialog.modal:not(.quiz-arena-modal):not(.quiz-start-confirm-modal):not(.quiz-exit-confirm-modal):not(.namecard-modal):not(.full-cover-viewer-modal):not(.namecard-studio-modal):not(.confirm-discard-modal) {
+.modal:not(.quiz-arena-modal):not(.quiz-start-confirm-modal):not(.quiz-exit-confirm-modal):not(.namecard-modal):not(.full-cover-viewer-modal):not(.namecard-studio-modal):not(.confirm-discard-modal):not(.xmas-tree-modal),
+dialog.modal:not(.quiz-arena-modal):not(.quiz-start-confirm-modal):not(.quiz-exit-confirm-modal):not(.namecard-modal):not(.full-cover-viewer-modal):not(.namecard-studio-modal):not(.confirm-discard-modal):not(.xmas-tree-modal) {
   position: fixed;
   inset: 0;
   margin: auto;
@@ -29555,29 +29555,25 @@ body.dark-theme .xmas-hero-tree-btn {
   font-variant-numeric: tabular-nums;
 }
 
-html.dark-theme .xmas-tree-count-badge,
-body.dark-theme .xmas-tree-count-badge {
-  background: rgba(52, 211, 153, 0.2);
-}
-
+/* Loại bỏ hoàn toàn số lượng trang trí cạnh icon cây thông theo yêu cầu */
+.xmas-tree-widget-badge,
+.xmas-tree-count-badge,
 .quick-menu-tree-count {
-  margin-left: 4px;
-  font-size: 11.5px;
-  font-weight: 700;
-  color: var(--muted, #64748b);
-  font-variant-numeric: tabular-nums;
+  display: none !important;
 }
 
 /* ==========================================================================
    COMMUNITY CHRISTMAS TREE STUDIO DIALOG (<dialog id="christmasTreeModal">)
    ========================================================================== */
 dialog#christmasTreeModal[open] {
-  display: flex;
-  flex-direction: column;
+  display: flex !important;
+  flex-direction: column !important;
+  position: fixed !important;
+  inset: 0 !important;
   width: min(1040px, calc(100vw - 24px));
   max-width: 1040px;
   max-height: min(92vh, 840px);
-  margin: auto;
+  margin: auto !important;
   padding: 0;
   border: 1px solid rgba(20, 83, 45, 0.16);
   border-radius: 22px;
@@ -29586,6 +29582,7 @@ dialog#christmasTreeModal[open] {
   box-shadow: 0 28px 80px rgba(8, 28, 22, 0.34);
   overflow: hidden;
   overscroll-behavior: contain;
+  z-index: 100000 !important;
 }
 
 dialog#christmasTreeModal:modal {
@@ -32238,4 +32235,103 @@ body.dark-theme .xmas-item-viewer-likes-list {
   .page {
     scroll-margin-top: 84px;
   }
+}
+
+/* ==========================================================================
+   PASSWORD SHOW/HIDE VISIBILITY TOGGLE FEATURE
+   ========================================================================== */
+.password-input-wrap {
+  position: relative !important;
+  display: flex !important;
+  align-items: center !important;
+  width: 100% !important;
+}
+
+.password-input-wrap input {
+  width: 100% !important;
+  padding-right: 42px !important;
+}
+
+.password-toggle-btn {
+  position: absolute !important;
+  right: 6px !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 32px !important;
+  height: 32px !important;
+  padding: 0 !important;
+  border: none !important;
+  background: transparent !important;
+  color: var(--muted, #64748b) !important;
+  border-radius: 6px !important;
+  cursor: pointer !important;
+  transition: color 0.18s ease, background 0.18s ease !important;
+  z-index: 5 !important;
+}
+
+.password-toggle-btn:hover {
+  color: var(--ink, #123d30) !important;
+  background: rgba(0, 0, 0, 0.05) !important;
+}
+
+.password-toggle-btn:focus-visible {
+  outline: 2px solid var(--primary, #123d30) !important;
+  outline-offset: 1px !important;
+}
+
+body.dark-theme .password-toggle-btn {
+  color: #94a3b8 !important;
+}
+
+body.dark-theme .password-toggle-btn:hover {
+  color: #f1f5f9 !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+}
+
+/* ==========================================================================
+   POST DETAIL VIEW: DESKTOP HEADER ELEVATION ABOVE CHRISTMAS DECORATIONS & MOBILE NAV SUPPRESSION
+   ========================================================================== */
+body.page-post-detail main,
+main:has(#postDetail.active-page) {
+  position: static !important;
+  z-index: auto !important;
+}
+
+body.page-post-detail #postDetail,
+#postDetail.active-page {
+  position: relative !important;
+  z-index: 1010 !important;
+}
+
+body.page-post-detail #postDetail .post-detail-top-nav-slot,
+body.page-post-detail #postDetail .post-detail-top-nav,
+#postDetail.active-page .post-detail-top-nav {
+  z-index: 1025 !important;
+}
+
+body.page-post-detail #postDetail .post-detail-top-nav.is-header-docked,
+#postDetail.active-page .post-detail-top-nav.is-header-docked {
+  position: fixed !important;
+  z-index: 1005 !important;
+}
+
+/* Trong giao diện xem toàn bài đăng: lớp garland trang trí giáng sinh không đè lên header / docked bar */
+body.page-post-detail header#siteHeader .christmas-header-garland,
+body:has(#postDetail.active-page) header#siteHeader .christmas-header-garland {
+  z-index: 0 !important;
+  pointer-events: none !important;
+}
+
+/* Mobile: Trong giao diện xem bài đăng, thanh điều hướng đáy và nút fab không bao giờ bật ra */
+body.page-post-detail .mobile-nav,
+body.page-post-detail .mobile-fab,
+body:has(#postDetail.active-page) .mobile-nav,
+body:has(#postDetail.active-page) .mobile-fab {
+  display: none !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  transform: translateY(120%) !important;
 }

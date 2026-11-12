@@ -30,7 +30,7 @@
     <script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js" defer></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" defer></script>
-    <link rel="stylesheet" href="styles.css?v=170" />
+    <link rel="stylesheet" href="styles.css?v=171" />
   </head>
   <body>
     <canvas id="christmasTreeCanvas" class="christmas-tree-edge-canvas" aria-hidden="true"></canvas>
@@ -469,7 +469,7 @@
             <div class="quick-menu-divider xmas-seasonal-control"></div>
             <button type="button" class="quick-menu-item xmas-seasonal-control" id="quickMenuXmasTreeBtn" onclick="openChristmasTreeModal(event)" role="menuitem">
               <span class="quick-menu-icon" aria-hidden="true">🎄</span>
-              <span class="quick-menu-label">Cây thông Giáng sinh <small class="quick-menu-tree-count" id="quickMenuTreeCount">(0)</small></span>
+              <span class="quick-menu-label">Cây thông Giáng sinh</span>
             </button>
             <div class="quick-menu-theme-row xmas-seasonal-control" id="quickMenuXmasMusicRow" onclick="toggleChristmasMusic(event)" role="menuitem" tabindex="0">
               <div class="quick-menu-theme-info">
@@ -530,10 +530,9 @@
               <button class="button button-quiet" data-route="forum">
                 Khám phá diễn đàn <svg class="ui-btn-icon" style="margin-left:6px; margin-right:0;" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
               </button>
-              <button type="button" class="button button-quiet xmas-hero-tree-btn xmas-seasonal-control" id="heroChristmasTreeBtn">
+              <button type="button" class="button button-quiet xmas-hero-tree-btn xmas-seasonal-control" id="heroChristmasTreeBtn" onclick="openChristmasTreeModal(event)">
                 <span aria-hidden="true">🎄</span>
                 <span>Trang trí cây thông</span>
-                <span class="xmas-tree-count-badge" id="heroTreeCountBadge">0</span>
               </button>
             </div>
           </div>
@@ -2603,14 +2602,14 @@
             autocomplete="email"
             placeholder="Nhập email do Nhà trường cung cấp" /></label
         ><label
-          >Mật khẩu<input
+          >Mật khẩu<div class="password-input-wrap"><input
             id="authPassword"
             type="password"
             required
             minlength="12"
             autocomplete="current-password"
             placeholder="Ít nhất 12 ký tự"
-        /></label>
+          /><button type="button" class="password-toggle-btn" aria-label="Hiện mật khẩu" title="Hiện mật khẩu" onclick="togglePasswordVisibility(this)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button></div></label>
         <div style="display: flex; justify-content: flex-end; margin-top: 4px; margin-bottom: 8px;" id="authForgotWrapper">
           <button type="button" id="authForgotPasswordBtn" style="background: none; border: none; padding: 0; font-size: 12px; color: var(--accent, #347553); text-decoration: underline; cursor: pointer;">
             Quên mật khẩu?
@@ -2688,11 +2687,11 @@
           </div>
           <div style="margin-bottom: 16px;">
             <label for="forgotNewPassword" style="display: block; font-weight: 700; margin-bottom: 6px; font-size: 12px; color: #2f4d3e; text-transform: uppercase; letter-spacing: 0.5px;">Mật khẩu mới (tối thiểu 12 ký tự):</label>
-            <input id="forgotNewPassword" type="password" required minlength="12" autocomplete="new-password" placeholder="Tối thiểu 12 ký tự" style="display: block; width: 100%; box-sizing: border-box; padding: 11px 13px; font-size: 14px; border: 1px solid #c9d6cb; border-radius: 8px; background: #fff;" />
+            <div class="password-input-wrap"><input id="forgotNewPassword" type="password" required minlength="12" autocomplete="new-password" placeholder="Tối thiểu 12 ký tự" style="display: block; width: 100%; box-sizing: border-box; padding: 11px 42px 11px 13px; font-size: 14px; border: 1px solid #c9d6cb; border-radius: 8px; background: #fff;" /><button type="button" class="password-toggle-btn" aria-label="Hiện mật khẩu" title="Hiện mật khẩu" onclick="togglePasswordVisibility(this)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button></div>
           </div>
           <div style="margin-bottom: 16px;">
             <label for="forgotConfirmPassword" style="display: block; font-weight: 700; margin-bottom: 6px; font-size: 12px; color: #2f4d3e; text-transform: uppercase; letter-spacing: 0.5px;">Xác nhận mật khẩu mới:</label>
-            <input id="forgotConfirmPassword" type="password" required minlength="12" autocomplete="new-password" placeholder="Nhập lại mật khẩu mới" style="display: block; width: 100%; box-sizing: border-box; padding: 11px 13px; font-size: 14px; border: 1px solid #c9d6cb; border-radius: 8px; background: #fff;" />
+            <div class="password-input-wrap"><input id="forgotConfirmPassword" type="password" required minlength="12" autocomplete="new-password" placeholder="Nhập lại mật khẩu mới" style="display: block; width: 100%; box-sizing: border-box; padding: 11px 42px 11px 13px; font-size: 14px; border: 1px solid #c9d6cb; border-radius: 8px; background: #fff;" /><button type="button" class="password-toggle-btn" aria-label="Hiện mật khẩu" title="Hiện mật khẩu" onclick="togglePasswordVisibility(this)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button></div>
           </div>
           <div class="modal-actions" style="margin-top: 24px; gap: 10px;">
             <button type="button" class="button button-outline" id="forgotBackToStep1Btn" style="padding: 10px 18px;">
@@ -3446,31 +3445,31 @@
         </div>
 
         <label
-          >Mật khẩu hiện tại<input
+          >Mật khẩu hiện tại<div class="password-input-wrap"><input
             id="currentPasswordInput"
             type="password"
             required
             autocomplete="current-password"
             placeholder="Nhập mật khẩu đang dùng"
-        /></label>
+          /><button type="button" class="password-toggle-btn" aria-label="Hiện mật khẩu" title="Hiện mật khẩu" onclick="togglePasswordVisibility(this)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button></div></label>
         <label style="margin-top: 14px;"
-          >Mật khẩu mới<input
+          >Mật khẩu mới<div class="password-input-wrap"><input
             id="newPasswordInput"
             type="password"
             required
             minlength="12"
             autocomplete="new-password"
             placeholder="Tối thiểu 12 ký tự"
-        /></label>
+          /><button type="button" class="password-toggle-btn" aria-label="Hiện mật khẩu" title="Hiện mật khẩu" onclick="togglePasswordVisibility(this)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button></div></label>
         <label style="margin-top: 14px;"
-          >Xác nhận mật khẩu mới<input
+          >Xác nhận mật khẩu mới<div class="password-input-wrap"><input
             id="confirmPasswordInput"
             type="password"
             required
             minlength="12"
             autocomplete="new-password"
             placeholder="Nhập lại mật khẩu mới"
-        /></label>
+          /><button type="button" class="password-toggle-btn" aria-label="Hiện mật khẩu" title="Hiện mật khẩu" onclick="togglePasswordVisibility(this)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button></div></label>
         <p class="auth-note" style="margin-top: 12px;">
           Lưu ý: Mật khẩu an toàn phải có từ 12 ký tự trở lên và khác mật khẩu cũ.
         </p>
@@ -5651,7 +5650,7 @@
     </dialog>
 
     <!-- MODAL SỰ KIỆN CỘNG ĐỒNG: TRANG TRÍ CÂY THÔNG GIÁNG SINH 2026 -->
-    <dialog id="christmasTreeModal" class="modal xmas-tree-modal" closedby="any" aria-labelledby="christmasTreeModalTitle">
+    <dialog id="christmasTreeModal" class="modal xmas-tree-modal" aria-labelledby="christmasTreeModalTitle">
       <div class="xmas-tree-dialog-shell">
         <header class="xmas-tree-modal-header">
           <div class="xmas-tree-header-copy">
@@ -6061,12 +6060,11 @@
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="2" x2="12" y2="22"></line><path d="m17 5-5 5-5-5"></path><path d="m17 19-5-5-5 5"></path><line x1="2" y1="12" x2="22" y2="12"></line><path d="m5 7 5 5-5 5"></path><path d="m19 7-5 5 5 5"></path></svg>
       </button>
       <span class="xmas-widget-sep" aria-hidden="true"></span>
-      <button type="button" class="xmas-widget-tree-btn" id="christmasTreeOpenBtn" aria-label="Mở sự kiện trang trí cây thông Giáng sinh chung" title="Sự kiện cộng đồng: Xem & trang trí cây thông Noel">
+      <button type="button" class="xmas-widget-tree-btn" id="christmasTreeOpenBtn" onclick="openChristmasTreeModal(event)" aria-label="Mở sự kiện trang trí cây thông Giáng sinh chung" title="Sự kiện cộng đồng: Xem & trang trí cây thông Noel">
         <span aria-hidden="true">🎄</span>
-        <span class="xmas-tree-widget-badge" id="christmasTreeWidgetCount">0</span>
       </button>
     </div>
 
-    <script src="app.js?v=170" defer></script>
+    <script src="app.js?v=171" defer></script>
   </body>
 </html>

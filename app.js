@@ -3209,6 +3209,9 @@ function go(rawRoute, scrollToTop = true) {
     stopPostReadTracking();
     if (typeof showMobileNav === "function") showMobileNav();
     window.postNavigationStack = [];
+    document.body.classList.remove("page-post-detail");
+  } else {
+    document.body.classList.add("page-post-detail");
   }
 
   const isSameRoute = (currentActiveRoute === baseRoute);
@@ -3368,6 +3371,13 @@ function initMobileNavScrollHandler() {
     if (window.innerWidth > 900) return;
     if (document.querySelector("dialog[open]")) return;
 
+    // Khi đang xem toàn bài đăng, tuyệt đối không hiện thanh điều hướng di động hoặc nút fab
+    const postDetailPage = document.getElementById("postDetail");
+    if (postDetailPage && postDetailPage.classList.contains("active-page")) {
+      hideMobileNav();
+      return;
+    }
+
     const currentY = Math.max(
       0,
       window.scrollY ||
@@ -3436,6 +3446,11 @@ function initMobileNavScrollHandler() {
   if ("onscrollend" in window) {
     window.addEventListener("scrollend", () => {
       if (window.innerWidth > 900) return;
+      const postDetailPage = document.getElementById("postDetail");
+      if (postDetailPage && postDetailPage.classList.contains("active-page")) {
+        hideMobileNav();
+        return;
+      }
       if (mobileScrollUpAccumulator >= 20 || (window.scrollY || 0) <= 60) {
         showMobileNav();
       }
@@ -3486,8 +3501,8 @@ function initPostDetailNavScrollHandler() {
       0
     );
 
-    // 1. Luôn hiển thị khi ở gần đầu trang (<= 75px) - đảm bảo Back, Copy link, Save không bao giờ kẹt khi cuộn lên
-    if (currentY <= 75) {
+    // 1. Luôn hiển thị khi ở sát đầu trang (<= 20px)
+    if (currentY <= 20) {
       if (postDetailScrollTimeout) {
         clearTimeout(postDetailScrollTimeout);
         postDetailScrollTimeout = null;
@@ -3515,35 +3530,29 @@ function initPostDetailNavScrollHandler() {
     const delta = currentY - lastPostDetailScrollY;
 
     if (delta > 0) {
-      // Cuộn xuống -> trượt lên ẩn trọn dưới thanh logo
+      // Cuộn xuống -> ẩn trọn dưới thanh logo, dứt khoát không bao giờ bật ra khi đang cuộn xuống
       postDetailDownAccumulator += delta;
       postDetailUpAccumulator = 0;
       if (postDetailScrollTimeout) {
         clearTimeout(postDetailScrollTimeout);
         postDetailScrollTimeout = null;
       }
-      if (postDetailDownAccumulator >= 15 && currentY > 75) {
+      if (currentY > 30) {
         hidePostDetailTopNav();
       }
     } else if (delta < 0) {
-      // Cuộn ngược lên -> rơi lại về vị trí cố định dưới thanh logo
+      // Cuộn ngược lên -> chỉ rơi lại thanh điều hướng khi người dùng chủ động vuốt ngược lên
       const upDelta = Math.abs(delta);
       postDetailUpAccumulator += upDelta;
       postDetailDownAccumulator = 0;
 
       if (postDetailScrollTimeout) {
         clearTimeout(postDetailScrollTimeout);
+        postDetailScrollTimeout = null;
       }
 
-      if (postDetailUpAccumulator >= 12 || currentY <= 100) {
+      if (postDetailUpAccumulator >= 18 || currentY <= 25) {
         showPostDetailTopNav();
-      } else {
-        postDetailScrollTimeout = setTimeout(() => {
-          if (postDetailUpAccumulator >= 8 || currentY <= 80) {
-            showPostDetailTopNav();
-          }
-          postDetailUpAccumulator = 0;
-        }, 100);
       }
     }
 
@@ -4788,6 +4797,7 @@ async function openDetail(id, updateHash = true, isBack = false, targetScrollY =
     window.syncPostDetailTopNavState();
   }
   currentActiveRoute = "post-detail";
+  document.body.classList.add("page-post-detail");
   if (!isBack || !targetScrollY) {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
@@ -5529,6 +5539,32 @@ $$("#authModal .auth-tab[data-auth-mode]").forEach((tab) =>
     }
   }),
 );
+
+// --- PASSWORD SHOW/HIDE TOGGLE FEATURE ---
+window.togglePasswordVisibility = function (btn) {
+  if (!btn) return;
+  const wrap = btn.closest(".password-input-wrap") || btn.parentElement;
+  if (!wrap) return;
+  const input = wrap.querySelector("input");
+  if (!input) return;
+  const isPassword = input.type === "password";
+  input.type = isPassword ? "text" : "password";
+  btn.setAttribute("aria-label", isPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu");
+  btn.title = isPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu";
+  btn.innerHTML = isPassword
+    ? `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>`
+    : `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`;
+  input.focus();
+};
+
+document.addEventListener("click", (e) => {
+  const btn = e.target.closest(".password-toggle-btn");
+  if (btn) {
+    e.preventDefault();
+    e.stopPropagation();
+    window.togglePasswordVisibility(btn);
+  }
+});
 
 // --- FORGOT PASSWORD FLOW ---
 function openForgotPasswordView() {
@@ -25308,18 +25344,20 @@ function initChristmasTreeStudio() {
 
   if (!modal) return;
 
-  if (!("closedBy" in HTMLDialogElement.prototype)) {
-    let downOnBackdrop = false;
-    modal.addEventListener("pointerdown", (ev) => {
-      downOnBackdrop = ev.target === modal;
-    });
-    modal.addEventListener("pointerup", (ev) => {
-      if (downOnBackdrop && ev.target === modal) {
+  modal.addEventListener("click", (ev) => {
+    if (ev.target === modal) {
+      const rect = modal.getBoundingClientRect();
+      const isInDialog = (
+        rect.top <= ev.clientY &&
+        ev.clientY <= rect.top + rect.height &&
+        rect.left <= ev.clientX &&
+        ev.clientX <= rect.left + rect.width
+      );
+      if (!isInDialog) {
         modal.close();
       }
-      downOnBackdrop = false;
-    });
-  }
+    }
+  });
 
   modal.addEventListener("close", () => {
     christmasTreeStudioState.isOpen = false;
@@ -25911,7 +25949,11 @@ window.openChristmasTreeModal = async function (e) {
   if (!modal) return;
 
   if (!modal.open) {
-    modal.showModal();
+    try {
+      modal.showModal();
+    } catch (err) {
+      modal.setAttribute("open", "");
+    }
   }
   christmasTreeStudioState.isOpen = true;
   christmasTreeStudioState.autoSpin = !christmasSnowState.reducedMotion;
