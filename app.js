@@ -4603,10 +4603,24 @@ window.openExternalLinkModal = function (url, title) {
     directBtn.href = url;
   }
   if (iframe) {
-    iframe.src = url;
+    let embedUrl = url;
+    if (embedUrl.includes("drive.google.com") && embedUrl.includes("/view")) {
+      embedUrl = embedUrl.replace(/\/view.*$/, "/preview");
+    }
+    iframe.src = embedUrl;
   }
   if (typeof modal.showModal === "function") {
     if (!modal.open) modal.showModal();
+  }
+};
+
+window.openRethinkExamModal = function () {
+  const examUrl = "https://drive.google.com/file/d/1muoNgT5eUuW-Tj0xHGZOLZmyPQqjM3RP/view?usp=sharing";
+  const title = "Tài liệu đề thi Cuộc thi RE:THINK 2026";
+  if (typeof openExternalLinkModal === "function") {
+    openExternalLinkModal(examUrl, title);
+  } else {
+    window.open(examUrl, "_blank", "noopener,noreferrer");
   }
 };
 
@@ -16116,6 +16130,22 @@ initAdaptiveGlassHeader();
 // =========================================================================
 const HOME_BANNERS_CONFIG = [
   {
+    id: "rethink-2026",
+    title: "Cuộc thi RE:THINK 2026 — Nhấn để xem tài liệu đề thi!",
+    image: "public/assets/banner-rethink-2026.jpg?v=20261112_1",
+    // Ưu tiên xuất hiện trang đầu, kể cả các banner sau. Xuất hiện tới hết ngày 01/12/2026
+    priority: 100,
+    startsAt: new Date("2026-11-12T00:00:00+07:00").getTime(),
+    expiresAt: new Date("2026-12-01T23:59:59+07:00").getTime(),
+    action: () => {
+      if (typeof openRethinkExamModal === "function") {
+        openRethinkExamModal();
+      } else {
+        window.open("https://drive.google.com/file/d/1muoNgT5eUuW-Tj0xHGZOLZmyPQqjM3RP/view?usp=sharing", "_blank", "noopener,noreferrer");
+      }
+    }
+  },
+  {
     id: "xmas-tree-2026",
     title: "Trang trí Cây thông Giáng sinh Cộng đồng RE:SEARCH 2026 — Nhấn để tham gia!",
     image: "public/assets/banner-xmas-tree.png?v=20261112_1",
@@ -16276,11 +16306,13 @@ let homeBannerState = {
 
 function getActiveHomeBanners() {
   const now = Date.now();
-  return HOME_BANNERS_CONFIG.filter((b) => {
+  const list = HOME_BANNERS_CONFIG.filter((b) => {
     if (b.startsAt && now < b.startsAt) return false;
     if (b.expiresAt && now > b.expiresAt) return false;
     return true;
   });
+  // Luôn đảm bảo banner có priority cao nhất (như RE:THINK 2026) nằm ở vị trí đầu tiên
+  return list.sort((a, b) => (b.priority || 0) - (a.priority || 0));
 }
 
 function initHomeBannerStack() {

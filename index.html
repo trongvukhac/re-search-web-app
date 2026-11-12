@@ -30,7 +30,7 @@
     <script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js" defer></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" defer></script>
-    <link rel="stylesheet" href="styles.css?v=169" />
+    <link rel="stylesheet" href="styles.css?v=170" />
   </head>
   <body>
     <canvas id="christmasTreeCanvas" class="christmas-tree-edge-canvas" aria-hidden="true"></canvas>
@@ -621,8 +621,12 @@
           <div id="bannerStackCard" class="banner-stack-card" aria-label="Ngăn xếp banner thông báo" title="Kéo ngang để xem các banner khác">
             <div class="banner-viewport" id="bannerViewport">
               <div class="banner-track" id="bannerTrack">
-              <!-- Slide 0: Sự kiện cộng đồng: Trang trí Cây thông Giáng sinh 2026 (đến hết 31/12/2026, tương tác mở modal) -->
-              <div class="banner-slide active" data-banner-id="xmas-tree-2026" data-index="0">
+              <!-- Slide 0: Cuộc thi RE:THINK 2026 (ưu tiên xuất hiện trang đầu tới hết 01/12/2026, tương tác mở tài liệu đề thi) -->
+              <div class="banner-slide active" data-banner-id="rethink-2026" data-index="0">
+                <img src="public/assets/banner-rethink-2026.jpg?v=20261112_1" class="banner-image" alt="Cuộc thi RE:THINK 2026 — Nhấn để xem tài liệu đề thi!" />
+              </div>
+              <!-- Slide 1: Sự kiện cộng đồng: Trang trí Cây thông Giáng sinh 2026 (đến hết 31/12/2026, tương tác mở modal) -->
+              <div class="banner-slide" data-banner-id="xmas-tree-2026" data-index="1">
                 <img src="public/assets/banner-xmas-tree.png?v=20261112_1" class="banner-image" alt="Trang trí Cây thông Giáng sinh Cộng đồng RE:SEARCH 2026" />
               </div>
               <!-- Slide 1: Cập nhật Giáng sinh 2026 & Sự kiện Món quà mùa đông (Từ 11/11 đến hết ngày 31/12/2026, không tương tác) -->
@@ -6063,6 +6067,6 @@
       </button>
     </div>
 
-    <script src="app.js?v=169" defer></script>
+    <script src="app.js?v=170" defer></script>
   </body>
 </html>
