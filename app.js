@@ -82,6 +82,7 @@ const christmasTreeStudioState = {
   activeTab: "decorate",
   activeSlot: "polaroid",
   polaroidPhotoData: "",
+  polaroidPhotoFullData: "",
   pendingReopenModal: false,
   lastSessionUserId: undefined,
   stageFullscreen: false,
@@ -21977,7 +21978,12 @@ function getChristmasTreePhotoAsset(photoData) {
     christmasTreeMediaCache.set(photoData, entry);
     return entry;
   }
-  if (photoData.startsWith("data:image/") || photoData.startsWith("public/") || photoData.startsWith("/public/")) {
+  if (
+    photoData.startsWith("data:image/") ||
+    photoData.startsWith("/api/christmas-tree/photos/") ||
+    photoData.startsWith("public/") ||
+    photoData.startsWith("/public/")
+  ) {
     const img = new Image();
     const entry = { ready: false, drawable: img, dataUrl: photoData };
     img.onload = () => {
@@ -24337,10 +24343,18 @@ function openChristmasItemViewer(itemId, options = {}) {
         ? `linear-gradient(145deg,${item.gradientStops.join(",")})`
         : (item.frameColor || TREE_POLAROID_FRAME_MAP[item.itemStyle] || "#FFFAF0"));
     const darkFrame = item.itemStyle === "grad_crimson_velvet" || item.itemStyle === "grad_mythic_prism";
-    const asset = getChristmasTreePhotoAsset(item.photoData || "");
-    const photoHtml = asset && asset.dataUrl
-      ? `<img src="${asset.dataUrl}" alt="Ảnh Polaroid kỷ niệm" />`
-      : buildTreeInlineSvgIcon("polaroid", item.itemStyle, 48);
+    const viewerSrc = item.photoFullData || item.photoData || "";
+    let photoHtml = buildTreeInlineSvgIcon("polaroid", item.itemStyle, 48);
+    if (viewerSrc) {
+      if (viewerSrc.startsWith("preset:")) {
+        const asset = getChristmasTreePhotoAsset(viewerSrc);
+        if (asset && asset.dataUrl) {
+          photoHtml = `<img src="${asset.dataUrl}" alt="Ảnh Polaroid kỷ niệm" />`;
+        }
+      } else {
+        photoHtml = `<img src="${escapeHTML(viewerSrc)}" alt="Ảnh Polaroid kỷ niệm" decoding="async" />`;
+      }
+    }
     const captionTxt = escapeHTML((item.message || "").trim() || "Kỷ niệm mùa đông RE:SEARCH");
     bodyEl.innerHTML = `
       <div class="xmas-viewer-polaroid-frame${darkFrame ? " is-dark-frame" : ""}" style="background:${escapeHTML(polBg)};">
@@ -24544,11 +24558,14 @@ function renderPolaroidFormPreview() {
     sealBadge.hidden = !(myPol && myPol.isMysteryLocked);
   }
   const photoData = christmasTreeStudioState.polaroidPhotoData || "";
+  const previewSrc = christmasTreeStudioState.polaroidPhotoFullData || photoData;
   if (photoBox) {
-    if (photoData) {
-      const asset = getChristmasTreePhotoAsset(photoData);
+    if (previewSrc) {
+      const asset = getChristmasTreePhotoAsset(previewSrc);
       if (asset && asset.dataUrl) {
         photoBox.innerHTML = `<img src="${asset.dataUrl}" alt="" />`;
+      } else if (previewSrc.startsWith("/api/christmas-tree/photos/") || previewSrc.startsWith("data:image/")) {
+        photoBox.innerHTML = `<img src="${escapeHTML(previewSrc)}" alt="" />`;
       } else {
         photoBox.innerHTML = buildTreeInlineSvgIcon("polaroid", styleVal, 26);
       }
@@ -24726,10 +24743,14 @@ function populateUserTreeFormsFromItems() {
   if (myPolaroid) {
     const draftMsg = myPolaroid.ownerDraft ? myPolaroid.ownerDraft.message : (myPolaroid.message || "");
     const draftPhoto = myPolaroid.ownerDraft ? myPolaroid.ownerDraft.photoData : (myPolaroid.photoData || "");
+    const draftPhotoFull = myPolaroid.ownerDraft
+      ? (myPolaroid.ownerDraft.photoFullData || draftPhoto)
+      : (myPolaroid.photoFullData || draftPhoto);
     if (polMsg) polMsg.value = draftMsg;
     const radio = document.querySelector(`input[name="polaroidStyle"][value="${myPolaroid.itemStyle}"]`);
     if (radio && !radio.disabled) radio.checked = true;
     christmasTreeStudioState.polaroidPhotoData = draftPhoto;
+    christmasTreeStudioState.polaroidPhotoFullData = draftPhoto.startsWith("preset:") ? "" : draftPhotoFull;
     if (fileLabel) {
       fileLabel.textContent = draftPhoto
         ? (draftPhoto.startsWith("preset:") ? "Đang dùng tranh minh họa có sẵn" : "Đã đính kèm ảnh kỷ niệm")
@@ -24743,6 +24764,7 @@ function populateUserTreeFormsFromItems() {
   } else {
     if (polMsg && !polMsg.matches(":focus")) polMsg.value = "";
     christmasTreeStudioState.polaroidPhotoData = "";
+    christmasTreeStudioState.polaroidPhotoFullData = "";
     if (fileLabel) fileLabel.textContent = "PNG, JPG, WEBP · Kéo thả hoặc bấm chọn";
     if (polSubmit) polSubmit.textContent = "Treo lên cây";
     if (polDelete) {
@@ -24910,7 +24932,36 @@ function setChristmasTreeStatus(msg, isError = false) {
   }
 }
 
-async function compressPolaroidImageFile(file) {
+function encodeScaledImageWithinBudget(img, sideCandidates, qualityCandidates, maxDataUrlLen) {
+  let lastUrl = "";
+  for (const maxSide of sideCandidates) {
+    const scale = Math.min(1, maxSide / Math.max(1, img.width, img.height));
+    const tw = Math.max(32, Math.round(img.width * scale));
+    const th = Math.max(32, Math.round(img.height * scale));
+    const c = document.createElement("canvas");
+    c.width = tw;
+    c.height = th;
+    const g = c.getContext("2d");
+    if (g) {
+      g.imageSmoothingEnabled = true;
+      g.imageSmoothingQuality = "high";
+      g.drawImage(img, 0, 0, tw, th);
+    }
+    for (const q of qualityCandidates) {
+      let url = c.toDataURL("image/webp", q);
+      if (!url.startsWith("data:image/webp")) {
+        url = c.toDataURL("image/jpeg", Math.max(0.5, q - 0.06));
+      }
+      lastUrl = url;
+      if (url.length <= maxDataUrlLen) {
+        return url;
+      }
+    }
+  }
+  return lastUrl && lastUrl.length <= maxDataUrlLen ? lastUrl : "";
+}
+
+async function compressPolaroidImagePair(file) {
   if (!file || !/^image\/(png|jpeg|jpg|webp)$/i.test(file.type || "")) {
     throw new Error("Chỉ hỗ trợ ảnh PNG, JPG hoặc WEBP.");
   }
@@ -24922,26 +24973,22 @@ async function compressPolaroidImageFile(file) {
       i.onerror = () => reject(new Error("Không thể đọc ảnh này."));
       i.src = objectUrl;
     });
-    const maxSide = 260;
-    const scale = Math.min(1, maxSide / Math.max(1, img.width, img.height));
-    const tw = Math.max(32, Math.round(img.width * scale));
-    const th = Math.max(32, Math.round(img.height * scale));
-    const c = document.createElement("canvas");
-    c.width = tw;
-    c.height = th;
-    const g = c.getContext("2d");
-    g.drawImage(img, 0, 0, tw, th);
-    let dataUrl = c.toDataURL("image/webp", 0.78);
-    if (!dataUrl.startsWith("data:image/webp") || dataUrl.length > 120000) {
-      dataUrl = c.toDataURL("image/jpeg", 0.76);
+    const fullDataUrl = encodeScaledImageWithinBudget(
+      img,
+      [840, 720, 600],
+      [0.84, 0.78, 0.7, 0.6],
+      225000
+    );
+    const thumbDataUrl = encodeScaledImageWithinBudget(
+      img,
+      [220, 180],
+      [0.78, 0.68, 0.56],
+      58000
+    );
+    if (!fullDataUrl || !thumbDataUrl) {
+      throw new Error("Ảnh quá lớn hoặc quá chi tiết, vui lòng chọn ảnh khác nhẹ hơn.");
     }
-    if (dataUrl.length > 135000) {
-      dataUrl = c.toDataURL("image/jpeg", 0.56);
-    }
-    if (dataUrl.length > 138000) {
-      throw new Error("Ảnh quá lớn, vui lòng chọn ảnh nhẹ hơn.");
-    }
-    return dataUrl;
+    return { thumbDataUrl, fullDataUrl };
   } finally {
     URL.revokeObjectURL(objectUrl);
   }
@@ -25262,6 +25309,7 @@ function initChristmasTreeStudio() {
     }
     cardBtn.addEventListener("click", () => {
       christmasTreeStudioState.polaroidPhotoData = presetKey;
+      christmasTreeStudioState.polaroidPhotoFullData = "";
       const fileEl = $("#xmasPolaroidFile");
       if (fileEl) fileEl.value = "";
       const fileNameEl = $("#xmasPolaroidFileName");
@@ -25280,8 +25328,9 @@ function initChristmasTreeStudio() {
     }
     try {
       setChristmasTreeStatus("Đang xử lý ảnh...");
-      const compressed = await compressPolaroidImageFile(file);
-      christmasTreeStudioState.polaroidPhotoData = compressed;
+      const { thumbDataUrl, fullDataUrl } = await compressPolaroidImagePair(file);
+      christmasTreeStudioState.polaroidPhotoData = thumbDataUrl;
+      christmasTreeStudioState.polaroidPhotoFullData = fullDataUrl;
       const fileNameEl = $("#xmasPolaroidFileName");
       if (fileNameEl) fileNameEl.textContent = file.name || "Đã tải ảnh kỷ niệm";
       setChristmasTreeStatus("Ảnh đã sẵn sàng!");
@@ -25469,6 +25518,7 @@ function initChristmasTreeStudio() {
       itemStyle: styleEl ? styleEl.value : "classic",
       message: msgVal,
       photoData: christmasTreeStudioState.polaroidPhotoData || "",
+      photoFullData: christmasTreeStudioState.polaroidPhotoFullData || "",
       shufflePosition: Boolean(shuffleEl && shuffleEl.checked),
       isSealed: choice.isSealed
     });

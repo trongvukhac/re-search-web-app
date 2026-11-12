@@ -794,6 +794,7 @@ try {
       item_finish TEXT NOT NULL DEFAULT '',
       message TEXT NOT NULL DEFAULT '',
       photo_data TEXT NOT NULL DEFAULT '',
+      photo_full_data TEXT NOT NULL DEFAULT '',
       card_name TEXT NOT NULL DEFAULT '',
       card_year TEXT NOT NULL DEFAULT '2026',
       frame_color TEXT NOT NULL DEFAULT '#FFFAF0',
@@ -888,6 +889,9 @@ try {
   }
   if (!treeCols.some((c) => c.name === "card_year")) {
     db.exec("ALTER TABLE christmas_tree_ornaments ADD COLUMN card_year TEXT NOT NULL DEFAULT ''");
+  }
+  if (!treeCols.some((c) => c.name === "photo_full_data")) {
+    db.exec("ALTER TABLE christmas_tree_ornaments ADD COLUMN photo_full_data TEXT NOT NULL DEFAULT ''");
   }
   db.exec(`
     CREATE TABLE IF NOT EXISTS christmas_tree_likes (
@@ -5755,6 +5759,7 @@ async function api(request, response, url) {
         gradientStops,
         message: (isAccessory || isMysteryLocked) ? "" : (r.message || ""),
         photoData: (isAccessory || slotKind !== "polaroid" || isMysteryLocked) ? "" : (r.photo_data || ""),
+        photoFullData: (isAccessory || slotKind !== "polaroid" || isMysteryLocked) ? "" : (r.photo_full_data || r.photo_data || ""),
         cardName: (slotKind === "card" && !isMysteryLocked) ? (r.card_name || r.display_name || "Thành viên") : "",
         frameColor: resolvedFrameColor,
         accentColor: r.accent_color || "#FFD700",
@@ -5775,6 +5780,7 @@ async function api(request, response, url) {
         item.ownerDraft = {
           message: r.message || "",
           photoData: r.photo_data || "",
+          photoFullData: r.photo_full_data || r.photo_data || "",
           cardName: r.card_name || r.display_name || "",
           itemFinish: normFinish,
           isSealed: true
@@ -5834,6 +5840,81 @@ async function api(request, response, url) {
     return { posU: Number(bestU.toFixed(4)), posAngle: Number(bestAngle.toFixed(4)) };
   }
 
+  const TREE_PHOTO_DIR = path.join(DATABASE_DIR, "tree-photos");
+  const TREE_PHOTO_URL_PREFIX = "/api/christmas-tree/photos/";
+
+  function isValidTreeImageMagic(ext, buf) {
+    if (!Buffer.isBuffer(buf) || buf.length < 16) return false;
+    if (ext === "webp") {
+      return buf.subarray(0, 4).toString("ascii") === "RIFF" && buf.subarray(8, 12).toString("ascii") === "WEBP";
+    }
+    if (ext === "png") {
+      return buf[0] === 0x89 && buf[1] === 0x50 && buf[2] === 0x4e && buf[3] === 0x47;
+    }
+    return buf[0] === 0xff && buf[1] === 0xd8 && buf[2] === 0xff;
+  }
+
+  function decodeTreeImageDataUrl(dataUrl, maxBytes) {
+    const m = typeof dataUrl === "string" && dataUrl.match(/^data:image\/(webp|png|jpeg|jpg);base64,([A-Za-z0-9+/=]+)$/i);
+    if (!m) return null;
+    const rawMime = m[1].toLowerCase();
+    const ext = rawMime === "webp" ? "webp" : (rawMime === "png" ? "png" : "jpg");
+    const buf = Buffer.from(m[2], "base64");
+    if (!buf.length || buf.length > maxBytes || !isValidTreeImageMagic(ext, buf)) {
+      return null;
+    }
+    return { ext, buf };
+  }
+
+  function writeTreePhotoFile(userId, suffix, ext, buf) {
+    fs.mkdirSync(TREE_PHOTO_DIR, { recursive: true });
+    const token = crypto.randomBytes(12).toString("hex");
+    const filename = `u${Number(userId)}_${token}_${suffix}.${ext}`;
+    fs.writeFileSync(path.join(TREE_PHOTO_DIR, filename), buf);
+    return `${TREE_PHOTO_URL_PREFIX}${filename}`;
+  }
+
+  function cleanupOrphanedTreePhotoUrls(urls) {
+    if (!Array.isArray(urls)) return;
+    const seen = new Set();
+    for (const url of urls) {
+      if (typeof url !== "string" || !url.startsWith(TREE_PHOTO_URL_PREFIX) || seen.has(url)) continue;
+      seen.add(url);
+      const basename = url.slice(TREE_PHOTO_URL_PREFIX.length);
+      if (!/^[a-zA-Z0-9_-]+\.(webp|png|jpe?g)$/.test(basename)) continue;
+      const inUse = db.prepare("SELECT 1 FROM christmas_tree_ornaments WHERE photo_data = ? OR photo_full_data = ? LIMIT 1").get(url, url);
+      if (inUse) continue;
+      try {
+        const target = path.join(TREE_PHOTO_DIR, basename);
+        if (fs.existsSync(target)) fs.unlinkSync(target);
+      } catch {}
+    }
+  }
+
+  const treePhotoServeMatch = pathName.match(/^\/api\/christmas-tree\/photos\/([a-zA-Z0-9_-]+\.(webp|png|jpe?g))$/);
+  if (method === "GET" && treePhotoServeMatch) {
+    const filename = treePhotoServeMatch[1];
+    const ext = treePhotoServeMatch[2].toLowerCase();
+    const filePath = path.join(TREE_PHOTO_DIR, filename);
+    if (!fs.existsSync(filePath)) {
+      return error(response, 404, "Không tìm thấy ảnh Polaroid.");
+    }
+    try {
+      const data = fs.readFileSync(filePath);
+      const mime = ext === "webp" ? "image/webp" : (ext === "png" ? "image/png" : "image/jpeg");
+      response.writeHead(200, {
+        "Content-Type": mime,
+        "Content-Length": data.length,
+        "Cache-Control": "public, max-age=31536000, immutable",
+        "X-Content-Type-Options": "nosniff"
+      });
+      response.end(data);
+    } catch {
+      return error(response, 500, "Không thể đọc ảnh Polaroid.");
+    }
+    return;
+  }
+
   if (method === "GET" && pathName === "/api/christmas-tree") {
     try {
       const viewer = sessionFrom(request);
@@ -5885,6 +5966,7 @@ async function api(request, response, url) {
       let savedStyle = rawStyle;
       let message = "";
       let photoData = "";
+      let photoFullData = "";
       let cardName = "";
       const cardYear = "";
 
@@ -5902,17 +5984,39 @@ async function api(request, response, url) {
         message = typeof body.message === "string" ? body.message.trim().slice(0, 140) : "";
 
         const rawPhoto = typeof body.photoData === "string" ? body.photoData.trim() : "";
+        const rawPhotoFull = typeof body.photoFullData === "string" ? body.photoFullData.trim() : "";
         if (rawPhoto) {
           if (TREE_PHOTO_PRESETS.has(rawPhoto)) {
             photoData = rawPhoto;
-          } else if (/^data:image\/(png|jpeg|jpg|webp);base64,[A-Za-z0-9+/=]+$/i.test(rawPhoto)) {
+            photoFullData = "";
+          } else if (
+            existing &&
+            existing.slot_kind === "polaroid" &&
+            rawPhoto === existing.photo_data &&
+            (rawPhoto.startsWith(TREE_PHOTO_URL_PREFIX) || rawPhoto.startsWith("data:image/"))
+          ) {
+            photoData = existing.photo_data;
+            photoFullData = existing.photo_full_data || existing.photo_data;
+          } else if (rawPhoto.startsWith("data:image/")) {
             if (userStreak < 3) {
               return error(response, 403, "Cần đạt chuỗi hoạt động từ 3 ngày trở lên để tải ảnh kỷ niệm từ máy lên Polaroid.");
             }
-            if (rawPhoto.length > 140000) {
-              return error(response, 400, "Ảnh Polaroid vượt quá dung lượng cho phép (~100KB). Vui lòng chọn ảnh khác.");
+            const decodedThumb = decodeTreeImageDataUrl(rawPhoto, rawPhotoFull ? 48 * 1024 : 180 * 1024);
+            if (!decodedThumb) {
+              return error(response, 400, "Ảnh Polaroid thu gọn không hợp lệ hoặc vượt quá dung lượng cho phép.");
             }
-            photoData = rawPhoto;
+            if (rawPhotoFull && rawPhotoFull.startsWith("data:image/")) {
+              const decodedFull = decodeTreeImageDataUrl(rawPhotoFull, 180 * 1024);
+              if (!decodedFull) {
+                return error(response, 400, "Ảnh Polaroid độ phân giải cao không hợp lệ hoặc vượt quá ~180KB.");
+              }
+              photoData = writeTreePhotoFile(user.id, "t", decodedThumb.ext, decodedThumb.buf);
+              photoFullData = writeTreePhotoFile(user.id, "hd", decodedFull.ext, decodedFull.buf);
+            } else {
+              const url = writeTreePhotoFile(user.id, "hd", decodedThumb.ext, decodedThumb.buf);
+              photoData = url;
+              photoFullData = url;
+            }
           } else {
             return error(response, 400, "Định dạng ảnh Polaroid không hợp lệ (chỉ hỗ trợ PNG, JPG, WEBP).");
           }
@@ -5983,15 +6087,16 @@ async function api(request, response, url) {
 
       db.prepare(`
         INSERT INTO christmas_tree_ornaments (
-          user_id, slot_kind, item_style, item_finish, message, photo_data, card_name, card_year,
+          user_id, slot_kind, item_style, item_finish, message, photo_data, photo_full_data, card_name, card_year,
           frame_color, accent_color, pos_u, pos_angle, is_sealed, created_at, updated_at
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
         ON CONFLICT(user_id, slot_kind) DO UPDATE SET
           item_style = excluded.item_style,
           item_finish = excluded.item_finish,
           message = excluded.message,
           photo_data = excluded.photo_data,
+          photo_full_data = excluded.photo_full_data,
           card_name = excluded.card_name,
           card_year = excluded.card_year,
           frame_color = excluded.frame_color,
@@ -6007,6 +6112,7 @@ async function api(request, response, url) {
         itemFinish,
         message,
         photoData,
+        photoFullData,
         cardName,
         cardYear,
         frameColor,
@@ -6015,6 +6121,13 @@ async function api(request, response, url) {
         spot.posAngle,
         isSealed
       );
+
+      if (existing) {
+        const replaced = [];
+        if (existing.photo_data && existing.photo_data !== photoData) replaced.push(existing.photo_data);
+        if (existing.photo_full_data && existing.photo_full_data !== photoFullData) replaced.push(existing.photo_full_data);
+        cleanupOrphanedTreePhotoUrls(replaced);
+      }
 
       return json(response, 200, {
         ok: true,
@@ -6108,6 +6221,7 @@ async function api(request, response, url) {
     }
 
     db.prepare("DELETE FROM christmas_tree_ornaments WHERE id = ?").run(itemId);
+    cleanupOrphanedTreePhotoUrls([existing.photo_data, existing.photo_full_data]);
     return json(response, 200, {
       ok: true,
       message: "Đã gỡ khỏi cây thông Giáng sinh.",
