@@ -53,7 +53,8 @@ const christmasTreeEventState = {
   loading: false,
   active: true,
   items: [],
-  stats: { totalItems: 0, contributors: 0, polaroids: 0, accessories: 0 },
+  viewerAccess: null,
+  stats: { totalItems: 0, contributors: 0, polaroids: 0, cards: 0, gifts: 0, accessories: 0 },
   expiresAt: CHRISTMAS_2026_END_MS
 };
 
@@ -3279,6 +3280,12 @@ function go(rawRoute, scrollToTop = true) {
   else onLeaveArena();
   updateResponsiveAsidePlacement();
   showMobileNav();
+  if (typeof syncCardSnowCaps === "function") {
+    requestAnimationFrame(syncCardSnowCaps);
+    if (baseRoute === "study" || baseRoute === "arena") {
+      setTimeout(syncCardSnowCaps, 180);
+    }
+  }
 }
 /* ==========================================================================
    MOBILE FLOATING NAVIGATION SMART SCROLL HIDE/SHOW
@@ -16100,6 +16107,17 @@ initAdaptiveGlassHeader();
 // =========================================================================
 const HOME_BANNERS_CONFIG = [
   {
+    id: "xmas-tree-2026",
+    title: "Trang trí Cây thông Giáng sinh Cộng đồng RE:SEARCH 2026 — Nhấn để tham gia!",
+    image: "public/assets/banner-xmas-tree.png?v=20261112_1",
+    // Thời gian xuất hiện: đến hết 31/12/2026, nhấn để mở giao diện trang trí cây thông
+    startsAt: new Date("2026-11-11T00:00:00+07:00").getTime(),
+    expiresAt: new Date("2026-12-31T23:59:59+07:00").getTime(),
+    action: () => {
+      if (typeof openChristmasTreeModal === "function") openChristmasTreeModal();
+    }
+  },
+  {
     id: "christmas-2026",
     title: "Cập nhật Giáng sinh 2026 — Sự kiện Món quà mùa đông: Phép màu mùa đông",
     image: "public/assets/banner-christmas-2026.jpg?v=20261111_1",
@@ -21188,26 +21206,77 @@ function drawBottomSnowPile(ctx, w, h, pile, isDark) {
   ctx.restore();
 }
 
+const TREE_STREAK_REQUIREMENTS = [0, 3, 7, 14, 30, 50];
+
 const TREE_POLAROID_FRAME_MAP = {
   classic: "#FFFAF0",
   warm_gold: "#FEF3C7",
   blush: "#FFE4E6",
   lavender: "#EDE9FE",
-  mint: "#DCFCE7"
+  mint: "#DCFCE7",
+  grad_frost_sky: "#DBEAFE",
+  grad_champagne_gold: "#FEF08A",
+  grad_aurora_borealis: "#A7F3D0",
+  grad_crimson_velvet: "#FECDD3",
+  grad_mythic_prism: "#F5D0FE"
+};
+
+const TREE_POLAROID_GRADIENT_MAP = {
+  grad_frost_sky: ["#EFF6FF", "#BAE6FD", "#60A5FA"],
+  grad_champagne_gold: ["#FFFBEB", "#FDE047", "#F59E0B"],
+  grad_aurora_borealis: ["#34D399", "#38BDF8", "#A855F7"],
+  grad_crimson_velvet: ["#FFE4E6", "#FB7185", "#9F1239"],
+  grad_mythic_prism: ["#F43F5E", "#F59E0B", "#10B981", "#3B82F6", "#A855F7"]
+};
+
+const TREE_CARD_TEMPLATE_MAP = {
+  card_reindeer: { label: "Thiệp Tuần lộc Đỏ", bg: "#E8F1FB", accent: "#C8102E" },
+  card_lights: { label: "Thiệp Đèn Ánh nến", bg: "#FAF5ED", accent: "#B91C1C" },
+  card_snowglobe: { label: "Thiệp Quả cầu Tuyết", bg: "#9EC5E8", accent: "#C8102E" },
+  card_envelope: { label: "Thiệp Phong thư Thông", bg: "#FFFFFF", accent: "#B91C1C" },
+  card_midnight_gold: { label: "Thiệp Đêm Hoàng kim", bg: "#071742", accent: "#F5C451" },
+  card_santa_letter: { label: "Thiệp Thư Ông già Noel", bg: "#FFFDF8", accent: "#C81E1E" }
+};
+
+const TREE_CARD_FINISH_MAP = {
+  classic: { label: "Cổ điển", gradientStops: null, minTier: 0 },
+  grad_frost_sky: { label: "Băng Lam", gradientStops: ["#EFF6FF", "#7DD3FC", "#0284C7"], minTier: 1 },
+  grad_champagne_gold: { label: "Ánh Kim", gradientStops: ["#FFFBEB", "#FDE047", "#D97706"], minTier: 2 },
+  grad_aurora_borealis: { label: "Cực Quang", gradientStops: ["#34D399", "#38BDF8", "#A855F7"], minTier: 3 },
+  grad_crimson_velvet: { label: "Nhung Đỏ", gradientStops: ["#FDA4AF", "#E11D48", "#881337"], minTier: 4 },
+  grad_mythic_prism: { label: "Đa sắc", gradientStops: ["#F43F5E", "#F59E0B", "#10B981", "#3B82F6", "#A855F7"], minTier: 5 }
 };
 
 const TREE_GIFT_PALETTE_MAP = {
-  gift_red: { box: "#D32F2F", lid: "#EF4444", ribbon: "#FFD700" },
-  gift_blue: { box: "#1D4ED8", lid: "#3B82F6", ribbon: "#FDE047" },
-  gift_gold: { box: "#D97706", lid: "#FBBF24", ribbon: "#DC2626" },
-  gift_emerald: { box: "#15803D", lid: "#22C55E", ribbon: "#FFFBEB" }
+  gift_red: { box: "#D32F2F", lid: "#EF4444", ribbon: "#FFD700", gradientStops: null },
+  gift_blue: { box: "#1D4ED8", lid: "#3B82F6", ribbon: "#FDE047", gradientStops: null },
+  gift_gold: { box: "#D97706", lid: "#FBBF24", ribbon: "#DC2626", gradientStops: null },
+  gift_emerald: { box: "#15803D", lid: "#22C55E", ribbon: "#FFFBEB", gradientStops: null },
+  gift_grad_glacier: { box: "#2563EB", lid: "#38BDF8", ribbon: "#E0F2FE", gradientStops: ["#0EA5E9", "#2563EB", "#93C5FD"] },
+  gift_grad_sunset_gold: { box: "#EA580C", lid: "#FBBF24", ribbon: "#991B1B", gradientStops: ["#FDE047", "#F59E0B", "#EA580C"] },
+  gift_grad_aurora: { box: "#06B6D4", lid: "#34D399", ribbon: "#FEF08A", gradientStops: ["#10B981", "#06B6D4", "#8B5CF6"] },
+  gift_grad_royal_ruby: { box: "#DC2626", lid: "#F43F5E", ribbon: "#FDE68A", gradientStops: ["#9F1239", "#DC2626", "#F43F5E"] },
+  gift_grad_prism: { box: "#8B5CF6", lid: "#EC4899", ribbon: "#FFFFFF", gradientStops: ["#EC4899", "#8B5CF6", "#3B82F6", "#10B981", "#F59E0B"] }
 };
 
 const TREE_BAUBLE_COLOR_MAP = {
   bauble_ruby: "#E11D48",
   bauble_gold: "#F59E0B",
   bauble_sapphire: "#2563EB",
-  bauble_emerald: "#10B981"
+  bauble_emerald: "#10B981",
+  bauble_grad_ice: "#38BDF8",
+  bauble_grad_aurora: "#8B5CF6",
+  star_grad_gold: "#FBBF24",
+  ribbon_grad_velvet: "#E11D48",
+  prism_multi_garland: "#EC4899"
+};
+
+const TREE_ACCESSORY_GRADIENT_MAP = {
+  bauble_grad_ice: ["#E0F2FE", "#38BDF8", "#1D4ED8"],
+  star_grad_gold: ["#FEF9C3", "#FBBF24", "#D97706"],
+  bauble_grad_aurora: ["#34D399", "#38BDF8", "#A855F7"],
+  ribbon_grad_velvet: ["#F43F5E", "#BE123C", "#FBBF24"],
+  prism_multi_garland: ["#F43F5E", "#F59E0B", "#10B981", "#38BDF8", "#C084FC"]
 };
 
 const TREE_STYLE_LABELS = {
@@ -21216,15 +21285,36 @@ const TREE_STYLE_LABELS = {
   blush: "Polaroid Hồng phấn",
   lavender: "Polaroid Oải hương",
   mint: "Polaroid Bạc hà",
-  gift_red: "Hộp quà Đỏ ruy-băng vàng",
+  grad_frost_sky: "Polaroid Băng Lam",
+  grad_champagne_gold: "Polaroid Ánh Kim",
+  grad_aurora_borealis: "Polaroid Cực Quang",
+  grad_crimson_velvet: "Polaroid Nhung Đỏ",
+  grad_mythic_prism: "Polaroid Đa Sắc",
+  card_reindeer: "Thiệp Tuần lộc Đỏ",
+  card_lights: "Thiệp Đèn Ánh nến",
+  card_snowglobe: "Thiệp Quả cầu Tuyết",
+  card_envelope: "Thiệp Phong thư Thông",
+  card_midnight_gold: "Thiệp Đêm Hoàng kim",
+  card_santa_letter: "Thiệp Thư Ông già Noel",
+  gift_red: "Hộp quà Đỏ nơ vàng",
   gift_blue: "Hộp quà Xanh lam",
   gift_gold: "Hộp quà Vàng kim",
   gift_emerald: "Hộp quà Ngọc lục bảo",
+  gift_grad_glacier: "Hộp quà Băng Giá",
+  gift_grad_sunset_gold: "Hộp quà Hoàng Kim",
+  gift_grad_aurora: "Hộp quà Cực Quang",
+  gift_grad_royal_ruby: "Hộp quà Hồng Ngọc",
+  gift_grad_prism: "Hộp quà Đa Sắc",
   bauble_ruby: "Trái châu Ruby",
   bauble_gold: "Trái châu Vàng kim",
   bauble_sapphire: "Trái châu Sapphire",
   bauble_emerald: "Trái châu Lục bảo",
-  fairy_garland: "Dây đèn Giáng sinh đa sắc"
+  fairy_garland: "Dây đèn Giáng sinh đa sắc",
+  bauble_grad_ice: "Châu Băng Tuyết",
+  star_grad_gold: "Ngôi sao Hoàng Kim",
+  bauble_grad_aurora: "Châu Cực Quang",
+  ribbon_grad_velvet: "Nơ Nhung Ruby",
+  prism_multi_garland: "Chuỗi Pha Lê Đa Sắc"
 };
 
 function createSeededTreeRng(seed) {
@@ -21773,7 +21863,7 @@ function getChristmasTreePhotoAsset(photoData) {
     christmasTreeMediaCache.set(photoData, entry);
     return entry;
   }
-  if (photoData.startsWith("data:image/")) {
+  if (photoData.startsWith("data:image/") || photoData.startsWith("public/") || photoData.startsWith("/public/")) {
     const img = new Image();
     const entry = { ready: false, drawable: img, dataUrl: photoData };
     img.onload = () => {
@@ -21870,14 +21960,37 @@ function buildCommunityOrnamentNodes(communityItems) {
         rNorm: coneRadiusAtHeight(uClamped) * 1.13,
         angle,
         frameColor: item.frameColor || TREE_POLAROID_FRAME_MAP[item.itemStyle] || "#FFFAF0",
+        gradientStops: Array.isArray(item.gradientStops)
+          ? item.gradientStops
+          : (TREE_POLAROID_GRADIENT_MAP[item.itemStyle] || null),
         accentColor: item.accentColor || "#F0E68C",
         photoData: item.photoData || "",
         swayPhase: ((item.id * 1.37) % (Math.PI * 2)),
         baseTilt: (((item.id % 5) - 2) * 0.08),
         scale: 1.05
       });
-    } else if (String(item.itemStyle || "").startsWith("gift_")) {
+    } else if (item.slotKind === "card") {
+      const finishSpec = TREE_CARD_FINISH_MAP[item.itemFinish || "classic"] || TREE_CARD_FINISH_MAP.classic;
+      nodes.push({
+        kind: "community_card",
+        data: item,
+        u: uClamped,
+        rNorm: coneRadiusAtHeight(uClamped) * 1.14,
+        angle,
+        itemStyle: item.itemStyle || "card_reindeer",
+        itemFinish: item.itemFinish || "classic",
+        gradientStops: Array.isArray(item.gradientStops) ? item.gradientStops : finishSpec.gradientStops,
+        frameColor: item.frameColor || "#FFFAF0",
+        accentColor: item.accentColor || "#C8102E",
+        cardName: item.cardName || item.authorName || "RE:SEARCH",
+        cardYear: item.cardYear || "2026",
+        swayPhase: ((item.id * 1.71) % (Math.PI * 2)),
+        baseTilt: (((item.id % 5) - 2) * 0.07),
+        scale: 1.06
+      });
+    } else if (item.slotKind === "gift" || String(item.itemStyle || "").startsWith("gift_")) {
       const palette = TREE_GIFT_PALETTE_MAP[item.itemStyle] || TREE_GIFT_PALETTE_MAP.gift_red;
+      const stops = Array.isArray(item.gradientStops) ? item.gradientStops : palette.gradientStops;
       nodes.push({
         kind: "community_gift",
         data: item,
@@ -21885,33 +21998,62 @@ function buildCommunityOrnamentNodes(communityItems) {
         rNorm: 0.56 + ((item.id * 19) % 24) * 0.01,
         angle,
         yawOffset: ((item.id * 1.13) % (Math.PI * 2)),
-        palette,
+        palette: { ...palette, gradientStops: stops },
         size: 14.8,
         bobPhase: (item.id * 0.77) % (Math.PI * 2)
       });
-    } else if (item.itemStyle === "fairy_garland") {
-      const garlandKeys = ["red", "gold", "blue", "green"];
+    } else if (item.itemStyle === "fairy_garland" || item.itemStyle === "prism_multi_garland") {
+      const isPrism = item.itemStyle === "prism_multi_garland";
+      const garlandKeys = isPrism ? ["red", "gold", "green", "blue", "gold"] : ["red", "gold", "blue", "green"];
       const bulbColors = { gold: "#FFD54F", red: "#FF2D2D", blue: "#38BDF8", green: "#22C55E" };
+      const prismColors = ["#F43F5E", "#F59E0B", "#10B981", "#38BDF8", "#C084FC"];
       const bandCenter = Math.max(0.26, Math.min(0.8, uClamped));
-      for (let b = 0; b < 9; b++) {
-        const offsetFrac = (b - 4) / 4;
-        const bu = Math.max(0.19, Math.min(0.91, bandCenter + offsetFrac * 0.11));
+      const bulbCount = isPrism ? 11 : 9;
+      const midIdx = (bulbCount - 1) / 2;
+      for (let b = 0; b < bulbCount; b++) {
+        const offsetFrac = (b - midIdx) / midIdx;
+        const bu = Math.max(0.19, Math.min(0.91, bandCenter + offsetFrac * 0.12));
         const key = garlandKeys[(item.id + b) % garlandKeys.length];
         nodes.push({
           kind: "community_garland_bulb",
           data: item,
           u: bu,
           rNorm: coneRadiusAtHeight(bu) * 1.05,
-          angle: angle + offsetFrac * 1.15,
+          angle: angle + offsetFrac * 1.2,
           key,
-          coreColor: bulbColors[key],
-          size: 2.55,
+          coreColor: isPrism ? prismColors[b % prismColors.length] : bulbColors[key],
+          size: isPrism ? 2.85 : 2.55,
           phase: b * 0.8 + item.id,
           speed: 2.4 + (b % 3) * 0.45
         });
       }
+    } else if (item.itemStyle === "star_grad_gold") {
+      nodes.push({
+        kind: "community_star_ornament",
+        data: item,
+        u: uClamped,
+        rNorm: coneRadiusAtHeight(uClamped) * 1.05,
+        angle,
+        gradientStops: Array.isArray(item.gradientStops) ? item.gradientStops : TREE_ACCESSORY_GRADIENT_MAP.star_grad_gold,
+        swayPhase: ((item.id * 1.19) % (Math.PI * 2)),
+        size: 6.4
+      });
+    } else if (item.itemStyle === "ribbon_grad_velvet") {
+      nodes.push({
+        kind: "community_ribbon_bow",
+        data: item,
+        u: uClamped,
+        rNorm: coneRadiusAtHeight(uClamped) * 1.06,
+        angle,
+        gradientStops: Array.isArray(item.gradientStops) ? item.gradientStops : TREE_ACCESSORY_GRADIENT_MAP.ribbon_grad_velvet,
+        swayPhase: ((item.id * 1.43) % (Math.PI * 2)),
+        size: 6.8
+      });
     } else {
       const color = TREE_BAUBLE_COLOR_MAP[item.itemStyle] || item.accentColor || "#E11D48";
+      const stops = Array.isArray(item.gradientStops)
+        ? item.gradientStops
+        : (TREE_ACCESSORY_GRADIENT_MAP[item.itemStyle] || null);
       nodes.push({
         kind: "community_bauble",
         data: item,
@@ -21919,7 +22061,8 @@ function buildCommunityOrnamentNodes(communityItems) {
         rNorm: coneRadiusAtHeight(uClamped) * 1.02,
         angle,
         color,
-        size: 4.8
+        gradientStops: stops,
+        size: stops ? 5.2 : 4.8
       });
     }
   }
@@ -22167,6 +22310,19 @@ function drawQuadBandUV(ctx, quad, u0, v0, u1, v1, fillStyle, strokeStyle = "") 
   }
 }
 
+function createGradientFillFromStops(ctx, x0, y0, x1, y1, stops, shadeMult = 1) {
+  if (!Array.isArray(stops) || stops.length < 2) {
+    return shadeMult === 1 ? (stops && stops[0]) || "#FFFAF0" : hexShadeRgb((stops && stops[0]) || "#FFFAF0", shadeMult);
+  }
+  const grad = ctx.createLinearGradient(x0, y0, x1, y1);
+  const denom = Math.max(1, stops.length - 1);
+  for (let i = 0; i < stops.length; i++) {
+    const col = shadeMult === 1 ? stops[i] : hexShadeRgb(stops[i], shadeMult);
+    grad.addColorStop(i / denom, col);
+  }
+  return grad;
+}
+
 function drawProjected3DGiftBox(ctx, cx, cy, s, yaw, palette, { isDark, isMystery, isSelected }) {
   const cosY = Math.cos(yaw);
   const sinY = Math.sin(yaw);
@@ -22174,6 +22330,7 @@ function drawProjected3DGiftBox(ctx, cx, cy, s, yaw, palette, { isDark, isMyster
   const cosP = Math.cos(pitch);
   const sinP = Math.sin(pitch);
   const fovLocal = Math.max(24, s * 6.0);
+  const gradStops = Array.isArray(palette && palette.gradientStops) ? palette.gradientStops : null;
 
   const projPt = (lx, ly, lz) => {
     const rx = lx * cosY - lz * sinY;
@@ -22213,7 +22370,10 @@ function drawProjected3DGiftBox(ctx, cx, cy, s, yaw, palette, { isDark, isMyster
       const f = sides[i];
       if (!bestFrontFace || -f.nz > -bestFrontFace.nz) bestFrontFace = f;
       const light = 0.72 + 0.34 * Math.max(0, -f.nz * 0.85 - f.nx * 0.42);
-      drawQuadBandUV(ctx, f.pts, 0, 0, 1, 1, hexShadeRgb(baseHex, light), "rgba(255,255,255,0.12)");
+      const faceFill = gradStops
+        ? createGradientFillFromStops(ctx, f.pts[0].sx, f.pts[0].sy, f.pts[2].sx, f.pts[2].sy, gradStops, light)
+        : hexShadeRgb(baseHex, light);
+      drawQuadBandUV(ctx, f.pts, 0, 0, 1, 1, faceFill, "rgba(255,255,255,0.12)");
       const ribShade = 0.84 + 0.24 * Math.max(0, -f.nz * 0.85 - f.nx * 0.42);
       drawQuadBandUV(ctx, f.pts, 0.39, 0, 0.61, 1, hexShadeRgb(palette.ribbon, ribShade));
       if (!lidMode) {
@@ -22223,7 +22383,10 @@ function drawProjected3DGiftBox(ctx, cx, cy, s, yaw, palette, { isDark, isMyster
     }
 
     const topQuad = [t3, t2, t1, t0];
-    drawQuadBandUV(ctx, topQuad, 0, 0, 1, 1, hexShadeRgb(baseHex, 1.08), "rgba(255,255,255,0.22)");
+    const topFill = gradStops
+      ? createGradientFillFromStops(ctx, t3.sx, t3.sy, t1.sx, t1.sy, gradStops, 1.08)
+      : hexShadeRgb(baseHex, 1.08);
+    drawQuadBandUV(ctx, topQuad, 0, 0, 1, 1, topFill, "rgba(255,255,255,0.22)");
     if (lidMode) {
       drawQuadBandUV(ctx, topQuad, 0.39, 0, 0.61, 1, palette.ribbon);
       drawQuadBandUV(ctx, topQuad, 0, 0.39, 1, 0.61, palette.ribbon);
@@ -22263,7 +22426,7 @@ function drawProjected3DGiftBox(ctx, cx, cy, s, yaw, palette, { isDark, isMyster
     const faceScale = Math.max(0.28, -bodyFace.nz);
     const badgeR = Math.max(3.1, s * 0.24);
     ctx.save();
-    ctx.translate(fc.sx, fc.sy);
+    ctx.translate(fc.x, fc.y);
     ctx.scale(faceScale, 1);
     ctx.fillStyle = "#fde047";
     ctx.beginPath();
@@ -22328,7 +22491,9 @@ function drawProjected3DPolaroid(ctx, sx, sy, pw, ph, sway, angle, it, { isDark,
   }
 
   if (isFront) {
-    ctx.fillStyle = it.frameColor || "#FFFAF0";
+    ctx.fillStyle = Array.isArray(it.gradientStops) && it.gradientStops.length >= 2
+      ? createGradientFillFromStops(ctx, -pw * 0.5, -ph * 0.5, pw * 0.5, ph * 0.5, it.gradientStops)
+      : (it.frameColor || "#FFFAF0");
     ctx.fillRect(-pw * 0.5, -ph * 0.5, pw, ph);
     if (isSelected || !isDark) {
       ctx.strokeStyle = isSelected ? "#F59E0B" : "rgba(15, 23, 42, 0.22)";
@@ -22388,6 +22553,232 @@ function drawProjected3DPolaroid(ctx, sx, sy, pw, ph, sway, angle, it, { isDark,
     ctx.beginPath();
     ctx.arc(0, 0, Math.max(1.8, pw * 0.14), 0, Math.PI * 2);
     ctx.fill();
+  }
+  ctx.restore();
+}
+
+function drawProjected3DGreetingCard(ctx, sx, sy, cw, ch, sway, angle, it, { isDark, isSelected }) {
+  const facing = -Math.sin(angle);
+  const absFacing = Math.abs(facing);
+  const edgeCos = Math.cos(angle);
+  const scaleX = Math.max(0.08, absFacing);
+  const isFront = facing >= 0;
+
+  ctx.save();
+  ctx.translate(sx, sy);
+
+  // Crimson hanging thread attached to card top
+  ctx.strokeStyle = "#EF4444";
+  ctx.lineWidth = Math.max(0.7, cw * 0.045);
+  ctx.beginPath();
+  ctx.moveTo(0, -ch * 0.48);
+  ctx.lineTo(-edgeCos * Math.max(1.4, cw * 0.13), -ch * 0.5 - Math.max(4, cw * 0.22));
+  ctx.stroke();
+
+  ctx.rotate(sway * (0.35 + 0.65 * absFacing));
+  ctx.transform(scaleX, edgeCos * 0.14, 0, 1, 0, 0);
+
+  ctx.fillStyle = isDark ? "rgba(0, 0, 0, 0.4)" : "rgba(15, 23, 42, 0.2)";
+  ctx.fillRect(-cw * 0.5 + 1.3, -ch * 0.5 + 1.8, cw, ch);
+
+  if (absFacing < 0.84) {
+    const edgeThick = (1 - absFacing) * Math.max(1.6, cw * 0.16) / scaleX;
+    const edgeDir = edgeCos >= 0 ? -1 : 1;
+    ctx.fillStyle = isDark ? "#cbd5e1" : "#e2e8f0";
+    ctx.fillRect(edgeDir < 0 ? -cw * 0.5 - edgeThick : cw * 0.5, -ch * 0.5, edgeThick, ch);
+  }
+
+  if (isFront) {
+    const hasGradTrim = Array.isArray(it.gradientStops) && it.gradientStops.length >= 2;
+    ctx.fillStyle = hasGradTrim
+      ? createGradientFillFromStops(ctx, -cw * 0.5, -ch * 0.5, cw * 0.5, ch * 0.5, it.gradientStops)
+      : "#ffffff";
+    ctx.fillRect(-cw * 0.5, -ch * 0.5, cw, ch);
+
+    const rim = hasGradTrim ? cw * 0.095 : cw * 0.04;
+    const ax = -cw * 0.5 + rim;
+    const ay = -ch * 0.5 + rim;
+    const aw = cw - rim * 2;
+    const ah = ch - rim * 2;
+    const isMystery = Boolean(it.data && it.data.isMysteryLocked);
+
+    if (isMystery) {
+      const mg = ctx.createLinearGradient(ax, ay, ax + aw, ay + ah);
+      mg.addColorStop(0, "#7f1d1d");
+      mg.addColorStop(1, "#be123c");
+      ctx.fillStyle = mg;
+      ctx.fillRect(ax, ay, aw, ah);
+      ctx.strokeStyle = "#fde047";
+      ctx.lineWidth = Math.max(0.8, cw * 0.045);
+      ctx.beginPath();
+      ctx.moveTo(ax, ay + ah * 0.34);
+      ctx.lineTo(0, ay + ah * 0.62);
+      ctx.lineTo(ax + aw, ay + ah * 0.34);
+      ctx.stroke();
+      ctx.fillStyle = "#fde047";
+      ctx.beginPath();
+      ctx.arc(0, ay + ah * 0.62, Math.max(2.2, cw * 0.16), 0, Math.PI * 2);
+      ctx.fill();
+    } else {
+      const tpl = String(it.itemStyle || "card_reindeer");
+      if (tpl === "card_santa_letter") {
+        const asset = getChristmasTreePhotoAsset("public/assets/card-santa-letter.webp");
+        if (asset && asset.ready) {
+          ctx.drawImage(asset.drawable, ax, ay, aw, ah);
+        } else {
+          ctx.fillStyle = "#fffdf8";
+          ctx.fillRect(ax, ay, aw, ah);
+          ctx.fillStyle = "#eab308";
+          ctx.fillRect(ax + aw * 0.1, ay + ah * 0.12, aw * 0.28, ah * 0.16);
+          ctx.fillStyle = "#dc2626";
+          ctx.beginPath();
+          ctx.arc(ax + aw * 0.74, ay + ah * 0.2, aw * 0.14, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      } else if (tpl === "card_midnight_gold") {
+        ctx.fillStyle = "#071742";
+        ctx.fillRect(ax, ay, aw, ah);
+        ctx.fillStyle = "#facc15";
+        ctx.fillRect(ax + aw * 0.16, ay + ah * 0.35, aw * 0.68, ah * 0.14);
+        ctx.fillRect(ax, ay + ah * 0.84, aw, ah * 0.16);
+      } else if (tpl === "card_lights") {
+        ctx.fillStyle = "#b91c1c";
+        ctx.fillRect(ax, ay, aw, ah);
+        ctx.fillStyle = "#faf5ed";
+        ctx.fillRect(ax + aw * 0.1, ay + ah * 0.34, aw * 0.8, ah * 0.54);
+        const bulbDotCols = ["#facc15", "#38bdf8", "#dc2626", "#22c55e"];
+        for (let d = 0; d < 4; d++) {
+          ctx.fillStyle = bulbDotCols[d];
+          ctx.beginPath();
+          ctx.arc(ax + aw * (0.24 + d * 0.17), ay + ah * 0.4, Math.max(1, cw * 0.045), 0, Math.PI * 2);
+          ctx.fill();
+        }
+      } else if (tpl === "card_snowglobe") {
+        ctx.fillStyle = "#9ec5e8";
+        ctx.fillRect(ax, ay, aw, ah);
+        ctx.fillStyle = "#f8fafc";
+        ctx.beginPath();
+        ctx.arc(0, ay + ah * 0.4, aw * 0.3, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = "#15803d";
+        ctx.beginPath();
+        ctx.moveTo(0, ay + ah * 0.24);
+        ctx.lineTo(-aw * 0.13, ay + ah * 0.48);
+        ctx.lineTo(aw * 0.13, ay + ah * 0.48);
+        ctx.closePath();
+        ctx.fill();
+        ctx.fillStyle = "#c8102e";
+        ctx.fillRect(ax + aw * 0.24, ay + ah * 0.66, aw * 0.52, ah * 0.14);
+      } else if (tpl === "card_envelope") {
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(ax, ay, aw, ah);
+        ctx.fillStyle = "#b91c1c";
+        ctx.fillRect(ax + aw * 0.12, ay + ah * 0.42, aw * 0.76, ah * 0.48);
+        ctx.fillStyle = "#fffbeb";
+        ctx.fillRect(ax + aw * 0.18, ay + ah * 0.26, aw * 0.64, ah * 0.3);
+      } else {
+        // card_reindeer
+        ctx.fillStyle = "#eff6ff";
+        ctx.fillRect(ax, ay, aw, ah);
+        ctx.fillStyle = "#c8102e";
+        ctx.beginPath();
+        ctx.arc(0, ay + ah * 0.44, aw * 0.34, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = "#ffffff";
+        ctx.beginPath();
+        ctx.ellipse(0, ay + ah * 0.49, aw * 0.09, ah * 0.11, 0, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    ctx.strokeStyle = isSelected ? "#F59E0B" : (hasGradTrim ? "rgba(255,255,255,0.65)" : "rgba(15, 23, 42, 0.22)");
+    ctx.lineWidth = isSelected ? 2.1 : 0.75;
+    ctx.strokeRect(-cw * 0.5, -ch * 0.5, cw, ch);
+  } else {
+    ctx.fillStyle = isDark ? "#fee2e2" : "#fff1f2";
+    ctx.fillRect(-cw * 0.5, -ch * 0.5, cw, ch);
+    ctx.strokeStyle = isSelected ? "#F59E0B" : "rgba(190, 18, 60, 0.35)";
+    ctx.lineWidth = isSelected ? 2 : 0.8;
+    ctx.strokeRect(-cw * 0.5, -ch * 0.5, cw, ch);
+    ctx.fillStyle = "#be123c";
+    ctx.beginPath();
+    ctx.arc(0, 0, Math.max(2, cw * 0.15), 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.restore();
+}
+
+function drawProjected3DStarOrnament(ctx, sx, sy, r, sway, angle, stops, { isDark, isSelected }) {
+  const facingScale = 0.28 + 0.72 * Math.abs(-Math.sin(angle));
+  ctx.save();
+  ctx.translate(sx, sy);
+  ctx.rotate(sway * 0.4);
+  ctx.scale(facingScale, 1);
+
+  const pts = [];
+  for (let i = 0; i < 10; i++) {
+    const a = -Math.PI * 0.5 + (i * Math.PI) / 5;
+    const rad = i % 2 === 0 ? r : r * 0.44;
+    pts.push({ x: Math.cos(a) * rad, y: Math.sin(a) * rad });
+  }
+  ctx.beginPath();
+  pts.forEach((p, idx) => (idx === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y)));
+  ctx.closePath();
+  ctx.fillStyle = createGradientFillFromStops(ctx, -r, -r, r, r, stops || ["#FEF9C3", "#FBBF24", "#D97706"]);
+  ctx.fill();
+  ctx.strokeStyle = isSelected ? "#FFFFFF" : (isDark ? "#FFFBEB" : "#B45309");
+  ctx.lineWidth = isSelected ? 2 : 0.9;
+  ctx.stroke();
+
+  if (isSelected) {
+    ctx.strokeStyle = "#FACC15";
+    ctx.lineWidth = 1.6;
+    ctx.beginPath();
+    ctx.arc(0, 0, r + 3.2, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+function drawProjected3DRibbonBow(ctx, sx, sy, s, sway, angle, stops, { isSelected }) {
+  const facingScale = 0.35 + 0.65 * Math.abs(-Math.sin(angle));
+  ctx.save();
+  ctx.translate(sx, sy);
+  ctx.rotate(sway * 0.35);
+  ctx.scale(facingScale, 1);
+  const grad = createGradientFillFromStops(ctx, -s, -s * 0.7, s, s, stops || ["#F43F5E", "#BE123C", "#FBBF24"]);
+  ctx.fillStyle = grad;
+  // Twin hanging tails
+  ctx.beginPath();
+  ctx.moveTo(0, 0);
+  ctx.lineTo(-s * 0.46, s * 0.92);
+  ctx.lineTo(-s * 0.14, s * 0.66);
+  ctx.closePath();
+  ctx.fill();
+  ctx.beginPath();
+  ctx.moveTo(0, 0);
+  ctx.lineTo(s * 0.46, s * 0.92);
+  ctx.lineTo(s * 0.14, s * 0.66);
+  ctx.closePath();
+  ctx.fill();
+  // Left & right loops + gold rim knot
+  ctx.beginPath();
+  ctx.ellipse(-s * 0.45, -s * 0.08, s * 0.48, s * 0.28, -0.35, 0, Math.PI * 2);
+  ctx.ellipse(s * 0.45, -s * 0.08, s * 0.48, s * 0.28, 0.35, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = "#FDE047";
+  ctx.lineWidth = Math.max(0.8, s * 0.08);
+  ctx.stroke();
+  ctx.fillStyle = "#FBBF24";
+  ctx.beginPath();
+  ctx.arc(0, -s * 0.04, Math.max(1.8, s * 0.2), 0, Math.PI * 2);
+  ctx.fill();
+  if (isSelected) {
+    ctx.strokeStyle = "#FACC15";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(0, s * 0.12, s + 2, 0, Math.PI * 2);
+    ctx.stroke();
   }
   ctx.restore();
 }
@@ -22511,6 +22902,19 @@ function renderChristmasTreeScene(ctx, layout, projBuffer, sceneParams) {
       if (interactive && it.data && hitBoxes) {
         hitBoxes.push({ item: it.data, x: p.sx, y: p.sy, r: Math.max(18, ph * 0.64) });
       }
+    } else if (it.kind === "community_card") {
+      const baseW = isMobile ? 13.5 : (interactive ? 24.5 : 15.5);
+      const cw = baseW * it.scale * persp;
+      const ch = cw * 1.32;
+      const sway = it.baseTilt + Math.sin(t * 1.38 + it.swayPhase) * 0.11;
+      const isSelected = it.data && (it.data.id === selectedId || it.data.id === hoverId);
+      ctx.save();
+      ctx.globalAlpha = 0.84 + 0.16 * depthNorm;
+      drawProjected3DGreetingCard(ctx, p.sx, p.sy, cw, ch, sway, p.angle, it, { isDark, isSelected });
+      ctx.restore();
+      if (interactive && it.data && hitBoxes) {
+        hitBoxes.push({ item: it.data, x: p.sx, y: p.sy, r: Math.max(18, ch * 0.64) });
+      }
     } else if (it.kind === "community_gift") {
       const s = it.size * persp * scaleBoost;
       const bob = Math.sin(t * 1.4 + it.bobPhase) * 0.7;
@@ -22531,6 +22935,28 @@ function renderChristmasTreeScene(ctx, layout, projBuffer, sceneParams) {
       if (interactive && it.data && hitBoxes) {
         hitBoxes.push({ item: it.data, x: p.sx, y: p.sy + bob, r: Math.max(17, s * 0.92) });
       }
+    } else if (it.kind === "community_star_ornament") {
+      const r = it.size * persp * scaleBoost;
+      const sway = Math.sin(t * 1.6 + (it.swayPhase || 0)) * 0.14;
+      const isSelected = it.data && (it.data.id === selectedId || it.data.id === hoverId);
+      ctx.save();
+      ctx.globalAlpha = 0.88 + 0.12 * depthNorm;
+      drawProjected3DStarOrnament(ctx, p.sx, p.sy, r, sway, p.angle, it.gradientStops, { isDark, isSelected });
+      ctx.restore();
+      if (interactive && it.data && hitBoxes) {
+        hitBoxes.push({ item: it.data, x: p.sx, y: p.sy, r: Math.max(16, r * 1.8) });
+      }
+    } else if (it.kind === "community_ribbon_bow") {
+      const s = it.size * persp * scaleBoost;
+      const sway = Math.sin(t * 1.4 + (it.swayPhase || 0)) * 0.11;
+      const isSelected = it.data && (it.data.id === selectedId || it.data.id === hoverId);
+      ctx.save();
+      ctx.globalAlpha = 0.88 + 0.12 * depthNorm;
+      drawProjected3DRibbonBow(ctx, p.sx, p.sy, s, sway, p.angle, it.gradientStops, { isDark, isSelected });
+      ctx.restore();
+      if (interactive && it.data && hitBoxes) {
+        hitBoxes.push({ item: it.data, x: p.sx, y: p.sy, r: Math.max(16, s * 1.7) });
+      }
     } else if (it.kind === "community_bauble") {
       const r = it.size * persp * scaleBoost;
       const isSelected = it.data && (it.data.id === selectedId || it.data.id === hoverId);
@@ -22539,14 +22965,28 @@ function renderChristmasTreeScene(ctx, layout, projBuffer, sceneParams) {
       ctx.globalAlpha = 0.84 + 0.16 * depthNorm;
       ctx.fillStyle = "#F59E0B";
       ctx.fillRect(p.sx - r * 0.28, p.sy - r * 1.18, r * 0.56, r * 0.28);
-      const baubleGrad = ctx.createRadialGradient(p.sx + specOffsetX, p.sy - r * 0.34, Math.max(0.5, r * 0.12), p.sx, p.sy, r);
-      baubleGrad.addColorStop(0, "#ffffff");
-      baubleGrad.addColorStop(0.28, it.color);
-      baubleGrad.addColorStop(1, hexShadeRgb(it.color, 0.58 + 0.22 * depthNorm));
-      ctx.fillStyle = baubleGrad;
-      ctx.beginPath();
-      ctx.arc(p.sx, p.sy, r, 0, Math.PI * 2);
-      ctx.fill();
+      if (Array.isArray(it.gradientStops) && it.gradientStops.length >= 2) {
+        ctx.fillStyle = createGradientFillFromStops(ctx, p.sx - r, p.sy - r, p.sx + r, p.sy + r, it.gradientStops);
+        ctx.beginPath();
+        ctx.arc(p.sx, p.sy, r, 0, Math.PI * 2);
+        ctx.fill();
+        const specGrad = ctx.createRadialGradient(p.sx + specOffsetX, p.sy - r * 0.34, 0.4, p.sx + specOffsetX, p.sy - r * 0.34, r * 0.72);
+        specGrad.addColorStop(0, "rgba(255, 255, 255, 0.85)");
+        specGrad.addColorStop(1, "rgba(255, 255, 255, 0)");
+        ctx.fillStyle = specGrad;
+        ctx.beginPath();
+        ctx.arc(p.sx, p.sy, r, 0, Math.PI * 2);
+        ctx.fill();
+      } else {
+        const baubleGrad = ctx.createRadialGradient(p.sx + specOffsetX, p.sy - r * 0.34, Math.max(0.5, r * 0.12), p.sx, p.sy, r);
+        baubleGrad.addColorStop(0, "#ffffff");
+        baubleGrad.addColorStop(0.28, it.color);
+        baubleGrad.addColorStop(1, hexShadeRgb(it.color, 0.58 + 0.22 * depthNorm));
+        ctx.fillStyle = baubleGrad;
+        ctx.beginPath();
+        ctx.arc(p.sx, p.sy, r, 0, Math.PI * 2);
+        ctx.fill();
+      }
       if (isSelected) {
         ctx.strokeStyle = "#FACC15";
         ctx.lineWidth = 2;
@@ -22675,32 +23115,79 @@ function cardCornerDropY(cardX, cardWidth, effR) {
   return effR - Math.sqrt(Math.max(0, effR * effR - dx * dx));
 }
 
+const CARD_EDGE_SNOW_SELECTOR = [
+  "#homeContributionCard",
+  "#bannerStackCard",
+  "#weeklyCompetitionModule",
+  "#forum .mini-card",
+  "#timerMainCard",
+  "#studySpacesMainCard",
+  "#studyTimerPage .study-quote-card",
+  "#compGatewayHero",
+  "#arenaLockedNotice",
+  "#arenaPausedNotice",
+  "#arenaStudentIdRequiredNotice"
+].join(", ");
+
+const CARD_EDGE_CANVAS_H = 26;
+const CARD_EDGE_BASE_Y = 20;
+
+function removeCardEdgeSnowDom(el) {
+  if (!el) return;
+  el.classList.remove("xmas-snow-card", "is-snow-hover");
+  el.querySelectorAll(":scope > canvas.xmas-card-edge-snow, :scope > canvas.xmas-card-snow-canvas").forEach((c) => c.remove());
+}
+
 function syncCardSnowCaps() {
   const registry = getTrackedCardSnowRegistry();
   const active = isChristmas2026Season() && christmasSnowState.enabled && !christmasSnowState.reducedMotion;
   if (!active) {
     registry.forEach((entry) => {
-      if (entry.el) entry.el.classList.remove("xmas-snow-card", "is-snow-hover");
+      if (entry.el) removeCardEdgeSnowDom(entry.el);
     });
+    registry.clear();
     return;
   }
 
-  const cardEls = Array.from(document.querySelectorAll(
-    "#homeContributionCard, #weeklyCompetitionModule, #forum .mini-card, #studyTimerPage .study-card:not(.study-maintenance-card), #studyTimerPage .study-quote-card"
-  ));
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const matchedSet = new Set();
+  const cardEls = Array.from(document.querySelectorAll(CARD_EDGE_SNOW_SELECTOR));
 
   cardEls.forEach((el, idx) => {
     if (!el || !el.isConnected) return;
-    // Remove any legacy inner-card canvas elements if present
+    // On mobile showcase carousel, #weeklyCompetitionModule lives inside #bannerTrack (which clips overflow); #bannerStackCard owns the top cap.
+    if (el.id === "weeklyCompetitionModule" && el.closest && el.closest("#bannerTrack")) {
+      return;
+    }
+    matchedSet.add(el);
+    // Clean legacy canvas if present
     const legacyCanvas = el.querySelector(":scope > canvas.xmas-card-snow-canvas");
     if (legacyCanvas) legacyCanvas.remove();
 
     el.classList.add("xmas-snow-card");
-    const rectW = Math.round(el.getBoundingClientRect().width || el.clientWidth || 0);
+    const rectW = Math.round(el.offsetWidth || el.getBoundingClientRect().width || el.clientWidth || 0);
     const parsedRadius = parseFloat(window.getComputedStyle(el).borderTopLeftRadius || "14") || 14;
     const cornerR = Math.max(0, Math.min(parsedRadius, Math.max(0, rectW * 0.22)));
     const insetX = Math.max(4, Math.round(cornerR * 0.36));
     const usableW = Math.max(0, rectW - insetX * 2);
+
+    let canvas = el.querySelector(":scope > canvas.xmas-card-edge-snow");
+    if (!canvas) {
+      canvas = document.createElement("canvas");
+      canvas.className = "xmas-card-edge-snow";
+      canvas.setAttribute("aria-hidden", "true");
+      el.appendChild(canvas);
+    }
+
+    const canvasW = Math.max(0, rectW + 2);
+    const backingW = Math.round(canvasW * dpr);
+    const backingH = Math.round(CARD_EDGE_CANVAS_H * dpr);
+    let sizedNow = false;
+    if (canvasW > 20 && (canvas.width !== backingW || canvas.height !== backingH)) {
+      canvas.width = backingW;
+      canvas.height = backingH;
+      sizedNow = true;
+    }
 
     let entry = registry.get(el);
     if (!entry) {
@@ -22709,6 +23196,9 @@ function syncCardSnowCaps() {
       const prof = buildCardSnowProfile(initW, colW, idx * 1.93 + 0.7);
       entry = {
         el,
+        canvas,
+        ctx: canvas.getContext("2d"),
+        dpr,
         width: usableW > 20 ? usableW : 0,
         cardWidth: rectW,
         cornerR,
@@ -22716,6 +23206,7 @@ function syncCardSnowCaps() {
         colW,
         cols: prof.cols,
         target: prof.target,
+        dirty: true,
         glints: Array.from({ length: 14 }, (_, gi) => ({
           frac: 0.06 + (gi / 13) * 0.88,
           phase: gi * 1.27 + idx
@@ -22723,9 +23214,16 @@ function syncCardSnowCaps() {
       };
       registry.set(el, entry);
     } else {
+      if (entry.canvas !== canvas) {
+        entry.canvas = canvas;
+        entry.ctx = canvas.getContext("2d");
+        entry.dirty = true;
+      }
+      entry.dpr = dpr;
       entry.cornerR = cornerR;
       entry.insetX = insetX;
       entry.cardWidth = rectW;
+      if (sizedNow) entry.dirty = true;
     }
 
     if (usableW > 20 && Math.abs(usableW - entry.width) > 4) {
@@ -22744,12 +23242,18 @@ function syncCardSnowCaps() {
       entry.cols = prof.cols;
       entry.target = prof.target;
       entry.width = usableW;
+      entry.dirty = true;
+    }
+
+    if (entry.dirty && rectW > 20 && el.offsetParent !== null) {
+      renderCardEdgeCanvas(entry, christmasSnowState.isDark, christmasSnowState.windAngle * 3.2);
     }
   });
 
-  // Prune detached DOM elements safely
-  registry.forEach((_, el) => {
-    if (!el || !el.isConnected) {
+  // Prune detached or moved-into-carousel elements
+  registry.forEach((entry, el) => {
+    if (!el || !el.isConnected || !matchedSet.has(el)) {
+      removeCardEdgeSnowDom(el);
       registry.delete(el);
     }
   });
@@ -22779,6 +23283,7 @@ function brushCardSnowSegment(entry, rect, localX0, localX1, velX) {
     const diff = prevH - newH;
     if (diff > 0.12) {
       cols[i] = newH;
+      entry.dirty = true;
       removedSum += diff;
       if (removedSum > 0.55 && (i % 3 === 0) && christmasSnowState.cascades.length < 150) {
         const dropY = cardCornerDropY(insetX + cx, rect.width, cornerR);
@@ -22797,30 +23302,37 @@ function brushCardSnowSegment(entry, rect, localX0, localX1, velX) {
   return removedSum;
 }
 
-function renderCardSnowCapOverlay(ctx, entry, rect, isDark, tPhase) {
-  const { cols, width, insetX, cornerR, glints } = entry;
-  if (!cols || cols.length < 3 || width < 20) return;
+function renderCardEdgeCanvas(entry, isDark, tPhase) {
+  const { cols, width, insetX, cornerR, glints, canvas, ctx, dpr, cardWidth } = entry;
+  if (!canvas || !ctx || !cols || cols.length < 3 || width < 20 || cardWidth < 20) return;
+
+  const logicalW = canvas.width / Math.max(1, dpr || 1);
+  ctx.setTransform(dpr || 1, 0, 0, dpr || 1, 0, 0);
+  ctx.clearRect(0, 0, logicalW, CARD_EDGE_CANVAS_H);
 
   let maxCol = 0;
   for (let i = 0; i < cols.length; i++) {
     if (cols[i] > maxCol) maxCol = cols[i];
   }
-  if (maxCol < 0.35) return;
+  if (maxCol < 0.35) {
+    entry.dirty = false;
+    return;
+  }
 
-  const spanW = Math.max(20, rect.width - insetX * 2);
+  const spanW = Math.max(20, cardWidth - insetX * 2);
   const lastIdx = cols.length - 1;
   const ptsX = new Float32Array(cols.length);
   const ptsBaseY = new Float32Array(cols.length);
   const ptsTopY = new Float32Array(cols.length);
-  let minTopY = rect.top;
-  let maxBaseY = rect.top;
+  let minTopY = CARD_EDGE_BASE_Y;
+  let maxBaseY = CARD_EDGE_BASE_Y;
 
   for (let i = 0; i < cols.length; i++) {
     const localX = (i / lastIdx) * spanW;
-    const vx = rect.left + insetX + localX;
-    const drop = cardCornerDropY(insetX + localX, rect.width, cornerR);
-    const by = rect.top + drop + 1.5;
-    const ty = by - cols[i];
+    const vx = 1 + insetX + localX;
+    const drop = cardCornerDropY(insetX + localX, cardWidth, cornerR);
+    const by = CARD_EDGE_BASE_Y + drop + 1.5;
+    const ty = Math.max(1.5, by - cols[i]);
     ptsX[i] = vx;
     ptsBaseY[i] = by;
     ptsTopY[i] = ty;
@@ -22829,7 +23341,6 @@ function renderCardSnowCapOverlay(ctx, entry, rect, isDark, tPhase) {
   }
 
   ctx.save();
-  // Smooth closed snowpack resting ABOVE rect.top along rounded top edge
   ctx.beginPath();
   ctx.moveTo(ptsX[0], ptsBaseY[0]);
   for (let i = 0; i < lastIdx; i++) {
@@ -22862,7 +23373,6 @@ function renderCardSnowCapOverlay(ctx, entry, rect, isDark, tPhase) {
   ctx.shadowOffsetY = 1.5;
   ctx.fill();
 
-  // Crisp upper ridge outline so snow stands cleanly off both cream light & dark backdrops
   ctx.shadowColor = "transparent";
   ctx.shadowBlur = 0;
   ctx.beginPath();
@@ -22877,7 +23387,6 @@ function renderCardSnowCapOverlay(ctx, entry, rect, isDark, tPhase) {
   ctx.lineWidth = 0.9;
   ctx.stroke();
 
-  // Twinkling ice crystal glints along upper snow ridge
   for (let i = 0; i < glints.length; i++) {
     const g = glints[i];
     const ci = Math.min(lastIdx, Math.floor(g.frac * lastIdx));
@@ -22887,15 +23396,16 @@ function renderCardSnowCapOverlay(ctx, entry, rect, isDark, tPhase) {
     ctx.globalAlpha = shimmer * 0.85;
     ctx.fillStyle = "#ffffff";
     ctx.beginPath();
-    ctx.arc(ptsX[ci], ptsBaseY[ci] - ch * 0.56, 1.15, 0, Math.PI * 2);
+    ctx.arc(ptsX[ci], Math.max(2, ptsBaseY[ci] - ch * 0.56), 1.15, 0, Math.PI * 2);
     ctx.fill();
   }
   ctx.restore();
+  entry.dirty = false;
 }
 
 function handleCardSnowPointer(ev, isDownClick) {
   if (!isChristmas2026Season() || !christmasSnowState.enabled || christmasSnowState.reducedMotion) return;
-  if (document.documentElement.classList.contains("study-mode-active") || document.body.classList.contains("arena-quiz-active")) return;
+  if (document.body.classList.contains("arena-quiz-active")) return;
   if (!ev || typeof ev.clientX !== "number" || typeof ev.clientY !== "number") return;
   const target = ev.target;
   if (target && target.closest && target.closest("dialog[open], .floating-menu, .quick-menu-popover, .site-header")) return;
@@ -22909,13 +23419,12 @@ function handleCardSnowPointer(ev, isDownClick) {
   let sweptAny = false;
 
   registry.forEach((entry, el) => {
-    if (!el.isConnected) return;
+    if (!el.isConnected || el.offsetParent === null) return;
     const rect = el.getBoundingClientRect();
     if (rect.width < 20 || rect.height < 20) return;
     if (rect.bottom < 0 || rect.top > window.innerHeight) return;
 
-    // Snow rests ABOVE rect.top ([rect.top - 16 .. rect.top + 2]), catch comfortable band around top edge
-    if (cx >= rect.left - 8 && cx <= rect.right + 8 && cy >= rect.top - 22 && cy <= rect.top + 14) {
+    if (cx >= rect.left - 8 && cx <= rect.right + 8 && cy >= rect.top - 24 && cy <= rect.top + 14) {
       hoveredCard = el;
       const offsetL = rect.left + (entry.insetX || 0);
       const localX1 = cx - offsetL;
@@ -22925,7 +23434,8 @@ function handleCardSnowPointer(ev, isDownClick) {
         const brushed = brushCardSnowSegment(entry, rect, localX0, localX1, dx);
         if (brushed > 0.2) {
           sweptAny = true;
-          if (Math.abs(dx) > 4 && el.id === "weeklyCompetitionModule") {
+          renderCardEdgeCanvas(entry, christmasSnowState.isDark, christmasSnowState.windAngle * 3.2);
+          if (Math.abs(dx) > 4 && (el.id === "weeklyCompetitionModule" || el.id === "bannerStackCard")) {
             window.__xmasSnowSwipeLockUntil = Date.now() + 260;
           }
         }
@@ -23089,47 +23599,42 @@ function renderChristmasSnowFrame() {
     drawBottomSnowPile(ctx, w, h, pile, isDark);
   }
 
-  // Sync, regrow & render per-card interactive snow drifts ON TOP OF card upper rims
+  // Sync, regrow & paint DOM-anchored per-card edge snow (zero scroll bounce!)
   christmasSnowState._cardSyncTick = ((christmasSnowState._cardSyncTick || 0) + 1) % 24;
   if (christmasSnowState._cardSyncTick === 1) {
     syncCardSnowCaps();
   }
   const cardRegistry = getTrackedCardSnowRegistry();
-  const cardRegrowRate = 0.011;
-  const headerEl = document.querySelector(".site-header");
-  const headerRect = headerEl ? headerEl.getBoundingClientRect() : null;
-  const clipTop = headerRect && headerRect.height > 0 ? Math.max(0, Math.round(headerRect.bottom)) : 0;
+  const cardRegrowRate = 0.014;
+  const isArenaQuiz = document.body.classList.contains("arena-quiz-active");
+  const shimmerTick = (christmasSnowState._cardSyncTick % 4) === 0;
 
-  ctx.save();
-  ctx.beginPath();
-  ctx.rect(0, clipTop, w, Math.max(0, h - clipTop));
-  ctx.clip();
-
-  cardRegistry.forEach((entry) => {
-    if (!entry.el || !entry.el.isConnected) return;
-    const cols = entry.cols;
-    const target = entry.target;
-    if (cols && target) {
-      for (let i = 0; i < cols.length; i++) {
-        if (cols[i] < target[i] - 0.02) {
-          cols[i] = Math.min(target[i], cols[i] + cardRegrowRate);
+  if (!isArenaQuiz) {
+    cardRegistry.forEach((entry) => {
+      if (!entry.el || !entry.el.isConnected || entry.el.offsetParent === null) return;
+      const cols = entry.cols;
+      const target = entry.target;
+      let changed = Boolean(entry.dirty);
+      if (cols && target) {
+        for (let i = 0; i < cols.length; i++) {
+          if (cols[i] < target[i] - 0.02) {
+            cols[i] = Math.min(target[i], cols[i] + cardRegrowRate);
+            changed = true;
+          }
+        }
+        for (let i = 1; i < cols.length - 1; i++) {
+          const avg = (cols[i - 1] + cols[i] * 2 + cols[i + 1]) * 0.25;
+          if (Math.abs(avg - cols[i]) > 0.08 && cols[i] < target[i]) {
+            cols[i] = Math.min(target[i], cols[i] + (avg - cols[i]) * 0.08);
+            changed = true;
+          }
         }
       }
-      // Smooth column slopes gently along card edge so brushed gap closes organically
-      for (let i = 1; i < cols.length - 1; i++) {
-        const avg = (cols[i - 1] + cols[i] * 2 + cols[i + 1]) * 0.25;
-        if (Math.abs(avg - cols[i]) > 0.08 && cols[i] < target[i]) {
-          cols[i] = Math.min(target[i], cols[i] + (avg - cols[i]) * 0.08);
-        }
+      if (changed || shimmerTick) {
+        renderCardEdgeCanvas(entry, isDark, christmasSnowState.windAngle * 3.2);
       }
-    }
-    const rect = entry.el.getBoundingClientRect();
-    if (rect.width < 20 || rect.height < 20) return;
-    if (rect.top - 22 > h || rect.top + 8 < clipTop) return;
-    renderCardSnowCapOverlay(ctx, entry, rect, isDark, christmasSnowState.windAngle * 3.2);
-  });
-
-  ctx.restore();
+    });
+  }
 
   christmasSnowState.rafId = requestAnimationFrame(renderChristmasSnowFrame);
 }
@@ -23169,11 +23674,10 @@ function updateChristmasEffectsToggleUI() {
   const widgetBtn = $("#christmasSnowToggleBtn");
 
   if (labelEl) {
-    if (christmasSnowState.reducedMotion) {
-      labelEl.textContent = "Tuyết rơi: Giảm CĐ";
-    } else {
-      labelEl.textContent = christmasSnowState.enabled ? "Tuyết rơi: Bật" : "Tuyết rơi: Tắt";
-    }
+    labelEl.textContent = "Không khí Giáng sinh";
+    labelEl.title = christmasSnowState.reducedMotion
+      ? "Không khí Giáng sinh (Thiết bị đang bật Giảm chuyển động)"
+      : "Không khí Giáng sinh";
   }
   if (switchEl) {
     switchEl.classList.toggle("active", isActive);
@@ -23182,7 +23686,7 @@ function updateChristmasEffectsToggleUI() {
   if (widgetBtn) {
     widgetBtn.classList.toggle("active", isActive);
     widgetBtn.setAttribute("aria-pressed", String(isActive));
-    widgetBtn.title = isActive ? "Tạm dừng tuyết rơi" : "Bật hiệu ứng tuyết rơi Giáng sinh";
+    widgetBtn.title = "Không khí Giáng sinh";
   }
 }
 
@@ -23201,7 +23705,7 @@ window.toggleChristmasEffects = function (e) {
     localStorage.setItem(XMAS_EFFECTS_STORAGE_KEY, christmasSnowState.enabled ? "on" : "off");
   } catch (err) { }
   startOrStopChristmasSnowLoop();
-  toast(christmasSnowState.enabled ? "❄️ Đã bật hiệu ứng Giáng sinh" : "Đã tạm dừng hiệu ứng tuyết rơi");
+  toast(christmasSnowState.enabled ? "Đã bật Không khí Giáng sinh" : "Đã tạm dừng Không khí Giáng sinh");
 };
 
 function ensureChristmasAudioElement() {
@@ -23231,20 +23735,15 @@ function updateChristmasMusicUI() {
   if (btn) {
     btn.classList.toggle("is-playing", isPlaying);
     btn.setAttribute("aria-pressed", String(isPlaying));
+    btn.title = (christmasBgmState.pausedByStudy && christmasBgmState.userWantsPlay)
+      ? "Nhạc nền Giáng sinh (đang tạm nhường âm thanh Study)"
+      : "Nhạc nền Giáng sinh (Ikson - Christmas)";
   }
   if (statusEl) {
-    if (christmasBgmState.pausedByStudy && christmasBgmState.userWantsPlay) {
-      statusEl.textContent = "Đang nhường Study";
-    } else {
-      statusEl.textContent = isPlaying ? "Đang phát Noel" : "Nhạc Noel";
-    }
+    statusEl.textContent = "Nhạc nền Giáng sinh";
   }
   if (rowLabel) {
-    if (christmasBgmState.pausedByStudy && christmasBgmState.userWantsPlay) {
-      rowLabel.textContent = "Nhạc Noel: Study";
-    } else {
-      rowLabel.textContent = isPlaying ? "Nhạc Noel: Bật" : "Nhạc Noel: Tắt";
-    }
+    rowLabel.textContent = "Nhạc nền Giáng sinh";
   }
   if (rowSwitch) {
     rowSwitch.classList.toggle("active", isPlaying);
@@ -23325,7 +23824,7 @@ window.toggleChristmasMusic = async function (e) {
   } catch (err) {
     if (err && err.name !== "AbortError") {
       console.warn("Christmas BGM play blocked:", err);
-      toast("Nhấn lại nút Nhạc Noel để cho phép trình duyệt phát âm thanh.");
+      toast("Nhấn lại nút Nhạc nền Giáng sinh để cho phép trình duyệt phát âm thanh.");
     }
     updateChristmasMusicUI();
   }
@@ -23394,6 +23893,18 @@ function initChristmasMusicPlayer() {
   }
 }
 
+function syncChristmasSpinButton(spinning) {
+  const btn = $("#xmasTreeAutoSpinBtn");
+  if (!btn) return;
+  btn.setAttribute("aria-pressed", String(Boolean(spinning)));
+  const iconSvg = btn.querySelector(".xmas-spin-icon");
+  if (iconSvg) {
+    iconSvg.innerHTML = spinning
+      ? '<rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect>'
+      : '<polygon points="6 3 20 12 6 21 6 3"></polygon>';
+  }
+}
+
 function focusChristmasTreeItemOnStage(itemId, options = {}) {
   const { pauseAutoSpin = true } = options || {};
   const item = (christmasTreeEventState.items || []).find((it) => Number(it.id) === Number(itemId));
@@ -23402,11 +23913,7 @@ function focusChristmasTreeItemOnStage(itemId, options = {}) {
   const keepSpinning = !pauseAutoSpin && !christmasSnowState.reducedMotion;
   christmasTreeStudioState.autoSpin = keepSpinning;
   christmasTreeStudioState.rotation = -Math.PI * 0.5 - Number(item.posAngle || 0);
-  const spinBtn = $("#xmasTreeAutoSpinBtn");
-  if (spinBtn) {
-    spinBtn.setAttribute("aria-pressed", keepSpinning ? "true" : "false");
-    spinBtn.textContent = keepSpinning ? "⏸ Tự xoay" : "▶ Tự xoay";
-  }
+  syncChristmasSpinButton(keepSpinning);
   showChristmasTreeInspector(item);
   renderChristmasTreeGallery();
   if (!christmasTreeStudioState.rafId && christmasTreeStudioState.isOpen) {
@@ -23420,24 +23927,224 @@ function hideChristmasTreeInspector() {
   if (card) card.hidden = true;
 }
 
+function buildTreeInlineSvgIcon(kind, styleKey, size = 22) {
+  const s = Math.max(14, Number(size) || 22);
+  if (kind === "lock") {
+    return `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>`;
+  }
+  if (kind === "polaroid") {
+    return `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><path d="m21 15-5-5L5 21"></path></svg>`;
+  }
+  if (kind === "card") {
+    const tpl = TREE_CARD_TEMPLATE_MAP[styleKey] || TREE_CARD_TEMPLATE_MAP.card_reindeer;
+    return `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3" y="2" width="18" height="20" rx="2.5" fill="${escapeHTML(tpl.bg)}" stroke="${escapeHTML(tpl.accent)}" stroke-width="1.8"/><path d="M7 8h10M7 12h8M7 16h5" stroke="${escapeHTML(tpl.accent)}" stroke-width="1.6" stroke-linecap="round"/></svg>`;
+  }
+  if (kind === "gift") {
+    const pal = TREE_GIFT_PALETTE_MAP[styleKey] || TREE_GIFT_PALETTE_MAP.gift_red;
+    return `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3" y="10" width="18" height="11" rx="2" fill="${escapeHTML(pal.box)}"/><rect x="2" y="7" width="20" height="4.5" rx="1.2" fill="${escapeHTML(pal.lid)}"/><rect x="10.5" y="7" width="3" height="14" fill="${escapeHTML(pal.ribbon)}"/><path d="M12 7C9.2 7 7.4 4.8 8.6 3.5c1.1-1.2 2.9-.2 3.4 3.5Zm0 0c2.8 0 4.6-2.2 3.4-3.5-1.1-1.2-2.9-.2-3.4 3.5Z" fill="${escapeHTML(pal.ribbon)}"/></svg>`;
+  }
+  if (styleKey === "star_grad_gold") {
+    return `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="#FBBF24" stroke="#B45309" stroke-width="1.4" stroke-linejoin="round" aria-hidden="true"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>`;
+  }
+  if (styleKey === "ribbon_grad_velvet") {
+    return `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 12L7 21l2.5-1.8L12 14l2.5 5.2L17 21l-5-9Z" fill="#BE123C"/><ellipse cx="7.5" cy="9.5" rx="4.5" ry="3" fill="#E11D48" stroke="#FBBF24" stroke-width="1.2"/><ellipse cx="16.5" cy="9.5" rx="4.5" ry="3" fill="#E11D48" stroke="#FBBF24" stroke-width="1.2"/><circle cx="12" cy="10" r="2.2" fill="#FBBF24"/></svg>`;
+  }
+  if (styleKey === "fairy_garland" || styleKey === "prism_multi_garland") {
+    const c1 = styleKey === "prism_multi_garland" ? "#EC4899" : "#F59E0B";
+    const c2 = styleKey === "prism_multi_garland" ? "#38BDF8" : "#EF4444";
+    const c3 = "#22C55E";
+    return `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M2 7c5 5 15 5 20 0" stroke="#15803D" stroke-width="1.8" stroke-linecap="round"/><circle cx="6.5" cy="10.5" r="2.5" fill="${c1}"/><circle cx="12" cy="12" r="2.6" fill="${c2}"/><circle cx="17.5" cy="10.5" r="2.5" fill="${c3}"/></svg>`;
+  }
+  const baubleCol = TREE_BAUBLE_COLOR_MAP[styleKey] || "#E11D48";
+  return `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="10" y="3" width="4" height="3" rx="0.8" fill="#F59E0B"/><circle cx="12" cy="14" r="7.5" fill="${escapeHTML(baubleCol)}"/><circle cx="9.6" cy="11.4" r="2.1" fill="#ffffff" opacity="0.72"/></svg>`;
+}
+
 function buildOrnamentThumbnailHtml(item) {
   if (item && item.isMysteryLocked) {
-    return item.slotKind === "polaroid" ? `<span aria-hidden="true">🤫</span>` : `<span aria-hidden="true">🎁</span>`;
+    return item.slotKind === "gift"
+      ? buildTreeInlineSvgIcon("gift", item.itemStyle, 24)
+      : buildTreeInlineSvgIcon("lock", "", 22);
   }
   if (item.slotKind === "polaroid") {
     const asset = getChristmasTreePhotoAsset(item.photoData || "");
     if (asset && asset.dataUrl) {
       return `<img src="${asset.dataUrl}" alt="" />`;
     }
-    return `<span aria-hidden="true">📷</span>`;
+    return buildTreeInlineSvgIcon("polaroid", item.itemStyle, 22);
   }
-  const style = String(item.itemStyle || "");
-  if (style.startsWith("gift_")) return `<span aria-hidden="true">🎁</span>`;
-  if (style === "fairy_garland") return `<span aria-hidden="true">✨</span>`;
-  if (style === "bauble_gold") return `<span aria-hidden="true">🟡</span>`;
-  if (style === "bauble_sapphire") return `<span aria-hidden="true">🔵</span>`;
-  if (style === "bauble_emerald") return `<span aria-hidden="true">🟢</span>`;
-  return `<span aria-hidden="true">🔴</span>`;
+  if (item.slotKind === "card") {
+    if (item.itemStyle === "card_santa_letter") {
+      return `<img src="public/assets/card-santa-letter.webp" alt="" />`;
+    }
+    return buildTreeInlineSvgIcon("card", item.itemStyle, 24);
+  }
+  if (item.slotKind === "gift" || String(item.itemStyle || "").startsWith("gift_")) {
+    return buildTreeInlineSvgIcon("gift", item.itemStyle, 24);
+  }
+  return buildTreeInlineSvgIcon("accessory", item.itemStyle, 22);
+}
+
+function renderGreetingCardHTML({ itemStyle, itemFinish, gradientStops, cardName, cardYear, message, compact = false }) {
+  const tpl = TREE_CARD_TEMPLATE_MAP[itemStyle] ? itemStyle : "card_reindeer";
+  const stops = Array.isArray(gradientStops)
+    ? gradientStops
+    : ((TREE_CARD_FINISH_MAP[itemFinish || "classic"] || {}).gradientStops || null);
+  const nameTxt = escapeHTML((cardName || "").trim() || (typeof session !== "undefined" && session && session.displayName) || "RE:SEARCH Member");
+  const yearTxt = escapeHTML((cardYear || "").trim() || "2026");
+  const rawWish = (message || "").trim();
+  const wishTxt = escapeHTML(rawWish || "Chúc bạn một mùa Giáng sinh an lành và năm mới rực rỡ!");
+  const borderStyle = stops && stops.length >= 2
+    ? `background:linear-gradient(135deg,${stops.map((c) => escapeHTML(c)).join(",")});padding:4px;border-radius:16px;`
+    : "";
+
+  let inner = "";
+  if (tpl === "card_reindeer") {
+    inner = `
+      <div class="xc-brand-top">${nameTxt}</div>
+      <div class="xc-artwork">
+        <svg width="${compact ? 56 : 76}" height="${compact ? 56 : 76}" viewBox="0 0 80 80" aria-hidden="true">
+          <circle cx="40" cy="40" r="34" fill="#C8102E"/>
+          <path d="M40 22c-1 6-1 12 0 18M35 28l-6-7M45 28l6-7M31 24l-5-1M49 24l5-1M37 40l-4 17M43 40l4 17" stroke="#ffffff" stroke-width="2.6" stroke-linecap="round" fill="none"/>
+          <ellipse cx="40" cy="41" rx="7" ry="10" fill="#ffffff"/>
+          <circle cx="40" cy="31" r="4.5" fill="#ffffff"/>
+        </svg>
+      </div>
+      <div>
+        <div class="xc-headline">Happy Holidays!</div>
+        <div class="xc-year-pill">${yearTxt}</div>
+      </div>
+      <div class="xc-wish-body">${wishTxt}</div>`;
+  } else if (tpl === "card_lights") {
+    inner = `
+      <div class="xc-headline">Merry Christmas</div>
+      <div class="xc-parchment">
+        <svg width="100%" height="22" viewBox="0 0 180 22" preserveAspectRatio="none" aria-hidden="true">
+          <path d="M0 4 Q45 18 90 6 T180 8" fill="none" stroke="#166534" stroke-width="1.6"/>
+          <circle cx="24" cy="11" r="3.4" fill="#FACC15"/><circle cx="56" cy="13" r="3.4" fill="#38BDF8"/>
+          <circle cx="90" cy="8" r="3.4" fill="#DC2626"/><circle cx="126" cy="11" r="3.4" fill="#22C55E"/>
+          <circle cx="158" cy="10" r="3.4" fill="#F59E0B"/>
+        </svg>
+        <div class="xc-wish-body">${wishTxt}</div>
+      </div>
+      <div class="xc-brand-top">${nameTxt} · ${yearTxt}</div>`;
+  } else if (tpl === "card_snowglobe") {
+    inner = `
+      <div class="xc-artwork">
+        <svg width="${compact ? 64 : 84}" height="${compact ? 64 : 84}" viewBox="0 0 90 90" aria-hidden="true">
+          <circle cx="45" cy="38" r="28" fill="#EFF6FF" stroke="#FFFFFF" stroke-width="2.2"/>
+          <polygon points="45,20 33,44 57,44" fill="#15803D"/>
+          <polygon points="31,32 23,46 39,46" fill="#166534"/>
+          <path d="M22 50h46a20 20 0 0 1-46 0Z" fill="#FFFFFF"/>
+          <rect x="26" y="59" width="38" height="14" rx="4" fill="#C8102E"/>
+          <text x="45" y="69" text-anchor="middle" fill="#FFFFFF" font-size="9.5" font-weight="800">${yearTxt}</text>
+        </svg>
+      </div>
+      <div class="xc-headline">Happy Holidays!</div>
+      <div class="xc-wish-body">${wishTxt}</div>
+      <div class="xc-brand-top">${nameTxt}</div>`;
+  } else if (tpl === "card_envelope") {
+    inner = `
+      <div class="xc-headline" style="font-size:13.5px;color:#B91C1C;">Merry Christmas</div>
+      <div class="xc-envelope-sheet">
+        <div class="xc-wish-body">${wishTxt}</div>
+      </div>
+      <div class="xc-artwork" style="width:100%;margin:2px 0;">
+        <div style="width:100%;background:linear-gradient(135deg,#DC2626,#991B1B);color:#FFFBEB;border-radius:8px;padding:6px 8px;">
+          <div class="xc-brand-top">${nameTxt} · ${yearTxt}</div>
+        </div>
+      </div>`;
+  } else if (tpl === "card_midnight_gold") {
+    inner = `
+      <div class="xc-brand-top" style="color:#FDE68A;">${nameTxt}</div>
+      <div>
+        <div class="xc-headline">HAPPY NEW YEAR</div>
+        <div class="xc-year-pill" style="background:linear-gradient(135deg,#FDE047,#D97706);color:#1E1B4B;">${yearTxt}</div>
+      </div>
+      <div class="xc-wish-body" style="color:#E2E8F0;">${wishTxt}</div>
+      <svg width="100%" height="20" viewBox="0 0 200 20" preserveAspectRatio="none" aria-hidden="true">
+        <path d="M0 16 Q50 4 105 14 T200 8 L200 20 L0 20 Z" fill="#F59E0B" opacity="0.88"/>
+      </svg>`;
+  } else {
+    // card_santa_letter
+    inner = `
+      <img src="public/assets/card-santa-letter.webp" alt="" class="xc-santa-hero" />
+      <div class="xc-brand-top">${nameTxt} · ${yearTxt}</div>
+      <div class="xc-wish-body">${wishTxt}</div>`;
+  }
+
+  const cardHtml = `<div class="xmas-greeting-card tpl-${tpl}${compact ? " is-compact" : ""}">${inner}</div>`;
+  return borderStyle ? `<div style="${borderStyle}">${cardHtml}</div>` : cardHtml;
+}
+
+function getEffectiveViewerStreakAccess() {
+  const fromServer = christmasTreeEventState.viewerAccess;
+  if (fromServer && typeof fromServer.streak === "number") {
+    return {
+      streak: Number(fromServer.streak || 0),
+      streakTier: Number(fromServer.streakTier || 0),
+      canUploadPhoto: Boolean(fromServer.canUploadPhoto || Number(fromServer.streak || 0) >= 3)
+    };
+  }
+  const s = typeof session !== "undefined" ? session : null;
+  if (!s) return { streak: 0, streakTier: 0, canUploadPhoto: false };
+  if (s.role === "admin" || s.role === "ta") {
+    return { streak: Math.max(52, Number(s.streak || 0)), streakTier: 5, canUploadPhoto: true };
+  }
+  const streak = Math.max(0, Number(s.streak || 0));
+  let tier = Number(s.streakTier || 0);
+  if (!tier) {
+    for (let i = TREE_STREAK_REQUIREMENTS.length - 1; i >= 0; i--) {
+      if (streak >= TREE_STREAK_REQUIREMENTS[i]) {
+        tier = i;
+        break;
+      }
+    }
+  }
+  return { streak, streakTier: tier, canUploadPhoto: streak >= 3 };
+}
+
+function syncChristmasTreeStreakAccess() {
+  const access = getEffectiveViewerStreakAccess();
+  const tierNames = ["Tân binh", "Khởi động (≥3d)", "Bền bỉ (≥7d)", "Kiên trì (≥14d)", "Tinh anh (≥30d)", "Huyền thoại (≥50d)"];
+  const tierText = $("#xmasUserTierText");
+  if (tierText) {
+    tierText.textContent = `Chuỗi ${access.streak} ngày · ${tierNames[Math.min(5, access.streakTier)] || "Tân binh"}`;
+  }
+
+  const uploadBox = $("#xmasPolaroidDropzone");
+  const fileEl = $("#xmasPolaroidFile");
+  const uploadBadge = $("#xmasPolaroidUploadBadge");
+  const uploadTitle = $("#xmasPolaroidUploadTitle");
+  const lockNote = $("#xmasPolaroidLockNote");
+  const canUpload = Boolean(access.canUploadPhoto);
+  if (uploadBox) {
+    uploadBox.classList.toggle("is-locked", !canUpload);
+    uploadBox.setAttribute("aria-disabled", String(!canUpload));
+  }
+  if (fileEl) fileEl.disabled = !canUpload;
+  if (uploadBadge) {
+    uploadBadge.textContent = canUpload ? "Đã mở (≥3d)" : "Chuỗi ≥3 ngày";
+    uploadBadge.classList.toggle("is-unlocked", canUpload);
+  }
+  if (uploadTitle) {
+    uploadTitle.textContent = canUpload ? "Tải ảnh lên" : "Mở khóa khi chuỗi ≥3 ngày";
+  }
+  if (lockNote) lockNote.hidden = canUpload;
+
+  $$("#christmasTreeModal .is-tier-option[data-min-tier]").forEach((opt) => {
+    const minTier = Number(opt.dataset.minTier || 0);
+    const unlocked = access.streakTier >= minTier;
+    opt.classList.toggle("is-locked", !unlocked);
+    const radio = opt.querySelector('input[type="radio"]');
+    if (radio) {
+      radio.disabled = !unlocked;
+      if (radio.checked && !unlocked) {
+        const groupName = radio.getAttribute("name");
+        const fallback = groupName && document.querySelector(`input[name="${groupName}"]:not(:disabled)`);
+        if (fallback) fallback.checked = true;
+      }
+    }
+  });
 }
 
 function showChristmasTreeInspector(item) {
@@ -23446,15 +24153,65 @@ function showChristmasTreeInspector(item) {
   if (!card || !body || !item) return;
   const typeLabel = TREE_STYLE_LABELS[item.itemStyle] || "Trang trí Giáng sinh";
   const isLocked = Boolean(item.isMysteryLocked);
-  const wishText = isLocked
-    ? `<span class="xmas-mystery-tag">🔒 ${escapeHTML(item.lockedNotice || CHRISTMAS_LOCKED_NOTICE)}</span>`
-    : (item.message ? escapeHTML(item.message) : "<em>Không có lời nhắn kèm theo.</em>");
   const deleteBtnHtml = item.canDelete
     ? `<button type="button" class="xmas-gallery-delete-btn" data-tree-delete-id="${item.id}" style="margin-top:8px;">Gỡ món này</button>`
     : "";
+
+  if (item.slotKind === "accessory") {
+    body.innerHTML = `
+      <div class="xmas-inspector-content">
+        <div class="xmas-inspector-thumb">${buildOrnamentThumbnailHtml(item)}</div>
+        <div class="xmas-inspector-meta">
+          <button type="button" class="xmas-inspector-author" data-open-namecard="${item.userId}">
+            ${escapeHTML(item.authorName || "Thành viên RE:SEARCH")}
+          </button>
+          <div class="xmas-inspector-type">${escapeHTML(typeLabel)}</div>
+          ${deleteBtnHtml}
+        </div>
+      </div>
+    `;
+    card.hidden = false;
+    return;
+  }
+
+  if (item.slotKind === "card" && !isLocked) {
+    body.innerHTML = `
+      <div class="xmas-inspector-meta" style="width:100%;">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px;padding-right:28px;">
+          <button type="button" class="xmas-inspector-author" data-open-namecard="${item.userId}">
+            ${escapeHTML(item.authorName || "Thành viên RE:SEARCH")}
+          </button>
+          <span class="xmas-inspector-type">${escapeHTML(typeLabel)}</span>
+        </div>
+        ${renderGreetingCardHTML({
+          itemStyle: item.itemStyle,
+          itemFinish: item.itemFinish,
+          gradientStops: item.gradientStops,
+          cardName: item.cardName || item.authorName,
+          cardYear: item.cardYear || "2026",
+          message: item.message,
+          compact: true
+        })}
+        ${deleteBtnHtml}
+      </div>
+    `;
+    card.hidden = false;
+    return;
+  }
+
+  const wishText = isLocked
+    ? `<span class="xmas-mystery-tag">${buildTreeInlineSvgIcon("lock", "", 13)} ${escapeHTML(item.lockedNotice || CHRISTMAS_LOCKED_NOTICE)}</span>`
+    : (item.message ? escapeHTML(item.message) : "<em>Không có lời nhắn kèm theo.</em>");
+  const polGradBg = Array.isArray(item.gradientStops) && item.gradientStops.length >= 2
+    ? `linear-gradient(135deg,${item.gradientStops.join(",")})`
+    : (item.frameColor || "#FFFAF0");
+  const thumbStyle = isLocked
+    ? "background:linear-gradient(135deg,#9f1239,#be123c);color:#fffbeb;"
+    : (item.slotKind === "polaroid" ? `background:${escapeHTML(polGradBg)};` : "");
+
   body.innerHTML = `
     <div class="xmas-inspector-content">
-      <div class="xmas-inspector-thumb" style="${item.slotKind === "polaroid" && !isLocked ? `background:${escapeHTML(item.frameColor || "#FFFAF0")};` : (isLocked ? "background:linear-gradient(135deg,#9f1239,#be123c);color:#fffbeb;" : "")}">
+      <div class="xmas-inspector-thumb" style="${thumbStyle}">
         ${buildOrnamentThumbnailHtml(item)}
       </div>
       <div class="xmas-inspector-meta">
@@ -23483,19 +24240,19 @@ function updateChristmasTreeBadges() {
 
   const summary = $("#xmasTreeStatsSummary");
   if (summary) {
-    summary.textContent = "Hãy treo ảnh kỷ niệm, hộp quà hoặc trái châu của bạn để cùng cộng đồng tạo nên một mùa giáng sinh ấm áp (tối đa 2 món/người).";
+    summary.textContent = "Hãy treo Polaroid, thiệp chúc, hộp quà hoặc phụ kiện của bạn để cùng cộng đồng tạo nên một mùa Giáng sinh ấm áp (tối đa 2 trong 4 loại/người).";
   }
 
   const milestone = $("#xmasTreeMilestoneBar");
   if (milestone) {
     if (total === 0) {
-      milestone.textContent = "🌱 Trạng thái: Cây thông khởi đầu · Mời bạn treo món đầu tiên!";
+      milestone.textContent = "🎄 Cây thông khởi đầu · Mời bạn treo món đầu tiên";
     } else if (total < 5) {
-      milestone.textContent = `✨ Cây thông bắt đầu lên đèn (${total} món từ ${contributors} thành viên)`;
+      milestone.textContent = `🎄 Cây thông bắt đầu lên đèn (${total} món từ ${contributors} thành viên)`;
     } else if (total < 15) {
       milestone.textContent = `🎄 Cây thông đang rực rỡ sắc màu (${total} món · ${contributors} người)`;
     } else {
-      milestone.textContent = `🌟 Cây thông đại lễ hội RE:SEARCH (${total} món · ${contributors} người chung tay!)`;
+      milestone.textContent = `🎄 Cây thông đại lễ hội RE:SEARCH (${total} món · ${contributors} người chung tay)`;
     }
   }
 }
@@ -23511,12 +24268,15 @@ function renderPolaroidFormPreview() {
   const styleVal = checkedStyle ? checkedStyle.value : "classic";
 
   if (previewCard) {
-    previewCard.style.background = TREE_POLAROID_FRAME_MAP[styleVal] || "#FFFAF0";
+    const gradStops = TREE_POLAROID_GRADIENT_MAP[styleVal];
+    previewCard.style.background = gradStops
+      ? `linear-gradient(135deg, ${gradStops.join(", ")})`
+      : (TREE_POLAROID_FRAME_MAP[styleVal] || "#FFFAF0");
   }
   const msgVal = msgInput ? msgInput.value : "";
   if (charCount) charCount.textContent = String(msgVal.length);
   if (captionBox) {
-    captionBox.textContent = msgVal.trim() || "Lời chúc Giáng sinh...";
+    captionBox.textContent = msgVal.trim() || "Kỷ niệm mùa đông...";
   }
   const myPol = (christmasTreeEventState.items || []).find((it) => it.isSelf && it.slotKind === "polaroid");
   if (sealBadge) {
@@ -23529,10 +24289,10 @@ function renderPolaroidFormPreview() {
       if (asset && asset.dataUrl) {
         photoBox.innerHTML = `<img src="${asset.dataUrl}" alt="" />`;
       } else {
-        photoBox.textContent = "📷";
+        photoBox.innerHTML = buildTreeInlineSvgIcon("polaroid", styleVal, 26);
       }
     } else {
-      photoBox.textContent = "✨";
+      photoBox.innerHTML = buildTreeInlineSvgIcon("polaroid", styleVal, 26);
     }
   }
   $$("#christmasTreeModal .xmas-preset-card[data-photo-preset]").forEach((btn) => {
@@ -23540,28 +24300,63 @@ function renderPolaroidFormPreview() {
   });
 }
 
-function renderAccessoryFormPreview() {
-  const checkedAcc = document.querySelector('input[name="accessoryStyle"]:checked');
-  const accVal = checkedAcc ? checkedAcc.value : "gift_red";
-  const iconEl = $("#xmasAccPreviewIcon");
-  const labelEl = $("#xmasAccPreviewLabel");
-  const wishEl = $("#xmasAccPreviewWish");
-  const msgEl = $("#xmasAccMsg");
+function renderCardFormPreview() {
+  const host = $("#xmasCardLivePreview");
+  const checkedTpl = document.querySelector('input[name="cardStyle"]:checked');
+  const checkedFinish = document.querySelector('input[name="cardFinish"]:checked');
+  const nameEl = $("#xmasCardName");
+  const yearEl = $("#xmasCardYear");
+  const msgEl = $("#xmasCardMsg");
+  const countEl = $("#xmasCardCharCount");
+  const msgVal = msgEl ? msgEl.value : "";
+  if (countEl) countEl.textContent = String(msgVal.length);
+  if (!host) return;
+  const finishKey = checkedFinish ? checkedFinish.value : "classic";
+  const finishSpec = TREE_CARD_FINISH_MAP[finishKey] || TREE_CARD_FINISH_MAP.classic;
+  host.innerHTML = renderGreetingCardHTML({
+    itemStyle: checkedTpl ? checkedTpl.value : "card_reindeer",
+    itemFinish: finishKey,
+    gradientStops: finishSpec.gradientStops,
+    cardName: nameEl ? nameEl.value : "",
+    cardYear: yearEl ? yearEl.value : "2026",
+    message: msgVal,
+    compact: false
+  });
+}
 
+function renderGiftFormPreview() {
+  const checkedGift = document.querySelector('input[name="giftStyle"]:checked');
+  const giftVal = checkedGift ? checkedGift.value : "gift_red";
+  const iconEl = $("#xmasGiftPreviewIcon");
+  const labelEl = $("#xmasGiftPreviewLabel");
+  const wishEl = $("#xmasGiftPreviewWish");
+  const msgEl = $("#xmasGiftMsg");
+  const pal = TREE_GIFT_PALETTE_MAP[giftVal] || TREE_GIFT_PALETTE_MAP.gift_red;
   if (iconEl) {
-    if (accVal.startsWith("gift_")) iconEl.textContent = "🎁";
-    else if (accVal === "fairy_garland") iconEl.textContent = "✨";
-    else if (accVal === "bauble_gold") iconEl.textContent = "🟡";
-    else if (accVal === "bauble_sapphire") iconEl.textContent = "🔵";
-    else if (accVal === "bauble_emerald") iconEl.textContent = "🟢";
-    else iconEl.textContent = "🔴";
+    iconEl.innerHTML = buildTreeInlineSvgIcon("gift", giftVal, 28);
+    iconEl.style.background = pal.gradientStops ? `linear-gradient(135deg,${pal.gradientStops.join(",")})` : "";
   }
   if (labelEl) {
-    labelEl.textContent = TREE_STYLE_LABELS[accVal] || "Phụ kiện Giáng sinh";
+    labelEl.textContent = TREE_STYLE_LABELS[giftVal] || "Hộp quà Giáng sinh";
   }
   if (wishEl) {
     const val = msgEl ? msgEl.value.trim() : "";
-    wishEl.textContent = val || "Gửi chút ấm áp cho RE:SEARCH!";
+    wishEl.textContent = val || "Món quà đặt dưới gốc thông";
+  }
+}
+
+function renderAccessoryFormPreview() {
+  const checkedAcc = document.querySelector('input[name="accessoryStyle"]:checked');
+  const accVal = checkedAcc ? checkedAcc.value : "bauble_ruby";
+  const iconEl = $("#xmasAccPreviewIcon");
+  const labelEl = $("#xmasAccPreviewLabel");
+  const stops = TREE_ACCESSORY_GRADIENT_MAP[accVal];
+  if (iconEl) {
+    iconEl.innerHTML = buildTreeInlineSvgIcon("accessory", accVal, 28);
+    iconEl.style.background = stops ? `linear-gradient(135deg,${stops.join(",")})` : "";
+  }
+  if (labelEl) {
+    labelEl.textContent = TREE_STYLE_LABELS[accVal] || "Phụ kiện Giáng sinh";
   }
 }
 
@@ -23573,7 +24368,7 @@ function renderChristmasTreeGallery() {
   if (!listEl) return;
 
   if (!items.length) {
-    listEl.innerHTML = `<div class="xmas-tree-guest-box"><p>Cây thông hiện chưa có món trang trí nào từ cộng đồng. Hãy là người đầu tiên treo khung ảnh Polaroid hoặc đặt hộp quà dưới gốc thông!</p></div>`;
+    listEl.innerHTML = `<div class="xmas-tree-guest-box"><p>Cây thông hiện chưa có món trang trí nào từ cộng đồng. Hãy là người đầu tiên treo Polaroid, thiệp chúc, hộp quà hoặc phụ kiện!</p></div>`;
     return;
   }
 
@@ -23581,15 +24376,27 @@ function renderChristmasTreeGallery() {
     const typeLabel = TREE_STYLE_LABELS[item.itemStyle] || "Trang trí";
     const isSel = Number(christmasTreeStudioState.selectedId) === Number(item.id);
     const isLocked = Boolean(item.isMysteryLocked);
-    const msgHtml = isLocked
-      ? `<p class="xmas-gallery-msg"><span class="xmas-mystery-tag">🔒 ${escapeHTML(item.lockedNotice || CHRISTMAS_LOCKED_NOTICE)}</span></p>`
-      : (item.message ? `<p class="xmas-gallery-msg">“${escapeHTML(item.message)}”</p>` : "");
+    let msgHtml = "";
+    if (item.slotKind === "accessory") {
+      msgHtml = "";
+    } else if (isLocked) {
+      msgHtml = `<p class="xmas-gallery-msg"><span class="xmas-mystery-tag">${buildTreeInlineSvgIcon("lock", "", 13)} ${escapeHTML(item.lockedNotice || CHRISTMAS_LOCKED_NOTICE)}</span></p>`;
+    } else if (item.slotKind === "card") {
+      const cardMeta = [item.cardName, item.cardYear].filter(Boolean).join(" · ");
+      msgHtml = `<p class="xmas-gallery-msg">${cardMeta ? `<strong>${escapeHTML(cardMeta)}:</strong> ` : ""}${item.message ? `“${escapeHTML(item.message)}”` : ""}</p>`;
+    } else if (item.message) {
+      msgHtml = `<p class="xmas-gallery-msg">“${escapeHTML(item.message)}”</p>`;
+    }
+
     const delBtn = item.canDelete
       ? `<button type="button" class="xmas-gallery-delete-btn" data-tree-delete-id="${item.id}">Gỡ</button>`
       : "";
+    const gradBg = Array.isArray(item.gradientStops) && item.gradientStops.length >= 2
+      ? `linear-gradient(135deg,${item.gradientStops.join(",")})`
+      : (item.frameColor || "#FFFAF0");
     const iconBg = isLocked
       ? "background:linear-gradient(135deg,#9f1239,#be123c);color:#fffbeb;"
-      : (item.slotKind === "polaroid" ? `background:${escapeHTML(item.frameColor || "#FFFAF0")};` : "");
+      : (item.slotKind === "polaroid" ? `background:${escapeHTML(gradBg)};` : "");
     return `
       <div class="xmas-gallery-item${isSel ? " is-selected" : ""}">
         <div class="xmas-gallery-icon" style="${iconBg}">
@@ -23616,12 +24423,25 @@ function renderChristmasTreeGallery() {
 function populateUserTreeFormsFromItems() {
   const myItems = (christmasTreeEventState.items || []).filter((it) => it.isSelf);
   const myPolaroid = myItems.find((it) => it.slotKind === "polaroid") || null;
+  const myCard = myItems.find((it) => it.slotKind === "card") || null;
+  const myGift = myItems.find((it) => it.slotKind === "gift") || null;
   const myAccessory = myItems.find((it) => it.slotKind === "accessory") || null;
 
   const slotCountEl = $("#xmasMySlotCount");
   if (slotCountEl) slotCountEl.textContent = String(myItems.length);
+  const quotaEl = $("#xmasSlotQuotaNote");
+  if (quotaEl) {
+    quotaEl.textContent = myItems.length >= 2
+      ? `Đã dùng ${myItems.length}/2 loại · Gỡ bớt 1 món để đổi loại`
+      : `Đã dùng ${myItems.length}/2 loại`;
+  }
 
-  // Sync Polaroid form fields (read ownerDraft if sealed so owner can edit seamlessly)
+  $("#xmasSlotBtnPolaroid")?.classList.toggle("is-used", Boolean(myPolaroid));
+  $("#xmasSlotBtnCard")?.classList.toggle("is-used", Boolean(myCard));
+  $("#xmasSlotBtnGift")?.classList.toggle("is-used", Boolean(myGift));
+  $("#xmasSlotBtnAccessory")?.classList.toggle("is-used", Boolean(myAccessory));
+
+  // Sync Polaroid form fields
   const polMsg = $("#xmasPolaroidMsg");
   const polSubmit = $("#xmasPolaroidSubmitBtn");
   const polDelete = $("#xmasPolaroidDeleteBtn");
@@ -23631,14 +24451,14 @@ function populateUserTreeFormsFromItems() {
     const draftPhoto = myPolaroid.ownerDraft ? myPolaroid.ownerDraft.photoData : (myPolaroid.photoData || "");
     if (polMsg) polMsg.value = draftMsg;
     const radio = document.querySelector(`input[name="polaroidStyle"][value="${myPolaroid.itemStyle}"]`);
-    if (radio) radio.checked = true;
+    if (radio && !radio.disabled) radio.checked = true;
     christmasTreeStudioState.polaroidPhotoData = draftPhoto;
     if (fileLabel) {
       fileLabel.textContent = draftPhoto
         ? (draftPhoto.startsWith("preset:") ? "Đang dùng tranh minh họa có sẵn" : "Đã đính kèm ảnh kỷ niệm")
         : "PNG, JPG, WEBP · Kéo thả hoặc bấm chọn";
     }
-    if (polSubmit) polSubmit.textContent = "Cập nhật khung ảnh";
+    if (polSubmit) polSubmit.textContent = "Cập nhật Polaroid";
     if (polDelete) {
       polDelete.hidden = false;
       polDelete.dataset.deleteId = String(myPolaroid.id);
@@ -23647,7 +24467,7 @@ function populateUserTreeFormsFromItems() {
     if (polMsg && !polMsg.matches(":focus")) polMsg.value = "";
     christmasTreeStudioState.polaroidPhotoData = "";
     if (fileLabel) fileLabel.textContent = "PNG, JPG, WEBP · Kéo thả hoặc bấm chọn";
-    if (polSubmit) polSubmit.textContent = "Treo khung ảnh lên cây";
+    if (polSubmit) polSubmit.textContent = "Treo lên cây";
     if (polDelete) {
       polDelete.hidden = true;
       delete polDelete.dataset.deleteId;
@@ -23655,23 +24475,76 @@ function populateUserTreeFormsFromItems() {
   }
   renderPolaroidFormPreview();
 
+  // Sync Greeting Card form fields
+  const cardNameEl = $("#xmasCardName");
+  const cardYearEl = $("#xmasCardYear");
+  const cardMsgEl = $("#xmasCardMsg");
+  const cardSubmit = $("#xmasCardSubmitBtn");
+  const cardDelete = $("#xmasCardDeleteBtn");
+  const defaultAuthor = (typeof session !== "undefined" && session && session.displayName) || "";
+  if (myCard) {
+    const draft = myCard.ownerDraft || myCard;
+    if (cardNameEl && !cardNameEl.matches(":focus")) cardNameEl.value = draft.cardName || defaultAuthor;
+    if (cardYearEl && !cardYearEl.matches(":focus")) cardYearEl.value = draft.cardYear || "2026";
+    if (cardMsgEl && !cardMsgEl.matches(":focus")) cardMsgEl.value = draft.message || "";
+    const tplR = document.querySelector(`input[name="cardStyle"][value="${myCard.itemStyle}"]`);
+    if (tplR) tplR.checked = true;
+    const finR = document.querySelector(`input[name="cardFinish"][value="${draft.itemFinish || myCard.itemFinish || "classic"}"]`);
+    if (finR && !finR.disabled) finR.checked = true;
+    if (cardSubmit) cardSubmit.textContent = "Cập nhật thiệp";
+    if (cardDelete) {
+      cardDelete.hidden = false;
+      cardDelete.dataset.deleteId = String(myCard.id);
+    }
+  } else {
+    if (cardNameEl && !cardNameEl.matches(":focus") && !cardNameEl.value) cardNameEl.value = defaultAuthor;
+    if (cardYearEl && !cardYearEl.matches(":focus") && !cardYearEl.value) cardYearEl.value = "2026";
+    if (cardMsgEl && !cardMsgEl.matches(":focus")) cardMsgEl.value = "";
+    if (cardSubmit) cardSubmit.textContent = "Treo lên cây";
+    if (cardDelete) {
+      cardDelete.hidden = true;
+      delete cardDelete.dataset.deleteId;
+    }
+  }
+  renderCardFormPreview();
+
+  // Sync Gift form fields
+  const giftMsg = $("#xmasGiftMsg");
+  const giftSubmit = $("#xmasGiftSubmitBtn");
+  const giftDelete = $("#xmasGiftDeleteBtn");
+  if (myGift) {
+    const draftMsg = myGift.ownerDraft ? myGift.ownerDraft.message : (myGift.message || "");
+    if (giftMsg && !giftMsg.matches(":focus")) giftMsg.value = draftMsg;
+    const radio = document.querySelector(`input[name="giftStyle"][value="${myGift.itemStyle}"]`);
+    if (radio && !radio.disabled) radio.checked = true;
+    if (giftSubmit) giftSubmit.textContent = "Cập nhật hộp quà";
+    if (giftDelete) {
+      giftDelete.hidden = false;
+      giftDelete.dataset.deleteId = String(myGift.id);
+    }
+  } else {
+    if (giftMsg && !giftMsg.matches(":focus")) giftMsg.value = "";
+    if (giftSubmit) giftSubmit.textContent = "Treo lên cây";
+    if (giftDelete) {
+      giftDelete.hidden = true;
+      delete giftDelete.dataset.deleteId;
+    }
+  }
+  renderGiftFormPreview();
+
   // Sync Accessory form fields
-  const accMsg = $("#xmasAccMsg");
   const accSubmit = $("#xmasAccSubmitBtn");
   const accDelete = $("#xmasAccDeleteBtn");
   if (myAccessory) {
-    const draftAccMsg = myAccessory.ownerDraft ? myAccessory.ownerDraft.message : (myAccessory.message || "");
-    if (accMsg) accMsg.value = draftAccMsg;
     const radio = document.querySelector(`input[name="accessoryStyle"][value="${myAccessory.itemStyle}"]`);
-    if (radio) radio.checked = true;
+    if (radio && !radio.disabled) radio.checked = true;
     if (accSubmit) accSubmit.textContent = "Cập nhật phụ kiện";
     if (accDelete) {
       accDelete.hidden = false;
       accDelete.dataset.deleteId = String(myAccessory.id);
     }
   } else {
-    if (accMsg && !accMsg.matches(":focus")) accMsg.value = "";
-    if (accSubmit) accSubmit.textContent = "Treo phụ kiện lên cây";
+    if (accSubmit) accSubmit.textContent = "Treo lên cây";
     if (accDelete) {
       accDelete.hidden = true;
       delete accDelete.dataset.deleteId;
@@ -23682,6 +24555,7 @@ function populateUserTreeFormsFromItems() {
 
 function renderChristmasTreeStudioUI(syncForms = true) {
   updateChristmasTreeBadges();
+  syncChristmasTreeStreakAccess();
   renderChristmasTreeGallery();
 
   const guestBox = $("#xmasTreeGuestBox");
@@ -23717,8 +24591,9 @@ function applyChristmasTreeServerPayload(data, syncForms = true) {
   christmasTreeEventState.loaded = true;
   christmasTreeEventState.active = data.active !== false;
   christmasTreeEventState.expiresAt = Number(data.expiresAt || CHRISTMAS_2026_END_MS);
+  christmasTreeEventState.viewerAccess = data.viewerAccess || null;
   christmasTreeEventState.items = Array.isArray(data.items) ? data.items : [];
-  christmasTreeEventState.stats = data.stats || { totalItems: 0, contributors: 0, polaroids: 0, accessories: 0 };
+  christmasTreeEventState.stats = data.stats || { totalItems: 0, contributors: 0, polaroids: 0, cards: 0, gifts: 0, accessories: 0 };
   syncCombinedChristmasTreeItems();
   renderChristmasTreeStudioUI(syncForms);
 }
@@ -23880,7 +24755,6 @@ function initChristmasTreeStudio() {
 
   if (!modal) return;
 
-  // Light-dismiss fallback for browsers without HTMLDialogElement.prototype.closedBy (e.g. Safari)
   if (!("closedBy" in HTMLDialogElement.prototype)) {
     let downOnBackdrop = false;
     modal.addEventListener("pointerdown", (ev) => {
@@ -23919,11 +24793,7 @@ function initChristmasTreeStudio() {
   });
   $("#xmasTreeAutoSpinBtn")?.addEventListener("click", () => {
     christmasTreeStudioState.autoSpin = !christmasTreeStudioState.autoSpin;
-    const btn = $("#xmasTreeAutoSpinBtn");
-    if (btn) {
-      btn.setAttribute("aria-pressed", String(christmasTreeStudioState.autoSpin));
-      btn.textContent = christmasTreeStudioState.autoSpin ? "⏸ Tự xoay" : "▶ Tự xoay";
-    }
+    syncChristmasSpinButton(christmasTreeStudioState.autoSpin);
   });
 
   const tabDecorate = $("#xmasTabDecorate");
@@ -23947,26 +24817,52 @@ function initChristmasTreeStudio() {
   tabDecorate?.addEventListener("click", () => switchTab("decorate"));
   tabGallery?.addEventListener("click", () => switchTab("gallery"));
 
-  const slotPol = $("#xmasSlotBtnPolaroid");
-  const slotAcc = $("#xmasSlotBtnAccessory");
-  const formPol = $("#xmasPolaroidForm");
-  const formAcc = $("#xmasAccessoryForm");
+  const slotButtons = {
+    polaroid: $("#xmasSlotBtnPolaroid"),
+    card: $("#xmasSlotBtnCard"),
+    gift: $("#xmasSlotBtnGift"),
+    accessory: $("#xmasSlotBtnAccessory")
+  };
+  const slotForms = {
+    polaroid: $("#xmasPolaroidForm"),
+    card: $("#xmasCardForm"),
+    gift: $("#xmasGiftForm"),
+    accessory: $("#xmasAccessoryForm")
+  };
   const switchSlot = (slot) => {
+    if (!slotForms[slot]) return;
     christmasTreeStudioState.activeSlot = slot;
-    const isPol = slot === "polaroid";
-    slotPol?.classList.toggle("active", isPol);
-    slotAcc?.classList.toggle("active", !isPol);
-    if (formPol) formPol.hidden = !isPol;
-    if (formAcc) formAcc.hidden = isPol;
+    Object.keys(slotButtons).forEach((k) => {
+      const active = k === slot;
+      const btn = slotButtons[k];
+      if (btn) {
+        btn.classList.toggle("active", active);
+        btn.setAttribute("aria-selected", String(active));
+      }
+      if (slotForms[k]) slotForms[k].hidden = !active;
+    });
     setChristmasTreeStatus("");
   };
-  slotPol?.addEventListener("click", () => switchSlot("polaroid"));
-  slotAcc?.addEventListener("click", () => switchSlot("accessory"));
+  Object.keys(slotButtons).forEach((k) => {
+    slotButtons[k]?.addEventListener("click", () => switchSlot(k));
+  });
 
   $("#xmasTreeLoginBtn")?.addEventListener("click", () => {
     christmasTreeStudioState.pendingReopenModal = true;
     modal.close();
     if (typeof openAuth === "function") openAuth();
+  });
+
+  // Notify cleanly when clicking a locked streak-tier option
+  $$("#christmasTreeModal .is-tier-option[data-min-tier]").forEach((opt) => {
+    opt.addEventListener("click", () => {
+      const minTier = Number(opt.dataset.minTier || 0);
+      const access = getEffectiveViewerStreakAccess();
+      if (access.streakTier < minTier) {
+        const reqDays = TREE_STREAK_REQUIREMENTS[minTier] || 3;
+        setChristmasTreeStatus(`Mẫu gradient này yêu cầu chuỗi hoạt động từ ${reqDays} ngày trở lên.`, true);
+      }
+    });
   });
 
   // Polaroid form controls
@@ -23983,10 +24879,21 @@ function initChristmasTreeStudio() {
   $$('input[name="polaroidStyle"]').forEach((r) => {
     r.addEventListener("change", renderPolaroidFormPreview);
   });
-  $$('input[name="accessoryStyle"]').forEach((r) => {
-    r.addEventListener("change", renderAccessoryFormPreview);
+
+  // Greeting Card form controls
+  $$('input[name="cardStyle"]').forEach((r) => r.addEventListener("change", renderCardFormPreview));
+  $$('input[name="cardFinish"]').forEach((r) => r.addEventListener("change", renderCardFormPreview));
+  $("#xmasCardName")?.addEventListener("input", renderCardFormPreview);
+  $("#xmasCardYear")?.addEventListener("input", renderCardFormPreview);
+  $("#xmasCardMsg")?.addEventListener("input", () => {
+    setChristmasTreeStatus("");
+    renderCardFormPreview();
   });
-  $("#xmasAccMsg")?.addEventListener("input", renderAccessoryFormPreview);
+
+  // Gift & Accessory form controls
+  $$('input[name="giftStyle"]').forEach((r) => r.addEventListener("change", renderGiftFormPreview));
+  $("#xmasGiftMsg")?.addEventListener("input", renderGiftFormPreview);
+  $$('input[name="accessoryStyle"]').forEach((r) => r.addEventListener("change", renderAccessoryFormPreview));
 
   // Hydrate illustrated postcard thumbnails inside preset cards
   $$('#christmasTreeModal .xmas-preset-card[data-photo-preset]').forEach((cardBtn) => {
@@ -24009,18 +24916,13 @@ function initChristmasTreeStudio() {
     });
   });
 
-  $("#xmasClearPhotoBtn")?.addEventListener("click", () => {
-    christmasTreeStudioState.polaroidPhotoData = "";
-    const fileEl = $("#xmasPolaroidFile");
-    if (fileEl) fileEl.value = "";
-    const fileNameEl = $("#xmasPolaroidFileName");
-    if (fileNameEl) fileNameEl.textContent = "PNG, JPG, WEBP · Kéo thả hoặc bấm chọn";
-    setChristmasTreeStatus("");
-    renderPolaroidFormPreview();
-  });
-
   async function processUploadedPolaroidFile(file) {
     if (!file) return;
+    const access = getEffectiveViewerStreakAccess();
+    if (!access.canUploadPhoto) {
+      setChristmasTreeStatus("Cần đạt chuỗi hoạt động từ 3 ngày trở lên để tải ảnh từ thiết bị.", true);
+      return;
+    }
     try {
       setChristmasTreeStatus("Đang xử lý ảnh...");
       const compressed = await compressPolaroidImageFile(file);
@@ -24041,9 +24943,18 @@ function initChristmasTreeStudio() {
 
   const dropzone = $("#xmasPolaroidDropzone");
   if (dropzone) {
+    dropzone.addEventListener("click", (ev) => {
+      const access = getEffectiveViewerStreakAccess();
+      if (!access.canUploadPhoto) {
+        ev.preventDefault();
+        setChristmasTreeStatus("Cần đạt chuỗi hoạt động từ 3 ngày trở lên để tải ảnh từ thiết bị.", true);
+      }
+    });
     dropzone.addEventListener("dragover", (ev) => {
       ev.preventDefault();
-      dropzone.classList.add("is-dragover");
+      if (getEffectiveViewerStreakAccess().canUploadPhoto) {
+        dropzone.classList.add("is-dragover");
+      }
     });
     dropzone.addEventListener("dragleave", () => {
       dropzone.classList.remove("is-dragover");
@@ -24057,7 +24968,7 @@ function initChristmasTreeStudio() {
   }
 
   function askChristmasGiftSealConfirmation(slotKind) {
-    if (Date.now() >= CHRISTMAS_2026_REVEAL_MS) {
+    if (slotKind === "accessory" || Date.now() >= CHRISTMAS_2026_REVEAL_MS) {
       return Promise.resolve({ confirmed: true, isSealed: false });
     }
     const confirmModal = $("#xmasConfirmHangModal");
@@ -24075,6 +24986,9 @@ function initChristmasTreeStudio() {
     if (slotKind === "polaroid") {
       if (sealLabelEl) sealLabelEl.textContent = "Ẩn ảnh";
       if (openLabelEl) openLabelEl.textContent = "Hiện ảnh";
+    } else if (slotKind === "card") {
+      if (sealLabelEl) sealLabelEl.textContent = "Đóng thiệp";
+      if (openLabelEl) openLabelEl.textContent = "Mở thiệp";
     } else {
       if (sealLabelEl) sealLabelEl.textContent = "Gói quà";
       if (openLabelEl) openLabelEl.textContent = "Mở quà";
@@ -24127,12 +25041,12 @@ function initChristmasTreeStudio() {
       applyChristmasTreeServerPayload(data, true);
       setChristmasTreeStatus(
         payload.isSealed
-          ? "🎁 Đã cất bí mật! Món quà sẽ mở vào 20:00 ngày 24/12."
+          ? "🎄 Đã niêm phong bí mật! Món quà sẽ mở vào 20:00 ngày 24/12."
           : "🎄 Đã lưu trang trí của bạn lên cây thông chung!"
       );
       toast(
         payload.isSealed
-          ? "🎁 Đã gói bí mật món quà đến 20:00 ngày 24/12!"
+          ? "🎄 Đã gói bí mật món quà đến 20:00 ngày 24/12!"
           : "🎄 Đã cập nhật trang trí lên cây thông Giáng sinh!"
       );
       const mine = (christmasTreeEventState.items || []).find(
@@ -24160,14 +25074,14 @@ function initChristmasTreeStudio() {
     }
   }
 
-  formPol?.addEventListener("submit", async (ev) => {
+  slotForms.polaroid?.addEventListener("submit", async (ev) => {
     ev.preventDefault();
     const styleEl = document.querySelector('input[name="polaroidStyle"]:checked');
     const msgEl = $("#xmasPolaroidMsg");
     const shuffleEl = $("#xmasPolaroidShuffle");
     const msgVal = (msgEl ? msgEl.value : "").trim();
-    if (!msgVal && !christmasTreeStudioState.polaroidPhotoData) {
-      setChristmasTreeStatus("Hãy thêm một tấm ảnh kỷ niệm hoặc viết lời chúc ngắn nhé.", true);
+    if (!christmasTreeStudioState.polaroidPhotoData) {
+      setChristmasTreeStatus("Hãy chọn tranh minh họa hoặc tải ảnh kỷ niệm lên khung Polaroid.", true);
       return;
     }
     const choice = await askChristmasGiftSealConfirmation("polaroid");
@@ -24183,15 +25097,43 @@ function initChristmasTreeStudio() {
     if (shuffleEl) shuffleEl.checked = false;
   });
 
-  formAcc?.addEventListener("submit", async (ev) => {
+  slotForms.card?.addEventListener("submit", async (ev) => {
     ev.preventDefault();
-    const styleEl = document.querySelector('input[name="accessoryStyle"]:checked');
-    const msgEl = $("#xmasAccMsg");
-    const shuffleEl = $("#xmasAccShuffle");
-    const choice = await askChristmasGiftSealConfirmation("accessory");
+    const tplEl = document.querySelector('input[name="cardStyle"]:checked');
+    const finishEl = document.querySelector('input[name="cardFinish"]:checked');
+    const nameEl = $("#xmasCardName");
+    const yearEl = $("#xmasCardYear");
+    const msgEl = $("#xmasCardMsg");
+    const shuffleEl = $("#xmasCardShuffle");
+    const msgVal = (msgEl ? msgEl.value : "").trim();
+    if (msgVal.length < 2) {
+      setChristmasTreeStatus("Hãy viết lời chúc trên tấm thiệp (ít nhất 2 ký tự).", true);
+      return;
+    }
+    const choice = await askChristmasGiftSealConfirmation("card");
     if (!choice.confirmed) return;
     await saveChristmasTreeOrnament({
-      slotKind: "accessory",
+      slotKind: "card",
+      itemStyle: tplEl ? tplEl.value : "card_reindeer",
+      itemFinish: finishEl ? finishEl.value : "classic",
+      cardName: (nameEl ? nameEl.value : "").trim(),
+      cardYear: (yearEl ? yearEl.value : "2026").trim() || "2026",
+      message: msgVal,
+      shufflePosition: Boolean(shuffleEl && shuffleEl.checked),
+      isSealed: choice.isSealed
+    });
+    if (shuffleEl) shuffleEl.checked = false;
+  });
+
+  slotForms.gift?.addEventListener("submit", async (ev) => {
+    ev.preventDefault();
+    const styleEl = document.querySelector('input[name="giftStyle"]:checked');
+    const msgEl = $("#xmasGiftMsg");
+    const shuffleEl = $("#xmasGiftShuffle");
+    const choice = await askChristmasGiftSealConfirmation("gift");
+    if (!choice.confirmed) return;
+    await saveChristmasTreeOrnament({
+      slotKind: "gift",
       itemStyle: styleEl ? styleEl.value : "gift_red",
       message: (msgEl ? msgEl.value : "").trim(),
       shufflePosition: Boolean(shuffleEl && shuffleEl.checked),
@@ -24200,16 +25142,28 @@ function initChristmasTreeStudio() {
     if (shuffleEl) shuffleEl.checked = false;
   });
 
-  $("#xmasPolaroidDeleteBtn")?.addEventListener("click", (ev) => {
-    const id = ev.currentTarget && ev.currentTarget.dataset.deleteId;
-    if (id) deleteChristmasTreeOrnamentById(id);
-  });
-  $("#xmasAccDeleteBtn")?.addEventListener("click", (ev) => {
-    const id = ev.currentTarget && ev.currentTarget.dataset.deleteId;
-    if (id) deleteChristmasTreeOrnamentById(id);
+  // Accessory hangs directly with zero confirm dialog & zero message
+  slotForms.accessory?.addEventListener("submit", async (ev) => {
+    ev.preventDefault();
+    const styleEl = document.querySelector('input[name="accessoryStyle"]:checked');
+    const shuffleEl = $("#xmasAccShuffle");
+    await saveChristmasTreeOrnament({
+      slotKind: "accessory",
+      itemStyle: styleEl ? styleEl.value : "bauble_ruby",
+      message: "",
+      shufflePosition: Boolean(shuffleEl && shuffleEl.checked),
+      isSealed: false
+    });
+    if (shuffleEl) shuffleEl.checked = false;
   });
 
-  // Delegated gallery + inspector actions (focus, delete, open namecard)
+  ["#xmasPolaroidDeleteBtn", "#xmasCardDeleteBtn", "#xmasGiftDeleteBtn", "#xmasAccDeleteBtn"].forEach((sel) => {
+    $(sel)?.addEventListener("click", (ev) => {
+      const id = ev.currentTarget && ev.currentTarget.dataset.deleteId;
+      if (id) deleteChristmasTreeOrnamentById(id);
+    });
+  });
+
   modal.addEventListener("click", (ev) => {
     const t = ev.target;
     if (!t || !t.closest) return;
@@ -24233,7 +25187,6 @@ function initChristmasTreeStudio() {
     }
   });
 
-  // Canvas 3D drag-to-rotate + tap-to-inspect
   if (canvas) {
     canvas.addEventListener("pointerdown", (ev) => {
       christmasTreeStudioState.dragging = true;
@@ -24311,11 +25264,7 @@ window.openChristmasTreeModal = async function (e) {
   }
   christmasTreeStudioState.isOpen = true;
   christmasTreeStudioState.autoSpin = !christmasSnowState.reducedMotion;
-  const spinBtn = $("#xmasTreeAutoSpinBtn");
-  if (spinBtn) {
-    spinBtn.setAttribute("aria-pressed", String(christmasTreeStudioState.autoSpin));
-    spinBtn.textContent = christmasTreeStudioState.autoSpin ? "⏸ Tự xoay" : "▶ Tự xoay";
-  }
+  syncChristmasSpinButton(christmasTreeStudioState.autoSpin);
   setChristmasTreeStatus("");
   renderChristmasTreeStudioUI(true);
   requestAnimationFrame(() => {

@@ -788,12 +788,19 @@ select:focus-visible {
 }
 
 .theme-toggle-switch.active,
-body.dark-theme .theme-toggle-switch {
+html.dark-theme #quickMenuThemeToggle,
+body.dark-theme #quickMenuThemeToggle {
   background: #10b981;
 }
 
+html.dark-theme .theme-toggle-switch:not(.active),
+body.dark-theme .theme-toggle-switch:not(.active) {
+  background: #334155;
+}
+
 .theme-toggle-switch.active .theme-switch-thumb,
-body.dark-theme .theme-switch-thumb {
+html.dark-theme #quickMenuThemeToggle .theme-switch-thumb,
+body.dark-theme #quickMenuThemeToggle .theme-switch-thumb {
   transform: translateX(18px);
   background: #f8fafc;
 }
@@ -29188,7 +29195,46 @@ body.christmas-season:not(.christmas-effects-off) header#siteHeader .site-header
   }
 }
 
-/* Interactive Dynamic Snow Drifts Resting ABOVE Large Cards (Viewport-overlay canvas, swipe-to-clear & regrows gradually) */
+/* Interactive Dynamic Snow Drifts Resting ABOVE Large Cards (DOM-anchored edge canvas for zero scroll jitter) */
+.xmas-card-bg-clip {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.xmas-card-edge-snow {
+  position: absolute;
+  top: -20px;
+  left: -1px;
+  width: calc(100% + 2px);
+  height: 26px;
+  pointer-events: none;
+  z-index: 6;
+  display: block;
+}
+
+body.christmas-season:not(.christmas-effects-off) .xmas-snow-card {
+  position: relative;
+  overflow: visible !important;
+}
+
+body.christmas-season:not(.christmas-effects-off) .contribution-card.xmas-snow-card:after {
+  clip-path: inset(0 115px 145px 0 round 0 0 16px 0);
+}
+
+body.christmas-season:not(.christmas-effects-off) #bannerStackCard .banner-track {
+  overflow: hidden;
+  border-radius: inherit;
+}
+
+body.christmas-effects-off .xmas-card-edge-snow,
+body.arena-quiz-active .xmas-card-edge-snow {
+  display: none !important;
+}
+
 body.christmas-season:not(.christmas-effects-off) .xmas-snow-card.is-snow-hover {
   cursor: grab;
 }
@@ -29594,28 +29640,6 @@ body.dark-theme dialog#christmasTreeModal[open] {
   line-height: 1.45;
 }
 
-.xmas-tree-policy-note {
-  margin: 7px 0 0;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 5px 11px;
-  border-radius: 12px;
-  font-size: 11.5px;
-  font-weight: 600;
-  line-height: 1.35;
-  background: rgba(15, 118, 110, 0.09);
-  border: 1px solid rgba(15, 118, 110, 0.22);
-  color: #0f766e;
-}
-
-html.dark-theme .xmas-tree-policy-note,
-body.dark-theme .xmas-tree-policy-note {
-  background: rgba(52, 211, 153, 0.11);
-  border-color: rgba(52, 211, 153, 0.28);
-  color: #a7f3d0;
-}
-
 .xmas-tree-close-btn {
   width: 38px;
   height: 38px;
@@ -29711,6 +29735,10 @@ body.dark-theme .xmas-tree-stage-wrap {
 }
 
 .xmas-stage-ctrl-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
   min-height: 32px;
   padding: 0 10px;
   border-radius: 9999px;
@@ -29772,6 +29800,9 @@ body.dark-theme .xmas-tree-milestone-bar {
   right: 10px;
   bottom: 10px;
   z-index: 6;
+  max-height: 62%;
+  overflow-y: auto;
+  overscroll-behavior: contain;
   border-radius: 14px;
   padding: 12px 14px;
   background: rgba(255, 255, 255, 0.96);
@@ -29934,31 +29965,97 @@ body.dark-theme .xmas-tree-guest-box {
   margin: 0;
 }
 
-.xmas-slot-switcher {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
+.xmas-tier-status-strip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+  padding: 7px 10px;
+  border-radius: 10px;
+  background: rgba(15, 118, 110, 0.06);
+  border: 1px solid rgba(15, 118, 110, 0.16);
+}
+
+html.dark-theme .xmas-tier-status-strip,
+body.dark-theme .xmas-tier-status-strip {
+  background: rgba(16, 42, 34, 0.55);
+  border-color: rgba(52, 211, 153, 0.22);
+}
+
+.xmas-tier-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #0f766e;
+}
+
+html.dark-theme .xmas-tier-pill,
+body.dark-theme .xmas-tier-pill {
+  color: #6ee7b7;
+}
+
+.xmas-slot-quota-note {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--muted, #64748b);
+}
+
+.xmas-slot-switcher,
+.xmas-slot-switcher-4 {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
   margin-bottom: 14px;
 }
 
 .xmas-slot-pill {
-  min-height: 38px;
-  padding: 6px 10px;
-  border-radius: 10px;
-  border: 1px solid var(--line, #dfe4dc);
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-height: 40px;
+  padding: 6px 8px;
+  border-radius: 11px;
+  border: 1.5px solid var(--line, #dfe4dc);
   background: var(--surface-2, #f8fafc);
   color: var(--ink, #123d30);
   font-family: inherit;
-  font-size: 12.5px;
+  font-size: 12px;
   font-weight: 700;
   cursor: pointer;
-  transition: border-color 0.16s ease, background 0.16s ease, color 0.16s ease;
+  transition: border-color 0.16s ease, background 0.16s ease, color 0.16s ease, transform 0.12s ease;
+}
+
+.xmas-slot-pill:hover {
+  border-color: rgba(22, 163, 74, 0.45);
+}
+
+.xmas-slot-pill.is-used::after {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #16a34a;
+  flex-shrink: 0;
 }
 
 .xmas-slot-pill.active {
   border-color: #16a34a;
-  background: rgba(22, 163, 74, 0.11);
+  background: rgba(22, 163, 74, 0.12);
   color: #14532d;
+  box-shadow: 0 0 0 1px rgba(22, 163, 74, 0.22);
+}
+
+html.dark-theme .xmas-slot-pill,
+body.dark-theme .xmas-slot-pill {
+  background: #13221d;
+  border-color: rgba(148, 163, 184, 0.22);
+  color: #e2e8f0;
 }
 
 html.dark-theme .xmas-slot-pill.active,
@@ -30082,11 +30179,20 @@ body.dark-theme .xmas-slot-pill.active {
   flex-shrink: 0;
 }
 
+#christmasTreeModal input.xmas-file-sr,
 .xmas-file-sr {
   position: absolute;
-  width: 1px;
-  height: 1px;
-  opacity: 0;
+  width: 1px !important;
+  height: 1px !important;
+  min-width: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  opacity: 0 !important;
   pointer-events: none;
 }
 
@@ -30602,7 +30708,332 @@ body.dark-theme dialog.xmas-confirm-modal {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
+  gap: 10px;
+}
+
+.xmas-form-actions-centered {
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin-top: 4px;
+}
+
+#christmasTreeModal .xmas-hang-cta-btn {
+  width: min(100%, 300px);
+  min-height: 46px;
+  padding: 11px 28px;
+  border-radius: 9999px;
+  font-size: 14.5px;
+  font-weight: 800;
+  letter-spacing: 0.2px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   gap: 8px;
+  background: linear-gradient(135deg, #15803d 0%, #166534 55%, #0f766e 100%);
+  border: 1px solid rgba(167, 243, 208, 0.35);
+  color: #ffffff;
+  box-shadow: 0 10px 24px -6px rgba(21, 128, 61, 0.45);
+  cursor: pointer;
+  transition: transform 0.16s ease, box-shadow 0.16s ease, filter 0.16s ease;
+}
+
+#christmasTreeModal .xmas-hang-cta-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  filter: brightness(1.06);
+  box-shadow: 0 14px 28px -6px rgba(21, 128, 61, 0.52);
+}
+
+#christmasTreeModal .xmas-hang-cta-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* Upload Streak Lock + Tier Gradient Swatch Badges */
+.xmas-upload-head-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.xmas-streak-req-tag,
+.xmas-tier-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 1px 6px;
+  border-radius: 9999px;
+  font-size: 10px;
+  font-weight: 800;
+  font-style: normal;
+  background: rgba(245, 158, 11, 0.14);
+  color: #b45309;
+  border: 1px solid rgba(245, 158, 11, 0.35);
+}
+
+html.dark-theme .xmas-streak-req-tag,
+body.dark-theme .xmas-streak-req-tag,
+html.dark-theme .xmas-tier-chip,
+body.dark-theme .xmas-tier-chip {
+  background: rgba(251, 191, 36, 0.16);
+  color: #fde68a;
+  border-color: rgba(251, 191, 36, 0.35);
+}
+
+.xmas-streak-req-tag.is-unlocked {
+  background: rgba(22, 163, 74, 0.12);
+  color: #15803d;
+  border-color: rgba(22, 163, 74, 0.3);
+}
+
+html.dark-theme .xmas-streak-req-tag.is-unlocked,
+body.dark-theme .xmas-streak-req-tag.is-unlocked {
+  background: rgba(52, 211, 153, 0.14);
+  color: #6ee7b7;
+  border-color: rgba(52, 211, 153, 0.32);
+}
+
+#christmasTreeModal .xmas-upload-dropzone.is-locked {
+  opacity: 0.62;
+  cursor: not-allowed;
+  border-style: solid;
+  border-color: rgba(148, 163, 184, 0.45);
+  background: rgba(148, 163, 184, 0.12);
+}
+
+.xmas-upload-lock-note {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.4;
+  color: #b45309;
+}
+
+html.dark-theme .xmas-upload-lock-note,
+body.dark-theme .xmas-upload-lock-note {
+  color: #fde68a;
+}
+
+.is-tier-option.is-locked,
+.is-tier-option.is-tier-locked {
+  opacity: 0.54;
+  cursor: not-allowed !important;
+}
+
+/* Greeting Card Studio Designer & Live 6-Template Preview */
+.xmas-card-template-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 7px;
+}
+
+#christmasTreeModal .xmas-card-tpl-opt {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 8px;
+  margin: 0;
+  border-radius: 10px;
+  border: 1.5px solid var(--line, #dfe4dc);
+  background: var(--surface-2, #f8fafc);
+  font-size: 11.5px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+#christmasTreeModal .xmas-card-tpl-opt input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.xmas-card-tpl-opt:has(input:checked) {
+  border-color: #16a34a;
+  background: rgba(22, 163, 74, 0.11);
+  box-shadow: 0 0 0 1px rgba(22, 163, 74, 0.25);
+}
+
+html.dark-theme #christmasTreeModal .xmas-card-tpl-opt,
+body.dark-theme #christmasTreeModal .xmas-card-tpl-opt {
+  background: #13221d;
+  border-color: rgba(148, 163, 184, 0.22);
+  color: #e2e8f0;
+}
+
+.xmas-tpl-swatch {
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  border: 1px solid rgba(15, 23, 42, 0.16);
+  flex-shrink: 0;
+}
+
+.xmas-card-meta-row {
+  display: grid;
+  grid-template-columns: 1fr 112px;
+  gap: 8px;
+}
+
+.xmas-card-designer-wrap {
+  display: flex;
+  justify-content: center;
+}
+
+.xmas-card-live-preview {
+  width: min(100%, 272px);
+}
+
+.xmas-greeting-card {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  border-radius: 14px;
+  padding: 14px 14px 12px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  text-align: center;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.18);
+  border: 2px solid rgba(255, 255, 255, 0.72);
+  box-sizing: border-box;
+}
+
+.xmas-greeting-card.is-compact {
+  aspect-ratio: auto;
+  min-height: 168px;
+  padding: 11px 12px;
+}
+
+.xmas-greeting-card .xc-brand-top {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  position: relative;
+  z-index: 2;
+}
+
+.xmas-greeting-card .xc-artwork {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 4px auto;
+}
+
+.xmas-greeting-card .xc-headline {
+  font-size: 15px;
+  font-weight: 800;
+  line-height: 1.15;
+  position: relative;
+  z-index: 2;
+}
+
+.xmas-greeting-card .xc-year-pill {
+  display: inline-block;
+  margin: 2px auto 0;
+  padding: 1px 10px;
+  border-radius: 9999px;
+  font-size: 11px;
+  font-weight: 800;
+  position: relative;
+  z-index: 2;
+}
+
+.xmas-greeting-card .xc-wish-body {
+  font-size: 11.5px;
+  line-height: 1.42;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  position: relative;
+  z-index: 2;
+}
+
+.xmas-greeting-card.tpl-card_reindeer {
+  background: linear-gradient(180deg, #eff6ff 0%, #dbeafe 100%);
+  color: #1e3a5f;
+}
+
+.xmas-greeting-card.tpl-card_reindeer .xc-year-pill {
+  background: #c8102e;
+  color: #ffffff;
+}
+
+.xmas-greeting-card.tpl-card_lights {
+  background: linear-gradient(180deg, #b91c1c 0%, #991b1b 100%);
+  color: #fffbeb;
+}
+
+.xmas-greeting-card.tpl-card_lights .xc-parchment {
+  background: #faf5ed;
+  color: #451a03;
+  border-radius: 10px;
+  padding: 10px;
+  margin: 4px 0;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+
+.xmas-greeting-card.tpl-card_snowglobe {
+  background: linear-gradient(180deg, #bfdbfe 0%, #60a5fa 100%);
+  color: #0f2942;
+}
+
+.xmas-greeting-card.tpl-card_snowglobe .xc-headline {
+  display: inline-block;
+  background: #c8102e;
+  color: #ffffff;
+  padding: 3px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+}
+
+.xmas-greeting-card.tpl-card_envelope {
+  background: #ffffff;
+  color: #991b1b;
+  border-color: #fecaca;
+}
+
+.xmas-greeting-card.tpl-card_envelope .xc-envelope-sheet {
+  background: #fffbeb;
+  border: 1.5px solid #e11d48;
+  border-radius: 8px;
+  padding: 9px 10px;
+  color: #1f2937;
+}
+
+.xmas-greeting-card.tpl-card_midnight_gold {
+  background: linear-gradient(180deg, #071742 0%, #0d2b70 100%);
+  color: #fef3c7;
+}
+
+.xmas-greeting-card.tpl-card_midnight_gold .xc-headline {
+  color: #facc15;
+}
+
+.xmas-greeting-card.tpl-card_santa_letter {
+  background: #fffdf8;
+  color: #7f1d1d;
+  border-color: #fca5a5;
+}
+
+.xmas-greeting-card.tpl-card_santa_letter .xc-santa-hero {
+  width: 100%;
+  height: 76px;
+  object-fit: cover;
+  object-position: top center;
+  border-radius: 8px;
+}
+
+.xmas-greeting-card.tpl-card_santa_letter .xc-wish-body {
+  background: repeating-linear-gradient(transparent, transparent 17px, rgba(220, 38, 38, 0.24) 17px, rgba(220, 38, 38, 0.24) 18px);
+  padding: 4px 6px;
+  color: #374151;
 }
 
 .xmas-danger-btn {
@@ -30734,9 +31165,14 @@ body.dark-theme dialog.xmas-confirm-modal {
   }
 
   .xmas-tree-stage-wrap {
-    min-height: 310px;
-    height: 320px;
+    min-height: 330px;
+    height: 340px;
     flex: none;
+  }
+
+  .xmas-tree-milestone-bar {
+    top: 48px;
+    max-width: calc(100% - 20px);
   }
 
   .xmas-tree-panel-col {
@@ -30749,6 +31185,14 @@ body.dark-theme dialog.xmas-confirm-modal {
   }
 
   .xmas-acc-radio-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .xmas-slot-switcher-4 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .xmas-card-template-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
@@ -30793,11 +31237,11 @@ body.dark-theme dialog.xmas-confirm-modal {
   }
 
   .xmas-widget-label {
-    max-width: 92px;
+    max-width: 148px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    font-size: 12px;
+    font-size: 11.5px;
   }
 
   .xmas-widget-music-btn {

@@ -789,10 +789,13 @@ try {
     CREATE TABLE IF NOT EXISTS christmas_tree_ornaments (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-      slot_kind TEXT NOT NULL CHECK (slot_kind IN ('polaroid', 'accessory')),
+      slot_kind TEXT NOT NULL CHECK (slot_kind IN ('polaroid', 'card', 'gift', 'accessory')),
       item_style TEXT NOT NULL,
+      item_finish TEXT NOT NULL DEFAULT '',
       message TEXT NOT NULL DEFAULT '',
       photo_data TEXT NOT NULL DEFAULT '',
+      card_name TEXT NOT NULL DEFAULT '',
+      card_year TEXT NOT NULL DEFAULT '2026',
       frame_color TEXT NOT NULL DEFAULT '#FFFAF0',
       accent_color TEXT NOT NULL DEFAULT '#FFD700',
       pos_u REAL NOT NULL,
@@ -804,9 +807,82 @@ try {
     );
     CREATE INDEX IF NOT EXISTS idx_christmas_tree_created ON christmas_tree_ornaments(created_at DESC);
   `);
+  const schemaRow = db.prepare("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'christmas_tree_ornaments'").get();
+  const tableSql = (schemaRow && schemaRow.sql) || "";
+  if (tableSql && (!tableSql.includes("'card'") || !tableSql.includes("'gift'"))) {
+    const oldCols = db.prepare("PRAGMA table_info(christmas_tree_ornaments)").all().map((c) => c.name);
+    const hasSealed = oldCols.includes("is_sealed");
+    const hasFinish = oldCols.includes("item_finish");
+    const hasCardName = oldCols.includes("card_name");
+    const hasCardYear = oldCols.includes("card_year");
+    const migrateTx = db.transaction(() => {
+      db.exec(`
+        DROP TABLE IF EXISTS christmas_tree_ornaments_v2;
+        CREATE TABLE christmas_tree_ornaments_v2 (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+          slot_kind TEXT NOT NULL CHECK (slot_kind IN ('polaroid', 'card', 'gift', 'accessory')),
+          item_style TEXT NOT NULL,
+          item_finish TEXT NOT NULL DEFAULT '',
+          message TEXT NOT NULL DEFAULT '',
+          photo_data TEXT NOT NULL DEFAULT '',
+          card_name TEXT NOT NULL DEFAULT '',
+          card_year TEXT NOT NULL DEFAULT '2026',
+          frame_color TEXT NOT NULL DEFAULT '#FFFAF0',
+          accent_color TEXT NOT NULL DEFAULT '#FFD700',
+          pos_u REAL NOT NULL,
+          pos_angle REAL NOT NULL,
+          is_sealed INTEGER NOT NULL DEFAULT 0,
+          created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          UNIQUE(user_id, slot_kind)
+        );
+      `);
+      db.exec(`
+        INSERT INTO christmas_tree_ornaments_v2 (
+          id, user_id, slot_kind, item_style, item_finish, message, photo_data, card_name, card_year,
+          frame_color, accent_color, pos_u, pos_angle, is_sealed, created_at, updated_at
+        )
+        SELECT
+          id,
+          user_id,
+          CASE
+            WHEN slot_kind = 'accessory' AND item_style LIKE 'gift_%' THEN 'gift'
+            ELSE slot_kind
+          END AS slot_kind,
+          item_style,
+          ${hasFinish ? "item_finish" : "''"} AS item_finish,
+          message,
+          photo_data,
+          ${hasCardName ? "card_name" : "''"} AS card_name,
+          ${hasCardYear ? "card_year" : "'2026'"} AS card_year,
+          frame_color,
+          accent_color,
+          pos_u,
+          pos_angle,
+          ${hasSealed ? "is_sealed" : "0"} AS is_sealed,
+          created_at,
+          updated_at
+        FROM christmas_tree_ornaments;
+        DROP TABLE christmas_tree_ornaments;
+        ALTER TABLE christmas_tree_ornaments_v2 RENAME TO christmas_tree_ornaments;
+        CREATE INDEX IF NOT EXISTS idx_christmas_tree_created ON christmas_tree_ornaments(created_at DESC);
+      `);
+    });
+    migrateTx();
+  }
   const treeCols = db.prepare("PRAGMA table_info(christmas_tree_ornaments)").all();
   if (!treeCols.some((c) => c.name === "is_sealed")) {
     db.exec("ALTER TABLE christmas_tree_ornaments ADD COLUMN is_sealed INTEGER NOT NULL DEFAULT 0");
+  }
+  if (!treeCols.some((c) => c.name === "item_finish")) {
+    db.exec("ALTER TABLE christmas_tree_ornaments ADD COLUMN item_finish TEXT NOT NULL DEFAULT ''");
+  }
+  if (!treeCols.some((c) => c.name === "card_name")) {
+    db.exec("ALTER TABLE christmas_tree_ornaments ADD COLUMN card_name TEXT NOT NULL DEFAULT ''");
+  }
+  if (!treeCols.some((c) => c.name === "card_year")) {
+    db.exec("ALTER TABLE christmas_tree_ornaments ADD COLUMN card_year TEXT NOT NULL DEFAULT '2026'");
   }
 } catch (e) {
   console.error("[DB Schema christmas_tree_ornaments]", e);
@@ -5498,26 +5574,64 @@ async function api(request, response, url) {
   }
 
   // =========================================================================
-  // SỰ KIỆN CỘNG ĐỒNG: CÂY THÔNG GIÁNG SINH 2026 (MỖI TÀI KHOẢN TỐI ĐA 2 MÓN)
+  // SỰ KIỆN CỘNG ĐỒNG: CÂY THÔNG GIÁNG SINH 2026 (MỖI TÀI KHOẢN TỐI ĐA 2/4 LOẠI)
   // =========================================================================
+  const TREE_STREAK_TIER_REQUIREMENTS = [0, 3, 7, 14, 30, 50];
+
   const TREE_POLAROID_FRAMES = new Map([
-    ["classic", { frameColor: "#FFFAF0", accentColor: "#F0E68C" }],
-    ["warm_gold", { frameColor: "#FEF3C7", accentColor: "#F59E0B" }],
-    ["blush", { frameColor: "#FFE4E6", accentColor: "#FB7185" }],
-    ["lavender", { frameColor: "#EDE9FE", accentColor: "#A78BFA" }],
-    ["mint", { frameColor: "#DCFCE7", accentColor: "#34D399" }]
+    ["classic", { frameColor: "#FFFAF0", accentColor: "#F0E68C", gradientStops: null, minTier: 0 }],
+    ["warm_gold", { frameColor: "#FEF3C7", accentColor: "#F59E0B", gradientStops: null, minTier: 0 }],
+    ["blush", { frameColor: "#FFE4E6", accentColor: "#FB7185", gradientStops: null, minTier: 0 }],
+    ["lavender", { frameColor: "#EDE9FE", accentColor: "#A78BFA", gradientStops: null, minTier: 0 }],
+    ["mint", { frameColor: "#DCFCE7", accentColor: "#34D399", gradientStops: null, minTier: 0 }],
+    ["grad_frost_sky", { frameColor: "#DBEAFE", accentColor: "#0284C7", gradientStops: ["#EFF6FF", "#BAE6FD", "#60A5FA"], minTier: 1 }],
+    ["grad_champagne_gold", { frameColor: "#FEF08A", accentColor: "#D97706", gradientStops: ["#FFFBEB", "#FDE047", "#F59E0B"], minTier: 2 }],
+    ["grad_aurora_borealis", { frameColor: "#A7F3D0", accentColor: "#7C3AED", gradientStops: ["#34D399", "#38BDF8", "#A855F7"], minTier: 3 }],
+    ["grad_crimson_velvet", { frameColor: "#FECDD3", accentColor: "#BE123C", gradientStops: ["#FFE4E6", "#FB7185", "#9F1239"], minTier: 4 }],
+    ["grad_mythic_prism", { frameColor: "#F5D0FE", accentColor: "#EC4899", gradientStops: ["#F43F5E", "#F59E0B", "#10B981", "#3B82F6", "#A855F7"], minTier: 5 }]
   ]);
 
-  const TREE_ACCESSORY_COLORS = new Map([
-    ["gift_red", { frameColor: "#D32F2F", accentColor: "#FFD700" }],
-    ["gift_blue", { frameColor: "#1976D2", accentColor: "#FFD700" }],
-    ["gift_gold", { frameColor: "#D97706", accentColor: "#D32F2F" }],
-    ["gift_emerald", { frameColor: "#15803D", accentColor: "#FFFBEB" }],
-    ["bauble_ruby", { frameColor: "#DC2626", accentColor: "#FEE2E2" }],
-    ["bauble_gold", { frameColor: "#F59E0B", accentColor: "#FEF3C7" }],
-    ["bauble_sapphire", { frameColor: "#2563EB", accentColor: "#DBEAFE" }],
-    ["bauble_emerald", { frameColor: "#10B981", accentColor: "#D1FAE5" }],
-    ["fairy_garland", { frameColor: "#FFD54F", accentColor: "#38BDF8" }]
+  const TREE_CARD_TEMPLATES = new Map([
+    ["card_reindeer", { frameColor: "#E8F1FB", accentColor: "#C8102E", minTier: 0 }],
+    ["card_lights", { frameColor: "#FAF5ED", accentColor: "#B91C1C", minTier: 0 }],
+    ["card_snowglobe", { frameColor: "#6CA3D8", accentColor: "#C8102E", minTier: 0 }],
+    ["card_envelope", { frameColor: "#FFFFFF", accentColor: "#B91C1C", minTier: 0 }],
+    ["card_midnight_gold", { frameColor: "#091E52", accentColor: "#F5C451", minTier: 0 }],
+    ["card_santa_letter", { frameColor: "#FFFDF8", accentColor: "#C81E1E", minTier: 0 }]
+  ]);
+
+  const TREE_CARD_FINISHES = new Map([
+    ["classic", { label: "Cổ điển", gradientStops: null, minTier: 0 }],
+    ["grad_frost_sky", { label: "Băng Lam", gradientStops: ["#EFF6FF", "#7DD3FC", "#0284C7"], minTier: 1 }],
+    ["grad_champagne_gold", { label: "Ánh Kim", gradientStops: ["#FFFBEB", "#FDE047", "#D97706"], minTier: 2 }],
+    ["grad_aurora_borealis", { label: "Cực Quang", gradientStops: ["#34D399", "#38BDF8", "#A855F7"], minTier: 3 }],
+    ["grad_crimson_velvet", { label: "Nhung Đỏ", gradientStops: ["#FDA4AF", "#E11D48", "#881337"], minTier: 4 }],
+    ["grad_mythic_prism", { label: "Đa Sắc Cầu Vồng", gradientStops: ["#F43F5E", "#F59E0B", "#10B981", "#3B82F6", "#A855F7"], minTier: 5 }]
+  ]);
+
+  const TREE_GIFT_STYLES = new Map([
+    ["gift_red", { frameColor: "#D32F2F", accentColor: "#FFD700", gradientStops: null, minTier: 0 }],
+    ["gift_blue", { frameColor: "#1976D2", accentColor: "#FFD700", gradientStops: null, minTier: 0 }],
+    ["gift_gold", { frameColor: "#D97706", accentColor: "#D32F2F", gradientStops: null, minTier: 0 }],
+    ["gift_emerald", { frameColor: "#15803D", accentColor: "#FFFBEB", gradientStops: null, minTier: 0 }],
+    ["gift_grad_glacier", { frameColor: "#2563EB", accentColor: "#E0F2FE", gradientStops: ["#0EA5E9", "#2563EB", "#93C5FD"], minTier: 1 }],
+    ["gift_grad_sunset_gold", { frameColor: "#EA580C", accentColor: "#991B1B", gradientStops: ["#FDE047", "#F59E0B", "#EA580C"], minTier: 2 }],
+    ["gift_grad_aurora", { frameColor: "#06B6D4", accentColor: "#FEF08A", gradientStops: ["#10B981", "#06B6D4", "#8B5CF6"], minTier: 3 }],
+    ["gift_grad_royal_ruby", { frameColor: "#DC2626", accentColor: "#FDE68A", gradientStops: ["#9F1239", "#DC2626", "#F43F5E"], minTier: 4 }],
+    ["gift_grad_prism", { frameColor: "#8B5CF6", accentColor: "#FFFFFF", gradientStops: ["#EC4899", "#8B5CF6", "#3B82F6", "#10B981", "#F59E0B"], minTier: 5 }]
+  ]);
+
+  const TREE_ACCESSORY_STYLES = new Map([
+    ["bauble_ruby", { frameColor: "#DC2626", accentColor: "#FEE2E2", gradientStops: null, minTier: 0 }],
+    ["bauble_gold", { frameColor: "#F59E0B", accentColor: "#FEF3C7", gradientStops: null, minTier: 0 }],
+    ["bauble_sapphire", { frameColor: "#2563EB", accentColor: "#DBEAFE", gradientStops: null, minTier: 0 }],
+    ["bauble_emerald", { frameColor: "#10B981", accentColor: "#D1FAE5", gradientStops: null, minTier: 0 }],
+    ["fairy_garland", { frameColor: "#FFD54F", accentColor: "#38BDF8", gradientStops: null, minTier: 0 }],
+    ["bauble_grad_ice", { frameColor: "#38BDF8", accentColor: "#1D4ED8", gradientStops: ["#E0F2FE", "#38BDF8", "#1D4ED8"], minTier: 1 }],
+    ["star_grad_gold", { frameColor: "#FBBF24", accentColor: "#D97706", gradientStops: ["#FEF9C3", "#FBBF24", "#D97706"], minTier: 2 }],
+    ["bauble_grad_aurora", { frameColor: "#34D399", accentColor: "#A855F7", gradientStops: ["#34D399", "#38BDF8", "#A855F7"], minTier: 3 }],
+    ["ribbon_grad_velvet", { frameColor: "#E11D48", accentColor: "#FBBF24", gradientStops: ["#F43F5E", "#BE123C", "#FBBF24"], minTier: 4 }],
+    ["prism_multi_garland", { frameColor: "#EC4899", accentColor: "#38BDF8", gradientStops: ["#F43F5E", "#F59E0B", "#10B981", "#38BDF8", "#C084FC"], minTier: 5 }]
   ]);
 
   const CHRISTMAS_2026_REVEAL_AT = "2026-12-24T20:00:00+07:00";
@@ -5533,6 +5647,22 @@ async function api(request, response, url) {
     "preset:study_night"
   ]);
 
+  function resolveOrnamentGradientStops(slotKind, itemStyle, itemFinish) {
+    if (slotKind === "polaroid") {
+      return (TREE_POLAROID_FRAMES.get(itemStyle) || {}).gradientStops || null;
+    }
+    if (slotKind === "card") {
+      return (TREE_CARD_FINISHES.get(itemFinish || "classic") || {}).gradientStops || null;
+    }
+    if (slotKind === "gift") {
+      return (TREE_GIFT_STYLES.get(itemStyle) || {}).gradientStops || null;
+    }
+    if (slotKind === "accessory") {
+      return (TREE_ACCESSORY_STYLES.get(itemStyle) || {}).gradientStops || null;
+    }
+    return null;
+  }
+
   function buildChristmasTreePayload(viewer) {
     const rows = db.prepare(`
       SELECT o.*, u.display_name, u.avatar, u.role
@@ -5542,20 +5672,33 @@ async function api(request, response, url) {
     `).all();
     const isAdmin = Boolean(viewer && viewer.role === "admin");
     const isRevealed = Date.now() >= CHRISTMAS_2026_REVEAL_MS;
+    const viewerStreakInfo = viewer && viewer.id ? calculateUserStreak(viewer.id) : null;
+
     const items = rows.map((r) => {
+      const slotKind = (r.slot_kind === "accessory" && String(r.item_style || "").startsWith("gift_"))
+        ? "gift"
+        : r.slot_kind;
       const isSelf = Boolean(viewer && r.user_id === viewer.id);
-      const isSealed = Boolean(Number(r.is_sealed));
-      const isMysteryLocked = isSealed && !isRevealed;
+      const isAccessory = slotKind === "accessory";
+      const isSealed = isAccessory ? false : Boolean(Number(r.is_sealed));
+      const isMysteryLocked = !isAccessory && isSealed && !isRevealed;
+      const itemFinish = r.item_finish || "classic";
+      const gradientStops = resolveOrnamentGradientStops(slotKind, r.item_style, itemFinish);
+
       const item = {
         id: r.id,
         userId: r.user_id,
         authorName: r.display_name || "Thành viên",
         authorAvatar: r.avatar || getAvatarEmoji(r.display_name || "R"),
         authorRole: r.role || "student",
-        slotKind: r.slot_kind,
+        slotKind,
         itemStyle: r.item_style,
-        message: isMysteryLocked ? "" : (r.message || ""),
-        photoData: isMysteryLocked ? "" : (r.photo_data || ""),
+        itemFinish,
+        gradientStops,
+        message: (isAccessory || isMysteryLocked) ? "" : (r.message || ""),
+        photoData: (isAccessory || slotKind !== "polaroid" || isMysteryLocked) ? "" : (r.photo_data || ""),
+        cardName: (slotKind === "card" && !isMysteryLocked) ? (r.card_name || r.display_name || "Thành viên") : "",
+        cardYear: (slotKind === "card" && !isMysteryLocked) ? (r.card_year || "2026") : "",
         frameColor: r.frame_color || "#FFFAF0",
         accentColor: r.accent_color || "#FFD700",
         posU: Number(r.pos_u),
@@ -5573,6 +5716,9 @@ async function api(request, response, url) {
         item.ownerDraft = {
           message: r.message || "",
           photoData: r.photo_data || "",
+          cardName: r.card_name || r.display_name || "",
+          cardYear: r.card_year || "2026",
+          itemFinish,
           isSealed: true
         };
       }
@@ -5586,10 +5732,17 @@ async function api(request, response, url) {
       revealAtMs: CHRISTMAS_2026_REVEAL_MS,
       isMysteryRevealed: isRevealed,
       lockedNotice: CHRISTMAS_LOCKED_NOTICE,
+      viewerAccess: viewerStreakInfo ? {
+        streak: Number(viewerStreakInfo.streak || 0),
+        streakTier: Number(viewerStreakInfo.streakTier || 0),
+        canUploadPhoto: Number(viewerStreakInfo.streak || 0) >= 3
+      } : null,
       stats: {
         totalItems: items.length,
         contributors: uniqueUsers.size,
         polaroids: items.filter((x) => x.slotKind === "polaroid").length,
+        cards: items.filter((x) => x.slotKind === "card").length,
+        gifts: items.filter((x) => x.slotKind === "gift").length,
         accessories: items.filter((x) => x.slotKind === "accessory").length
       },
       items
@@ -5597,9 +5750,9 @@ async function api(request, response, url) {
   }
 
   function pickChristmasTreeSpot(slotKind, itemStyle, existingRows) {
-    const isBaseGift = slotKind === "accessory" && itemStyle.startsWith("gift_");
-    const minU = isBaseGift ? 0.015 : (slotKind === "polaroid" ? 0.24 : 0.22);
-    const maxU = isBaseGift ? 0.115 : (slotKind === "polaroid" ? 0.80 : 0.86);
+    const isBaseGift = slotKind === "gift";
+    const minU = isBaseGift ? 0.015 : (slotKind === "polaroid" ? 0.25 : (slotKind === "card" ? 0.23 : 0.20));
+    const maxU = isBaseGift ? 0.115 : (slotKind === "polaroid" ? 0.78 : (slotKind === "card" ? 0.80 : 0.87));
     let bestU = minU + Math.random() * (maxU - minU);
     let bestAngle = Math.random() * Math.PI * 2;
     let bestScore = -1;
@@ -5642,34 +5795,61 @@ async function api(request, response, url) {
 
     try {
       const body = await readJSON(request);
-      const slotKind = body.slotKind === "polaroid" ? "polaroid" : (body.slotKind === "accessory" ? "accessory" : "");
+      const VALID_SLOTS = new Set(["polaroid", "card", "gift", "accessory"]);
+      const slotKind = VALID_SLOTS.has(body.slotKind) ? body.slotKind : "";
       if (!slotKind) {
         return error(response, 400, "Loại trang trí không hợp lệ.");
       }
 
+      const userRows = db.prepare("SELECT * FROM christmas_tree_ornaments WHERE user_id = ?").all(user.id);
+      const existing = userRows.find((r) => r.slot_kind === slotKind) || null;
+      if (!existing && userRows.length >= 2) {
+        return error(
+          response,
+          400,
+          "Mỗi tài khoản chỉ được chọn treo tối đa 2 trong 4 loại (Polaroid, Thiệp, Hộp quà, Phụ kiện). Hãy gỡ bớt 1 món trước khi treo loại mới."
+        );
+      }
+
+      const streakInfo = calculateUserStreak(user.id);
+      const userStreak = Number(streakInfo.streak || 0);
+      const userTier = Number(streakInfo.streakTier || 0);
+
       const rawStyle = typeof body.itemStyle === "string" ? body.itemStyle.trim() : "";
+      const rawFinish = typeof body.itemFinish === "string" ? body.itemFinish.trim() : "classic";
       const shufflePosition = Boolean(body.shufflePosition);
       const isRevealed = Date.now() >= CHRISTMAS_2026_REVEAL_MS;
-      const isSealed = (!isRevealed && Boolean(body.isSealed)) ? 1 : 0;
+      let isSealed = (!isRevealed && Boolean(body.isSealed)) ? 1 : 0;
 
       let frameColor = "#FFFAF0";
       let accentColor = "#FFD700";
-      let message = typeof body.message === "string" ? body.message.trim().slice(0, slotKind === "polaroid" ? 140 : 100) : "";
+      let itemFinish = "classic";
+      let message = "";
       let photoData = "";
+      let cardName = "";
+      let cardYear = "2026";
 
       if (slotKind === "polaroid") {
         const styleSpec = TREE_POLAROID_FRAMES.get(rawStyle);
         if (!styleSpec) {
           return error(response, 400, "Kiểu khung Polaroid không hợp lệ.");
         }
+        if (userTier < styleSpec.minTier) {
+          const needDays = TREE_STREAK_TIER_REQUIREMENTS[styleSpec.minTier] || 3;
+          return error(response, 403, `Kiểu khung gradient này yêu cầu chuỗi hoạt động từ ${needDays} ngày trở lên.`);
+        }
         frameColor = styleSpec.frameColor;
         accentColor = styleSpec.accentColor;
+        message = typeof body.message === "string" ? body.message.trim().slice(0, 140) : "";
 
         const rawPhoto = typeof body.photoData === "string" ? body.photoData.trim() : "";
         if (rawPhoto) {
           if (TREE_PHOTO_PRESETS.has(rawPhoto)) {
             photoData = rawPhoto;
           } else if (/^data:image\/(png|jpeg|jpg|webp);base64,[A-Za-z0-9+/=]+$/i.test(rawPhoto)) {
+            if (userStreak < 3) {
+              return error(response, 403, "Cần đạt chuỗi hoạt động từ 3 ngày trở lên để tải ảnh kỷ niệm từ máy lên Polaroid.");
+            }
             if (rawPhoto.length > 140000) {
               return error(response, 400, "Ảnh Polaroid vượt quá dung lượng cho phép (~100KB). Vui lòng chọn ảnh khác.");
             }
@@ -5678,50 +5858,101 @@ async function api(request, response, url) {
             return error(response, 400, "Định dạng ảnh Polaroid không hợp lệ (chỉ hỗ trợ PNG, JPG, WEBP).");
           }
         }
-        if (!photoData && message.length < 2) {
-          return error(response, 400, "Hãy chọn ảnh kỷ niệm hoặc viết ít nhất 2 ký tự lời chúc cho khung Polaroid.");
+        if (!photoData) {
+          return error(response, 400, "Hãy chọn ảnh minh họa hoặc tải ảnh kỷ niệm cho khung Polaroid.");
         }
+      } else if (slotKind === "card") {
+        const tplSpec = TREE_CARD_TEMPLATES.get(rawStyle);
+        if (!tplSpec) {
+          return error(response, 400, "Mẫu thiệp Giáng sinh không hợp lệ.");
+        }
+        const finishSpec = TREE_CARD_FINISHES.get(rawFinish || "classic");
+        if (!finishSpec) {
+          return error(response, 400, "Kiểu phối viền thiệp không hợp lệ.");
+        }
+        if (userTier < finishSpec.minTier) {
+          const needDays = TREE_STREAK_TIER_REQUIREMENTS[finishSpec.minTier] || 3;
+          return error(response, 403, `Viền thiệp gradient này yêu cầu chuỗi hoạt động từ ${needDays} ngày trở lên.`);
+        }
+        itemFinish = rawFinish || "classic";
+        frameColor = tplSpec.frameColor;
+        accentColor = tplSpec.accentColor;
+        cardName = (typeof body.cardName === "string" ? body.cardName.trim() : "").slice(0, 40) || (user.display_name || "Thành viên");
+        cardYear = (typeof body.cardYear === "string" ? body.cardYear.trim() : "").replace(/[^0-9A-Za-z-]/g, "").slice(0, 8) || "2026";
+        message = typeof body.message === "string" ? body.message.trim().slice(0, 450) : "";
+        if (message.length < 2) {
+          return error(response, 400, "Hãy viết lời chúc trên tấm thiệp (ít nhất 2 ký tự).");
+        }
+      } else if (slotKind === "gift") {
+        const giftSpec = TREE_GIFT_STYLES.get(rawStyle);
+        if (!giftSpec) {
+          return error(response, 400, "Kiểu hộp quà không hợp lệ.");
+        }
+        if (userTier < giftSpec.minTier) {
+          const needDays = TREE_STREAK_TIER_REQUIREMENTS[giftSpec.minTier] || 3;
+          return error(response, 403, `Kiểu hộp quà gradient này yêu cầu chuỗi hoạt động từ ${needDays} ngày trở lên.`);
+        }
+        frameColor = giftSpec.frameColor;
+        accentColor = giftSpec.accentColor;
+        message = typeof body.message === "string" ? body.message.trim().slice(0, 200) : "";
       } else {
-        const accSpec = TREE_ACCESSORY_COLORS.get(rawStyle);
+        const accSpec = TREE_ACCESSORY_STYLES.get(rawStyle);
         if (!accSpec) {
           return error(response, 400, "Loại phụ kiện không hợp lệ.");
         }
+        if (userTier < accSpec.minTier) {
+          const needDays = TREE_STREAK_TIER_REQUIREMENTS[accSpec.minTier] || 3;
+          return error(response, 403, `Phụ kiện đặc biệt này yêu cầu chuỗi hoạt động từ ${needDays} ngày trở lên.`);
+        }
         frameColor = accSpec.frameColor;
         accentColor = accSpec.accentColor;
+        message = "";
+        isSealed = 0;
       }
 
-      const existing = db.prepare("SELECT * FROM christmas_tree_ornaments WHERE user_id = ? AND slot_kind = ?").get(user.id, slotKind);
       const others = db.prepare("SELECT pos_u, pos_angle FROM christmas_tree_ornaments WHERE slot_kind = ? AND user_id != ?").all(slotKind, user.id);
 
       let spot;
       if (existing && !shufflePosition) {
-        const wasGift = existing.item_style.startsWith("gift_");
-        const nowGift = rawStyle.startsWith("gift_");
-        if (wasGift === nowGift) {
-          spot = { posU: existing.pos_u, posAngle: existing.pos_angle };
-        } else {
-          spot = pickChristmasTreeSpot(slotKind, rawStyle, others);
-        }
+        spot = { posU: existing.pos_u, posAngle: existing.pos_angle };
       } else {
         spot = pickChristmasTreeSpot(slotKind, rawStyle, others);
       }
 
       db.prepare(`
         INSERT INTO christmas_tree_ornaments (
-          user_id, slot_kind, item_style, message, photo_data, frame_color, accent_color, pos_u, pos_angle, is_sealed, created_at, updated_at
+          user_id, slot_kind, item_style, item_finish, message, photo_data, card_name, card_year,
+          frame_color, accent_color, pos_u, pos_angle, is_sealed, created_at, updated_at
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
         ON CONFLICT(user_id, slot_kind) DO UPDATE SET
           item_style = excluded.item_style,
+          item_finish = excluded.item_finish,
           message = excluded.message,
           photo_data = excluded.photo_data,
+          card_name = excluded.card_name,
+          card_year = excluded.card_year,
           frame_color = excluded.frame_color,
           accent_color = excluded.accent_color,
           pos_u = excluded.pos_u,
           pos_angle = excluded.pos_angle,
           is_sealed = excluded.is_sealed,
           updated_at = CURRENT_TIMESTAMP
-      `).run(user.id, slotKind, rawStyle, message, photoData, frameColor, accentColor, spot.posU, spot.posAngle, isSealed);
+      `).run(
+        user.id,
+        slotKind,
+        rawStyle,
+        itemFinish,
+        message,
+        photoData,
+        cardName,
+        cardYear,
+        frameColor,
+        accentColor,
+        spot.posU,
+        spot.posAngle,
+        isSealed
+      );
 
       return json(response, 200, {
         ok: true,
