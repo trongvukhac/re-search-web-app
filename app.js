@@ -22074,6 +22074,11 @@ function buildChristmasTreeGeometry(isMobile) {
 function buildCommunityOrnamentNodes(communityItems) {
   if (!Array.isArray(communityItems) || !communityItems.length) return [];
   const nodes = [];
+  const totalGifts = communityItems.reduce((acc, it) => (
+    it && (it.slotKind === "gift" || String(it.itemStyle || "").startsWith("gift_")) ? acc + 1 : acc
+  ), 0);
+  const giftCrowdScale = totalGifts <= 10 ? 1 : Math.max(0.44, Math.sqrt(10 / totalGifts));
+  let giftIdx = 0;
   for (let i = 0; i < communityItems.length; i++) {
     const item = communityItems[i];
     if (!item || !item.id) continue;
@@ -22120,16 +22125,24 @@ function buildCommunityOrnamentNodes(communityItems) {
     } else if (item.slotKind === "gift" || String(item.itemStyle || "").startsWith("gift_")) {
       const palette = TREE_GIFT_PALETTE_MAP[item.itemStyle] || TREE_GIFT_PALETTE_MAP.gift_red;
       const stops = Array.isArray(item.gradientStops) ? item.gradientStops : palette.gradientStops;
+      // Vogel annulus phyllotaxis scatters 1..100+ gifts evenly across the entire snow ring & scales size automatically
+      const minRing = totalGifts > 14 ? 0.25 : 0.38;
+      const maxRing = totalGifts > 14 ? 0.84 : 0.72;
+      const areaFrac = totalGifts <= 1 ? 0.5 : (giftIdx + 0.5) / totalGifts;
+      const rNorm = totalGifts > 10
+        ? Math.sqrt(minRing * minRing + areaFrac * (maxRing * maxRing - minRing * minRing))
+        : (minRing + ((giftIdx * 0.61803398875) % 1) * (maxRing - minRing));
+      const orbitAngle = totalGifts > 10 ? ((giftIdx * 2.399963229728653) % (Math.PI * 2)) : angle;
+      giftIdx += 1;
       nodes.push({
         kind: "community_gift",
         data: item,
-        u: 0.025 + ((item.id % 5) * 0.008),
-        rNorm: 0.56 + ((item.id * 19) % 24) * 0.01,
-        angle,
+        u: -0.016,
+        rNorm,
+        angle: orbitAngle,
         yawOffset: ((item.id * 1.13) % (Math.PI * 2)),
         palette: { ...palette, gradientStops: stops },
-        size: 14.8,
-        bobPhase: (item.id * 0.77) % (Math.PI * 2)
+        size: 13.8 * giftCrowdScale
       });
     } else if (item.itemStyle === "fairy_garland" || item.itemStyle === "prism_multi_garland") {
       const isPrism = item.itemStyle === "prism_multi_garland";
@@ -22230,8 +22243,8 @@ function drawSoftSnowDriftLobe(ctx, cx, cy, rx, ry, isDark) {
 function drawTreeBaseAndMound(ctx, anchorX, baseY, treeR, isDark) {
   // Natural sculpted snowdrift bank tapering softly to alpha=0 along the floor (zero hard saucer outline)
   ctx.save();
-  const bankHalfW = treeR * 0.78;
-  const moundH = Math.max(9, treeR * 0.19);
+  const bankHalfW = treeR * 0.95;
+  const moundH = Math.max(10, treeR * 0.21);
   const steps = 28;
 
   // Wavy multi-hump snowbank silhouette blending vertically from sunlit snow crest to transparent floor
@@ -22268,19 +22281,19 @@ function drawTreeBaseAndMound(ctx, anchorX, baseY, treeR, isDark) {
   ctx.fill();
 
   // Soft pine-branch contact occlusion tucked into the snow right under the lowest foliage skirt
-  const castGrad = ctx.createRadialGradient(anchorX, baseY - 1, 2, anchorX, baseY + 1, treeR * 0.62);
+  const castGrad = ctx.createRadialGradient(anchorX, baseY - 1, 2, anchorX, baseY + 1, treeR * 0.72);
   castGrad.addColorStop(0, isDark ? "rgba(2, 16, 18, 0.44)" : "rgba(15, 23, 42, 0.14)");
   castGrad.addColorStop(0.65, isDark ? "rgba(2, 16, 18, 0.16)" : "rgba(15, 23, 42, 0.04)");
   castGrad.addColorStop(1, "rgba(0, 0, 0, 0)");
   ctx.fillStyle = castGrad;
   ctx.beginPath();
-  ctx.ellipse(anchorX, baseY + 1, treeR * 0.62, moundH * 0.58, 0, 0, Math.PI * 2);
+  ctx.ellipse(anchorX, baseY + 1, treeR * 0.72, moundH * 0.62, 0, 0, Math.PI * 2);
   ctx.fill();
 
   // Powdery snow drifts pillowing organically around foreground & trunk collar
-  drawSoftSnowDriftLobe(ctx, anchorX - treeR * 0.26, baseY + 1, treeR * 0.36, moundH * 0.68, isDark);
-  drawSoftSnowDriftLobe(ctx, anchorX + treeR * 0.24, baseY + 2, treeR * 0.32, moundH * 0.62, isDark);
-  drawSoftSnowDriftLobe(ctx, anchorX, baseY - moundH * 0.34, treeR * 0.22, moundH * 0.54, isDark);
+  drawSoftSnowDriftLobe(ctx, anchorX - treeR * 0.32, baseY + 1, treeR * 0.42, moundH * 0.72, isDark);
+  drawSoftSnowDriftLobe(ctx, anchorX + treeR * 0.3, baseY + 2, treeR * 0.38, moundH * 0.68, isDark);
+  drawSoftSnowDriftLobe(ctx, anchorX, baseY - moundH * 0.32, treeR * 0.24, moundH * 0.54, isDark);
 
   // Subtle icy surface glints along upper sunlit ridges
   const glints = [-0.32, -0.12, 0.11, 0.29];
@@ -23063,15 +23076,15 @@ function renderChristmasTreeScene(ctx, layout, projBuffer, sceneParams) {
       }
     } else if (it.kind === "community_gift") {
       const s = it.size * persp * scaleBoost;
-      const bob = Math.sin(t * 1.4 + it.bobPhase) * 0.7;
+      const giftCenterY = p.sy - s * 0.44;
       const isSelected = it.data && (it.data.id === selectedId || it.data.id === hoverId);
       const isMystery = Boolean(it.data && it.data.isMysteryLocked);
       ctx.save();
-      ctx.globalAlpha = 0.86 + 0.14 * depthNorm;
+      ctx.globalAlpha = 0.88 + 0.12 * depthNorm;
       drawProjected3DGiftBox(
         ctx,
         p.sx,
-        p.sy + bob,
+        giftCenterY,
         s,
         p.angle + (it.yawOffset || 0),
         it.palette,
@@ -23079,7 +23092,7 @@ function renderChristmasTreeScene(ctx, layout, projBuffer, sceneParams) {
       );
       ctx.restore();
       if (interactive && it.data && hitBoxes) {
-        hitBoxes.push({ item: it.data, x: p.sx, y: p.sy + bob, r: Math.max(17, s * 0.92) });
+        hitBoxes.push({ item: it.data, x: p.sx, y: giftCenterY, r: Math.max(15, s * 0.95) });
       }
     } else if (it.kind === "community_star_ornament") {
       const r = it.size * persp * scaleBoost;
