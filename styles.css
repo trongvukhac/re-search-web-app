@@ -29913,16 +29913,23 @@ body.dark-theme .xmas-tree-inspector {
 .xmas-tree-panel-col {
   display: flex;
   flex-direction: column;
+  min-width: 0;
   min-height: 0;
   overflow: hidden;
 }
 
 .xmas-tree-panel-tabs {
   display: flex;
-  gap: 6px;
-  padding: 10px 20px 0;
+  gap: 4px;
+  padding: 10px 16px 0;
   border-bottom: 1px solid var(--line, #dfe4dc);
   flex-shrink: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.xmas-tree-panel-tabs::-webkit-scrollbar {
+  display: none;
 }
 
 .xmas-panel-tab {
@@ -29930,10 +29937,12 @@ body.dark-theme .xmas-tree-inspector {
   border-bottom: 2px solid transparent;
   background: transparent;
   color: var(--muted, #64748b);
-  padding: 10px 12px;
+  padding: 10px 10px;
   font-family: inherit;
-  font-size: 13px;
+  font-size: 12.5px;
   font-weight: 700;
+  white-space: nowrap;
+  flex-shrink: 0;
   cursor: pointer;
   transition: color 0.16s ease, border-color 0.16s ease;
 }
@@ -31220,6 +31229,162 @@ body.dark-theme .xmas-countdown-clock {
   color: #fda4af;
 }
 
+/* Christmas Tree Likes Leaderboard Tab (Arena Top 3 Podium + Top 4-10 List) */
+.xmas-lb-summary-notice {
+  margin-bottom: 6px;
+  font-size: 12px;
+}
+
+.xmas-lb-podium-wrap {
+  padding: 4px 0 22px;
+  overflow: visible;
+}
+
+.xmas-lb-podium-wrap .arena-concept1-wrap {
+  gap: 8px;
+  padding-top: 40px;
+}
+
+.xmas-lb-podium-wrap .arena-champion-card.mini-namecard.rank-1 {
+  --mini-scale: 0.222;
+  width: calc(680px * var(--mini-scale));
+  height: calc(760px * var(--mini-scale));
+}
+
+.xmas-lb-podium-wrap .arena-champion-card.mini-namecard.rank-2,
+.xmas-lb-podium-wrap .arena-champion-card.mini-namecard.rank-3 {
+  --mini-scale: 0.19;
+  width: calc(680px * var(--mini-scale));
+  height: calc(760px * var(--mini-scale));
+}
+
+.xmas-lb-podium-wrap .champ-cover-banner {
+  height: 33%;
+}
+
+.xmas-lb-podium-wrap .champ-body.mini-namecard-body {
+  padding: 0 5px;
+}
+
+.xmas-lb-podium-wrap .champ-avatar-wrap {
+  margin-top: -16px;
+}
+
+.xmas-lb-podium-wrap .arena-champion-card.mini-namecard.rank-1 .champ-avatar-wrap {
+  margin-top: -20px;
+}
+
+.xmas-lb-podium-wrap .champ-avatar.rank-1-avatar {
+  width: 40px;
+  height: 40px;
+  font-size: 17px;
+  --ring-inset: -3px;
+  --ring-width: 2px;
+}
+
+.xmas-lb-podium-wrap .champ-avatar.rank-2-avatar,
+.xmas-lb-podium-wrap .champ-avatar.rank-3-avatar {
+  width: 34px;
+  height: 34px;
+  font-size: 14px;
+  --ring-inset: -2.5px;
+  --ring-width: 1.5px;
+}
+
+.xmas-lb-podium-wrap .champ-crown.rank-medal.rank-1 svg {
+  width: 30px;
+  height: 30px;
+}
+
+.xmas-lb-podium-wrap .champ-crown.rank-medal.rank-2 svg,
+.xmas-lb-podium-wrap .champ-crown.rank-medal.rank-3 svg {
+  width: 26px;
+  height: 26px;
+}
+
+.xmas-lb-podium-wrap .champ-info-group {
+  gap: 4px;
+  padding-top: 2px;
+  padding-bottom: 9px;
+}
+
+.xmas-lb-podium-wrap .arena-champion-card.mini-namecard.rank-1 .champ-info-group {
+  gap: 5px;
+  padding-bottom: 11px;
+}
+
+.xmas-lb-podium-wrap .champ-name {
+  font-size: 11px;
+  padding: 0 3px;
+  gap: 2.5px;
+}
+
+.xmas-lb-podium-wrap .champ-name.font-bold {
+  font-size: 12px;
+}
+
+.xmas-lb-podium-wrap .champ-rank-pill {
+  font-size: 9.5px;
+  padding: 1.5px 8px;
+}
+
+.xmas-lb-podium-wrap .champ-score {
+  font-size: 10.5px;
+  padding: 2px 9px;
+}
+
+.xmas-lb-podium-wrap .xmas-lb-empty {
+  width: 100%;
+  padding: 28px 16px;
+  font-size: 13px;
+  line-height: 1.5;
+  text-align: center;
+  color: var(--muted, #64748b);
+  border: 1px dashed rgba(148, 163, 184, 0.35);
+  border-radius: 14px;
+}
+
+.xmas-lb-list-container {
+  margin-top: 6px;
+}
+
+.xmas-lb-heart-icon {
+  margin-right: 3px;
+  vertical-align: -2px;
+}
+
+@media (max-width: 760px) {
+  .xmas-tree-panel-tabs {
+    padding: 8px 10px 0;
+    gap: 2px;
+  }
+
+  .xmas-panel-tab {
+    padding: 8px 8px;
+    font-size: 11.5px;
+  }
+
+  .xmas-lb-podium-wrap .arena-concept1-wrap {
+    gap: 6px !important;
+    padding-top: 38px !important;
+  }
+
+  .xmas-lb-podium-wrap .arena-champion-card.mini-namecard.rank-1 {
+    --mini-scale: 0.165 !important;
+    width: calc(680px * var(--mini-scale)) !important;
+    height: calc(760px * var(--mini-scale)) !important;
+    flex: 0 0 calc(680px * var(--mini-scale)) !important;
+  }
+
+  .xmas-lb-podium-wrap .arena-champion-card.mini-namecard.rank-2,
+  .xmas-lb-podium-wrap .arena-champion-card.mini-namecard.rank-3 {
+    --mini-scale: 0.138 !important;
+    width: calc(680px * var(--mini-scale)) !important;
+    height: calc(760px * var(--mini-scale)) !important;
+    flex: 0 0 calc(680px * var(--mini-scale)) !important;
+  }
+}
+
 /* Mobile Stage Fullscreen Button & State */
 .xmas-stage-fs-btn {
   display: none;
@@ -31622,6 +31787,8 @@ body.dark-theme .xmas-item-viewer-likes-list {
   }
 
   .xmas-tree-panel-col {
+    min-width: 0;
+    width: 100%;
     overflow: visible;
   }
 

@@ -30,7 +30,7 @@
     <script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js" defer></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" defer></script>
-    <link rel="stylesheet" href="styles.css?v=167" />
+    <link rel="stylesheet" href="styles.css?v=168" />
   </head>
   <body>
     <canvas id="christmasTreeCanvas" class="christmas-tree-edge-canvas" aria-hidden="true"></canvas>
@@ -5708,6 +5708,9 @@
               <button type="button" role="tab" class="xmas-panel-tab" id="xmasTabGallery" aria-selected="false" aria-controls="xmasPanelGallery">
                 Tất cả trang trí (<span id="xmasGalleryCount">0</span>)
               </button>
+              <button type="button" role="tab" class="xmas-panel-tab" id="xmasTabLeaderboard" aria-selected="false" aria-controls="xmasPanelLeaderboard">
+                Bảng xếp hạng
+              </button>
             </div>
 
             <div class="xmas-tree-panel-body" id="xmasPanelDecorate" role="tabpanel" aria-labelledby="xmasTabDecorate">
@@ -5979,6 +5982,20 @@
             <div class="xmas-tree-panel-body" id="xmasPanelGallery" role="tabpanel" aria-labelledby="xmasTabGallery" hidden>
               <div class="xmas-tree-gallery-list" id="xmasTreeGalleryList"></div>
             </div>
+
+            <div class="xmas-tree-panel-body" id="xmasPanelLeaderboard" role="tabpanel" aria-labelledby="xmasTabLeaderboard" hidden>
+              <div class="lb-summary-notice xmas-lb-summary-notice" id="xmasTreeLbNotice">
+                Bảng xếp hạng lượt yêu thích trang trí (tính tổng tim từ tối đa 2 món)
+              </div>
+              <div class="comp-podium-wrap xmas-lb-podium-wrap" id="xmasTreeLbPodium"></div>
+              <div class="comp-lb-list-container xmas-lb-list-container" id="xmasTreeLbListWrap" hidden>
+                <div class="comp-lb-list-header">
+                  <span>Thứ hạng &amp; Thành viên (Top 4 - 10)</span>
+                  <span style="text-align: right;">Lượt tim</span>
+                </div>
+                <div class="comp-lb-list" id="xmasTreeLbList"></div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -6046,6 +6063,6 @@
       </button>
     </div>
 
-    <script src="app.js?v=167" defer></script>
+    <script src="app.js?v=168" defer></script>
   </body>
 </html>

@@ -5711,9 +5711,91 @@ async function api(request, response, url) {
     return null;
   }
 
+  function buildChristmasTreeLikesLeaderboard(viewer, preloadedRows = null, preloadedLikesCountMap = null) {
+    const rows = preloadedRows || db.prepare(`
+      SELECT o.id, o.user_id, u.display_name, u.avatar, u.role, u.cover_image, u.namecard_frame
+      FROM christmas_tree_ornaments o
+      JOIN users u ON u.id = o.user_id
+    `).all();
+    let likesCountMap = preloadedLikesCountMap;
+    if (!likesCountMap) {
+      likesCountMap = new Map();
+      db.prepare("SELECT ornament_id, COUNT(*) AS cnt FROM christmas_tree_likes GROUP BY ornament_id").all().forEach((lr) => {
+        likesCountMap.set(Number(lr.ornament_id), Number(lr.cnt || 0));
+      });
+    }
+    const userLastLikedMap = new Map();
+    db.prepare(`
+      SELECT o.user_id AS userId, MAX(l.created_at) AS lastLikedAt
+      FROM christmas_tree_likes l
+      JOIN christmas_tree_ornaments o ON o.id = l.ornament_id
+      GROUP BY o.user_id
+    `).all().forEach((lr) => {
+      userLastLikedMap.set(Number(lr.userId), lr.lastLikedAt || "");
+    });
+
+    const perUserMap = new Map();
+    for (const r of rows) {
+      const uid = Number(r.user_id);
+      if (!uid || uid === 89) continue;
+      let agg = perUserMap.get(uid);
+      if (!agg) {
+        agg = {
+          userId: uid,
+          displayName: r.display_name || "Thành viên",
+          avatar: r.avatar || getAvatarEmoji(r.display_name || "R"),
+          initials: r.avatar || getAvatarEmoji(r.display_name || "R"),
+          role: r.role || "student",
+          coverImage: r.cover_image || "default",
+          namecardFrame: (r.namecard_frame && r.namecard_frame !== "default") ? r.namecard_frame : "none",
+          likesCount: 0,
+          ornamentCount: 0,
+          lastLikedAt: userLastLikedMap.get(uid) || ""
+        };
+        perUserMap.set(uid, agg);
+      }
+      agg.ornamentCount += 1;
+      agg.likesCount += (likesCountMap.get(Number(r.id)) || 0);
+    }
+
+    const todayDate = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Ho_Chi_Minh" }));
+    const sorted = Array.from(perUserMap.values())
+      .filter((entry) => entry.likesCount > 0)
+      .sort((a, b) => (
+        b.likesCount - a.likesCount ||
+        String(a.lastLikedAt).localeCompare(String(b.lastLikedAt)) ||
+        a.userId - b.userId
+      ));
+
+    const ranked = sorted.map((entry, idx) => {
+      const streakInfo = calculateUserStreak(entry.userId, todayDate);
+      return {
+        rank: idx + 1,
+        userId: entry.userId,
+        displayName: entry.displayName,
+        avatar: entry.avatar,
+        initials: entry.initials,
+        role: entry.role,
+        coverImage: entry.coverImage,
+        namecardFrame: entry.namecardFrame,
+        streakTier: Number(streakInfo?.streakTier || 0),
+        likesCount: entry.likesCount,
+        score: entry.likesCount,
+        ornamentCount: entry.ornamentCount,
+        isCurrentUser: Boolean(viewer && Number(viewer.id) === entry.userId)
+      };
+    });
+
+    return {
+      top10: ranked.slice(0, 10),
+      totalRanked: ranked.length,
+      currentUserEntry: viewer ? (ranked.find((e) => e.userId === Number(viewer.id)) || null) : null
+    };
+  }
+
   function buildChristmasTreePayload(viewer) {
     const rows = db.prepare(`
-      SELECT o.*, u.display_name, u.avatar, u.role
+      SELECT o.*, u.display_name, u.avatar, u.role, u.cover_image, u.namecard_frame
       FROM christmas_tree_ornaments o
       JOIN users u ON u.id = o.user_id
       ORDER BY o.updated_at DESC, o.id DESC
@@ -5809,6 +5891,7 @@ async function api(request, response, url) {
         gifts: items.filter((x) => x.slotKind === "gift").length,
         accessories: items.filter((x) => x.slotKind === "accessory").length
       },
+      likesLeaderboard: buildChristmasTreeLikesLeaderboard(viewer, rows, likesCountMap),
       items
     };
   }
@@ -6176,7 +6259,8 @@ async function api(request, response, url) {
       ok: true,
       id: itemId,
       likesCount: Number(cntRow?.cnt || 0),
-      hasLiked: true
+      hasLiked: true,
+      likesLeaderboard: buildChristmasTreeLikesLeaderboard(user)
     });
   }
 

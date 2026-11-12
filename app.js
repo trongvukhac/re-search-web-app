@@ -55,6 +55,7 @@ const christmasTreeEventState = {
   items: [],
   viewerAccess: null,
   stats: { totalItems: 0, contributors: 0, polaroids: 0, cards: 0, gifts: 0, accessories: 0 },
+  likesLeaderboard: { top10: [], totalRanked: 0, currentUserEntry: null },
   expiresAt: CHRISTMAS_2026_END_MS
 };
 
@@ -17968,8 +17969,48 @@ function switchArenaPodiumConcept(conceptId) {
 }
 window.switchArenaPodiumConcept = switchArenaPodiumConcept;
 
-function renderArenaTop3(top1, top2, top3, isWeek = false) {
+const ARENA_DEFAULT_SCORE_STAR_SVG = `<svg class="ui-icon champ-score-star" width="13" height="13" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>`;
+const XMAS_LIKE_HEART_SVG = `<svg class="ui-icon xmas-lb-heart-icon" width="13" height="13" viewBox="0 0 24 24" fill="#e11d48" stroke="#e11d48" stroke-width="1.2" aria-hidden="true"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>`;
+
+function buildArenaLeaderboardRowHtml(u, isCurrent, options = {}) {
+  const avatarClass = getAvatarClass(u.streakTier, false, u.role);
+  const nameClass = getNameClass(u.streakTier);
+  const coverStyle = getMiniCoverStyle(u.coverImage);
+  const scoreIconHtml = options.scoreIconHtml || `<svg class="ui-icon" width="13" height="13" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.5" style="color: #f59e0b; margin-right: 2px;"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>`;
+  const isPinnedMyRow = Boolean(options.isPinnedMyRow);
+  const rankBadgeText = isPinnedMyRow ? `#${u.rank}` : String(u.rank);
+  const rankBadgeClass = isPinnedMyRow ? "rank-me" : `rank-${u.rank}`;
+  const rowExtraClass = isPinnedMyRow ? "top-11-plus-row lb-my-rank-row" : (isCurrent ? "is-current-user is-me" : "");
+  const scoreVal = options.useLikesCount ? Number(u.likesCount || 0) : u.score;
+
+  return `
+    <div class="comp-lb-row leaderboard-item ${isPinnedMyRow ? "is-current-user is-me " + rowExtraClass : rowExtraClass}" data-namecard-user-id="${u.userId}" style="cursor: pointer;" title="Xem thẻ tên">
+      <div class="comp-lb-capsule lb-capsule">
+        <div class="lb-cover-art-wrap">
+          <div class="lb-cover-art" style="${coverStyle}"></div>
+          <div class="lb-cover-overlay"></div>
+        </div>
+        <div class="comp-lb-avatar-wrap lb-avatar-wrap">
+          <span class="avatar avatar-sm ${avatarClass}">${escapeHTML(u.avatar || u.initials || "U")}</span>
+          <span class="lb-rank-badge ${rankBadgeClass}">${rankBadgeText}</span>
+        </div>
+        <div class="comp-lb-user lb-info">
+          <span class="comp-lb-name lb-name ${nameClass}">
+            ${getFlameSVG(u.streakTier, 15)}
+            <span class="lb-name-text">${escapeHTML(u.displayName)}</span>
+          </span>
+          ${u.role && u.role !== 'student' ? `<span class="lb-role lb-role-${u.role}">${getRoleDisplay(u.role)}</span>` : ""}
+          ${(isCurrent || isPinnedMyRow) ? '<span class="you-tag">(Bạn)</span>' : ""}
+        </div>
+      </div>
+      <span class="comp-lb-score lb-points">${scoreIconHtml}${scoreVal}</span>
+    </div>
+  `;
+}
+
+function renderArenaTop3(top1, top2, top3, isWeek = false, options = {}) {
   let html = `<div class="arena-concept1-wrap arena-top3-cards">`;
+  const scoreIconHtml = options.scoreIconHtml || ARENA_DEFAULT_SCORE_STAR_SVG;
 
   function renderMiniNamecard(user, rank) {
     if (!user) {
@@ -17997,6 +18038,7 @@ function renderArenaTop3(top1, top2, top3, isWeek = false) {
       flameSize = 14;
       scoreClass = "bronze-score";
     }
+    const scoreVal = options.useLikesCount ? Number(user.likesCount || 0) : user.score;
 
     return `
       <div class="arena-champion-card mini-namecard rank-${rank}" data-namecard-user-id="${user.userId}" data-frame="${activeFrame}" style="cursor: pointer;" title="Xem thẻ tên">
@@ -18031,9 +18073,9 @@ function renderArenaTop3(top1, top2, top3, isWeek = false) {
                 <span class="champ-rank-pill pill-rank-${rank}">${rankTag}</span>
               </div>
 
-              <!-- Số điểm -->
+              <!-- Số điểm / lượt tim -->
               <div class="champ-score ${scoreClass}">
-                <svg class="ui-icon champ-score-star" width="13" height="13" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>${user.score}
+                ${scoreIconHtml}${scoreVal}
               </div>
             </div>
           </div>
@@ -18101,63 +18143,11 @@ function renderLeaderboardUI(data) {
       (currentUserEntry && (currentUserEntry.userId == u.userId || currentUserEntry.userId == u.id)) ||
       (typeof session !== "undefined" && session && (session.id == u.userId || session.id == u.id || session.userId == u.userId))
     );
-    const avatarClass = getAvatarClass(u.streakTier, false, u.role);
-    const nameClass = getNameClass(u.streakTier);
-    const coverStyle = getMiniCoverStyle(u.coverImage);
-
-    rowsHTML += `
-      <div class="comp-lb-row leaderboard-item ${isCurrent ? "is-current-user is-me" : ""}" data-namecard-user-id="${u.userId}" style="cursor: pointer;" title="Xem thẻ tên">
-        <div class="comp-lb-capsule lb-capsule">
-          <div class="lb-cover-art-wrap">
-            <div class="lb-cover-art" style="${coverStyle}"></div>
-            <div class="lb-cover-overlay"></div>
-          </div>
-          <div class="comp-lb-avatar-wrap lb-avatar-wrap">
-            <span class="avatar avatar-sm ${avatarClass}">${escapeHTML(u.avatar || u.initials || "U")}</span>
-            <span class="lb-rank-badge rank-${u.rank}">${u.rank}</span>
-          </div>
-          <div class="comp-lb-user lb-info">
-            <span class="comp-lb-name lb-name ${nameClass}">
-              ${getFlameSVG(u.streakTier, 15)}
-              <span class="lb-name-text">${escapeHTML(u.displayName)}</span>
-            </span>
-            ${u.role && u.role !== 'student' ? `<span class="lb-role lb-role-${u.role}">${getRoleDisplay(u.role)}</span>` : ""}
-            ${isCurrent ? '<span class="you-tag">(Bạn)</span>' : ""}
-          </div>
-        </div>
-        <span class="comp-lb-score lb-points"><svg class="ui-icon" width="13" height="13" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.5" style="color: #f59e0b; margin-right: 2px;"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>${u.score}</span>
-      </div>
-    `;
+    rowsHTML += buildArenaLeaderboardRowHtml(u, isCurrent);
   });
 
   if (currentUserEntry && currentUserEntry.rank > 10) {
-    const myAvatarClass = getAvatarClass(currentUserEntry.streakTier, false, currentUserEntry.role);
-    const myNameClass = getNameClass(currentUserEntry.streakTier);
-    const myCoverStyle = getMiniCoverStyle(currentUserEntry.coverImage);
-
-    rowsHTML += `
-      <div class="comp-lb-row leaderboard-item is-current-user is-me top-11-plus-row lb-my-rank-row" data-namecard-user-id="${currentUserEntry.userId}" style="cursor: pointer;" title="Xem thẻ tên">
-        <div class="comp-lb-capsule lb-capsule">
-          <div class="lb-cover-art-wrap">
-            <div class="lb-cover-art" style="${myCoverStyle}"></div>
-            <div class="lb-cover-overlay"></div>
-          </div>
-          <div class="comp-lb-avatar-wrap lb-avatar-wrap">
-            <span class="avatar avatar-sm ${myAvatarClass}">${escapeHTML(currentUserEntry.avatar || currentUserEntry.initials || "U")}</span>
-            <span class="lb-rank-badge rank-me">#${currentUserEntry.rank}</span>
-          </div>
-          <div class="comp-lb-user lb-info">
-            <span class="comp-lb-name lb-name ${myNameClass}">
-              ${getFlameSVG(currentUserEntry.streakTier, 15)}
-              <span class="lb-name-text">${escapeHTML(currentUserEntry.displayName)}</span>
-            </span>
-            ${currentUserEntry.role && currentUserEntry.role !== 'student' ? `<span class="lb-role lb-role-${currentUserEntry.role}">${getRoleDisplay(currentUserEntry.role)}</span>` : ""}
-            <span class="you-tag">(Bạn)</span>
-          </div>
-        </div>
-        <span class="comp-lb-score lb-points"><svg class="ui-icon" width="13" height="13" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.5" style="color: #f59e0b; margin-right: 2px;"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>${currentUserEntry.score}</span>
-      </div>
-    `;
+    rowsHTML += buildArenaLeaderboardRowHtml(currentUserEntry, true, { isPinnedMyRow: true });
   }
 
   if (!rowsHTML) {
@@ -22019,22 +22009,25 @@ function buildChristmasTreeGeometry(isMobile) {
   }
 
   // 1. Conical evergreen pine needles starting cleanly above trunk (u = 0.215..0.985)
-  const foliageCount = isMobile ? 490 : 980;
+  // Area-weighted distribution (1 - (1 - t)^2.05) keeps lush pine foliage density across wide lower boughs
+  const foliageCount = isMobile ? 820 : 1650;
   for (let i = 0; i < foliageCount; i++) {
-    const uLin = Math.pow(i / foliageCount, 0.78);
+    const tRatio = i / foliageCount;
+    const uLin = 1 - Math.pow(1 - tRatio, 2.05);
     const u = 0.215 + uLin * 0.77;
     const angle = i * goldenAngle + (rng() - 0.5) * 0.24;
-    const minShell = u < 0.27 ? 0.36 : 0.14;
-    const shell = minShell + (1 - minShell) * Math.pow(rng(), 0.42);
+    const minShell = u < 0.36 ? 0.25 : 0.14;
+    const shell = minShell + (1 - minShell) * Math.pow(rng(), 0.44);
     const rNorm = coneRadiusAtHeight(u) * shell;
     const toneRoll = rng();
     const tone = toneRoll < 0.42 ? 0 : (toneRoll < 0.74 ? 1 : (toneRoll < 0.94 ? 2 : 3));
+    const lowerSizeBoost = 1 + (1 - uLin) * 0.18;
     items.push({
       kind: "needle",
       u: Math.max(0.215, Math.min(0.99, u + (rng() - 0.5) * 0.015)),
       rNorm,
       angle,
-      size: (isMobile ? 2.1 : 2.3) + rng() * 2.1,
+      size: ((isMobile ? 2.15 : 2.35) + rng() * 2.15) * lowerSizeBoost,
       tone,
       phase: rng() * Math.PI * 2
     });
@@ -24514,6 +24507,10 @@ async function handleChristmasTreeLikeClick(itemId, btnEl) {
     if (res && res.ok) {
       item.likesCount = Number(res.likesCount || 0);
       item.hasLiked = true;
+      if (res.likesLeaderboard) {
+        christmasTreeEventState.likesLeaderboard = res.likesLeaderboard;
+        renderChristmasTreeLikesLeaderboard();
+      }
       syncChristmasLikeButtonsInDom(item.id, item.likesCount, true);
       $$(`[data-tree-like-id="${Number(item.id)}"]`).forEach((b) => {
         b.classList.remove("animate-pop");
@@ -24920,10 +24917,54 @@ function populateUserTreeFormsFromItems() {
   renderAccessoryFormPreview();
 }
 
+function renderChristmasTreeLikesLeaderboard() {
+  const podiumWrap = $("#xmasTreeLbPodium");
+  const listWrap = $("#xmasTreeLbListWrap");
+  const listEl = $("#xmasTreeLbList");
+  if (!podiumWrap) return;
+
+  const lb = christmasTreeEventState.likesLeaderboard || { top10: [], totalRanked: 0, currentUserEntry: null };
+  const top10 = Array.isArray(lb.top10) ? lb.top10 : [];
+  const currentUserEntry = lb.currentUserEntry || null;
+
+  if (!top10.length) {
+    podiumWrap.innerHTML = `<div class="comp-lb-empty xmas-lb-empty">Chưa có lượt yêu thích nào cho các món trang trí. Hãy thả tim cho món bạn thích nhé!</div>`;
+    if (listWrap) listWrap.hidden = true;
+    if (listEl) listEl.innerHTML = "";
+    return;
+  }
+
+  const top1 = top10.find((u) => u.rank === 1) || null;
+  const top2 = top10.find((u) => u.rank === 2) || null;
+  const top3 = top10.find((u) => u.rank === 3) || null;
+  const opts = { scoreIconHtml: XMAS_LIKE_HEART_SVG, useLikesCount: true };
+
+  podiumWrap.innerHTML = renderArenaTop3(top1, top2, top3, false, opts);
+
+  const rest = top10.filter((u) => u.rank >= 4);
+  let rowsHtml = "";
+  rest.forEach((u) => {
+    const isCurrent = Boolean(
+      u.isCurrentUser ||
+      (currentUserEntry && Number(currentUserEntry.userId) === Number(u.userId)) ||
+      (typeof session !== "undefined" && session && Number(session.id) === Number(u.userId))
+    );
+    rowsHtml += buildArenaLeaderboardRowHtml(u, isCurrent, opts);
+  });
+
+  if (currentUserEntry && currentUserEntry.rank > 10) {
+    rowsHtml += buildArenaLeaderboardRowHtml(currentUserEntry, true, { ...opts, isPinnedMyRow: true });
+  }
+
+  if (listEl) listEl.innerHTML = rowsHtml;
+  if (listWrap) listWrap.hidden = !rowsHtml;
+}
+
 function renderChristmasTreeStudioUI(syncForms = true) {
   updateChristmasTreeBadges();
   syncChristmasTreeStreakAccess();
   renderChristmasTreeGallery();
+  renderChristmasTreeLikesLeaderboard();
 
   const guestBox = $("#xmasTreeGuestBox");
   const formsWrap = $("#xmasTreeFormsWrap");
@@ -24961,6 +25002,7 @@ function applyChristmasTreeServerPayload(data, syncForms = true) {
   christmasTreeEventState.viewerAccess = data.viewerAccess || null;
   christmasTreeEventState.items = Array.isArray(data.items) ? data.items : [];
   christmasTreeEventState.stats = data.stats || { totalItems: 0, contributors: 0, polaroids: 0, cards: 0, gifts: 0, accessories: 0 };
+  christmasTreeEventState.likesLeaderboard = data.likesLeaderboard || { top10: [], totalRanked: 0, currentUserEntry: null };
   syncCombinedChristmasTreeItems();
   renderChristmasTreeStudioUI(syncForms);
 }
@@ -25268,26 +25310,34 @@ function initChristmasTreeStudio() {
     syncChristmasSpinButton(christmasTreeStudioState.autoSpin);
   });
 
-  const tabDecorate = $("#xmasTabDecorate");
-  const tabGallery = $("#xmasTabGallery");
-  const panelDecorate = $("#xmasPanelDecorate");
-  const panelGallery = $("#xmasPanelGallery");
-  const switchTab = (tab) => {
-    christmasTreeStudioState.activeTab = tab;
-    const isDec = tab === "decorate";
-    if (tabDecorate) {
-      tabDecorate.classList.toggle("active", isDec);
-      tabDecorate.setAttribute("aria-selected", String(isDec));
-    }
-    if (tabGallery) {
-      tabGallery.classList.toggle("active", !isDec);
-      tabGallery.setAttribute("aria-selected", String(!isDec));
-    }
-    if (panelDecorate) panelDecorate.hidden = !isDec;
-    if (panelGallery) panelGallery.hidden = isDec;
+  const tabEls = {
+    decorate: $("#xmasTabDecorate"),
+    gallery: $("#xmasTabGallery"),
+    leaderboard: $("#xmasTabLeaderboard")
   };
-  tabDecorate?.addEventListener("click", () => switchTab("decorate"));
-  tabGallery?.addEventListener("click", () => switchTab("gallery"));
+  const panelEls = {
+    decorate: $("#xmasPanelDecorate"),
+    gallery: $("#xmasPanelGallery"),
+    leaderboard: $("#xmasPanelLeaderboard")
+  };
+  const switchTab = (tab) => {
+    const activeTab = panelEls[tab] ? tab : "decorate";
+    christmasTreeStudioState.activeTab = activeTab;
+    Object.keys(panelEls).forEach((key) => {
+      const isActive = key === activeTab;
+      if (tabEls[key]) {
+        tabEls[key].classList.toggle("active", isActive);
+        tabEls[key].setAttribute("aria-selected", String(isActive));
+      }
+      if (panelEls[key]) panelEls[key].hidden = !isActive;
+    });
+    if (activeTab === "leaderboard") {
+      renderChristmasTreeLikesLeaderboard();
+    }
+  };
+  Object.keys(tabEls).forEach((key) => {
+    tabEls[key]?.addEventListener("click", () => switchTab(key));
+  });
 
   const slotButtons = {
     polaroid: $("#xmasSlotBtnPolaroid"),
