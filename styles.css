@@ -29566,9 +29566,9 @@ body.dark-theme .xmas-hero-tree-btn {
    COMMUNITY CHRISTMAS TREE STUDIO PAGE (<section id="christmasTreePage">)
    ========================================================================== */
 #christmasTreePage.page {
-  max-width: 1080px;
+  max-width: 1100px;
   margin: 0 auto;
-  padding: 24px 20px 80px;
+  padding: 12px 18px 24px;
 }
 
 #christmasTreePage.active-page {
@@ -29657,7 +29657,7 @@ body.dark-theme .xmas-tree-page-shell {
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  padding: 16px 22px 14px;
+  padding: 10px 18px 10px;
   border-bottom: 1px solid var(--line, #dfe4dc);
   flex-shrink: 0;
   background: var(--surface, #ffffff);
@@ -29759,16 +29759,17 @@ body.dark-theme .xmas-tree-modal-header {
 
 .xmas-tree-studio-grid {
   display: grid;
-  grid-template-columns: minmax(350px, 1.08fr) minmax(340px, 1fr);
+  grid-template-columns: minmax(360px, 1.15fr) minmax(340px, 1fr);
   flex: 1;
-  min-height: 0;
+  min-height: 520px;
+  max-height: calc(100vh - 145px);
   overflow: hidden;
 }
 
 .xmas-tree-stage-col {
   display: flex;
   flex-direction: column;
-  padding: 16px 18px;
+  padding: 14px 16px;
   border-right: 1px solid var(--line, #dfe4dc);
   background: linear-gradient(180deg, rgba(240, 253, 250, 0.72), rgba(248, 250, 252, 0.92));
   min-height: 0;
@@ -29852,11 +29853,12 @@ body.dark-theme .xmas-stage-ctrl-btn {
 
 .xmas-tree-milestone-bar {
   position: absolute;
-  top: 10px;
+  bottom: 10px;
   left: 10px;
+  top: auto;
   z-index: 4;
-  max-width: calc(100% - 178px);
-  padding: 6px 11px;
+  max-width: calc(100% - 20px);
+  padding: 5px 11px;
   border-radius: 9999px;
   font-size: 11.5px;
   font-weight: 600;
@@ -29868,6 +29870,7 @@ body.dark-theme .xmas-stage-ctrl-btn {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  pointer-events: none;
 }
 
 html.dark-theme .xmas-tree-milestone-bar,
@@ -31823,7 +31826,7 @@ body.dark-theme .xmas-item-viewer-likes-list {
 
 @media (max-width: 860px) {
   #christmasTreePage.page {
-    padding: 14px 12px 130px;
+    padding: 6px 10px 110px;
   }
 
   .xmas-tree-page-shell {
@@ -31835,19 +31838,35 @@ body.dark-theme .xmas-item-viewer-likes-list {
   }
 
   .xmas-tree-page-header {
-    padding: 12px 14px 10px;
+    padding: 8px 12px 6px;
     border-radius: 18px 18px 0 0;
   }
 
   .xmas-tree-header-left {
-    gap: 10px;
+    gap: 8px;
     align-items: center;
   }
 
   .xmas-tree-back-btn {
-    height: 34px;
-    padding: 0 11px;
-    font-size: 12.5px;
+    height: 32px;
+    padding: 0 10px;
+    font-size: 12px;
+  }
+
+  .xmas-tree-close-btn {
+    width: 32px;
+    height: 32px;
+    font-size: 14px;
+  }
+
+  .xmas-tree-header-copy h1,
+  .xmas-tree-header-copy h2 {
+    font-size: 15px;
+    margin: 0;
+  }
+
+  .xmas-tree-header-sub {
+    display: none;
   }
 
   dialog#christmasTreeModal[open] {
@@ -31884,23 +31903,35 @@ body.dark-theme .xmas-item-viewer-likes-list {
     grid-template-columns: 1fr;
     overflow: visible;
     flex: none;
+    max-height: none;
+    height: auto;
   }
 
   .xmas-tree-stage-col {
     border-right: 0;
     border-bottom: 1px solid var(--line, #dfe4dc);
-    padding: 12px;
+    padding: 8px 10px;
   }
 
   .xmas-tree-stage-wrap {
-    min-height: 330px;
-    height: 340px;
+    min-height: 260px;
+    height: min(44vh, 310px);
+    max-height: 330px;
     flex: none;
   }
 
   .xmas-tree-milestone-bar {
-    top: 48px;
-    max-width: calc(100% - 20px);
+    bottom: 8px;
+    left: 8px;
+    top: auto;
+    max-width: calc(100% - 16px);
+    font-size: 11px;
+    padding: 4px 9px;
+  }
+
+  .xmas-tree-stage-hint {
+    margin: 6px 2px 0;
+    font-size: 11px;
   }
 
   .xmas-tree-panel-col {

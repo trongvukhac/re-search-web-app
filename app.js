@@ -67,7 +67,7 @@ const christmasTreeStudioState = {
   ctx: null,
   width: 0,
   height: 0,
-  rotation: 0.42,
+  rotation: 0.38,
   starRotation: 0.25,
   timeSec: 0,
   lastMs: 0,
@@ -21551,14 +21551,19 @@ function getChristmasTreeLayout(w, h) {
 function getChristmasTreeStudioLayout(w, h) {
   const safeW = Math.max(260, w);
   const safeH = Math.max(280, h);
-  // Keep summit star safely below top floating milestone pill & spin controls on mobile & desktop
-  const topClearance = safeH <= 360 ? 52 : 44;
-  const baseY = Math.round(safeH * 0.91);
-  const maxTreeHByHeight = Math.max(180, baseY - topClearance - 14);
-  const treeH = Math.round(Math.min(maxTreeHByHeight, safeW * 0.9));
-  const treeR = Math.round(treeH * 0.285);
+  const isMobile = safeW <= 440;
+  // Summit star clearance from top canvas edge (star outer tip remains completely visible with margins)
+  const topClearance = isMobile ? 30 : 38;
+  const bottomPadding = isMobile ? 22 : 26;
+  const availH = safeH - topClearance - bottomPadding;
+  // Let the tree expand to fill vertical room while keeping a lush, majestic cone aspect ratio
+  const maxTreeHByWidth = Math.round((safeW * 0.88) / 0.74);
+  const treeH = Math.round(Math.max(190, Math.min(availH, maxTreeHByWidth)));
+  // Cone radius filling ~76-82% of width when height permits, eliminating blank empty side gutters
+  const treeR = Math.round(Math.min(treeH * 0.38, safeW * 0.42));
+  const baseY = Math.round(safeH - bottomPadding);
   return {
-    isMobile: safeW <= 440,
+    isMobile,
     anchorX: Math.round(safeW * 0.5),
     baseY,
     treeH,
@@ -22182,7 +22187,7 @@ function buildCommunityOrnamentNodes(communityItems) {
         kind: "community_polaroid",
         data: item,
         u: uClamped,
-        rNorm: coneRadiusAtHeight(uClamped) * 1.13,
+        rNorm: coneRadiusAtHeight(uClamped) * 0.94,
         angle,
         frameColor: item.frameColor || TREE_POLAROID_FRAME_MAP[item.itemStyle] || "#FFFAF0",
         gradientStops: Array.isArray(item.gradientStops)
@@ -22202,7 +22207,7 @@ function buildCommunityOrnamentNodes(communityItems) {
         kind: "community_card",
         data: item,
         u: uClamped,
-        rNorm: coneRadiusAtHeight(uClamped) * 1.14,
+        rNorm: coneRadiusAtHeight(uClamped) * 0.94,
         angle,
         itemStyle: tplKey,
         itemFinish: finKey,
@@ -22252,7 +22257,7 @@ function buildCommunityOrnamentNodes(communityItems) {
           kind: "community_garland_bulb",
           data: item,
           u: bu,
-          rNorm: coneRadiusAtHeight(bu) * 1.05,
+          rNorm: coneRadiusAtHeight(bu) * 0.96,
           angle: angle + offsetFrac * 1.2,
           key,
           coreColor: isPrism ? prismColors[b % prismColors.length] : bulbColors[key],
@@ -22266,7 +22271,7 @@ function buildCommunityOrnamentNodes(communityItems) {
         kind: "community_star_ornament",
         data: item,
         u: uClamped,
-        rNorm: coneRadiusAtHeight(uClamped) * 1.05,
+        rNorm: coneRadiusAtHeight(uClamped) * 0.96,
         angle,
         gradientStops: Array.isArray(item.gradientStops) ? item.gradientStops : TREE_ACCESSORY_GRADIENT_MAP.star_grad_gold,
         swayPhase: ((item.id * 1.19) % (Math.PI * 2)),
@@ -22277,7 +22282,7 @@ function buildCommunityOrnamentNodes(communityItems) {
         kind: "community_ribbon_bow",
         data: item,
         u: uClamped,
-        rNorm: coneRadiusAtHeight(uClamped) * 1.06,
+        rNorm: coneRadiusAtHeight(uClamped) * 0.96,
         angle,
         gradientStops: Array.isArray(item.gradientStops) ? item.gradientStops : TREE_ACCESSORY_GRADIENT_MAP.ribbon_grad_velvet,
         swayPhase: ((item.id * 1.43) % (Math.PI * 2)),
@@ -22292,7 +22297,7 @@ function buildCommunityOrnamentNodes(communityItems) {
         kind: "community_bauble",
         data: item,
         u: uClamped,
-        rNorm: coneRadiusAtHeight(uClamped) * 1.02,
+        rNorm: coneRadiusAtHeight(uClamped) * 0.95,
         angle,
         color,
         gradientStops: stops,
@@ -23310,8 +23315,12 @@ function renderChristmasTreeFrame(nowMs) {
   const dt = christmasTreeState.lastMs ? Math.min(0.05, Math.max(0.004, (nowMs - christmasTreeState.lastMs) / 1000)) : 0.016;
   christmasTreeState.lastMs = nowMs;
   christmasTreeState.timeSec += dt;
-  christmasTreeState.rotation = (christmasTreeState.rotation + dt * 0.38) % (Math.PI * 2);
+  if (christmasTreeStudioState.autoSpin && !christmasTreeStudioState.dragging && !christmasSnowState.reducedMotion) {
+    christmasTreeState.rotation = (christmasTreeState.rotation + dt * 0.38) % (Math.PI * 2);
+    christmasTreeStudioState.rotation = christmasTreeState.rotation;
+  }
   christmasTreeState.starRotation = (christmasTreeState.starRotation + dt * 0.85) % (Math.PI * 2);
+  christmasTreeStudioState.starRotation = christmasTreeState.starRotation;
 
   ctx.clearRect(0, 0, w, h);
   const layout = getChristmasTreeLayout(w, h);
@@ -24160,6 +24169,7 @@ function focusChristmasTreeItemOnStage(itemId, options = {}) {
   const keepSpinning = !pauseAutoSpin && !christmasSnowState.reducedMotion;
   christmasTreeStudioState.autoSpin = keepSpinning;
   christmasTreeStudioState.rotation = -Math.PI * 0.5 - Number(item.posAngle || 0);
+  christmasTreeState.rotation = christmasTreeStudioState.rotation;
   syncChristmasSpinButton(keepSpinning);
   showChristmasTreeInspector(item);
   renderChristmasTreeGallery();
@@ -25253,8 +25263,10 @@ function renderStudioChristmasTreeFrame(nowMs) {
 
   if (christmasTreeStudioState.autoSpin && !christmasTreeStudioState.dragging && !christmasSnowState.reducedMotion) {
     christmasTreeStudioState.rotation = (christmasTreeStudioState.rotation + dt * 0.38) % (Math.PI * 2);
+    christmasTreeState.rotation = christmasTreeStudioState.rotation;
   }
   christmasTreeStudioState.starRotation = (christmasTreeStudioState.starRotation + dt * 0.72) % (Math.PI * 2);
+  christmasTreeState.starRotation = christmasTreeStudioState.starRotation;
 
   if (!christmasTreeState.baseItems.length) {
     buildChristmasTreeGeometry(w <= 440);
@@ -25422,13 +25434,16 @@ function initChristmasTreeStudio() {
 
   $("#xmasTreeRotateLeftBtn")?.addEventListener("click", () => {
     christmasTreeStudioState.rotation -= 0.62;
+    christmasTreeState.rotation = christmasTreeStudioState.rotation;
   });
   $("#xmasTreeRotateRightBtn")?.addEventListener("click", () => {
     christmasTreeStudioState.rotation += 0.62;
+    christmasTreeState.rotation = christmasTreeStudioState.rotation;
   });
   $("#xmasTreeAutoSpinBtn")?.addEventListener("click", () => {
     christmasTreeStudioState.autoSpin = !christmasTreeStudioState.autoSpin;
     syncChristmasSpinButton(christmasTreeStudioState.autoSpin);
+    christmasTreeState.rotation = christmasTreeStudioState.rotation;
   });
 
   const tabEls = {
@@ -25932,6 +25947,7 @@ function initChristmasTreeStudio() {
           christmasTreeStudioState.dragMoved = true;
         }
         christmasTreeStudioState.rotation += dx * 0.012;
+        christmasTreeState.rotation = christmasTreeStudioState.rotation;
       } else if (ev.target === canvas) {
         const hit = findHitTreeOrnament(ev.clientX, ev.clientY);
         christmasTreeStudioState.hoverId = hit ? hit.id : null;
@@ -25979,7 +25995,11 @@ window.exitChristmasTreePage = function () {
 function onEnterChristmasTree() {
   initChristmasTreeStudio();
   christmasTreeStudioState.isOpen = true;
-  christmasTreeStudioState.autoSpin = !christmasSnowState.reducedMotion;
+  if (christmasSnowState.reducedMotion) {
+    christmasTreeStudioState.autoSpin = false;
+  }
+  christmasTreeStudioState.rotation = christmasTreeState.rotation;
+  christmasTreeStudioState.starRotation = christmasTreeState.starRotation;
   setChristmasTreeFullscreen(false);
   startChristmasCountdownLoop();
   syncChristmasSpinButton(christmasTreeStudioState.autoSpin);
@@ -25998,6 +26018,8 @@ function onEnterChristmasTree() {
 function onLeaveChristmasTree() {
   if (!christmasTreeStudioState.isOpen) return;
   christmasTreeStudioState.isOpen = false;
+  christmasTreeState.rotation = christmasTreeStudioState.rotation;
+  christmasTreeState.starRotation = christmasTreeStudioState.starRotation;
   stopChristmasCountdownLoop();
   setChristmasTreeFullscreen(false);
   if (christmasTreeStudioState.rafId) {
