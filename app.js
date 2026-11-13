@@ -21552,16 +21552,13 @@ function getChristmasTreeStudioLayout(w, h) {
   const safeW = Math.max(260, w);
   const safeH = Math.max(280, h);
   const isMobile = safeW <= 440;
-  // Summit star clearance from top canvas edge (star outer tip remains completely visible with margins)
-  const topClearance = isMobile ? 30 : 38;
-  const bottomPadding = isMobile ? 22 : 26;
-  const availH = safeH - topClearance - bottomPadding;
-  // Let the tree expand to fill vertical room while keeping a lush, majestic cone aspect ratio
-  const maxTreeHByWidth = Math.round((safeW * 0.88) / 0.74);
-  const treeH = Math.round(Math.max(190, Math.min(availH, maxTreeHByWidth)));
-  // Cone radius filling ~76-82% of width when height permits, eliminating blank empty side gutters
-  const treeR = Math.round(Math.min(treeH * 0.38, safeW * 0.42));
-  const baseY = Math.round(safeH - bottomPadding);
+  // Summit star clearance from top canvas edge
+  const topClearance = safeH <= 360 ? 44 : 40;
+  const baseY = Math.round(safeH * 0.90);
+  const maxTreeHByHeight = Math.max(180, baseY - topClearance - 14);
+  const treeH = Math.round(Math.min(maxTreeHByHeight, safeW * 0.88));
+  // Classic conical pine tree radius proportion (0.285)
+  const treeR = Math.round(treeH * 0.285);
   return {
     isMobile,
     anchorX: Math.round(safeW * 0.5),
@@ -23315,8 +23312,12 @@ function renderChristmasTreeFrame(nowMs) {
   const dt = christmasTreeState.lastMs ? Math.min(0.05, Math.max(0.004, (nowMs - christmasTreeState.lastMs) / 1000)) : 0.016;
   christmasTreeState.lastMs = nowMs;
   christmasTreeState.timeSec += dt;
-  if (christmasTreeStudioState.autoSpin && !christmasTreeStudioState.dragging && !christmasSnowState.reducedMotion) {
-    christmasTreeState.rotation = (christmasTreeState.rotation + dt * 0.38) % (Math.PI * 2);
+  // When studio is open, ONLY the studio loop increments rotation to avoid double-speed spinning!
+  if (christmasTreeStudioState.isOpen) {
+    christmasTreeState.rotation = christmasTreeStudioState.rotation;
+    christmasTreeState.starRotation = christmasTreeStudioState.starRotation;
+  } else if (christmasTreeStudioState.autoSpin && !christmasSnowState.reducedMotion) {
+    christmasTreeState.rotation = (christmasTreeState.rotation + dt * 0.32) % (Math.PI * 2);
     christmasTreeStudioState.rotation = christmasTreeState.rotation;
   }
   christmasTreeState.starRotation = (christmasTreeState.starRotation + dt * 0.85) % (Math.PI * 2);
@@ -25262,7 +25263,7 @@ function renderStudioChristmasTreeFrame(nowMs) {
   christmasTreeStudioState.timeSec += dt;
 
   if (christmasTreeStudioState.autoSpin && !christmasTreeStudioState.dragging && !christmasSnowState.reducedMotion) {
-    christmasTreeStudioState.rotation = (christmasTreeStudioState.rotation + dt * 0.38) % (Math.PI * 2);
+    christmasTreeStudioState.rotation = (christmasTreeStudioState.rotation + dt * 0.32) % (Math.PI * 2);
     christmasTreeState.rotation = christmasTreeStudioState.rotation;
   }
   christmasTreeStudioState.starRotation = (christmasTreeStudioState.starRotation + dt * 0.72) % (Math.PI * 2);
