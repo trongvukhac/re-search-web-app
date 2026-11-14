@@ -5403,7 +5403,7 @@ function openThemeCustomizerModal(e) {
   });
 
   // Active nav style
-  const isClassic = document.body.classList.contains("nav-style-classic");
+  const isClassic = document.body.classList.contains("nav-style-classic") || document.documentElement.classList.contains("nav-style-classic");
   document.querySelectorAll(".theme-nav-card").forEach(c => {
     const isMatch = isClassic ? c.dataset.navVal === "classic" : c.dataset.navVal === "glass";
     c.classList.toggle("active", isMatch);
