@@ -4950,19 +4950,6 @@ dialog::backdrop {
     gap: 4px;
   }
 
-  .desktop-nav .nav-link-icon {
-    display: inline-flex !important;
-  }
-
-  .desktop-nav .nav-link-text {
-    display: none !important;
-  }
-
-  .desktop-nav .nav-link {
-    padding: 8px 10px;
-    border-radius: 8px;
-  }
-
   .profile-chip-text {
     max-width: 90px;
   }
@@ -28846,20 +28833,6 @@ body.dark-theme #postDetail .post-detail-pinned-reply {
 }
 
 @media (min-width: 801px) and (max-width: 1080px) and (min-height: 521px) {
-  header#siteHeader .desktop-nav-links .nav-link-text {
-    display: none;
-  }
-
-  header#siteHeader .desktop-nav-links .nav-link-icon {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  header#siteHeader .desktop-nav-links .nav-link {
-    padding: 0 11px;
-  }
-
   header#siteHeader .profile-chip .profile-chip-text {
     max-width: 130px;
   }
@@ -33157,10 +33130,15 @@ body.dark-theme .theme-customizer-close {
   gap: 12px;
 }
 
-@media (max-width: 540px) {
+#themeColorOptionsGrid {
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+}
+
+@media (max-width: 580px) {
   .theme-options-grid,
-  .theme-nav-grid {
-    grid-template-columns: 1fr;
+  .theme-nav-grid,
+  #themeColorOptionsGrid {
+    grid-template-columns: 1fr !important;
   }
 }
 
@@ -33190,6 +33168,37 @@ body.dark-theme .theme-customizer-close {
   border-color: var(--primary, #123d30);
   background: rgba(18, 61, 48, 0.05);
   box-shadow: 0 4px 14px rgba(18, 61, 48, 0.12);
+}
+
+body.dark-theme .theme-card,
+body.dark-theme .theme-nav-card {
+  background: rgba(255, 255, 255, 0.03) !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+body.dark-theme .theme-card:hover:not(.is-locked),
+body.dark-theme .theme-nav-card:hover {
+  border-color: var(--primary, #34d399) !important;
+  background: rgba(52, 211, 153, 0.08) !important;
+}
+
+body.dark-theme .theme-card.active,
+body.dark-theme .theme-nav-card.active {
+  border-color: var(--primary, #34d399) !important;
+  background: rgba(52, 211, 153, 0.12) !important;
+  box-shadow: 0 4px 14px rgba(52, 211, 153, 0.18) !important;
+}
+
+body.dark-theme .theme-card-status-badge {
+  background: rgba(255, 255, 255, 0.1) !important;
+  color: #94a3b8 !important;
+}
+
+body.dark-theme .theme-card.active .theme-card-status-badge,
+body.dark-theme .theme-nav-card.active .theme-card-status-badge {
+  background: var(--primary, #34d399) !important;
+  color: #042f2e !important;
+  font-weight: 700 !important;
 }
 
 .theme-card.is-locked {
@@ -33481,12 +33490,15 @@ body.dark-theme .theme-customizer-close {
   body.nav-style-classic header#siteHeader .desktop-nav {
     display: flex !important;
     align-items: center !important;
-    justify-content: center !important;
-    position: absolute !important;
-    left: 50% !important;
-    top: 50% !important;
-    transform: translate(-50%, -50%) !important;
-    margin: 0 !important;
+    justify-content: flex-start !important;
+    position: relative !important;
+    left: auto !important;
+    right: auto !important;
+    top: auto !important;
+    bottom: auto !important;
+    transform: none !important;
+    margin-left: clamp(24px, 3.5vw, 44px) !important;
+    margin-right: auto !important;
     padding: 0 !important;
     height: auto !important;
     width: auto !important;
@@ -33495,6 +33507,7 @@ body.dark-theme .theme-customizer-close {
     border-radius: 0 !important;
     box-shadow: none !important;
     pointer-events: auto !important;
+    z-index: 10 !important;
   }
 
   html.nav-style-classic header#siteHeader .desktop-nav-shell,
@@ -33723,10 +33736,21 @@ body.dark-theme .theme-customizer-close {
     left: auto !important;
     width: 100% !important;
     max-width: 100% !important;
-    transform: none !important;
+    transform: translateY(0) !important;
     border-radius: 8px !important;
     margin-bottom: 20px !important;
-    z-index: 999 !important;
+    z-index: 990 !important;
+    transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease !important;
+    will-change: transform;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+  }
+
+  html.nav-style-classic #postDetail .post-detail-top-nav.top-nav-hidden,
+  body.nav-style-classic #postDetail .post-detail-top-nav.top-nav-hidden {
+    transform: translateY(-100%) !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
   }
 
   /* Dark Theme for Classic Navbar */

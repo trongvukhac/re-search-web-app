@@ -3514,10 +3514,6 @@ function initPostDetailNavScrollHandler() {
     const postDetailPage = document.getElementById("postDetail");
     if (!postDetailPage || !postDetailPage.classList.contains("active-page")) return;
     if (document.querySelector("dialog[open]")) return;
-    if (window.innerWidth > 800 && window.innerHeight > 520) {
-      showPostDetailTopNav();
-      return;
-    }
 
     const currentY = Math.max(
       0,
@@ -3526,6 +3522,30 @@ function initPostDetailNavScrollHandler() {
       document.documentElement.scrollTop ||
       0
     );
+
+    const isDesktop = window.innerWidth > 800 && window.innerHeight > 520;
+    const isClassic = document.body.classList.contains("nav-style-classic") || document.documentElement.classList.contains("nav-style-classic");
+
+    if (isDesktop && isClassic) {
+      const delta = currentY - lastPostDetailScrollY;
+      if (currentY <= 60) {
+        showPostDetailTopNav();
+      } else if (delta > 3) {
+        // Cuộn xuống: đẩy xuống từ trên xuống
+        showPostDetailTopNav();
+      } else if (delta < -3) {
+        // Cuộn lên: đẩy lên dưới layer navi
+        hidePostDetailTopNav();
+      }
+      lastPostDetailScrollY = currentY;
+      return;
+    }
+
+    if (isDesktop && !isClassic) {
+      showPostDetailTopNav();
+      lastPostDetailScrollY = currentY;
+      return;
+    }
 
     // 1. Luôn hiển thị khi ở sát đầu trang (<= 20px)
     if (currentY <= 20) {
@@ -5360,9 +5380,48 @@ window.initDarkMode = initDarkMode;
 initDarkMode();
 
 // =========================================================================
-// THEME CUSTOMIZER & NAVBAR STYLE SELECTION (ISSUE 4)
+// THEME CUSTOMIZER & NAVBAR STYLE SELECTION (ISSUE 4 & 10)
 // =========================================================================
 window.pendingThemeChange = null;
+
+function refreshThemeCustomizerActiveStates() {
+  const userStreak = typeof currentUserStreak === "number" ? currentUserStreak : (session?.streak || 0);
+
+  // 1. Tông màu (color)
+  const curColor = document.documentElement.getAttribute("data-user-theme") || "default";
+  document.querySelectorAll('#themeColorOptionsGrid .theme-card').forEach(c => {
+    const minStreak = Number(c.dataset.minStreak || 0);
+    const isLocked = minStreak > 0 && userStreak < minStreak;
+    c.classList.toggle("is-locked", isLocked);
+    const lockEl = c.querySelector(".theme-lock-overlay");
+    if (lockEl) lockEl.style.display = isLocked ? "flex" : "none";
+
+    const isMatch = c.dataset.themeVal === curColor;
+    c.classList.toggle("active", isMatch);
+    const badge = c.querySelector(".theme-card-status-badge");
+    if (badge) badge.textContent = isMatch ? "Đang dùng" : (isLocked ? "Khóa" : "Chọn");
+  });
+
+  // 2. Giao diện (mode: default / christmas)
+  const isXmasActive = !document.body.classList.contains("christmas-effects-off") && (typeof christmasSnowState !== "undefined" ? christmasSnowState.enabled : true);
+  const curMode = isXmasActive ? "christmas" : "default";
+  document.querySelectorAll('#themeModeOptionsGrid .theme-card').forEach(c => {
+    const isMatch = c.dataset.themeVal === curMode;
+    c.classList.toggle("active", isMatch);
+    const badge = c.querySelector(".theme-card-status-badge");
+    if (badge) badge.textContent = isMatch ? "Đang dùng" : "Chọn";
+  });
+
+  // 3. Thanh điều hướng (nav: classic / glass)
+  const isClassic = document.body.classList.contains("nav-style-classic") || document.documentElement.classList.contains("nav-style-classic");
+  document.querySelectorAll('#themeNavOptionsGrid .theme-nav-card').forEach(c => {
+    const isMatch = isClassic ? c.dataset.navVal === "classic" : c.dataset.navVal === "glass";
+    c.classList.toggle("active", isMatch);
+    const badge = c.querySelector(".theme-card-status-badge");
+    if (badge) badge.textContent = isMatch ? "Đang dùng" : "Chọn";
+  });
+}
+window.refreshThemeCustomizerActiveStates = refreshThemeCustomizerActiveStates;
 
 function openThemeCustomizerModal(e) {
   if (e) {
@@ -5372,63 +5431,50 @@ function openThemeCustomizerModal(e) {
   const modal = document.getElementById("themeCustomizerModal");
   if (!modal) return;
 
-  // Determine current user streak
-  const userStreak = typeof currentUserStreak === "number" ? currentUserStreak : (session?.streak || 0);
-
-  // Update locked states for ruby (30d) and mythic (50d)
-  const rubyCard = document.querySelector('.theme-card[data-theme-val="ruby"]');
-  const mythicCard = document.querySelector('.theme-card[data-theme-val="mythic"]');
-
-  if (rubyCard) {
-    const isLocked = userStreak < 30;
-    rubyCard.classList.toggle("is-locked", isLocked);
-    const lockEl = rubyCard.querySelector(".theme-lock-overlay");
-    if (lockEl) lockEl.style.display = isLocked ? "flex" : "none";
-  }
-
-  if (mythicCard) {
-    const isLocked = userStreak < 50;
-    mythicCard.classList.toggle("is-locked", isLocked);
-    const lockEl = mythicCard.querySelector(".theme-lock-overlay");
-    if (lockEl) lockEl.style.display = isLocked ? "flex" : "none";
-  }
-
-  // Active theme color
-  const curTheme = document.documentElement.getAttribute("data-user-theme") || (document.body.classList.contains("christmas-season") && !document.body.classList.contains("christmas-effects-off") ? "christmas" : "default");
-  document.querySelectorAll(".theme-card").forEach(c => {
-    const isMatch = c.dataset.themeVal === curTheme;
-    c.classList.toggle("active", isMatch);
-    const badge = c.querySelector(".theme-card-status-badge");
-    if (badge) badge.textContent = isMatch ? "Đang dùng" : (c.classList.contains("is-locked") ? "Khóa" : "Chọn");
-  });
-
-  // Active nav style
-  const isClassic = document.body.classList.contains("nav-style-classic") || document.documentElement.classList.contains("nav-style-classic");
-  document.querySelectorAll(".theme-nav-card").forEach(c => {
-    const isMatch = isClassic ? c.dataset.navVal === "classic" : c.dataset.navVal === "glass";
-    c.classList.toggle("active", isMatch);
-    const badge = c.querySelector(".theme-card-status-badge");
-    if (badge) badge.textContent = isMatch ? "Đang dùng" : "Chọn";
-  });
-
+  refreshThemeCustomizerActiveStates();
   modal.showModal();
 }
 window.openThemeCustomizerModal = openThemeCustomizerModal;
 
 function requestThemeSwitch(type, val, label, minStreak = 0) {
   const userStreak = typeof currentUserStreak === "number" ? currentUserStreak : (session?.streak || 0);
-  if (type === "color" && minStreak > 0 && userStreak < minStreak) {
+
+  // 1. Kiểm tra nếu đang dùng đúng cái này thì không hiện popup xác nhận, báo "Đã được áp dụng"
+  let isCurrentlyActive = false;
+  if (type === "color") {
+    const curColor = document.documentElement.getAttribute("data-user-theme") || "default";
+    isCurrentlyActive = (curColor === val);
+  } else if (type === "mode") {
+    const isXmasActive = !document.body.classList.contains("christmas-effects-off") && (typeof christmasSnowState !== "undefined" ? christmasSnowState.enabled : true);
+    const curMode = isXmasActive ? "christmas" : "default";
+    isCurrentlyActive = (curMode === val);
+  } else if (type === "nav") {
+    const isClassic = document.body.classList.contains("nav-style-classic") || document.documentElement.classList.contains("nav-style-classic");
+    const curNav = isClassic ? "classic" : "glass";
+    isCurrentlyActive = (curNav === val);
+  }
+
+  if (isCurrentlyActive) {
     if (typeof toast === "function") {
-      toast(`🔒 Cần đạt chuỗi ${minStreak} ngày để mở khóa giao diện này.`);
+      toast("✨ Đã được áp dụng");
     }
     return;
   }
 
+  // 2. Kiểm tra chuỗi ngày nếu bị khóa
+  if (type === "color" && minStreak > 0 && userStreak < minStreak) {
+    if (typeof toast === "function") {
+      toast(`🔒 Cần đạt chuỗi ${minStreak} ngày để mở khóa.`);
+    }
+    return;
+  }
+
+  // 3. Hiện popup xác nhận đổi
   window.pendingThemeChange = { type, val, label };
   const confirmModal = document.getElementById("themeConfirmModal");
   const descEl = document.getElementById("themeConfirmDesc");
   if (descEl) {
-    descEl.textContent = `Bạn có chắc chắn muốn chuyển sang giao diện "${label}" không?`;
+    descEl.textContent = `Bạn có chắc chắn muốn chuyển sang "${label}" không?`;
   }
   confirmModal?.showModal();
 }
@@ -5446,19 +5492,34 @@ function initThemeCustomizerHandlers() {
       if (pending.val === "default") {
         document.documentElement.removeAttribute("data-user-theme");
         document.body.removeAttribute("data-user-theme");
-        document.body.classList.add("christmas-effects-off");
-        try { localStorage.setItem("re_search_user_theme_preference", "default"); } catch (e) {}
-      } else if (pending.val === "christmas") {
-        document.documentElement.removeAttribute("data-user-theme");
-        document.body.removeAttribute("data-user-theme");
-        document.body.classList.add("christmas-season");
-        document.body.classList.remove("christmas-effects-off");
-        try { localStorage.setItem("re_search_user_theme_preference", "christmas"); } catch (e) {}
+        try {
+          localStorage.removeItem("re_search_user_color_preference");
+          localStorage.setItem("re_search_user_theme_preference", "default");
+        } catch (e) {}
       } else {
         document.documentElement.setAttribute("data-user-theme", pending.val);
         document.body.setAttribute("data-user-theme", pending.val);
-        document.body.classList.add("christmas-effects-off");
-        try { localStorage.setItem("re_search_user_theme_preference", pending.val); } catch (e) {}
+        try {
+          localStorage.setItem("re_search_user_color_preference", pending.val);
+          localStorage.setItem("re_search_user_theme_preference", pending.val);
+        } catch (e) {}
+      }
+      if (typeof toast === "function") {
+        toast(`✨ Đã áp dụng tông màu: ${pending.label}`);
+      }
+    } else if (pending.type === "mode") {
+      const isXmas = pending.val === "christmas";
+      document.body.classList.toggle("christmas-season", isXmas);
+      document.body.classList.toggle("christmas-effects-off", !isXmas);
+      if (typeof christmasSnowState !== "undefined") {
+        christmasSnowState.enabled = isXmas;
+      }
+      try {
+        localStorage.setItem(XMAS_EFFECTS_STORAGE_KEY, isXmas ? "on" : "off");
+        localStorage.setItem("re_search_seasonal_mode", isXmas ? "christmas" : "default");
+      } catch (e) {}
+      if (typeof startOrStopChristmasSnowLoop === "function") {
+        startOrStopChristmasSnowLoop();
       }
       if (typeof toast === "function") {
         toast(`✨ Đã áp dụng giao diện: ${pending.label}`);
@@ -5485,19 +5546,28 @@ function initThemeCustomizerHandlers() {
       }
     }
 
+    refreshThemeCustomizerActiveStates();
     document.getElementById("themeConfirmModal")?.close();
     document.getElementById("themeCustomizerModal")?.close();
   };
 
   // Restore saved theme and nav style preference
   try {
-    const savedTheme = localStorage.getItem("re_search_user_theme_preference");
-    if (savedTheme === "ruby" || savedTheme === "mythic") {
-      document.documentElement.setAttribute("data-user-theme", savedTheme);
-      document.body.setAttribute("data-user-theme", savedTheme);
-    } else if (savedTheme === "default") {
+    const savedColor = localStorage.getItem("re_search_user_color_preference") || localStorage.getItem("re_search_user_theme_preference");
+    if (savedColor === "ruby" || savedColor === "mythic") {
+      document.documentElement.setAttribute("data-user-theme", savedColor);
+      document.body.setAttribute("data-user-theme", savedColor);
+    } else if (savedColor === "default") {
       document.documentElement.removeAttribute("data-user-theme");
       document.body.removeAttribute("data-user-theme");
+    }
+
+    const savedMode = localStorage.getItem("re_search_seasonal_mode") || (localStorage.getItem(XMAS_EFFECTS_STORAGE_KEY) === "off" ? "default" : null);
+    if (savedMode === "default") {
+      document.body.classList.add("christmas-effects-off");
+      if (typeof christmasSnowState !== "undefined") {
+        christmasSnowState.enabled = false;
+      }
     }
 
     const savedNav = localStorage.getItem("re_search_nav_style");
@@ -16256,11 +16326,18 @@ function initAdaptiveGlassHeader() {
     const topNav = document.getElementById("postDetailTopNav");
     if (!topNav) return;
     const isDetailActive = Boolean(postDetailPage && postDetailPage.classList.contains("active-page"));
+    const isClassic = document.body.classList.contains("nav-style-classic") || document.documentElement.classList.contains("nav-style-classic");
+    if (isClassic) {
+      topNav.classList.remove("is-header-docked", "is-peek-suppressed");
+      return;
+    }
+    const y = window.scrollY || window.pageYOffset || 0;
     const desktopDock =
       isDetailActive &&
       isDesktopGlassViewport() &&
-      !document.body.classList.contains("nav-style-classic") &&
-      !document.body.classList.contains("study-zen-fullscreen");
+      !document.body.classList.contains("study-zen-fullscreen") &&
+      isCompact &&
+      y > 50;
     topNav.classList.toggle("is-header-docked", desktopDock);
     topNav.classList.toggle("is-peek-suppressed", desktopDock && isPeeking);
     if (desktopDock) {
@@ -16415,7 +16492,8 @@ function initAdaptiveGlassHeader() {
   }
 
   function evaluateScrollState() {
-    if (document.body.classList.contains("nav-style-classic")) {
+    const isClassic = document.body.classList.contains("nav-style-classic") || document.documentElement.classList.contains("nav-style-classic");
+    if (isClassic) {
       header.classList.remove("is-compact", "is-nav-peek", "is-scrolled");
       document.body.classList.remove("detail-dock-tight", "detail-dock-compact-bc");
       isCompact = false;
@@ -16426,12 +16504,21 @@ function initAdaptiveGlassHeader() {
       applyCompactState(false);
       return;
     }
-    const isDetailActive = document.body.classList.contains("page-post-detail");
+    const y = window.scrollY || window.pageYOffset || 0;
+    const isDetailActive = document.body.classList.contains("page-post-detail") ||
+      Boolean(document.getElementById("postDetail")?.classList.contains("active-page"));
+
     if (isDetailActive) {
-      applyCompactState(true);
+      if (!isCompact && y > 50) {
+        applyCompactState(true);
+      } else if (isCompact && y <= 30) {
+        applyCompactState(false);
+      } else if (isCompact && isPeeking && Date.now() > suppressPeekAutoCloseUntil && Math.abs(y - peekScrollY) > 56) {
+        setNavPeekOpen(false);
+      }
       return;
     }
-    const y = window.scrollY || window.pageYOffset || 0;
+
     if (!isCompact && y > 48) {
       applyCompactState(true);
     } else if (isCompact && y < 24) {
