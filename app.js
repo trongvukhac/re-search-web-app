@@ -3231,8 +3231,10 @@ function go(rawRoute, scrollToTop = true) {
     if (typeof showMobileNav === "function") showMobileNav();
     window.postNavigationStack = [];
     document.body.classList.remove("page-post-detail");
+    $("#christmasHeaderGarland")?.style.removeProperty("display");
   } else {
     document.body.classList.add("page-post-detail");
+    $("#christmasHeaderGarland")?.style.setProperty("display", "none", "important");
   }
 
   const isSameRoute = (currentActiveRoute === baseRoute);
@@ -4795,6 +4797,7 @@ async function openDetail(id, updateHash = true, isBack = false, targetScrollY =
   }
   currentActiveRoute = "post-detail";
   document.body.classList.add("page-post-detail");
+  $("#christmasHeaderGarland")?.style.setProperty("display", "none", "important");
   if (!isBack || !targetScrollY) {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
@@ -5465,8 +5468,17 @@ function initThemeCustomizerHandlers() {
       document.body.classList.toggle("nav-style-classic", isClassic);
       document.documentElement.classList.toggle("nav-style-classic", isClassic);
       try { localStorage.setItem("re_search_nav_style", pending.val); } catch (e) {}
+      const siteHeader = document.getElementById("siteHeader");
+      if (isClassic) {
+        siteHeader?.classList.remove("is-compact", "is-scrolled", "is-nav-peek");
+        document.querySelector(".compact-nav-popover")?.setAttribute("hidden", "");
+        document.querySelector(".desktop-nav-compact-trigger")?.setAttribute("aria-expanded", "false");
+      }
       if (typeof window.syncAdaptiveGlassHeaderMetrics === "function") {
         window.syncAdaptiveGlassHeaderMetrics();
+      }
+      if (typeof window.syncPostDetailTopNavState === "function") {
+        window.syncPostDetailTopNavState();
       }
       if (typeof toast === "function") {
         toast(`🧭 Đã đổi kiểu thanh điều hướng: ${pending.label}`);
@@ -16198,6 +16210,7 @@ function initAdaptiveGlassHeader() {
   }
 
   function syncNavActiveGlider(instant) {
+    if (document.body.classList.contains("nav-style-classic")) return;
     if (!navGlider) return;
     const activeLink = navLinks.querySelector(".nav-link.active");
     if (!activeLink || activeLink.offsetWidth <= 0) {
@@ -16223,6 +16236,7 @@ function initAdaptiveGlassHeader() {
   window.syncNavActiveGlider = syncNavActiveGlider;
 
   function triggerNavMorph(mode) {
+    if (document.body.classList.contains("nav-style-classic")) return;
     if (morphEffectTimer) {
       clearTimeout(morphEffectTimer);
       morphEffectTimer = null;
@@ -16245,6 +16259,7 @@ function initAdaptiveGlassHeader() {
     const desktopDock =
       isDetailActive &&
       isDesktopGlassViewport() &&
+      !document.body.classList.contains("nav-style-classic") &&
       !document.body.classList.contains("study-zen-fullscreen");
     topNav.classList.toggle("is-header-docked", desktopDock);
     topNav.classList.toggle("is-peek-suppressed", desktopDock && isPeeking);
@@ -16308,6 +16323,15 @@ function initAdaptiveGlassHeader() {
   }
 
   function syncAdaptiveGlassHeaderMetrics() {
+    if (document.body.classList.contains("nav-style-classic")) {
+      header.classList.remove("is-compact", "is-nav-peek", "is-scrolled");
+      document.body.classList.remove("detail-dock-tight", "detail-dock-compact-bc");
+      isCompact = false;
+      isPeeking = false;
+      syncFocusOrder();
+      syncPostDetailTopNavState();
+      return;
+    }
     if (!isDesktopGlassViewport()) {
       header.classList.remove("is-compact", "is-nav-peek");
       document.body.classList.remove("detail-dock-tight", "detail-dock-compact-bc");
@@ -16391,6 +16415,13 @@ function initAdaptiveGlassHeader() {
   }
 
   function evaluateScrollState() {
+    if (document.body.classList.contains("nav-style-classic")) {
+      header.classList.remove("is-compact", "is-nav-peek", "is-scrolled");
+      document.body.classList.remove("detail-dock-tight", "detail-dock-compact-bc");
+      isCompact = false;
+      isPeeking = false;
+      return;
+    }
     if (!isDesktopGlassViewport() || document.body.classList.contains("study-zen-fullscreen")) {
       applyCompactState(false);
       return;
@@ -21845,7 +21876,9 @@ function getChristmasTreeStudioLayout(w, h) {
   const topClearance = safeH <= 360 ? 44 : 40;
   const baseY = Math.round(safeH * 0.90);
   const maxTreeHByHeight = Math.max(160, baseY - topClearance - 14);
-  const treeH = Math.round(Math.min(maxTreeHByHeight, safeW * (isMobile ? 0.72 : 0.88)));
+  const treeH = isMobile
+    ? Math.round(Math.min(maxTreeHByHeight, safeH * 0.72))
+    : Math.round(Math.min(maxTreeHByHeight, safeW * 0.88));
   // Classic conical pine tree radius proportion (0.285)
   const treeR = Math.round(treeH * 0.285);
   return {
@@ -25647,6 +25680,27 @@ function setChristmasTreeFullscreen(active) {
   if (container) container.classList.toggle("is-stage-fullscreen", next);
   document.body.classList.toggle("tree-stage-fullscreen", next);
   document.documentElement.classList.toggle("tree-stage-fullscreen", next);
+
+  const header = document.getElementById("siteHeader");
+  const mobNav = document.querySelector(".mobile-nav");
+  const mobFab = document.querySelector(".mobile-fab");
+  const cw = document.querySelector(".christmas-floating-widget");
+  const mp = document.getElementById("floatingMusicPlayer");
+
+  if (next) {
+    if (header) header.style.setProperty("display", "none", "important");
+    if (mobNav) mobNav.style.setProperty("display", "none", "important");
+    if (mobFab) mobFab.style.setProperty("display", "none", "important");
+    if (cw) cw.style.setProperty("display", "none", "important");
+    if (mp) mp.style.setProperty("display", "none", "important");
+  } else {
+    header?.style.removeProperty("display");
+    mobNav?.style.removeProperty("display");
+    mobFab?.style.removeProperty("display");
+    cw?.style.removeProperty("display");
+    mp?.style.removeProperty("display");
+  }
+
   if (fsBtn) {
     fsBtn.setAttribute("aria-pressed", String(next));
     fsBtn.setAttribute("title", next ? "Thu gọn cây thông" : "Xem toàn màn hình cây thông");
