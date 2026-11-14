@@ -3551,35 +3551,8 @@ function initPostDetailNavScrollHandler() {
       return;
     }
 
-    const delta = currentY - lastPostDetailScrollY;
-
-    if (delta > 0) {
-      // Cuộn xuống -> ẩn trọn dưới thanh logo, dứt khoát không bao giờ bật ra khi đang cuộn xuống
-      postDetailDownAccumulator += delta;
-      postDetailUpAccumulator = 0;
-      if (postDetailScrollTimeout) {
-        clearTimeout(postDetailScrollTimeout);
-        postDetailScrollTimeout = null;
-      }
-      if (currentY > 30) {
-        hidePostDetailTopNav();
-      }
-    } else if (delta < 0) {
-      // Cuộn ngược lên -> chỉ rơi lại thanh điều hướng khi người dùng chủ động vuốt ngược lên
-      const upDelta = Math.abs(delta);
-      postDetailUpAccumulator += upDelta;
-      postDetailDownAccumulator = 0;
-
-      if (postDetailScrollTimeout) {
-        clearTimeout(postDetailScrollTimeout);
-        postDetailScrollTimeout = null;
-      }
-
-      if (postDetailUpAccumulator >= 18 || currentY <= 25) {
-        showPostDetailTopNav();
-      }
-    }
-
+    // Luôn giữ thanh điều hướng bài đăng (Quay lại, Link, Lưu) hiển thị để người dùng dễ thao tác
+    showPostDetailTopNav();
     lastPostDetailScrollY = currentY;
   };
 
@@ -5383,6 +5356,147 @@ function initDarkMode() {
 window.initDarkMode = initDarkMode;
 initDarkMode();
 
+// =========================================================================
+// THEME CUSTOMIZER & NAVBAR STYLE SELECTION (ISSUE 4)
+// =========================================================================
+window.pendingThemeChange = null;
+
+function openThemeCustomizerModal(e) {
+  if (e) {
+    e.preventDefault();
+    e.stopPropagation();
+  }
+  const modal = document.getElementById("themeCustomizerModal");
+  if (!modal) return;
+
+  // Determine current user streak
+  const userStreak = typeof currentUserStreak === "number" ? currentUserStreak : (session?.streak || 0);
+
+  // Update locked states for ruby (30d) and mythic (50d)
+  const rubyCard = document.querySelector('.theme-card[data-theme-val="ruby"]');
+  const mythicCard = document.querySelector('.theme-card[data-theme-val="mythic"]');
+
+  if (rubyCard) {
+    const isLocked = userStreak < 30;
+    rubyCard.classList.toggle("is-locked", isLocked);
+    const lockEl = rubyCard.querySelector(".theme-lock-overlay");
+    if (lockEl) lockEl.style.display = isLocked ? "flex" : "none";
+  }
+
+  if (mythicCard) {
+    const isLocked = userStreak < 50;
+    mythicCard.classList.toggle("is-locked", isLocked);
+    const lockEl = mythicCard.querySelector(".theme-lock-overlay");
+    if (lockEl) lockEl.style.display = isLocked ? "flex" : "none";
+  }
+
+  // Active theme color
+  const curTheme = document.documentElement.getAttribute("data-user-theme") || (document.body.classList.contains("christmas-season") && !document.body.classList.contains("christmas-effects-off") ? "christmas" : "default");
+  document.querySelectorAll(".theme-card").forEach(c => {
+    const isMatch = c.dataset.themeVal === curTheme;
+    c.classList.toggle("active", isMatch);
+    const badge = c.querySelector(".theme-card-status-badge");
+    if (badge) badge.textContent = isMatch ? "Đang dùng" : (c.classList.contains("is-locked") ? "Khóa" : "Chọn");
+  });
+
+  // Active nav style
+  const isClassic = document.body.classList.contains("nav-style-classic");
+  document.querySelectorAll(".theme-nav-card").forEach(c => {
+    const isMatch = isClassic ? c.dataset.navVal === "classic" : c.dataset.navVal === "glass";
+    c.classList.toggle("active", isMatch);
+    const badge = c.querySelector(".theme-card-status-badge");
+    if (badge) badge.textContent = isMatch ? "Đang dùng" : "Chọn";
+  });
+
+  modal.showModal();
+}
+window.openThemeCustomizerModal = openThemeCustomizerModal;
+
+function requestThemeSwitch(type, val, label, minStreak = 0) {
+  const userStreak = typeof currentUserStreak === "number" ? currentUserStreak : (session?.streak || 0);
+  if (type === "color" && minStreak > 0 && userStreak < minStreak) {
+    if (typeof toast === "function") {
+      toast(`🔒 Cần đạt chuỗi ${minStreak} ngày để mở khóa giao diện này.`);
+    }
+    return;
+  }
+
+  window.pendingThemeChange = { type, val, label };
+  const confirmModal = document.getElementById("themeConfirmModal");
+  const descEl = document.getElementById("themeConfirmDesc");
+  if (descEl) {
+    descEl.textContent = `Bạn có chắc chắn muốn chuyển sang giao diện "${label}" không?`;
+  }
+  confirmModal?.showModal();
+}
+window.requestThemeSwitch = requestThemeSwitch;
+
+function initThemeCustomizerHandlers() {
+  const applyBtn = document.getElementById("btnApplyThemeConfirm");
+  if (!applyBtn) return;
+
+  applyBtn.onclick = () => {
+    const pending = window.pendingThemeChange;
+    if (!pending) return;
+
+    if (pending.type === "color") {
+      if (pending.val === "default") {
+        document.documentElement.removeAttribute("data-user-theme");
+        document.body.removeAttribute("data-user-theme");
+        document.body.classList.add("christmas-effects-off");
+        try { localStorage.setItem("re_search_user_theme_preference", "default"); } catch (e) {}
+      } else if (pending.val === "christmas") {
+        document.documentElement.removeAttribute("data-user-theme");
+        document.body.removeAttribute("data-user-theme");
+        document.body.classList.add("christmas-season");
+        document.body.classList.remove("christmas-effects-off");
+        try { localStorage.setItem("re_search_user_theme_preference", "christmas"); } catch (e) {}
+      } else {
+        document.documentElement.setAttribute("data-user-theme", pending.val);
+        document.body.setAttribute("data-user-theme", pending.val);
+        document.body.classList.add("christmas-effects-off");
+        try { localStorage.setItem("re_search_user_theme_preference", pending.val); } catch (e) {}
+      }
+      if (typeof toast === "function") {
+        toast(`✨ Đã áp dụng giao diện: ${pending.label}`);
+      }
+    } else if (pending.type === "nav") {
+      const isClassic = pending.val === "classic";
+      document.body.classList.toggle("nav-style-classic", isClassic);
+      document.documentElement.classList.toggle("nav-style-classic", isClassic);
+      try { localStorage.setItem("re_search_nav_style", pending.val); } catch (e) {}
+      if (typeof window.syncAdaptiveGlassHeaderMetrics === "function") {
+        window.syncAdaptiveGlassHeaderMetrics();
+      }
+      if (typeof toast === "function") {
+        toast(`🧭 Đã đổi kiểu thanh điều hướng: ${pending.label}`);
+      }
+    }
+
+    document.getElementById("themeConfirmModal")?.close();
+    document.getElementById("themeCustomizerModal")?.close();
+  };
+
+  // Restore saved theme and nav style preference
+  try {
+    const savedTheme = localStorage.getItem("re_search_user_theme_preference");
+    if (savedTheme === "ruby" || savedTheme === "mythic") {
+      document.documentElement.setAttribute("data-user-theme", savedTheme);
+      document.body.setAttribute("data-user-theme", savedTheme);
+    } else if (savedTheme === "default") {
+      document.documentElement.removeAttribute("data-user-theme");
+      document.body.removeAttribute("data-user-theme");
+    }
+
+    const savedNav = localStorage.getItem("re_search_nav_style");
+    if (savedNav === "classic") {
+      document.body.classList.add("nav-style-classic");
+      document.documentElement.classList.add("nav-style-classic");
+    }
+  } catch (e) {}
+}
+initThemeCustomizerHandlers();
+
 function updateQuickMenuUser(user = session) {
   const isAuth = Boolean(user && user.id);
   const streakTier = Number(user?.streakTier || 0);
@@ -5510,7 +5624,173 @@ document.addEventListener("keydown", (e) => {
 });
 $("#askFromHome").onclick = openQuestion;
 $("#askFromForum").onclick = openQuestion;
-$("#mobileAsk").onclick = openQuestion;
+// =========================================================================
+// MOBILE FAB SPEED-DIAL ACTION MENU & 4-SQUARE ANIMATION (ISSUE 3)
+// =========================================================================
+function initMobileFabSpeedDial() {
+  const fabBtn = document.getElementById("mobileAsk");
+  const menu = document.getElementById("mobileFabMenu");
+  const backdrop = document.getElementById("mobileFabMenuBackdrop");
+  const closeBtn = document.getElementById("mobileFabMenuClose");
+  const itemPost = document.getElementById("mobileFabItemPost");
+  const itemDoc = document.getElementById("mobileFabItemDoc");
+  const itemXmas = document.getElementById("mobileFabItemXmas");
+  const xmasTray = document.getElementById("mobileFabXmasTray");
+  const itemContest = document.getElementById("mobileFabItemContest");
+
+  const xmasMusicBtn = document.getElementById("mobileFabXmasMusicBtn");
+  const xmasSnowBtn = document.getElementById("mobileFabXmasSnowBtn");
+  const xmasTreeBtn = document.getElementById("mobileFabXmasTreeBtn");
+
+  if (!fabBtn || !menu) return;
+
+  function setMenuOpen(open) {
+    const isOpen = Boolean(open);
+    menu.hidden = !isOpen;
+    fabBtn.classList.toggle("is-active", isOpen);
+    fabBtn.setAttribute("aria-expanded", String(isOpen));
+    if (isOpen) {
+      updateXmasFabTrayLabels();
+    }
+  }
+
+  function updateXmasFabTrayLabels() {
+    const musicLabel = document.getElementById("mobileFabMusicStatus");
+    const snowLabel = document.getElementById("mobileFabSnowStatus");
+    const isPlaying = typeof isChristmasMusicPlaying === "function" ? isChristmasMusicPlaying() : (christmasMusicState?.isPlaying || false);
+    const isSnowOff = document.body.classList.contains("christmas-effects-off");
+
+    if (musicLabel) musicLabel.textContent = isPlaying ? "Nhạc Noel: Đang phát 🔊" : "Nhạc Noel: Đang tắt 🔇";
+    if (snowLabel) snowLabel.textContent = isSnowOff ? "Không khí Noel: Đang tắt" : "Không khí Noel: Đang bật ✨";
+  }
+
+  fabBtn.addEventListener("click", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const isOpen = !menu.hidden;
+    setMenuOpen(!isOpen);
+  });
+
+  backdrop?.addEventListener("click", () => setMenuOpen(false));
+  closeBtn?.addEventListener("click", () => setMenuOpen(false));
+
+  itemPost?.addEventListener("click", () => {
+    setMenuOpen(false);
+    if (typeof openQuestion === "function") openQuestion();
+  });
+
+  itemDoc?.addEventListener("click", () => {
+    setMenuOpen(false);
+    const docModal = document.getElementById("documentModal");
+    if (docModal) docModal.showModal();
+  });
+
+  itemXmas?.addEventListener("click", () => {
+    if (!xmasTray) return;
+    const isHidden = xmasTray.hidden;
+    xmasTray.hidden = !isHidden;
+    itemXmas.setAttribute("aria-expanded", String(isHidden));
+    updateXmasFabTrayLabels();
+  });
+
+  xmasMusicBtn?.addEventListener("click", (e) => {
+    if (typeof toggleChristmasMusic === "function") {
+      toggleChristmasMusic(e);
+      updateXmasFabTrayLabels();
+    }
+  });
+
+  xmasSnowBtn?.addEventListener("click", (e) => {
+    if (typeof toggleChristmasEffects === "function") {
+      toggleChristmasEffects(e);
+      updateXmasFabTrayLabels();
+    }
+  });
+
+  xmasTreeBtn?.addEventListener("click", (e) => {
+    setMenuOpen(false);
+    if (typeof openChristmasTreeModal === "function") openChristmasTreeModal(e);
+  });
+
+  itemContest?.addEventListener("click", () => {
+    setMenuOpen(false);
+    if (typeof openRethinkExamModal === "function") openRethinkExamModal();
+  });
+}
+initMobileFabSpeedDial();
+
+// =========================================================================
+// CHRISTMAS THEME PERFORMANCE LAG MONITOR & WARNING MODAL (ISSUE 3)
+// =========================================================================
+let xmasLagDetectorInitialized = false;
+function initChristmasLagDetector() {
+  if (xmasLagDetectorInitialized) return;
+  xmasLagDetectorInitialized = true;
+
+  const modal = document.getElementById("xmasLagWarningModal");
+  const disableBtn = document.getElementById("btnDisableXmasFromLag");
+  const dismissBtn = document.getElementById("btnDismissXmasLagWarning");
+
+  if (disableBtn) {
+    disableBtn.onclick = () => {
+      if (typeof toggleChristmasEffects === "function") {
+        toggleChristmasEffects(null, false);
+      }
+      try {
+        localStorage.setItem("re_search_xmas_lag_dismissed", String(Date.now()));
+      } catch (e) {}
+      modal?.close();
+      if (typeof toast === "function") {
+        toast("❄️ Đã tắt tạm thời giao diện Giáng sinh để thiết bị mượt hơn");
+      }
+    };
+  }
+
+  if (dismissBtn) {
+    dismissBtn.onclick = () => {
+      try {
+        localStorage.setItem("re_search_xmas_lag_dismissed", String(Date.now()));
+      } catch (e) {}
+      modal?.close();
+    };
+  }
+
+  let frameCount = 0;
+  let startTime = performance.now();
+  let slowFrames = 0;
+
+  function checkPerf(now) {
+    if (!document.body.classList.contains("christmas-season") || document.body.classList.contains("christmas-effects-off")) {
+      return;
+    }
+    const delta = now - startTime;
+    frameCount++;
+    if (delta > 75) slowFrames++;
+
+    if (frameCount >= 90) {
+      const avgFps = (frameCount * 1000) / Math.max(1, (now - (startTime - delta)));
+      let lastDismissed = 0;
+      try {
+        lastDismissed = parseInt(localStorage.getItem("re_search_xmas_lag_dismissed") || "0", 10);
+      } catch (e) {}
+
+      if ((avgFps < 24 || slowFrames >= 7) && Date.now() - lastDismissed > 24 * 60 * 60 * 1000) {
+        if (modal && !modal.open && !document.querySelector("dialog[open]")) {
+          modal.showModal();
+        }
+      }
+      frameCount = 0;
+      slowFrames = 0;
+    }
+    startTime = now;
+    requestAnimationFrame(checkPerf);
+  }
+
+  setTimeout(() => {
+    requestAnimationFrame(checkPerf);
+  }, 3500);
+}
+initChristmasLagDetector();
 $("#openSearch").onclick = () => {
   go("forum");
   setTimeout(() => $("#forumSearch").focus(), 80);
@@ -8306,20 +8586,20 @@ function renderCoverPicker() {
   if (uploadBtn) {
     if (isPrivileged || session?.limitedItems?.isPermanent) {
       uploadBtn.disabled = false;
-      uploadBtn.innerHTML = `<span>📷</span> Tải ảnh bìa từ thiết bị lên (Tối đa 150KB) - <strong style="color:#0369a1;">Vĩnh viễn</strong>`;
+      uploadBtn.innerHTML = `<span class="studio-upload-btn-line1"><span>📷</span> <span>Tải ảnh bìa từ thiết bị</span></span><span class="studio-upload-btn-line2">(Tối đa 1MB • <strong style="color:#0369a1;">Vĩnh viễn</strong>)</span>`;
       uploadBtn.onclick = () => $("#coverFileInput")?.click();
     } else if (isEligibleCover) {
       uploadBtn.disabled = false;
       if (session?.limitedItems?.customCoverMaintaining) {
-        uploadBtn.innerHTML = `<span>📷</span> Tải ảnh bìa từ thiết bị lên (Tối đa 150KB) - <strong style="color:#15803d;">Khả dụng</strong>`;
+        uploadBtn.innerHTML = `<span class="studio-upload-btn-line1"><span>📷</span> <span>Tải ảnh bìa từ thiết bị</span></span><span class="studio-upload-btn-line2">(Tối đa 1MB • <strong style="color:#15803d;">Khả dụng</strong>)</span>`;
       } else {
         const remDays = session?.limitedItems?.customCoverRemainingDays || 30;
-        uploadBtn.innerHTML = `<span>📷</span> Tải ảnh bìa từ thiết bị lên (Tối đa 150KB) - <strong style="color:#b45309;">${remDays}d</strong>`;
+        uploadBtn.innerHTML = `<span class="studio-upload-btn-line1"><span>📷</span> <span>Tải ảnh bìa từ thiết bị</span></span><span class="studio-upload-btn-line2">(Tối đa 1MB • <strong style="color:#b45309;">${remDays}d</strong>)</span>`;
       }
       uploadBtn.onclick = () => $("#coverFileInput")?.click();
     } else {
       uploadBtn.disabled = true;
-      uploadBtn.innerHTML = `<span>🔒</span> Tải ảnh riêng (Yêu cầu duy trì chuỗi 30+ ngày, hiện có: ${curStreak} ngày)`;
+      uploadBtn.innerHTML = `<span class="studio-upload-btn-line1"><span>🔒</span> <span>Tải ảnh riêng</span></span><span class="studio-upload-btn-line2">(Yêu cầu duy trì chuỗi 30+ ngày, hiện có: ${curStreak} ngày)</span>`;
       uploadBtn.onclick = null;
     }
   }
@@ -8335,7 +8615,7 @@ function renderCoverPicker() {
   }
 }
 
-// Client compression for custom cover
+// Client compression for custom cover (1MB max, client WebP optimize)
 if ($("#coverFileInput")) {
   $("#coverFileInput").onchange = function (e) {
     const file = e.target.files?.[0];
@@ -8343,6 +8623,11 @@ if ($("#coverFileInput")) {
 
     if (!file.type.startsWith("image/")) {
       toast("Vui lòng chọn file hình ảnh hợp lệ.");
+      return;
+    }
+
+    if (file.size > 1024 * 1024) {
+      toast("Vui lòng chọn ảnh dung lượng dưới 1MB.");
       return;
     }
 
@@ -15960,7 +16245,6 @@ function initAdaptiveGlassHeader() {
     const desktopDock =
       isDetailActive &&
       isDesktopGlassViewport() &&
-      isCompact &&
       !document.body.classList.contains("study-zen-fullscreen");
     topNav.classList.toggle("is-header-docked", desktopDock);
     topNav.classList.toggle("is-peek-suppressed", desktopDock && isPeeking);
@@ -16109,6 +16393,11 @@ function initAdaptiveGlassHeader() {
   function evaluateScrollState() {
     if (!isDesktopGlassViewport() || document.body.classList.contains("study-zen-fullscreen")) {
       applyCompactState(false);
+      return;
+    }
+    const isDetailActive = document.body.classList.contains("page-post-detail");
+    if (isDetailActive) {
+      applyCompactState(true);
       return;
     }
     const y = window.scrollY || window.pageYOffset || 0;
@@ -21549,14 +21838,14 @@ function getChristmasTreeLayout(w, h) {
 }
 
 function getChristmasTreeStudioLayout(w, h) {
-  const safeW = Math.max(260, w);
-  const safeH = Math.max(280, h);
-  const isMobile = safeW <= 440;
+  const safeW = Math.max(200, w);
+  const safeH = Math.max(200, h);
+  const isMobile = safeW <= 768;
   // Summit star clearance from top canvas edge
   const topClearance = safeH <= 360 ? 44 : 40;
   const baseY = Math.round(safeH * 0.90);
-  const maxTreeHByHeight = Math.max(180, baseY - topClearance - 14);
-  const treeH = Math.round(Math.min(maxTreeHByHeight, safeW * 0.88));
+  const maxTreeHByHeight = Math.max(160, baseY - topClearance - 14);
+  const treeH = Math.round(Math.min(maxTreeHByHeight, safeW * (isMobile ? 0.72 : 0.88)));
   // Classic conical pine tree radius proportion (0.285)
   const treeR = Math.round(treeH * 0.285);
   return {
@@ -25226,8 +25515,8 @@ function resizeChristmasTreeStudioCanvas() {
   if (!canvas) return;
   const wrap = canvas.parentElement;
   const rect = wrap ? wrap.getBoundingClientRect() : canvas.getBoundingClientRect();
-  const w = Math.max(260, Math.round(rect.width || 440));
-  const h = Math.max(280, Math.round(rect.height || 440));
+  const w = Math.max(200, Math.round(rect.width || wrap?.clientWidth || 440));
+  const h = Math.max(200, Math.round(rect.height || wrap?.clientHeight || 440));
   const dpr = Math.min(window.devicePixelRatio || 1, 2);
   christmasTreeStudioState.width = w;
   christmasTreeStudioState.height = h;
@@ -25356,6 +25645,8 @@ function setChristmasTreeFullscreen(active) {
   const next = Boolean(active);
   christmasTreeStudioState.stageFullscreen = next;
   if (container) container.classList.toggle("is-stage-fullscreen", next);
+  document.body.classList.toggle("tree-stage-fullscreen", next);
+  document.documentElement.classList.toggle("tree-stage-fullscreen", next);
   if (fsBtn) {
     fsBtn.setAttribute("aria-pressed", String(next));
     fsBtn.setAttribute("title", next ? "Thu gọn cây thông" : "Xem toàn màn hình cây thông");

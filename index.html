@@ -30,7 +30,7 @@
     <script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js" defer></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" defer></script>
-    <link rel="stylesheet" href="styles.css?v=175" />
+    <link rel="stylesheet" href="styles.css?v=176" />
   </head>
   <body>
     <canvas id="christmasTreeCanvas" class="christmas-tree-edge-canvas" aria-hidden="true"></canvas>
@@ -464,6 +464,12 @@
                 </span>
               </div>
             </div>
+            <button type="button" class="quick-menu-item" id="quickMenuThemeCustomizerBtn" onclick="openThemeCustomizerModal(event)" role="menuitem">
+              <span class="quick-menu-icon" aria-hidden="true">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"/><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"/><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/></svg>
+              </span>
+              <span class="quick-menu-label">Tuỳ biến giao diện &amp; thanh nav</span>
+            </button>
 
             <!-- Tùy chọn Không khí & Nhạc Giáng sinh -->
             <div class="quick-menu-divider xmas-seasonal-control"></div>
@@ -2324,17 +2330,13 @@
           <div class="xmas-tree-card-panel xmas-tree-panel-col">
             <header class="xmas-tree-page-header">
               <div class="xmas-tree-header-left">
-                <button type="button" class="button button-outline button-sm xmas-tree-back-btn" id="xmasTreeBackBtn" aria-label="Quay lại">
-                  <svg class="back-arrow ui-btn-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
-                  <span class="detail-btn-label">Quay lại</span>
-                </button>
                 <div class="xmas-tree-header-copy">
                   <h1 id="christmasTreePageTitle" class="xmas-tree-title">🎄 Trang trí Cây thông</h1>
                   <p class="xmas-tree-header-sub" id="xmasTreeStatsSummary">Trang trí phụ kiện của bạn lên cây thông để cùng tạo nên mùa Giáng sinh ấm áp</p>
                 </div>
               </div>
               <div class="xmas-tree-header-actions">
-                <button type="button" class="xmas-tree-close-btn" id="xmasTreeCloseBtn" aria-label="Đóng trang trí cây thông" title="Quay lại">
+                <button type="button" class="xmas-tree-close-btn" id="xmasTreeCloseBtn" aria-label="Đóng trang trí cây thông" title="Đóng">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
                 </button>
               </div>
@@ -2667,9 +2669,92 @@
         <span class="mobile-nav-label">Tài khoản</span>
       </a>
     </nav>
-    <button class="mobile-fab" id="mobileAsk" aria-label="Tạo bài đăng">
-      +
+    <button class="mobile-fab" id="mobileAsk" aria-label="Menu thao tác nhanh" aria-expanded="false" aria-haspopup="true">
+      <span class="mobile-fab-icon-wrap" aria-hidden="true">
+        <svg class="mobile-fab-icon-grid" width="22" height="22" viewBox="0 0 24 24" fill="none">
+          <rect class="fab-sq fab-sq-1" x="3" y="3" width="7.5" height="7.5" rx="2" fill="currentColor"/>
+          <rect class="fab-sq fab-sq-2" x="13.5" y="3" width="7.5" height="7.5" rx="2" fill="currentColor"/>
+          <rect class="fab-sq fab-sq-3" x="3" y="13.5" width="7.5" height="7.5" rx="2" fill="currentColor"/>
+          <rect class="fab-sq fab-sq-4" x="13.5" y="13.5" width="7.5" height="7.5" rx="2" fill="currentColor"/>
+        </svg>
+      </span>
     </button>
+
+    <!-- Menu Thao tác nhanh trên Mobile -->
+    <div class="mobile-fab-menu" id="mobileFabMenu" hidden>
+      <div class="mobile-fab-menu-backdrop" id="mobileFabMenuBackdrop"></div>
+      <div class="mobile-fab-menu-sheet" role="menu" aria-label="Menu thao tác nhanh">
+        <div class="mobile-fab-menu-header">
+          <div class="mobile-fab-menu-title-wrap">
+            <span class="mobile-fab-menu-eyebrow">THAO TÁC NHANH</span>
+            <span class="mobile-fab-menu-title">Khám phá &amp; Đóng góp</span>
+          </div>
+          <button type="button" class="mobile-fab-menu-close" id="mobileFabMenuClose" aria-label="Đóng menu">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+          </button>
+        </div>
+        <div class="mobile-fab-menu-list">
+          <!-- 1. Tạo bài đăng -->
+          <button type="button" class="mobile-fab-action-btn" id="mobileFabItemPost" role="menuitem">
+            <span class="mobile-fab-action-icon fab-icon-post">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+            </span>
+            <div class="mobile-fab-action-info">
+              <strong class="mobile-fab-action-name">Tạo bài đăng</strong>
+              <span class="mobile-fab-action-desc">Mở khung thảo luận hoặc câu hỏi mới</span>
+            </div>
+          </button>
+
+          <!-- 2. Đề xuất tài liệu -->
+          <button type="button" class="mobile-fab-action-btn" id="mobileFabItemDoc" role="menuitem">
+            <span class="mobile-fab-action-icon fab-icon-doc">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="12" y1="18" x2="12" y2="12"></line><line x1="9" y1="15" x2="15" y2="15"></line></svg>
+            </span>
+            <div class="mobile-fab-action-info">
+              <strong class="mobile-fab-action-name">Đề xuất tài liệu</strong>
+              <span class="mobile-fab-action-desc">Đóng góp giáo trình, đề thi &amp; tài liệu học</span>
+            </div>
+          </button>
+
+          <!-- 3. Sự kiện Giáng sinh -->
+          <div class="mobile-fab-accordion-group" id="mobileFabXmasGroup">
+            <button type="button" class="mobile-fab-action-btn" id="mobileFabItemXmas" role="menuitem" aria-expanded="false">
+              <span class="mobile-fab-action-icon fab-icon-xmas">🎄</span>
+              <div class="mobile-fab-action-info">
+                <strong class="mobile-fab-action-name">Sự kiện Giáng sinh</strong>
+                <span class="mobile-fab-action-desc">Nhạc nền, tuyết rơi &amp; cây thông 3D</span>
+              </div>
+              <span class="mobile-fab-arrow" aria-hidden="true">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+              </span>
+            </button>
+            <div class="mobile-fab-sub-tray" id="mobileFabXmasTray" hidden>
+              <button type="button" class="mobile-fab-sub-pill" id="mobileFabXmasMusicBtn">
+                <span class="sub-icon">🎵</span>
+                <span class="sub-label" id="mobileFabMusicStatus">Nhạc Noel: Đang tắt</span>
+              </button>
+              <button type="button" class="mobile-fab-sub-pill" id="mobileFabXmasSnowBtn">
+                <span class="sub-icon">❄️</span>
+                <span class="sub-label" id="mobileFabSnowStatus">Không khí Noel: Đang bật</span>
+              </button>
+              <button type="button" class="mobile-fab-sub-pill" id="mobileFabXmasTreeBtn">
+                <span class="sub-icon">🎄</span>
+                <span class="sub-label">Trang trí Cây thông 3D</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- 4. Cuộc thi thiết kế -->
+          <button type="button" class="mobile-fab-action-btn" id="mobileFabItemContest" role="menuitem">
+            <span class="mobile-fab-action-icon fab-icon-contest">🏆</span>
+            <div class="mobile-fab-action-info">
+              <strong class="mobile-fab-action-name">Cuộc thi thiết kế RE:THINK 2026</strong>
+              <span class="mobile-fab-action-desc">Xem tài liệu đề thi &amp; nộp bài dự thi</span>
+            </div>
+          </button>
+        </div>
+      </div>
+    </div>
 
     <dialog id="questionModal" class="modal">
       <form method="dialog" id="questionForm">
@@ -3374,8 +3459,180 @@
       </div>
     </dialog>
 
+    <!-- MODAL: CẢNH BÁO THIẾT BỊ NÓNG / LAG KHI BẬT THEME NOEL -->
+    <dialog id="xmasLagWarningModal" class="modal xmas-lag-warning-modal" aria-labelledby="xmasLagWarningTitle">
+      <div class="xmas-lag-card">
+        <div class="xmas-lag-icon-wrap" aria-hidden="true">
+          <span class="xmas-lag-icon">⚠️</span>
+        </div>
+        <h3 id="xmasLagWarningTitle" class="xmas-lag-title">Thiết bị của bạn có thể chạy chậm và nóng</h3>
+        <p class="xmas-lag-desc">Giao diện Giáng sinh với hiệu ứng tuyết rơi động và cây thông 3D có thể tiêu tốn nhiều tài nguyên của thiết bị. <strong>RE:SEARCH</strong> đề xuất bạn tắt tạm thời giao diện Giáng sinh để đảm bảo trải nghiệm ổn định và mượt mà nhất.</p>
+        <div class="xmas-lag-actions">
+          <button type="button" class="button button-primary xmas-lag-turnoff-btn" id="btnDisableXmasFromLag">
+            Tắt tạm thời giao diện Giáng sinh
+          </button>
+          <button type="button" class="button button-outline button-quiet" id="btnDismissXmasLagWarning">
+            Để sau
+          </button>
+        </div>
+      </div>
+    </dialog>
+
+    <!-- MODAL: TUỲ BIẾN GIAO DIỆN CHUNG & THANH ĐIỀU HƯỚNG -->
+    <dialog id="themeCustomizerModal" class="modal theme-customizer-modal" aria-labelledby="themeCustomizerTitle">
+      <div class="theme-customizer-shell">
+        <header class="theme-customizer-header">
+          <div class="theme-customizer-title-wrap">
+            <span class="theme-customizer-eyebrow">CÀI ĐẶT GIAO DIỆN</span>
+            <h2 id="themeCustomizerTitle" class="theme-customizer-title">Tuỳ biến phong cách &amp; điều hướng</h2>
+          </div>
+          <button type="button" class="theme-customizer-close" onclick="document.getElementById('themeCustomizerModal').close()" aria-label="Đóng">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+          </button>
+        </header>
+
+        <div class="theme-customizer-body">
+          <!-- PHẦN 1: TÔNG MÀU GIAO DIỆN THEO TIER CHUỖI & NOEL -->
+          <section class="theme-section">
+            <div class="theme-section-head">
+              <h3 class="theme-section-title">🎨 Tông màu giao diện</h3>
+              <p class="theme-section-subtitle">Chuyển đổi giao diện theo chuỗi học tập bạn đã đạt được hoặc đón mùa Giáng sinh</p>
+            </div>
+
+            <div class="theme-options-grid" id="themeColorOptionsGrid">
+              <!-- Option 1: Mặc định (Emerald) -->
+              <div class="theme-card active" data-theme-val="default" onclick="requestThemeSwitch('color', 'default', 'Mặc định (Ngọc lục bảo)', 0)">
+                <div class="theme-demo-preview preview-emerald" aria-hidden="true">
+                  <div class="demo-mock-bar"></div>
+                  <div class="demo-mock-pill"></div>
+                  <div class="demo-mock-content"><span class="mock-line"></span><span class="mock-btn mock-btn-emerald"></span></div>
+                </div>
+                <div class="theme-card-info">
+                  <strong class="theme-card-name">Mặc định</strong>
+                  <span class="theme-card-tier">Chuỗi 0+</span>
+                </div>
+                <span class="theme-card-status-badge">Đang dùng</span>
+              </div>
+
+              <!-- Option 2: Đỏ Huyết sắc (Ruby - 30d) -->
+              <div class="theme-card" data-theme-val="ruby" data-min-streak="30" onclick="requestThemeSwitch('color', 'ruby', 'Đỏ Huyết sắc (Ruby)', 30)">
+                <div class="theme-demo-preview preview-ruby" aria-hidden="true">
+                  <div class="demo-mock-bar"></div>
+                  <div class="demo-mock-pill"></div>
+                  <div class="demo-mock-content"><span class="mock-line"></span><span class="mock-btn mock-btn-ruby"></span></div>
+                  <span class="theme-lock-overlay" aria-hidden="true">🔒</span>
+                </div>
+                <div class="theme-card-info">
+                  <strong class="theme-card-name">Đỏ Huyết sắc</strong>
+                  <span class="theme-card-tier">Chuỗi 30+</span>
+                </div>
+                <span class="theme-card-status-badge">Chọn</span>
+              </div>
+
+              <!-- Option 3: Tím Thần thoại (Mythic - 50d) -->
+              <div class="theme-card" data-theme-val="mythic" data-min-streak="50" onclick="requestThemeSwitch('color', 'mythic', 'Tím Thần thoại (Mythic)', 50)">
+                <div class="theme-demo-preview preview-mythic" aria-hidden="true">
+                  <div class="demo-mock-bar"></div>
+                  <div class="demo-mock-pill"></div>
+                  <div class="demo-mock-content"><span class="mock-line"></span><span class="mock-btn mock-btn-mythic"></span></div>
+                  <span class="theme-lock-overlay" aria-hidden="true">🔒</span>
+                </div>
+                <div class="theme-card-info">
+                  <strong class="theme-card-name">Tím Thần thoại</strong>
+                  <span class="theme-card-tier">Chuỗi 50+</span>
+                </div>
+                <span class="theme-card-status-badge">Chọn</span>
+              </div>
+
+              <!-- Option 4: Giáng sinh (Giới hạn) -->
+              <div class="theme-card" data-theme-val="christmas" data-min-streak="0" onclick="requestThemeSwitch('color', 'christmas', 'Giáng sinh (Noel Mùa đông)', 0)">
+                <div class="theme-demo-preview preview-christmas" aria-hidden="true">
+                  <div class="demo-mock-bar mock-xmas-garland"></div>
+                  <div class="demo-mock-pill"></div>
+                  <div class="demo-mock-content"><span class="mock-line"></span><span class="mock-btn mock-btn-xmas">🎄</span></div>
+                </div>
+                <div class="theme-card-info">
+                  <strong class="theme-card-name">Giáng sinh</strong>
+                  <span class="theme-card-tier tier-limited">Giới hạn mùa lễ</span>
+                </div>
+                <span class="theme-card-status-badge">Chọn</span>
+              </div>
+            </div>
+          </section>
+
+          <!-- PHẦN 2: KIỂU THANH ĐIỀU HƯỚNG (NAVBAR) -->
+          <section class="theme-section">
+            <div class="theme-section-head">
+              <h3 class="theme-section-title">🧭 Kiểu thanh điều hướng (Navigation Bar)</h3>
+              <p class="theme-section-subtitle">Tuỳ chọn phong cách thanh điều hướng cổ điển hoặc kính mờ lò xo thế hệ mới</p>
+            </div>
+
+            <div class="theme-nav-grid" id="themeNavOptionsGrid">
+              <!-- Nav Option 1: Cổ điển -->
+              <div class="theme-nav-card" data-nav-val="classic" onclick="requestThemeSwitch('nav', 'classic', 'Cổ điển (Một dải cố định)')">
+                <div class="theme-demo-preview preview-nav-classic" aria-hidden="true">
+                  <div class="nav-demo-band">
+                    <span class="nav-demo-logo"></span>
+                    <span class="nav-demo-links"></span>
+                    <span class="nav-demo-avatar"></span>
+                  </div>
+                </div>
+                <div class="theme-card-info">
+                  <strong class="theme-card-name">Cổ điển</strong>
+                  <span class="theme-card-tier">Thanh dải truyền thống trải dài</span>
+                </div>
+                <span class="theme-card-status-badge">Chọn</span>
+              </div>
+
+              <!-- Nav Option 2: Kính mờ -->
+              <div class="theme-nav-card active" data-nav-val="glass" onclick="requestThemeSwitch('nav', 'glass', 'Kính mờ (Hiệu ứng lò xo nổi)')">
+                <div class="theme-demo-preview preview-nav-glass" aria-hidden="true">
+                  <div class="nav-demo-island">
+                    <span class="nav-demo-pill"></span>
+                    <span class="nav-demo-pill wide"></span>
+                    <span class="nav-demo-pill"></span>
+                  </div>
+                </div>
+                <div class="theme-card-info">
+                  <strong class="theme-card-name">Kính mờ</strong>
+                  <span class="theme-card-tier">Hiệu ứng kính mờ lò xo hiện đại</span>
+                </div>
+                <span class="theme-card-status-badge">Đang dùng</span>
+              </div>
+            </div>
+          </section>
+        </div>
+      </div>
+    </dialog>
+
+    <!-- POPUP XÁC NHẬN ĐỔI GIAO DIỆN -->
+    <dialog id="themeConfirmModal" class="modal theme-confirm-modal" aria-labelledby="themeConfirmTitle">
+      <div class="theme-confirm-card">
+        <div class="theme-confirm-icon" aria-hidden="true">✨</div>
+        <h3 id="themeConfirmTitle" class="theme-confirm-title">Xác nhận đổi giao diện?</h3>
+        <p class="theme-confirm-desc" id="themeConfirmDesc">Bạn có muốn chuyển sang phong cách này không?</p>
+        <div class="theme-confirm-actions">
+          <button type="button" class="button button-primary" id="btnApplyThemeConfirm">Xác nhận đổi</button>
+          <button type="button" class="button button-outline" onclick="document.getElementById('themeConfirmModal').close()">Huỷ</button>
+        </div>
+      </div>
+    </dialog>
+
     <!-- MODAL 1: CHỈNH SỬA THẺ TÊN & TRANG TRÍ (NAMECARD STUDIO) -->
     <dialog class="modal namecard-studio-modal" id="editNamecardModal" aria-labelledby="editNamecardTitle">
+      <button
+        class="studio-modal-close-btn"
+        type="button"
+        id="btnStudioClose"
+        aria-label="Đóng cửa sổ"
+        onclick="if (typeof requestCloseEditNamecard === 'function') { requestCloseEditNamecard(); } else { this.closest('dialog').close(); }"
+        title="Đóng (Huỷ)"
+      >
+        <svg class="ui-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
       <div class="namecard-studio-container">
         
         <!-- CỘT TRÁI: KHU VỰC ĐIỀU KHIỂN & CHỈNH SỬA -->
@@ -3386,18 +3643,6 @@
               <span class="studio-eyebrow">NAMECARD STUDIO</span>
               <h2 id="editNamecardTitle">Chỉnh sửa thẻ tên</h2>
             </div>
-            <button
-              class="studio-close-btn"
-              type="button"
-              id="btnStudioClose"
-              aria-label="Đóng cửa sổ"
-              onclick="if (typeof requestCloseEditNamecard === 'function') { requestCloseEditNamecard(); } else { this.closest('dialog').close(); }"
-            >
-              <svg class="ui-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                <line x1="18" y1="6" x2="6" y2="18"></line>
-                <line x1="6" y1="6" x2="18" y2="18"></line>
-              </svg>
-            </button>
           </div>
 
           <!-- Studio Navigation Bar: Sử dụng SVG Icons làm nút chọn, không dùng icon hệ thống -->
@@ -3566,11 +3811,14 @@
                 <div class="custom-cover-upload-section">
                   <input type="file" id="coverFileInput" accept="image/*" style="display: none;" />
                   <button type="button" class="button button-outline studio-upload-btn" id="btnUploadCustomCover">
-                    <svg class="ui-btn-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                      <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
-                      <circle cx="12" cy="13" r="4"></circle>
-                    </svg>
-                    Tải ảnh bìa từ thiết bị lên (Tối đa 150KB)
+                    <span class="studio-upload-btn-line1">
+                      <svg class="ui-btn-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+                        <circle cx="12" cy="13" r="4"></circle>
+                      </svg>
+                      <span>Tải ảnh bìa từ thiết bị</span>
+                    </span>
+                    <span class="studio-upload-btn-line2" id="uploadCustomCoverSubtext">(Hỗ trợ JPG/PNG/WebP • Tối đa 1MB)</span>
                   </button>
                   <div id="coverUploadPreview" style="display: none;" class="custom-cover-preview-box">
                     <img id="coverUploadImg" src="" alt="Preview ảnh bìa tải lên" />
@@ -6075,6 +6323,6 @@
       </button>
     </div>
 
-    <script src="app.js?v=175" defer></script>
+    <script src="app.js?v=176" defer></script>
   </body>
 </html>
