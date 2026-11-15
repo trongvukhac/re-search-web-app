@@ -44,7 +44,7 @@
     <script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js" defer></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" defer></script>
-    <link rel="stylesheet" href="styles.css?v=179" />
+    <link rel="stylesheet" href="styles.css?v=180" />
   </head>
   <body>
     <canvas id="christmasTreeCanvas" class="christmas-tree-edge-canvas" aria-hidden="true"></canvas>
@@ -648,16 +648,20 @@
               <div class="banner-slide" data-banner-id="xmas-tree-2026" data-index="1">
                 <img src="public/assets/banner-xmas-tree.png?v=20261112_1" class="banner-image" alt="Trang trí Cây thông Giáng sinh Cộng đồng RE:SEARCH 2026" />
               </div>
-              <!-- Slide 1: Cập nhật Giáng sinh 2026 & Sự kiện Món quà mùa đông (Từ 11/11 đến hết ngày 31/12/2026, không tương tác) -->
-              <div class="banner-slide no-action" data-banner-id="christmas-2026" data-index="1" style="cursor: default;">
+              <!-- Slide 2: Cập nhật Giáng sinh 2026 & Sự kiện Món quà mùa đông (Từ 11/11 đến hết ngày 31/12/2026, không tương tác) -->
+              <div class="banner-slide no-action" data-banner-id="christmas-2026" data-index="2" style="cursor: default;">
                 <img src="public/assets/banner-christmas-2026.jpg?v=20261111_1" class="banner-image" alt="Giáng sinh an lành RE:SEARCH 2026 — Sự kiện Món quà mùa đông: Phép màu mùa đông" />
               </div>
-              <!-- Slide 1: Bảng Vàng Toàn Đoàn Tuần 04 — Mô Hình Nghiên Cứu (Từ 09/11 đến hết ngày 15/11/2026) -->
-              <div class="banner-slide no-action" data-banner-id="leaderboard-w04" data-index="1" style="cursor: default;">
+              <!-- Slide 3: Bảng Vàng Tuần 05 Arena — Mô Hình Nghiên Cứu Và Tư Duy Lý Thuyết (Từ 16/11 đến hết ngày 22/11/2026, không tương tác) -->
+              <div class="banner-slide no-action" data-banner-id="leaderboard-w05" data-index="3" style="cursor: default;">
+                <img src="public/assets/banner-leaderboard-w05.jpg?v=20261116_1" class="banner-image" alt="Bảng Vàng Tuần 05 — Mô Hình Nghiên Cứu Và Tư Duy Lý Thuyết" />
+              </div>
+              <!-- Slide 4: Bảng Vàng Toàn Đoàn Tuần 04 — Mô Hình Nghiên Cứu (Từ 09/11 đến hết ngày 15/11/2026) -->
+              <div class="banner-slide no-action" data-banner-id="leaderboard-w04" data-index="4" style="cursor: default;">
                 <img src="public/assets/banner-leaderboard-w04.jpg?v=20261109_1" class="banner-image" alt="Bảng Vàng Toàn Đoàn Tuần 04 — Mô Hình Nghiên Cứu" />
               </div>
-              <!-- Slide 2: RE:SEARCH Arena Tuần 05 — Mô hình nghiên cứu và tư duy lý thuyết (Từ 09/11 đến hết ngày 15/11/2026) -->
-              <div class="banner-slide" data-banner-id="arena-w05" data-index="1">
+              <!-- Slide 5: RE:SEARCH Arena Tuần 05 — Mô hình nghiên cứu và tư duy lý thuyết (Từ 09/11 đến hết ngày 15/11/2026) -->
+              <div class="banner-slide" data-banner-id="arena-w05" data-index="5">
                 <img src="public/assets/banner-arena-w05.jpg?v=20261109_1" class="banner-image" alt="RE:SEARCH Arena Tuần 05 — Mô hình nghiên cứu và tư duy lý thuyết" />
               </div>
               <!-- Slide 3: Cập nhật mới Namecard (Từ 02/11 đến hết ngày 10/11/2026) -->
@@ -5431,23 +5435,25 @@
             <div class="study-color-roles-wrap" style="margin-bottom: 18px; padding: 14px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px;">
               <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
                 <div>
-                  <h4 style="margin: 0; font-size: 13.5px; font-weight: 700;">Bộ phối màu giao diện &amp; Đồng hồ</h4>
-                  <span style="font-size: 11.5px; color: var(--muted);">Tùy chỉnh 3 bộ màu độc lập (Mặc định cả 3 là Xanh lá)</span>
+                  <h4 style="margin: 0; font-size: 13.5px; font-weight: 700;">Màu sắc đồng hồ</h4>
                 </div>
                 <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap; justify-content: flex-end;">
-                  <button type="button" id="btnChristmasThemePreset" class="button button-xs button-outline xmas-seasonal-control" onclick="applyChristmasStudyColors()" title="Áp dụng bộ màu Giáng sinh (Đỏ Berry - Xanh Thông - Vàng Ấm)">🎄 Giáng sinh</button>
-                  <button type="button" class="button button-xs button-ghost" onclick="resetStudyColorRoles()" title="Khôi phục mặc định 3 màu xanh lá">Mặc định xanh lá</button>
+                  <button type="button" id="btnChristmasThemePreset" class="button button-xs button-outline xmas-seasonal-control" onclick="applyChristmasStudyColors()" title="Áp dụng bộ màu Giáng sinh">🎄 Giáng sinh</button>
+                  <button type="button" class="button button-xs button-ghost" onclick="resetStudyColorRoles()" title="Khôi phục mặc định">Mặc định</button>
                 </div>
               </div>
 
               <!-- 1. Màu chính -->
               <div class="color-role-item" style="margin-bottom: 12px;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                  <div>
-                    <strong style="font-size: 12.5px; color: var(--ink);">Màu chính:</strong>
-                    <span style="font-size: 11.5px; color: var(--muted); margin-left: 4px;">Thời gian (bộ đếm giờ / số phút &amp; giây)</span>
+                  <strong style="font-size: 12.5px; color: var(--ink);">Màu chính</strong>
+                  <div class="study-custom-color-picker-wrap">
+                    <button type="button" class="study-custom-color-circle-btn" id="btnCustomColorPrimary" onclick="triggerStudyCustomColorPicker('primary')" title="Tùy chỉnh màu tự do (Đa sắc)">
+                      <svg class="custom-color-lock-icon" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                      <span class="custom-color-active-dot"></span>
+                    </button>
+                    <input type="color" id="studyColorPrimaryPicker" value="#10b981" class="visually-hidden-color-input" tabindex="-1" aria-hidden="true" onchange="updateStudyColorRole('primary', this.value)" />
                   </div>
-                  <input type="color" id="studyColorPrimaryPicker" value="#10b981" title="Chọn màu chính tùy ý" onchange="updateStudyColorRole('primary', this.value)" style="width: 28px; height: 28px; border: none; border-radius: 6px; cursor: pointer; padding: 0; background: transparent;" />
                 </div>
                 <div class="color-swatch-row" id="swatchesPrimary"></div>
               </div>
@@ -5455,11 +5461,14 @@
               <!-- 2. Màu phụ -->
               <div class="color-role-item" style="margin-bottom: 12px;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                  <div>
-                    <strong style="font-size: 12.5px; color: var(--ink);">Màu phụ:</strong>
-                    <span style="font-size: 11.5px; color: var(--muted); margin-left: 4px;">Màu đi kèm (vòng tròn, chấm, kệ, vạch cơ học, cát, ô LED)</span>
+                  <strong style="font-size: 12.5px; color: var(--ink);">Màu phụ</strong>
+                  <div class="study-custom-color-picker-wrap">
+                    <button type="button" class="study-custom-color-circle-btn" id="btnCustomColorSecondary" onclick="triggerStudyCustomColorPicker('secondary')" title="Tùy chỉnh màu tự do (Đa sắc)">
+                      <svg class="custom-color-lock-icon" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                      <span class="custom-color-active-dot"></span>
+                    </button>
+                    <input type="color" id="studyColorSecondaryPicker" value="#10b981" class="visually-hidden-color-input" tabindex="-1" aria-hidden="true" onchange="updateStudyColorRole('secondary', this.value)" />
                   </div>
-                  <input type="color" id="studyColorSecondaryPicker" value="#10b981" title="Chọn màu phụ tùy ý" onchange="updateStudyColorRole('secondary', this.value)" style="width: 28px; height: 28px; border: none; border-radius: 6px; cursor: pointer; padding: 0; background: transparent;" />
                 </div>
                 <div class="color-swatch-row" id="swatchesSecondary"></div>
               </div>
@@ -5467,11 +5476,14 @@
               <!-- 3. Màu phụ kiện -->
               <div class="color-role-item">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                  <div>
-                    <strong style="font-size: 12.5px; color: var(--ink);">Màu phụ kiện:</strong>
-                    <span style="font-size: 11.5px; color: var(--muted); margin-left: 4px;">Bộ màu nút bấm (bắt đầu, tạm dừng, rời phòng, dấu +, icon câu nói, mục tiêu)</span>
+                  <strong style="font-size: 12.5px; color: var(--ink);">Màu phụ kiện</strong>
+                  <div class="study-custom-color-picker-wrap">
+                    <button type="button" class="study-custom-color-circle-btn" id="btnCustomColorAccessory" onclick="triggerStudyCustomColorPicker('accessory')" title="Tùy chỉnh màu tự do (Đa sắc)">
+                      <svg class="custom-color-lock-icon" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                      <span class="custom-color-active-dot"></span>
+                    </button>
+                    <input type="color" id="studyColorAccessoryPicker" value="#10b981" class="visually-hidden-color-input" tabindex="-1" aria-hidden="true" onchange="updateStudyColorRole('accessory', this.value)" />
                   </div>
-                  <input type="color" id="studyColorAccessoryPicker" value="#10b981" title="Chọn màu phụ kiện tùy ý" onchange="updateStudyColorRole('accessory', this.value)" style="width: 28px; height: 28px; border: none; border-radius: 6px; cursor: pointer; padding: 0; background: transparent;" />
                 </div>
                 <div class="color-swatch-row" id="swatchesAccessory"></div>
               </div>
@@ -6350,6 +6362,6 @@
       </button>
     </div>
 
-    <script src="app.js?v=179" defer></script>
+    <script src="app.js?v=180" defer></script>
   </body>
 </html>

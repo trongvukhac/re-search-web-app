@@ -298,6 +298,7 @@ window.notifyPerkLocked = function (days, featureName) {
 };
 
 function getInitialStudySettings() {
+  const isXmas = typeof isChristmas2026Season === "function" ? isChristmas2026Season() : false;
   const defaults = {
     focusMins: 25,
     shortBreakMins: 5,
@@ -318,17 +319,17 @@ function getInitialStudySettings() {
     reminderBeforeEnd: 0, // 0 (Off), 1, 2, 5 mins
     tickingSound: "off", // 'off', 'mechanical', 'digital'
     browserNotifications: false,
-    // Wallpaper & Theme
-    activeWallpaper: "default",
+    // Wallpaper & Theme (Tự động áp dụng Giáng sinh cho toàn người dùng đến hết 31/12/2026)
+    activeWallpaper: isXmas ? "christmas_2026" : "default",
     wallpaperDim: 35,
     cardGlassOpacity: 50,
     activeAura: "emerald",
     clockColor: "default",
-    // 6 Clock Styles & 3 Independent Color Roles
+    // 6 Clock Styles & 3 Independent Color Roles (Đỏ Berry - Xanh Thông - Vàng Ấm trong mùa Giáng sinh)
     clockStyle: "dial", // 'dial', 'flip', 'minimal', 'kitchen', 'digital', 'hourglass'
-    primaryColor: "#10b981",    // Màu chính: thời gian (bộ đếm giờ / số phút & giây)
+    primaryColor: isXmas ? "#dc2626" : "#10b981",    // Màu chính: thời gian (bộ đếm giờ / số phút & giây)
     secondaryColor: "#10b981",  // Màu phụ: màu đi kèm (vòng tròn, chấm knob, kệ, vạch cơ học, cát, ô LED)
-    accessoryColor: "#10b981",  // Màu phụ kiện: bộ màu nút bấm (bắt đầu, rời phòng, dấu +, icon câu nói, mục tiêu ngày)
+    accessoryColor: isXmas ? "#f59e0b" : "#10b981",  // Màu phụ kiện: bộ màu nút bấm (bắt đầu, rời phòng, dấu +, icon câu nói, mục tiêu ngày)
     // Task Category Labels (Unlocked at 7d streak)
     taskLabels: [
       { id: "thesis", name: "Đề cương", color: "#6366f1" },
@@ -344,6 +345,28 @@ function getInitialStudySettings() {
     if (parsed.activeAura === 'pomodoro') {
       parsed.activeAura = 'emerald';
     }
+
+    // Tự động trang bị cho toàn người dùng bộ giao diện Giáng sinh trong mùa lễ hội 2026
+    const autoEquipKey = "re_search_study_xmas_auto_2026_applied";
+    if (isXmas) {
+      let alreadyEquipped = false;
+      try { alreadyEquipped = localStorage.getItem(autoEquipKey) === "1"; } catch (e) {}
+      if (!alreadyEquipped) {
+        parsed.activeWallpaper = "christmas_2026";
+        parsed.primaryColor = "#dc2626";
+        parsed.secondaryColor = "#10b981";
+        parsed.accessoryColor = "#f59e0b";
+        try { localStorage.setItem(autoEquipKey, "1"); } catch (e) {}
+      }
+    } else {
+      // Sau 31/12/2026, tự động quay về mặc định
+      if (parsed.activeWallpaper === "christmas_2026") {
+        parsed.activeWallpaper = "default";
+      }
+      if (parsed.primaryColor === "#dc2626") parsed.primaryColor = "#10b981";
+      if (parsed.accessoryColor === "#f59e0b") parsed.accessoryColor = "#10b981";
+    }
+
     return parsed;
   } catch (e) {
     return defaults;
@@ -9734,6 +9757,10 @@ window.updateStudyStreakPerks = function () {
   const clockColorWrap = $(".clock-color-wrap");
   if (clockColorWrap) clockColorWrap.classList.toggle("locked-feature", !clockColorUnlocked);
 
+  if (typeof renderStudyColorRoleSwatches === "function") {
+    renderStudyColorRoleSwatches();
+  }
+
   // Streak 30: Custom Audio Upload (Max 3 Env, Max 5 Mix, Max 3 Music) & First 5 Color Palettes
   const customAudioUnlocked = streak >= 30;
   const badgeCustomEnvLock = $("#badgeCustomEnvLock");
@@ -10220,6 +10247,38 @@ function applyStudyColorRoles() {
 
 function renderStudyColorRoleSwatches() {
   const streak = getUserStudyStreak();
+  const isCustomUnlocked = (streak >= 14);
+
+  const updateCustomBtn = (btnId, inputId, role, currentVal) => {
+    const btn = document.getElementById(btnId);
+    const input = document.getElementById(inputId);
+    if (!btn) return;
+    btn.classList.toggle("locked", !isCustomUnlocked);
+    btn.title = isCustomUnlocked
+      ? "Tùy chỉnh màu tự do (Đa sắc)"
+      : "Tùy chỉnh màu tự do (Mở khóa ở Chuỗi 14 ngày)";
+
+    const isPreset = STUDY_SWATCH_PRESETS.some(
+      s => s.color.toLowerCase() === String(currentVal).toLowerCase()
+    );
+    const isChristmasColor = (
+      typeof isChristmas2026Season === "function" &&
+      isChristmas2026Season() &&
+      (String(currentVal).toLowerCase() === "#dc2626" || String(currentVal).toLowerCase() === "#f59e0b")
+    );
+    const isCustomActive = (!isPreset && !isChristmasColor && String(currentVal).toLowerCase() !== '#10b981' && isCustomUnlocked);
+    btn.classList.toggle("active", isCustomActive);
+    btn.style.setProperty("--custom-current-color", currentVal || "#10b981");
+
+    if (input && input.value !== currentVal) {
+      try { input.value = currentVal; } catch (e) {}
+    }
+  };
+
+  updateCustomBtn("btnCustomColorPrimary", "studyColorPrimaryPicker", "primary", studySettings.primaryColor || "#10b981");
+  updateCustomBtn("btnCustomColorSecondary", "studyColorSecondaryPicker", "secondary", studySettings.secondaryColor || "#10b981");
+  updateCustomBtn("btnCustomColorAccessory", "studyColorAccessoryPicker", "accessory", studySettings.accessoryColor || "#10b981");
+
   const renderRow = (contId, role, activeVal) => {
     const cont = document.getElementById(contId);
     if (!cont) return;
@@ -10229,7 +10288,7 @@ function renderStudyColorRoleSwatches() {
       const isUnlocked = (isDefault || streak >= 7);
       const clickAction = isUnlocked
         ? `updateStudyColorRole('${role}', '${s.color}')`
-        : `notifyPerkLocked(7, 'Bộ phối màu đồng hồ')`;
+        : `notifyPerkLocked(7, 'Màu sắc đồng hồ')`;
       return `<button type="button" class="color-role-swatch ${isActive ? 'active' : ''} ${!isUnlocked ? 'locked' : ''}" style="background:${s.color};" title="${escapeHTML(s.name)}${!isUnlocked ? ' (Mở khóa ở Chuỗi 7 ngày)' : ''}" onclick="${clickAction}"></button>`;
     }).join("");
   };
@@ -10239,12 +10298,47 @@ function renderStudyColorRoleSwatches() {
   renderRow("swatchesAccessory", "accessory", studySettings.accessoryColor || '#10b981');
 }
 
-window.updateStudyColorRole = function (role, colorHex) {
+window.triggerStudyCustomColorPicker = function (role) {
   const streak = getUserStudyStreak();
-  if (colorHex.toLowerCase() !== '#10b981' && streak < 7) {
-    notifyPerkLocked(7, "Bộ phối màu đồng hồ");
+  if (streak < 14) {
+    notifyPerkLocked(14, "Tùy chỉnh màu tự do");
     return;
   }
+  const inputId = (role === 'primary') ? 'studyColorPrimaryPicker' :
+                  (role === 'secondary') ? 'studyColorSecondaryPicker' :
+                  'studyColorAccessoryPicker';
+  const input = document.getElementById(inputId);
+  if (input) {
+    if (typeof input.showPicker === 'function') {
+      try {
+        input.showPicker();
+        return;
+      } catch (e) {}
+    }
+    input.click();
+  }
+};
+
+window.updateStudyColorRole = function (role, colorHex) {
+  const streak = getUserStudyStreak();
+  const hex = String(colorHex || '').toLowerCase();
+  const isDefault = (hex === '#10b981');
+  const isPreset = STUDY_SWATCH_PRESETS.some(s => s.color.toLowerCase() === hex);
+
+  if (!isDefault) {
+    if (isPreset) {
+      if (streak < 7) {
+        notifyPerkLocked(7, "Màu sắc đồng hồ");
+        return;
+      }
+    } else {
+      if (streak < 14) {
+        notifyPerkLocked(14, "Tùy chỉnh màu tự do");
+        return;
+      }
+    }
+  }
+
   if (role === 'primary') studySettings.primaryColor = colorHex;
   else if (role === 'secondary') studySettings.secondaryColor = colorHex;
   else if (role === 'accessory') studySettings.accessoryColor = colorHex;
@@ -10265,7 +10359,7 @@ window.resetStudyColorRoles = function () {
   updateStaticStudyControlsUI();
   updateTimerDisplay();
   updateDailyGoalUI();
-  toast("Đã khôi phục 3 bộ màu mặc định: Xanh lá!");
+  toast("Đã khôi phục màu mặc định!");
 };
 
 window.applyChristmasStudyColors = function () {
@@ -10276,12 +10370,13 @@ window.applyChristmasStudyColors = function () {
   studySettings.primaryColor = "#dc2626";
   studySettings.secondaryColor = "#10b981";
   studySettings.accessoryColor = "#f59e0b";
+  applyStudyWallpaperPreset("christmas_2026");
   saveStudySettings(false);
   applyStudyColorRoles();
   updateStaticStudyControlsUI();
   updateTimerDisplay();
   updateDailyGoalUI();
-  toast("🎄 Đã áp dụng bộ phối màu Giáng sinh cho Phòng tự học!");
+  toast("🎄 Đã áp dụng bộ giao diện Giáng sinh cho Phòng tự học!");
 };
 
 // Hoạt ảnh lật lá cơ học (Split-flap leaf flip animation)
@@ -15849,6 +15944,38 @@ function onEnterStudyLounge() {
     }
   }
 
+  // Tự động trang bị bộ giao diện Giáng sinh trong mùa lễ hội 2026, hoặc tự động quay về mặc định sau 31/12/2026
+  if (typeof isChristmas2026Season === "function" && isChristmas2026Season()) {
+    const autoEquipKey = "re_search_study_xmas_auto_2026_applied";
+    let alreadyEquipped = false;
+    try { alreadyEquipped = localStorage.getItem(autoEquipKey) === "1"; } catch (e) {}
+    if (!alreadyEquipped) {
+      studySettings.activeWallpaper = "christmas_2026";
+      studySettings.primaryColor = "#dc2626";
+      studySettings.secondaryColor = "#10b981";
+      studySettings.accessoryColor = "#f59e0b";
+      saveStudySettings(false);
+      try { localStorage.setItem(autoEquipKey, "1"); } catch (e) {}
+    }
+  } else {
+    let changed = false;
+    if (studySettings.activeWallpaper === "christmas_2026") {
+      studySettings.activeWallpaper = "default";
+      changed = true;
+    }
+    if (studySettings.primaryColor === "#dc2626") {
+      studySettings.primaryColor = "#10b981";
+      changed = true;
+    }
+    if (studySettings.accessoryColor === "#f59e0b") {
+      studySettings.accessoryColor = "#10b981";
+      changed = true;
+    }
+    if (changed) {
+      saveStudySettings(false);
+    }
+  }
+
   // 2. Đồng bộ & hiển thị đúng không gian phòng và tiến độ hiện tại
   renderActiveSpaceBanner(currentStudyRoomData);
   renderClockTicks();
@@ -16630,6 +16757,15 @@ const HOME_BANNERS_CONFIG = [
     // Thời gian xuất hiện: 11/11 đến hết 31/12/2026, banner cập nhật không tương tác
     startsAt: new Date("2026-11-11T00:00:00+07:00").getTime(),
     expiresAt: new Date("2026-12-31T23:59:59+07:00").getTime(),
+    action: null
+  },
+  {
+    id: "leaderboard-w05",
+    title: "Bảng Vàng Tuần 05 — Mô Hình Nghiên Cứu Và Tư Duy Lý Thuyết",
+    image: "public/assets/banner-leaderboard-w05.jpg?v=20261116_1",
+    // thời gian xuất hiện: 16/11 - hết ngày 22/11/2026, không tương tác
+    startsAt: new Date("2026-11-16T00:00:00+07:00").getTime(),
+    expiresAt: new Date("2026-11-22T23:59:59+07:00").getTime(),
     action: null
   },
   {
@@ -26569,8 +26705,25 @@ function initChristmasSeasonEffects() {
       if (currentActiveRoute === "christmas-tree") {
         go("home");
       }
-      if (typeof studySettings !== "undefined" && studySettings.activeWallpaper === "christmas_2026") {
-        applyStudyWallpaperPreset("default");
+      if (typeof studySettings !== "undefined") {
+        let changed = false;
+        if (studySettings.activeWallpaper === "christmas_2026") {
+          studySettings.activeWallpaper = "default";
+          changed = true;
+          applyStudyWallpaperPreset("default");
+        }
+        if (studySettings.primaryColor === "#dc2626") {
+          studySettings.primaryColor = "#10b981";
+          changed = true;
+        }
+        if (studySettings.accessoryColor === "#f59e0b") {
+          studySettings.accessoryColor = "#10b981";
+          changed = true;
+        }
+        if (changed) {
+          saveStudySettings(false);
+          applyStudyColorRoles();
+        }
       }
       if (typeof renderWallpaperPresets === "function") {
         renderWallpaperPresets();

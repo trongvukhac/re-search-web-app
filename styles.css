@@ -27024,6 +27024,113 @@ body.dark-theme .all-review-card-footer {
   transform: scale(1.12);
 }
 
+.color-role-swatch.locked {
+  filter: grayscale(0.55) opacity(0.6);
+  cursor: pointer;
+}
+
+/* 3 Nút chọn màu đa sắc tròn đồng bộ kích cỡ (24px x 24px) */
+.study-custom-color-picker-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.study-custom-color-circle-btn {
+  width: 24px;
+  height: 24px;
+  min-width: 24px;
+  min-height: 24px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.95);
+  background: conic-gradient(
+    from 0deg,
+    #ff0055 0deg,
+    #ff5500 45deg,
+    #ffcc00 90deg,
+    #33cc33 135deg,
+    #00ccff 180deg,
+    #3366ff 225deg,
+    #cc00ff 270deg,
+    #ff0099 315deg,
+    #ff0055 360deg
+  );
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.22);
+  cursor: pointer;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
+  box-sizing: border-box;
+  flex-shrink: 0;
+  position: relative;
+  outline: none;
+}
+
+.study-custom-color-circle-btn:not(.locked):hover {
+  transform: scale(1.18);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.study-custom-color-circle-btn.active {
+  border-color: #ffffff;
+  box-shadow: 0 0 0 2px var(--surface, #ffffff), 0 0 0 3px #0f172a, 0 2px 8px rgba(0, 0, 0, 0.35);
+}
+
+.study-custom-color-circle-btn .custom-color-active-dot {
+  display: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--custom-current-color, #ffffff);
+  border: 1px solid rgba(255, 255, 255, 0.95);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+}
+
+.study-custom-color-circle-btn.active:not(.locked) .custom-color-active-dot {
+  display: block;
+}
+
+.study-custom-color-circle-btn.locked .custom-color-active-dot {
+  display: none !important;
+}
+
+.study-custom-color-circle-btn.locked {
+  filter: grayscale(0.65) opacity(0.75);
+  cursor: pointer;
+}
+
+.study-custom-color-circle-btn.locked:hover {
+  transform: scale(1.08);
+}
+
+.study-custom-color-circle-btn .custom-color-lock-icon {
+  display: none;
+  color: #ffffff;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.9));
+}
+
+.study-custom-color-circle-btn.locked .custom-color-lock-icon {
+  display: flex;
+}
+
+.visually-hidden-color-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
 /* ====================================================
    WALLPAPER ENHANCED CONTRAST
    ==================================================== */
