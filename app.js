@@ -5777,6 +5777,7 @@ function initMobileFabSpeedDial() {
   function setMenuOpen(open) {
     const isOpen = Boolean(open);
     menu.hidden = !isOpen;
+    menu.classList.toggle("is-open", isOpen);
     fabBtn.classList.toggle("is-active", isOpen);
     fabBtn.setAttribute("aria-expanded", String(isOpen));
     if (isOpen) {
