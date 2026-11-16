@@ -350,13 +350,13 @@ function getInitialStudySettings() {
     const autoEquipKey = "re_search_study_xmas_auto_2026_applied";
     if (isXmas) {
       let alreadyEquipped = false;
-      try { alreadyEquipped = localStorage.getItem(autoEquipKey) === "1"; } catch (e) {}
+      try { alreadyEquipped = localStorage.getItem(autoEquipKey) === "1"; } catch (e) { }
       if (!alreadyEquipped) {
         parsed.activeWallpaper = "christmas_2026";
         parsed.primaryColor = "#dc2626";
         parsed.secondaryColor = "#10b981";
         parsed.accessoryColor = "#f59e0b";
-        try { localStorage.setItem(autoEquipKey, "1"); } catch (e) {}
+        try { localStorage.setItem(autoEquipKey, "1"); } catch (e) { }
       }
     } else {
       // Sau 31/12/2026, tự động quay về mặc định
@@ -1649,13 +1649,44 @@ function applySession(user) {
   const roleDisplay = getRoleDisplay(user?.role);
   const streakTier = Number(user?.streakTier || 0);
 
-  // Apply theme shift
-  if (streakTier >= 5) {
-    document.documentElement.dataset.userTheme = "mythic";
-  } else if (streakTier >= 4) {
-    document.documentElement.dataset.userTheme = "ruby";
+  // Apply theme shift respecting user explicit preference
+  let userThemePref = null;
+  try {
+    userThemePref = localStorage.getItem("re_search_user_color_preference") || localStorage.getItem("re_search_user_theme_preference");
+  } catch (e) { }
+
+  let effectiveTheme = null;
+  const userStreak = typeof currentUserStreak === "number" ? currentUserStreak : (user?.streak || 0);
+
+  if (userThemePref === "ruby") {
+    // Only allow if unlocked (streakTier >= 4 or streak >= 30)
+    if (streakTier >= 4 || userStreak >= 30) {
+      effectiveTheme = "ruby";
+    }
+  } else if (userThemePref === "mythic") {
+    // Only allow if unlocked (streakTier >= 5 or streak >= 50)
+    if (streakTier >= 5 || userStreak >= 50) {
+      effectiveTheme = "mythic";
+    }
+  } else if (userThemePref === "default") {
+    effectiveTheme = null;
   } else {
-    delete document.documentElement.dataset.userTheme;
+    // No explicit preference saved: fallback to highest unlocked streak tier
+    if (streakTier >= 5) {
+      effectiveTheme = "mythic";
+    } else if (streakTier >= 4) {
+      effectiveTheme = "ruby";
+    } else {
+      effectiveTheme = null;
+    }
+  }
+
+  if (effectiveTheme) {
+    document.documentElement.setAttribute("data-user-theme", effectiveTheme);
+    document.body.setAttribute("data-user-theme", effectiveTheme);
+  } else {
+    document.documentElement.removeAttribute("data-user-theme");
+    document.body.removeAttribute("data-user-theme");
   }
 
   $$(".profile-chip-text").forEach(
@@ -3550,16 +3581,10 @@ function initPostDetailNavScrollHandler() {
     const isClassic = document.body.classList.contains("nav-style-classic") || document.documentElement.classList.contains("nav-style-classic");
 
     if (isDesktop && isClassic) {
-      const delta = currentY - lastPostDetailScrollY;
-      if (currentY <= 60) {
-        showPostDetailTopNav();
-      } else if (delta > 3) {
-        // Cuộn xuống: đẩy xuống từ trên xuống
-        showPostDetailTopNav();
-      } else if (delta < -3) {
-        // Cuộn lên: đẩy lên dưới layer navi
-        hidePostDetailTopNav();
+      if (typeof window.syncPostDetailTopNavState === "function") {
+        window.syncPostDetailTopNavState();
       }
+      showPostDetailTopNav();
       lastPostDetailScrollY = currentY;
       return;
     }
@@ -5518,14 +5543,14 @@ function initThemeCustomizerHandlers() {
         try {
           localStorage.removeItem("re_search_user_color_preference");
           localStorage.setItem("re_search_user_theme_preference", "default");
-        } catch (e) {}
+        } catch (e) { }
       } else {
         document.documentElement.setAttribute("data-user-theme", pending.val);
         document.body.setAttribute("data-user-theme", pending.val);
         try {
           localStorage.setItem("re_search_user_color_preference", pending.val);
           localStorage.setItem("re_search_user_theme_preference", pending.val);
-        } catch (e) {}
+        } catch (e) { }
       }
       if (typeof toast === "function") {
         toast(`✨ Đã áp dụng tông màu: ${pending.label}`);
@@ -5540,7 +5565,7 @@ function initThemeCustomizerHandlers() {
       try {
         localStorage.setItem(XMAS_EFFECTS_STORAGE_KEY, isXmas ? "on" : "off");
         localStorage.setItem("re_search_seasonal_mode", isXmas ? "christmas" : "default");
-      } catch (e) {}
+      } catch (e) { }
       if (typeof startOrStopChristmasSnowLoop === "function") {
         startOrStopChristmasSnowLoop();
       }
@@ -5551,7 +5576,7 @@ function initThemeCustomizerHandlers() {
       const isClassic = pending.val === "classic";
       document.body.classList.toggle("nav-style-classic", isClassic);
       document.documentElement.classList.toggle("nav-style-classic", isClassic);
-      try { localStorage.setItem("re_search_nav_style", pending.val); } catch (e) {}
+      try { localStorage.setItem("re_search_nav_style", pending.val); } catch (e) { }
       const siteHeader = document.getElementById("siteHeader");
       if (isClassic) {
         siteHeader?.classList.remove("is-compact", "is-scrolled", "is-nav-peek");
@@ -5598,7 +5623,7 @@ function initThemeCustomizerHandlers() {
       document.body.classList.add("nav-style-classic");
       document.documentElement.classList.add("nav-style-classic");
     }
-  } catch (e) {}
+  } catch (e) { }
 }
 initThemeCustomizerHandlers();
 
@@ -5792,10 +5817,23 @@ function initMobileFabSpeedDial() {
 
   itemXmas?.addEventListener("click", () => {
     if (!xmasTray) return;
-    const isHidden = xmasTray.hidden;
-    xmasTray.hidden = !isHidden;
-    itemXmas.setAttribute("aria-expanded", String(isHidden));
+    const isCurrentlyOpen = !xmasTray.hidden && !xmasTray.hasAttribute("hidden");
+    if (isCurrentlyOpen) {
+      xmasTray.hidden = true;
+      xmasTray.setAttribute("hidden", "");
+      itemXmas.setAttribute("aria-expanded", "false");
+    } else {
+      xmasTray.hidden = false;
+      xmasTray.removeAttribute("hidden");
+      itemXmas.setAttribute("aria-expanded", "true");
+    }
     updateXmasFabTrayLabels();
+  });
+
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && menu && !menu.hidden) {
+      setMenuOpen(false);
+    }
   });
 
   xmasMusicBtn?.addEventListener("click", (e) => {
@@ -5843,7 +5881,7 @@ function initChristmasLagDetector() {
       }
       try {
         localStorage.setItem("re_search_xmas_lag_dismissed", String(Date.now()));
-      } catch (e) {}
+      } catch (e) { }
       modal?.close();
       if (typeof toast === "function") {
         toast("❄️ Đã tắt tạm thời giao diện Giáng sinh để thiết bị mượt hơn");
@@ -5855,7 +5893,7 @@ function initChristmasLagDetector() {
     dismissBtn.onclick = () => {
       try {
         localStorage.setItem("re_search_xmas_lag_dismissed", String(Date.now()));
-      } catch (e) {}
+      } catch (e) { }
       modal?.close();
     };
   }
@@ -5877,7 +5915,7 @@ function initChristmasLagDetector() {
       let lastDismissed = 0;
       try {
         lastDismissed = parseInt(localStorage.getItem("re_search_xmas_lag_dismissed") || "0", 10);
-      } catch (e) {}
+      } catch (e) { }
 
       if ((avgFps < 24 || slowFrames >= 7) && Date.now() - lastDismissed > 24 * 60 * 60 * 1000) {
         if (modal && !modal.open && !document.querySelector("dialog[open]")) {
@@ -10261,17 +10299,12 @@ function renderStudyColorRoleSwatches() {
     const isPreset = STUDY_SWATCH_PRESETS.some(
       s => s.color.toLowerCase() === String(currentVal).toLowerCase()
     );
-    const isChristmasColor = (
-      typeof isChristmas2026Season === "function" &&
-      isChristmas2026Season() &&
-      (String(currentVal).toLowerCase() === "#dc2626" || String(currentVal).toLowerCase() === "#f59e0b")
-    );
-    const isCustomActive = (!isPreset && !isChristmasColor && String(currentVal).toLowerCase() !== '#10b981' && isCustomUnlocked);
+    const isCustomActive = (!isPreset && String(currentVal).toLowerCase() !== '#10b981');
     btn.classList.toggle("active", isCustomActive);
     btn.style.setProperty("--custom-current-color", currentVal || "#10b981");
 
     if (input && input.value !== currentVal) {
-      try { input.value = currentVal; } catch (e) {}
+      try { input.value = currentVal; } catch (e) { }
     }
   };
 
@@ -10305,15 +10338,15 @@ window.triggerStudyCustomColorPicker = function (role) {
     return;
   }
   const inputId = (role === 'primary') ? 'studyColorPrimaryPicker' :
-                  (role === 'secondary') ? 'studyColorSecondaryPicker' :
-                  'studyColorAccessoryPicker';
+    (role === 'secondary') ? 'studyColorSecondaryPicker' :
+      'studyColorAccessoryPicker';
   const input = document.getElementById(inputId);
   if (input) {
     if (typeof input.showPicker === 'function') {
       try {
         input.showPicker();
         return;
-      } catch (e) {}
+      } catch (e) { }
     }
     input.click();
   }
@@ -15948,14 +15981,14 @@ function onEnterStudyLounge() {
   if (typeof isChristmas2026Season === "function" && isChristmas2026Season()) {
     const autoEquipKey = "re_search_study_xmas_auto_2026_applied";
     let alreadyEquipped = false;
-    try { alreadyEquipped = localStorage.getItem(autoEquipKey) === "1"; } catch (e) {}
+    try { alreadyEquipped = localStorage.getItem(autoEquipKey) === "1"; } catch (e) { }
     if (!alreadyEquipped) {
       studySettings.activeWallpaper = "christmas_2026";
       studySettings.primaryColor = "#dc2626";
       studySettings.secondaryColor = "#10b981";
       studySettings.accessoryColor = "#f59e0b";
       saveStudySettings(false);
-      try { localStorage.setItem(autoEquipKey, "1"); } catch (e) {}
+      try { localStorage.setItem(autoEquipKey, "1"); } catch (e) { }
     }
   } else {
     let changed = false;
@@ -16454,11 +16487,20 @@ function initAdaptiveGlassHeader() {
     if (!topNav) return;
     const isDetailActive = Boolean(postDetailPage && postDetailPage.classList.contains("active-page"));
     const isClassic = document.body.classList.contains("nav-style-classic") || document.documentElement.classList.contains("nav-style-classic");
+    const y = window.scrollY || window.pageYOffset || 0;
+
     if (isClassic) {
-      topNav.classList.remove("is-header-docked", "is-peek-suppressed");
+      const isDesktop = window.innerWidth > 800 && window.innerHeight > 520;
+      const classicDock =
+        isDetailActive &&
+        isDesktop &&
+        !document.body.classList.contains("study-zen-fullscreen") &&
+        y > 50;
+      topNav.classList.toggle("is-header-docked", classicDock);
+      topNav.classList.remove("is-peek-suppressed", "top-nav-hidden");
       return;
     }
-    const y = window.scrollY || window.pageYOffset || 0;
+
     const desktopDock =
       isDetailActive &&
       isDesktopGlassViewport() &&
@@ -16625,6 +16667,7 @@ function initAdaptiveGlassHeader() {
       document.body.classList.remove("detail-dock-tight", "detail-dock-compact-bc");
       isCompact = false;
       isPeeking = false;
+      syncPostDetailTopNavState();
       return;
     }
     if (!isDesktopGlassViewport() || document.body.classList.contains("study-zen-fullscreen")) {
