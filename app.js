@@ -5786,13 +5786,12 @@ function initMobileFabSpeedDial() {
   }
 
   function updateXmasFabTrayLabels() {
-    const musicLabel = document.getElementById("mobileFabMusicStatus");
-    const snowLabel = document.getElementById("mobileFabSnowStatus");
-    const isPlaying = typeof isChristmasMusicPlaying === "function" ? isChristmasMusicPlaying() : (christmasMusicState?.isPlaying || false);
-    const isSnowOff = document.body.classList.contains("christmas-effects-off");
-
-    if (musicLabel) musicLabel.textContent = isPlaying ? "Nhạc Noel: Đang phát 🔊" : "Nhạc Noel: Đang tắt 🔇";
-    if (snowLabel) snowLabel.textContent = isSnowOff ? "Không khí Noel: Đang tắt" : "Không khí Noel: Đang bật ✨";
+    if (typeof updateChristmasMusicUI === "function") {
+      updateChristmasMusicUI();
+    }
+    if (typeof updateChristmasEffectsToggleUI === "function") {
+      updateChristmasEffectsToggleUI();
+    }
   }
 
   fabBtn.addEventListener("click", (e) => {
@@ -5837,16 +5836,20 @@ function initMobileFabSpeedDial() {
     }
   });
 
-  xmasMusicBtn?.addEventListener("click", (e) => {
-    if (typeof toggleChristmasMusic === "function") {
-      toggleChristmasMusic(e);
+  xmasMusicBtn?.addEventListener("click", async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (typeof window.toggleChristmasMusic === "function") {
+      await window.toggleChristmasMusic(e);
       updateXmasFabTrayLabels();
     }
   });
 
   xmasSnowBtn?.addEventListener("click", (e) => {
-    if (typeof toggleChristmasEffects === "function") {
-      toggleChristmasEffects(e);
+    e.preventDefault();
+    e.stopPropagation();
+    if (typeof window.toggleChristmasEffects === "function") {
+      window.toggleChristmasEffects(e);
       updateXmasFabTrayLabels();
     }
   });
@@ -5860,6 +5863,8 @@ function initMobileFabSpeedDial() {
     setMenuOpen(false);
     if (typeof openRethinkExamModal === "function") openRethinkExamModal();
   });
+
+  updateXmasFabTrayLabels();
 }
 initMobileFabSpeedDial();
 
@@ -24514,7 +24519,12 @@ function startOrStopChristmasSnowLoop() {
 }
 
 function updateChristmasEffectsToggleUI() {
-  const isActive = Boolean(isChristmas2026Season() && christmasSnowState.enabled && !christmasSnowState.reducedMotion);
+  const isActive = Boolean(
+    isChristmas2026Season() &&
+    christmasSnowState.enabled &&
+    !christmasSnowState.reducedMotion &&
+    !document.body.classList.contains("christmas-effects-off")
+  );
   const labelEl = $("#quickMenuXmasSnowLabel");
   const switchEl = $("#quickMenuXmasSnowToggle");
   const widgetBtn = $("#christmasSnowToggleBtn");
@@ -24534,6 +24544,22 @@ function updateChristmasEffectsToggleUI() {
     widgetBtn.setAttribute("aria-pressed", String(isActive));
     widgetBtn.title = "Không khí Giáng sinh";
   }
+
+  // Cập nhật trạng thái trực quan ở menu thao tác nhanh (FAB speed dial)
+  const fabSnowBtn = document.getElementById("mobileFabXmasSnowBtn");
+  const fabSnowToggle = document.getElementById("mobileFabSnowToggle");
+  const fabSnowStatus = document.getElementById("mobileFabSnowStatus");
+  if (fabSnowBtn) {
+    fabSnowBtn.classList.toggle("is-active", isActive);
+    fabSnowBtn.setAttribute("aria-checked", String(isActive));
+  }
+  if (fabSnowToggle) {
+    fabSnowToggle.classList.toggle("active", isActive);
+    fabSnowToggle.setAttribute("aria-checked", String(isActive));
+  }
+  if (fabSnowStatus) {
+    fabSnowStatus.textContent = isActive ? "Giao diện Giáng sinh: Đang bật" : "Giao diện Giáng sinh: Đang tắt";
+  }
 }
 
 window.toggleChristmasEffects = function (e) {
@@ -24546,12 +24572,16 @@ window.toggleChristmasEffects = function (e) {
     toast("Thiết bị đang bật chế độ Giảm chuyển động (Reduced Motion).");
     return;
   }
-  christmasSnowState.enabled = !christmasSnowState.enabled;
+  const nextState = !christmasSnowState.enabled;
+  christmasSnowState.enabled = nextState;
+  document.body.classList.toggle("christmas-effects-off", !nextState);
   try {
-    localStorage.setItem(XMAS_EFFECTS_STORAGE_KEY, christmasSnowState.enabled ? "on" : "off");
+    localStorage.setItem(XMAS_EFFECTS_STORAGE_KEY, nextState ? "on" : "off");
+    localStorage.setItem("re_search_seasonal_mode", nextState ? "christmas" : "default");
   } catch (err) { }
   startOrStopChristmasSnowLoop();
-  toast(christmasSnowState.enabled ? "Đã bật Không khí Giáng sinh" : "Đã tạm dừng Không khí Giáng sinh");
+  updateChristmasEffectsToggleUI();
+  toast(nextState ? "🎄 Đã bật Giao diện Giáng sinh" : "❄️ Đã tắt Giao diện Giáng sinh");
 };
 
 function ensureChristmasAudioElement() {
@@ -24594,6 +24624,22 @@ function updateChristmasMusicUI() {
   if (rowSwitch) {
     rowSwitch.classList.toggle("active", isPlaying);
     rowSwitch.setAttribute("aria-checked", String(isPlaying));
+  }
+
+  // Cập nhật trạng thái trực quan ở menu thao tác nhanh (FAB speed dial)
+  const fabMusicBtn = document.getElementById("mobileFabXmasMusicBtn");
+  const fabMusicToggle = document.getElementById("mobileFabMusicToggle");
+  const fabMusicStatus = document.getElementById("mobileFabMusicStatus");
+  if (fabMusicBtn) {
+    fabMusicBtn.classList.toggle("is-active", isPlaying);
+    fabMusicBtn.setAttribute("aria-checked", String(isPlaying));
+  }
+  if (fabMusicToggle) {
+    fabMusicToggle.classList.toggle("active", isPlaying);
+    fabMusicToggle.setAttribute("aria-checked", String(isPlaying));
+  }
+  if (fabMusicStatus) {
+    fabMusicStatus.textContent = isPlaying ? "Nhạc Giáng sinh: Đang phát" : "Nhạc Giáng sinh: Đang tắt";
   }
 }
 

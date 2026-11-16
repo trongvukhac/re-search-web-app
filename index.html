@@ -2714,17 +2714,39 @@
               </span>
             </button>
             <div class="mobile-fab-sub-tray" id="mobileFabXmasTray" hidden>
-              <button type="button" class="mobile-fab-sub-pill" id="mobileFabXmasMusicBtn">
-                <span class="sub-icon">🎵</span>
-                <span class="sub-label" id="mobileFabMusicStatus">Nhạc Noel: Đang tắt</span>
+              <!-- 1. Bật/tắt Nhạc Giáng sinh -->
+              <button type="button" class="mobile-fab-sub-pill" id="mobileFabXmasMusicBtn" role="switch" aria-checked="false" title="Bật hoặc tắt nhạc nền Giáng sinh">
+                <div class="sub-pill-left">
+                  <span class="sub-icon">🎵</span>
+                  <span class="sub-label" id="mobileFabMusicStatus">Nhạc Giáng sinh: Đang tắt</span>
+                </div>
+                <div class="theme-toggle-switch" id="mobileFabMusicToggle" aria-hidden="true">
+                  <span class="theme-switch-slider">
+                    <span class="theme-switch-thumb"></span>
+                  </span>
+                </div>
               </button>
-              <button type="button" class="mobile-fab-sub-pill" id="mobileFabXmasSnowBtn">
-                <span class="sub-icon">❄️</span>
-                <span class="sub-label" id="mobileFabSnowStatus">Không khí Noel: Đang bật</span>
+
+              <!-- 2. Bật/tắt Giao diện Giáng sinh -->
+              <button type="button" class="mobile-fab-sub-pill" id="mobileFabXmasSnowBtn" role="switch" aria-checked="true" title="Bật hoặc tắt giao diện & không khí Giáng sinh">
+                <div class="sub-pill-left">
+                  <span class="sub-icon">❄️</span>
+                  <span class="sub-label" id="mobileFabSnowStatus">Giao diện Giáng sinh: Đang bật</span>
+                </div>
+                <div class="theme-toggle-switch active" id="mobileFabSnowToggle" aria-hidden="true">
+                  <span class="theme-switch-slider">
+                    <span class="theme-switch-thumb"></span>
+                  </span>
+                </div>
               </button>
-              <button type="button" class="mobile-fab-sub-pill" id="mobileFabXmasTreeBtn">
-                <span class="sub-icon">🎄</span>
-                <span class="sub-label">Trang trí Cây thông 3D</span>
+
+              <!-- 3. Mở Cây thông Giáng sinh 3D -->
+              <button type="button" class="mobile-fab-sub-pill sub-pill-action" id="mobileFabXmasTreeBtn" title="Mở phòng trang trí Cây thông Giáng sinh">
+                <div class="sub-pill-left">
+                  <span class="sub-icon">🎄</span>
+                  <span class="sub-label">Trang trí Cây thông 3D</span>
+                </div>
+                <span class="sub-pill-arrow">→</span>
               </button>
             </div>
           </div>
