@@ -33027,8 +33027,11 @@ html[data-user-theme="mythic"] .mobile-fab:hover {
 [data-user-theme="ruby"] .mobile-fab-sub-pill.is-active:hover {
   background: rgba(201, 42, 42, 0.14) !important;
 }
-[data-user-theme="ruby"] .mobile-fab-sub-pill .theme-toggle-switch.active .theme-switch-slider {
+[data-user-theme="ruby"] .mobile-fab-sub-pill .theme-toggle-switch.active {
   background: #c92a2a !important;
+}
+[data-user-theme="ruby"] .mobile-fab-sub-pill .theme-switch-slider {
+  background: transparent !important;
 }
 [data-user-theme="ruby"] .mobile-fab-sub-pill:hover .sub-pill-arrow {
   color: #c92a2a !important;
@@ -33056,8 +33059,11 @@ html[data-user-theme="mythic"] .mobile-fab:hover {
 [data-user-theme="mythic"] .mobile-fab-sub-pill.is-active:hover {
   background: rgba(156, 28, 104, 0.16) !important;
 }
-[data-user-theme="mythic"] .mobile-fab-sub-pill .theme-toggle-switch.active .theme-switch-slider {
+[data-user-theme="mythic"] .mobile-fab-sub-pill .theme-toggle-switch.active {
   background: linear-gradient(135deg, #7048e8, #d6336c) !important;
+}
+[data-user-theme="mythic"] .mobile-fab-sub-pill .theme-switch-slider {
+  background: transparent !important;
 }
 [data-user-theme="mythic"] .mobile-fab-sub-pill:hover .sub-pill-arrow {
   color: #9c1c68 !important;
@@ -33334,8 +33340,13 @@ body.dark-theme .fab-icon-contest { background: rgba(202, 138, 4, 0.2); }
   border: 1px solid rgba(0, 0, 0, 0.08);
   background: var(--surface, #ffffff);
   color: var(--ink);
+  font-family: inherit;
   font-size: 12.5px;
   font-weight: 600;
+  text-align: left;
+  appearance: none;
+  -webkit-appearance: none;
+  outline: none;
   cursor: pointer;
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   box-sizing: border-box;
@@ -33369,6 +33380,37 @@ body.dark-theme .fab-icon-contest { background: rgba(202, 138, 4, 0.2); }
   transform: scale(0.85);
   transform-origin: right center;
   margin: 0;
+  overflow: hidden;
+}
+
+#mobileFabContestCountdown {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+.edit-timer-btn.is-privileged-edit {
+  border-radius: 50%;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.edit-timer-btn.is-privileged-edit:hover {
+  background: var(--sage-2, rgba(0, 0, 0, 0.06));
+  opacity: 1 !important;
+  transform: scale(1.08);
+}
+
+.edit-doc-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.edit-doc-btn:hover {
+  opacity: 1 !important;
+  background: var(--sage-2, rgba(0, 0, 0, 0.06));
+  transform: scale(1.08);
 }
 
 .mobile-fab-sub-pill.is-active {

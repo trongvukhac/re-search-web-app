@@ -44,7 +44,7 @@
     <script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js" defer></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" defer></script>
-    <link rel="stylesheet" href="styles.css?v=180" />
+    <link rel="stylesheet" href="styles.css?v=181" />
   </head>
   <body>
     <canvas id="christmasTreeCanvas" class="christmas-tree-edge-canvas" aria-hidden="true"></canvas>
@@ -80,6 +80,17 @@
             </div>
           </div>
           <div class="doc-viewer-head-actions">
+            <button
+              type="button"
+              class="button button-outline button-sm doc-viewer-edit-btn"
+              id="docViewerEditBtn"
+              onclick="openEditDocumentModal(event, currentViewingDocId)"
+              title="Chỉnh sửa tài liệu"
+              style="display: none;"
+            >
+              <svg class="ui-btn-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+              <span>Chỉnh sửa</span>
+            </button>
             <button
               type="button"
               class="button button-outline button-sm doc-viewer-share-btn"
@@ -2721,10 +2732,10 @@
             </button>
             <div class="mobile-fab-sub-tray" id="mobileFabXmasTray" hidden>
               <!-- 1. Bật/tắt Nhạc Giáng sinh -->
-              <button type="button" class="mobile-fab-sub-pill" id="mobileFabXmasMusicBtn" role="switch" aria-checked="false" title="Bật hoặc tắt nhạc nền Giáng sinh">
+              <button type="button" class="mobile-fab-sub-pill" id="mobileFabXmasMusicBtn" role="switch" aria-checked="false" title="Nhạc Giáng sinh">
                 <div class="sub-pill-left">
                   <span class="sub-icon">🎵</span>
-                  <span class="sub-label" id="mobileFabMusicStatus">Nhạc Giáng sinh: Đang tắt</span>
+                  <span class="sub-label" id="mobileFabMusicStatus">Nhạc Giáng sinh</span>
                 </div>
                 <div class="theme-toggle-switch" id="mobileFabMusicToggle" aria-hidden="true">
                   <span class="theme-switch-slider">
@@ -2734,10 +2745,10 @@
               </button>
 
               <!-- 2. Bật/tắt Giao diện Giáng sinh -->
-              <button type="button" class="mobile-fab-sub-pill" id="mobileFabXmasSnowBtn" role="switch" aria-checked="true" title="Bật hoặc tắt giao diện & không khí Giáng sinh">
+              <button type="button" class="mobile-fab-sub-pill is-active" id="mobileFabXmasSnowBtn" role="switch" aria-checked="true" title="Giao diện Giáng sinh">
                 <div class="sub-pill-left">
                   <span class="sub-icon">❄️</span>
-                  <span class="sub-label" id="mobileFabSnowStatus">Giao diện Giáng sinh: Đang bật</span>
+                  <span class="sub-label" id="mobileFabSnowStatus">Giao diện Giáng sinh</span>
                 </div>
                 <div class="theme-toggle-switch active" id="mobileFabSnowToggle" aria-hidden="true">
                   <span class="theme-switch-slider">
@@ -2762,7 +2773,7 @@
             <span class="mobile-fab-action-icon fab-icon-contest">🏆</span>
             <div class="mobile-fab-action-info">
               <strong class="mobile-fab-action-name">Cuộc thi thiết kế RE:THINK 2026</strong>
-              <span class="mobile-fab-action-desc">Xem tài liệu đề thi &amp; nộp bài dự thi</span>
+              <span class="mobile-fab-action-desc" id="mobileFabContestCountdown">còn -- ngày -- giờ -- phút -- giây</span>
             </div>
           </button>
         </div>
@@ -6357,6 +6368,6 @@
       </button>
     </div>
 
-    <script src="app.js?v=180" defer></script>
+    <script src="app.js?v=181" defer></script>
   </body>
 </html>

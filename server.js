@@ -4218,10 +4218,12 @@ async function api(request, response, url) {
     if (row.status !== "visible") return error(response, 403, "Không thể chỉnh sửa nội dung đã bị ẩn.");
     if (row.author_id !== user.id) return error(response, 403, "Chỉ tác giả mới được phép chỉnh sửa.");
 
-    // Kiểm tra thời gian 30 phút (1800000 ms)
-    const createdAtTime = new Date(row.created_at.replace(' ', 'T') + 'Z').getTime();
-    if (Date.now() - createdAtTime > 30 * 60 * 1000) {
-      return error(response, 403, "Đã hết thời hạn 30 phút để chỉnh sửa.");
+    // Kiểm tra thời gian 30 phút (1800000 ms) - chỉ áp dụng cho sinh viên / thành viên thường
+    if (!isAdmin(user)) {
+      const createdAtTime = new Date(row.created_at.replace(' ', 'T') + 'Z').getTime();
+      if (Date.now() - createdAtTime > 30 * 60 * 1000) {
+        return error(response, 403, "Đã hết thời hạn 30 phút để chỉnh sửa.");
+      }
     }
 
     if (type === "posts") {
@@ -6428,6 +6430,109 @@ async function api(request, response, url) {
       return error(response, 400, "Thông tin tài liệu chưa hợp lệ.");
     }
   }
+  const patchDocMatch = pathName.match(/^\/api\/documents\/(\d+)$/);
+  if (method === "PATCH" && patchDocMatch) {
+    const user = requireUser(request, response);
+    if (!user || !requireCsrf(request, response, user)) return;
+
+    const docId = Number(patchDocMatch[1]);
+    const doc = db.prepare("SELECT * FROM documents WHERE id=?").get(docId);
+    if (!doc) return error(response, 404, "Không tìm thấy tài liệu.");
+
+    // Kiểm tra quyền: tác giả hoặc admin
+    if (doc.submitted_by !== user.id && user.role !== "admin") {
+      return error(response, 403, "Chỉ tác giả hoặc Admin mới có quyền chỉnh sửa tài liệu này.");
+    }
+
+    // Kiểm tra thời hạn 30 phút: chỉ áp dụng cho sinh viên / thành viên thường
+    if (!isAdmin(user)) {
+      const createdAtTime = new Date(doc.created_at.replace(' ', 'T') + 'Z').getTime();
+      if (Date.now() - createdAtTime > 30 * 60 * 1000) {
+        return error(response, 403, "Đã hết thời hạn 30 phút để chỉnh sửa tài liệu.");
+      }
+    }
+
+    const { title, subtitle, description, sourceUrl, category, format } = await readJSON(request);
+    try {
+      const link = new URL(sourceUrl);
+      if (!["https:", "http:"].includes(link.protocol)) throw new Error();
+
+      const ALLOWED_DOC_FORMATS = [
+        "PDF",
+        "Word",
+        "Slide",
+        "Bảng tính",
+        "Hình ảnh",
+        "Video",
+        "Audio",
+        "Mã nguồn",
+        "Tập dữ liệu",
+        "Ebook",
+        "Khác"
+      ];
+      let normalizedFormat = typeof format === "string" ? format.trim() : "Khác";
+      const formatAliases = {
+        "docx": "Word", "doc": "Word",
+        "pptx": "Slide", "ppt": "Slide",
+        "excel": "Bảng tính", "xlsx": "Bảng tính", "xls": "Bảng tính", "csv": "Bảng tính",
+        "image": "Hình ảnh", "infographic": "Hình ảnh", "png": "Hình ảnh", "jpg": "Hình ảnh",
+        "mp4": "Video",
+        "mp3": "Audio", "podcast": "Audio",
+        "notebook": "Mã nguồn", "code": "Mã nguồn", "python": "Mã nguồn", "r": "Mã nguồn",
+        "dataset": "Tập dữ liệu", "spss": "Tập dữ liệu",
+        "ebook": "Ebook", "epub": "Ebook"
+      };
+      if (formatAliases[normalizedFormat.toLowerCase()]) {
+        normalizedFormat = formatAliases[normalizedFormat.toLowerCase()];
+      }
+      if (!ALLOWED_DOC_FORMATS.includes(normalizedFormat)) {
+        normalizedFormat = "Khác";
+      }
+
+      if (
+        typeof title !== "string" ||
+        title.trim().length < 3 ||
+        typeof description !== "string" ||
+        description.trim().length < 3 ||
+        !["course", "reference"].includes(category)
+      ) {
+        return error(response, 400, "Thông tin tài liệu chưa hợp lệ.");
+      }
+
+      const cleanSubtitle = typeof subtitle === "string" ? subtitle.trim().slice(0, 200) : "";
+
+      db.prepare(
+        "UPDATE documents SET title=?, subtitle=?, description=?, source_url=?, category=?, format=?, updated_at=CURRENT_TIMESTAMP WHERE id=?"
+      ).run(
+        title.trim(),
+        cleanSubtitle,
+        description.trim(),
+        link.href,
+        category,
+        normalizedFormat,
+        docId
+      );
+
+      db.prepare(
+        "INSERT INTO audit_logs(actor_id,action,subject_type,subject_id,reason) VALUES (?,?,?,?,?)"
+      ).run(user.id, "document_edited", "document", docId, "Chỉnh sửa tài liệu");
+
+      return json(response, 200, {
+        success: true,
+        document: {
+          id: docId,
+          title: title.trim(),
+          subtitle: cleanSubtitle,
+          description: description.trim(),
+          sourceUrl: link.href,
+          category,
+          format: normalizedFormat
+        }
+      });
+    } catch {
+      return error(response, 400, "Thông tin tài liệu chưa hợp lệ.");
+    }
+  }
   const docReadMatch = pathName.match(/^\/api\/documents\/(\d+)\/read$/);
   if (method === "POST" && docReadMatch) {
     const docId = Number(docReadMatch[1]);
@@ -6642,10 +6747,12 @@ async function api(request, response, url) {
       return error(response, 403, "Chỉ tác giả mới được phép chỉnh sửa thảo luận.");
     }
 
-    // Kiểm tra thời hạn 30 phút
-    const createdAtTime = new Date(comment.created_at.replace(' ', 'T') + 'Z').getTime();
-    if (Date.now() - createdAtTime > 30 * 60 * 1000) {
-      return error(response, 403, "Đã hết thời hạn 30 phút để chỉnh sửa thảo luận.");
+    // Kiểm tra thời hạn 30 phút - chỉ áp dụng cho sinh viên / thành viên thường
+    if (!isAdmin(user)) {
+      const createdAtTime = new Date(comment.created_at.replace(' ', 'T') + 'Z').getTime();
+      if (Date.now() - createdAtTime > 30 * 60 * 1000) {
+        return error(response, 403, "Đã hết thời hạn 30 phút để chỉnh sửa thảo luận.");
+      }
     }
 
     const { content } = await readJSON(request);

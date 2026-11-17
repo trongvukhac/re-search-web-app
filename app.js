@@ -2703,11 +2703,19 @@ let globalTimerInterval = null;
 
 function renderEditBtn(id, createdAtStr, type) {
   if (!session) return "";
+  const penSvg = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>`;
+  const isPrivileged = session.role === "admin" || session.role === "ta" || session.role === "lecturer";
+
+  if (isPrivileged) {
+    return `<button class="edit-timer-btn is-privileged-edit" onclick="event.stopPropagation(); openEditModal('${type}', ${id})" title="Chỉnh sửa nội dung">
+      ${penSvg}
+    </button>`;
+  }
+
   const createdAt = new Date(createdAtStr).getTime();
   const thirtyMins = 30 * 60 * 1000;
   if (Date.now() - createdAt >= thirtyMins) return "";
 
-  const penSvg = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>`;
   const timerSvg = `<svg class="edit-countdown-svg timer-circle" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><circle class="progress edit-progress-${type}-${id}" cx="12" cy="12" r="10"></circle></svg>`;
 
   editTimers.set(`${type}-${id}`, createdAt);
@@ -3022,6 +3030,16 @@ function renderDocuments() {
     .map(
       (d) => {
         const delBtn = isAdminOrTA ? `<button class="delete-doc-btn" onclick="deleteDocument(event, ${d.id})" style="position:absolute; top:8px; right:8px; background:transparent; color:var(--error); border:none; padding:8px; cursor:pointer; font-size:16px; line-height:1; z-index:10;" aria-label="Xoá tài liệu">✕</button>` : "";
+        const isDocAuthor = session && (d.authorId === session.id);
+        const isDocWithin30Mins = d.createdAt && (Date.now() - new Date(d.createdAt).getTime() < 30 * 60 * 1000);
+        const canEditDoc = session && (
+          isAdminOrTA
+            ? (isDocAuthor || session.role === "admin")
+            : (isDocAuthor && isDocWithin30Mins)
+        );
+        const editBtn = canEditDoc
+          ? `<button type="button" class="edit-doc-btn" onclick="openEditDocumentModal(event, ${d.id})" style="position:absolute; top:8px; right:${isAdminOrTA ? '36px' : '8px'}; background:transparent; color:var(--ink); border:none; padding:8px; cursor:pointer; font-size:14px; line-height:1; z-index:10; opacity:0.75; transition:opacity 0.2s;" title="Chỉnh sửa tài liệu" aria-label="Chỉnh sửa tài liệu"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg></button>`
+          : "";
         const isSaved = Boolean(d.isSaved);
         const saveBtnContent = isSaved
           ? `<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg> <span>Đã lưu</span>`
@@ -3030,6 +3048,7 @@ function renderDocuments() {
         return `
           <article class="document-card" data-doc="${d.id}" style="position:relative;">
             ${delBtn}
+            ${editBtn}
             <div class="document-header-badges">
               <div class="document-type" data-format="${d.format}">${d.format}</div>
               <span class="document-id-badge" title="Mã tài liệu: #TL-${d.id}">#TL-${d.id}</span>
@@ -3149,6 +3168,18 @@ window.viewDocumentById = async function (docId) {
       }
     }
     updateDocViewerSaveBtn(doc.id, doc.isSaved);
+    const isAdminOrTA = session?.role === "admin" || session?.role === "ta" || session?.role === "lecturer";
+    const isDocAuthor = session && (doc.authorId === session.id);
+    const isDocWithin30Mins = doc.createdAt && (Date.now() - new Date(doc.createdAt).getTime() < 30 * 60 * 1000);
+    const canEditDoc = session && (
+      isAdminOrTA
+        ? (isDocAuthor || session.role === "admin")
+        : (isDocAuthor && isDocWithin30Mins)
+    );
+    const viewerEditBtn = $("#docViewerEditBtn");
+    if (viewerEditBtn) {
+      viewerEditBtn.style.display = canEditDoc ? "" : "none";
+    }
     const modal = $("#documentViewerModal");
     if (modal && typeof modal.showModal === "function") {
       if (!modal.open) modal.showModal();
@@ -5782,6 +5813,7 @@ function initMobileFabSpeedDial() {
     fabBtn.setAttribute("aria-expanded", String(isOpen));
     if (isOpen) {
       updateXmasFabTrayLabels();
+      updateRethinkContestCountdown();
     }
   }
 
@@ -5811,8 +5843,12 @@ function initMobileFabSpeedDial() {
 
   itemDoc?.addEventListener("click", () => {
     setMenuOpen(false);
-    const docModal = document.getElementById("documentModal");
-    if (docModal) docModal.showModal();
+    if (typeof openDocumentModal === "function") {
+      openDocumentModal();
+    } else {
+      const docModal = document.getElementById("documentModal");
+      if (docModal) docModal.showModal();
+    }
   });
 
   itemXmas?.addEventListener("click", () => {
@@ -5866,7 +5902,28 @@ function initMobileFabSpeedDial() {
 
   updateXmasFabTrayLabels();
 }
+
+function updateRethinkContestCountdown() {
+  const el = document.getElementById("mobileFabContestCountdown");
+  if (!el) return;
+  // Hạn chót: 23h59 ngày 29/11/2026 (Giờ Việt Nam UTC+7)
+  const deadline = new Date("2026-11-29T23:59:00+07:00").getTime();
+  const now = Date.now();
+  const diff = deadline - now;
+  if (diff <= 0) {
+    el.textContent = "Đã kết thúc nhận bài";
+    return;
+  }
+  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+  const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
+  const minutes = Math.floor((diff / (1000 * 60)) % 60);
+  const seconds = Math.floor((diff / 1000) % 60);
+  el.textContent = `còn ${days} ngày ${String(hours).padStart(2, "0")} giờ ${String(minutes).padStart(2, "0")} phút ${String(seconds).padStart(2, "0")} giây`;
+}
+
 initMobileFabSpeedDial();
+updateRethinkContestCountdown();
+setInterval(updateRethinkContestCountdown, 1000);
 
 // =========================================================================
 // CHRISTMAS THEME PERFORMANCE LAG MONITOR & WARNING MODAL (ISSUE 3)
@@ -6448,7 +6505,44 @@ $$(".tab").forEach((tab) =>
     renderDocuments();
   }),
 );
-$("#shareDocument").onclick = () => {
+let currentEditingDocId = null;
+
+window.openEditDocumentModal = function (e, docId) {
+  if (e) {
+    e.stopPropagation();
+    e.preventDefault();
+  }
+  const doc = (typeof getAppDocument === "function" ? getAppDocument(docId) : null) ||
+              (documents ? documents.find(d => d.id === Number(docId)) : null);
+  if (!doc) {
+    toast("Không tìm thấy thông tin tài liệu.");
+    return;
+  }
+  currentEditingDocId = Number(docId);
+  const modal = $("#documentModal");
+  if (!modal) return;
+
+  const eyebrow = modal.querySelector(".eyebrow");
+  const heading = modal.querySelector(".modal-head h2");
+  const submitBtn = modal.querySelector("#documentForm button[type='submit']");
+  if (eyebrow) eyebrow.textContent = "CHỈNH SỬA TÀI LIỆU";
+  if (heading) heading.textContent = "Cập nhật nội dung tài liệu";
+  if (submitBtn) submitBtn.textContent = "Lưu thay đổi";
+
+  $("#docTitle").value = doc.title || "";
+  if ($("#docSubtitle")) $("#docSubtitle").value = doc.subtitle || "";
+  $("#docUrl").value = doc.url || doc.sourceUrl || "";
+  if ($("#docFormat")) $("#docFormat").value = doc.format || "Khác";
+  if ($("#docCategory")) $("#docCategory").value = doc.type || doc.category || "reference";
+  if (docDescEditor) {
+    docDescEditor.root.innerHTML = DOMPurify.sanitize(doc.desc || doc.description || "");
+  }
+
+  modal.showModal();
+  $("#docTitle").focus();
+};
+
+window.openDocumentModal = function () {
   if (serverMode && !session) {
     openAuth();
     return;
@@ -6458,10 +6552,23 @@ $("#shareDocument").onclick = () => {
     toast("⚠️ Tính năng đề xuất tài liệu chỉ dành cho sinh viên Văn Lang (email @vanlanguni.vn hoặc @vlu.edu.vn).");
     return;
   }
+  currentEditingDocId = null;
   const modal = $("#documentModal");
+  if (!modal) return;
+  const eyebrow = modal.querySelector(".eyebrow");
+  const heading = modal.querySelector(".modal-head h2");
+  const submitBtn = modal.querySelector("#documentForm button[type='submit']");
+  if (eyebrow) eyebrow.textContent = "TÀI LIỆU MỚI";
+  if (heading) heading.textContent = "Đề xuất tài liệu tham khảo";
+  if (submitBtn) submitBtn.textContent = "Gửi tài liệu";
   $("#documentForm").reset();
+  if (docDescEditor) docDescEditor.setText("");
   modal.showModal();
   $("#docTitle").focus();
+};
+
+$("#shareDocument").onclick = () => {
+  openDocumentModal();
 };
 
 $("#documentForm").addEventListener("submit", async (e) => {
@@ -6482,18 +6589,58 @@ $("#documentForm").addEventListener("submit", async (e) => {
 
   try {
     if (serverMode) {
-      await requestAPI("/api/documents", {
-        method: "POST",
-        body: JSON.stringify({
-          title,
-          subtitle,
-          description: desc,
-          sourceUrl: url,
-          category: cat,
-          format,
-        }),
-      });
-      toast("Đã gửi đề xuất tài liệu chờ duyệt.");
+      if (currentEditingDocId) {
+        await requestAPI(`/api/documents/${currentEditingDocId}`, {
+          method: "PATCH",
+          body: JSON.stringify({
+            title,
+            subtitle,
+            description: desc,
+            sourceUrl: url,
+            category: cat,
+            format,
+          }),
+        });
+        toast("Cập nhật tài liệu thành công!");
+        const target = documents.find((d) => d.id === currentEditingDocId);
+        if (target) {
+          target.title = title;
+          target.subtitle = subtitle;
+          target.desc = desc;
+          target.url = url;
+          target.type = cat;
+          target.format = format;
+        }
+        if (typeof currentViewingDocId !== "undefined" && currentViewingDocId === currentEditingDocId) {
+          const vTitle = $("#viewerTitle");
+          const vSubtitle = $("#viewerSubtitle");
+          const vIframe = $("#viewerIframe");
+          if (vTitle) vTitle.textContent = title;
+          if (vSubtitle) {
+            vSubtitle.textContent = subtitle || "";
+            vSubtitle.style.display = subtitle ? "block" : "none";
+          }
+          let previewUrl = url;
+          if (previewUrl.includes("drive.google.com") && previewUrl.includes("/view")) {
+            previewUrl = previewUrl.replace(/\/view.*$/, "/preview");
+          }
+          if (vIframe) vIframe.src = previewUrl;
+        }
+        currentEditingDocId = null;
+      } else {
+        await requestAPI("/api/documents", {
+          method: "POST",
+          body: JSON.stringify({
+            title,
+            subtitle,
+            description: desc,
+            sourceUrl: url,
+            category: cat,
+            format,
+          }),
+        });
+        toast("Đã gửi đề xuất tài liệu chờ duyệt.");
+      }
       $("#documentForm").reset();
       $("#documentModal").close();
       hydrateServer();
@@ -24552,13 +24699,14 @@ function updateChristmasEffectsToggleUI() {
   if (fabSnowBtn) {
     fabSnowBtn.classList.toggle("is-active", isActive);
     fabSnowBtn.setAttribute("aria-checked", String(isActive));
+    fabSnowBtn.title = isActive ? "Giao diện Giáng sinh (Đang bật)" : "Giao diện Giáng sinh (Đang tắt)";
   }
   if (fabSnowToggle) {
     fabSnowToggle.classList.toggle("active", isActive);
     fabSnowToggle.setAttribute("aria-checked", String(isActive));
   }
   if (fabSnowStatus) {
-    fabSnowStatus.textContent = isActive ? "Giao diện Giáng sinh: Đang bật" : "Giao diện Giáng sinh: Đang tắt";
+    fabSnowStatus.textContent = "Giao diện Giáng sinh";
   }
 }
 
@@ -24633,13 +24781,14 @@ function updateChristmasMusicUI() {
   if (fabMusicBtn) {
     fabMusicBtn.classList.toggle("is-active", isPlaying);
     fabMusicBtn.setAttribute("aria-checked", String(isPlaying));
+    fabMusicBtn.title = isPlaying ? "Nhạc Giáng sinh (Đang phát)" : "Nhạc Giáng sinh (Đang tắt)";
   }
   if (fabMusicToggle) {
     fabMusicToggle.classList.toggle("active", isPlaying);
     fabMusicToggle.setAttribute("aria-checked", String(isPlaying));
   }
   if (fabMusicStatus) {
-    fabMusicStatus.textContent = isPlaying ? "Nhạc Giáng sinh: Đang phát" : "Nhạc Giáng sinh: Đang tắt";
+    fabMusicStatus.textContent = "Nhạc Giáng sinh";
   }
 }
 
