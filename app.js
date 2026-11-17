@@ -8583,9 +8583,21 @@ window.openEditNamecardModal = function (section = "all") {
   if (modal) {
     modal.showModal();
     if (section === "name" && $("#namecardDisplayNameInput")) {
-      setTimeout(() => $("#namecardDisplayNameInput").focus(), 100);
+      setTimeout(() => {
+        try {
+          $("#namecardDisplayNameInput").focus({ preventScroll: true });
+        } catch (e) {
+          $("#namecardDisplayNameInput").focus();
+        }
+      }, 100);
     } else if (section === "avatar" && $("#profileAvatarPicker")) {
-      setTimeout(() => $("#profileAvatarPicker").scrollIntoView({ behavior: "smooth", block: "center" }), 100);
+      const editor = modal.querySelector(".namecard-studio-editor");
+      const picker = $("#profileAvatarPicker");
+      if (editor && picker) {
+        editor.scrollTo({ top: picker.offsetTop - 60, behavior: "smooth" });
+      } else if (picker) {
+        picker.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      }
     }
   }
 };

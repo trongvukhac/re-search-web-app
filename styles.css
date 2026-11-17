@@ -21298,6 +21298,9 @@ dialog.modal.full-cover-viewer-modal {
 
 .namecard-studio-modal,
 dialog.modal.namecard-studio-modal {
+  position: fixed !important;
+  inset: 0 !important;
+  margin: auto !important;
   width: min(1080px, calc(100vw - 36px)) !important;
   max-width: 1080px !important;
   height: min(86vh, 760px) !important;
@@ -21308,6 +21311,7 @@ dialog.modal.namecard-studio-modal {
   background: #ffffff !important;
   border: 1px solid var(--border) !important;
   box-shadow: 0 25px 70px -15px rgba(15, 23, 42, 0.35) !important;
+  z-index: 1000 !important;
 }
 
 body.dark-theme .namecard-studio-modal,
@@ -21824,15 +21828,20 @@ body.dark-theme .preview-badge {
 }
 
 /* CONFIRM DISCARD MODAL */
-.confirm-discard-modal {
-  border-radius: 20px;
-  padding: 0;
-  max-width: 440px;
-  width: 90vw;
-  background: #ffffff;
-  border: 1px solid var(--border);
-  box-shadow: 0 25px 70px -15px rgba(0, 0, 0, 0.5);
-  overflow: hidden;
+.confirm-discard-modal,
+dialog.modal.confirm-discard-modal {
+  position: fixed !important;
+  inset: 0 !important;
+  margin: auto !important;
+  border-radius: 20px !important;
+  padding: 0 !important;
+  max-width: 440px !important;
+  width: 90vw !important;
+  background: #ffffff !important;
+  border: 1px solid var(--border) !important;
+  box-shadow: 0 25px 70px -15px rgba(0, 0, 0, 0.5) !important;
+  overflow: hidden !important;
+  z-index: 1100 !important;
 }
 
 body.dark-theme .confirm-discard-modal {
@@ -21906,10 +21915,14 @@ body.dark-theme .confirm-modal-desc {
 
   .namecard-studio-modal,
   dialog.modal.namecard-studio-modal {
+    position: fixed !important;
+    inset: 0 !important;
+    margin: auto !important;
     width: 95vw !important;
     max-width: 480px !important;
     height: 92vh !important;
     max-height: 92vh !important;
+    z-index: 1000 !important;
   }
 
   .namecard-studio-container {
@@ -34477,13 +34490,17 @@ body.dark-theme .studio-modal-close-btn:hover {
 }
 
 /* Căn giữa demo namecard theo chiều dọc và tối ưu diện tích trống desktop */
-.namecard-studio-modal,
-dialog.modal.namecard-studio-modal {
-  width: min(980px, calc(100vw - 36px)) !important;
-  max-width: 980px !important;
-  height: min(82vh, 670px) !important;
-  max-height: 670px !important;
-  position: relative !important;
+@media (min-width: 861px) {
+  .namecard-studio-modal,
+  dialog.modal.namecard-studio-modal {
+    position: fixed !important;
+    inset: 0 !important;
+    margin: auto !important;
+    width: min(980px, calc(100vw - 36px)) !important;
+    max-width: 980px !important;
+    height: min(82vh, 670px) !important;
+    max-height: 670px !important;
+  }
 }
 
 .namecard-studio-preview {
