@@ -2902,6 +2902,106 @@ window.unhidePost = async (id) => {
     }
   }
 };
+const FORUM_POSTS_PER_PAGE = 10;
+let forumCurrentPage = 1;
+
+function getPaginationPills(current, total) {
+  if (total <= 7) {
+    return Array.from({ length: total }, (_, i) => i + 1);
+  }
+  const pills = [1];
+  if (current > 3) {
+    pills.push("...");
+  }
+  const start = Math.max(2, current - 1);
+  const end = Math.min(total - 1, current + 1);
+  for (let i = start; i <= end; i++) {
+    pills.push(i);
+  }
+  if (current < total - 2) {
+    pills.push("...");
+  }
+  pills.push(total);
+  return pills;
+}
+
+function renderForumPagination(totalPosts, totalPages, currentPage) {
+  const container = document.getElementById("forumPaginationContainer");
+  if (!container) return;
+
+  if (totalPosts <= 0) {
+    container.innerHTML = "";
+    return;
+  }
+
+  const startItem = (currentPage - 1) * FORUM_POSTS_PER_PAGE + 1;
+  const endItem = Math.min(totalPosts, currentPage * FORUM_POSTS_PER_PAGE);
+  const statusText = `Trang ${currentPage} / ${totalPages} • Hiển thị ${startItem}–${endItem} trên ${totalPosts} bài đăng`;
+
+  const prevDisabled = currentPage <= 1;
+  const nextDisabled = currentPage >= totalPages;
+
+  const pillItems = getPaginationPills(currentPage, totalPages);
+  let pillsHtml = "";
+  pillItems.forEach((item) => {
+    if (item === "...") {
+      pillsHtml += `<span class="pag__ellipsis" aria-hidden="true">...</span>`;
+    } else {
+      const isActive = item === currentPage;
+      pillsHtml += `<button type="button" class="pag__item${isActive ? " active" : ""}" ${isActive ? 'aria-current="page"' : ""} onclick="setForumPage(${item})" aria-label="Trang ${item}">${item}</button>`;
+    }
+  });
+
+  container.innerHTML = `
+    <p class="pag-status" id="forumPageStatus" role="status" aria-live="polite" aria-atomic="true">${escapeHTML(statusText)}</p>
+    <nav class="pag pag--pills" aria-label="Phân trang bài đăng diễn đàn">
+      <button type="button" class="pag__arrow pag__arrow--prev${prevDisabled ? " pag__arrow--off" : ""}" ${prevDisabled ? "disabled" : ""} onclick="setForumPage(${currentPage - 1})" aria-label="Trang trước" title="Trang trước">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+      </button>
+      ${pillsHtml}
+      <button type="button" class="pag__arrow pag__arrow--next${nextDisabled ? " pag__arrow--off" : ""}" ${nextDisabled ? "disabled" : ""} onclick="setForumPage(${currentPage + 1})" aria-label="Trang sau" title="Trang sau">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+      </button>
+    </nav>
+  `;
+}
+
+window.setForumPage = function (page) {
+  const term = $("#forumSearch") ? $("#forumSearch").value.trim().toLowerCase() : "";
+  let result = posts.filter((p) =>
+    `${p.title} ${p.excerpt} ${p.topic}`.toLowerCase().includes(term),
+  );
+  const topic = $("#topicFilter") ? $("#topicFilter").value : "all";
+  if (topic !== "all") result = result.filter((p) => p.topic === topic);
+  if (currentFilter === "new") {
+    const now = new Date();
+    const yesterday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
+    result = result.filter(p => new Date(p.createdAt) >= yesterday);
+  }
+  if (currentFilter === "popular") {
+    result.sort((a, b) => {
+      const sumA = (Number(a.upvotes) || 0) + (Number(a.responses) || 0);
+      const sumB = (Number(b.upvotes) || 0) + (Number(b.responses) || 0);
+      if (sumB !== sumA) return sumB - sumA;
+      return (new Date(b.createdAt || 0) - new Date(a.createdAt || 0)) || (b.id - a.id);
+    });
+  }
+  if (currentFilter === "most-read") result.sort((a, b) => (b.readCount || 0) - (a.readCount || 0));
+  if (currentFilter === "unanswered") result = result.filter((p) => p.responses === 0);
+
+  const totalPages = Math.max(1, Math.ceil(result.length / FORUM_POSTS_PER_PAGE));
+  if (page < 1 || page > totalPages || page === forumCurrentPage) return;
+
+  forumCurrentPage = page;
+  renderPosts();
+
+  const forumSection = document.getElementById("forumFeed") || document.getElementById("forum");
+  if (forumSection) {
+    const topOffset = forumSection.getBoundingClientRect().top + window.scrollY - 80;
+    window.scrollTo({ top: Math.max(0, topOffset), behavior: "smooth" });
+  }
+};
+
 function renderPosts() {
   const term = $("#forumSearch").value.trim().toLowerCase();
   let result = posts.filter((p) =>
@@ -2929,8 +3029,15 @@ function renderPosts() {
 
   result.sort((a, b) => (b.isPinned ? 1 : 0) - (a.isPinned ? 1 : 0));
 
-  const html = result.length
-    ? result.map(postCard).join("")
+  const totalPages = Math.max(1, Math.ceil(result.length / FORUM_POSTS_PER_PAGE));
+  if (forumCurrentPage > totalPages) forumCurrentPage = totalPages;
+  if (forumCurrentPage < 1) forumCurrentPage = 1;
+
+  const startIndex = (forumCurrentPage - 1) * FORUM_POSTS_PER_PAGE;
+  const pagedPosts = result.slice(startIndex, startIndex + FORUM_POSTS_PER_PAGE);
+
+  const html = pagedPosts.length
+    ? pagedPosts.map(postCard).join("")
     : `<div class="empty-state"><h3>Chưa tìm thấy nội dung phù hợp</h3><p>Thử dùng từ khóa khác hoặc tạo bài đăng mới.</p></div>`;
   $("#forumFeed").innerHTML = html;
   $$(".forum-feed .post-card").forEach((el) =>
@@ -2939,6 +3046,8 @@ function renderPosts() {
       openDetail(Number(el.dataset.postId));
     }),
   );
+
+  renderForumPagination(result.length, totalPages, forumCurrentPage);
 }
 function renderHome() {
   updateCommunityStats();
@@ -6026,30 +6135,287 @@ function initChristmasLagDetector() {
   }, 3500);
 }
 initChristmasLagDetector();
-$("#openSearch").onclick = () => {
-  go("forum");
-  setTimeout(() => $("#forumSearch").focus(), 80);
-};
-$("#homeSearch").addEventListener("keydown", (e) => {
-  if (e.key === "Enter") {
-    go("forum");
-    $("#forumSearch").value = e.currentTarget.value;
-    renderPosts();
+// ============================================================
+// OMNISEARCH MODAL — TÌM KIẾM ĐA NĂNG TOÀN DIỆN (BÀI ĐĂNG & TÀI LIỆU)
+// ============================================================
+let omniSearchScope = "all"; // "all" | "posts" | "docs"
+let omniSearchDebounceTimer = null;
+
+function highlightOmniMatch(text, query) {
+  if (!text) return "";
+  const safeText = escapeHTML(String(text));
+  if (!query) return safeText;
+  const cleanQ = query.trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  if (!cleanQ) return safeText;
+  try {
+    const regex = new RegExp(`(${cleanQ})`, "gi");
+    return safeText.replace(regex, '<mark class="omni-highlight">$1</mark>');
+  } catch (e) {
+    return safeText;
   }
+}
+
+window.openOmniSearch = function (initialQuery = "") {
+  const modal = document.getElementById("omniSearchModal");
+  if (!modal) return;
+
+  const input = document.getElementById("omniSearchInput");
+  if (input) {
+    input.value = initialQuery;
+    const clearBtn = document.getElementById("omniSearchClear");
+    if (clearBtn) clearBtn.style.display = initialQuery ? "inline-block" : "none";
+  }
+
+  setOmniScope("all", false);
+
+  if (!modal.open) {
+    modal.showModal();
+  }
+
+  setTimeout(() => {
+    if (input) {
+      try {
+        input.focus({ preventScroll: true });
+        input.select();
+      } catch (e) {
+        input.focus();
+      }
+    }
+  }, 60);
+
+  executeOmniSearch();
+};
+
+window.closeOmniSearch = function () {
+  const modal = document.getElementById("omniSearchModal");
+  if (modal && modal.open) {
+    modal.close();
+  }
+};
+
+window.setOmniScope = function (scope, reSearch = true) {
+  omniSearchScope = scope;
+  document.querySelectorAll(".omni-search-tab").forEach(tab => {
+    const isAct = tab.dataset.scope === scope;
+    tab.classList.toggle("active", isAct);
+    tab.setAttribute("aria-selected", isAct ? "true" : "false");
+  });
+  if (reSearch) executeOmniSearch();
+};
+
+function executeOmniSearch() {
+  const input = document.getElementById("omniSearchInput");
+  const query = (input?.value || "").trim().toLowerCase();
+  const clearBtn = document.getElementById("omniSearchClear");
+  if (clearBtn) clearBtn.style.display = query ? "inline-block" : "none";
+
+  const resultsContainer = document.getElementById("omniSearchResults");
+  if (!resultsContainer) return;
+
+  // Filter posts
+  const matchedPosts = query
+    ? (Array.isArray(posts) ? posts : []).filter(p =>
+        `${p.title || ""} ${p.excerpt || ""} ${p.topic || ""} ${p.author || ""}`.toLowerCase().includes(query)
+      )
+    : [];
+
+  // Filter documents
+  const matchedDocs = query
+    ? (Array.isArray(documents) ? documents : []).filter(d =>
+        `${d.title || ""} ${d.subtitle || ""} ${d.desc || ""} ${d.type || ""} ${d.author || ""}`.toLowerCase().includes(query)
+      )
+    : [];
+
+  // Update badge counts
+  const badgeAll = document.getElementById("omniBadgeAll");
+  const badgePosts = document.getElementById("omniBadgePosts");
+  const badgeDocs = document.getElementById("omniBadgeDocs");
+  if (badgeAll) badgeAll.textContent = matchedPosts.length + matchedDocs.length;
+  if (badgePosts) badgePosts.textContent = matchedPosts.length;
+  if (badgeDocs) badgeDocs.textContent = matchedDocs.length;
+
+  if (!query) {
+    resultsContainer.innerHTML = `
+      <div class="omni-empty-state">
+        <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="color: var(--muted); opacity: 0.6;"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+        <h4>Tìm kiếm đa năng RE:SEARCH</h4>
+        <p>Tra cứu nhanh chóng cả bài thảo luận và tài liệu học thuật theo từ khóa.</p>
+        <div class="omni-suggestions">
+          <span style="font-size: 11.5px; color: var(--muted); width: 100%;">Gợi ý tìm nhanh:</span>
+          <button type="button" class="omni-sug-chip" onclick="quickOmniSearch('Giáo trình')">Giáo trình</button>
+          <button type="button" class="omni-sug-chip" onclick="quickOmniSearch('Phương pháp')">Phương pháp</button>
+          <button type="button" class="omni-sug-chip" onclick="quickOmniSearch('Nghiên cứu')">Nghiên cứu</button>
+          <button type="button" class="omni-sug-chip" onclick="quickOmniSearch('Luận văn')">Luận văn</button>
+          <button type="button" class="omni-sug-chip" onclick="quickOmniSearch('Mẫu')">Mẫu khảo sát</button>
+        </div>
+      </div>
+    `;
+    return;
+  }
+
+  const showPosts = omniSearchScope === "all" || omniSearchScope === "posts";
+  const showDocs = omniSearchScope === "all" || omniSearchScope === "docs";
+  const totalMatches = (showPosts ? matchedPosts.length : 0) + (showDocs ? matchedDocs.length : 0);
+
+  if (totalMatches === 0) {
+    resultsContainer.innerHTML = `
+      <div class="omni-empty-state">
+        <h4>Không tìm thấy kết quả phù hợp</h4>
+        <p>Không có bài đăng hoặc tài liệu nào khớp với từ khóa "<strong>${escapeHTML(query)}</strong>".</p>
+      </div>
+    `;
+    return;
+  }
+
+  let html = "";
+
+  // Render Post Matches
+  if (showPosts && matchedPosts.length > 0) {
+    if (omniSearchScope === "all") {
+      html += `<div class="omni-group-title">Bài đăng thảo luận (${matchedPosts.length})</div>`;
+    }
+    html += matchedPosts.slice(0, 15).map(p => `
+      <article class="omni-item" onclick="selectOmniPost(${p.id})">
+        <div class="omni-item-icon-box">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+        </div>
+        <div class="omni-item-content">
+          <div class="omni-item-header">
+            <span class="omni-item-badge">${escapeHTML(p.topic || "Thảo luận")}</span>
+            <span style="font-size: 11px; color: var(--muted);">${escapeHTML(p.author || "Thành viên")}</span>
+          </div>
+          <h5 class="omni-item-title">${highlightOmniMatch(p.title, query)}</h5>
+          ${p.excerpt ? `<p class="omni-item-snippet">${highlightOmniMatch(p.excerpt, query)}</p>` : ""}
+          <div class="omni-item-meta">
+            <span>💬 ${p.responses || 0} phản hồi</span>
+            <span>▲ ${p.upvotes || 0}</span>
+            <span>👁 ${p.readCount || 0} lượt đọc</span>
+          </div>
+        </div>
+      </article>
+    `).join("");
+  }
+
+  // Render Document Matches
+  if (showDocs && matchedDocs.length > 0) {
+    if (omniSearchScope === "all") {
+      html += `<div class="omni-group-title">Tài liệu học tập (${matchedDocs.length})</div>`;
+    }
+    html += matchedDocs.slice(0, 15).map(d => {
+      const format = (d.format || "PDF").toUpperCase();
+      const descSnippet = d.subtitle || d.desc || "";
+      return `
+      <article class="omni-item" onclick="selectOmniDoc(${d.id})">
+        <div class="omni-item-icon-box doc-icon-box">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
+        </div>
+        <div class="omni-item-content">
+          <div class="omni-item-header">
+            <span class="omni-item-badge" style="background: rgba(20, 184, 166, 0.15); color: #0d9488;">${escapeHTML(format)}</span>
+            <span class="omni-item-badge">${escapeHTML(d.type || "Tài liệu")}</span>
+            <span style="font-size: 11px; color: var(--muted);">${escapeHTML(d.author || "Người đóng góp")}</span>
+          </div>
+          <h5 class="omni-item-title">${highlightOmniMatch(d.title, query)}</h5>
+          ${descSnippet ? `<p class="omni-item-snippet">${highlightOmniMatch(descSnippet, query)}</p>` : ""}
+          <div class="omni-item-meta">
+            <span>📅 ${escapeHTML(d.date || "Gần đây")}</span>
+          </div>
+        </div>
+      </article>
+    `;
+    }).join("");
+  }
+
+  resultsContainer.innerHTML = html;
+}
+
+window.quickOmniSearch = function (text) {
+  const input = document.getElementById("omniSearchInput");
+  if (input) {
+    input.value = text;
+    executeOmniSearch();
+    input.focus();
+  }
+};
+
+window.selectOmniPost = function (postId) {
+  closeOmniSearch();
+  openDetail(postId);
+};
+
+window.selectOmniDoc = function (docId) {
+  closeOmniSearch();
+  viewDocumentById(docId);
+};
+
+// Event bindings for Omnisearch
+const omniModalEl = document.getElementById("omniSearchModal");
+if (omniModalEl) {
+  omniModalEl.addEventListener("click", (e) => {
+    if (e.target === omniModalEl) closeOmniSearch();
+  });
+}
+const omniInputEl = document.getElementById("omniSearchInput");
+if (omniInputEl) {
+  omniInputEl.addEventListener("input", () => {
+    if (omniSearchDebounceTimer) clearTimeout(omniSearchDebounceTimer);
+    omniSearchDebounceTimer = setTimeout(executeOmniSearch, 100);
+  });
+  omniInputEl.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") {
+      closeOmniSearch();
+    } else if (e.key === "Enter") {
+      const firstItem = document.querySelector("#omniSearchResults .omni-item");
+      if (firstItem) firstItem.click();
+    }
+  });
+}
+const omniClearBtn = document.getElementById("omniSearchClear");
+if (omniClearBtn) {
+  omniClearBtn.onclick = () => {
+    if (omniInputEl) {
+      omniInputEl.value = "";
+      executeOmniSearch();
+      omniInputEl.focus();
+    }
+  };
+}
+document.querySelectorAll(".omni-search-tab").forEach(tab => {
+  tab.onclick = () => setOmniScope(tab.dataset.scope);
 });
+
+// Nút tìm kiếm mở Omnisearch đa năng
+const openSearchBtn = document.getElementById("openSearch");
+if (openSearchBtn) {
+  openSearchBtn.onclick = () => openOmniSearch();
+}
+const homeSearchInput = document.getElementById("homeSearch");
+if (homeSearchInput) {
+  homeSearchInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      openOmniSearch(e.currentTarget.value);
+    }
+  });
+}
+
 let forumSearchDebounceTimer = null;
 $("#forumSearch").addEventListener("input", () => {
+  forumCurrentPage = 1;
   if (forumSearchDebounceTimer) clearTimeout(forumSearchDebounceTimer);
   forumSearchDebounceTimer = setTimeout(renderPosts, 180);
 });
 $$(".filter-chip").forEach((c) =>
   c.addEventListener("click", () => {
+    forumCurrentPage = 1;
     currentFilter = c.dataset.filter;
     $$(".filter-chip").forEach((x) => x.classList.toggle("selected", x === c));
     renderPosts();
   }),
 );
-$("#topicFilter").onchange = renderPosts;
+$("#topicFilter").onchange = () => {
+  forumCurrentPage = 1;
+  renderPosts();
+};
 $$(".identity-choice").forEach((btn) =>
   btn.addEventListener("click", () => {
     anonymous = btn.dataset.anonymous === "true";
@@ -7390,8 +7756,9 @@ if ($("#openGuide")) {
 window.addEventListener("keydown", (e) => {
   if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
     e.preventDefault();
-    go("forum");
-    setTimeout(() => $("#forumSearch").focus(), 60);
+    if (typeof openOmniSearch === "function") {
+      openOmniSearch();
+    }
   }
 });
 window.addEventListener("hashchange", () =>

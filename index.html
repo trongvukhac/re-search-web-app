@@ -39,12 +39,13 @@
       href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Unbounded:wght@400;500;600;700;800;900&display=swap&subset=vietnamese"
       rel="stylesheet"
     />
-    <link rel="icon" type="image/png" href="public/assets/research-logo.png" />
+    <link rel="icon" type="image/png" href="public/assets/research-logo.png?v=2" />
+    <link rel="apple-touch-icon" href="public/assets/research-logo.png?v=2" />
     <link href="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.snow.css" rel="stylesheet" />
     <script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js" defer></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" defer></script>
-    <link rel="stylesheet" href="styles.css?v=182" />
+    <link rel="stylesheet" href="styles.css?v=183" />
   </head>
   <body>
     <canvas id="christmasTreeCanvas" class="christmas-tree-edge-canvas" aria-hidden="true"></canvas>
@@ -330,13 +331,53 @@
         </div>
       </div>
     </dialog>
+    <!-- HỘP TÌM KIẾM ĐA NĂNG TOÀN DIỆN (BÀI ĐĂNG & TÀI LIỆU) -->
+    <dialog id="omniSearchModal" class="modal omni-search-modal" aria-label="Tìm kiếm đa năng RE:SEARCH">
+      <div class="omni-search-container">
+        <div class="omni-search-header">
+          <div class="omni-search-input-wrap">
+            <svg class="omni-search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+            <input type="search" id="omniSearchInput" class="omni-search-input" placeholder="Tìm kiếm bài thảo luận, tài liệu học tập..." autocomplete="off" />
+            <button type="button" id="omniSearchClear" class="omni-search-clear" title="Xóa từ khóa" style="display: none;">✕</button>
+          </div>
+          <button type="button" class="omni-search-close-btn" onclick="closeOmniSearch()" title="Đóng tìm kiếm (Esc)" aria-label="Đóng tìm kiếm">
+            <kbd>ESC</kbd>
+          </button>
+        </div>
+
+        <div class="omni-search-tabs" id="omniSearchTabs">
+          <button type="button" class="omni-search-tab active" data-scope="all">
+            Tất cả <span class="omni-tab-badge" id="omniBadgeAll">0</span>
+          </button>
+          <button type="button" class="omni-search-tab" data-scope="posts">
+            Bài đăng <span class="omni-tab-badge" id="omniBadgePosts">0</span>
+          </button>
+          <button type="button" class="omni-search-tab" data-scope="docs">
+            Tài liệu <span class="omni-tab-badge" id="omniBadgeDocs">0</span>
+          </button>
+        </div>
+
+        <div class="omni-search-body" id="omniSearchBody">
+          <div id="omniSearchResults" class="omni-results-list"></div>
+        </div>
+
+        <div class="omni-search-footer">
+          <div class="omni-footer-hint">
+            <span>Nhấn <kbd>↑</kbd><kbd>↓</kbd> để di chuyển</span>
+            <span><kbd>↵</kbd> để mở</span>
+            <span><kbd>ESC</kbd> để đóng</span>
+          </div>
+        </div>
+      </div>
+    </dialog>
+
     <div class="toast" id="toast" popover="manual"></div>
     <header class="site-header" id="siteHeader">
       <div class="christmas-header-garland" id="christmasHeaderGarland" aria-hidden="true"></div>
       <div class="site-header-inner">
         <a class="brand" href="#home" aria-label="RE:SEARCH Trang chủ">
           <span class="brand-mark">
-            <img src="public/assets/research-logo.png" alt="" />
+            <img src="public/assets/research-logo.png?v=2" alt="RE:SEARCH" />
             <svg class="christmas-santa-hat" aria-hidden="true" viewBox="0 0 40 32" fill="none">
               <path d="M7 22C8.5 10.5 17.5 3.5 28 6.5C32.5 7.8 35.5 11.2 35 16C30 13.5 23.5 14.5 19.5 20.5L7 22Z" fill="#dc2626"/>
               <path d="M9 21.5C14 14.5 22 10 29.5 10.5C25 14 21 17 19.5 20.5L9 21.5Z" fill="#991b1b" opacity="0.55"/>
@@ -814,7 +855,10 @@
           </select>
         </div>
         <div class="forum-layout">
-          <div class="forum-feed" id="forumFeed"></div>
+          <div class="forum-feed-col">
+            <div class="forum-feed" id="forumFeed"></div>
+            <div class="pag-container" id="forumPaginationContainer"></div>
+          </div>
           <aside class="forum-aside" id="forumCommunityAsideSlot">
             <div id="forumCommunityAsideCards" class="forum-community-cards">
               <section class="mini-card">
@@ -6368,6 +6412,6 @@
       </button>
     </div>
 
-    <script src="app.js?v=182" defer></script>
+    <script src="app.js?v=183" defer></script>
   </body>
 </html>
