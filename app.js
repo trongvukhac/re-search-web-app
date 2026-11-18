@@ -48,6 +48,35 @@ const christmasTreeState = {
   spriteThemeKey: ""
 };
 
+const christmasTreePerfState = {
+  sampleFrames: 0,
+  slowFrames: 0,
+  adaptiveLOD: false
+};
+
+function recordChristmasTreeFramePerf(dt) {
+  christmasTreePerfState.sampleFrames++;
+  if (dt > 0.040) {
+    christmasTreePerfState.slowFrames++;
+  }
+  if (christmasTreePerfState.sampleFrames >= 90) {
+    if (christmasTreePerfState.slowFrames >= 36) {
+      // Over 40% of recent frames took >40ms (<25 FPS) -> engage silent adaptive LOD
+      christmasTreePerfState.adaptiveLOD = true;
+    }
+    christmasTreePerfState.sampleFrames = 0;
+    christmasTreePerfState.slowFrames = 0;
+  }
+}
+
+function resetChristmasTreePerfLOD() {
+  if (typeof christmasTreePerfState !== "undefined" && christmasTreePerfState) {
+    christmasTreePerfState.sampleFrames = 0;
+    christmasTreePerfState.slowFrames = 0;
+    christmasTreePerfState.adaptiveLOD = false;
+  }
+}
+
 const christmasTreeEventState = {
   loaded: false,
   loading: false,
@@ -22879,7 +22908,8 @@ function buildChristmasTreeGeometry(isMobile) {
       angle,
       size: baseNeedleSize * lowerSizeBoost,
       tone,
-      phase: rng() * Math.PI * 2
+      phase: rng() * Math.PI * 2,
+      isDeepFill: !isOuter
     });
   }
 
@@ -22893,7 +22923,7 @@ function buildChristmasTreeGeometry(isMobile) {
     const lNode = {
       kind: "light",
       u,
-      rNorm: coneRadiusAtHeight(u) * 1.01,
+      rNorm: coneRadiusAtHeight(u) * 1.015,
       angle,
       key: "gold",
       coreColor: "#FDE68A",
@@ -22954,7 +22984,7 @@ function buildCommunityOrnamentNodes(communityItems) {
         kind: "community_polaroid",
         data: item,
         u: uClamped,
-        rNorm: coneRadiusAtHeight(uClamped) * 0.97,
+        rNorm: coneRadiusAtHeight(uClamped) * 1.025,
         angle,
         frameColor: item.frameColor || TREE_POLAROID_FRAME_MAP[item.itemStyle] || "#FFFAF0",
         gradientStops: Array.isArray(item.gradientStops)
@@ -22974,7 +23004,7 @@ function buildCommunityOrnamentNodes(communityItems) {
         kind: "community_card",
         data: item,
         u: uClamped,
-        rNorm: coneRadiusAtHeight(uClamped) * 0.97,
+        rNorm: coneRadiusAtHeight(uClamped) * 1.025,
         angle,
         itemStyle: tplKey,
         itemFinish: finKey,
@@ -23022,7 +23052,7 @@ function buildCommunityOrnamentNodes(communityItems) {
         const bu = Math.max(0.19, Math.min(0.91, bandCenter + offsetFrac * 0.12));
         const key = garlandKeys[(item.id + b) % garlandKeys.length];
         const bulbAngle = angle + offsetFrac * 1.25;
-        const rNorm = coneRadiusAtHeight(bu) * 0.97;
+        const rNorm = coneRadiusAtHeight(bu) * 1.015;
         const bulbNode = {
           kind: "community_garland_bulb",
           data: item,
@@ -23055,7 +23085,7 @@ function buildCommunityOrnamentNodes(communityItems) {
         kind: "community_star_ornament",
         data: item,
         u: uClamped,
-        rNorm: coneRadiusAtHeight(uClamped) * 0.97,
+        rNorm: coneRadiusAtHeight(uClamped) * 1.025,
         angle,
         gradientStops: Array.isArray(item.gradientStops) ? item.gradientStops : TREE_ACCESSORY_GRADIENT_MAP.star_grad_gold,
         swayPhase: ((item.id * 1.19) % (Math.PI * 2)),
@@ -23066,7 +23096,7 @@ function buildCommunityOrnamentNodes(communityItems) {
         kind: "community_ribbon_bow",
         data: item,
         u: uClamped,
-        rNorm: coneRadiusAtHeight(uClamped) * 0.97,
+        rNorm: coneRadiusAtHeight(uClamped) * 1.025,
         angle,
         gradientStops: Array.isArray(item.gradientStops) ? item.gradientStops : TREE_ACCESSORY_GRADIENT_MAP.ribbon_grad_velvet,
         swayPhase: ((item.id * 1.43) % (Math.PI * 2)),
@@ -23081,7 +23111,7 @@ function buildCommunityOrnamentNodes(communityItems) {
         kind: "community_bauble",
         data: item,
         u: uClamped,
-        rNorm: coneRadiusAtHeight(uClamped) * 0.97,
+        rNorm: coneRadiusAtHeight(uClamped) * 1.025,
         angle,
         color,
         gradientStops: stops,
@@ -23842,6 +23872,8 @@ function renderChristmasTreeScene(ctx, layout, projBuffer, sceneParams) {
     hitBoxes = null
   } = sceneParams;
 
+  const adaptiveLOD = Boolean(typeof christmasTreePerfState !== "undefined" && christmasTreePerfState && christmasTreePerfState.adaptiveLOD);
+
   const sprites = getChristmasTreeSprites(isDark);
   const t = timeSec;
   const fov = 560;
@@ -23923,6 +23955,13 @@ function renderChristmasTreeScene(ctx, layout, projBuffer, sceneParams) {
     const sx = anchorX + x3 * persp;
     const sy = (baseY - treeH * 0.44) + y3Tilt * persp;
 
+    const isHangingOrnament = it.kind === "community_polaroid" ||
+      it.kind === "community_card" ||
+      it.kind === "community_bauble" ||
+      it.kind === "community_star_ornament" ||
+      it.kind === "community_ribbon_bow";
+    const zBias = (isHangingOrnament && z3Tilt < 0) ? -10.0 : 0;
+
     let slot = projBuffer[i];
     if (!slot) {
       slot = {};
@@ -23931,7 +23970,7 @@ function renderChristmasTreeScene(ctx, layout, projBuffer, sceneParams) {
     slot.item = it;
     slot.sx = sx;
     slot.sy = sy;
-    slot.z = z3Tilt;
+    slot.z = z3Tilt + zBias;
     slot.persp = persp;
     slot.angle = swayAngle;
   }
@@ -23991,6 +24030,9 @@ function renderChristmasTreeScene(ctx, layout, projBuffer, sceneParams) {
     }
 
     if (it.kind === "needle") {
+      if (adaptiveLOD && it.isDeepFill) {
+        continue;
+      }
       const r = it.size * persp;
       const shimmer = it.tone === 3 ? (0.65 + 0.35 * Math.sin(t * 2.2 + it.phase)) : 1;
       ctx.globalAlpha = (isDark ? 0.9 : 0.88) * depthNorm * shimmer;
@@ -24206,6 +24248,7 @@ function renderChristmasTreeFrame(nowMs) {
 
   const dt = christmasTreeState.lastMs ? Math.min(0.05, Math.max(0.004, (nowMs - christmasTreeState.lastMs) / 1000)) : 0.016;
   christmasTreeState.lastMs = nowMs;
+  recordChristmasTreeFramePerf(dt);
   christmasTreeState.timeSec += dt;
   // When studio is open, ONLY the studio loop increments rotation to avoid double-speed spinning!
   if (christmasTreeStudioState.isOpen) {
@@ -24792,6 +24835,7 @@ function renderChristmasSnowFrame() {
 }
 
 function startOrStopChristmasSnowLoop() {
+  resetChristmasTreePerfLOD();
   syncChristmasSeasonalControlsVisibility();
   updateChristmasEffectsToggleUI();
   renderChristmasHeaderGarland();
@@ -26198,6 +26242,7 @@ function renderStudioChristmasTreeFrame(nowMs) {
     ? Math.min(0.05, Math.max(0.004, (nowMs - christmasTreeStudioState.lastMs) / 1000))
     : 0.016;
   christmasTreeStudioState.lastMs = nowMs;
+  recordChristmasTreeFramePerf(dt);
   christmasTreeStudioState.timeSec += dt;
 
   if (christmasTreeStudioState.autoSpin && !christmasTreeStudioState.dragging && !christmasSnowState.reducedMotion) {
