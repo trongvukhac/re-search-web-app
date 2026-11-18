@@ -22856,51 +22856,68 @@ function buildChristmasTreeGeometry(isMobile) {
   }
 
   // 1. Conical evergreen pine needles starting cleanly above trunk (u = 0.215..0.985)
-  // Area-weighted distribution (1 - (1 - t)^2.05) keeps lush pine foliage density across wide lower boughs
-  const foliageCount = isMobile ? 820 : 1650;
+  // Area-weighted distribution (1 - (1 - t)^0.40) keeps lush pine foliage density across wide lower boughs
+  const foliageCount = isMobile ? 1800 : 3400;
   for (let i = 0; i < foliageCount; i++) {
     const tRatio = i / foliageCount;
-    const uLin = 1 - Math.pow(1 - tRatio, 2.05);
+    const uLin = 1 - Math.pow(1 - tRatio, 0.40);
     const u = 0.215 + uLin * 0.77;
     const angle = i * goldenAngle + (rng() - 0.5) * 0.24;
-    const minShell = u < 0.36 ? 0.25 : 0.14;
-    const shell = minShell + (1 - minShell) * Math.pow(rng(), 0.44);
+    const isOuter = rng() < 0.72;
+    const shell = isOuter
+      ? (0.72 + 0.29 * Math.pow(rng(), 0.7))
+      : (0.16 + 0.56 * rng());
     const rNorm = coneRadiusAtHeight(u) * shell;
     const toneRoll = rng();
     const tone = toneRoll < 0.42 ? 0 : (toneRoll < 0.74 ? 1 : (toneRoll < 0.94 ? 2 : 3));
-    const lowerSizeBoost = 1 + (1 - uLin) * 0.18;
+    const lowerSizeBoost = 1.25 + Math.pow(1 - uLin, 1.2) * 0.55;
+    const baseNeedleSize = (isMobile ? 2.5 : 2.9) + rng() * 2.3;
     items.push({
       kind: "needle",
       u: Math.max(0.215, Math.min(0.99, u + (rng() - 0.5) * 0.015)),
       rNorm,
       angle,
-      size: ((isMobile ? 2.15 : 2.35) + rng() * 2.15) * lowerSizeBoost,
+      size: baseNeedleSize * lowerSizeBoost,
       tone,
       phase: rng() * Math.PI * 2
     });
   }
 
-  // 2. Humble starter state: ONLY gentle warm golden fairy pinpoints (community items add Polaroids, gifts, baubles & rainbow lights)
-  const lightCount = isMobile ? 18 : 26;
-  const strandTurns = 3.8;
+  // 2. Warm golden fairy light strand spiraling up the tree with connected wire
+  const lightCount = isMobile ? 26 : 38;
+  const strandTurns = 4.2;
+  const starterLights = [];
   for (let i = 0; i < lightCount; i++) {
     const u = 0.235 + (i / lightCount) * 0.705;
-    const angle = u * Math.PI * 2 * strandTurns + (rng() - 0.5) * 0.22;
-    items.push({
+    const angle = u * Math.PI * 2 * strandTurns + (rng() - 0.5) * 0.16;
+    const lNode = {
       kind: "light",
       u,
-      rNorm: coneRadiusAtHeight(u) * 1.02,
+      rNorm: coneRadiusAtHeight(u) * 1.01,
       angle,
       key: "gold",
       coreColor: "#FDE68A",
-      size: isMobile ? 1.85 : 2.15,
+      size: isMobile ? 2.8 : 3.4,
       phase: rng() * Math.PI * 2,
       speed: 1.6 + rng() * 1.6
+    };
+    items.push(lNode);
+    starterLights.push(lNode);
+  }
+  for (let i = 0; i < starterLights.length - 1; i++) {
+    const lA = starterLights[i];
+    const lB = starterLights[i + 1];
+    items.push({
+      kind: "garland_wire",
+      ptA: { u: lA.u, rNorm: lA.rNorm, angle: lA.angle },
+      ptB: { u: lB.u, rNorm: lB.rNorm, angle: lB.angle },
+      u: (lA.u + lB.u) * 0.5,
+      wireStyle: "fairy"
     });
   }
 
   // 3. Soft subtle dust sparkles
-  const sparkleCount = isMobile ? 6 : 12;
+  const sparkleCount = isMobile ? 8 : 14;
   for (let i = 0; i < sparkleCount; i++) {
     items.push({
       kind: "sparkle",
@@ -22937,7 +22954,7 @@ function buildCommunityOrnamentNodes(communityItems) {
         kind: "community_polaroid",
         data: item,
         u: uClamped,
-        rNorm: coneRadiusAtHeight(uClamped) * 0.94,
+        rNorm: coneRadiusAtHeight(uClamped) * 0.97,
         angle,
         frameColor: item.frameColor || TREE_POLAROID_FRAME_MAP[item.itemStyle] || "#FFFAF0",
         gradientStops: Array.isArray(item.gradientStops)
@@ -22947,7 +22964,7 @@ function buildCommunityOrnamentNodes(communityItems) {
         photoData: item.photoData || "",
         swayPhase: ((item.id * 1.37) % (Math.PI * 2)),
         baseTilt: (((item.id % 5) - 2) * 0.08),
-        scale: 1.05
+        scale: 1.25
       });
     } else if (item.slotKind === "card") {
       const tplKey = normalizeCardTemplateKey(item.itemStyle);
@@ -22957,7 +22974,7 @@ function buildCommunityOrnamentNodes(communityItems) {
         kind: "community_card",
         data: item,
         u: uClamped,
-        rNorm: coneRadiusAtHeight(uClamped) * 0.94,
+        rNorm: coneRadiusAtHeight(uClamped) * 0.97,
         angle,
         itemStyle: tplKey,
         itemFinish: finKey,
@@ -22967,7 +22984,7 @@ function buildCommunityOrnamentNodes(communityItems) {
         cardName: item.cardName || item.authorName || "RE:SEARCH",
         swayPhase: ((item.id * 1.71) % (Math.PI * 2)),
         baseTilt: (((item.id % 5) - 2) * 0.07),
-        scale: 1.06
+        scale: 1.25
       });
     } else if (item.slotKind === "gift" || String(item.itemStyle || "").startsWith("gift_")) {
       const palette = TREE_GIFT_PALETTE_MAP[item.itemStyle] || TREE_GIFT_PALETTE_MAP.gift_red;
@@ -22989,7 +23006,7 @@ function buildCommunityOrnamentNodes(communityItems) {
         angle: orbitAngle,
         yawOffset: ((item.id * 1.13) % (Math.PI * 2)),
         palette: { ...palette, gradientStops: stops },
-        size: 13.8 * giftCrowdScale
+        size: 24.5 * giftCrowdScale
       });
     } else if (item.itemStyle === "fairy_garland" || item.itemStyle === "prism_multi_garland") {
       const isPrism = item.itemStyle === "prism_multi_garland";
@@ -22997,23 +23014,40 @@ function buildCommunityOrnamentNodes(communityItems) {
       const bulbColors = { gold: "#FFD54F", red: "#FF2D2D", blue: "#38BDF8", green: "#22C55E" };
       const prismColors = ["#F43F5E", "#F59E0B", "#10B981", "#38BDF8", "#C084FC"];
       const bandCenter = Math.max(0.26, Math.min(0.8, uClamped));
-      const bulbCount = isPrism ? 11 : 9;
+      const bulbCount = isPrism ? 13 : 11;
       const midIdx = (bulbCount - 1) / 2;
+      const strandBulbs = [];
       for (let b = 0; b < bulbCount; b++) {
         const offsetFrac = (b - midIdx) / midIdx;
         const bu = Math.max(0.19, Math.min(0.91, bandCenter + offsetFrac * 0.12));
         const key = garlandKeys[(item.id + b) % garlandKeys.length];
-        nodes.push({
+        const bulbAngle = angle + offsetFrac * 1.25;
+        const rNorm = coneRadiusAtHeight(bu) * 0.97;
+        const bulbNode = {
           kind: "community_garland_bulb",
           data: item,
           u: bu,
-          rNorm: coneRadiusAtHeight(bu) * 0.96,
-          angle: angle + offsetFrac * 1.2,
+          rNorm,
+          angle: bulbAngle,
           key,
           coreColor: isPrism ? prismColors[b % prismColors.length] : bulbColors[key],
-          size: isPrism ? 2.85 : 2.55,
+          size: isPrism ? 4.5 : 4.0,
           phase: b * 0.8 + item.id,
           speed: 2.4 + (b % 3) * 0.45
+        };
+        nodes.push(bulbNode);
+        strandBulbs.push(bulbNode);
+      }
+      for (let b = 0; b < strandBulbs.length - 1; b++) {
+        const bA = strandBulbs[b];
+        const bB = strandBulbs[b + 1];
+        nodes.push({
+          kind: "garland_wire",
+          data: item,
+          ptA: { u: bA.u, rNorm: bA.rNorm, angle: bA.angle },
+          ptB: { u: bB.u, rNorm: bB.rNorm, angle: bB.angle },
+          u: (bA.u + bB.u) * 0.5,
+          wireStyle: isPrism ? "prism" : "garland"
         });
       }
     } else if (item.itemStyle === "star_grad_gold") {
@@ -23021,22 +23055,22 @@ function buildCommunityOrnamentNodes(communityItems) {
         kind: "community_star_ornament",
         data: item,
         u: uClamped,
-        rNorm: coneRadiusAtHeight(uClamped) * 0.96,
+        rNorm: coneRadiusAtHeight(uClamped) * 0.97,
         angle,
         gradientStops: Array.isArray(item.gradientStops) ? item.gradientStops : TREE_ACCESSORY_GRADIENT_MAP.star_grad_gold,
         swayPhase: ((item.id * 1.19) % (Math.PI * 2)),
-        size: 6.4
+        size: 12.0
       });
     } else if (item.itemStyle === "ribbon_grad_velvet") {
       nodes.push({
         kind: "community_ribbon_bow",
         data: item,
         u: uClamped,
-        rNorm: coneRadiusAtHeight(uClamped) * 0.96,
+        rNorm: coneRadiusAtHeight(uClamped) * 0.97,
         angle,
         gradientStops: Array.isArray(item.gradientStops) ? item.gradientStops : TREE_ACCESSORY_GRADIENT_MAP.ribbon_grad_velvet,
         swayPhase: ((item.id * 1.43) % (Math.PI * 2)),
-        size: 6.8
+        size: 12.8
       });
     } else {
       const color = TREE_BAUBLE_COLOR_MAP[item.itemStyle] || item.accentColor || "#E11D48";
@@ -23047,11 +23081,11 @@ function buildCommunityOrnamentNodes(communityItems) {
         kind: "community_bauble",
         data: item,
         u: uClamped,
-        rNorm: coneRadiusAtHeight(uClamped) * 0.95,
+        rNorm: coneRadiusAtHeight(uClamped) * 0.97,
         angle,
         color,
         gradientStops: stops,
-        size: stops ? 5.2 : 4.8
+        size: stops ? 9.0 : 8.2
       });
     }
   }
@@ -23064,6 +23098,9 @@ function syncCombinedChristmasTreeItems() {
   const combined = base.concat(community);
   christmasTreeState.items = combined;
   christmasTreeState.projected = new Array(combined.length);
+  if (typeof christmasTreeStudioState !== "undefined" && christmasTreeStudioState) {
+    christmasTreeStudioState.projected = new Array(combined.length);
+  }
 }
 
 function drawSoftSnowDriftLobe(ctx, cx, cy, rx, ry, isDark) {
@@ -23711,6 +23748,15 @@ function drawProjected3DStarOrnament(ctx, sx, sy, r, sway, angle, stops, { isDar
   const facingScale = 0.28 + 0.72 * Math.abs(-Math.sin(angle));
   ctx.save();
   ctx.translate(sx, sy);
+
+  // Delicate gold hanging thread
+  ctx.strokeStyle = "#FDE047";
+  ctx.lineWidth = Math.max(0.7, r * 0.08);
+  ctx.beginPath();
+  ctx.moveTo(0, -r * 0.95);
+  ctx.lineTo(0, -r * 1.38);
+  ctx.stroke();
+
   ctx.rotate(sway * 0.4);
   ctx.scale(facingScale, 1);
 
@@ -23818,6 +23864,52 @@ function renderChristmasTreeScene(ctx, layout, projBuffer, sceneParams) {
 
   for (let i = 0; i < items.length; i++) {
     const it = items[i];
+    if (it.kind === "garland_wire") {
+      const pA = it.ptA;
+      const pB = it.ptB;
+      const swayA = pA.angle + rot;
+      const swayB = pB.angle + rot;
+      const rA = pA.rNorm * treeR;
+      const rB = pB.rNorm * treeR;
+      const x3A = Math.cos(swayA) * rA;
+      const z3A = Math.sin(swayA) * rA;
+      const yRelA = (0.44 - pA.u) * treeH;
+      const y3TiltA = yRelA * tiltCos - z3A * tiltSin;
+      const z3TiltA = yRelA * tiltSin + z3A * tiltCos;
+      const perspA = fov / (fov + z3TiltA);
+      const sxA = anchorX + x3A * perspA;
+      const syA = (baseY - treeH * 0.44) + y3TiltA * perspA;
+
+      const x3B = Math.cos(swayB) * rB;
+      const z3B = Math.sin(swayB) * rB;
+      const yRelB = (0.44 - pB.u) * treeH;
+      const y3TiltB = yRelB * tiltCos - z3B * tiltSin;
+      const z3TiltB = yRelB * tiltSin + z3B * tiltCos;
+      const perspB = fov / (fov + z3TiltB);
+      const sxB = anchorX + x3B * perspB;
+      const syB = (baseY - treeH * 0.44) + y3TiltB * perspB;
+
+      const avgZ = (z3TiltA + z3TiltB) * 0.5;
+      const avgPersp = (perspA + perspB) * 0.5;
+
+      let slot = projBuffer[i];
+      if (!slot) {
+        slot = {};
+        projBuffer[i] = slot;
+      }
+      slot.item = it;
+      slot.sxA = sxA;
+      slot.syA = syA;
+      slot.sxB = sxB;
+      slot.syB = syB;
+      slot.sx = (sxA + sxB) * 0.5;
+      slot.sy = (syA + syB) * 0.5;
+      slot.z = avgZ;
+      slot.persp = avgPersp;
+      slot.angle = (swayA + swayB) * 0.5;
+      continue;
+    }
+
     const u = it.kind === "sparkle" ? ((it.u + t * it.speedY) % 1.03) : it.u;
     const isTrunkSeg = it.kind === "trunk_seg";
     const swayAngle = isTrunkSeg ? 0 : (it.angle + rot + (it.kind === "sparkle" ? t * 0.2 : 0));
@@ -23862,6 +23954,42 @@ function renderChristmasTreeScene(ctx, layout, projBuffer, sceneParams) {
       continue;
     }
 
+    if (it.kind === "garland_wire") {
+      const dx = p.sxB - p.sxA;
+      const dy = p.syB - p.syA;
+      const dist = Math.hypot(dx, dy);
+      if (dist > 0.5 && dist < treeR * 1.8) {
+        const sag = Math.max(1.8, Math.min(12, dist * 0.11));
+        const midX = (p.sxA + p.sxB) * 0.5;
+        const midY = (p.syA + p.syB) * 0.5 + sag;
+
+        ctx.save();
+        ctx.globalAlpha = (isDark ? 0.88 : 0.80) * depthNorm;
+        // Deep pine green insulated wire cord
+        ctx.strokeStyle = isDark ? "#062210" : "#0d381c";
+        ctx.lineWidth = Math.max(1.3, 1.85 * persp * scaleBoost);
+        ctx.lineCap = "round";
+        ctx.beginPath();
+        ctx.moveTo(p.sxA, p.syA);
+        ctx.quadraticCurveTo(midX, midY, p.sxB, p.syB);
+        ctx.stroke();
+
+        // Subtle twin copper filament sheen
+        ctx.strokeStyle = isDark ? "rgba(234, 179, 8, 0.45)" : "rgba(180, 83, 9, 0.38)";
+        ctx.lineWidth = Math.max(0.65, 0.92 * persp * scaleBoost);
+        ctx.beginPath();
+        ctx.moveTo(p.sxA, p.syA);
+        ctx.quadraticCurveTo(midX, midY, p.sxB, p.syB);
+        ctx.stroke();
+        ctx.restore();
+
+        if (interactive && it.data && hitBoxes) {
+          hitBoxes.push({ item: it.data, x: midX, y: midY, r: Math.max(14, 10 * persp * scaleBoost) });
+        }
+      }
+      continue;
+    }
+
     if (it.kind === "needle") {
       const r = it.size * persp;
       const shimmer = it.tone === 3 ? (0.65 + 0.35 * Math.sin(t * 2.2 + it.phase)) : 1;
@@ -23871,6 +23999,12 @@ function renderChristmasTreeScene(ctx, layout, projBuffer, sceneParams) {
       ctx.arc(p.sx, p.sy, r, 0, Math.PI * 2);
       ctx.fill();
     } else if (it.kind === "light" || it.kind === "community_garland_bulb") {
+      // Small dark socket attaching bulb to wire
+      const socketW = Math.max(2.2, it.size * 0.65 * persp * scaleBoost);
+      const socketH = Math.max(1.8, it.size * 0.55 * persp * scaleBoost);
+      ctx.fillStyle = isDark ? "#051f0e" : "#0c2e17";
+      ctx.fillRect(p.sx - socketW * 0.5, p.sy + it.size * 0.35 * persp * scaleBoost, socketW, socketH);
+
       const pulse = 0.42 + 0.58 * Math.pow(0.5 + 0.5 * Math.sin(t * it.speed + it.phase), 1.4);
       const glowRadius = it.size * (3.1 + pulse * 1.1) * persp * scaleBoost;
       const sprite = sprites.bulbs[it.key] || sprites.bulbs.gold;
@@ -23879,7 +24013,7 @@ function renderChristmasTreeScene(ctx, layout, projBuffer, sceneParams) {
       ctx.drawImage(sprite, p.sx - glowRadius, p.sy - glowRadius, glowRadius * 2, glowRadius * 2);
       ctx.fillStyle = it.coreColor;
       ctx.beginPath();
-      ctx.arc(p.sx, p.sy, Math.max(1.2, it.size * 0.56 * persp * scaleBoost), 0, Math.PI * 2);
+      ctx.arc(p.sx, p.sy, Math.max(1.4, it.size * 0.56 * persp * scaleBoost), 0, Math.PI * 2);
       ctx.fill();
       if (interactive && it.data) {
         if (isSelected) {
@@ -23887,16 +24021,16 @@ function renderChristmasTreeScene(ctx, layout, projBuffer, sceneParams) {
           ctx.strokeStyle = "#FACC15";
           ctx.lineWidth = 1.6;
           ctx.beginPath();
-          ctx.arc(p.sx, p.sy, Math.max(7, it.size * 2.6 * persp), 0, Math.PI * 2);
+          ctx.arc(p.sx, p.sy, Math.max(9, it.size * 2.6 * persp), 0, Math.PI * 2);
           ctx.stroke();
           ctx.restore();
         }
         if (hitBoxes) {
-          hitBoxes.push({ item: it.data, x: p.sx, y: p.sy, r: Math.max(14, it.size * 3.8 * persp) });
+          hitBoxes.push({ item: it.data, x: p.sx, y: p.sy, r: Math.max(16, it.size * 3.8 * persp) });
         }
       }
     } else if (it.kind === "community_polaroid") {
-      const baseW = isMobile ? 13.5 : (interactive ? 24 : 15.5);
+      const baseW = isMobile ? 20 : (interactive ? 36 : 26);
       const pw = baseW * it.scale * persp;
       const ph = pw * 1.24;
       const sway = it.baseTilt + Math.sin(t * 1.45 + it.swayPhase) * 0.12;
@@ -23906,10 +24040,10 @@ function renderChristmasTreeScene(ctx, layout, projBuffer, sceneParams) {
       drawProjected3DPolaroid(ctx, p.sx, p.sy, pw, ph, sway, p.angle, it, { isDark, isSelected });
       ctx.restore();
       if (interactive && it.data && hitBoxes) {
-        hitBoxes.push({ item: it.data, x: p.sx, y: p.sy, r: Math.max(18, ph * 0.64) });
+        hitBoxes.push({ item: it.data, x: p.sx, y: p.sy, r: Math.max(22, ph * 0.65) });
       }
     } else if (it.kind === "community_card") {
-      const baseW = isMobile ? 13.5 : (interactive ? 24.5 : 15.5);
+      const baseW = isMobile ? 20.5 : (interactive ? 37 : 26.5);
       const cw = baseW * it.scale * persp;
       const ch = cw * 1.4;
       const sway = it.baseTilt + Math.sin(t * 1.38 + it.swayPhase) * 0.11;
@@ -23919,7 +24053,7 @@ function renderChristmasTreeScene(ctx, layout, projBuffer, sceneParams) {
       drawProjected3DGreetingCard(ctx, p.sx, p.sy, cw, ch, sway, p.angle, it, { isDark, isSelected });
       ctx.restore();
       if (interactive && it.data && hitBoxes) {
-        hitBoxes.push({ item: it.data, x: p.sx, y: p.sy, r: Math.max(18, ch * 0.64) });
+        hitBoxes.push({ item: it.data, x: p.sx, y: p.sy, r: Math.max(22, ch * 0.65) });
       }
     } else if (it.kind === "community_gift") {
       const s = it.size * persp * scaleBoost;
@@ -23939,7 +24073,7 @@ function renderChristmasTreeScene(ctx, layout, projBuffer, sceneParams) {
       );
       ctx.restore();
       if (interactive && it.data && hitBoxes) {
-        hitBoxes.push({ item: it.data, x: p.sx, y: giftCenterY, r: Math.max(15, s * 0.95) });
+        hitBoxes.push({ item: it.data, x: p.sx, y: giftCenterY, r: Math.max(20, s * 0.95) });
       }
     } else if (it.kind === "community_star_ornament") {
       const r = it.size * persp * scaleBoost;
@@ -23950,7 +24084,7 @@ function renderChristmasTreeScene(ctx, layout, projBuffer, sceneParams) {
       drawProjected3DStarOrnament(ctx, p.sx, p.sy, r, sway, p.angle, it.gradientStops, { isDark, isSelected });
       ctx.restore();
       if (interactive && it.data && hitBoxes) {
-        hitBoxes.push({ item: it.data, x: p.sx, y: p.sy, r: Math.max(16, r * 1.8) });
+        hitBoxes.push({ item: it.data, x: p.sx, y: p.sy, r: Math.max(18, r * 1.8) });
       }
     } else if (it.kind === "community_ribbon_bow") {
       const s = it.size * persp * scaleBoost;
@@ -23961,7 +24095,7 @@ function renderChristmasTreeScene(ctx, layout, projBuffer, sceneParams) {
       drawProjected3DRibbonBow(ctx, p.sx, p.sy, s, sway, p.angle, it.gradientStops, { isDark, isSelected });
       ctx.restore();
       if (interactive && it.data && hitBoxes) {
-        hitBoxes.push({ item: it.data, x: p.sx, y: p.sy, r: Math.max(16, s * 1.7) });
+        hitBoxes.push({ item: it.data, x: p.sx, y: p.sy, r: Math.max(18, s * 1.7) });
       }
     } else if (it.kind === "community_bauble") {
       const r = it.size * persp * scaleBoost;
@@ -23969,6 +24103,14 @@ function renderChristmasTreeScene(ctx, layout, projBuffer, sceneParams) {
       const specOffsetX = Math.cos(p.angle) * r * 0.22 - r * 0.26;
       ctx.save();
       ctx.globalAlpha = 0.84 + 0.16 * depthNorm;
+
+      // Delicate gold hanging loop above bauble cap
+      ctx.strokeStyle = isSelected ? "#FACC15" : (isDark ? "#FDE047" : "#D97706");
+      ctx.lineWidth = Math.max(0.75, r * 0.12);
+      ctx.beginPath();
+      ctx.arc(p.sx, p.sy - r * 1.25, Math.max(1.5, r * 0.22), Math.PI, 0);
+      ctx.stroke();
+
       ctx.fillStyle = "#F59E0B";
       ctx.fillRect(p.sx - r * 0.28, p.sy - r * 1.18, r * 0.56, r * 0.28);
       if (Array.isArray(it.gradientStops) && it.gradientStops.length >= 2) {
@@ -24002,7 +24144,7 @@ function renderChristmasTreeScene(ctx, layout, projBuffer, sceneParams) {
       }
       ctx.restore();
       if (interactive && it.data && hitBoxes) {
-        hitBoxes.push({ item: it.data, x: p.sx, y: p.sy, r: Math.max(15, r * 1.8) });
+        hitBoxes.push({ item: it.data, x: p.sx, y: p.sy, r: Math.max(18, r * 1.8) });
       }
     } else if (it.kind === "sparkle") {
       const tw = 0.3 + 0.7 * Math.abs(Math.sin(t * 2.4 + it.phase));
