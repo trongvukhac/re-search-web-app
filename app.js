@@ -2953,7 +2953,7 @@ function renderForumPagination(totalPosts, totalPages, currentPage) {
   });
 
   container.innerHTML = `
-    <p class="pag-status" id="forumPageStatus" role="status" aria-live="polite" aria-atomic="true">${escapeHTML(statusText)}</p>
+    <p class="pag-status sr-only" id="forumPageStatus" role="status" aria-live="polite" aria-atomic="true">${escapeHTML(statusText)}</p>
     <nav class="pag pag--pills" aria-label="Phân trang bài đăng diễn đàn">
       <button type="button" class="pag__arrow pag__arrow--prev${prevDisabled ? " pag__arrow--off" : ""}" ${prevDisabled ? "disabled" : ""} onclick="setForumPage(${currentPage - 1})" aria-label="Trang trước" title="Trang trước">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
@@ -6203,6 +6203,13 @@ window.setOmniScope = function (scope, reSearch = true) {
   if (reSearch) executeOmniSearch();
 };
 
+function getDocCategoryLabel(typeOrCategory) {
+  const norm = String(typeOrCategory || "").toLowerCase().trim();
+  if (norm === "course" || norm === "môn học") return "Tài liệu môn học";
+  if (norm === "reference" || norm === "tham khảo") return "Tài liệu tham khảo";
+  return norm ? norm.charAt(0).toUpperCase() + norm.slice(1) : "Tài liệu";
+}
+
 function executeOmniSearch() {
   const input = document.getElementById("omniSearchInput");
   const query = (input?.value || "").trim().toLowerCase();
@@ -6219,11 +6226,12 @@ function executeOmniSearch() {
       )
     : [];
 
-  // Filter documents
+  // Filter documents (matching both raw type and localized Vietnamese category label)
   const matchedDocs = query
-    ? (Array.isArray(documents) ? documents : []).filter(d =>
-        `${d.title || ""} ${d.subtitle || ""} ${d.desc || ""} ${d.type || ""} ${d.author || ""}`.toLowerCase().includes(query)
-      )
+    ? (Array.isArray(documents) ? documents : []).filter(d => {
+        const catLabel = getDocCategoryLabel(d.type || d.category || "");
+        return `${d.title || ""} ${d.subtitle || ""} ${d.desc || ""} ${d.type || ""} ${catLabel} ${d.author || ""}`.toLowerCase().includes(query);
+      })
     : [];
 
   // Update badge counts
@@ -6282,14 +6290,26 @@ function executeOmniSearch() {
         <div class="omni-item-content">
           <div class="omni-item-header">
             <span class="omni-item-badge">${escapeHTML(p.topic || "Thảo luận")}</span>
-            <span style="font-size: 11px; color: var(--muted);">${escapeHTML(p.author || "Thành viên")}</span>
+            <span class="omni-author-tag">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              <span>${escapeHTML(p.author || "Thành viên")}</span>
+            </span>
           </div>
           <h5 class="omni-item-title">${highlightOmniMatch(p.title, query)}</h5>
           ${p.excerpt ? `<p class="omni-item-snippet">${highlightOmniMatch(p.excerpt, query)}</p>` : ""}
           <div class="omni-item-meta">
-            <span>💬 ${p.responses || 0} phản hồi</span>
-            <span>▲ ${p.upvotes || 0}</span>
-            <span>👁 ${p.readCount || 0} lượt đọc</span>
+            <span class="omni-meta-stat">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+              <span>${p.responses || 0} phản hồi</span>
+            </span>
+            <span class="omni-meta-stat">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>
+              <span>${p.upvotes || 0}</span>
+            </span>
+            <span class="omni-meta-stat">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              <span>${p.readCount || 0} lượt đọc</span>
+            </span>
           </div>
         </div>
       </article>
@@ -6304,6 +6324,7 @@ function executeOmniSearch() {
     html += matchedDocs.slice(0, 15).map(d => {
       const format = (d.format || "PDF").toUpperCase();
       const descSnippet = d.subtitle || d.desc || "";
+      const catLabel = getDocCategoryLabel(d.type || d.category || "");
       return `
       <article class="omni-item" onclick="selectOmniDoc(${d.id})">
         <div class="omni-item-icon-box doc-icon-box">
@@ -6312,13 +6333,19 @@ function executeOmniSearch() {
         <div class="omni-item-content">
           <div class="omni-item-header">
             <span class="omni-item-badge" style="background: rgba(20, 184, 166, 0.15); color: #0d9488;">${escapeHTML(format)}</span>
-            <span class="omni-item-badge">${escapeHTML(d.type || "Tài liệu")}</span>
-            <span style="font-size: 11px; color: var(--muted);">${escapeHTML(d.author || "Người đóng góp")}</span>
+            <span class="omni-item-badge">${escapeHTML(catLabel)}</span>
+            <span class="omni-author-tag">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              <span>${escapeHTML(d.author || "Người đóng góp")}</span>
+            </span>
           </div>
           <h5 class="omni-item-title">${highlightOmniMatch(d.title, query)}</h5>
           ${descSnippet ? `<p class="omni-item-snippet">${highlightOmniMatch(descSnippet, query)}</p>` : ""}
           <div class="omni-item-meta">
-            <span>📅 ${escapeHTML(d.date || "Gần đây")}</span>
+            <span class="omni-meta-stat">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+              <span>${escapeHTML(d.date || "Gần đây")}</span>
+            </span>
           </div>
         </div>
       </article>
