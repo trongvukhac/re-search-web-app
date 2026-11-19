@@ -144,6 +144,11 @@ let posts = [...seedPosts];
 let currentFilter = "all";
 let currentDocFilter = "all";
 let anonymous = false;
+let homeLeaderboardPeriod = "week";
+let cachedHomeLeaderboardData = null;
+let currentForumCommunitySlug = null;
+let forumCommunitiesList = [];
+let activeCommunityTab = "explore";
 
 function getCachedUser() {
   try {
@@ -28514,9 +28519,6 @@ if (typeof checkNotifUnreadCount === "function") {
 // BẢNG VINH DANH HỌC THUẬT TRANG CHỦ (HOMEPAGE GRAND LEADERBOARD)
 // =========================================================================
 
-let homeLeaderboardPeriod = "week";
-let cachedHomeLeaderboardData = null;
-
 const HOME_LB_POINT_SVG = `<svg class="ui-icon champ-score-star" width="13" height="13" viewBox="0 0 24 24" fill="#f59e0b" stroke="#f59e0b" stroke-width="1.2" aria-hidden="true" style="margin-right: 3px;"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>`;
 
 async function loadAndRenderHomeLeaderboard(period, forceRefresh = false) {
@@ -28614,10 +28616,6 @@ window.loadAndRenderHomeLeaderboard = loadAndRenderHomeLeaderboard;
 // =========================================================================
 // TÍNH NĂNG CỘNG ĐỒNG HỌC THUẬT (COMMUNITIES / SUBREDDITS)
 // =========================================================================
-
-let currentForumCommunitySlug = null;
-let forumCommunitiesList = [];
-let activeCommunityTab = "explore"; // "explore" | "joined"
 
 async function loadForumCommunities() {
   try {

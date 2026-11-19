@@ -2136,8 +2136,8 @@ function serializePost(row, viewer, preloadedDocs) {
 }
 function listPosts(viewer, search = "", communityFilter = null) {
   const needle = `%${search.trim()}%`;
-  const viewerId = viewer ? viewer.id : null;
-  const isAdminOrTa = viewer && (viewer.role === 'admin' || viewer.role === 'ta');
+  const viewerId = (viewer && viewer.id != null) ? Number(viewer.id) : null;
+  const isAdminOrTa = Boolean(viewer && (viewer.role === 'admin' || viewer.role === 'ta'));
 
   let commFilterSql = "";
   const params = [needle, needle, needle];
@@ -4112,8 +4112,8 @@ async function api(request, response, url) {
   // --- HỆ THỐNG CỘNG ĐỒNG HỌC THUẬT (COMMUNITIES / SUBREDDITS) ---
   if (method === "GET" && pathName === "/api/communities") {
     const viewer = sessionFrom(request);
-    const viewerId = viewer ? viewer.id : null;
-    const isAdminOrTa = viewer && (viewer.role === "admin" || viewer.role === "ta");
+    const viewerId = (viewer && viewer.id != null) ? Number(viewer.id) : null;
+    const isAdminOrTa = Boolean(viewer && (viewer.role === "admin" || viewer.role === "ta"));
 
     const rows = db.prepare(`
       SELECT 
@@ -4153,8 +4153,8 @@ async function api(request, response, url) {
     const rawParam = commDetailMatch[1];
     const isNum = /^\d+$/.test(rawParam);
     const viewer = sessionFrom(request);
-    const viewerId = viewer ? viewer.id : null;
-    const isAdminOrTa = viewer && (viewer.role === "admin" || viewer.role === "ta");
+    const viewerId = (viewer && viewer.id != null) ? Number(viewer.id) : null;
+    const isAdminOrTa = Boolean(viewer && (viewer.role === "admin" || viewer.role === "ta"));
 
     const comm = db.prepare(`
       SELECT 
@@ -4300,7 +4300,7 @@ async function api(request, response, url) {
   }
 
   if (method === "GET" && pathName === "/api/posts") {
-    const viewer = sessionFrom(request) || { role: "student" };
+    const viewer = sessionFrom(request);
     const searchQuery = url.searchParams.get("q") || "";
     const commFilter = url.searchParams.get("community") || url.searchParams.get("community_id") || url.searchParams.get("community_slug") || null;
     const postList = listPosts(viewer, searchQuery, commFilter);
