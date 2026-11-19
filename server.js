@@ -441,6 +441,13 @@ try {
 } catch (e) {
   console.warn("Lỗi đồng bộ mã lớp tự động:", e.message);
 }
+
+// Cập nhật bộ khung và ảnh bìa Chinh phục bầu trời thành phần thưởng Đấu trường Arena mùa AS1 (2026), tạm khoá với mọi người dùng
+try {
+  db.prepare("DELETE FROM user_limited_items WHERE item_id = 'chinh_phuc_bau_troi'").run();
+  db.prepare("UPDATE users SET namecard_frame = 'none' WHERE namecard_frame = 'chinh_phuc_bau_troi'").run();
+  db.prepare("UPDATE users SET cover_image = 'default' WHERE cover_image = 'chinh_phuc_bau_troi' OR cover_image LIKE '%covers/chinh-phuc-bau-troi.png%'").run();
+} catch (e) { }
 try {
   db.exec(`
     CREATE TABLE IF NOT EXISTS study_logs (
@@ -625,6 +632,102 @@ try {
     CREATE INDEX IF NOT EXISTS idx_password_resets_code ON password_resets(code);
   `);
 } catch (e) { }
+
+// --- BẢNG DỮ LIỆU CỘNG ĐỒNG HỌC THUẬT (COMMUNITIES / SUBREDDITS) ---
+try {
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS communities (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL UNIQUE,
+      slug TEXT NOT NULL UNIQUE,
+      description TEXT,
+      cover_image TEXT,
+      avatar TEXT,
+      privacy TEXT NOT NULL DEFAULT 'public' CHECK(privacy IN ('public','private')),
+      creator_id INTEGER NOT NULL REFERENCES users(id),
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE TABLE IF NOT EXISTS community_members (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      community_id INTEGER NOT NULL REFERENCES communities(id) ON DELETE CASCADE,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      role TEXT NOT NULL DEFAULT 'member' CHECK(role IN ('admin','moderator','member')),
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE(community_id, user_id)
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_comm_slug ON communities(slug);
+    CREATE INDEX IF NOT EXISTS idx_comm_privacy ON communities(privacy);
+    CREATE INDEX IF NOT EXISTS idx_comm_members_uid ON community_members(user_id);
+    CREATE INDEX IF NOT EXISTS idx_comm_members_cid ON community_members(community_id);
+  `);
+} catch (e) {
+  console.warn("Lỗi khởi tạo bảng communities:", e.message);
+}
+
+try { db.exec("ALTER TABLE posts ADD COLUMN community_id INTEGER REFERENCES communities(id) ON DELETE SET NULL;"); } catch (e) { }
+try { db.exec("CREATE INDEX IF NOT EXISTS idx_posts_comm_id ON posts(community_id);"); } catch (e) { }
+
+// Khởi tạo các cộng đồng mẫu nếu bảng communities trống
+try {
+  const commCount = db.prepare("SELECT count(*) as count FROM communities").get()?.count || 0;
+  if (commCount === 0) {
+    const adminUser = db.prepare("SELECT id FROM users WHERE role = 'admin' LIMIT 1").get() || { id: 1 };
+    const adminId = adminUser.id;
+    const initialCommunities = [
+      {
+        name: "Phương pháp Nghiên cứu",
+        slug: "phuong-phap-nghien-cuu",
+        description: "Không gian chia sẻ phương pháp định tính, định lượng, mô hình nghiên cứu và cách xử lý dữ liệu học thuật chuẩn mực.",
+        cover_image: "linear-gradient(135deg, #1e3a8a 0%, #3b82f6 50%, #93c5fd 100%)",
+        avatar: "📚",
+        privacy: "public"
+      },
+      {
+        name: "Khoa học Dữ liệu & AI",
+        slug: "khoa-hoc-du-lieu",
+        description: "Thảo luận về phân tích dữ liệu SPSS, SmartPLS, R, Python và ứng dụng AI trong học thuật.",
+        cover_image: "linear-gradient(135deg, #090d16 0%, #1e1b4b 40%, #4338ca 80%, #00f59b 100%)",
+        avatar: "📊",
+        privacy: "public"
+      },
+      {
+        name: "Viết & Công bố Quốc tế",
+        slug: "viet-luan-van",
+        description: "Kinh nghiệm viết luận văn tốt nghiệp, bài báo khoa học Scopus/WoS và quy trình bình duyệt.",
+        cover_image: "linear-gradient(135deg, #4c0519 0%, #db2777 50%, #fcd34d 100%)",
+        avatar: "✍️",
+        privacy: "public"
+      },
+      {
+        name: "Nhóm Đề tài K20 Nghiên cứu",
+        slug: "nhom-nghien-cuu-k20",
+        description: "Không gian riêng tư trao đổi dữ liệu, tài liệu nội bộ và tiến độ của nhóm nghiên cứu sinh K20.",
+        cover_image: "linear-gradient(135deg, #064e3b 0%, #059669 50%, #34d399 100%)",
+        avatar: "🔒",
+        privacy: "private"
+      }
+    ];
+
+    const insComm = db.prepare(`
+      INSERT INTO communities (name, slug, description, cover_image, avatar, privacy, creator_id)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `);
+    const insMember = db.prepare(`
+      INSERT INTO community_members (community_id, user_id, role)
+      VALUES (?, ?, 'admin')
+    `);
+
+    for (const c of initialCommunities) {
+      const res = insComm.run(c.name, c.slug, c.description, c.cover_image, c.avatar, c.privacy, adminId);
+      insMember.run(res.lastInsertRowid, adminId);
+    }
+  }
+} catch (e) {
+  console.warn("Lỗi seed communities:", e.message);
+}
 
 // --- BẢNG DỮ LIỆU HOẠT ĐỘNG THI ĐUA HÀNG TUẦN (WEEKLY COMPETITION) ---
 db.exec(`
@@ -1959,11 +2062,21 @@ function serializePost(row, viewer, preloadedDocs) {
   }
   const primaryDoc = linkedDocs[0] || fallbackDoc || null;
 
+  const community = (row.comm_id || row.community_id) ? {
+    id: Number(row.comm_id || row.community_id),
+    name: row.comm_name || row.community_name || "",
+    slug: row.comm_slug || row.community_slug || "",
+    avatar: row.comm_avatar || row.community_avatar || "👥",
+    privacy: row.comm_privacy || row.community_privacy || "public"
+  } : null;
+
   return {
     id: row.id,
     title: row.title,
     content: row.content,
     topic: row.topic,
+    communityId: community ? community.id : null,
+    community,
     documentId: primaryDoc ? primaryDoc.id : (row.document_id || null),
     documentIds: linkedDocs.map(d => d.id),
     linkedDocument: primaryDoc,
@@ -1993,23 +2106,55 @@ function serializePost(row, viewer, preloadedDocs) {
     status: row.status || 'visible',
   };
 }
-function listPosts(viewer, search = "") {
+function listPosts(viewer, search = "", communityFilter = null) {
   const needle = `%${search.trim()}%`;
+  const viewerId = viewer ? viewer.id : null;
+  const isAdminOrTa = viewer && (viewer.role === 'admin' || viewer.role === 'ta');
+
+  let commFilterSql = "";
+  const params = [needle, needle, needle];
+
+  if (communityFilter && String(communityFilter).trim() !== "" && String(communityFilter).trim() !== "all") {
+    const cf = String(communityFilter).trim();
+    commFilterSql = " AND (comm.slug = ? OR comm.id = ?)";
+    params.push(cf, Number(cf) || 0);
+  }
+
+  const privacySql = `
+    AND (
+      p.community_id IS NULL
+      OR comm.privacy = 'public'
+      OR (
+        comm.privacy = 'private'
+        AND (
+          ? = 1
+          OR (? IS NOT NULL AND p.author_id = ?)
+          OR (? IS NOT NULL AND EXISTS (SELECT 1 FROM community_members cm WHERE cm.community_id = p.community_id AND cm.user_id = ?))
+        )
+      )
+    )
+  `;
+  params.push(isAdminOrTa ? 1 : 0, viewerId, viewerId, viewerId, viewerId);
+
   const rows = db
     .prepare(
       `SELECT p.*,
               u.display_name, u.avatar, u.role,
               doc.id as doc_id, doc.title as doc_title, doc.format as doc_format, doc.category as doc_category, doc.source_url as doc_source_url,
+              comm.id as comm_id, comm.name as comm_name, comm.slug as comm_slug, comm.avatar as comm_avatar, comm.privacy as comm_privacy,
               (SELECT coalesce(sum(vote_value),0) FROM votes v WHERE v.target_type='post' AND v.target_id=p.id) helpful_count,
               (SELECT count(*) FROM responses r WHERE r.post_id=p.id AND r.status='visible') response_count,
               (SELECT count(*) FROM votes v JOIN users vu ON vu.id=v.user_id WHERE v.target_type='post' AND v.target_id=p.id AND v.vote_value > 0 AND vu.role='lecturer') lecturer_recommended
        FROM posts p
        JOIN users u ON u.id=p.author_id
        LEFT JOIN documents doc ON doc.id=p.document_id
+       LEFT JOIN communities comm ON comm.id=p.community_id
        WHERE p.status='visible' AND (p.title LIKE ? OR p.content LIKE ? OR p.topic LIKE ?)
+       ${commFilterSql}
+       ${privacySql}
        ORDER BY p.is_pinned DESC, p.created_at DESC`,
     )
-    .all(needle, needle, needle);
+    .all(...params);
 
   if (rows.length === 0) return [];
   const postIds = rows.map(r => r.id);
@@ -2422,7 +2567,8 @@ const LIMITED_THEMES = [
     coverId: "chinh_phuc_bau_troi",
     frameId: "chinh_phuc_bau_troi",
     durationDays: 30,
-    isEligible: () => false // Kích hoạt có điều kiện qua Đấu trường tuần 09/11 - 15/11 lúc 01:00 CN 15/11
+    isEligible: () => false, // Phần thưởng Đấu trường Arena mùa AS1 (2026) - Tạm khóa với mọi người dùng
+    isTemporarilyLocked: true
   },
   {
     id: "phep_mau_mua_dong",
@@ -2438,100 +2584,8 @@ const LIMITED_THEMES = [
 ];
 
 function checkAndGrantArenaSkyLimitedItems(userId, vnNow) {
-  if (!userId) return;
-  // Kích hoạt khi đạt điều kiện hợp lệ vào 01:00 chủ nhật 15/11
-  const SKY_ACTIVATION_TIME = new Date("2026-11-15T01:00:00+07:00").getTime();
-  if (vnNow.getTime() < SKY_ACTIVATION_TIME) return;
-
-  // Tuần thi đấu 09/11 - 15/11 (week_key = '2026-W46')
-  const comp = db.prepare(`
-    SELECT id, status FROM weekly_competitions 
-    WHERE week_key = '2026-W46' OR start_date = '2026-11-09'
-  `).get();
-  if (!comp) return;
-
-  // Lấy thứ hạng của user
-  let rank = null;
-  const rewardRow = db.prepare(`
-    SELECT rank FROM competition_weekly_rewards WHERE competition_id = ? AND user_id = ?
-  `).get(comp.id, userId);
-
-  if (rewardRow && rewardRow.rank > 0) {
-    rank = rewardRow.rank;
-  } else {
-    // Nếu chưa chốt thưởng trong bảng competition_weekly_rewards, tự động tính từ bảng kết quả
-    const participants = db.prepare(`
-      SELECT 
-        u.id as userId,
-        u.student_id as studentId,
-        u.class_name as className,
-        sum(r.best_score) as totalStars,
-        min(r.updated_at) as firstCompletedAt
-      FROM users u
-      JOIN competition_phase_results r ON u.id = r.user_id
-      WHERE r.competition_id = ?
-      GROUP BY u.id
-      ORDER BY totalStars DESC, firstCompletedAt ASC
-    `).all(comp.id);
-
-    const studentRow = db.prepare("SELECT student_id, class_name FROM users WHERE id = ?").get(userId);
-    const userClass = studentRow ? getArenaClassByStudentId(studentRow.student_id) : "TD";
-
-    let classParts = [];
-    if (userClass === "TD") {
-      classParts = participants.filter(p => getArenaClassByStudentId(p.studentId) === "TD");
-    } else {
-      const targetIds = userClass === "07" ? CLASS_07_STUDENT_IDS : CLASS_06_STUDENT_IDS;
-      const targetName = userClass === "07" ? "261_71RESE30312_07" : "261_71RESE30312_06";
-      classParts = participants.filter(p => {
-        if (p.studentId && targetIds.has(String(p.studentId).trim())) return true;
-        if (p.className && p.className.trim() === targetName) return true;
-        return false;
-      });
-    }
-
-    const classIdx = classParts.findIndex(p => p.userId === userId);
-    const overallIdx = participants.findIndex(p => p.userId === userId);
-
-    const classRank = classIdx >= 0 ? classIdx + 1 : null;
-    const overallRank = overallIdx >= 0 ? overallIdx + 1 : null;
-
-    if (classRank && overallRank) rank = Math.min(classRank, overallRank);
-    else rank = classRank || overallRank;
-  }
-
-  if (!rank) return;
-
-  const unlockedAt = new Date(Math.max(SKY_ACTIVATION_TIME, vnNow.getTime())).toISOString();
-  // Hạn sử dụng: 30 ngày kể từ khi nhận
-  const expDate = new Date(new Date(unlockedAt).getTime() + 30 * 24 * 60 * 60 * 1000);
-  const expiresAt = expDate.toISOString();
-
-  // Frame: top 10 đấu trường tuần 9/11 - 15/11
-  if (rank <= 10) {
-    const existing = db.prepare(
-      "SELECT expires_at FROM user_limited_items WHERE user_id=? AND item_type='frame' AND item_id='chinh_phuc_bau_troi'"
-    ).get(userId);
-    if (!existing) {
-      db.prepare(`
-        INSERT INTO user_limited_items (user_id, item_type, item_id, unlocked_at, expires_at)
-        VALUES (?, 'frame', 'chinh_phuc_bau_troi', ?, ?)
-      `).run(userId, unlockedAt, expiresAt);
-    }
-  }
-
-  // Ảnh bìa: top 3 đấu trường tuần 9/11 - 15/11 (top 3 nhận cả bộ frame và ảnh bìa)
-  if (rank <= 3) {
-    const existing = db.prepare(
-      "SELECT expires_at FROM user_limited_items WHERE user_id=? AND item_type='cover' AND item_id='chinh_phuc_bau_troi'"
-    ).get(userId);
-    if (!existing) {
-      db.prepare(`
-        INSERT INTO user_limited_items (user_id, item_type, item_id, unlocked_at, expires_at)
-        VALUES (?, 'cover', 'chinh_phuc_bau_troi', ?, ?)
-      `).run(userId, unlockedAt, expiresAt);
-    }
-  }
+  // Bộ khung và ảnh bìa Chinh phục bầu trời là phần thưởng Đấu trường Arena mùa AS1 (2026), tạm khoá với mọi người dùng
+  return;
 }
 
 function syncUserStreakPerkItems(userId, vnNow = getVietnamNow()) {
@@ -2733,6 +2787,12 @@ function getUserLimitedItemsStatus(userId) {
 
   // 1. Vật phẩm sự kiện giới hạn
   for (const theme of LIMITED_THEMES) {
+    if (theme.id === "chinh_phuc_bau_troi" || theme.isTemporarilyLocked) {
+      // Phần thưởng Đấu trường Arena mùa AS1 (2026): Tạm khóa với mọi người dùng
+      res.frames[theme.frameId] = { isUnlocked: false, expiresAt: null, remainingDays: 0, isPermanent: false, isMaintaining: false, isLocked: true, isSeasonReward: true };
+      res.covers[theme.coverId] = { isUnlocked: false, expiresAt: null, remainingDays: 0, isPermanent: false, isMaintaining: false, isLocked: true, isSeasonReward: true };
+      continue;
+    }
     const isFixedThemeExpired = Boolean(theme.fixedExpiresAt) && (new Date(theme.fixedExpiresAt).getTime() <= now);
     const frameRow = rowMap.get(`frame:${theme.frameId}`);
     if (isPrivileged) {
@@ -3627,40 +3687,6 @@ function awardCompetitionSundayRewards(competitionId) {
             shields
           );
 
-          // Trao thưởng vật phẩm giới hạn "Chinh phục bầu trời" nếu là tuần 09/11 - 15/11
-          if (comp.week_key === '2026-W46' || comp.start_date === '2026-11-09') {
-            const SKY_ACTIVATION_TIME = new Date("2026-11-15T01:00:00+07:00").getTime();
-            const curTime = getVietnamNow().getTime();
-            if (curTime >= SKY_ACTIVATION_TIME) {
-              const unlockedAt = new Date(Math.max(SKY_ACTIVATION_TIME, curTime)).toISOString();
-              const expiresAt = new Date(new Date(unlockedAt).getTime() + 30 * 24 * 60 * 60 * 1000).toISOString();
-
-              if (rank <= 10) {
-                const existingFrame = db.prepare(
-                  "SELECT expires_at FROM user_limited_items WHERE user_id=? AND item_type='frame' AND item_id='chinh_phuc_bau_troi'"
-                ).get(p.userId);
-                if (!existingFrame) {
-                  db.prepare(`
-                    INSERT INTO user_limited_items (user_id, item_type, item_id, unlocked_at, expires_at)
-                    VALUES (?, 'frame', 'chinh_phuc_bau_troi', ?, ?)
-                  `).run(p.userId, unlockedAt, expiresAt);
-                }
-              }
-
-              if (rank <= 3) {
-                const existingCover = db.prepare(
-                  "SELECT expires_at FROM user_limited_items WHERE user_id=? AND item_type='cover' AND item_id='chinh_phuc_bau_troi'"
-                ).get(p.userId);
-                if (!existingCover) {
-                  db.prepare(`
-                    INSERT INTO user_limited_items (user_id, item_type, item_id, unlocked_at, expires_at)
-                    VALUES (?, 'cover', 'chinh_phuc_bau_troi', ?, ?)
-                  `).run(p.userId, unlockedAt, expiresAt);
-                }
-              }
-            }
-          }
-
           awardedCount++;
         }
       }
@@ -4050,10 +4076,201 @@ async function api(request, response, url) {
         "Đặt lại mật khẩu thành công! Bạn có thể đăng nhập ngay bằng mật khẩu mới.",
     });
   }
+  // --- HỆ THỐNG CỘNG ĐỒNG HỌC THUẬT (COMMUNITIES / SUBREDDITS) ---
+  if (method === "GET" && pathName === "/api/communities") {
+    const viewer = sessionFrom(request);
+    const viewerId = viewer ? viewer.id : null;
+    const isAdminOrTa = viewer && (viewer.role === "admin" || viewer.role === "ta");
+
+    const rows = db.prepare(`
+      SELECT 
+        c.id, c.name, c.slug, c.description, c.cover_image as coverImage, c.avatar, c.privacy,
+        c.creator_id as creatorId, c.created_at as createdAt,
+        u.display_name as creatorName,
+        (SELECT count(*) FROM community_members cm WHERE cm.community_id = c.id) as membersCount,
+        (SELECT count(*) FROM posts p WHERE p.community_id = c.id AND p.status = 'visible') as postsCount,
+        ${viewerId ? `(SELECT role FROM community_members cm WHERE cm.community_id = c.id AND cm.user_id = ${viewerId})` : 'NULL'} as userRole
+      FROM communities c
+      JOIN users u ON u.id = c.creator_id
+      ORDER BY c.created_at ASC
+    `).all();
+
+    const list = rows.map(r => ({
+      id: r.id,
+      name: r.name,
+      slug: r.slug,
+      description: r.description || "",
+      coverImage: r.coverImage || "default",
+      avatar: r.avatar || "👥",
+      privacy: r.privacy,
+      creatorId: r.creatorId,
+      creatorName: r.creatorName,
+      membersCount: Number(r.membersCount || 0),
+      postsCount: Number(r.postsCount || 0),
+      isMember: Boolean(r.userRole),
+      userRole: r.userRole || null,
+      canView: r.privacy === "public" || Boolean(r.userRole) || isAdminOrTa
+    }));
+
+    return json(response, 200, { communities: list });
+  }
+
+  const commDetailMatch = pathName.match(/^\/api\/communities\/([a-zA-Z0-9_-]+)$/);
+  if (method === "GET" && commDetailMatch && pathName !== "/api/communities/join" && pathName !== "/api/communities/leave") {
+    const rawParam = commDetailMatch[1];
+    const isNum = /^\d+$/.test(rawParam);
+    const viewer = sessionFrom(request);
+    const viewerId = viewer ? viewer.id : null;
+    const isAdminOrTa = viewer && (viewer.role === "admin" || viewer.role === "ta");
+
+    const comm = db.prepare(`
+      SELECT 
+        c.id, c.name, c.slug, c.description, c.cover_image as coverImage, c.avatar, c.privacy,
+        c.creator_id as creatorId, c.created_at as createdAt,
+        u.display_name as creatorName,
+        (SELECT count(*) FROM community_members cm WHERE cm.community_id = c.id) as membersCount,
+        (SELECT count(*) FROM posts p WHERE p.community_id = c.id AND p.status = 'visible') as postsCount,
+        ${viewerId ? `(SELECT role FROM community_members cm WHERE cm.community_id = c.id AND cm.user_id = ${viewerId})` : 'NULL'} as userRole
+      FROM communities c
+      JOIN users u ON u.id = c.creator_id
+      WHERE ${isNum ? "c.id = ?" : "c.slug = ?"}
+    `).get(isNum ? Number(rawParam) : rawParam);
+
+    if (!comm) return error(response, 404, "Không tìm thấy cộng đồng.");
+
+    const isMember = Boolean(comm.userRole);
+    const canView = comm.privacy === "public" || isMember || isAdminOrTa;
+
+    return json(response, 200, {
+      community: {
+        id: comm.id,
+        name: comm.name,
+        slug: comm.slug,
+        description: comm.description || "",
+        coverImage: comm.coverImage || "default",
+        avatar: comm.avatar || "👥",
+        privacy: comm.privacy,
+        creatorId: comm.creatorId,
+        creatorName: comm.creatorName,
+        membersCount: Number(comm.membersCount || 0),
+        postsCount: Number(comm.postsCount || 0),
+        isMember,
+        userRole: comm.userRole || null,
+        canView
+      }
+    });
+  }
+
+  if (method === "POST" && pathName === "/api/communities") {
+    const user = requireUser(request, response);
+    if (!user || !requireCsrf(request, response, user)) return;
+
+    const { name, description, coverImage, avatar, privacy } = await readJSON(request);
+    if (!name || typeof name !== "string" || name.trim().length < 3 || name.trim().length > 50) {
+      return error(response, 400, "Tên cộng đồng phải từ 3 đến 50 ký tự.");
+    }
+    const cleanPrivacy = privacy === "private" ? "private" : "public";
+    const trimmedName = name.trim();
+
+    let slug = trimmedName
+      .toLowerCase()
+      .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+      .replace(/[đĐ]/g, "d")
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "");
+    if (!slug) slug = `community-${Date.now()}`;
+
+    const existing = db.prepare("SELECT id FROM communities WHERE LOWER(name) = LOWER(?) OR slug = ?").get(trimmedName, slug);
+    if (existing) {
+      return error(response, 400, "Tên hoặc định danh cộng đồng này đã tồn tại, vui lòng chọn tên khác.");
+    }
+
+    const result = db.prepare(`
+      INSERT INTO communities (name, slug, description, cover_image, avatar, privacy, creator_id)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      trimmedName,
+      slug,
+      (typeof description === "string" ? description.trim() : "").slice(0, 500),
+      typeof coverImage === "string" ? coverImage.trim() : "default",
+      typeof avatar === "string" && avatar.trim() ? avatar.trim() : "👥",
+      cleanPrivacy,
+      user.id
+    );
+
+    const newCommId = result.lastInsertRowid;
+    db.prepare(`
+      INSERT INTO community_members (community_id, user_id, role)
+      VALUES (?, ?, 'admin')
+    `).run(newCommId, user.id);
+
+    try {
+      recordContribution(user.id, "community_created", 15, "community", newCommId, `Sáng lập cộng đồng "${trimmedName}"`);
+    } catch (e) { }
+
+    return json(response, 201, {
+      ok: true,
+      community: {
+        id: newCommId,
+        name: trimmedName,
+        slug,
+        description: description || "",
+        coverImage: coverImage || "default",
+        avatar: avatar || "👥",
+        privacy: cleanPrivacy,
+        creatorId: user.id,
+        creatorName: user.displayName,
+        membersCount: 1,
+        postsCount: 0,
+        isMember: true,
+        userRole: "admin",
+        canView: true
+      }
+    });
+  }
+
+  const joinMatch = pathName.match(/^\/api\/communities\/(\d+)\/join$/);
+  if (method === "POST" && joinMatch) {
+    const user = requireUser(request, response);
+    if (!user || !requireCsrf(request, response, user)) return;
+    const commId = Number(joinMatch[1]);
+    const comm = db.prepare("SELECT * FROM communities WHERE id = ?").get(commId);
+    if (!comm) return error(response, 404, "Cộng đồng không tồn tại.");
+
+    const existingMember = db.prepare("SELECT id, role FROM community_members WHERE community_id = ? AND user_id = ?").get(commId, user.id);
+    if (existingMember) {
+      return json(response, 200, { ok: true, message: "Bạn đã là thành viên của cộng đồng này.", isMember: true, role: existingMember.role });
+    }
+
+    db.prepare("INSERT INTO community_members (community_id, user_id, role) VALUES (?, ?, 'member')").run(commId, user.id);
+    const membersCount = db.prepare("SELECT count(*) as count FROM community_members WHERE community_id = ?").get(commId)?.count || 1;
+
+    return json(response, 200, { ok: true, message: `Đã tham gia cộng đồng "${comm.name}"!`, isMember: true, role: "member", membersCount });
+  }
+
+  const leaveMatch = pathName.match(/^\/api\/communities\/(\d+)\/leave$/);
+  if (method === "POST" && leaveMatch) {
+    const user = requireUser(request, response);
+    if (!user || !requireCsrf(request, response, user)) return;
+    const commId = Number(leaveMatch[1]);
+    const comm = db.prepare("SELECT * FROM communities WHERE id = ?").get(commId);
+    if (!comm) return error(response, 404, "Cộng đồng không tồn tại.");
+
+    if (comm.creator_id === user.id) {
+      return error(response, 400, "Bạn là người sáng lập/quản trị viên chính của cộng đồng này nên không thể rời khỏi.");
+    }
+
+    db.prepare("DELETE FROM community_members WHERE community_id = ? AND user_id = ?").run(commId, user.id);
+    const membersCount = db.prepare("SELECT count(*) as count FROM community_members WHERE community_id = ?").get(commId)?.count || 0;
+
+    return json(response, 200, { ok: true, message: `Đã rời cộng đồng "${comm.name}".`, isMember: false, membersCount });
+  }
+
   if (method === "GET" && pathName === "/api/posts") {
     const viewer = sessionFrom(request) || { role: "student" };
     const searchQuery = url.searchParams.get("q") || "";
-    const postList = listPosts(viewer, searchQuery);
+    const commFilter = url.searchParams.get("community") || url.searchParams.get("community_id") || url.searchParams.get("community_slug") || null;
+    const postList = listPosts(viewer, searchQuery, commFilter);
     const statsRow = db.prepare(`
       SELECT 
         count(*) as totalPosts,
@@ -4083,7 +4300,7 @@ async function api(request, response, url) {
         429,
         "Bạn đã đăng quá nhiều bài thảo luận trong một giờ.",
       );
-    const { title, content, topic, isAnonymous, documentId, documentIds } = await readJSON(request);
+    const { title, content, topic, isAnonymous, documentId, documentIds, communityId } = await readJSON(request);
     const allowedTopics = db.prepare("SELECT name FROM topics WHERE status = 'approved'").all().map(t => t.name);
     if (
       typeof title !== "string" ||
@@ -4096,6 +4313,21 @@ async function api(request, response, url) {
     )
       return error(response, 400, "Nội dung bài đăng chưa hợp lệ.");
     const anonymous = isAdmin(user) ? 0 : isAnonymous ? 1 : 0;
+
+    let validCommId = null;
+    if (communityId) {
+      const comm = db.prepare("SELECT id, privacy FROM communities WHERE id = ?").get(Number(communityId));
+      if (comm) {
+        if (comm.privacy === "private") {
+          const isMem = db.prepare("SELECT 1 FROM community_members WHERE community_id = ? AND user_id = ?").get(comm.id, user.id);
+          const isPrivileged = user.role === "admin" || user.role === "ta";
+          if (!isMem && !isPrivileged) {
+            return error(response, 403, "Bạn chưa phải thành viên của cộng đồng riêng tư này.");
+          }
+        }
+        validCommId = comm.id;
+      }
+    }
 
     let rawIds = [];
     if (Array.isArray(documentIds)) {
@@ -4117,9 +4349,9 @@ async function api(request, response, url) {
 
     const result = db
       .prepare(
-        "INSERT INTO posts(author_id,title,content,topic,is_anonymous,document_id) VALUES (?,?,?,?,?,?)",
+        "INSERT INTO posts(author_id,title,content,topic,is_anonymous,document_id,community_id) VALUES (?,?,?,?,?,?,?)",
       )
-      .run(user.id, title.trim(), content.trim(), topic, anonymous, primaryDocId);
+      .run(user.id, title.trim(), content.trim(), topic, anonymous, primaryDocId, validCommId);
     const newPostId = result.lastInsertRowid;
     if (validDocIds.length > 0) {
       const insertPd = db.prepare("INSERT OR IGNORE INTO post_documents(post_id, document_id, sort_order) VALUES (?, ?, ?)");
@@ -4141,10 +4373,12 @@ async function api(request, response, url) {
         `SELECT p.*,
                 u.display_name,u.avatar,u.role,
                 doc.id as doc_id, doc.title as doc_title, doc.format as doc_format, doc.category as doc_category, doc.source_url as doc_source_url,
+                comm.id as comm_id, comm.name as comm_name, comm.slug as comm_slug, comm.avatar as comm_avatar, comm.privacy as comm_privacy,
                 0 helpful_count,0 response_count
          FROM posts p
          JOIN users u ON u.id=p.author_id
          LEFT JOIN documents doc ON doc.id=p.document_id
+         LEFT JOIN communities comm ON comm.id=p.community_id
          WHERE p.id=?`,
       )
       .get(newPostId);
@@ -5363,6 +5597,9 @@ async function api(request, response, url) {
         }
         newCoverImage = trimmedCover;
       } else if (LIMITED_COVER_IDS.has(trimmedCover) || STREAK_COVER_IDS.has(trimmedCover)) {
+        if (trimmedCover === "chinh_phuc_bau_troi") {
+          return error(response, 403, "Ảnh bìa này là phần thưởng Đấu trường Arena mùa AS1 (2026) và hiện đang tạm khóa.");
+        }
         const coverStatus = userLimited.covers[trimmedCover];
         const isCoverUnlocked = isPrivileged || (coverStatus && coverStatus.isUnlocked);
         if (!isCoverUnlocked) {
@@ -5405,6 +5642,9 @@ async function api(request, response, url) {
     ]);
     const requestedFrame = typeof namecardFrame === "string" ? namecardFrame.trim() : (currentUser.namecard_frame || "none");
     if (LIMITED_FRAME_IDS.has(requestedFrame) || STREAK_FRAME_IDS.has(requestedFrame)) {
+      if (requestedFrame === "chinh_phuc_bau_troi") {
+        return error(response, 403, "Khung này là phần thưởng Đấu trường Arena mùa AS1 (2026) và hiện đang tạm khóa.");
+      }
       const frameStatus = userLimited.frames[requestedFrame];
       const isFrameUnlocked = isPrivileged || (frameStatus && frameStatus.isUnlocked);
       if (!isFrameUnlocked) {

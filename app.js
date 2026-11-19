@@ -8296,7 +8296,13 @@ const FRAME_OPTIONS = [
     lockNote: "Đăng nhập 3 ngày từ sau cập nhật Giáng sinh để mở khóa (Hiệu lực đến hết 31/12/2026)",
     expiredLockNote: "Khung kỷ niệm Lễ hội Giáng sinh 2026"
   },
-  { id: "chinh_phuc_bau_troi", name: "Chinh phục bầu trời", isLimited: true, lockNote: "Khung dành cho Top 10 Đấu trường tuần 09/11 - 15/11 (Kích hoạt 01:00 CN 15/11, hạn dùng 30 ngày)" },
+  {
+    id: "chinh_phuc_bau_troi",
+    name: "Chinh phục bầu trời",
+    isLimited: true,
+    lockNote: "Phần thưởng Đấu trường Arena mùa AS1 (2026) — Tạm khóa, cách thức trao thưởng sẽ được thông báo sau",
+    expiredLockNote: "Vật phẩm giới hạn Đấu trường Arena mùa AS1 (2026)"
+  },
   { id: "ton_vinh_phai_dep", name: "Tôn vinh phái đẹp", isLimited: true, lockNote: "Khung nhận được qua hoạt động giới hạn" },
   { id: "bua_tiec_ma_mi", name: "Bữa tiệc ma mị", isLimited: true, lockNote: "Khung nhận được qua hoạt động giới hạn" },
 ];
@@ -8314,7 +8320,15 @@ const COVER_PRESETS = [
     lockNote: "Đăng nhập 3 ngày từ sau cập nhật Giáng sinh để mở khóa (Hiệu lực đến hết 31/12/2026)",
     expiredLockNote: "Ảnh bìa kỷ niệm Lễ hội Giáng sinh 2026"
   },
-  { id: "chinh_phuc_bau_troi", name: "Chinh phục bầu trời", type: "image", value: "covers/chinh-phuc-bau-troi.png", isLimited: true, lockNote: "Ảnh bìa dành cho Top 3 Đấu trường tuần 09/11 - 15/11 (Kích hoạt 01:00 CN 15/11, hạn dùng 30 ngày)" },
+  {
+    id: "chinh_phuc_bau_troi",
+    name: "Chinh phục bầu trời",
+    type: "image",
+    value: "covers/chinh-phuc-bau-troi.png",
+    isLimited: true,
+    lockNote: "Phần thưởng Đấu trường Arena mùa AS1 (2026) — Tạm khóa, cách thức trao thưởng sẽ được thông báo sau",
+    expiredLockNote: "Vật phẩm giới hạn Đấu trường Arena mùa AS1 (2026)"
+  },
   { id: "ton_vinh_phai_dep", name: "Tôn vinh phái đẹp", type: "image", value: "covers/ton-vinh-phai-dep.png", isLimited: true, lockNote: "Ảnh bìa nhận được qua hoạt động giới hạn" },
   { id: "bua_tiec_ma_mi", name: "Bữa tiệc ma mị", type: "image", value: "covers/bua-tiec-ma-mi.png", isLimited: true, lockNote: "Ảnh bìa nhận được qua hoạt động giới hạn" },
 
@@ -9329,6 +9343,12 @@ function renderAvatarPicker() {
 
 function getLimitedItemLockInfo(item, limitedItemsObj) {
   if (!item) return { message: "", badgeLabel: "Sự kiện" };
+  if (item.id === "chinh_phuc_bau_troi") {
+    return {
+      message: item.lockNote || "Phần thưởng Đấu trường Arena mùa AS1 (2026) — Tạm khóa, cách thức trao thưởng sẽ được thông báo sau",
+      badgeLabel: "Mùa AS1"
+    };
+  }
   if (item.eventId === "phep_mau_mua_dong") {
     const prog = limitedItemsObj?.eventProgress?.phep_mau_mua_dong;
     const isExpired = Boolean(prog?.isExpired) || (item.expiresAt && Date.now() > new Date(item.expiresAt).getTime());
@@ -9376,8 +9396,12 @@ function renderFramePicker() {
 
     if (f.isLimited) {
       const limStatus = limitedFrames[f.id];
-      isUnlocked = isPrivileged || Boolean(limStatus && limStatus.isUnlocked);
-      if (isPrivileged || limStatus?.isPermanent) {
+      if (f.id === "chinh_phuc_bau_troi" || limStatus?.isLocked) {
+        isUnlocked = false;
+        const lockInfo = getLimitedItemLockInfo(f, limitedItems);
+        lockTooltip = lockInfo.message;
+        badgeHtml = `<span class="choice-lock-badge" title="${escapeHTML(lockTooltip)}"><svg class="ui-icon" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px; margin-right:2px;"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>${escapeHTML(lockInfo.badgeLabel)}</span>`;
+      } else if (isPrivileged || limStatus?.isPermanent) {
         lockTooltip = `${f.name} (Đặc quyền Quản trị viên: Vĩnh viễn)`;
         badgeHtml = `<span class="choice-unlock-badge badge-permanent"><svg class="ui-icon" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px; margin-right:2px;"><path d="m2 4 3 12h14l3-12-6 7-4-7-4 7-6-7zm3 16h14"/></svg>Vĩnh viễn</span>`;
       } else if (isUnlocked) {
@@ -9479,8 +9503,12 @@ function renderCoverPicker() {
 
     if (p.isLimited) {
       const limStatus = limitedCovers[p.id];
-      isUnlocked = isPrivileged || Boolean(limStatus && limStatus.isUnlocked);
-      if (isPrivileged || limStatus?.isPermanent) {
+      if (p.id === "chinh_phuc_bau_troi" || limStatus?.isLocked) {
+        isUnlocked = false;
+        const lockInfo = getLimitedItemLockInfo(p, limitedItems);
+        lockTooltip = lockInfo.message;
+        badgeHtml = `<span class="choice-lock-badge" title="${escapeHTML(lockTooltip)}"><svg class="ui-icon" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px; margin-right:2px;"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>${escapeHTML(lockInfo.badgeLabel)}</span>`;
+      } else if (isPrivileged || limStatus?.isPermanent) {
         lockTooltip = `${p.name} (Đặc quyền Quản trị viên: Vĩnh viễn)`;
         badgeHtml = `<span class="choice-unlock-badge badge-permanent"><svg class="ui-icon" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px; margin-right:2px;"><path d="m2 4 3 12h14l3-12-6 7-4-7-4 7-6-7zm3 16h14"/></svg>Vĩnh viễn</span>`;
       } else if (isUnlocked) {
