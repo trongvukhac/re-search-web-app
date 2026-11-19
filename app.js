@@ -28908,14 +28908,29 @@ function updateCommunityHeroBanner() {
   const slugEl = $("#commHeroSlug");
   if (slugEl) slugEl.textContent = `re/${comm.slug}`;
 
+  // 3 Trạng thái cộng đồng: Công khai / Hạn chế / Riêng tư
   const privacyEl = $("#commHeroPrivacy");
   if (privacyEl) {
-    const isPriv = comm.privacy === "private";
-    const iconSvg = isPriv
-      ? `<svg class="privacy-pill-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>`
-      : `<svg class="privacy-pill-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>`;
-    privacyEl.innerHTML = `${iconSvg}<span>${isPriv ? "Riêng tư" : "Công khai"}</span>`;
-    privacyEl.className = `community-privacy-pill ${isPriv ? "is-private" : "is-public"}`;
+    let iconSvg = "";
+    let privacyText = "Công khai";
+    let privacyClass = "is-public";
+
+    if (comm.privacy === "private") {
+      iconSvg = `<svg class="privacy-pill-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>`;
+      privacyText = "Riêng tư";
+      privacyClass = "is-private";
+    } else if (comm.privacy === "restricted") {
+      iconSvg = `<svg class="privacy-pill-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>`;
+      privacyText = "Hạn chế";
+      privacyClass = "is-restricted";
+    } else {
+      iconSvg = `<svg class="privacy-pill-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>`;
+      privacyText = "Công khai";
+      privacyClass = "is-public";
+    }
+
+    privacyEl.innerHTML = `${iconSvg}<span>${privacyText}</span>`;
+    privacyEl.className = `community-privacy-pill ${privacyClass}`;
   }
 
   const descEl = $("#commHeroDesc");
@@ -28924,7 +28939,17 @@ function updateCommunityHeroBanner() {
   const membersCountEl = $("#commHeroMembersCount");
   if (membersCountEl) membersCountEl.innerHTML = `<strong>${comm.membersCount || 0}</strong> thành viên`;
 
-  // Avatar Stack: 1 thành viên chủ cộng đồng + 8 thành viên mới nhất + icon +x
+  // Avatar Stack cạnh số thành viên (đồng bộ màu sắc và khung)
+  const COMM_AVATAR_TINTS = [
+    "linear-gradient(135deg, rgba(254, 205, 211, 0.45), rgba(253, 164, 175, 0.25))",
+    "linear-gradient(135deg, rgba(187, 247, 208, 0.45), rgba(134, 239, 172, 0.25))",
+    "linear-gradient(135deg, rgba(191, 219, 254, 0.45), rgba(147, 197, 253, 0.25))",
+    "linear-gradient(135deg, rgba(233, 213, 255, 0.45), rgba(216, 180, 254, 0.25))",
+    "linear-gradient(135deg, rgba(254, 240, 138, 0.45), rgba(253, 224, 71, 0.25))",
+    "linear-gradient(135deg, rgba(199, 210, 254, 0.45), rgba(165, 180, 252, 0.25))",
+    "linear-gradient(135deg, rgba(153, 246, 228, 0.45), rgba(94, 234, 212, 0.25))"
+  ];
+
   const stackEl = $("#commHeroAvatarStack");
   if (stackEl) {
     const preview = comm.membersPreview;
@@ -28936,16 +28961,17 @@ function updateCommunityHeroBanner() {
 
       if (creator) {
         stackHtml += `
-          <span class="comm-avatar-pill is-creator" title="Chủ cộng đồng / Quản trị viên: ${escapeHTML(creator.displayName)}" data-namecard-user-id="${creator.id}">
+          <span class="comm-avatar-pill is-creator" title="Chủ sáng lập / Quản trị viên: ${escapeHTML(creator.displayName)}" data-namecard-user-id="${creator.id}">
             <span>${escapeHTML(creator.avatar || getAvatarEmoji(creator.displayName))}</span>
-            <span class="creator-badge" title="Chủ cộng đồng">👑</span>
+            <span class="creator-badge" title="Chủ sáng lập">👑</span>
           </span>
         `;
       }
 
-      recent.slice(0, 8).forEach((m) => {
+      recent.slice(0, 8).forEach((m, idx) => {
+        const bgTint = COMM_AVATAR_TINTS[(m.id || idx) % COMM_AVATAR_TINTS.length];
         stackHtml += `
-          <span class="comm-avatar-pill" title="${escapeHTML(m.displayName)}" data-namecard-user-id="${m.id}">
+          <span class="comm-avatar-pill" style="background: ${bgTint};" title="${escapeHTML(m.displayName)}" data-namecard-user-id="${m.id}">
             <span>${escapeHTML(m.avatar || getAvatarEmoji(m.displayName))}</span>
           </span>
         `;
@@ -28965,18 +28991,57 @@ function updateCommunityHeroBanner() {
   const postsCountEl = $("#commHeroPostsCount");
   if (postsCountEl) postsCountEl.innerHTML = `<strong>${comm.postsCount || 0}</strong> bài thảo luận`;
 
+  // Kiểm tra trạng thái đã giải tán
   const joinBtn = $("#btnCommJoinHero");
-  if (joinBtn) {
-    if (!session) {
-      joinBtn.textContent = "Tham gia";
-      joinBtn.className = "button button-primary button-sm";
-    } else if (comm.isMember) {
-      joinBtn.textContent = "✓ Đã tham gia";
-      joinBtn.className = "button button-outline button-sm btn-joined";
-    } else {
-      joinBtn.textContent = "+ Tham gia";
-      joinBtn.className = "button button-primary button-sm";
+  const dissolvedNotice = $("#commDissolvedNotice");
+
+  if (comm.status === "dissolving") {
+    if (joinBtn) {
+      joinBtn.style.display = "none";
+      joinBtn.classList.add("is-hidden");
     }
+    if (dissolvedNotice) dissolvedNotice.style.display = "inline-flex";
+  } else {
+    if (dissolvedNotice) dissolvedNotice.style.display = "none";
+    if (joinBtn) {
+      joinBtn.classList.remove("is-hidden");
+      joinBtn.style.display = "inline-flex";
+      if (!session) {
+        joinBtn.innerHTML = `<span>Tham gia</span>`;
+        joinBtn.className = "button button-primary button-sm btn-comm-action btn-join-comm-hero";
+      } else if (comm.isPending) {
+        joinBtn.innerHTML = `<span>⏳ Chờ duyệt</span>`;
+        joinBtn.className = "button button-outline button-sm btn-comm-action button-disabled";
+      } else if (comm.isMember) {
+        joinBtn.innerHTML = `<span>✓ Đã tham gia (Rời)</span>`;
+        joinBtn.className = "button button-outline button-sm btn-comm-action btn-joined";
+      } else {
+        joinBtn.innerHTML = `<span>+ Tham gia</span>`;
+        joinBtn.className = "button button-primary button-sm btn-comm-action btn-join-comm-hero";
+      }
+    }
+  }
+
+  // Nút Quản trị / Thành viên
+  const membersBtnText = $("#commMembersBtnText");
+  if (membersBtnText) {
+    membersBtnText.textContent = comm.isManager ? "Quản trị & Thành viên" : "Thành viên";
+  }
+
+  // Nút Chỉnh sửa (chỉ người sáng lập hoặc admin)
+  const editBtn = $("#btnCommEditHero");
+  if (editBtn) {
+    editBtn.style.display = comm.isManager ? "inline-flex" : "none";
+  }
+
+  // Nút Thông báo
+  const notifyBtnText = $("#commNotifyBtnText");
+  const notifyIcon = $("#btnCommNotifyHero .comm-notify-icon");
+  if (notifyBtnText) {
+    notifyBtnText.textContent = comm.isMuted ? "Tắt thông báo" : "Thông báo";
+  }
+  if (notifyIcon) {
+    notifyIcon.style.opacity = comm.isMuted ? "0.45" : "1";
   }
 }
 
@@ -28993,7 +29058,12 @@ async function toggleJoinCommunity(commId) {
     return;
   }
   const comm = forumCommunitiesList.find((c) => c.id === commId);
-  const isJoining = !comm?.isMember;
+  if (comm?.status === "dissolving") {
+    toast("Cộng đồng đã giải tán, không thể tham gia.");
+    return;
+  }
+
+  const isJoining = !comm?.isMember && !comm?.isPending;
   const endpoint = isJoining ? `/api/communities/${commId}/join` : `/api/communities/${commId}/leave`;
 
   try {
@@ -29001,8 +29071,9 @@ async function toggleJoinCommunity(commId) {
     if (res && res.ok) {
       toast(res.message || (isJoining ? "Đã tham gia cộng đồng thành công!" : "Đã rời cộng đồng."));
       if (comm) {
-        comm.isMember = res.isMember;
-        comm.membersCount = res.membersCount;
+        comm.isMember = Boolean(res.isMember);
+        comm.isPending = Boolean(res.isPending);
+        if (res.membersCount != null) comm.membersCount = res.membersCount;
       }
       await loadForumCommunities();
       renderForumCommunitiesSidebar();
@@ -29022,12 +29093,22 @@ function openCreateCommunityModal() {
     askLogin("Vui lòng đăng nhập để tạo không gian cộng đồng mới.");
     return;
   }
+
+  // Quyền tạo mới cộng đồng chỉ dành cho thành viên chuỗi 50 trở lên hoặc Admin/TA
+  const userStreak = Number(session.streak || 0);
+  const isEligible = session.role === "admin" || session.role === "ta" || userStreak >= 50;
+  if (!isEligible) {
+    toast(`Quyền tạo cộng đồng chỉ dành cho thành viên đạt chuỗi 50 ngày trở lên (Học giả uyên bác) hoặc Quản trị viên. Chuỗi hiện tại của bạn: ${userStreak} ngày.`);
+    return;
+  }
+
   const modal = $("#createCommunityModal");
   if (!modal) return;
   $("#newCommName").value = "";
   $("#newCommSlug").value = "";
   $("#newCommAvatar").value = "📚";
   $("#newCommDesc").value = "";
+  if ($("#newCommRules")) $("#newCommRules").value = "";
   $("#newCommCover").value = "linear-gradient(135deg, #1e3a8a 0%, #3b82f6 50%, #93c5fd 100%)";
   const publicRadio = document.querySelector('input[name="newCommPrivacy"][value="public"]');
   if (publicRadio) publicRadio.checked = true;
@@ -29052,9 +29133,10 @@ function updateCreateCommPreview() {
   const avatar = ($("#newCommAvatar")?.value || "").trim() || "📚";
   const cover = $("#newCommCover")?.value || "linear-gradient(135deg, #1e3a8a 0%, #3b82f6 50%, #93c5fd 100%)";
   const privacy = document.querySelector('input[name="newCommPrivacy"]:checked')?.value || "public";
+  const privacyLabel = privacy === "private" ? "Riêng tư" : privacy === "restricted" ? "Hạn chế" : "Công khai";
 
   if ($("#commPreviewName")) $("#commPreviewName").textContent = name;
-  if ($("#commPreviewSlug")) $("#commPreviewSlug").textContent = `re/${slug || "ten-cong-dong"} • ${privacy === "private" ? "Riêng tư" : "Công khai"}`;
+  if ($("#commPreviewSlug")) $("#commPreviewSlug").textContent = `re/${slug || "ten-cong-dong"} • ${privacyLabel}`;
   if ($("#commPreviewAvatar")) $("#commPreviewAvatar").textContent = avatar;
   if ($("#commPreviewCover")) $("#commPreviewCover").style.background = cover;
 }
@@ -29088,6 +29170,7 @@ async function handleCreateCommunitySubmit() {
       .replace(/^-|-$/g, "");
   }
   const description = ($("#newCommDesc")?.value || "").trim();
+  const rules = ($("#newCommRules")?.value || "").trim();
   const avatar = ($("#newCommAvatar")?.value || "").trim() || "📚";
   const coverImage = $("#newCommCover")?.value || "linear-gradient(135deg, #1e3a8a 0%, #3b82f6 50%, #93c5fd 100%)";
   const privacy = document.querySelector('input[name="newCommPrivacy"]:checked')?.value || "public";
@@ -29107,7 +29190,7 @@ async function handleCreateCommunitySubmit() {
   try {
     const res = await requestAPI("/api/communities", {
       method: "POST",
-      body: JSON.stringify({ name, slug, description, avatar, coverImage, privacy }),
+      body: JSON.stringify({ name, slug, description, avatar, coverImage, privacy, rules }),
     });
     if (res && res.community) {
       toast("Đã khởi tạo cộng đồng thành công! (+15 điểm đóng góp)");
@@ -29123,6 +29206,494 @@ async function handleCreateCommunitySubmit() {
   }
 }
 
+// =========================================================================
+// QUẢN LÝ THÀNH VIÊN CỘNG ĐỒNG
+// =========================================================================
+
+let currentCommMembersData = null;
+let currentCommMembersTab = "active";
+
+async function openCommunityMembersModal() {
+  if (!currentForumCommunitySlug) return;
+  const comm = forumCommunitiesList.find((c) => c.slug === currentForumCommunitySlug);
+  if (!comm) return;
+
+  const modal = $("#communityMembersModal");
+  if (!modal) return;
+
+  if ($("#commMembersModalTitle")) {
+    $("#commMembersModalTitle").textContent = `Thành viên re/${comm.slug}`;
+  }
+  if ($("#commMemberSearchInput")) {
+    $("#commMemberSearchInput").value = "";
+  }
+
+  currentCommMembersTab = "active";
+  modal.showModal();
+  await loadAndRenderCommMembers(comm.id);
+}
+
+async function loadAndRenderCommMembers(commId) {
+  const container = $("#commMembersListContainer");
+  if (container) container.innerHTML = `<p style="text-align: center; color: var(--muted); padding: 24px;">Đang tải danh sách thành viên...</p>`;
+
+  try {
+    const data = await requestAPI(`/api/communities/${commId}/members`);
+    currentCommMembersData = data;
+
+    const tabsBar = $("#commMembersTabsBar");
+    if (tabsBar) {
+      // Chỉ hiển thị tab chờ duyệt nếu là quản lý và là nhóm riêng tư (hoặc có pending members)
+      if (data.isManager && (data.commPrivacy === "private" || (data.pendingMembers && data.pendingMembers.length > 0))) {
+        tabsBar.style.display = "flex";
+        if ($("#commActiveCountBadge")) $("#commActiveCountBadge").textContent = data.totalCount || 0;
+        if ($("#commPendingCountBadge")) $("#commPendingCountBadge").textContent = data.pendingCount || 0;
+      } else {
+        tabsBar.style.display = "none";
+      }
+    }
+
+    renderCommMembersList();
+  } catch (err) {
+    if (container) {
+      container.innerHTML = `<p style="text-align: center; color: #dc2626; padding: 20px;">${escapeHTML(err.message || "Không thể tải danh sách thành viên.")}</p>`;
+    }
+  }
+}
+
+function switchCommMembersTab(tab) {
+  currentCommMembersTab = tab;
+  $$(".comm-members-tab").forEach((btn) => {
+    btn.classList.toggle("active", btn.dataset.tab === tab);
+  });
+  renderCommMembersList();
+}
+
+function filterCommMembersList() {
+  renderCommMembersList();
+}
+
+function renderCommMembersList() {
+  const container = $("#commMembersListContainer");
+  if (!container || !currentCommMembersData) return;
+
+  const query = ($("#commMemberSearchInput")?.value || "").trim().toLowerCase();
+  const list = currentCommMembersTab === "pending"
+    ? (currentCommMembersData.pendingMembers || [])
+    : (currentCommMembersData.members || []);
+
+  const filtered = list.filter((m) => {
+    if (!query) return true;
+    return (
+      (m.displayName || "").toLowerCase().includes(query) ||
+      String(m.userId).includes(query) ||
+      (m.studentId || "").toLowerCase().includes(query)
+    );
+  });
+
+  if (filtered.length === 0) {
+    container.innerHTML = `
+      <div style="text-align: center; padding: 32px 16px; color: var(--muted);">
+        <p style="font-size: 14px; margin: 0;">${query ? "Không tìm thấy thành viên phù hợp." : currentCommMembersTab === "pending" ? "Không có thành viên nào đang chờ duyệt." : "Chưa có thành viên nào."}</p>
+      </div>
+    `;
+    return;
+  }
+
+  const isManager = Boolean(currentCommMembersData.isManager);
+  const commPrivacy = currentCommMembersData.commPrivacy;
+  const commId = currentCommMembersData.members?.[0]?.community_id || (forumCommunitiesList.find(c => c.slug === currentForumCommunitySlug)?.id);
+
+  container.innerHTML = filtered.map((m) => {
+    const isSelf = session && session.id === m.userId;
+    const isCreator = m.isCreator;
+    const roleBadge = isCreator
+      ? `<span class="comm-item-role-badge admin">👑 Sáng lập</span>`
+      : m.commRole === "admin"
+      ? `<span class="comm-item-role-badge admin">Quản trị</span>`
+      : m.commRole === "moderator"
+      ? `<span class="comm-item-role-badge mod">Kiểm duyệt</span>`
+      : `<span class="comm-item-role-badge">Thành viên</span>`;
+
+    // Nút phân quyền & thao tác
+    let actionButtonsHtml = "";
+
+    if (currentCommMembersTab === "pending" && isManager) {
+      actionButtonsHtml = `
+        <button type="button" class="button button-primary button-sm" onclick="approveCommMember(${commId}, ${m.userId})" style="font-size: 11px; padding: 4px 10px;">
+          ✓ Duyệt
+        </button>
+        <button type="button" class="button button-outline button-sm btn-kick-member" onclick="rejectCommMember(${commId}, ${m.userId})" style="font-size: 11px; padding: 4px 10px;">
+          ✕ Từ chối
+        </button>
+      `;
+    } else if (isManager && !isSelf && !isCreator) {
+      let permToggles = "";
+      if (commPrivacy === "restricted" || commPrivacy === "private") {
+        permToggles = `
+          <button type="button" class="btn-perm-toggle ${m.canPost ? "active" : ""}" 
+                  onclick="toggleMemberPermission(${commId}, ${m.userId}, 'canPost', ${!m.canPost})" 
+                  title="${m.canPost ? "Đang cho phép đăng bài. Nhấn để thu hồi." : "Đang chặn đăng bài. Nhấn để cấp quyền."}">
+            ${m.canPost ? "✓ Đăng bài" : "+ Đăng bài"}
+          </button>
+          <button type="button" class="btn-perm-toggle ${m.canComment ? "active" : ""}" 
+                  onclick="toggleMemberPermission(${commId}, ${m.userId}, 'canComment', ${!m.canComment})" 
+                  title="${m.canComment ? "Đang cho phép thảo luận. Nhấn để thu hồi." : "Đang chặn thảo luận. Nhấn để cấp quyền."}">
+            ${m.canComment ? "✓ Thảo luận" : "+ Thảo luận"}
+          </button>
+        `;
+      }
+      actionButtonsHtml = `
+        ${permToggles}
+        <button type="button" class="btn-kick-member" onclick="kickCommMember(${commId}, ${m.userId}, '${escapeHTML(m.displayName)}')">
+          Mời rời
+        </button>
+      `;
+    }
+
+    return `
+      <div class="comm-member-row">
+        ${m.coverImage && m.coverImage !== "default" ? `<div class="comm-member-cover-mini" style="background: ${m.coverImage.startsWith("linear") ? m.coverImage : `url(${m.coverImage}) center/cover`};"></div>` : ""}
+        <div class="comm-member-info" onclick="if (typeof openNamecardModal === 'function') openNamecardModal(${m.userId});" style="cursor: pointer;">
+          <div class="comm-member-avatar-box">
+            <span>${escapeHTML(m.avatar || getAvatarEmoji(m.displayName))}</span>
+          </div>
+          <div class="comm-member-names">
+            <div class="comm-member-name-row">
+              <span class="comm-member-name">${escapeHTML(m.displayName)}</span>
+              <span class="comm-member-id-tag">#${m.userId}</span>
+              ${roleBadge}
+            </div>
+            <div style="font-size: 11px; color: var(--muted); margin-top: 2px;">
+              ${m.studentId ? `MSSV: ${escapeHTML(m.studentId)} • ` : ""}Tham gia: ${new Date(m.joinedAt).toLocaleDateString("vi-VN")}
+            </div>
+          </div>
+        </div>
+        <div class="comm-member-actions">
+          ${actionButtonsHtml}
+        </div>
+      </div>
+    `;
+  }).join("");
+}
+
+async function kickCommMember(commId, userId, name) {
+  if (!confirm(`Bạn có chắc chắn muốn mời thành viên "${name}" rời khỏi cộng đồng không?`)) return;
+  try {
+    const res = await requestAPI(`/api/communities/${commId}/members/${userId}/kick`, { method: "POST" });
+    if (res && res.ok) {
+      toast(res.message || "Đã mời thành viên rời cộng đồng.");
+      await loadAndRenderCommMembers(commId);
+      await loadForumCommunities();
+      updateCommunityHeroBanner();
+    }
+  } catch (err) {
+    toast(err.message || "Không thể thực hiện thao tác.");
+  }
+}
+
+async function toggleMemberPermission(commId, userId, permType, newVal) {
+  const member = currentCommMembersData?.members?.find((m) => m.userId === userId);
+  const canPost = permType === "canPost" ? newVal : (member ? member.canPost : true);
+  const canComment = permType === "canComment" ? newVal : (member ? member.canComment : true);
+
+  try {
+    const res = await requestAPI(`/api/communities/${commId}/members/${userId}/permissions`, {
+      method: "POST",
+      body: JSON.stringify({ canPost, canComment }),
+    });
+    if (res && res.ok) {
+      toast(res.message || "Đã cập nhật quyền hạn thành viên.");
+      if (member) {
+        if (permType === "canPost") member.canPost = newVal;
+        if (permType === "canComment") member.canComment = newVal;
+      }
+      renderCommMembersList();
+    }
+  } catch (err) {
+    toast(err.message || "Không thể cập nhật quyền hạn.");
+  }
+}
+
+async function approveCommMember(commId, userId) {
+  try {
+    const res = await requestAPI(`/api/communities/${commId}/members/${userId}/approve`, {
+      method: "POST",
+      body: JSON.stringify({ canPost: true, canComment: true }),
+    });
+    if (res && res.ok) {
+      toast(res.message || "Đã duyệt thành viên gia nhập cộng đồng.");
+      await loadAndRenderCommMembers(commId);
+      await loadForumCommunities();
+      updateCommunityHeroBanner();
+    }
+  } catch (err) {
+    toast(err.message || "Không thể duyệt thành viên.");
+  }
+}
+
+async function rejectCommMember(commId, userId) {
+  if (!confirm("Bạn có chắc chắn muốn từ chối yêu cầu gia nhập này không?")) return;
+  try {
+    const res = await requestAPI(`/api/communities/${commId}/members/${userId}/reject`, { method: "POST" });
+    if (res && res.ok) {
+      toast(res.message || "Đã từ chối yêu cầu.");
+      await loadAndRenderCommMembers(commId);
+    }
+  } catch (err) {
+    toast(err.message || "Không thể từ chối yêu cầu.");
+  }
+}
+
+// =========================================================================
+// NỘI QUY CỘNG ĐỒNG
+// =========================================================================
+
+function openCommunityRulesModal() {
+  if (!currentForumCommunitySlug) return;
+  const comm = forumCommunitiesList.find((c) => c.slug === currentForumCommunitySlug);
+  if (!comm) return;
+
+  const modal = $("#communityRulesModal");
+  if (!modal) return;
+
+  if ($("#commRulesModalTitle")) {
+    $("#commRulesModalTitle").textContent = `Nội quy re/${comm.slug}`;
+  }
+
+  const defaultRules = "1. Tôn trọng và văn minh trong thảo luận học thuật.\n2. Không chia sẻ tài liệu vi phạm bản quyền hoặc thông tin sai lệch.\n3. Đăng bài đúng chủ đề và ghi rõ nguồn tham khảo.";
+  const rules = comm.rules || defaultRules;
+
+  if ($("#commRulesBody")) {
+    $("#commRulesBody").textContent = rules;
+    $("#commRulesBody").style.display = "block";
+  }
+  if ($("#commRulesEditBox")) {
+    $("#commRulesEditBox").style.display = "none";
+  }
+  if ($("#commRulesEditTextarea")) {
+    $("#commRulesEditTextarea").value = rules;
+  }
+
+  if ($("#btnToggleEditRules")) {
+    $("#btnToggleEditRules").style.display = comm.isManager ? "inline-flex" : "none";
+    $("#btnToggleEditRules").textContent = "Chỉnh sửa nội quy";
+  }
+  if ($("#btnSaveCommRules")) {
+    $("#btnSaveCommRules").style.display = "none";
+  }
+
+  modal.showModal();
+}
+
+function toggleEditCommRules() {
+  const isEditing = $("#commRulesEditBox")?.style.display === "block";
+  if (isEditing) {
+    if ($("#commRulesEditBox")) $("#commRulesEditBox").style.display = "none";
+    if ($("#commRulesBody")) $("#commRulesBody").style.display = "block";
+    if ($("#btnToggleEditRules")) $("#btnToggleEditRules").textContent = "Chỉnh sửa nội quy";
+    if ($("#btnSaveCommRules")) $("#btnSaveCommRules").style.display = "none";
+  } else {
+    if ($("#commRulesEditBox")) $("#commRulesEditBox").style.display = "block";
+    if ($("#commRulesBody")) $("#commRulesBody").style.display = "none";
+    if ($("#btnToggleEditRules")) $("#btnToggleEditRules").textContent = "Hủy sửa";
+    if ($("#btnSaveCommRules")) $("#btnSaveCommRules").style.display = "inline-flex";
+  }
+}
+
+async function saveCommRules() {
+  if (!currentForumCommunitySlug) return;
+  const comm = forumCommunitiesList.find((c) => c.slug === currentForumCommunitySlug);
+  if (!comm) return;
+
+  const newRules = ($("#commRulesEditTextarea")?.value || "").trim();
+  try {
+    const res = await requestAPI(`/api/communities/${comm.id}/edit`, {
+      method: "POST",
+      body: JSON.stringify({
+        name: comm.name,
+        description: comm.description,
+        coverImage: comm.coverImage,
+        avatar: comm.avatar,
+        privacy: comm.privacy,
+        rules: newRules,
+      }),
+    });
+    if (res && res.ok) {
+      toast("Đã cập nhật nội quy cộng đồng thành công!");
+      comm.rules = newRules;
+      if ($("#commRulesBody")) $("#commRulesBody").textContent = newRules;
+      toggleEditCommRules();
+      await loadForumCommunities();
+    }
+  } catch (err) {
+    toast(err.message || "Không thể lưu nội quy.");
+  }
+}
+
+// =========================================================================
+// CHIA SẺ & BẬT TẮT THÔNG BÁO
+// =========================================================================
+
+function shareCommunityLink() {
+  if (!currentForumCommunitySlug) return;
+  const comm = forumCommunitiesList.find((c) => c.slug === currentForumCommunitySlug);
+  if (!comm) return;
+
+  const url = `${window.location.origin}/?community=${encodeURIComponent(comm.slug)}`;
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(url).then(() => {
+      toast(`Đã sao chép liên kết re/${comm.slug} vào bộ nhớ tạm!`);
+    }).catch(() => {
+      prompt("Sao chép liên kết cộng đồng bên dưới:", url);
+    });
+  } else {
+    prompt("Sao chép liên kết cộng đồng bên dưới:", url);
+  }
+}
+
+async function toggleCommunityNotifications() {
+  if (!session) {
+    askLogin("Vui lòng đăng nhập để cài đặt thông báo cộng đồng.");
+    return;
+  }
+  if (!currentForumCommunitySlug) return;
+  const comm = forumCommunitiesList.find((c) => c.slug === currentForumCommunitySlug);
+  if (!comm) return;
+
+  try {
+    const res = await requestAPI(`/api/communities/${comm.id}/notifications`, { method: "POST" });
+    if (res && res.ok) {
+      comm.isMuted = res.isMuted;
+      toast(res.message);
+      updateCommunityHeroBanner();
+    }
+  } catch (err) {
+    toast(err.message || "Không thể thay đổi cài đặt thông báo.");
+  }
+}
+
+// =========================================================================
+// CHỈNH SỬA & GIẢI TÁN CỘNG ĐỒNG (14 ngày sửa 1 lần, giải tán sau 30 ngày)
+// =========================================================================
+
+function openEditCommunityModal() {
+  if (!session) {
+    askLogin("Vui lòng đăng nhập.");
+    return;
+  }
+  if (!currentForumCommunitySlug) return;
+  const comm = forumCommunitiesList.find((c) => c.slug === currentForumCommunitySlug);
+  if (!comm) return;
+
+  if (!comm.isManager) {
+    toast("Bạn không có quyền chỉnh sửa thông tin cộng đồng này.");
+    return;
+  }
+
+  // Kiểm tra quy định 14 ngày sửa 1 lần (Admin được miễn trừ để kiểm tra/quản trị)
+  if (session.role !== "admin" && comm.lastEditedAt) {
+    const lastEdited = new Date(comm.lastEditedAt).getTime();
+    const diffDays = (Date.now() - lastEdited) / (1000 * 60 * 60 * 24);
+    if (diffDays < 14) {
+      const remainingDays = Math.ceil(14 - diffDays);
+      toast(`Thông tin cộng đồng chỉ được sửa 14 ngày một lần. Còn ${remainingDays} ngày nữa bạn mới có thể chỉnh sửa tiếp.`);
+      return;
+    }
+  }
+
+  const modal = $("#editCommunityModal");
+  if (!modal) return;
+
+  $("#editCommName").value = comm.name || "";
+  $("#editCommAvatar").value = comm.avatar || "📚";
+  $("#editCommCover").value = comm.coverImage || "default";
+  $("#editCommDesc").value = comm.description || "";
+  $("#editCommRules").value = comm.rules || "";
+
+  const privacyVal = comm.privacy || "public";
+  const radio = document.querySelector(`input[name="editCommPrivacy"][value="${privacyVal}"]`);
+  if (radio) radio.checked = true;
+
+  // Active cover chip
+  $$("#editCommCoverPresets .cover-chip").forEach((chip) => {
+    chip.classList.toggle("active", chip.dataset.cover === comm.coverImage);
+  });
+
+  modal.showModal();
+}
+
+function selectEditCommCover(btn) {
+  $$("#editCommCoverPresets .cover-chip").forEach((c) => c.classList.remove("active"));
+  btn.classList.add("active");
+  const cover = btn.dataset.cover;
+  if ($("#editCommCover")) $("#editCommCover").value = cover;
+}
+
+async function handleEditCommunitySubmit() {
+  if (!currentForumCommunitySlug) return;
+  const comm = forumCommunitiesList.find((c) => c.slug === currentForumCommunitySlug);
+  if (!comm) return;
+
+  const name = ($("#editCommName")?.value || "").trim();
+  const avatar = ($("#editCommAvatar")?.value || "").trim() || "📚";
+  const coverImage = $("#editCommCover")?.value || comm.coverImage || "default";
+  const description = ($("#editCommDesc")?.value || "").trim();
+  const rules = ($("#editCommRules")?.value || "").trim();
+  const privacy = document.querySelector('input[name="editCommPrivacy"]:checked')?.value || "public";
+
+  if (!name || name.length < 3) {
+    toast("Tên cộng đồng tối thiểu 3 ký tự.");
+    return;
+  }
+
+  const btn = $("#btnSubmitEditComm");
+  if (btn) btn.disabled = true;
+
+  try {
+    const res = await requestAPI(`/api/communities/${comm.id}/edit`, {
+      method: "POST",
+      body: JSON.stringify({ name, description, avatar, coverImage, privacy, rules }),
+    });
+    if (res && res.ok) {
+      toast("Đã cập nhật thông tin cộng đồng thành công!");
+      const modal = $("#editCommunityModal");
+      if (modal && modal.open) modal.close();
+      await loadForumCommunities();
+      selectForumCommunity(comm.slug);
+    }
+  } catch (err) {
+    toast(err.message || "Không thể cập nhật thông tin cộng đồng.");
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+}
+
+async function confirmDissolveCommunity() {
+  if (!currentForumCommunitySlug) return;
+  const comm = forumCommunitiesList.find((c) => c.slug === currentForumCommunitySlug);
+  if (!comm) return;
+
+  const confirmed = confirm(
+    `CẢNH BÁO QUAN TRỌNG:\n\nSau khi giải tán, mọi bài đăng hay hoạt động trước đó trong cộng đồng "${comm.name}" sẽ xoá vĩnh viễn sau 30 ngày. Trong vòng 30 ngày chờ xoá, cộng đồng sẽ chuyển sang trạng thái "Cộng đồng đã giải tán".\n\nBạn có chắc chắn muốn giải tán cộng đồng này không?`
+  );
+  if (!confirmed) return;
+
+  try {
+    const res = await requestAPI(`/api/communities/${comm.id}/dissolve`, { method: "POST" });
+    if (res && res.ok) {
+      toast(res.message || "Cộng đồng đã được giải tán thành công.");
+      const modal = $("#editCommunityModal");
+      if (modal && modal.open) modal.close();
+      comm.status = "dissolving";
+      await loadForumCommunities();
+      updateCommunityHeroBanner();
+    }
+  } catch (err) {
+    toast(err.message || "Không thể giải tán cộng đồng.");
+  }
+}
+
 window.selectForumCommunity = selectForumCommunity;
 window.clearCommunityFilter = clearCommunityFilter;
 window.switchCommunityTab = switchCommunityTab;
@@ -29133,3 +29704,22 @@ window.updateCreateCommPreview = updateCreateCommPreview;
 window.selectCommEmoji = selectCommEmoji;
 window.selectCommCover = selectCommCover;
 window.handleCreateCommunitySubmit = handleCreateCommunitySubmit;
+
+// Exposed functions for new community actions
+window.openCommunityMembersModal = openCommunityMembersModal;
+window.switchCommMembersTab = switchCommMembersTab;
+window.filterCommMembersList = filterCommMembersList;
+window.renderCommMembersList = renderCommMembersList;
+window.kickCommMember = kickCommMember;
+window.toggleMemberPermission = toggleMemberPermission;
+window.approveCommMember = approveCommMember;
+window.rejectCommMember = rejectCommMember;
+window.openCommunityRulesModal = openCommunityRulesModal;
+window.toggleEditCommRules = toggleEditCommRules;
+window.saveCommRules = saveCommRules;
+window.shareCommunityLink = shareCommunityLink;
+window.toggleCommunityNotifications = toggleCommunityNotifications;
+window.openEditCommunityModal = openEditCommunityModal;
+window.selectEditCommCover = selectEditCommCover;
+window.handleEditCommunitySubmit = handleEditCommunitySubmit;
+window.confirmDissolveCommunity = confirmDissolveCommunity;

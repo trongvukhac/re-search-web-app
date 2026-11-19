@@ -643,8 +643,13 @@ try {
       description TEXT,
       cover_image TEXT,
       avatar TEXT,
-      privacy TEXT NOT NULL DEFAULT 'public' CHECK(privacy IN ('public','private')),
+      privacy TEXT NOT NULL DEFAULT 'public' CHECK(privacy IN ('public','restricted','private')),
       creator_id INTEGER NOT NULL REFERENCES users(id),
+      rules TEXT DEFAULT NULL,
+      status TEXT NOT NULL DEFAULT 'active' CHECK(status IN ('active','dissolving')),
+      dissolved_at TEXT DEFAULT NULL,
+      delete_scheduled_at TEXT DEFAULT NULL,
+      last_edited_at TEXT DEFAULT NULL,
       created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
       updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
     );
@@ -654,18 +659,78 @@ try {
       community_id INTEGER NOT NULL REFERENCES communities(id) ON DELETE CASCADE,
       user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
       role TEXT NOT NULL DEFAULT 'member' CHECK(role IN ('admin','moderator','member')),
+      status TEXT NOT NULL DEFAULT 'active' CHECK(status IN ('active','pending')),
+      can_post INTEGER NOT NULL DEFAULT 1,
+      can_comment INTEGER NOT NULL DEFAULT 1,
       created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
       UNIQUE(community_id, user_id)
     );
 
+    CREATE TABLE IF NOT EXISTS community_notification_settings (
+      community_id INTEGER NOT NULL REFERENCES communities(id) ON DELETE CASCADE,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      is_muted INTEGER NOT NULL DEFAULT 0,
+      PRIMARY KEY(community_id, user_id)
+    );
+
     CREATE INDEX IF NOT EXISTS idx_comm_slug ON communities(slug);
     CREATE INDEX IF NOT EXISTS idx_comm_privacy ON communities(privacy);
+    CREATE INDEX IF NOT EXISTS idx_comm_status ON communities(status);
     CREATE INDEX IF NOT EXISTS idx_comm_members_uid ON community_members(user_id);
     CREATE INDEX IF NOT EXISTS idx_comm_members_cid ON community_members(community_id);
   `);
 } catch (e) {
   console.warn("Lỗi khởi tạo bảng communities:", e.message);
 }
+
+// Migration cho database cũ nếu thiếu cột
+try {
+  const commTableSql = db.prepare("SELECT sql FROM sqlite_master WHERE type='table' AND name='communities'").get()?.sql || "";
+  if (commTableSql && !commTableSql.includes("'restricted'")) {
+    db.exec(`
+      PRAGMA foreign_keys = OFF;
+      CREATE TABLE IF NOT EXISTS communities_new (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL UNIQUE,
+        slug TEXT NOT NULL UNIQUE,
+        description TEXT,
+        cover_image TEXT,
+        avatar TEXT,
+        privacy TEXT NOT NULL DEFAULT 'public' CHECK(privacy IN ('public','restricted','private')),
+        creator_id INTEGER NOT NULL REFERENCES users(id),
+        rules TEXT DEFAULT NULL,
+        status TEXT NOT NULL DEFAULT 'active' CHECK(status IN ('active','dissolving')),
+        dissolved_at TEXT DEFAULT NULL,
+        delete_scheduled_at TEXT DEFAULT NULL,
+        last_edited_at TEXT DEFAULT NULL,
+        created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+      );
+      INSERT INTO communities_new (id, name, slug, description, cover_image, avatar, privacy, creator_id, created_at, updated_at)
+      SELECT id, name, slug, description, cover_image, avatar, privacy, creator_id, created_at, updated_at FROM communities;
+      DROP TABLE communities;
+      ALTER TABLE communities_new RENAME TO communities;
+      CREATE INDEX IF NOT EXISTS idx_comm_slug ON communities(slug);
+      CREATE INDEX IF NOT EXISTS idx_comm_privacy ON communities(privacy);
+      CREATE INDEX IF NOT EXISTS idx_comm_status ON communities(status);
+      PRAGMA foreign_keys = ON;
+    `);
+  }
+} catch (e) { }
+
+try { db.exec("ALTER TABLE communities ADD COLUMN rules TEXT DEFAULT NULL;"); } catch (e) { }
+try { db.exec("ALTER TABLE communities ADD COLUMN status TEXT NOT NULL DEFAULT 'active';"); } catch (e) { }
+try { db.exec("ALTER TABLE communities ADD COLUMN dissolved_at TEXT DEFAULT NULL;"); } catch (e) { }
+try { db.exec("ALTER TABLE communities ADD COLUMN delete_scheduled_at TEXT DEFAULT NULL;"); } catch (e) { }
+try { db.exec("ALTER TABLE communities ADD COLUMN last_edited_at TEXT DEFAULT NULL;"); } catch (e) { }
+try { db.exec("ALTER TABLE community_members ADD COLUMN status TEXT NOT NULL DEFAULT 'active';"); } catch (e) { }
+try { db.exec("ALTER TABLE community_members ADD COLUMN can_post INTEGER NOT NULL DEFAULT 1;"); } catch (e) { }
+try { db.exec("ALTER TABLE community_members ADD COLUMN can_comment INTEGER NOT NULL DEFAULT 1;"); } catch (e) { }
+
+// Dọn dẹp các cộng đồng đã giải tán quá 30 ngày
+try {
+  db.exec("DELETE FROM communities WHERE status = 'dissolving' AND delete_scheduled_at IS NOT NULL AND delete_scheduled_at <= CURRENT_TIMESTAMP;");
+} catch (e) { }
 
 try { db.exec("ALTER TABLE posts ADD COLUMN community_id INTEGER REFERENCES communities(id) ON DELETE SET NULL;"); } catch (e) { }
 try { db.exec("CREATE INDEX IF NOT EXISTS idx_posts_comm_id ON posts(community_id);"); } catch (e) { }
@@ -2151,13 +2216,13 @@ function listPosts(viewer, search = "", communityFilter = null) {
   const privacySql = `
     AND (
       p.community_id IS NULL
-      OR comm.privacy = 'public'
+      OR comm.privacy IN ('public', 'restricted')
       OR (
         comm.privacy = 'private'
         AND (
           ? = 1
           OR (? IS NOT NULL AND p.author_id = ?)
-          OR (? IS NOT NULL AND EXISTS (SELECT 1 FROM community_members cm WHERE cm.community_id = p.community_id AND cm.user_id = ?))
+          OR (? IS NOT NULL AND EXISTS (SELECT 1 FROM community_members cm WHERE cm.community_id = p.community_id AND cm.user_id = ? AND (cm.status IS NULL OR cm.status = 'active')))
         )
       )
     )
@@ -4109,43 +4174,43 @@ async function api(request, response, url) {
         "Đặt lại mật khẩu thành công! Bạn có thể đăng nhập ngay bằng mật khẩu mới.",
     });
   }
-function getCommunityMembersPreview(commId, creatorId) {
-  try {
-    const creator = db.prepare(`
+  function getCommunityMembersPreview(commId, creatorId) {
+    try {
+      const creator = db.prepare(`
       SELECT id, display_name as displayName, avatar, role
       FROM users WHERE id = ?
     `).get(creatorId) || null;
 
-    const recent = db.prepare(`
+      const recent = db.prepare(`
       SELECT u.id, u.display_name as displayName, u.avatar, u.role
       FROM community_members cm
       JOIN users u ON u.id = cm.user_id
-      WHERE cm.community_id = ? AND cm.user_id != ?
+      WHERE cm.community_id = ? AND cm.user_id != ? AND (cm.status IS NULL OR cm.status = 'active')
       ORDER BY cm.created_at DESC
       LIMIT 8
     `).all(commId, creatorId);
 
-    const total = db.prepare("SELECT count(*) as count FROM community_members WHERE community_id = ?").get(commId)?.count || 0;
+      const total = db.prepare("SELECT count(*) as count FROM community_members WHERE community_id = ? AND (status IS NULL OR status = 'active')").get(commId)?.count || 0;
 
-    return {
-      creator: creator ? {
-        id: creator.id,
-        displayName: creator.displayName,
-        avatar: creator.avatar || getAvatarEmoji(creator.displayName),
-        role: creator.role
-      } : null,
-      recent: recent.map(r => ({
-        id: r.id,
-        displayName: r.displayName,
-        avatar: r.avatar || getAvatarEmoji(r.displayName),
-        role: r.role
-      })),
-      total: Number(total)
-    };
-  } catch (e) {
-    return { creator: null, recent: [], total: 0 };
+      return {
+        creator: creator ? {
+          id: creator.id,
+          displayName: creator.displayName,
+          avatar: creator.avatar || getAvatarEmoji(creator.displayName),
+          role: creator.role
+        } : null,
+        recent: recent.map(r => ({
+          id: r.id,
+          displayName: r.displayName,
+          avatar: r.avatar || getAvatarEmoji(r.displayName),
+          role: r.role
+        })),
+        total: Number(total)
+      };
+    } catch (e) {
+      return { creator: null, recent: [], total: 0 };
+    }
   }
-}
 
   // --- HỆ THỐNG CỘNG ĐỒNG HỌC THUẬT (COMMUNITIES / SUBREDDITS) ---
   if (method === "GET" && pathName === "/api/communities") {
@@ -4156,33 +4221,57 @@ function getCommunityMembersPreview(commId, creatorId) {
     const rows = db.prepare(`
       SELECT 
         c.id, c.name, c.slug, c.description, c.cover_image as coverImage, c.avatar, c.privacy,
+        c.rules, c.status, c.dissolved_at as dissolvedAt, c.delete_scheduled_at as deleteScheduledAt, c.last_edited_at as lastEditedAt,
         c.creator_id as creatorId, c.created_at as createdAt,
         u.display_name as creatorName,
-        (SELECT count(*) FROM community_members cm WHERE cm.community_id = c.id) as membersCount,
+        (SELECT count(*) FROM community_members cm WHERE cm.community_id = c.id AND (cm.status IS NULL OR cm.status = 'active')) as membersCount,
         (SELECT count(*) FROM posts p WHERE p.community_id = c.id AND p.status = 'visible') as postsCount,
-        ${viewerId ? `(SELECT role FROM community_members cm WHERE cm.community_id = c.id AND cm.user_id = ${viewerId})` : 'NULL'} as userRole
+        ${viewerId ? `(SELECT role FROM community_members cm WHERE cm.community_id = c.id AND cm.user_id = ${viewerId})` : 'NULL'} as userRole,
+        ${viewerId ? `(SELECT status FROM community_members cm WHERE cm.community_id = c.id AND cm.user_id = ${viewerId})` : 'NULL'} as memberStatus,
+        ${viewerId ? `(SELECT can_post FROM community_members cm WHERE cm.community_id = c.id AND cm.user_id = ${viewerId})` : '1'} as userCanPost,
+        ${viewerId ? `(SELECT can_comment FROM community_members cm WHERE cm.community_id = c.id AND cm.user_id = ${viewerId})` : '1'} as userCanComment,
+        ${viewerId ? `(SELECT is_muted FROM community_notification_settings cns WHERE cns.community_id = c.id AND cns.user_id = ${viewerId})` : '0'} as isMuted
       FROM communities c
       JOIN users u ON u.id = c.creator_id
       ORDER BY c.created_at ASC
     `).all();
 
-    const list = rows.map(r => ({
-      id: r.id,
-      name: r.name,
-      slug: r.slug,
-      description: r.description || "",
-      coverImage: r.coverImage || "default",
-      avatar: r.avatar || "📚",
-      privacy: r.privacy,
-      creatorId: r.creatorId,
-      creatorName: r.creatorName,
-      membersCount: Number(r.membersCount || 0),
-      postsCount: Number(r.postsCount || 0),
-      isMember: Boolean(r.userRole),
-      userRole: r.userRole || null,
-      canView: r.privacy === "public" || Boolean(r.userRole) || isAdminOrTa,
-      membersPreview: getCommunityMembersPreview(r.id, r.creatorId)
-    }));
+    const list = rows.map(r => {
+      const isMember = r.userRole != null && r.memberStatus === 'active';
+      const isPending = r.userRole != null && r.memberStatus === 'pending';
+      const isCreator = viewerId != null && viewerId === r.creatorId;
+      const isManager = Boolean(isAdminOrTa || isCreator);
+
+      return {
+        id: r.id,
+        name: r.name,
+        slug: r.slug,
+        description: r.description || "",
+        coverImage: r.coverImage || "default",
+        avatar: r.avatar || "📚",
+        privacy: r.privacy,
+        rules: r.rules || "",
+        status: r.status || "active",
+        dissolvedAt: r.dissolvedAt || null,
+        deleteScheduledAt: r.deleteScheduledAt || null,
+        lastEditedAt: r.lastEditedAt || null,
+        creatorId: r.creatorId,
+        creatorName: r.creatorName,
+        membersCount: Number(r.membersCount || 0),
+        postsCount: Number(r.postsCount || 0),
+        isMember,
+        isPending,
+        isCreator,
+        isManager,
+        userRole: r.userRole || null,
+        memberStatus: r.memberStatus || null,
+        canPost: isManager || (isMember && r.userCanPost !== 0),
+        canComment: isManager || (isMember && r.userCanComment !== 0),
+        isMuted: Boolean(r.isMuted),
+        canView: r.privacy !== "private" || isMember || isManager,
+        membersPreview: getCommunityMembersPreview(r.id, r.creatorId)
+      };
+    });
 
     return json(response, 200, { communities: list });
   }
@@ -4198,11 +4287,16 @@ function getCommunityMembersPreview(commId, creatorId) {
     const comm = db.prepare(`
       SELECT 
         c.id, c.name, c.slug, c.description, c.cover_image as coverImage, c.avatar, c.privacy,
+        c.rules, c.status, c.dissolved_at as dissolvedAt, c.delete_scheduled_at as deleteScheduledAt, c.last_edited_at as lastEditedAt,
         c.creator_id as creatorId, c.created_at as createdAt,
         u.display_name as creatorName,
-        (SELECT count(*) FROM community_members cm WHERE cm.community_id = c.id) as membersCount,
+        (SELECT count(*) FROM community_members cm WHERE cm.community_id = c.id AND (cm.status IS NULL OR cm.status = 'active')) as membersCount,
         (SELECT count(*) FROM posts p WHERE p.community_id = c.id AND p.status = 'visible') as postsCount,
-        ${viewerId ? `(SELECT role FROM community_members cm WHERE cm.community_id = c.id AND cm.user_id = ${viewerId})` : 'NULL'} as userRole
+        ${viewerId ? `(SELECT role FROM community_members cm WHERE cm.community_id = c.id AND cm.user_id = ${viewerId})` : 'NULL'} as userRole,
+        ${viewerId ? `(SELECT status FROM community_members cm WHERE cm.community_id = c.id AND cm.user_id = ${viewerId})` : 'NULL'} as memberStatus,
+        ${viewerId ? `(SELECT can_post FROM community_members cm WHERE cm.community_id = c.id AND cm.user_id = ${viewerId})` : '1'} as userCanPost,
+        ${viewerId ? `(SELECT can_comment FROM community_members cm WHERE cm.community_id = c.id AND cm.user_id = ${viewerId})` : '1'} as userCanComment,
+        ${viewerId ? `(SELECT is_muted FROM community_notification_settings cns WHERE cns.community_id = c.id AND cns.user_id = ${viewerId})` : '0'} as isMuted
       FROM communities c
       JOIN users u ON u.id = c.creator_id
       WHERE ${isNum ? "c.id = ?" : "c.slug = ?"}
@@ -4210,8 +4304,11 @@ function getCommunityMembersPreview(commId, creatorId) {
 
     if (!comm) return error(response, 404, "Không tìm thấy cộng đồng.");
 
-    const isMember = Boolean(comm.userRole);
-    const canView = comm.privacy === "public" || isMember || isAdminOrTa;
+    const isMember = comm.userRole != null && comm.memberStatus === 'active';
+    const isPending = comm.userRole != null && comm.memberStatus === 'pending';
+    const isCreator = viewerId != null && viewerId === comm.creatorId;
+    const isManager = Boolean(isAdminOrTa || isCreator);
+    const canView = comm.privacy !== "private" || isMember || isManager;
 
     return json(response, 200, {
       community: {
@@ -4222,12 +4319,24 @@ function getCommunityMembersPreview(commId, creatorId) {
         coverImage: comm.coverImage || "default",
         avatar: comm.avatar || "📚",
         privacy: comm.privacy,
+        rules: comm.rules || "",
+        status: comm.status || "active",
+        dissolvedAt: comm.dissolvedAt || null,
+        deleteScheduledAt: comm.deleteScheduledAt || null,
+        lastEditedAt: comm.lastEditedAt || null,
         creatorId: comm.creatorId,
         creatorName: comm.creatorName,
         membersCount: Number(comm.membersCount || 0),
         postsCount: Number(comm.postsCount || 0),
         isMember,
+        isPending,
+        isCreator,
+        isManager,
         userRole: comm.userRole || null,
+        memberStatus: comm.memberStatus || null,
+        canPost: isManager || (isMember && comm.userCanPost !== 0),
+        canComment: isManager || (isMember && comm.userCanComment !== 0),
+        isMuted: Boolean(comm.isMuted),
         canView,
         membersPreview: getCommunityMembersPreview(comm.id, comm.creatorId)
       }
@@ -4238,11 +4347,19 @@ function getCommunityMembersPreview(commId, creatorId) {
     const user = requireUser(request, response);
     if (!user || !requireCsrf(request, response, user)) return;
 
-    const { name, description, coverImage, avatar, privacy } = await readJSON(request);
+    // Quyền tạo mới cộng đồng chỉ dành cho thành viên chuỗi 50 trở lên hoặc Admin/TA
+    const streakInfo = calculateUserStreak(user.id);
+    const userStreak = Number(streakInfo.streak || 0);
+    const isEligible = user.role === "admin" || user.role === "ta" || userStreak >= 50;
+    if (!isEligible) {
+      return error(response, 403, `Quyền tạo mới cộng đồng chỉ dành cho thành viên đạt chuỗi 50 ngày trở lên (Học giả uyên bác) hoặc Quản trị viên. Chuỗi hiện tại của bạn: ${userStreak} ngày.`);
+    }
+
+    const { name, description, coverImage, avatar, privacy, rules } = await readJSON(request);
     if (!name || typeof name !== "string" || name.trim().length < 3 || name.trim().length > 50) {
       return error(response, 400, "Tên cộng đồng phải từ 3 đến 50 ký tự.");
     }
-    const cleanPrivacy = privacy === "private" ? "private" : "public";
+    const cleanPrivacy = ["public", "restricted", "private"].includes(privacy) ? privacy : "public";
     const trimmedName = name.trim();
 
     let slug = trimmedName
@@ -4258,23 +4375,26 @@ function getCommunityMembersPreview(commId, creatorId) {
       return error(response, 400, "Tên hoặc định danh cộng đồng này đã tồn tại, vui lòng chọn tên khác.");
     }
 
+    const defaultRules = typeof rules === "string" && rules.trim() ? rules.trim().slice(0, 2000) : "1. Tôn trọng và văn minh trong thảo luận học thuật.\n2. Không chia sẻ tài liệu vi phạm bản quyền hoặc thông tin sai lệch.\n3. Đăng bài đúng chủ đề và ghi rõ nguồn tham khảo.";
+
     const result = db.prepare(`
-      INSERT INTO communities (name, slug, description, cover_image, avatar, privacy, creator_id)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO communities (name, slug, description, cover_image, avatar, privacy, creator_id, rules, status)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'active')
     `).run(
       trimmedName,
       slug,
       (typeof description === "string" ? description.trim() : "").slice(0, 500),
       typeof coverImage === "string" ? coverImage.trim() : "default",
-      typeof avatar === "string" && avatar.trim() ? avatar.trim() : "👥",
+      typeof avatar === "string" && avatar.trim() ? avatar.trim() : "📚",
       cleanPrivacy,
-      user.id
+      user.id,
+      defaultRules
     );
 
     const newCommId = result.lastInsertRowid;
     db.prepare(`
-      INSERT INTO community_members (community_id, user_id, role)
-      VALUES (?, ?, 'admin')
+      INSERT INTO community_members (community_id, user_id, role, status, can_post, can_comment)
+      VALUES (?, ?, 'admin', 'active', 1, 1)
     `).run(newCommId, user.id);
 
     try {
@@ -4289,14 +4409,23 @@ function getCommunityMembersPreview(commId, creatorId) {
         slug,
         description: description || "",
         coverImage: coverImage || "default",
-        avatar: avatar || "👥",
+        avatar: avatar || "📚",
         privacy: cleanPrivacy,
+        rules: defaultRules,
+        status: "active",
         creatorId: user.id,
         creatorName: user.displayName,
         membersCount: 1,
         postsCount: 0,
         isMember: true,
+        isPending: false,
+        isCreator: true,
+        isManager: true,
         userRole: "admin",
+        memberStatus: "active",
+        canPost: true,
+        canComment: true,
+        isMuted: false,
         canView: true
       }
     });
@@ -4310,15 +4439,37 @@ function getCommunityMembersPreview(commId, creatorId) {
     const comm = db.prepare("SELECT * FROM communities WHERE id = ?").get(commId);
     if (!comm) return error(response, 404, "Cộng đồng không tồn tại.");
 
-    const existingMember = db.prepare("SELECT id, role FROM community_members WHERE community_id = ? AND user_id = ?").get(commId, user.id);
+    if (comm.status === "dissolving") {
+      return error(response, 400, "Cộng đồng đã giải tán, không thể tham gia.");
+    }
+
+    const existingMember = db.prepare("SELECT id, role, status FROM community_members WHERE community_id = ? AND user_id = ?").get(commId, user.id);
     if (existingMember) {
+      if (existingMember.status === "pending") {
+        return json(response, 200, { ok: true, message: "Yêu cầu gia nhập của bạn đang chờ quản trị viên phê duyệt.", isPending: true, isMember: false });
+      }
       return json(response, 200, { ok: true, message: "Bạn đã là thành viên của cộng đồng này.", isMember: true, role: existingMember.role });
     }
 
-    db.prepare("INSERT INTO community_members (community_id, user_id, role) VALUES (?, ?, 'member')").run(commId, user.id);
-    const membersCount = db.prepare("SELECT count(*) as count FROM community_members WHERE community_id = ?").get(commId)?.count || 1;
+    if (comm.privacy === "private") {
+      db.prepare("INSERT INTO community_members (community_id, user_id, role, status, can_post, can_comment) VALUES (?, ?, 'member', 'pending', 1, 1)").run(commId, user.id);
+      return json(response, 200, { ok: true, message: "Đã gửi yêu cầu tham gia. Vui lòng chờ quản trị viên phê duyệt.", isPending: true, isMember: false });
+    }
 
-    return json(response, 200, { ok: true, message: `Đã tham gia cộng đồng "${comm.name}"!`, isMember: true, role: "member", membersCount });
+    const initialCanPost = comm.privacy === "restricted" ? 0 : 1;
+    const initialCanComment = 1;
+    db.prepare("INSERT INTO community_members (community_id, user_id, role, status, can_post, can_comment) VALUES (?, ?, 'member', 'active', ?, ?)").run(commId, user.id, initialCanPost, initialCanComment);
+    const membersCount = db.prepare("SELECT count(*) as count FROM community_members WHERE community_id = ? AND (status IS NULL OR status = 'active')").get(commId)?.count || 1;
+
+    return json(response, 200, {
+      ok: true,
+      message: comm.privacy === "restricted"
+        ? `Đã tham gia cộng đồng "${comm.name}" (chế độ Hạn chế: quản trị viên sẽ cấp quyền đăng bài).`
+        : `Đã tham gia cộng đồng "${comm.name}"!`,
+      isMember: true,
+      role: "member",
+      membersCount
+    });
   }
 
   const leaveMatch = pathName.match(/^\/api\/communities\/(\d+)\/leave$/);
@@ -4330,13 +4481,309 @@ function getCommunityMembersPreview(commId, creatorId) {
     if (!comm) return error(response, 404, "Cộng đồng không tồn tại.");
 
     if (comm.creator_id === user.id) {
-      return error(response, 400, "Bạn là người sáng lập/quản trị viên chính của cộng đồng này nên không thể rời khỏi.");
+      return error(response, 400, "Bạn là người sáng lập của cộng đồng này nên không thể rời khỏi. Nếu muốn dừng hoạt động, bạn có thể chọn Giải tán cộng đồng.");
     }
 
     db.prepare("DELETE FROM community_members WHERE community_id = ? AND user_id = ?").run(commId, user.id);
-    const membersCount = db.prepare("SELECT count(*) as count FROM community_members WHERE community_id = ?").get(commId)?.count || 0;
+    const membersCount = db.prepare("SELECT count(*) as count FROM community_members WHERE community_id = ? AND (status IS NULL OR status = 'active')").get(commId)?.count || 0;
 
     return json(response, 200, { ok: true, message: `Đã rời cộng đồng "${comm.name}".`, isMember: false, membersCount });
+  }
+
+  // GIẢI TÁN CỘNG ĐỒNG (Chỉ Quản trị viên hệ thống hoặc Người sáng lập)
+  const dissolveMatch = pathName.match(/^\/api\/communities\/(\d+)\/dissolve$/);
+  if (method === "POST" && dissolveMatch) {
+    const user = requireUser(request, response);
+    if (!user || !requireCsrf(request, response, user)) return;
+    const commId = Number(dissolveMatch[1]);
+    const comm = db.prepare("SELECT * FROM communities WHERE id = ?").get(commId);
+    if (!comm) return error(response, 404, "Cộng đồng không tồn tại.");
+
+    const isCreatorOrAdmin = user.role === "admin" || comm.creator_id === user.id;
+    if (!isCreatorOrAdmin) {
+      return error(response, 403, "Chỉ Quản trị viên (Admin) và Người sáng lập mới có quyền giải tán cộng đồng.");
+    }
+    if (comm.status === "dissolving") {
+      return error(response, 400, "Cộng đồng này đã ở trạng thái giải tán.");
+    }
+
+    const deleteScheduledAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+    db.prepare(`
+      UPDATE communities SET
+        status = 'dissolving',
+        dissolved_at = CURRENT_TIMESTAMP,
+        delete_scheduled_at = ?
+      WHERE id = ?
+    `).run(deleteScheduledAt, commId);
+
+    return json(response, 200, {
+      ok: true,
+      message: "Cộng đồng đã giải tán. Mọi bài đăng và hoạt động sẽ được xóa vĩnh viễn sau 30 ngày.",
+      status: "dissolving",
+      deleteScheduledAt
+    });
+  }
+
+  // CHỈNH SỬA THÔNG TIN CỘNG ĐỒNG (14 ngày sửa 1 lần, người sáng lập hoặc admin)
+  const editCommMatch = pathName.match(/^\/api\/communities\/(\d+)\/edit$/);
+  if (method === "POST" && editCommMatch) {
+    const user = requireUser(request, response);
+    if (!user || !requireCsrf(request, response, user)) return;
+    const commId = Number(editCommMatch[1]);
+    const comm = db.prepare("SELECT * FROM communities WHERE id = ?").get(commId);
+    if (!comm) return error(response, 404, "Cộng đồng không tồn tại.");
+
+    const isCreatorOrAdmin = user.role === "admin" || comm.creator_id === user.id;
+    if (!isCreatorOrAdmin) {
+      return error(response, 403, "Chỉ Người sáng lập hoặc Quản trị viên mới có quyền chỉnh sửa thông tin cộng đồng.");
+    }
+
+    if (user.role !== "admin" && comm.last_edited_at) {
+      const lastEdited = new Date(comm.last_edited_at).getTime();
+      const diffMs = Date.now() - lastEdited;
+      const diffDays = diffMs / (1000 * 60 * 60 * 24);
+      if (diffDays < 14) {
+        const remainingDays = Math.ceil(14 - diffDays);
+        return error(response, 400, `Thông tin cộng đồng chỉ được sửa 14 ngày một lần. Vui lòng thử lại sau ${remainingDays} ngày nữa.`);
+      }
+    }
+
+    const { name, description, coverImage, avatar, privacy, rules } = await readJSON(request);
+    if (!name || typeof name !== "string" || name.trim().length < 3 || name.trim().length > 50) {
+      return error(response, 400, "Tên cộng đồng phải từ 3 đến 50 ký tự.");
+    }
+    const cleanPrivacy = ["public", "restricted", "private"].includes(privacy) ? privacy : "public";
+    const trimmedName = name.trim();
+
+    const existing = db.prepare("SELECT id FROM communities WHERE LOWER(name) = LOWER(?) AND id != ?").get(trimmedName, commId);
+    if (existing) {
+      return error(response, 400, "Tên cộng đồng này đã được sử dụng bởi cộng đồng khác.");
+    }
+
+    db.prepare(`
+      UPDATE communities SET
+        name = ?,
+        description = ?,
+        cover_image = ?,
+        avatar = ?,
+        privacy = ?,
+        rules = ?,
+        last_edited_at = CURRENT_TIMESTAMP,
+        updated_at = CURRENT_TIMESTAMP
+      WHERE id = ?
+    `).run(
+      trimmedName,
+      (typeof description === "string" ? description.trim() : "").slice(0, 500),
+      typeof coverImage === "string" && coverImage ? coverImage.trim() : (comm.cover_image || "default"),
+      typeof avatar === "string" && avatar.trim() ? avatar.trim() : (comm.avatar || "📚"),
+      cleanPrivacy,
+      typeof rules === "string" ? rules.trim().slice(0, 2000) : (comm.rules || ""),
+      commId
+    );
+
+    return json(response, 200, {
+      ok: true,
+      message: "Cập nhật thông tin cộng đồng thành công!",
+      community: {
+        id: commId,
+        name: trimmedName,
+        slug: comm.slug,
+        description: description || "",
+        coverImage: coverImage || comm.cover_image,
+        avatar: avatar || comm.avatar,
+        privacy: cleanPrivacy,
+        rules: rules || "",
+        lastEditedAt: new Date().toISOString()
+      }
+    });
+  }
+
+  // DANH SÁCH THÀNH VIÊN CỘNG ĐỒNG
+  const membersMatch = pathName.match(/^\/api\/communities\/(\d+)\/members$/);
+  if (method === "GET" && membersMatch) {
+    const viewer = sessionFrom(request);
+    const viewerId = (viewer && viewer.id != null) ? Number(viewer.id) : null;
+    const commId = Number(membersMatch[1]);
+    const comm = db.prepare("SELECT * FROM communities WHERE id = ?").get(commId);
+    if (!comm) return error(response, 404, "Cộng đồng không tồn tại.");
+
+    const isManager = Boolean(viewer && (viewer.role === "admin" || viewer.role === "ta" || comm.creator_id === viewer.id));
+
+    if (comm.privacy === "private" && !isManager) {
+      const isMember = viewerId ? db.prepare("SELECT 1 FROM community_members WHERE community_id = ? AND user_id = ? AND status = 'active'").get(commId, viewerId) : false;
+      if (!isMember) {
+        return error(response, 403, "Bạn không có quyền xem thành viên của cộng đồng riêng tư này.");
+      }
+    }
+
+    const rows = db.prepare(`
+      SELECT 
+        cm.id, cm.user_id as userId, cm.role as commRole, cm.status, 
+        cm.can_post as canPost, cm.can_comment as canComment, cm.created_at as joinedAt,
+        u.display_name as displayName, u.avatar, u.role as userRole, u.cover_image as coverImage, u.student_id as studentId
+      FROM community_members cm
+      JOIN users u ON u.id = cm.user_id
+      WHERE cm.community_id = ?
+      ORDER BY 
+        CASE WHEN u.id = ? THEN 0 WHEN cm.role = 'admin' THEN 1 WHEN cm.role = 'moderator' THEN 2 ELSE 3 END,
+        cm.created_at ASC
+    `).all(commId, comm.creator_id);
+
+    const activeMembers = [];
+    const pendingMembers = [];
+
+    rows.forEach(r => {
+      const item = {
+        id: r.id,
+        userId: r.userId,
+        displayName: r.displayName,
+        avatar: r.avatar || getAvatarEmoji(r.displayName),
+        coverImage: r.coverImage || "default",
+        userRole: r.userRole,
+        commRole: r.commRole,
+        isCreator: r.userId === comm.creator_id,
+        status: r.status || "active",
+        canPost: r.canPost !== 0,
+        canComment: r.canComment !== 0,
+        joinedAt: r.joinedAt,
+        studentId: r.studentId
+      };
+      if (r.status === "pending") {
+        pendingMembers.push(item);
+      } else {
+        activeMembers.push(item);
+      }
+    });
+
+    return json(response, 200, {
+      members: activeMembers,
+      pendingMembers,
+      isManager,
+      commPrivacy: comm.privacy,
+      commStatus: comm.status,
+      creatorId: comm.creator_id,
+      totalCount: activeMembers.length,
+      pendingCount: pendingMembers.length
+    });
+  }
+
+  // MỜI RỜI CỘNG ĐỒNG (KICK MEMBER)
+  const kickMatch = pathName.match(/^\/api\/communities\/(\d+)\/members\/(\d+)\/kick$/);
+  if (method === "POST" && kickMatch) {
+    const user = requireUser(request, response);
+    if (!user || !requireCsrf(request, response, user)) return;
+    const commId = Number(kickMatch[1]);
+    const targetUserId = Number(kickMatch[2]);
+    const comm = db.prepare("SELECT * FROM communities WHERE id = ?").get(commId);
+    if (!comm) return error(response, 404, "Cộng đồng không tồn tại.");
+
+    const isManager = user.role === "admin" || comm.creator_id === user.id;
+    if (!isManager) {
+      return error(response, 403, "Bạn không có quyền mời thành viên rời cộng đồng.");
+    }
+    if (targetUserId === comm.creator_id) {
+      return error(response, 400, "Không thể mời người sáng lập rời cộng đồng.");
+    }
+
+    db.prepare("DELETE FROM community_members WHERE community_id = ? AND user_id = ?").run(commId, targetUserId);
+    return json(response, 200, { ok: true, message: "Đã mời thành viên rời khỏi cộng đồng." });
+  }
+
+  // PHÂN QUYỀN ĐĂNG BÀI / THẢO LUẬN
+  const permMatch = pathName.match(/^\/api\/communities\/(\d+)\/members\/(\d+)\/permissions$/);
+  if (method === "POST" && permMatch) {
+    const user = requireUser(request, response);
+    if (!user || !requireCsrf(request, response, user)) return;
+    const commId = Number(permMatch[1]);
+    const targetUserId = Number(permMatch[2]);
+    const comm = db.prepare("SELECT * FROM communities WHERE id = ?").get(commId);
+    if (!comm) return error(response, 404, "Cộng đồng không tồn tại.");
+
+    const isManager = user.role === "admin" || comm.creator_id === user.id;
+    if (!isManager) {
+      return error(response, 403, "Bạn không có quyền thay đổi quyền hạn thành viên.");
+    }
+
+    const { canPost, canComment } = await readJSON(request);
+    db.prepare(`
+      UPDATE community_members SET
+        can_post = ?,
+        can_comment = ?
+      WHERE community_id = ? AND user_id = ?
+    `).run(canPost ? 1 : 0, canComment ? 1 : 0, commId, targetUserId);
+
+    return json(response, 200, { ok: true, message: "Đã cập nhật quyền hạn thành viên thành công." });
+  }
+
+  // DUYỆT THÀNH VIÊN GIA NHẬP (Nhóm riêng tư)
+  const approveMatch = pathName.match(/^\/api\/communities\/(\d+)\/members\/(\d+)\/approve$/);
+  if (method === "POST" && approveMatch) {
+    const user = requireUser(request, response);
+    if (!user || !requireCsrf(request, response, user)) return;
+    const commId = Number(approveMatch[1]);
+    const targetUserId = Number(approveMatch[2]);
+    const comm = db.prepare("SELECT * FROM communities WHERE id = ?").get(commId);
+    if (!comm) return error(response, 404, "Cộng đồng không tồn tại.");
+
+    const isManager = user.role === "admin" || comm.creator_id === user.id;
+    if (!isManager) {
+      return error(response, 403, "Bạn không có quyền phê duyệt thành viên.");
+    }
+
+    const { canPost, canComment } = await readJSON(request).catch(() => ({ canPost: true, canComment: true }));
+    db.prepare(`
+      UPDATE community_members SET
+        status = 'active',
+        can_post = ?,
+        can_comment = ?
+      WHERE community_id = ? AND user_id = ?
+    `).run(canPost === false ? 0 : 1, canComment === false ? 0 : 1, commId, targetUserId);
+
+    return json(response, 200, { ok: true, message: "Đã duyệt thành viên gia nhập cộng đồng." });
+  }
+
+  // TỪ CHỐI THÀNH VIÊN GIA NHẬP
+  const rejectMatch = pathName.match(/^\/api\/communities\/(\d+)\/members\/(\d+)\/reject$/);
+  if (method === "POST" && rejectMatch) {
+    const user = requireUser(request, response);
+    if (!user || !requireCsrf(request, response, user)) return;
+    const commId = Number(rejectMatch[1]);
+    const targetUserId = Number(rejectMatch[2]);
+    const comm = db.prepare("SELECT * FROM communities WHERE id = ?").get(commId);
+    if (!comm) return error(response, 404, "Cộng đồng không tồn tại.");
+
+    const isManager = user.role === "admin" || comm.creator_id === user.id;
+    if (!isManager) {
+      return error(response, 403, "Bạn không có quyền từ chối yêu cầu.");
+    }
+
+    db.prepare("DELETE FROM community_members WHERE community_id = ? AND user_id = ? AND status = 'pending'").run(commId, targetUserId);
+    return json(response, 200, { ok: true, message: "Đã từ chối yêu cầu gia nhập." });
+  }
+
+  // BẬT / TẮT THÔNG BÁO CỘNG ĐỒNG
+  const notifyMatch = pathName.match(/^\/api\/communities\/(\d+)\/notifications$/);
+  if (method === "POST" && notifyMatch) {
+    const user = requireUser(request, response);
+    if (!user || !requireCsrf(request, response, user)) return;
+    const commId = Number(notifyMatch[1]);
+    const comm = db.prepare("SELECT * FROM communities WHERE id = ?").get(commId);
+    if (!comm) return error(response, 404, "Cộng đồng không tồn tại.");
+
+    const existing = db.prepare("SELECT is_muted FROM community_notification_settings WHERE community_id = ? AND user_id = ?").get(commId, user.id);
+    const newMuted = existing ? (existing.is_muted ? 0 : 1) : 1;
+
+    db.prepare(`
+      INSERT INTO community_notification_settings (community_id, user_id, is_muted)
+      VALUES (?, ?, ?)
+      ON CONFLICT(community_id, user_id) DO UPDATE SET is_muted = excluded.is_muted
+    `).run(commId, user.id, newMuted);
+
+    return json(response, 200, {
+      ok: true,
+      isMuted: Boolean(newMuted),
+      message: newMuted ? "Đã tắt thông báo cho cộng đồng này." : "Đã bật thông báo cho cộng đồng này."
+    });
   }
 
   if (method === "GET" && pathName === "/api/posts") {
@@ -4389,13 +4836,24 @@ function getCommunityMembersPreview(commId, creatorId) {
 
     let validCommId = null;
     if (communityId) {
-      const comm = db.prepare("SELECT id, privacy FROM communities WHERE id = ?").get(Number(communityId));
+      const comm = db.prepare("SELECT id, privacy, status, creator_id FROM communities WHERE id = ?").get(Number(communityId));
       if (comm) {
+        if (comm.status === "dissolving") {
+          return error(response, 400, "Cộng đồng đã giải tán, không thể đăng bài thảo luận mới.");
+        }
+        const isPrivileged = user.role === "admin" || user.role === "ta" || comm.creator_id === user.id;
+        const memRecord = db.prepare("SELECT status, can_post FROM community_members WHERE community_id = ? AND user_id = ?").get(comm.id, user.id);
+
         if (comm.privacy === "private") {
-          const isMem = db.prepare("SELECT 1 FROM community_members WHERE community_id = ? AND user_id = ?").get(comm.id, user.id);
-          const isPrivileged = user.role === "admin" || user.role === "ta";
-          if (!isMem && !isPrivileged) {
-            return error(response, 403, "Bạn chưa phải thành viên của cộng đồng riêng tư này.");
+          if (!isPrivileged && (!memRecord || memRecord.status !== "active")) {
+            return error(response, 403, "Bạn chưa phải thành viên chính thức của cộng đồng riêng tư này.");
+          }
+          if (!isPrivileged && memRecord && memRecord.can_post === 0) {
+            return error(response, 403, "Bạn chưa được quản trị viên cấp quyền đăng bài trong cộng đồng này.");
+          }
+        } else if (comm.privacy === "restricted") {
+          if (!isPrivileged && (!memRecord || memRecord.status !== "active" || memRecord.can_post === 0)) {
+            return error(response, 403, "Cộng đồng ở chế độ Hạn chế: Bạn cần tham gia và được quản trị viên cấp quyền đăng bài.");
           }
         }
         validCommId = comm.id;
@@ -4606,9 +5064,32 @@ function getCommunityMembersPreview(commId, creatorId) {
       return error(response, 400, "Phản hồi quá dài (vượt quá giới hạn cho phép).");
     }
     const post = db
-      .prepare("SELECT id FROM posts WHERE id=? AND status='visible'")
+      .prepare("SELECT id, community_id FROM posts WHERE id=? AND status='visible'")
       .get(Number(responseMatch[1]));
     if (!post) return error(response, 404, "Không tìm thấy bài đăng.");
+
+    if (post.community_id) {
+      const comm = db.prepare("SELECT id, privacy, status, creator_id FROM communities WHERE id = ?").get(post.community_id);
+      if (comm) {
+        if (comm.status === "dissolving") {
+          return error(response, 400, "Cộng đồng đã giải tán, không thể gửi phản hồi mới.");
+        }
+        const isPrivileged = user.role === "admin" || user.role === "ta" || comm.creator_id === user.id;
+        const memRecord = db.prepare("SELECT status, can_comment FROM community_members WHERE community_id = ? AND user_id = ?").get(comm.id, user.id);
+        if (comm.privacy === "private") {
+          if (!isPrivileged && (!memRecord || memRecord.status !== "active")) {
+            return error(response, 403, "Bạn cần là thành viên chính thức của cộng đồng riêng tư để thảo luận.");
+          }
+          if (!isPrivileged && memRecord && memRecord.can_comment === 0) {
+            return error(response, 403, "Bạn chưa được quản trị viên cấp quyền thảo luận trong cộng đồng này.");
+          }
+        } else if (comm.privacy === "restricted") {
+          if (!isPrivileged && (!memRecord || memRecord.status !== "active" || memRecord.can_comment === 0)) {
+            return error(response, 403, "Cộng đồng ở chế độ Hạn chế: Bạn cần tham gia và được cấp quyền thảo luận.");
+          }
+        }
+      }
+    }
 
     let finalParentId = null;
     if (parentId) {
@@ -4836,35 +5317,35 @@ function getCommunityMembersPreview(commId, creatorId) {
       return error(response, 409, "Không thể cập nhật đánh giá.");
     }
   }
-function getLeaderboardTimeThreshold(period) {
-  const now = new Date();
-  const vnOffsetMs = 7 * 60 * 60 * 1000;
-  const vnNow = new Date(now.getTime() + (now.getTimezoneOffset() * 60000) + vnOffsetMs);
-  
-  if (period === "week") {
-    const day = vnNow.getDay();
-    const diffToMonday = (day === 0 ? -6 : 1) - day;
-    const monday = new Date(vnNow);
-    monday.setDate(vnNow.getDate() + diffToMonday);
-    monday.setHours(0, 0, 0, 0);
-    const utcMonday = new Date(monday.getTime() - vnOffsetMs);
-    return utcMonday.toISOString().replace("T", " ").substring(0, 19);
-  } else if (period === "month") {
-    const firstDay = new Date(vnNow.getFullYear(), vnNow.getMonth(), 1, 0, 0, 0, 0);
-    const utcFirstDay = new Date(firstDay.getTime() - vnOffsetMs);
-    return utcFirstDay.toISOString().replace("T", " ").substring(0, 19);
-  } else if (period === "quarter") {
-    const quarterMonth = Math.floor(vnNow.getMonth() / 3) * 3;
-    const firstQuarterDay = new Date(vnNow.getFullYear(), quarterMonth, 1, 0, 0, 0, 0);
-    const utcFirstQuarterDay = new Date(firstQuarterDay.getTime() - vnOffsetMs);
-    return utcFirstQuarterDay.toISOString().replace("T", " ").substring(0, 19);
-  }
-  return "1970-01-01 00:00:00";
-}
+  function getLeaderboardTimeThreshold(period) {
+    const now = new Date();
+    const vnOffsetMs = 7 * 60 * 60 * 1000;
+    const vnNow = new Date(now.getTime() + (now.getTimezoneOffset() * 60000) + vnOffsetMs);
 
-function getPeriodLeaderboard(period, currentUserId) {
-  const threshold = getLeaderboardTimeThreshold(period);
-  let rows = db.prepare(`
+    if (period === "week") {
+      const day = vnNow.getDay();
+      const diffToMonday = (day === 0 ? -6 : 1) - day;
+      const monday = new Date(vnNow);
+      monday.setDate(vnNow.getDate() + diffToMonday);
+      monday.setHours(0, 0, 0, 0);
+      const utcMonday = new Date(monday.getTime() - vnOffsetMs);
+      return utcMonday.toISOString().replace("T", " ").substring(0, 19);
+    } else if (period === "month") {
+      const firstDay = new Date(vnNow.getFullYear(), vnNow.getMonth(), 1, 0, 0, 0, 0);
+      const utcFirstDay = new Date(firstDay.getTime() - vnOffsetMs);
+      return utcFirstDay.toISOString().replace("T", " ").substring(0, 19);
+    } else if (period === "quarter") {
+      const quarterMonth = Math.floor(vnNow.getMonth() / 3) * 3;
+      const firstQuarterDay = new Date(vnNow.getFullYear(), quarterMonth, 1, 0, 0, 0, 0);
+      const utcFirstQuarterDay = new Date(firstQuarterDay.getTime() - vnOffsetMs);
+      return utcFirstQuarterDay.toISOString().replace("T", " ").substring(0, 19);
+    }
+    return "1970-01-01 00:00:00";
+  }
+
+  function getPeriodLeaderboard(period, currentUserId) {
+    const threshold = getLeaderboardTimeThreshold(period);
+    let rows = db.prepare(`
     SELECT u.id, u.display_name as displayName, u.avatar, u.role, u.cover_image as coverImage, u.namecard_frame as namecardFrame,
            coalesce(sum(c.points), 0) as periodPoints,
            max(c.created_at) as lastEventAt
@@ -4876,8 +5357,8 @@ function getPeriodLeaderboard(period, currentUserId) {
     ORDER BY periodPoints DESC, lastEventAt ASC, u.id ASC
   `).all(threshold);
 
-  if (rows.length < 3) {
-    rows = db.prepare(`
+    if (rows.length < 3) {
+      rows = db.prepare(`
       SELECT u.id, u.display_name as displayName, u.avatar, u.role, u.cover_image as coverImage, u.namecard_frame as namecardFrame,
              coalesce(sum(c.points), 0) as periodPoints,
              max(c.created_at) as lastEventAt
@@ -4888,46 +5369,28 @@ function getPeriodLeaderboard(period, currentUserId) {
       ORDER BY periodPoints DESC, u.id ASC
       LIMIT 10
     `).all();
-  }
+    }
 
-  const top10 = rows.slice(0, 10).map((u, idx) => ({
-    userId: u.id,
-    id: u.id,
-    displayName: u.displayName,
-    avatar: u.avatar,
-    initials: u.avatar || getAvatarEmoji(u.displayName),
-    role: u.role,
-    coverImage: u.coverImage || "default",
-    namecardFrame: u.namecardFrame || "none",
-    score: Number(u.periodPoints),
-    streakTier: getAuthorStreakTier(u.id),
-    rank: idx + 1
-  }));
+    const top10 = rows.slice(0, 10).map((u, idx) => ({
+      userId: u.id,
+      id: u.id,
+      displayName: u.displayName,
+      avatar: u.avatar,
+      initials: u.avatar || getAvatarEmoji(u.displayName),
+      role: u.role,
+      coverImage: u.coverImage || "default",
+      namecardFrame: u.namecardFrame || "none",
+      score: Number(u.periodPoints),
+      streakTier: getAuthorStreakTier(u.id),
+      rank: idx + 1
+    }));
 
-  let currentUserEntry = null;
-  if (currentUserId) {
-    const isStudent = db.prepare("SELECT 1 FROM users WHERE id = ? AND role NOT IN ('admin', 'lecturer', 'member') AND id != 89").get(currentUserId);
-    const userIdx = rows.findIndex(r => r.id === currentUserId);
-    if (userIdx !== -1) {
-      const u = rows[userIdx];
-      currentUserEntry = {
-        userId: u.id,
-        id: u.id,
-        displayName: u.displayName,
-        avatar: u.avatar,
-        initials: u.avatar || getAvatarEmoji(u.displayName),
-        role: u.role,
-        coverImage: u.coverImage || "default",
-        namecardFrame: u.namecardFrame || "none",
-        score: Number(u.periodPoints),
-        streakTier: getAuthorStreakTier(u.id),
-        rank: userIdx + 1,
-        isParticipant: Boolean(isStudent),
-        isCurrentUser: true
-      };
-    } else {
-      const u = db.prepare("SELECT id, display_name as displayName, avatar, role, cover_image as coverImage, namecard_frame as namecardFrame FROM users WHERE id = ?").get(currentUserId);
-      if (u) {
+    let currentUserEntry = null;
+    if (currentUserId) {
+      const isStudent = db.prepare("SELECT 1 FROM users WHERE id = ? AND role NOT IN ('admin', 'lecturer', 'member') AND id != 89").get(currentUserId);
+      const userIdx = rows.findIndex(r => r.id === currentUserId);
+      if (userIdx !== -1) {
+        const u = rows[userIdx];
         currentUserEntry = {
           userId: u.id,
           id: u.id,
@@ -4937,18 +5400,36 @@ function getPeriodLeaderboard(period, currentUserId) {
           role: u.role,
           coverImage: u.coverImage || "default",
           namecardFrame: u.namecardFrame || "none",
-          score: 0,
+          score: Number(u.periodPoints),
           streakTier: getAuthorStreakTier(u.id),
-          rank: rows.length + 1,
+          rank: userIdx + 1,
           isParticipant: Boolean(isStudent),
           isCurrentUser: true
         };
+      } else {
+        const u = db.prepare("SELECT id, display_name as displayName, avatar, role, cover_image as coverImage, namecard_frame as namecardFrame FROM users WHERE id = ?").get(currentUserId);
+        if (u) {
+          currentUserEntry = {
+            userId: u.id,
+            id: u.id,
+            displayName: u.displayName,
+            avatar: u.avatar,
+            initials: u.avatar || getAvatarEmoji(u.displayName),
+            role: u.role,
+            coverImage: u.coverImage || "default",
+            namecardFrame: u.namecardFrame || "none",
+            score: 0,
+            streakTier: getAuthorStreakTier(u.id),
+            rank: rows.length + 1,
+            isParticipant: Boolean(isStudent),
+            isCurrentUser: true
+          };
+        }
       }
     }
-  }
 
-  return { top10, currentUserEntry };
-}
+    return { top10, currentUserEntry };
+  }
 
   if (method === "GET" && pathName === "/api/leaderboard") {
     const user = sessionFrom(request);

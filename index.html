@@ -1325,14 +1325,48 @@
                 </div>
               </div>
               <div class="community-hero-actions">
-                <button type="button" class="button button-outline button-sm btn-back-all-forum"
-                  onclick="clearCommunityFilter()">
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
-                  Diễn đàn chung
+                <!-- 1. Diễn đàn chung -->
+                <button type="button" class="button button-outline button-sm btn-comm-action" onclick="clearCommunityFilter()" title="Quay lại tất cả bài đăng trên diễn đàn">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+                  <span>Diễn đàn chung</span>
                 </button>
-                <button type="button" class="button button-primary button-sm btn-join-comm-hero" id="btnCommJoinHero"
-                  onclick="toggleJoinCurrentCommunity()">
-                  Tham gia
+
+                <!-- 2. Tham gia / Rời cộng đồng (hoặc Trạng thái Đã giải tán) -->
+                <button type="button" class="button button-primary button-sm btn-comm-action btn-join-comm-hero" id="btnCommJoinHero" onclick="toggleJoinCurrentCommunity()">
+                  <span>Tham gia</span>
+                </button>
+                <span id="commDissolvedNotice" class="comm-status-pill is-dissolved" style="display: none;">
+                  ⚠️ Cộng đồng đã giải tán
+                </span>
+
+                <!-- 3. Thành viên / Quản trị -->
+                <button type="button" class="button button-outline button-sm btn-comm-action" id="btnCommMembersHero" onclick="openCommunityMembersModal()">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+                  <span id="commMembersBtnText">Thành viên</span>
+                </button>
+
+                <!-- 4. Nội quy -->
+                <button type="button" class="button button-outline button-sm btn-comm-action" id="btnCommRulesHero" onclick="openCommunityRulesModal()">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                  <span>Nội quy</span>
+                </button>
+
+                <!-- 5. Chia sẻ -->
+                <button type="button" class="button button-outline button-sm btn-comm-action" id="btnCommShareHero" onclick="shareCommunityLink()" title="Sao chép liên kết cộng đồng">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
+                  <span>Chia sẻ</span>
+                </button>
+
+                <!-- 6. Chỉnh sửa (chỉ người sáng lập / admin) -->
+                <button type="button" class="button button-outline button-sm btn-comm-action" id="btnCommEditHero" onclick="openEditCommunityModal()" style="display: none;" title="Chỉnh sửa thông tin (14 ngày sửa 1 lần)">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                  <span>Chỉnh sửa</span>
+                </button>
+
+                <!-- 7. Thông báo -->
+                <button type="button" class="button button-outline button-sm btn-comm-action" id="btnCommNotifyHero" onclick="toggleCommunityNotifications()" title="Bật/Tắt thông báo bài đăng và cập nhật">
+                  <svg class="comm-notify-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+                  <span id="commNotifyBtnText">Thông báo</span>
                 </button>
               </div>
             </div>
@@ -1365,12 +1399,11 @@
             <div class="communities-card-header">
               <p class="eyebrow">CỘNG ĐỒNG</p>
               <button type="button" class="btn-create-community" onclick="openCreateCommunityModal()"
-                title="Tạo cộng đồng mới">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                title="Tạo cộng đồng mới (Yêu cầu chuỗi 50+)" aria-label="Tạo cộng đồng mới">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
                   <line x1="12" y1="5" x2="12" y2="19"></line>
                   <line x1="5" y1="12" x2="19" y2="12"></line>
                 </svg>
-                Tạo mới
               </button>
             </div>
 
@@ -4218,37 +4251,61 @@
 
       <label>
         Mô tả cộng đồng
-        <textarea id="newCommDesc" rows="3" maxlength="280"
+        <textarea id="newCommDesc" rows="2" maxlength="280"
           placeholder="Mục đích thành lập cộng đồng, định hướng học tập hoặc đối tượng tham gia..."></textarea>
+      </label>
+
+      <label>
+        Nội quy ban đầu (Tùy chọn)
+        <textarea id="newCommRules" rows="2" maxlength="2000"
+          placeholder="Quy tắc trao đổi học thuật, tiêu chuẩn bài viết và ứng xử trong cộng đồng..."></textarea>
       </label>
 
       <div class="comm-privacy-select">
         <label style="font-weight: 600; display: block; margin-bottom: 8px;">Quyền riêng tư</label>
-        <div class="privacy-options-grid">
+        <div class="privacy-options-grid privacy-options-grid-3">
+          <!-- 1. Công khai -->
           <label class="privacy-option-card">
             <input type="radio" name="newCommPrivacy" value="public" checked onchange="updateCreateCommPreview()" />
             <div class="privacy-card-inner">
               <div class="privacy-card-header-line">
                 <span class="privacy-icon-svg">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
+                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
                 </span>
                 <span class="privacy-title-text">Công khai</span>
                 <span class="privacy-radio-indicator"></span>
               </div>
-              <p class="privacy-desc-text">Mọi thành viên đều có thể tìm thấy, đọc bài trên diễn đàn chung và tham gia thảo luận.</p>
+              <p class="privacy-desc-text">Tất cả mọi người có thể tham gia, xem bài đăng và đóng góp.</p>
             </div>
           </label>
+
+          <!-- 2. Hạn chế -->
+          <label class="privacy-option-card">
+            <input type="radio" name="newCommPrivacy" value="restricted" onchange="updateCreateCommPreview()" />
+            <div class="privacy-card-inner">
+              <div class="privacy-card-header-line">
+                <span class="privacy-icon-svg">
+                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+                </span>
+                <span class="privacy-title-text">Hạn chế</span>
+                <span class="privacy-radio-indicator"></span>
+              </div>
+              <p class="privacy-desc-text">Tất cả mọi người có thể tham gia, xem bài đăng, nhưng giới hạn người có thể đóng góp.</p>
+            </div>
+          </label>
+
+          <!-- 3. Riêng tư -->
           <label class="privacy-option-card">
             <input type="radio" name="newCommPrivacy" value="private" onchange="updateCreateCommPreview()" />
             <div class="privacy-card-inner">
               <div class="privacy-card-header-line">
                 <span class="privacy-icon-svg">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
                 </span>
                 <span class="privacy-title-text">Riêng tư</span>
                 <span class="privacy-radio-indicator"></span>
               </div>
-              <p class="privacy-desc-text">Chỉ thành viên được duyệt/gia nhập mới có thể xem và gửi bài viết trong không gian này.</p>
+              <p class="privacy-desc-text">Chỉ thành viên được duyệt mới có thể xem bài đăng và đóng góp.</p>
             </div>
           </label>
         </div>
@@ -4258,6 +4315,192 @@
         <button class="button button-quiet" type="button" onclick="this.closest('dialog').close()">Hủy</button>
         <button class="button button-primary" id="btnSubmitCreateComm" type="submit">
           Tạo cộng đồng <span>→</span>
+        </button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- MODAL: DANH SÁCH THÀNH VIÊN & QUẢN TRỊ CỘNG ĐỒNG -->
+  <dialog id="communityMembersModal" class="modal comm-members-modal">
+    <div class="modal-head">
+      <div>
+        <p class="eyebrow">CỘNG ĐỒNG HỌC THUẬT</p>
+        <h2 id="commMembersModalTitle">Danh sách thành viên</h2>
+      </div>
+      <button class="close-modal" type="button" onclick="this.closest('dialog').close()" aria-label="Đóng">
+        <svg class="ui-icon modal-close-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Tabs: Thành viên chính thức / Thành viên chờ duyệt -->
+    <div class="comm-members-tabs-bar" id="commMembersTabsBar" style="display: none;">
+      <button type="button" class="comm-members-tab active" data-tab="active" onclick="switchCommMembersTab('active')">
+        Thành viên chính thức (<span id="commActiveCountBadge">0</span>)
+      </button>
+      <button type="button" class="comm-members-tab" data-tab="pending" onclick="switchCommMembersTab('pending')">
+        Thành viên chờ duyệt (<span id="commPendingCountBadge">0</span>)
+      </button>
+    </div>
+
+    <div class="comm-members-search-wrap">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+      <input type="text" id="commMemberSearchInput" placeholder="Tìm thành viên theo tên hoặc ID..." oninput="filterCommMembersList()" />
+    </div>
+
+    <div class="comm-members-list-scroll" id="commMembersListContainer">
+      <p style="text-align: center; color: var(--muted); padding: 24px;">Đang tải danh sách thành viên...</p>
+    </div>
+
+    <div class="modal-actions" style="border-top: 1px solid var(--border); padding-top: 14px; margin-top: 16px;">
+      <button class="button button-outline button-sm" type="button" onclick="this.closest('dialog').close()">Đóng</button>
+    </div>
+  </dialog>
+
+  <!-- MODAL: NỘI QUY CỘNG ĐỒNG -->
+  <dialog id="communityRulesModal" class="modal comm-rules-modal">
+    <div class="modal-head">
+      <div>
+        <p class="eyebrow">QUY TẮC SINH HOẠT</p>
+        <h2 id="commRulesModalTitle">Nội quy cộng đồng</h2>
+      </div>
+      <button class="close-modal" type="button" onclick="this.closest('dialog').close()" aria-label="Đóng">
+        <svg class="ui-icon modal-close-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+    </div>
+
+    <div class="comm-rules-content-wrap">
+      <div class="comm-rules-body" id="commRulesBody">
+        <!-- Nội dung quy tắc hiển thị ở đây -->
+      </div>
+      <div id="commRulesEditBox" style="display: none; margin-top: 14px;">
+        <label style="font-weight: 600; display: block; margin-bottom: 6px;">Chỉnh sửa nội quy cộng đồng:</label>
+        <textarea id="commRulesEditTextarea" rows="6" style="width: 100%; box-sizing: border-box;"></textarea>
+      </div>
+    </div>
+
+    <div class="modal-actions" style="margin-top: 20px;">
+      <button class="button button-quiet" type="button" onclick="this.closest('dialog').close()">Đóng</button>
+      <button class="button button-outline" type="button" id="btnToggleEditRules" onclick="toggleEditCommRules()" style="display: none;">
+        Chỉnh sửa nội quy
+      </button>
+      <button class="button button-primary" type="button" id="btnSaveCommRules" onclick="saveCommRules()" style="display: none;">
+        Lưu nội quy
+      </button>
+    </div>
+  </dialog>
+
+  <!-- MODAL: CHỈNH SỬA THÔNG TIN CỘNG ĐỒNG (14 ngày sửa 1 lần, hoặc giải tán) -->
+  <dialog id="editCommunityModal" class="modal edit-community-modal">
+    <form method="dialog" id="editCommunityForm" onsubmit="event.preventDefault(); handleEditCommunitySubmit();">
+      <div class="modal-head">
+        <div>
+          <p class="eyebrow">QUẢN TRỊ CỘNG ĐỒNG</p>
+          <h2>Chỉnh sửa thông tin</h2>
+        </div>
+        <button class="close-modal" type="button" onclick="this.closest('dialog').close()" aria-label="Đóng">
+          <svg class="ui-icon modal-close-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+
+      <div class="comm-edit-notice-box" id="commEditNoticeBox">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+        <span>Mỗi cộng đồng chỉ được chỉnh sửa thông tin 14 ngày một lần để đảm bảo tính ổn định định danh.</span>
+      </div>
+
+      <label>
+        Tên cộng đồng
+        <input id="editCommName" required minlength="3" maxlength="60" />
+      </label>
+
+      <label>
+        Biểu tượng (Emoji Avatar)
+        <input id="editCommAvatar" maxlength="4" style="width: 70px; text-align: center; font-size: 20px;" />
+      </label>
+
+      <label>
+        Màu chủ đề ảnh bìa
+        <div class="cover-presets-row" id="editCommCoverPresets">
+          <button type="button" class="cover-chip" data-cover="linear-gradient(135deg, #1e3a8a 0%, #3b82f6 50%, #93c5fd 100%)" style="background: linear-gradient(135deg, #1e3a8a, #3b82f6);" onclick="selectEditCommCover(this)"></button>
+          <button type="button" class="cover-chip" data-cover="linear-gradient(135deg, #090d16 0%, #1e1b4b 40%, #4338ca 80%, #00f59b 100%)" style="background: linear-gradient(135deg, #1e1b4b, #00f59b);" onclick="selectEditCommCover(this)"></button>
+          <button type="button" class="cover-chip" data-cover="linear-gradient(135deg, #4c0519 0%, #db2777 50%, #fcd34d 100%)" style="background: linear-gradient(135deg, #db2777, #fcd34d);" onclick="selectEditCommCover(this)"></button>
+          <button type="button" class="cover-chip" data-cover="linear-gradient(135deg, #064e3b 0%, #059669 50%, #34d399 100%)" style="background: linear-gradient(135deg, #059669, #34d399);" onclick="selectEditCommCover(this)"></button>
+          <button type="button" class="cover-chip" data-cover="linear-gradient(135deg, #7c2d12 0%, #ea580c 50%, #facc15 100%)" style="background: linear-gradient(135deg, #ea580c, #facc15);" onclick="selectEditCommCover(this)"></button>
+          <button type="button" class="cover-chip" data-cover="linear-gradient(135deg, #312e81 0%, #6366f1 50%, #a855f7 100%)" style="background: linear-gradient(135deg, #6366f1, #a855f7);" onclick="selectEditCommCover(this)"></button>
+        </div>
+        <input id="editCommCover" type="hidden" />
+      </label>
+
+      <label>
+        Mô tả cộng đồng
+        <textarea id="editCommDesc" rows="3" maxlength="280"></textarea>
+      </label>
+
+      <label>
+        Nội quy cộng đồng
+        <textarea id="editCommRules" rows="3" maxlength="2000"></textarea>
+      </label>
+
+      <div class="comm-privacy-select">
+        <label style="font-weight: 600; display: block; margin-bottom: 8px;">Quyền riêng tư</label>
+        <div class="privacy-options-grid privacy-options-grid-3">
+          <label class="privacy-option-card">
+            <input type="radio" name="editCommPrivacy" value="public" />
+            <div class="privacy-card-inner">
+              <div class="privacy-card-header-line">
+                <span class="privacy-icon-svg"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg></span>
+                <span class="privacy-title-text">Công khai</span>
+                <span class="privacy-radio-indicator"></span>
+              </div>
+              <p class="privacy-desc-text">Mọi người tham gia, xem bài và đóng góp.</p>
+            </div>
+          </label>
+          <label class="privacy-option-card">
+            <input type="radio" name="editCommPrivacy" value="restricted" />
+            <div class="privacy-card-inner">
+              <div class="privacy-card-header-line">
+                <span class="privacy-icon-svg"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg></span>
+                <span class="privacy-title-text">Hạn chế</span>
+                <span class="privacy-radio-indicator"></span>
+              </div>
+              <p class="privacy-desc-text">Mọi người xem bài, nhưng giới hạn người đóng góp.</p>
+            </div>
+          </label>
+          <label class="privacy-option-card">
+            <input type="radio" name="editCommPrivacy" value="private" />
+            <div class="privacy-card-inner">
+              <div class="privacy-card-header-line">
+                <span class="privacy-icon-svg"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg></span>
+                <span class="privacy-title-text">Riêng tư</span>
+                <span class="privacy-radio-indicator"></span>
+              </div>
+              <p class="privacy-desc-text">Chỉ thành viên được duyệt mới xem bài và đóng góp.</p>
+            </div>
+          </label>
+        </div>
+      </div>
+
+      <!-- Khu vực nguy hiểm: Giải tán cộng đồng -->
+      <div class="comm-danger-zone">
+        <h4>Khu vực nguy hiểm</h4>
+        <p>Giải tán cộng đồng sẽ đưa không gian vào thời gian chờ 30 ngày trước khi xóa vĩnh viễn toàn bộ bài viết và dữ liệu.</p>
+        <button type="button" class="button button-outline btn-dissolve-community" onclick="confirmDissolveCommunity()">
+          ⚠️ Giải tán cộng đồng này
+        </button>
+      </div>
+
+      <div class="modal-actions">
+        <button class="button button-quiet" type="button" onclick="this.closest('dialog').close()">Hủy</button>
+        <button class="button button-primary" id="btnSubmitEditComm" type="submit">
+          Lưu thay đổi
         </button>
       </div>
     </form>
