@@ -45,7 +45,7 @@
     <script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js" defer></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" defer></script>
-    <link rel="stylesheet" href="styles.css?v=186" />
+    <link rel="stylesheet" href="styles.css?v=188" />
   </head>
   <body>
     <canvas id="christmasTreeCanvas" class="christmas-tree-edge-canvas" aria-hidden="true"></canvas>
@@ -340,8 +340,8 @@
             <input type="search" id="omniSearchInput" class="omni-search-input" placeholder="Tìm kiếm bài thảo luận, tài liệu học tập..." autocomplete="off" />
             <button type="button" id="omniSearchClear" class="omni-search-clear" title="Xóa từ khóa" style="display: none;">✕</button>
           </div>
-          <button type="button" class="omni-search-close-btn" onclick="closeOmniSearch()" title="Đóng tìm kiếm (Esc)" aria-label="Đóng tìm kiếm">
-            <kbd>ESC</kbd>
+          <button type="button" class="omni-search-close-btn" onclick="closeOmniSearch()" title="Thoát tìm kiếm (Esc)" aria-label="Thoát tìm kiếm">
+            <span>Thoát</span>
           </button>
         </div>
 
@@ -365,7 +365,7 @@
           <div class="omni-footer-hint">
             <span>Nhấn <kbd>↑</kbd><kbd>↓</kbd> để di chuyển</span>
             <span><kbd>↵</kbd> để mở</span>
-            <span><kbd>ESC</kbd> để đóng</span>
+            <span>Phím <kbd>Thoát</kbd> để đóng</span>
           </div>
         </div>
       </div>
@@ -478,15 +478,13 @@
                 </div>
 
                 <div class="notif-header-actions">
-                  <button type="button" class="notif-header-action-btn" id="notifSelectToggleBtn" onclick="toggleNotifSelectMode()" title="Chọn nhiều thông báo">
+                  <button type="button" class="notif-header-action-btn" id="notifSelectToggleBtn" onclick="toggleNotifSelectMode()" title="Chọn nhiều" aria-label="Chọn nhiều">
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"></polyline><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>
-                    <span id="notifSelectToggleLabel">Chọn</span>
                   </button>
-                  <button type="button" class="notif-header-action-btn notif-clear-all-btn" id="notifClearAllBtn" onclick="clearAllNotificationsInStream()" title="Xoá tất cả thông báo luồng này">
+                  <button type="button" class="notif-header-action-btn notif-clear-all-btn" id="notifClearAllBtn" onclick="clearAllNotificationsInStream()" title="Xoá tất cả" aria-label="Xoá tất cả">
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-                    <span>Xoá hết</span>
                   </button>
-                  <button type="button" class="notif-close-btn" onclick="closeNotificationPopover()" aria-label="Đóng bảng thông báo">
+                  <button type="button" class="notif-close-btn" onclick="closeNotificationPopover()" aria-label="Đóng bảng thông báo" title="Đóng">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
                   </button>
                 </div>
@@ -564,29 +562,6 @@
           </button>
 
           <div class="quick-menu-dropdown" id="quickMenuDropdown" role="menu" aria-label="Menu thao tác nhanh">
-            <!-- Nhóm Công cụ Tìm kiếm Đa năng & Thông báo trên Mobile -->
-            <div class="quick-menu-mobile-tools" id="quickMenuMobileTools">
-              <div class="quick-menu-mobile-group-header">Công cụ nhanh</div>
-              <button type="button" class="quick-menu-item" onclick="handleQuickMenuAction('search')" role="menuitem">
-                <span class="quick-menu-icon" aria-hidden="true">
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-                </span>
-                <span class="quick-menu-label">Tìm kiếm đa năng</span>
-                <span class="quick-menu-badge-shortcut">⌘K</span>
-              </button>
-              <button type="button" class="quick-menu-item" onclick="handleQuickMenuAction('notifications')" role="menuitem">
-                <span class="quick-menu-icon" aria-hidden="true">
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
-                    <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
-                  </svg>
-                </span>
-                <span class="quick-menu-label">Thông báo</span>
-                <span class="quick-menu-notif-count" id="quickMenuNotifCount" style="display: none;">0</span>
-              </button>
-              <div class="quick-menu-divider"></div>
-            </div>
-
             <!-- Vùng dành riêng cho khách (chưa đăng nhập) -->
             <div class="quick-menu-guest-section" id="quickMenuGuestContent" style="display: none;">
               <div class="quick-menu-guest-card">
@@ -597,9 +572,29 @@
                   <span class="quick-menu-guest-title">Chào bạn! <span class="quick-menu-role" style="font-size: 11px; padding: 2px 7px; background: rgba(148, 163, 184, 0.15); border-radius: 999px; color: var(--muted); margin-left: 6px; font-weight: 600;">Khách</span></span>
                   <span class="quick-menu-guest-desc">Đăng nhập để trải nghiệm đầy đủ tính năng & xem thẻ tên</span>
                 </div>
-                <button type="button" class="quick-menu-login-btn" onclick="handleQuickMenuAction('login')">
+                <button type="button" class="quick-menu-login-btn" onclick="handleQuickMenuAction('login', event)">
                   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path><polyline points="10 17 15 12 10 7"></polyline><line x1="15" y1="12" x2="3" y2="12"></line></svg>
                   <span>Đăng nhập</span>
+                </button>
+              </div>
+
+              <!-- Mobile Tools cho Khách (Dưới thông tin chào khách) -->
+              <div class="quick-menu-mobile-tools" id="quickMenuGuestMobileTools">
+                <button type="button" class="quick-menu-item" onclick="handleQuickMenuAction('search', event)" role="menuitem">
+                  <span class="quick-menu-icon" aria-hidden="true">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                  </span>
+                  <span class="quick-menu-label">Tìm kiếm đa năng</span>
+                </button>
+                <button type="button" class="quick-menu-item" onclick="handleQuickMenuAction('notifications', event)" role="menuitem">
+                  <span class="quick-menu-icon" aria-hidden="true">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                      <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+                    </svg>
+                  </span>
+                  <span class="quick-menu-label">Thông báo</span>
+                  <span class="quick-menu-notif-count" id="quickMenuGuestNotifCount" style="display: none;">0</span>
                 </button>
               </div>
             </div>
@@ -615,7 +610,28 @@
                   </div>
                 </div>
               </div>
-              <div class="quick-menu-divider"></div>
+
+              <!-- Nhóm Công cụ Tìm kiếm Đa năng & Thông báo trên Mobile (Nằm trực tiếp dưới Avatar) -->
+              <div class="quick-menu-mobile-tools" id="quickMenuMobileTools">
+                <button type="button" class="quick-menu-item" onclick="handleQuickMenuAction('search', event)" role="menuitem">
+                  <span class="quick-menu-icon" aria-hidden="true">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                  </span>
+                  <span class="quick-menu-label">Tìm kiếm đa năng</span>
+                </button>
+                <button type="button" class="quick-menu-item" onclick="handleQuickMenuAction('notifications', event)" role="menuitem">
+                  <span class="quick-menu-icon" aria-hidden="true">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                      <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+                    </svg>
+                  </span>
+                  <span class="quick-menu-label">Thông báo</span>
+                  <span class="quick-menu-notif-count" id="quickMenuNotifCount" style="display: none;">0</span>
+                </button>
+                <div class="quick-menu-divider"></div>
+              </div>
+
               <div class="quick-menu-items">
                 <button type="button" class="quick-menu-item" onclick="handleQuickMenuAction('namecard')" role="menuitem">
                   <span class="quick-menu-icon" aria-hidden="true">
@@ -6568,6 +6584,6 @@
       </div>
     </div>
 
-    <script src="app.js?v=186" defer></script>
+    <script src="app.js?v=188" defer></script>
   </body>
 </html>

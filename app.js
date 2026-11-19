@@ -5889,9 +5889,13 @@ window.closeQuickUserMenu = function () {
   }
 };
 
-window.handleQuickMenuAction = function (action) {
+window.handleQuickMenuAction = function (action, e) {
+  if (e && typeof e.stopPropagation === "function") e.stopPropagation();
   closeQuickUserMenu();
   switch (action) {
+    case "login":
+      if (typeof openAuth === "function") openAuth();
+      break;
     case "search":
       if (typeof openOmniSearch === "function") {
         openOmniSearch();
@@ -5901,7 +5905,9 @@ window.handleQuickMenuAction = function (action) {
       }
       break;
     case "notifications":
-      toggleNotificationPopover();
+      setTimeout(() => {
+        toggleNotificationPopover();
+      }, 50);
       break;
     case "namecard":
       if (session && session.id) {
@@ -17202,13 +17208,15 @@ function initAdaptiveGlassHeader() {
   function measureCompactActionsWidth() {
     const avatarEl = profileChip ? profileChip.querySelector(".avatar") : null;
     const searchBtn = headerActions.querySelector(".desktop-search");
+    const notifBtn = headerActions.querySelector(".nav-notification-btn") || headerActions.querySelector(".notification-trigger-wrap");
     const quickBtn = headerActions.querySelector(".quick-menu-btn");
-    // Compact right pill: 6px L/R padding (12) + 2px border + 2 gaps (12) = 26px + 3 circular controls
+    // Compact right pill: 6px L/R padding (12) + 2px border + 3 gaps (18) = 32px + 4 circular controls
     const avatarW = avatarEl ? Math.max(30, avatarEl.offsetWidth) : 31;
     const chipCompactW = Math.max(36, Math.ceil(avatarW + 6));
-    const searchW = searchBtn ? searchBtn.offsetWidth : 36;
+    const searchW = searchBtn && searchBtn.offsetParent !== null ? searchBtn.offsetWidth : 36;
+    const notifW = notifBtn && notifBtn.offsetParent !== null ? notifBtn.offsetWidth : 36;
     const quickW = quickBtn ? quickBtn.offsetWidth : 36;
-    return Math.max(122, chipCompactW + searchW + quickW + 26);
+    return Math.max(168, chipCompactW + searchW + notifW + quickW + 32);
   }
 
   function syncAdaptiveGlassHeaderMetrics() {
@@ -27801,6 +27809,7 @@ window.fetchNotifications = async function () {
 function updateNotifBadgeCounters(totalUnread, streamUnread) {
   const navBadge = document.getElementById("navNotificationBadge");
   const quickBadge = document.getElementById("quickMenuNotifCount");
+  const quickGuestBadge = document.getElementById("quickMenuGuestNotifCount");
   const actBadge = document.getElementById("notifActivityBadge");
   const annBadge = document.getElementById("notifAnnouncementBadge");
 
@@ -27813,6 +27822,10 @@ function updateNotifBadgeCounters(totalUnread, streamUnread) {
   if (quickBadge) {
     quickBadge.textContent = displayCount;
     quickBadge.style.display = totalUnread > 0 ? "inline-block" : "none";
+  }
+  if (quickGuestBadge) {
+    quickGuestBadge.textContent = displayCount;
+    quickGuestBadge.style.display = totalUnread > 0 ? "inline-block" : "none";
   }
   if (actBadge && streamUnread) {
     actBadge.textContent = streamUnread.activity > 99 ? "99+" : String(streamUnread.activity);
@@ -27989,7 +28002,10 @@ window.toggleNotifSelectMode = function (forceState) {
   const allCheckbox = document.getElementById("notifSelectAllCheckbox");
 
   if (batchBar) batchBar.style.display = notifState.selectMode ? "flex" : "none";
-  if (toggleBtn) toggleBtn.classList.toggle("active", notifState.selectMode);
+  if (toggleBtn) {
+    toggleBtn.classList.toggle("active", notifState.selectMode);
+    toggleBtn.title = notifState.selectMode ? "Hoàn tất chọn" : "Chọn nhiều";
+  }
   if (toggleLabel) toggleLabel.textContent = notifState.selectMode ? "Đóng chọn" : "Chọn";
   if (allCheckbox) allCheckbox.checked = false;
 
@@ -28118,6 +28134,8 @@ window.openAdminBroadcastModal = function () {
   const modal = document.getElementById("adminBroadcastModal");
   if (modal) {
     modal.style.display = "flex";
+    modal.classList.add("open");
+    closeNotificationPopover();
     const titleInput = document.getElementById("adminBroadcastInputTitle");
     if (titleInput) {
       titleInput.value = "";
@@ -28132,7 +28150,10 @@ window.openAdminBroadcastModal = function () {
 
 window.closeAdminBroadcastModal = function () {
   const modal = document.getElementById("adminBroadcastModal");
-  if (modal) modal.style.display = "none";
+  if (modal) {
+    modal.style.display = "none";
+    modal.classList.remove("open");
+  }
 };
 
 window.submitAdminBroadcast = async function () {
@@ -28166,11 +28187,20 @@ window.submitAdminBroadcast = async function () {
   }
 };
 
+// Backdrop click to close admin broadcast modal
+document.addEventListener("click", (e) => {
+  const adminModal = document.getElementById("adminBroadcastModal");
+  if (adminModal && e.target === adminModal) {
+    closeAdminBroadcastModal();
+  }
+});
+
 // Document click to close notification popover when clicking outside
 document.addEventListener("click", (e) => {
   const notifWrap = document.getElementById("notificationTriggerWrap");
+  const quickWrap = document.getElementById("quickUserMenuWrap");
   if (notifWrap && notifWrap.classList.contains("open")) {
-    if (!notifWrap.contains(e.target)) {
+    if (!notifWrap.contains(e.target) && (!quickWrap || !quickWrap.contains(e.target))) {
       closeNotificationPopover();
     }
   }
