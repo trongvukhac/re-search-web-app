@@ -145,6 +145,7 @@ let currentFilter = "all";
 let currentDocFilter = "all";
 let anonymous = false;
 let homeLeaderboardPeriod = "week";
+let homeLeaderboardCategory = "contributions";
 let cachedHomeLeaderboardData = null;
 let currentForumCommunitySlug = null;
 let forumCommunitiesList = [];
@@ -2976,8 +2977,8 @@ function postCard(post) {
   const commBadge = post.community
     ? `<span class="post-tag post-comm-tag ${post.community.privacy === 'private' ? 'is-private' : ''}" onclick="event.stopPropagation(); selectForumCommunity('${escapeHTML(post.community.slug)}')" title="Cộng đồng: ${escapeHTML(post.community.name)}">
         <span class="comm-tag-avatar">${escapeHTML(post.community.avatar || "📚")}</span>
-        <span class="comm-tag-name">r/${escapeHTML(post.community.slug)}</span>
-        ${post.community.privacy === 'private' ? '<span class="comm-tag-lock" title="Cộng đồng riêng tư">🔒</span>' : ''}
+        <span class="comm-tag-name">re/${escapeHTML(post.community.slug)}</span>
+        ${post.community.privacy === 'private' ? '<span class="comm-tag-lock" title="Cộng đồng riêng tư"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg></span>' : ''}
       </span>`
     : "";
   return `<article class="post-card ${post.authorRole === "admin" ? "admin-post" : ""}" data-post-id="${post.id}" style="position: relative;">
@@ -3225,16 +3226,25 @@ function renderHome() {
   updateCommunityStats();
   if (typeof initHomeBannerStack === "function") initHomeBannerStack();
   if (typeof loadAndRenderHomeLeaderboard === "function") loadAndRenderHomeLeaderboard();
-  const unpinnedRecentPosts = [...posts]
+  const visiblePosts = posts.filter((p) => p.status === "visible");
+  const unpinned = visiblePosts.filter((p) => !p.isPinned);
+  const homePosts = (unpinned.length > 0 ? unpinned : visiblePosts)
     .sort((a, b) => (new Date(b.createdAt || 0) - new Date(a.createdAt || 0)) || (b.id - a.id))
     .slice(0, 3);
-  $("#homePostList").innerHTML = unpinnedRecentPosts.map(postCard).join("");
-  $$("#homePostList .post-card").forEach((el) =>
-    el.addEventListener("click", (e) => {
-      if (e.target.closest("[data-namecard-user-id]")) return;
-      openDetail(Number(el.dataset.postId));
-    }),
-  );
+  const homeListEl = $("#homePostList");
+  if (homeListEl) {
+    if (homePosts.length === 0) {
+      homeListEl.innerHTML = `<div class="empty-state" style="padding: 24px; text-align: center; color: var(--muted, #64748b);">Chưa có thảo luận nào gần đây. Hãy là người đầu tiên đặt câu hỏi!</div>`;
+    } else {
+      homeListEl.innerHTML = homePosts.map(postCard).join("");
+      $$("#homePostList .post-card").forEach((el) =>
+        el.addEventListener("click", (e) => {
+          if (e.target.closest("[data-namecard-user-id]") || e.target.closest(".post-tag")) return;
+          openDetail(Number(el.dataset.postId));
+        }),
+      );
+    }
+  }
   const topicsHtml = topics
     .map((t) => `<button class="topic" data-topic="${t}">${t}</button>`)
     .join("");
@@ -3517,24 +3527,7 @@ window.goToDocumentInRepo = function (docId) {
 };
 
 function updateResponsiveAsidePlacement() {
-  const cardsContainer = document.getElementById("forumCommunityAsideCards");
-  const homeSlot = document.getElementById("homeCommunityAsideSlot");
-  const forumSlot = document.getElementById("forumCommunityAsideSlot");
-
-  if (!cardsContainer || !homeSlot || !forumSlot) return;
-  // Tránh chuyển DOM node trong khi người dùng đang nhập văn bản
-  if (typeof isUserBusyWithCriticalTask === "function" && isUserBusyWithCriticalTask()) return;
-
-  const isMobile = window.innerWidth <= 900;
-  if (isMobile) {
-    if (homeSlot !== cardsContainer.parentElement) {
-      homeSlot.appendChild(cardsContainer);
-    }
-  } else {
-    if (forumSlot !== cardsContainer.parentElement) {
-      forumSlot.appendChild(cardsContainer);
-    }
-  }
+  // Đã cố định vị trí: thẻ Cộng đồng ở sidebar diễn đàn, Một lưu ý nhỏ ở cuối trang sau phân trang
 }
 
 window.addEventListener("resize", updateResponsiveAsidePlacement);
@@ -28519,14 +28512,50 @@ if (typeof checkNotifUnreadCount === "function") {
 // BẢNG VINH DANH HỌC THUẬT TRANG CHỦ (HOMEPAGE GRAND LEADERBOARD)
 // =========================================================================
 
-const HOME_LB_POINT_SVG = `<svg class="ui-icon champ-score-star" width="13" height="13" viewBox="0 0 24 24" fill="#f59e0b" stroke="#f59e0b" stroke-width="1.2" aria-hidden="true" style="margin-right: 3px;"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>`;
+const HOME_LB_CATEGORIES = {
+  contributions: {
+    title: "Gương mặt Tri thức & Đóng góp Tiêu biểu",
+    subtitle: "Tôn vinh những cá nhân xuất sắc có hoạt động nghiên cứu, chia sẻ tài liệu và lan tỏa tri thức bền bỉ nhất.",
+    hasPeriods: true,
+    scoreIconHtml: `<svg class="ui-icon champ-score-star" width="13" height="13" viewBox="0 0 24 24" fill="#f59e0b" stroke="#f59e0b" stroke-width="1.2" aria-hidden="true" style="margin-right: 3px;"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>`,
+    unit: ""
+  },
+  streak: {
+    title: "Bậc thầy Bền bỉ & Người giữ lửa",
+    subtitle: "Tôn vinh những học viên duy trì chuỗi học tập và nghiên cứu liên tục mỗi ngày.",
+    hasPeriods: false,
+    scoreIconHtml: `<svg class="ui-icon" width="13" height="13" viewBox="0 0 24 24" fill="#f97316" stroke="#f97316" stroke-width="1.2" aria-hidden="true" style="margin-right: 3px;"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>`,
+    unit: "ngày"
+  },
+  competition: {
+    title: "Tinh thông Thần tốc & Đấu trường Học thuật",
+    subtitle: "Bảng vàng tổng kết các chặng thi đấu học thuật hàng tuần tại Đấu trường RE:SEARCH.",
+    hasPeriods: false,
+    scoreIconHtml: `<svg class="ui-icon" width="13" height="13" viewBox="0 0 24 24" fill="#f59e0b" stroke="#f59e0b" stroke-width="1.2" aria-hidden="true" style="margin-right: 3px;"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>`,
+    unit: "điểm"
+  },
+  likes: {
+    title: "Gương mặt Truyền cảm hứng & Vạn người mê",
+    subtitle: "Những thẻ tên học thuật nhận được nhiều sự ngưỡng mộ và yêu thích nhất từ cộng đồng.",
+    hasPeriods: false,
+    scoreIconHtml: `<svg class="ui-icon" width="13" height="13" viewBox="0 0 24 24" fill="#ec4899" stroke="#ec4899" stroke-width="1.2" aria-hidden="true" style="margin-right: 3px;"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>`,
+    unit: "tim"
+  },
+  study: {
+    title: "Học giả Cần cù & Ong chăm chỉ",
+    subtitle: "Xếp hạng tổng thời lượng tự học và nghiên cứu sâu tại Phòng tự học.",
+    hasPeriods: false,
+    scoreIconHtml: `<svg class="ui-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#0ea5e9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="margin-right: 3px;"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`,
+    unit: "giờ"
+  }
+};
 
 async function loadAndRenderHomeLeaderboard(period, forceRefresh = false) {
   if (period && ["week", "month", "quarter"].includes(period)) {
     homeLeaderboardPeriod = period;
   }
 
-  // Cập nhật tab active
+  // Cập nhật tab chu kỳ active
   $$(".home-lb-tab-btn").forEach((btn) => {
     const isAct = btn.dataset.period === homeLeaderboardPeriod;
     btn.classList.toggle("active", isAct);
@@ -28538,9 +28567,15 @@ async function loadAndRenderHomeLeaderboard(period, forceRefresh = false) {
   const listWrap = $("#homeLbListWrap");
   if (!podiumWrap || !lbList) return;
 
+  // Nếu đang chọn danh mục khác đóng góp (streak, competition, likes, study)
+  if (homeLeaderboardCategory !== "contributions") {
+    renderHomeCategoryLeaderboard(homeLeaderboardCategory);
+    return;
+  }
+
   // Sử dụng dữ liệu đã cache nếu có
   if (!forceRefresh && cachedHomeLeaderboardData?.periods?.[homeLeaderboardPeriod]) {
-    renderHomeLeaderboardData(cachedHomeLeaderboardData.periods[homeLeaderboardPeriod]);
+    renderHomeLeaderboardData(cachedHomeLeaderboardData.periods[homeLeaderboardPeriod], "contributions");
     return;
   }
 
@@ -28548,11 +28583,12 @@ async function loadAndRenderHomeLeaderboard(period, forceRefresh = false) {
     const data = await requestAPI(`/api/leaderboard?period=${homeLeaderboardPeriod}`);
     if (data) {
       cachedHomeLeaderboardData = data;
+      cachedLeaderboardData = data;
       const periodData = data.periods?.[homeLeaderboardPeriod] || {
         top10: data.top10 || [],
         currentUserEntry: data.currentUserEntry || null,
       };
-      renderHomeLeaderboardData(periodData);
+      renderHomeLeaderboardData(periodData, "contributions");
     }
   } catch (err) {
     console.error("Lỗi nạp bảng vinh danh trang chủ:", err);
@@ -28562,7 +28598,90 @@ async function loadAndRenderHomeLeaderboard(period, forceRefresh = false) {
   }
 }
 
-function renderHomeLeaderboardData(periodData) {
+function switchHomeLeaderboardCategory(cat) {
+  if (!HOME_LB_CATEGORIES[cat]) cat = "contributions";
+  homeLeaderboardCategory = cat;
+
+  // Cập nhật active button danh mục
+  $$(".home-lb-cat-btn").forEach((btn) => {
+    const isAct = btn.dataset.category === cat;
+    btn.classList.toggle("active", isAct);
+    btn.setAttribute("aria-selected", isAct ? "true" : "false");
+  });
+
+  // Cập nhật tiêu đề & mô tả
+  const cfg = HOME_LB_CATEGORIES[cat];
+  const titleEl = $("#homeLbCategoryTitle");
+  const subtitleEl = $("#homeLbCategorySubtitle");
+  if (titleEl) titleEl.textContent = cfg.title;
+  if (subtitleEl) subtitleEl.textContent = cfg.subtitle;
+
+  // Ẩn / hiện bộ lọc chu kỳ Tuần/Tháng/Quý (chỉ Đại sứ tri thức có chu kỳ)
+  const periodTabs = $("#homeLbPeriodTabs");
+  if (periodTabs) {
+    periodTabs.style.display = cfg.hasPeriods ? "inline-flex" : "none";
+  }
+
+  if (cat === "contributions") {
+    loadAndRenderHomeLeaderboard(homeLeaderboardPeriod);
+  } else {
+    renderHomeCategoryLeaderboard(cat);
+  }
+}
+
+function renderHomeCategoryLeaderboard(cat) {
+  const data = cachedHomeLeaderboardData || cachedLeaderboardData;
+  if (!data) {
+    requestAPI("/api/leaderboard").then(res => {
+      if (res) {
+        cachedHomeLeaderboardData = res;
+        cachedLeaderboardData = res;
+        renderHomeCategoryLeaderboard(cat);
+      }
+    }).catch(() => { });
+    return;
+  }
+
+  let rawList = [];
+  let unit = "";
+  if (cat === "streak") {
+    rawList = data.streakLeaderboard || [];
+    rawList = rawList.map((u, i) => ({
+      ...u,
+      rank: u.rank || (i + 1),
+      score: u.streak,
+      unit: "ngày"
+    }));
+  } else if (cat === "competition") {
+    rawList = data.arenaLeaderboard || [];
+    rawList = rawList.map((u, i) => ({
+      ...u,
+      rank: u.rank || (i + 1),
+      score: u.score != null ? u.score : (u.totalScore || 0),
+      unit: "điểm"
+    }));
+  } else if (cat === "likes") {
+    rawList = data.likesLeaderboard || [];
+    rawList = rawList.map((u, i) => ({
+      ...u,
+      rank: u.rank || (i + 1),
+      score: u.likesCount || 0,
+      unit: "tim"
+    }));
+  } else if (cat === "study") {
+    rawList = data.studyLeaderboard || [];
+    rawList = rawList.map((u, i) => ({
+      ...u,
+      rank: u.rank || (i + 1),
+      score: u.hours != null ? `${u.hours}h` : `${Math.floor((u.totalMinutes || 0) / 60)}h`,
+      unit: "giờ"
+    }));
+  }
+
+  renderHomeLeaderboardData({ top10: rawList.slice(0, 10), currentUserEntry: null }, cat);
+}
+
+function renderHomeLeaderboardData(periodData, category = "contributions") {
   const podiumWrap = $("#homeLbPodiumWrap");
   const lbList = $("#homeLbList");
   const listWrap = $("#homeLbListWrap");
@@ -28572,7 +28691,7 @@ function renderHomeLeaderboardData(periodData) {
   const currentUserEntry = periodData.currentUserEntry || null;
 
   if (top10.length === 0) {
-    podiumWrap.innerHTML = `<div class="comp-lb-empty">Chưa có thành viên nào ghi nhận điểm hoạt động trong chu kỳ này.</div>`;
+    podiumWrap.innerHTML = `<div class="comp-lb-empty">Chưa có thành viên nào ghi nhận thành tích trong bảng này.</div>`;
     if (listWrap) listWrap.style.display = "none";
     lbList.innerHTML = "";
     return;
@@ -28580,11 +28699,12 @@ function renderHomeLeaderboardData(periodData) {
 
   if (listWrap) listWrap.style.display = "";
 
+  const cfg = HOME_LB_CATEGORIES[category] || HOME_LB_CATEGORIES.contributions;
   const isWeek = true; // Hiển thị Quán quân / Á quân / Quý quân trên bục
   const top1 = top10.find((u) => u.rank === 1) || null;
   const top2 = top10.find((u) => u.rank === 2) || null;
   const top3 = top10.find((u) => u.rank === 3) || null;
-  const opts = { scoreIconHtml: HOME_LB_POINT_SVG };
+  const opts = { scoreIconHtml: cfg.scoreIconHtml, unit: cfg.unit };
 
   podiumWrap.innerHTML = renderArenaTop3(top1, top2, top3, isWeek, opts);
 
@@ -28611,6 +28731,7 @@ function switchHomeLeaderboardPeriod(period) {
   loadAndRenderHomeLeaderboard(period);
 }
 window.switchHomeLeaderboardPeriod = switchHomeLeaderboardPeriod;
+window.switchHomeLeaderboardCategory = switchHomeLeaderboardCategory;
 window.loadAndRenderHomeLeaderboard = loadAndRenderHomeLeaderboard;
 
 // =========================================================================
@@ -28640,7 +28761,7 @@ function updateForumCommunitySelectors() {
     forumCommunitiesList.forEach((c) => {
       if (c.privacy === "public" || c.isMember || (session && (session.role === "admin" || session.role === "ta"))) {
         const lockIcon = c.privacy === "private" ? "🔒 " : "";
-        opts += `<option value="${escapeHTML(c.slug)}">${lockIcon}${escapeHTML(c.name)} (r/${escapeHTML(c.slug)})</option>`;
+        opts += `<option value="${escapeHTML(c.slug)}">${lockIcon}${escapeHTML(c.name)} (re/${escapeHTML(c.slug)})</option>`;
       }
     });
     filterSelect.innerHTML = opts;
@@ -28653,7 +28774,7 @@ function updateForumCommunitySelectors() {
     forumCommunitiesList.forEach((c) => {
       if (c.privacy === "public" || c.isMember || (session && (session.role === "admin" || session.role === "ta"))) {
         const lockIcon = c.privacy === "private" ? "🔒 " : "";
-        opts += `<option value="${c.id}">${lockIcon}${escapeHTML(c.name)} (r/${escapeHTML(c.slug)})</option>`;
+        opts += `<option value="${c.id}">${lockIcon}${escapeHTML(c.name)} (re/${escapeHTML(c.slug)})</option>`;
       }
     });
     postSelect.innerHTML = opts;
@@ -28705,11 +28826,11 @@ function renderForumCommunitiesSidebar() {
         <div class="comm-item-info">
           <div class="comm-item-name-row">
             <span class="comm-item-name">${escapeHTML(c.name)}</span>
-            ${c.privacy === "private" ? `<span class="comm-item-lock" title="Cộng đồng riêng tư">🔒</span>` : ""}
+            ${c.privacy === "private" ? `<span class="comm-item-lock" title="Cộng đồng riêng tư"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg></span>` : ""}
             ${roleBadge}
           </div>
           <div class="comm-item-meta">
-            <span class="comm-item-slug">r/${escapeHTML(c.slug)}</span>
+            <span class="comm-item-slug">re/${escapeHTML(c.slug)}</span>
             <span class="comm-item-dot">•</span>
             <span class="comm-item-members">${c.membersCount || 0} tv</span>
           </div>
@@ -28785,12 +28906,15 @@ function updateCommunityHeroBanner() {
   if (titleEl) titleEl.textContent = comm.name;
 
   const slugEl = $("#commHeroSlug");
-  if (slugEl) slugEl.textContent = `r/${comm.slug}`;
+  if (slugEl) slugEl.textContent = `re/${comm.slug}`;
 
   const privacyEl = $("#commHeroPrivacy");
   if (privacyEl) {
     const isPriv = comm.privacy === "private";
-    privacyEl.textContent = isPriv ? "🔒 Riêng tư" : "🌐 Công khai";
+    const iconSvg = isPriv
+      ? `<svg class="privacy-pill-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>`
+      : `<svg class="privacy-pill-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>`;
+    privacyEl.innerHTML = `${iconSvg}<span>${isPriv ? "Riêng tư" : "Công khai"}</span>`;
     privacyEl.className = `community-privacy-pill ${isPriv ? "is-private" : "is-public"}`;
   }
 
@@ -28799,6 +28923,44 @@ function updateCommunityHeroBanner() {
 
   const membersCountEl = $("#commHeroMembersCount");
   if (membersCountEl) membersCountEl.innerHTML = `<strong>${comm.membersCount || 0}</strong> thành viên`;
+
+  // Avatar Stack: 1 thành viên chủ cộng đồng + 8 thành viên mới nhất + icon +x
+  const stackEl = $("#commHeroAvatarStack");
+  if (stackEl) {
+    const preview = comm.membersPreview;
+    if (preview) {
+      const creator = preview.creator;
+      const recent = preview.recent || [];
+      const total = preview.total || comm.membersCount || 0;
+      let stackHtml = "";
+
+      if (creator) {
+        stackHtml += `
+          <span class="comm-avatar-pill is-creator" title="Chủ cộng đồng / Quản trị viên: ${escapeHTML(creator.displayName)}" data-namecard-user-id="${creator.id}">
+            <span>${escapeHTML(creator.avatar || getAvatarEmoji(creator.displayName))}</span>
+            <span class="creator-badge" title="Chủ cộng đồng">👑</span>
+          </span>
+        `;
+      }
+
+      recent.slice(0, 8).forEach((m) => {
+        stackHtml += `
+          <span class="comm-avatar-pill" title="${escapeHTML(m.displayName)}" data-namecard-user-id="${m.id}">
+            <span>${escapeHTML(m.avatar || getAvatarEmoji(m.displayName))}</span>
+          </span>
+        `;
+      });
+
+      const shown = (creator ? 1 : 0) + Math.min(recent.length, 8);
+      const remaining = total - shown;
+      if (remaining > 0) {
+        stackHtml += `<span class="comm-avatar-pill comm-avatar-more" title="Và ${remaining} thành viên khác">+${remaining}</span>`;
+      }
+      stackEl.innerHTML = stackHtml;
+    } else {
+      stackEl.innerHTML = "";
+    }
+  }
 
   const postsCountEl = $("#commHeroPostsCount");
   if (postsCountEl) postsCountEl.innerHTML = `<strong>${comm.postsCount || 0}</strong> bài thảo luận`;
@@ -28842,6 +29004,7 @@ async function toggleJoinCommunity(commId) {
         comm.isMember = res.isMember;
         comm.membersCount = res.membersCount;
       }
+      await loadForumCommunities();
       renderForumCommunitiesSidebar();
       updateForumCommunitySelectors();
       if (currentForumCommunitySlug) {
@@ -28891,7 +29054,7 @@ function updateCreateCommPreview() {
   const privacy = document.querySelector('input[name="newCommPrivacy"]:checked')?.value || "public";
 
   if ($("#commPreviewName")) $("#commPreviewName").textContent = name;
-  if ($("#commPreviewSlug")) $("#commPreviewSlug").textContent = `r/${slug || "slug"} • ${privacy === "private" ? "🔒 Riêng tư" : "🌐 Công khai"}`;
+  if ($("#commPreviewSlug")) $("#commPreviewSlug").textContent = `re/${slug || "ten-cong-dong"} • ${privacy === "private" ? "Riêng tư" : "Công khai"}`;
   if ($("#commPreviewAvatar")) $("#commPreviewAvatar").textContent = avatar;
   if ($("#commPreviewCover")) $("#commPreviewCover").style.background = cover;
 }

@@ -40836,67 +40836,359 @@ html.dark-theme .community-hero-desc {
   box-shadow: 0 0 0 2px var(--primary, #059669);
 }
 
+/* Category Navigation (5 danh mục) trên Homepage Grand Leaderboard */
+.home-lb-cat-nav {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 4px 0 20px;
+  margin-bottom: 4px;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.home-lb-cat-nav::-webkit-scrollbar {
+  display: none;
+}
+
+.home-lb-cat-btn {
+  border: 1px solid var(--border, #e2e8f0);
+  background: var(--bg-alt, #f8fafc);
+  color: var(--muted, #64748b);
+  padding: 8px 18px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.18s ease;
+}
+
+.home-lb-cat-btn:hover {
+  border-color: var(--primary, #059669);
+  color: var(--text, #0f172a);
+}
+
+.home-lb-cat-btn.active {
+  background: var(--primary, #059669);
+  border-color: var(--primary, #059669);
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(5, 150, 105, 0.25);
+}
+
+[data-theme="dark"] .home-lb-cat-btn,
+body.dark-theme .home-lb-cat-btn,
+html.dark-theme .home-lb-cat-btn {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.09);
+  color: #94a3b8;
+}
+
+[data-theme="dark"] .home-lb-cat-btn:hover,
+body.dark-theme .home-lb-cat-btn:hover,
+html.dark-theme .home-lb-cat-btn:hover {
+  border-color: #38bdf8;
+  color: #f8fafc;
+}
+
+[data-theme="dark"] .home-lb-cat-btn.active,
+body.dark-theme .home-lb-cat-btn.active,
+html.dark-theme .home-lb-cat-btn.active {
+  background: #0284c7;
+  border-color: #38bdf8;
+  color: #ffffff;
+  box-shadow: 0 4px 16px rgba(56, 189, 248, 0.3);
+}
+
+/* Một lưu ý nhỏ đặt sau phân trang diễn đàn */
+.forum-guide-notice-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 20px 24px;
+  border-radius: 16px;
+  margin-top: 32px;
+  border: 1px dashed var(--border, #cbd5e1);
+  background: var(--bg-alt, #f8fafc);
+}
+
+.guide-notice-icon-box {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: rgba(5, 150, 105, 0.1);
+  color: var(--primary, #059669);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.guide-notice-body {
+  flex: 1;
+}
+
+.guide-notice-body .eyebrow {
+  margin: 0 0 4px 0;
+  font-size: 11px;
+  letter-spacing: 0.05em;
+  color: var(--primary, #059669);
+  font-weight: 700;
+}
+
+.guide-notice-body h3 {
+  margin: 0 0 6px 0;
+  font-size: 16px;
+  color: var(--text, #0f172a);
+}
+
+.guide-notice-body p {
+  margin: 0 0 10px 0;
+  font-size: 13px;
+  color: var(--muted, #64748b);
+  line-height: 1.5;
+}
+
+[data-theme="dark"] .forum-guide-notice-card,
+body.dark-theme .forum-guide-notice-card,
+html.dark-theme .forum-guide-notice-card {
+  background: rgba(255, 255, 255, 0.03);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+[data-theme="dark"] .guide-notice-icon-box,
+body.dark-theme .guide-notice-icon-box,
+html.dark-theme .guide-notice-icon-box {
+  background: rgba(56, 189, 248, 0.12);
+  color: #38bdf8;
+}
+
+[data-theme="dark"] .guide-notice-body .eyebrow,
+body.dark-theme .guide-notice-body .eyebrow,
+html.dark-theme .guide-notice-body .eyebrow {
+  color: #38bdf8;
+}
+
+[data-theme="dark"] .guide-notice-body h3,
+body.dark-theme .guide-notice-body h3,
+html.dark-theme .guide-notice-body h3 {
+  color: #f8fafc;
+}
+
+/* Avatar Stack cạnh số thành viên */
+.comm-stats-members-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.comm-stats-posts-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.comm-hero-avatar-stack {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 6px;
+  vertical-align: middle;
+}
+
+.comm-avatar-pill {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 2px solid var(--card-bg, #ffffff);
+  background: var(--surface, #f1f5f9);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  margin-left: -8px;
+  position: relative;
+  cursor: pointer;
+  transition: transform 0.15s ease, z-index 0.15s ease;
+  box-sizing: border-box;
+}
+
+.comm-avatar-pill:first-child {
+  margin-left: 0;
+  z-index: 10;
+}
+
+.comm-avatar-pill:hover {
+  transform: scale(1.3) translateY(-2px);
+  z-index: 25;
+}
+
+.comm-avatar-pill.is-creator {
+  border-color: #f59e0b;
+  box-shadow: 0 0 0 1.5px rgba(245, 158, 11, 0.4);
+}
+
+.comm-avatar-pill .creator-badge {
+  position: absolute;
+  bottom: -4px;
+  right: -5px;
+  font-size: 10px;
+  line-height: 1;
+}
+
+.comm-avatar-pill.comm-avatar-more {
+  background: #334155;
+  color: #ffffff;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  z-index: 1;
+}
+
+[data-theme="dark"] .comm-avatar-pill,
+body.dark-theme .comm-avatar-pill,
+html.dark-theme .comm-avatar-pill {
+  border-color: #1e293b;
+  background: #0f172a;
+}
+
+/* Tối ưu hiển thị Modal tạo cộng đồng & 2 nút Công khai / Riêng tư */
 .privacy-options-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 10px;
+  gap: 12px;
 }
 
 .privacy-option-card {
   position: relative;
-  display: flex;
-  align-items: flex-start;
-  padding: 12px;
-  border-radius: 12px;
-  border: 1px solid var(--border, #e2e8f0);
-  background: var(--card-bg, #ffffff);
+  display: block;
   cursor: pointer;
-  transition: all 0.15s ease;
 }
 
 .privacy-option-card input[type="radio"] {
-  margin-right: 8px;
-  margin-top: 3px;
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
 }
 
-.privacy-card-content {
+.privacy-card-inner {
+  border: 1.5px solid var(--border, #e2e8f0);
+  border-radius: 14px;
+  padding: 14px 16px;
+  background: var(--card-bg, #ffffff);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  height: 100%;
+  box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  gap: 4px;
 }
 
-.privacy-card-head {
+.privacy-card-header-line {
   display: flex;
   align-items: center;
-  gap: 4px;
-  font-size: 13px;
-  color: var(--text, #0f172a);
+  gap: 8px;
+  margin-bottom: 6px;
 }
 
-.privacy-card-content p {
+.privacy-icon-svg {
+  color: var(--primary, #059669);
+  display: flex;
+  align-items: center;
+}
+
+.privacy-title-text {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text, #0f172a);
+  flex: 1;
+}
+
+.privacy-radio-indicator {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid var(--border, #cbd5e1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+  box-sizing: border-box;
+}
+
+.privacy-radio-indicator::after {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: transparent;
+  transition: all 0.15s ease;
+}
+
+.privacy-desc-text {
   margin: 0;
-  font-size: 11px;
-  line-height: 1.4;
+  font-size: 12px;
+  line-height: 1.45;
   color: var(--muted, #64748b);
 }
 
-.privacy-option-card:hover {
+.privacy-option-card:hover .privacy-card-inner {
   border-color: var(--primary, #059669);
+  transform: translateY(-1px);
 }
 
-.privacy-option-card:has(input:checked) {
+.privacy-option-card input[type="radio"]:checked ~ .privacy-card-inner {
   border-color: var(--primary, #059669);
-  background: rgba(5, 150, 105, 0.04);
+  background: rgba(5, 150, 105, 0.05);
+  box-shadow: 0 0 0 1px var(--primary, #059669), 0 4px 12px rgba(5, 150, 105, 0.1);
 }
 
-[data-theme="dark"] .privacy-option-card {
+.privacy-option-card input[type="radio"]:checked ~ .privacy-card-inner .privacy-radio-indicator {
+  border-color: var(--primary, #059669);
+  background: var(--primary, #059669);
+}
+
+.privacy-option-card input[type="radio"]:checked ~ .privacy-card-inner .privacy-radio-indicator::after {
+  background: #ffffff;
+}
+
+[data-theme="dark"] .privacy-card-inner,
+body.dark-theme .privacy-card-inner,
+html.dark-theme .privacy-card-inner {
   background: rgba(255, 255, 255, 0.03);
   border-color: rgba(255, 255, 255, 0.08);
 }
 
-[data-theme="dark"] .privacy-option-card:has(input:checked) {
+[data-theme="dark"] .privacy-title-text,
+body.dark-theme .privacy-title-text,
+html.dark-theme .privacy-title-text {
+  color: #f8fafc;
+}
+
+[data-theme="dark"] .privacy-desc-text,
+body.dark-theme .privacy-desc-text,
+html.dark-theme .privacy-desc-text {
+  color: #94a3b8;
+}
+
+[data-theme="dark"] .privacy-icon-svg,
+body.dark-theme .privacy-icon-svg,
+html.dark-theme .privacy-icon-svg {
+  color: #38bdf8;
+}
+
+[data-theme="dark"] .privacy-option-card input[type="radio"]:checked ~ .privacy-card-inner,
+body.dark-theme .privacy-option-card input[type="radio"]:checked ~ .privacy-card-inner,
+html.dark-theme .privacy-option-card input[type="radio"]:checked ~ .privacy-card-inner {
   border-color: #38bdf8;
   background: rgba(56, 189, 248, 0.08);
+  box-shadow: 0 0 0 1px #38bdf8, 0 4px 16px rgba(56, 189, 248, 0.15);
+}
+
+[data-theme="dark"] .privacy-option-card input[type="radio"]:checked ~ .privacy-card-inner .privacy-radio-indicator,
+body.dark-theme .privacy-option-card input[type="radio"]:checked ~ .privacy-card-inner .privacy-radio-indicator,
+html.dark-theme .privacy-option-card input[type="radio"]:checked ~ .privacy-card-inner .privacy-radio-indicator {
+  border-color: #38bdf8;
+  background: #38bdf8;
 }
 
 /* ==========================================================================
@@ -40918,7 +41210,7 @@ html.dark-theme .community-hero-desc {
     flex-direction: column;
     align-items: stretch;
     gap: 16px;
-    margin-bottom: 20px;
+    margin-bottom: 16px;
   }
 
   .home-lb-title {
@@ -40941,17 +41233,45 @@ html.dark-theme .community-hero-desc {
     font-size: 12px;
   }
 
-  .home-lb-podium-wrap .arena-top3-cards {
-    gap: 8px;
-    padding: 16px 0 8px;
+  .home-lb-cat-nav {
+    padding-bottom: 14px;
+    gap: 6px;
   }
 
-  .home-lb-podium-wrap .arena-champion-card.mini-namecard {
-    flex: 1;
-    min-width: 0;
+  .home-lb-cat-btn {
+    padding: 6px 14px;
+    font-size: 12px;
+  }
+
+  .home-lb-podium-wrap .arena-top3-cards {
+    gap: 6px !important;
+    padding: 22px 0 10px !important;
+    justify-content: center !important;
+    width: 100% !important;
+  }
+
+  .home-lb-podium-wrap .arena-champion-card.mini-namecard.rank-1 {
+    --mini-scale: 0.165 !important;
+    width: calc(680px * var(--mini-scale)) !important;
+    height: calc(760px * var(--mini-scale)) !important;
+    flex: 0 0 calc(680px * var(--mini-scale)) !important;
+  }
+
+  .home-lb-podium-wrap .arena-champion-card.mini-namecard.rank-2,
+  .home-lb-podium-wrap .arena-champion-card.mini-namecard.rank-3 {
+    --mini-scale: 0.138 !important;
+    width: calc(680px * var(--mini-scale)) !important;
+    height: calc(760px * var(--mini-scale)) !important;
+    flex: 0 0 calc(680px * var(--mini-scale)) !important;
   }
 
   .privacy-options-grid {
     grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .forum-guide-notice-card {
+    padding: 16px;
+    gap: 12px;
   }
 }

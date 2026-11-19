@@ -4109,6 +4109,44 @@ async function api(request, response, url) {
         "Đặt lại mật khẩu thành công! Bạn có thể đăng nhập ngay bằng mật khẩu mới.",
     });
   }
+function getCommunityMembersPreview(commId, creatorId) {
+  try {
+    const creator = db.prepare(`
+      SELECT id, display_name as displayName, avatar, role
+      FROM users WHERE id = ?
+    `).get(creatorId) || null;
+
+    const recent = db.prepare(`
+      SELECT u.id, u.display_name as displayName, u.avatar, u.role
+      FROM community_members cm
+      JOIN users u ON u.id = cm.user_id
+      WHERE cm.community_id = ? AND cm.user_id != ?
+      ORDER BY cm.created_at DESC
+      LIMIT 8
+    `).all(commId, creatorId);
+
+    const total = db.prepare("SELECT count(*) as count FROM community_members WHERE community_id = ?").get(commId)?.count || 0;
+
+    return {
+      creator: creator ? {
+        id: creator.id,
+        displayName: creator.displayName,
+        avatar: creator.avatar || getAvatarEmoji(creator.displayName),
+        role: creator.role
+      } : null,
+      recent: recent.map(r => ({
+        id: r.id,
+        displayName: r.displayName,
+        avatar: r.avatar || getAvatarEmoji(r.displayName),
+        role: r.role
+      })),
+      total: Number(total)
+    };
+  } catch (e) {
+    return { creator: null, recent: [], total: 0 };
+  }
+}
+
   // --- HỆ THỐNG CỘNG ĐỒNG HỌC THUẬT (COMMUNITIES / SUBREDDITS) ---
   if (method === "GET" && pathName === "/api/communities") {
     const viewer = sessionFrom(request);
@@ -4134,7 +4172,7 @@ async function api(request, response, url) {
       slug: r.slug,
       description: r.description || "",
       coverImage: r.coverImage || "default",
-      avatar: r.avatar || "👥",
+      avatar: r.avatar || "📚",
       privacy: r.privacy,
       creatorId: r.creatorId,
       creatorName: r.creatorName,
@@ -4142,7 +4180,8 @@ async function api(request, response, url) {
       postsCount: Number(r.postsCount || 0),
       isMember: Boolean(r.userRole),
       userRole: r.userRole || null,
-      canView: r.privacy === "public" || Boolean(r.userRole) || isAdminOrTa
+      canView: r.privacy === "public" || Boolean(r.userRole) || isAdminOrTa,
+      membersPreview: getCommunityMembersPreview(r.id, r.creatorId)
     }));
 
     return json(response, 200, { communities: list });
@@ -4181,7 +4220,7 @@ async function api(request, response, url) {
         slug: comm.slug,
         description: comm.description || "",
         coverImage: comm.coverImage || "default",
-        avatar: comm.avatar || "👥",
+        avatar: comm.avatar || "📚",
         privacy: comm.privacy,
         creatorId: comm.creatorId,
         creatorName: comm.creatorName,
@@ -4189,7 +4228,8 @@ async function api(request, response, url) {
         postsCount: Number(comm.postsCount || 0),
         isMember,
         userRole: comm.userRole || null,
-        canView
+        canView,
+        membersPreview: getCommunityMembersPreview(comm.id, comm.creatorId)
       }
     });
   }
@@ -4925,7 +4965,7 @@ function getPeriodLeaderboard(period, currentUserId) {
       `)
       .all();
 
-    const topUsers = allContribStudents.slice(0, 5).map((u, idx) => ({
+    const topUsers = allContribStudents.slice(0, 10).map((u, idx) => ({
       id: u.id,
       displayName: u.displayName,
       avatar: u.avatar,
@@ -4973,7 +5013,7 @@ function getPeriodLeaderboard(period, currentUserId) {
       return a.id - b.id;
     });
 
-    const topStreakUsers = streakList.slice(0, 5).map((s, idx) => ({
+    const topStreakUsers = streakList.slice(0, 10).map((s, idx) => ({
       ...s,
       rank: idx + 1
     }));
@@ -5000,7 +5040,7 @@ function getPeriodLeaderboard(period, currentUserId) {
       ORDER BY totalScore DESC, firstCompletedAt ASC, u.id ASC
     `).all();
 
-    const topArenaUsers = arenaRows.slice(0, 5).map((row, idx) => ({
+    const topArenaUsers = arenaRows.slice(0, 10).map((row, idx) => ({
       id: row.userId,
       displayName: row.displayName,
       avatar: row.avatar,
@@ -5032,7 +5072,7 @@ function getPeriodLeaderboard(period, currentUserId) {
       `)
       .all();
 
-    const topLikesUsers = allLikesUsers.slice(0, 5).map((u, idx) => ({
+    const topLikesUsers = allLikesUsers.slice(0, 10).map((u, idx) => ({
       id: u.id,
       displayName: u.displayName,
       avatar: u.avatar,
@@ -5065,7 +5105,7 @@ function getPeriodLeaderboard(period, currentUserId) {
       `)
       .all();
 
-    const topStudyUsers = allStudyUsers.slice(0, 5).map((u, idx) => ({
+    const topStudyUsers = allStudyUsers.slice(0, 10).map((u, idx) => ({
       id: u.id,
       displayName: u.displayName,
       avatar: u.avatar,
