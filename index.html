@@ -28,7 +28,7 @@
         }
 
         var savedColor = localStorage.getItem("re_search_user_color_preference") || localStorage.getItem("re_search_user_theme_preference");
-        if (savedColor === "ruby" || savedColor === "mythic" || savedColor === "super" || savedColor === "diamond") {
+        if (savedColor === "ruby" || savedColor === "rosequartz" || savedColor === "mythic" || savedColor === "super" || savedColor === "diamond") {
           document.documentElement.setAttribute("data-user-theme", savedColor);
         }
       } catch (e) { }
@@ -46,7 +46,7 @@
   <script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js" defer></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" defer></script>
-  <link rel="stylesheet" href="styles.css?v=190" />
+  <link rel="stylesheet" href="styles.css?v=191" />
 </head>
 
 <body>
@@ -4856,7 +4856,23 @@
                 <span class="theme-lock-overlay" aria-hidden="true">🔒</span>
               </div>
               <div class="theme-card-info">
-                <strong class="theme-card-name">Đỏ Huyết sắc</strong>
+                <strong class="theme-card-name">Đỏ Huyết sắc (30d)</strong>
+              </div>
+              <span class="theme-card-status-badge">Chọn</span>
+            </div>
+
+            <!-- Thạch anh hồng (Rose Quartz - 50d) -->
+            <div class="theme-card" data-theme-val="rosequartz" data-min-streak="50"
+              onclick="requestThemeSwitch('color', 'rosequartz', 'Thạch anh hồng', 50)">
+              <div class="theme-demo-preview preview-rosequartz" aria-hidden="true">
+                <div class="demo-mock-bar"></div>
+                <div class="demo-mock-pill"></div>
+                <div class="demo-mock-content"><span class="mock-line"></span><span
+                    class="mock-btn mock-btn-rosequartz"></span></div>
+                <span class="theme-lock-overlay" aria-hidden="true">🔒</span>
+              </div>
+              <div class="theme-card-info">
+                <strong class="theme-card-name">Thạch anh hồng (50d)</strong>
               </div>
               <span class="theme-card-status-badge">Chọn</span>
             </div>
@@ -8302,7 +8318,7 @@
     </div>
   </div>
 
-  <script src="app.js?v=190" defer></script>
+  <script src="app.js?v=191" defer></script>
 </body>
 
 </html>

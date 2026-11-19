@@ -886,24 +886,36 @@ function getFlame2DSVG(tier = 0, size = 20, extraClass = '') {
   let diamondOverlay = '';
 
   if (t === 8) {
-    // Diamond facets and crystalline geometry
+    // Diamond facets and precision crystalline geometry (No cartoon stars)
     diamondOverlay = `
       <g class="flame-diamond-facets">
-        <polygon points="12,3.5 15.2,9.5 12,14.8 8.8,9.5" fill="url(#core_${id})" stroke="#ffffff" stroke-width="0.5" opacity="0.85"/>
-        <polygon points="12,14.8 15.5,18 12,21.8 8.5,18" fill="url(#mid_${id})" stroke="#ffffff" stroke-width="0.4" opacity="0.6"/>
-        <line x1="12" y1="3.5" x2="12" y2="21.8" stroke="#ffffff" stroke-width="0.6" opacity="0.9"/>
-        <line x1="8.8" y1="9.5" x2="15.2" y2="9.5" stroke="#ffffff" stroke-width="0.6" opacity="0.9"/>
+        <!-- Top Crown Facet -->
+        <polygon points="12,2 15.5,8 12,13.5 8.5,8" fill="url(#core_${id})" stroke="#ffffff" stroke-width="0.5" opacity="0.9"/>
+        <!-- Left Upper Facet -->
+        <polygon points="8.5,8 12,13.5 6,14.5 4,9.5" fill="url(#mid_${id})" stroke="#ffffff" stroke-width="0.35" opacity="0.65"/>
+        <!-- Right Upper Facet -->
+        <polygon points="15.5,8 20,9.5 18,14.5 12,13.5" fill="url(#mid_${id})" stroke="#ffffff" stroke-width="0.35" opacity="0.65"/>
+        <!-- Lower Pavilion Facet -->
+        <polygon points="12,13.5 16.5,18 12,22 7.5,18" fill="url(#outer_${id})" stroke="#ffffff" stroke-width="0.4" opacity="0.75"/>
+        <!-- Internal Reflection Cutlines -->
+        <line x1="12" y1="2" x2="12" y2="22" stroke="#ffffff" stroke-width="0.6" opacity="0.95"/>
+        <line x1="8.5" y1="8" x2="15.5" y2="8" stroke="#ffffff" stroke-width="0.6" opacity="0.95"/>
+        <line x1="6" y1="14.5" x2="18" y2="14.5" stroke="#ffffff" stroke-width="0.4" opacity="0.6"/>
       </g>
     `;
     embers = `
       <g class="flame-ember-group">
-        <path class="flame-sparkle flame-star sparkle-diamond star-1" d="M12 -3.5 L12.7 -1 L15.2 -1.2 L13.2 0.7 L14.4 2.8 L12 1.6 L9.6 2.8 L10.8 0.7 L8.8 -1.2 L11.3 -1 Z" fill="#ffffff"/>
-        <path class="flame-sparkle flame-star sparkle-diamond star-2" d="M21 6.5 L21.6 8 L23 7.8 L21.8 9 L22.5 10.5 L21 9.8 L19.5 10.5 L20.2 9 L19 7.8 L20.4 8 Z" fill="#ffffff"/>
-        <path class="flame-sparkle flame-star sparkle-diamond star-3" d="M3 7.5 L3.6 9 L5 8.8 L3.8 10 L4.5 11.5 L3 10.8 L1.5 11.5 L2.2 10 L1 8.8 L2.4 9 Z" fill="#ffffff"/>
-        <circle class="flame-ember flame-spark ember-1 flame-diamond-dust" cx="16.5" cy="1.5" r="0.85" fill="#ffffff"/>
-        <circle class="flame-ember flame-spark ember-2 flame-diamond-dust" cx="6" cy="3.5" r="0.75" fill="#ffffff"/>
-        <circle class="flame-ember flame-spark ember-3 flame-diamond-dust" cx="19.8" cy="4" r="0.7" fill="#ffffff"/>
-        <circle class="flame-ember flame-spark ember-4 flame-diamond-dust" cx="11.2" cy="-1.8" r="0.8" fill="#ffffff"/>
+        <!-- 4-point sharp prismatic needle glints (Trang sức cao cấp) -->
+        <path class="flame-sparkle flame-diamond-glint glint-1" d="M12 -3 L12.5 -0.8 L14.5 -0.3 L12.5 0.2 L12 2.4 L11.5 0.2 L9.5 -0.3 L11.5 -0.8 Z" fill="#ffffff"/>
+        <path class="flame-sparkle flame-diamond-glint glint-2" d="M21.5 6.5 L21.9 8 L23.4 8.4 L21.9 8.8 L21.5 10.3 L21.1 8.8 L19.6 8.4 L21.1 8 Z" fill="#ffffff"/>
+        <path class="flame-sparkle flame-diamond-glint glint-3" d="M2.5 7.5 L2.9 9 L4.4 9.4 L2.9 9.8 L2.5 11.3 L2.1 9.8 L0.6 9.4 L2.1 9 Z" fill="#ffffff"/>
+        <!-- Precision Diamond Shards (Rhombus facets) -->
+        <polygon class="flame-diamond-shard shard-1" points="16,1 17.8,2.8 16,4.6 14.2,2.8" fill="#ffffff" stroke="rgba(255,255,255,0.8)" stroke-width="0.3"/>
+        <polygon class="flame-diamond-shard shard-2" points="6.5,3 8,4.5 6.5,6 5,4.5" fill="#ffffff" stroke="rgba(255,255,255,0.8)" stroke-width="0.3"/>
+        <!-- Micro diamond crystal dust -->
+        <circle class="flame-diamond-dust dust-1" cx="19.5" cy="3.5" r="0.65" fill="#ffffff"/>
+        <circle class="flame-diamond-dust dust-2" cx="4.5" cy="4" r="0.55" fill="#ffffff"/>
+        <circle class="flame-diamond-dust dust-3" cx="11.2" cy="-1.8" r="0.6" fill="#ffffff"/>
       </g>
     `;
   } else if (t === 7) {
@@ -1440,7 +1452,7 @@ const STREAK_MILESTONES = [
     tier: 5,
     title: "Học giả uyên bác",
     color: "Thạch anh hồng Rose Quartz",
-    forumDesc: "Mở khoá giao diện thạch anh hồng tinh xảo, hào quang thanh tao!",
+    forumDesc: "Mở khoá giao diện Thạch anh hồng Rose Quartz độc quyền, màu tên rực rỡ và avatar đặc sắc",
     studyDesc: "Mở khoá các giao diện độc quyền"
   },
   {
@@ -1835,8 +1847,12 @@ function applySession(user) {
       effectiveTheme = "super";
     }
   } else if (userThemePref === "mythic") {
-    if (isAdminOrTa || streakTier >= 6 || userStreak >= 100 || userStreak >= 50) {
+    if (isAdminOrTa || streakTier >= 6 || userStreak >= 100) {
       effectiveTheme = "mythic";
+    }
+  } else if (userThemePref === "rosequartz") {
+    if (isAdminOrTa || streakTier >= 5 || userStreak >= 50) {
+      effectiveTheme = "rosequartz";
     }
   } else if (userThemePref === "ruby") {
     if (isAdminOrTa || streakTier >= 4 || userStreak >= 30) {

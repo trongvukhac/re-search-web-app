@@ -1256,27 +1256,36 @@ h1 em {
 }
 
 @keyframes roseQuartzBgShift {
-  0%, 100% {
+
+  0%,
+  100% {
     background-position: 0% 0%;
   }
+
   50% {
     background-position: 100% 100%;
   }
 }
 
 @keyframes superNeonShift {
-  0%, 100% {
+
+  0%,
+  100% {
     background-position: 0% 50%;
   }
+
   50% {
     background-position: 100% 50%;
   }
 }
 
 @keyframes diamondSheen {
-  0%, 100% {
+
+  0%,
+  100% {
     background-position: 0% 20%;
   }
+
   50% {
     background-position: 100% 80%;
   }
@@ -1542,7 +1551,7 @@ div.user-name-tier-7,
   box-shadow: none;
 }
 
-/* Tier 8: Học giả lưu danh (365d) - Pure Celestial Diamond Luxury */
+/* Tier 8: Học giả lưu danh (365d) - Pure Celestial Diamond Luxury (High-Contrast Platinum Titanium) */
 .user-name-tier-8,
 b.user-name-tier-8,
 span.user-name-tier-8,
@@ -1559,13 +1568,15 @@ div.user-name-tier-8,
 .account-header h1.user-name-tier-8,
 .document-footer span.user-name-tier-8 {
   background-image: linear-gradient(110deg,
-      #94a3b8 0%,
-      #cbd5e1 20%,
-      #ffffff 45%,
-      #e0f2fe 55%,
-      #cbd5e1 80%,
-      #94a3b8 100%);
-  background-size: 250% 100%;
+      #0f172a 0%,
+      #334155 18%,
+      #0f172a 32%,
+      #94a3b8 46%,
+      #f8fafc 52%,
+      #64748b 60%,
+      #0f172a 75%,
+      #334155 100%);
+  background-size: 200% 100%;
   background-position: 0% 50%;
   background-repeat: repeat-x;
   -webkit-background-clip: text;
@@ -1573,8 +1584,8 @@ div.user-name-tier-8,
   -webkit-text-fill-color: transparent;
   color: transparent;
   font-weight: 800;
-  animation: diamondShimmer 2.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
-  -webkit-animation: diamondShimmer 2.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  animation: diamondShimmer 4s ease-in-out infinite;
+  -webkit-animation: diamondShimmer 4s ease-in-out infinite;
   will-change: background-position;
   transform: translateZ(0);
   -webkit-transform: translateZ(0);
@@ -1582,8 +1593,8 @@ div.user-name-tier-8,
   -webkit-backface-visibility: hidden;
   display: inline-block;
   vertical-align: middle;
-  text-shadow: 0 0 10px rgba(255, 255, 255, 0.45);
-  filter: drop-shadow(0 0 1px rgba(15, 23, 42, 0.6));
+  text-shadow: none;
+  filter: drop-shadow(0 1px 1px rgba(15, 23, 42, 0.22));
   box-shadow: none;
 }
 
@@ -1593,16 +1604,35 @@ body.dark-theme span.user-name-tier-8,
 body.dark-theme strong.user-name-tier-8,
 body.dark-theme h1.user-name-tier-8,
 body.dark-theme div.user-name-tier-8 {
-  filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.65)) drop-shadow(0 0 14px rgba(224, 242, 254, 0.4));
-  text-shadow: 0 0 12px rgba(255, 255, 255, 0.65);
+  background-image: linear-gradient(110deg,
+      #94a3b8 0%,
+      #cbd5e1 20%,
+      #ffffff 48%,
+      #e0f2fe 52%,
+      #cbd5e1 75%,
+      #94a3b8 100%) !important;
+  background-size: 200% 100% !important;
+  -webkit-background-clip: text !important;
+  background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  color: transparent !important;
+  filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.75)) drop-shadow(0 0 14px rgba(224, 242, 254, 0.45)) !important;
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.5) !important;
+  animation: diamondShimmer 4s ease-in-out infinite !important;
+  -webkit-animation: diamondShimmer 4s ease-in-out infinite !important;
 }
 
 @keyframes diamondShimmer {
   0% {
     background-position: 0% 50%;
   }
+
+  50% {
+    background-position: 100% 50%;
+  }
+
   100% {
-    background-position: 250% 50%;
+    background-position: 0% 50%;
   }
 }
 
@@ -1610,8 +1640,13 @@ body.dark-theme div.user-name-tier-8 {
   0% {
     background-position: 0% 50%;
   }
+
+  50% {
+    background-position: 100% 50%;
+  }
+
   100% {
-    background-position: 250% 50%;
+    background-position: 0% 50%;
   }
 }
 
@@ -1620,8 +1655,12 @@ body.dark-theme div.user-name-tier-8 {
     background-position: 0% 50%;
   }
 
+  50% {
+    background-position: 100% 50%;
+  }
+
   100% {
-    background-position: 200% 50%;
+    background-position: 0% 50%;
   }
 }
 
@@ -1630,8 +1669,12 @@ body.dark-theme div.user-name-tier-8 {
     background-position: 0% 50%;
   }
 
+  50% {
+    background-position: 100% 50%;
+  }
+
   100% {
-    background-position: 200% 50%;
+    background-position: 0% 50%;
   }
 }
 
@@ -2158,19 +2201,62 @@ body.dark-theme div.user-name-tier-8 {
 }
 
 /* ==========================================================================
+   TIER 5: ROSE QUARTZ THEME (50D - HỌC GIẢ UYÊN BÁC)
+   #57223B -> #8A3157 -> #C45B83 -> #E8A9C1
+   ========================================================================== */
+[data-user-theme="rosequartz"] {
+  --primary: #8a3157;
+  --primary-soft: #fde8ef;
+  --accent: #c45b83;
+  --green: #8a3157;
+  --ink: #3b1323;
+  --ink-deep: #240a15;
+  --paper: #fff9fb;
+  --cream: #fcedf2;
+  --line: #f7d3e0;
+  --sage: #f2bacf;
+  --sage-2: #fcedf2;
+  --muted: #8a3157;
+}
+
+[data-user-theme="rosequartz"] body {
+  background: #fff9fb;
+  color: #3b1323;
+}
+
+[data-user-theme="rosequartz"] .button-primary {
+  background: linear-gradient(135deg, #57223b 0%, #8a3157 50%, #c45b83 100%) !important;
+  color: #ffffff !important;
+  font-weight: 700 !important;
+  box-shadow: 0 4px 16px rgba(138, 49, 87, 0.3) !important;
+}
+
+[data-user-theme="rosequartz"] .brand-colon {
+  color: #c45b83 !important;
+}
+
+[data-user-theme="rosequartz"] .streak-journey-header {
+  background: linear-gradient(135deg, #3d1425 0%, #5c1e3a 50%, #8a3157 100%) !important;
+}
+
+[data-user-theme="rosequartz"] .tab.active:after {
+  background: #8a3157 !important;
+}
+
+/* ==========================================================================
    TIER 8: PURE CELESTIAL DIAMOND LUXURY THEME (365D - HỌC GIẢ LƯU DANH)
    ========================================================================== */
 [data-user-theme="diamond"] {
   --primary: #0f172a;
   --primary-soft: #f1f5f9;
-  --accent: #38bdf8;
-  --green: #475569;
+  --accent: #0284c7;
+  --green: #0f172a;
   --ink: #0f172a;
   --ink-deep: #020617;
-  --paper: #f8fafc;
-  --cream: #f1f5f9;
-  --line: #e2e8f0;
-  --sage: #cbd5e1;
+  --paper: #ffffff;
+  --cream: #f8fafc;
+  --line: #cbd5e1;
+  --sage: #94a3b8;
   --sage-2: #e2e8f0;
   --muted: #64748b;
 }
@@ -2180,20 +2266,47 @@ body.dark-theme div.user-name-tier-8 {
   color: #0f172a;
 }
 
+[data-user-theme="diamond"] .site-header {
+  background: rgba(255, 255, 255, 0.88) !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+  border-bottom: 1px solid rgba(203, 213, 225, 0.8) !important;
+  box-shadow: 0 4px 20px rgba(15, 23, 42, 0.05) !important;
+}
+
 [data-user-theme="diamond"] .button-primary {
   background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%) !important;
   color: #ffffff !important;
   font-weight: 800 !important;
-  box-shadow: 0 4px 18px rgba(15, 23, 42, 0.35), 0 0 0 1px rgba(255, 255, 255, 0.15) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  box-shadow: 0 4px 18px rgba(15, 23, 42, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.25) !important;
 }
 
 [data-user-theme="diamond"] .brand-colon {
-  color: #38bdf8 !important;
+  color: #0f172a !important;
 }
 
 [data-user-theme="diamond"] .streak-journey-header {
   background: radial-gradient(circle at 50% 0%, #1e293b 0%, #090d16 80%) !important;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.15) !important;
+}
+
+[data-user-theme="diamond"] .tab.active:after {
+  background: #0f172a !important;
+}
+
+[data-user-theme="diamond"] .topics-card,
+[data-user-theme="diamond"] .mini-card,
+[data-user-theme="diamond"] .active-card,
+[data-user-theme="diamond"] .post-card,
+[data-user-theme="diamond"] .search-panel {
+  border: 1px solid rgba(148, 163, 184, 0.35) !important;
+  box-shadow: 0 4px 18px rgba(15, 23, 42, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
+}
+
+[data-user-theme="diamond"] .post-card:hover {
+  border-color: rgba(71, 85, 105, 0.5) !important;
+  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.08), inset 0 1px 0 #ffffff !important;
 }
 
 /* Flame SVG & Realistic Multi-directional Animations */
@@ -2315,9 +2428,39 @@ body.dark-theme div.user-name-tier-8 {
   transform-origin: center;
 }
 
-.flame-sparkle.sparkle-diamond {
-  animation: sparkleDiamond 1.5s ease-in-out infinite;
+/* Tier 8: High-Jewelry Diamond Glints, Shards & Crystal Dust (No cartoon stars) */
+.flame-diamond-glint {
+  transform-box: fill-box;
   transform-origin: center;
+  animation: diamondGlintTwinkle 2.4s ease-in-out infinite;
+  filter: drop-shadow(0 0 2px #ffffff) drop-shadow(0 0 5px rgba(224, 242, 254, 0.75));
+}
+
+.flame-diamond-glint.glint-1 {
+  animation-delay: 0s;
+}
+
+.flame-diamond-glint.glint-2 {
+  animation-delay: 0.8s;
+}
+
+.flame-diamond-glint.glint-3 {
+  animation-delay: 1.6s;
+}
+
+.flame-diamond-shard {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: diamondShardFloat 3.2s ease-in-out infinite;
+  filter: drop-shadow(0 0 3px rgba(255, 255, 255, 0.85));
+}
+
+.flame-diamond-shard.shard-1 {
+  animation-delay: 0.4s;
+}
+
+.flame-diamond-shard.shard-2 {
+  animation-delay: 1.8s;
 }
 
 .flame-diamond-dust {
@@ -2329,23 +2472,64 @@ body.dark-theme div.user-name-tier-8 {
 }
 
 @keyframes sparkleSuper {
-  0% { transform: scale(0.7) rotate(0deg); opacity: 0.6; }
-  100% { transform: scale(1.25) rotate(45deg); opacity: 1; }
+  0% {
+    transform: scale(0.7) rotate(0deg);
+    opacity: 0.6;
+  }
+
+  100% {
+    transform: scale(1.25) rotate(45deg);
+    opacity: 1;
+  }
 }
 
-@keyframes sparkleDiamond {
-  0%, 100% { transform: scale(0.6) rotate(0deg); opacity: 0.5; }
-  50% { transform: scale(1.3) rotate(90deg); opacity: 1; filter: drop-shadow(0 0 3px #ffffff); }
+@keyframes diamondGlintTwinkle {
+  0%,
+  100% {
+    transform: scale(0.6) rotate(0deg);
+    opacity: 0.35;
+  }
+
+  50% {
+    transform: scale(1.3) rotate(45deg);
+    opacity: 1;
+  }
+}
+
+@keyframes diamondShardFloat {
+  0%,
+  100% {
+    transform: translateY(0px) rotate(0deg);
+    opacity: 0.65;
+  }
+
+  50% {
+    transform: translateY(-2px) rotate(15deg);
+    opacity: 1;
+  }
 }
 
 @keyframes diamondDustFloat {
-  0% { transform: translateY(0) scale(0.8); opacity: 0.4; }
-  100% { transform: translateY(-3px) scale(1.15); opacity: 1; }
+  0% {
+    transform: translateY(0) scale(0.8);
+    opacity: 0.4;
+  }
+
+  100% {
+    transform: translateY(-3px) scale(1.15);
+    opacity: 1;
+  }
 }
 
 @keyframes diamondFacetPulse {
-  0% { opacity: 0.75; }
-  100% { opacity: 1; filter: drop-shadow(0 0 2px rgba(255, 255, 255, 0.8)); }
+  0% {
+    opacity: 0.75;
+  }
+
+  100% {
+    opacity: 1;
+    filter: drop-shadow(0 0 2px rgba(255, 255, 255, 0.8));
+  }
 }
 
 /* Tier Glows (Crisp vector rendering without blurry halo or background) */
@@ -2658,20 +2842,154 @@ body.dark-theme div.user-name-tier-8 {
   color: #ffc9c9;
 }
 
-/* Tier 5 (50+d): Mythic Purple + Red Gradient */
+/* Tier 5 (50-99d): Học giả uyên bác - Rose Quartz */
 .contribution-card[data-streak-tier="5"] {
-  background: linear-gradient(135deg, #280838 0%, #4a0e4e 50%, #68112a 100%);
-  border-color: rgba(247, 131, 172, 0.65);
-  box-shadow: 0 16px 40px rgba(112, 72, 232, 0.45), 0 0 20px rgba(255, 107, 107, 0.3);
+  background: linear-gradient(135deg, #3d1425 0%, #5c1e3a 45%, #8a3157 80%, #b84373 100%);
+  border-color: rgba(232, 169, 193, 0.45);
+  box-shadow: 0 16px 40px rgba(138, 49, 87, 0.35);
 }
 
-.contribution-card[data-streak-tier="5"] .card-topline {
-  color: #fcc2d7;
-}
-
+.contribution-card[data-streak-tier="5"] .card-topline,
 .contribution-card[data-streak-tier="5"] .streak-tier-label {
-  color: #fcc2d7;
+  color: #fde8ef;
+  text-shadow: 0 0 10px rgba(196, 91, 131, 0.6);
+}
+
+/* Tier 6 (100-199d): Nhà kiến tạo tri thức - Mythic Prism (old tier 5) */
+.contribution-card[data-streak-tier="6"] {
+  background: linear-gradient(135deg, #280838 0%, #4a0e4e 45%, #7048e8 75%, #a61e4d 100%);
+  border-color: rgba(247, 131, 172, 0.65);
+  box-shadow: 0 16px 40px rgba(112, 72, 232, 0.45), 0 0 20px rgba(255, 212, 59, 0.3);
+}
+
+.contribution-card[data-streak-tier="6"] .card-topline,
+.contribution-card[data-streak-tier="6"] .streak-tier-label {
+  color: #ffe066;
   text-shadow: 0 0 8px rgba(247, 131, 172, 0.6);
+}
+
+/* Tier 7 (200-364d): Bậc thầy học thuật - Super Duolingo Neon */
+.contribution-card[data-streak-tier="7"] {
+  background: linear-gradient(135deg, #070926 0%, #0d1238 35%, #1e1b4b 70%, #2e0854 100%);
+  border: 1.5px solid rgba(0, 210, 255, 0.55);
+  box-shadow: 0 16px 44px rgba(99, 102, 241, 0.45), 0 0 25px rgba(0, 245, 155, 0.3);
+}
+
+.contribution-card[data-streak-tier="7"] .card-topline {
+  color: #00f59b;
+  text-shadow: 0 0 10px rgba(0, 245, 155, 0.7);
+}
+
+.contribution-card[data-streak-tier="7"] .streak-tier-label {
+  color: #00d2ff;
+  text-shadow: 0 0 12px rgba(0, 210, 255, 0.75);
+}
+
+/* Tier 8 (365+d): Học giả lưu danh - Celestial Diamond Luxury (Concept Mảnh thủy tinh / Low-poly faceted glass shards) */
+.contribution-card[data-streak-tier="8"] {
+  background-color: #f1f5f9;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 240' preserveAspectRatio='none'%3E%3Crect width='600' height='240' fill='%23f1f5f9'/%3E%3Cpolygon points='0,0 130,0 80,75' fill='%23ffffff' opacity='0.85'/%3E%3Cpolygon points='130,0 270,0 190,80' fill='%23e2e8f0' opacity='0.75'/%3E%3Cpolygon points='270,0 430,0 350,65' fill='%23cbd5e1' opacity='0.6'/%3E%3Cpolygon points='430,0 600,0 520,85' fill='%2394a3b8' opacity='0.35'/%3E%3Cpolygon points='0,0 80,75 0,140' fill='%23f8fafc' opacity='0.9'/%3E%3Cpolygon points='80,75 190,80 140,165' fill='%23e0e7ff' opacity='0.4'/%3E%3Cpolygon points='190,80 350,65 280,150' fill='%23ffffff' opacity='0.85'/%3E%3Cpolygon points='350,65 520,85 450,160' fill='%23e2e8f0' opacity='0.75'/%3E%3Cpolygon points='520,85 600,0 600,135' fill='%23cbd5e1' opacity='0.6'/%3E%3Cpolygon points='0,140 140,165 60,240' fill='%2394a3b8' opacity='0.35'/%3E%3Cpolygon points='140,165 280,150 220,240' fill='%23f8fafc' opacity='0.9'/%3E%3Cpolygon points='280,150 450,160 380,240' fill='%23e0e7ff' opacity='0.4'/%3E%3Cpolygon points='450,160 600,135 530,240' fill='%23ffffff' opacity='0.85'/%3E%3Cpolygon points='0,140 60,240 0,240' fill='%23e2e8f0' opacity='0.75'/%3E%3Cpolygon points='60,240 220,240 140,165' fill='%23cbd5e1' opacity='0.6'/%3E%3Cpolygon points='220,240 380,240 280,150' fill='%2394a3b8' opacity='0.35'/%3E%3Cpolygon points='380,240 530,240 450,160' fill='%23f8fafc' opacity='0.9'/%3E%3Cpolygon points='530,240 600,240 600,135' fill='%23e0e7ff' opacity='0.4'/%3E%3Cpath d='M0,0 L80,75 L190,80 L350,65 L520,85 L600,0 M80,75 L140,165 L280,150 L450,160 L520,85 M0,140 L140,165 L220,240 M280,150 L380,240 M450,160 L530,240 M600,135 L450,160' stroke='%23ffffff' stroke-width='0.8' opacity='0.7' fill='none'/%3E%3C/svg%3E");
+  background-size: cover;
+  background-position: center;
+  border: 1.5px solid rgba(148, 163, 184, 0.7);
+  box-shadow: 0 18px 44px rgba(15, 23, 42, 0.16), 0 0 24px rgba(255, 255, 255, 0.95);
+  color: #0f172a;
+}
+
+.contribution-card[data-streak-tier="8"]::after {
+  content: "";
+  position: absolute;
+  inset: -100% -50%;
+  background: linear-gradient(115deg, transparent 40%, rgba(255, 255, 255, 0.4) 50%, transparent 60%);
+  pointer-events: none;
+  animation: diamondCardSheenSweep 6s ease-in-out infinite;
+  z-index: 1;
+}
+
+@keyframes diamondCardSheenSweep {
+  0%, 100% {
+    transform: translateX(-40%) translateY(-20%);
+    opacity: 0.2;
+  }
+  50% {
+    transform: translateX(40%) translateY(20%);
+    opacity: 0.8;
+  }
+}
+
+.contribution-card[data-streak-tier="8"] .card-topline {
+  color: #0f172a !important;
+  font-weight: 800;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.85);
+}
+
+.contribution-card[data-streak-tier="8"] .streak-tier-label {
+  color: #0f172a !important;
+  font-weight: 900;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+.contribution-card[data-streak-tier="8"] .streak-number {
+  color: #0f172a !important;
+  font-weight: 900;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+
+.contribution-card[data-streak-tier="8"] .streak-number span {
+  color: #475569 !important;
+}
+
+.contribution-card[data-streak-tier="8"] .streak-journey-btn,
+.contribution-card[data-streak-tier="8"] .streak-shield-badge {
+  background: rgba(255, 255, 255, 0.85) !important;
+  color: #0f172a !important;
+  border-color: rgba(148, 163, 184, 0.6) !important;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08), inset 0 1px 0 #ffffff !important;
+}
+
+.contribution-card[data-streak-tier="8"] .streak-shield-badge .shield-icon {
+  color: #0f172a !important;
+}
+
+body.dark-theme .contribution-card[data-streak-tier="8"] {
+  background-color: #090d16;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 240' preserveAspectRatio='none'%3E%3Crect width='600' height='240' fill='%23090d16'/%3E%3Cpolygon points='0,0 130,0 80,75' fill='%231e293b' opacity='0.85'/%3E%3Cpolygon points='130,0 270,0 190,80' fill='%230f172a' opacity='0.95'/%3E%3Cpolygon points='270,0 430,0 350,65' fill='%23334155' opacity='0.65'/%3E%3Cpolygon points='430,0 600,0 520,85' fill='%23475569' opacity='0.45'/%3E%3Cpolygon points='0,0 80,75 0,140' fill='%23141c2e' opacity='0.9'/%3E%3Cpolygon points='80,75 190,80 140,165' fill='%2325334a' opacity='0.7'/%3E%3Cpolygon points='190,80 350,65 280,150' fill='%231e293b' opacity='0.85'/%3E%3Cpolygon points='350,65 520,85 450,160' fill='%230f172a' opacity='0.95'/%3E%3Cpolygon points='520,85 600,0 600,135' fill='%23334155' opacity='0.65'/%3E%3Cpolygon points='0,140 140,165 60,240' fill='%23475569' opacity='0.45'/%3E%3Cpolygon points='140,165 280,150 220,240' fill='%23141c2e' opacity='0.9'/%3E%3Cpolygon points='280,150 450,160 380,240' fill='%2325334a' opacity='0.7'/%3E%3Cpolygon points='450,160 600,135 530,240' fill='%231e293b' opacity='0.85'/%3E%3Cpolygon points='0,140 60,240 0,240' fill='%230f172a' opacity='0.95'/%3E%3Cpolygon points='60,240 220,240 140,165' fill='%23334155' opacity='0.65'/%3E%3Cpolygon points='220,240 380,240 280,150' fill='%23475569' opacity='0.45'/%3E%3Cpolygon points='380,240 530,240 450,160' fill='%23141c2e' opacity='0.9'/%3E%3Cpolygon points='530,240 600,240 600,135' fill='%2325334a' opacity='0.7'/%3E%3Cpath d='M0,0 L80,75 L190,80 L350,65 L520,85 L600,0 M80,75 L140,165 L280,150 L450,160 L520,85 M0,140 L140,165 L220,240 M280,150 L380,240 M450,160 L530,240 M600,135 L450,160' stroke='%2394a3b8' stroke-width='0.8' opacity='0.45' fill='none'/%3E%3C/svg%3E");
+  background-size: cover;
+  background-position: center;
+  border: 1.5px solid rgba(255, 255, 255, 0.35);
+  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.8), 0 0 28px rgba(255, 255, 255, 0.22);
+  color: #ffffff;
+}
+
+body.dark-theme .contribution-card[data-streak-tier="8"] .card-topline {
+  color: #e2e8f0 !important;
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.6);
+}
+
+body.dark-theme .contribution-card[data-streak-tier="8"] .streak-tier-label {
+  color: #ffffff !important;
+  text-shadow: 0 0 14px rgba(255, 255, 255, 0.85);
+}
+
+body.dark-theme .contribution-card[data-streak-tier="8"] .streak-number {
+  color: #ffffff !important;
+  text-shadow: 0 0 16px rgba(255, 255, 255, 0.7);
+}
+
+body.dark-theme .contribution-card[data-streak-tier="8"] .streak-number span {
+  color: #cbd5e1 !important;
+}
+
+body.dark-theme .contribution-card[data-streak-tier="8"] .streak-journey-btn,
+body.dark-theme .contribution-card[data-streak-tier="8"] .streak-shield-badge {
+  background: rgba(15, 23, 42, 0.75) !important;
+  color: #ffffff !important;
+  border-color: rgba(255, 255, 255, 0.3) !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
+}
+
+body.dark-theme .contribution-card[data-streak-tier="8"] .streak-shield-badge .shield-icon {
+  color: #ffffff !important;
 }
 
 .card-topline {
@@ -21141,17 +21459,44 @@ body.dark-theme .namecard-canvas .namecard-display-name.user-name-tier-7 {
 
 .namecard-display-name.user-name-tier-8,
 .namecard-modal .namecard-display-name.user-name-tier-8,
-.namecard-canvas .namecard-display-name.user-name-tier-8,
+.namecard-canvas .namecard-display-name.user-name-tier-8 {
+  background-image: linear-gradient(110deg,
+      #0f172a 0%,
+      #334155 18%,
+      #0f172a 32%,
+      #94a3b8 46%,
+      #f8fafc 52%,
+      #64748b 60%,
+      #0f172a 75%,
+      #334155 100%) !important;
+  background-size: 200% 100% !important;
+  background-repeat: repeat-x !important;
+  -webkit-background-clip: text !important;
+  background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  color: transparent !important;
+  font-weight: 800;
+  display: inline-block !important;
+  vertical-align: middle;
+  text-shadow: none !important;
+  filter: drop-shadow(0 1px 1px rgba(15, 23, 42, 0.22)) !important;
+  animation: diamondShimmer 4s ease-in-out infinite !important;
+  -webkit-animation: diamondShimmer 4s ease-in-out infinite !important;
+  will-change: background-position;
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+}
+
 body.dark-theme .namecard-modal .namecard-display-name.user-name-tier-8,
 body.dark-theme .namecard-canvas .namecard-display-name.user-name-tier-8 {
   background-image: linear-gradient(110deg,
       #94a3b8 0%,
       #cbd5e1 20%,
-      #ffffff 45%,
-      #e0f2fe 55%,
-      #cbd5e1 80%,
+      #ffffff 48%,
+      #e0f2fe 52%,
+      #cbd5e1 75%,
       #94a3b8 100%) !important;
-  background-size: 250% 100% !important;
+  background-size: 200% 100% !important;
   background-repeat: repeat-x !important;
   -webkit-background-clip: text !important;
   background-clip: text !important;
@@ -21161,9 +21506,9 @@ body.dark-theme .namecard-canvas .namecard-display-name.user-name-tier-8 {
   display: inline-block !important;
   vertical-align: middle;
   text-shadow: 0 0 12px rgba(255, 255, 255, 0.65) !important;
-  filter: drop-shadow(0 0 4px rgba(255, 255, 255, 0.5)) !important;
-  animation: diamondShimmer 2.8s cubic-bezier(0.4, 0, 0.2, 1) infinite !important;
-  -webkit-animation: diamondShimmer 2.8s cubic-bezier(0.4, 0, 0.2, 1) infinite !important;
+  filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.65)) !important;
+  animation: diamondShimmer 4s ease-in-out infinite !important;
+  -webkit-animation: diamondShimmer 4s ease-in-out infinite !important;
   will-change: background-position;
   transform: translateZ(0);
   -webkit-transform: translateZ(0);
@@ -22721,8 +23066,37 @@ body.dark-theme .confirm-modal-desc {
   fill: #dc2626;
 }
 
-/* Tier 5 (50+ days): Tim màu động (Dynamic Animated Gradient & Glowing Pulse) */
+/* Tier 5 (50-99d): Rose Quartz */
 .namecard-like-btn[data-streak-tier="5"] {
+  background: linear-gradient(135deg, rgba(87, 34, 59, 0.12) 0%, rgba(138, 49, 87, 0.16) 50%, rgba(196, 91, 131, 0.2) 100%);
+  color: #8a3157;
+  border-width: 1.5px;
+  border-style: solid;
+  border-color: #c45b83;
+  box-shadow: 0 0 10px rgba(196, 91, 131, 0.25);
+}
+
+.namecard-like-btn[data-streak-tier="5"] .nc-heart-icon {
+  fill: #c45b83;
+}
+
+.namecard-like-btn[data-streak-tier="5"]:hover {
+  box-shadow: 0 0 14px rgba(196, 91, 131, 0.4);
+}
+
+.namecard-like-btn[data-streak-tier="5"].has-liked {
+  background: linear-gradient(135deg, #57223b 0%, #8a3157 50%, #c45b83 100%);
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.7);
+  box-shadow: 0 0 14px rgba(196, 91, 131, 0.45);
+}
+
+.namecard-like-btn[data-streak-tier="5"].has-liked .nc-heart-icon {
+  fill: #ffffff;
+}
+
+/* Tier 6 (100-199d): Mythic Prism */
+.namecard-like-btn[data-streak-tier="6"] {
   background: linear-gradient(135deg, rgba(95, 61, 196, 0.15) 0%, rgba(166, 30, 77, 0.18) 35%, rgba(224, 49, 49, 0.18) 70%, rgba(247, 131, 172, 0.2) 100%);
   background-size: 300% 300%;
   animation: dynamicHeartColorShift 4s ease-in-out infinite alternate;
@@ -22733,16 +23107,16 @@ body.dark-theme .confirm-modal-desc {
   box-shadow: 0 0 10px rgba(224, 49, 49, 0.25);
 }
 
-.namecard-like-btn[data-streak-tier="5"] .nc-heart-icon {
+.namecard-like-btn[data-streak-tier="6"] .nc-heart-icon {
   animation: dynamicHeartIconPulse 2.5s ease-in-out infinite;
   fill: #e03131;
 }
 
-.namecard-like-btn[data-streak-tier="5"]:hover {
+.namecard-like-btn[data-streak-tier="6"]:hover {
   box-shadow: 0 0 16px rgba(224, 49, 49, 0.45);
 }
 
-.namecard-like-btn[data-streak-tier="5"].has-liked {
+.namecard-like-btn[data-streak-tier="6"].has-liked {
   background: linear-gradient(135deg, #5f3dc4 0%, #a61e4d 35%, #e03131 70%, #f783ac 100%);
   background-size: 300% 300%;
   animation: dynamicHeartColorShift 4s ease-in-out infinite alternate;
@@ -22751,9 +23125,67 @@ body.dark-theme .confirm-modal-desc {
   box-shadow: 0 0 14px rgba(224, 49, 49, 0.45);
 }
 
-.namecard-like-btn[data-streak-tier="5"].has-liked .nc-heart-icon {
+.namecard-like-btn[data-streak-tier="6"].has-liked .nc-heart-icon {
   fill: #ffffff;
   animation: dynamicHeartIconPulse 2.5s ease-in-out infinite;
+}
+
+/* Tier 7 (200-364d): Super Duolingo Neon */
+.namecard-like-btn[data-streak-tier="7"] {
+  background: linear-gradient(135deg, rgba(0, 245, 155, 0.15) 0%, rgba(0, 210, 255, 0.15) 50%, rgba(236, 72, 153, 0.15) 100%);
+  color: #00cec9;
+  border-width: 1.5px;
+  border-style: solid;
+  border-color: #00cec9;
+  box-shadow: 0 0 12px rgba(0, 210, 255, 0.35);
+}
+
+.namecard-like-btn[data-streak-tier="7"] .nc-heart-icon {
+  fill: #00cec9;
+}
+
+.namecard-like-btn[data-streak-tier="7"]:hover {
+  box-shadow: 0 0 18px rgba(0, 210, 255, 0.55);
+}
+
+.namecard-like-btn[data-streak-tier="7"].has-liked {
+  background: linear-gradient(135deg, #00f59b 0%, #00d2ff 45%, #6366f1 75%, #ec4899 100%);
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.8);
+  box-shadow: 0 0 18px rgba(0, 210, 255, 0.5);
+}
+
+.namecard-like-btn[data-streak-tier="7"].has-liked .nc-heart-icon {
+  fill: #ffffff;
+}
+
+/* Tier 8 (365+d): Celestial Diamond */
+.namecard-like-btn[data-streak-tier="8"] {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(226, 232, 240, 0.9) 50%, rgba(203, 213, 225, 0.9) 100%);
+  color: #0f172a;
+  border-width: 1.5px;
+  border-style: solid;
+  border-color: rgba(148, 163, 184, 0.8);
+  box-shadow: 0 0 14px rgba(15, 23, 42, 0.18), inset 0 1px 0 #ffffff;
+}
+
+.namecard-like-btn[data-streak-tier="8"] .nc-heart-icon {
+  fill: #0f172a;
+}
+
+.namecard-like-btn[data-streak-tier="8"]:hover {
+  box-shadow: 0 0 20px rgba(15, 23, 42, 0.3);
+}
+
+.namecard-like-btn[data-streak-tier="8"].has-liked {
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 0 18px rgba(15, 23, 42, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+}
+
+.namecard-like-btn[data-streak-tier="8"].has-liked .nc-heart-icon {
+  fill: #ffffff;
 }
 
 @keyframes dynamicHeartColorShift {
@@ -22843,6 +23275,16 @@ body.dark-theme .namecard-like-btn[data-streak-tier="4"].has-liked .nc-heart-ico
 }
 
 body.dark-theme .namecard-like-btn[data-streak-tier="5"] {
+  color: #f472b6;
+  border-color: rgba(244, 114, 182, 0.45);
+  background: rgba(244, 114, 182, 0.16);
+}
+
+body.dark-theme .namecard-like-btn[data-streak-tier="5"].has-liked .nc-heart-icon {
+  fill: #f472b6;
+}
+
+body.dark-theme .namecard-like-btn[data-streak-tier="6"] {
   background: linear-gradient(135deg, rgba(95, 61, 196, 0.25) 0%, rgba(166, 30, 77, 0.3) 35%, rgba(224, 49, 49, 0.3) 70%, rgba(247, 131, 172, 0.35) 100%);
   background-size: 300% 300%;
   animation: dynamicHeartColorShift 4s ease-in-out infinite alternate;
@@ -22851,12 +23293,12 @@ body.dark-theme .namecard-like-btn[data-streak-tier="5"] {
   box-shadow: 0 0 12px rgba(224, 49, 49, 0.4);
 }
 
-body.dark-theme .namecard-like-btn[data-streak-tier="5"] .nc-heart-icon {
+body.dark-theme .namecard-like-btn[data-streak-tier="6"] .nc-heart-icon {
   fill: #ff8787;
   animation: dynamicHeartIconPulse 2.5s ease-in-out infinite;
 }
 
-body.dark-theme .namecard-like-btn[data-streak-tier="5"].has-liked {
+body.dark-theme .namecard-like-btn[data-streak-tier="6"].has-liked {
   background: linear-gradient(135deg, #5f3dc4 0%, #a61e4d 35%, #e03131 70%, #f783ac 100%);
   background-size: 300% 300%;
   animation: dynamicHeartColorShift 4s ease-in-out infinite alternate;
@@ -22865,9 +23307,49 @@ body.dark-theme .namecard-like-btn[data-streak-tier="5"].has-liked {
   box-shadow: 0 0 16px rgba(247, 131, 172, 0.5);
 }
 
-body.dark-theme .namecard-like-btn[data-streak-tier="5"].has-liked .nc-heart-icon {
+body.dark-theme .namecard-like-btn[data-streak-tier="6"].has-liked .nc-heart-icon {
   fill: #ffffff;
   animation: dynamicHeartIconPulse 2.5s ease-in-out infinite;
+}
+
+body.dark-theme .namecard-like-btn[data-streak-tier="7"] {
+  color: #00d2ff;
+  border-color: rgba(0, 210, 255, 0.5);
+  background: rgba(0, 210, 255, 0.16);
+  box-shadow: 0 0 12px rgba(0, 210, 255, 0.3);
+}
+
+body.dark-theme .namecard-like-btn[data-streak-tier="7"].has-liked {
+  background: linear-gradient(135deg, #00f59b 0%, #00d2ff 45%, #6366f1 75%, #ec4899 100%);
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.85);
+  box-shadow: 0 0 18px rgba(0, 210, 255, 0.5);
+}
+
+body.dark-theme .namecard-like-btn[data-streak-tier="7"].has-liked .nc-heart-icon {
+  fill: #ffffff;
+}
+
+body.dark-theme .namecard-like-btn[data-streak-tier="8"] {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.15) 0%, rgba(148, 163, 184, 0.2) 100%);
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.5);
+  box-shadow: 0 0 16px rgba(255, 255, 255, 0.35);
+}
+
+body.dark-theme .namecard-like-btn[data-streak-tier="8"] .nc-heart-icon {
+  fill: #ffffff;
+}
+
+body.dark-theme .namecard-like-btn[data-streak-tier="8"].has-liked {
+  background: linear-gradient(135deg, #ffffff 0%, #e2e8f0 50%, #cbd5e1 100%);
+  color: #080b11;
+  border-color: #ffffff;
+  box-shadow: 0 0 20px rgba(255, 255, 255, 0.7);
+}
+
+body.dark-theme .namecard-like-btn[data-streak-tier="8"].has-liked .nc-heart-icon {
+  fill: #080b11;
 }
 
 /* ========================================================
@@ -25858,6 +26340,76 @@ body.dark-theme[data-user-theme="super"] body,
   -webkit-background-clip: text !important;
   background-clip: text !important;
   -webkit-text-fill-color: transparent !important;
+}
+
+/* ==========================================================================
+   TIER 5: ROSE QUARTZ DARK MODE (50D - HỌC GIẢ UYÊN BÁC)
+   Deep Velvet Wine & Luminous Rose Quartz Accents
+   ========================================================================== */
+html.dark-theme[data-user-theme="rosequartz"],
+body.dark-theme[data-user-theme="rosequartz"] {
+  --primary: #f472b6;
+  --primary-soft: rgba(244, 114, 182, 0.16);
+  --accent: #fbcfe8;
+  --green: #f472b6;
+  --ink: #fdf2f8;
+  --ink-deep: #ffffff;
+  --paper: #190710;
+  --cream: #240b18;
+  --line: rgba(244, 114, 182, 0.22);
+  --sage: #361024;
+  --sage-2: #240b18;
+  --muted: #f472b6;
+  --surface-bg: #240b18;
+  --text: #fdf2f8;
+}
+
+html.dark-theme[data-user-theme="rosequartz"] body,
+body.dark-theme[data-user-theme="rosequartz"] body,
+[data-user-theme="rosequartz"] body.dark-theme {
+  background: radial-gradient(circle at 50% 0%, #2f0e21 0%, #14050d 75%) fixed !important;
+  color: #fdf2f8 !important;
+}
+
+[data-user-theme="rosequartz"] body.dark-theme .site-header {
+  background: rgba(25, 7, 16, 0.88) !important;
+  backdrop-filter: blur(18px) !important;
+  -webkit-backdrop-filter: blur(18px) !important;
+  border-bottom: 1px solid rgba(244, 114, 182, 0.25) !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6) !important;
+}
+
+[data-user-theme="rosequartz"] body.dark-theme .brand-colon {
+  color: #f472b6 !important;
+  text-shadow: 0 0 10px rgba(244, 114, 182, 0.7) !important;
+}
+
+[data-user-theme="rosequartz"] body.dark-theme .topics-card,
+[data-user-theme="rosequartz"] body.dark-theme .mini-card,
+[data-user-theme="rosequartz"] body.dark-theme .active-card,
+[data-user-theme="rosequartz"] body.dark-theme .post-card,
+[data-user-theme="rosequartz"] body.dark-theme .search-panel {
+  background: rgba(36, 11, 24, 0.82) !important;
+  backdrop-filter: blur(14px) !important;
+  border: 1px solid rgba(244, 114, 182, 0.22) !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45) !important;
+}
+
+[data-user-theme="rosequartz"] body.dark-theme .post-card:hover {
+  background: rgba(48, 15, 33, 0.88) !important;
+  border-color: rgba(244, 114, 182, 0.45) !important;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.55), 0 0 16px rgba(244, 114, 182, 0.2) !important;
+}
+
+[data-user-theme="rosequartz"] body.dark-theme .button-primary {
+  background: linear-gradient(135deg, #8a3157 0%, #c45b83 50%, #f472b6 100%) !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 18px rgba(196, 91, 131, 0.45) !important;
+}
+
+[data-user-theme="rosequartz"] body.dark-theme .tab.active:after {
+  background: #f472b6 !important;
+  box-shadow: 0 0 10px #f472b6 !important;
 }
 
 /* ==========================================================================
@@ -35049,6 +35601,10 @@ body.dark-theme .theme-nav-card.active .theme-card-status-badge {
   background: linear-gradient(135deg, #fff1f2 0%, #ffe4e6 100%);
 }
 
+.preview-rosequartz {
+  background: linear-gradient(135deg, #fdf2f8 0%, #fce7f3 50%, #fbcfe8 100%);
+}
+
 .preview-mythic {
   background: linear-gradient(135deg, #faf5ff 0%, #f3e8ff 100%);
 }
@@ -35102,6 +35658,10 @@ body.dark-theme .theme-nav-card.active .theme-card-status-badge {
 
 .mock-btn-ruby {
   background: #dc2626;
+}
+
+.mock-btn-rosequartz {
+  background: linear-gradient(135deg, #8a3157 0%, #c45b83 100%);
 }
 
 .mock-btn-mythic {
