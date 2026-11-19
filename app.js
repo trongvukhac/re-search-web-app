@@ -4985,6 +4985,9 @@ document.addEventListener("click", (e) => {
 });
 
 async function openDetail(id, updateHash = true, isBack = false, targetScrollY = 0, targetResponseId = 0) {
+  if (typeof cancelReplyContext === "function") {
+    cancelReplyContext();
+  }
   if (!window.postNavigationStack) window.postNavigationStack = [];
   if (!isBack && window.currentDetailPostId && window.currentDetailPostId !== id && currentActiveRoute === "post-detail") {
     window.postNavigationStack.push({
@@ -5061,6 +5064,7 @@ async function openDetail(id, updateHash = true, isBack = false, targetScrollY =
   if (backBtn) {
     backBtn.onclick = () => {
       stopPostReadTracking();
+      if (typeof cancelReplyContext === "function") cancelReplyContext();
       if (window.postNavigationStack && window.postNavigationStack.length > 0) {
         const prev = window.postNavigationStack.pop();
         openDetail(prev.postId, true, true, prev.scrollY);
@@ -5175,7 +5179,10 @@ async function openDetail(id, updateHash = true, isBack = false, targetScrollY =
       const editBtn = r.isAuthor ? renderEditBtn(r.id, r.createdAt, 'responses') : "";
       const targetParentId = level >= 2 ? r.parentId : r.id;
 
-      return `
+          const isSelf = Boolean(r.isAuthor || (session && r.authorId === session.id));
+          const authorDisplayName = r.anonymous ? "Ẩn danh" : (r.author?.displayName || "Thành viên");
+
+          return `
       <div class="response" id="response-${r.id}" data-response-id="${r.id}" style="position: relative;">
         ${editBtn}
         <span class="avatar avatar-xs ${getAvatarClass(r.author?.streakTier, r.anonymous, r.author?.role)}" ${!r.anonymous && r.author?.id ? `data-namecard-user-id="${r.author.id}" style="cursor: pointer;" title="Xem thẻ tên"` : ''}>${r.author.initials}</span>
@@ -5193,14 +5200,16 @@ async function openDetail(id, updateHash = true, isBack = false, targetScrollY =
             <button class="button button-outline button-sm response-vote-btn" onclick="voteResponse(${r.id}, 1)" title="Hữu ích"><svg class="icon-upvote-svg" width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 4 3 20 21 20"/></svg> <span>Hữu ích</span></button>
             <span style="font-weight:600; color:var(--primary); width:16px; text-align:center;">${r.helpfulCount}</span>
             <button class="button button-outline button-sm response-vote-btn" onclick="voteResponse(${r.id}, -1)" title="Không hữu ích"><svg class="icon-upvote-svg" width="12" height="12" viewBox="0 0 24 24" fill="currentColor" style="transform: rotate(180deg);"><polygon points="12 4 3 20 21 20"/></svg> <span>Không hữu ích</span></button>
-            <button class="button button-outline button-sm" style="margin-left: 8px;" onclick="showReplyForm(${r.id}, ${post.id}, ${targetParentId})">Phản hồi</button>
+            <button type="button" class="button button-outline button-sm response-reply-btn" style="margin-left: 8px;" data-response-id="${r.id}" data-parent-id="${targetParentId}" data-author-name="${escapeHTML(authorDisplayName)}" data-is-self="${isSelf ? 'true' : 'false'}" onclick="setReplyTargetFromBtn(this)" title="Phản hồi bình luận này">
+              <svg class="ui-btn-icon" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 17 4 12 9 7"/><path d="M20 18v-2a4 4 0 0 0-4-4H4"/></svg>
+              <span>Phản hồi</span>
+            </button>
             <button class="button button-outline button-sm response-copy-btn" style="margin-left: 6px;" onclick="copyResponseLink(${post.id}, ${r.id})" title="Sao chép liên kết phản hồi này">
               <svg class="ui-btn-icon" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
               <span>Chia sẻ</span>
             </button>
             ${deleteBtn}
           </div>
-          <div id="reply-form-${r.id}" style="display:none; margin-top:8px;"></div>
         </div>
       </div>
       ${childHtml}
@@ -5341,6 +5350,16 @@ async function openDetail(id, updateHash = true, isBack = false, targetScrollY =
     }
 
     $("#pinnedReplyContainer").innerHTML = `
+      <div id="replyContextBanner" class="reply-context-banner" style="display: none;">
+        <div class="reply-context-info">
+          <svg class="reply-context-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 17 4 12 9 7"/><path d="M20 18v-2a4 4 0 0 0-4-4H4"/></svg>
+          <span id="replyContextText" class="reply-context-text">Đang trả lời</span>
+        </div>
+        <button type="button" class="reply-context-cancel-btn" onclick="cancelReplyContext()" title="Huỷ trả lời bình luận này" aria-label="Huỷ trả lời">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          <span>Huỷ</span>
+        </button>
+      </div>
       <form id="replyForm" class="reply-bar collapsed">
         <div class="reply-avatar-dropdown" onclick="toggleAnonymousDropdown(event)">
           <span class="avatar avatar-sm ${getAvatarClass(session?.streakTier, false, session?.role)}" id="replyAvatarLabel" style="${(!session?.role || session?.role === 'student') ? ((session?.streakTier >= 3) ? '' : 'background: var(--primary); color: white;') : ''}">${session?.initials || '?'}</span>
@@ -5367,11 +5386,13 @@ async function openDetail(id, updateHash = true, isBack = false, targetScrollY =
     if (closeBtn) {
       closeBtn.onclick = () => {
         stopPostReadTracking();
+        if (typeof cancelReplyContext === "function") cancelReplyContext();
         go("forum");
       };
     }
 
     const replyEditor = initEditor("replyContentContainer", "Chia sẻ góc nhìn hoặc gợi ý tài liệu...");
+    window.activePostReplyEditor = replyEditor;
 
     $("#replyForm").onsubmit = async (e) => {
       e.preventDefault();
@@ -5393,13 +5414,19 @@ async function openDetail(id, updateHash = true, isBack = false, targetScrollY =
         setSubmitLoading(e, false);
         return;
       }
+      const payload = { content, isAnonymous };
+      if (currentReplyTarget && currentReplyTarget.parentId) {
+        payload.parentId = currentReplyTarget.parentId;
+      }
       try {
-        await requestAPI(`/api/posts/${post.id}/responses`, {
+        const res = await requestAPI(`/api/posts/${post.id}/responses`, {
           method: "POST",
-          body: JSON.stringify({ content, isAnonymous }),
+          body: JSON.stringify(payload),
         });
-        toast("Đã gửi phản hồi.");
-        openDetail(id); // Tải lại chi tiết
+        toast(currentReplyTarget ? "Đã gửi câu trả lời." : "Đã gửi phản hồi.");
+        const newResponseId = res?.id;
+        if (typeof cancelReplyContext === "function") cancelReplyContext();
+        openDetail(id, false, false, 0, newResponseId); // Tải lại chi tiết và cuộn tới phản hồi mới tạo
         hydrateServer(); // Cập nhật lại số lượng phản hồi ngoài trang chủ
       } catch (err) {
         toast(err.message);
@@ -7823,70 +7850,87 @@ window.deleteDocument = async (e, id) => {
   }
 };
 
-window.showReplyForm = (containerId, postId, actualParentId) => {
-  if (serverMode && !session) return openAuth();
-  const container = document.getElementById(`reply-form-${containerId}`);
-  if (container.style.display === "block") {
-    container.style.display = "none";
-    container.innerHTML = "";
-    return;
+// ============================================================
+// UNIFIED POST REPLY TARGET CONTROLLER (LEVEL-2 REPLIES)
+// ============================================================
+
+let currentReplyTarget = null;
+
+window.setReplyTarget = function (responseId, parentId, authorName, isSelf) {
+  const currentSession = session || window.session;
+  if (serverMode && !currentSession) return openAuth();
+
+  currentReplyTarget = {
+    responseId: Number(responseId),
+    parentId: Number(parentId || responseId),
+    authorName: String(authorName || "Thành viên"),
+    isSelf: Boolean(isSelf),
+  };
+
+  const banner = document.getElementById("replyContextBanner");
+  const textEl = document.getElementById("replyContextText");
+  const container = document.getElementById("pinnedReplyContainer");
+
+  if (banner && textEl) {
+    const label = isSelf ? "Đang trả lời chính mình" : `Đang trả lời @${authorName}`;
+    textEl.textContent = label;
+    banner.style.display = "flex";
   }
 
-  // Close all other inline forms
-  document.querySelectorAll('[id^="reply-form-"]').forEach(el => {
-    el.style.display = "none";
-    el.innerHTML = "";
-  });
+  if (container) {
+    container.classList.add("has-reply-context");
+    container.classList.remove("dock-reply-pulse");
+    void container.offsetWidth; // Trigger reflow for pulse animation
+    container.classList.add("dock-reply-pulse");
+    setTimeout(() => {
+      container.classList.remove("dock-reply-pulse");
+    }, 600);
+  }
 
-  container.style.display = "block";
-  const parentArg = actualParentId ? `, ${actualParentId}` : "";
-  container.innerHTML = `
-    <form onsubmit="event.preventDefault(); submitInlineReply(${containerId}, ${postId}${parentArg})">
-      <div id="inlineReplyContentContainer-${containerId}" style="height: 80px; margin-top: 4px; border-radius: 8px;"></div>
-      <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 8px;">
-        <label style="display: flex; align-items: center; gap: 4px; font-size: 11px; cursor: pointer;">
-          <input type="checkbox" id="inlineReplyAnonymous-${containerId}" style="width: auto; margin: 0; accent-color: var(--primary);">
-          Ẩn danh
-        </label>
-        <div>
-          <button type="button" class="button button-outline button-sm" onclick="document.getElementById('reply-form-${containerId}').style.display='none'">Hủy</button>
-          <button type="submit" class="button button-primary button-sm">Gửi</button>
-        </div>
-      </div>
-    </form>
-  `;
-  window.inlineReplyEditor = initEditor(`inlineReplyContentContainer-${containerId}`, "Viết phản hồi...");
-  window.inlineReplyEditor.focus();
+  // Update Quill editor placeholder and focus
+  if (window.activePostReplyEditor?.root) {
+    window.activePostReplyEditor.root.dataset.placeholder = isSelf
+      ? "Trả lời chính mình..."
+      : `Trả lời @${authorName}...`;
+    window.activePostReplyEditor.focus();
+  }
+};
+
+window.setReplyTargetFromBtn = function (btn) {
+  if (!btn) return;
+  const responseId = btn.dataset.responseId;
+  const parentId = btn.dataset.parentId;
+  const authorName = btn.dataset.authorName;
+  const isSelf = btn.dataset.isSelf === "true";
+  window.setReplyTarget(responseId, parentId, authorName, isSelf);
+};
+
+window.cancelReplyContext = function () {
+  currentReplyTarget = null;
+  const banner = document.getElementById("replyContextBanner");
+  const container = document.getElementById("pinnedReplyContainer");
+
+  if (banner) banner.style.display = "none";
+  if (container) container.classList.remove("has-reply-context");
+
+  if (window.activePostReplyEditor?.root) {
+    window.activePostReplyEditor.root.dataset.placeholder = "Chia sẻ góc nhìn hoặc gợi ý tài liệu...";
+  }
+};
+
+// Backwards-compatible wrapper in case external or legacy triggers call showReplyForm
+window.showReplyForm = function (containerId, postId, actualParentId) {
+  if (serverMode && !session) return openAuth();
+  const respEl = document.getElementById(`response-${containerId}`);
+  const authorEl = respEl ? respEl.querySelector(".response-meta b") : null;
+  const authorName = authorEl ? authorEl.textContent.trim() : "Thành viên";
+  const isSelf = authorName === "Bạn";
+  setReplyTarget(containerId, actualParentId || containerId, authorName, isSelf);
 };
 
 window.submitInlineReply = async (containerId, postId, actualParentId) => {
-  if (serverMode && !session) return openAuth();
-  if (!window.inlineReplyEditor) return;
-  const rawText = window.inlineReplyEditor.getText().trim();
-  const isAnonymous = document.getElementById(`inlineReplyAnonymous-${containerId}`).checked;
-  const parentId = actualParentId || containerId;
-
-  if (rawText.length < 10) {
-    toast("Phản hồi cần có ít nhất 10 ký tự.");
-    return;
-  }
-  const content = window.inlineReplyEditor.root.innerHTML;
-
-  const formEl = document.getElementById(`reply-form-${containerId}`);
-  setSubmitLoading(formEl, true);
-  try {
-    await requestAPI(`/api/posts/${postId}/responses`, {
-      method: "POST",
-      body: JSON.stringify({ content, isAnonymous, parentId }),
-    });
-    toast("Đã gửi phản hồi.");
-    openDetail(postId);
-    hydrateServer();
-  } catch (err) {
-    toast(err.message);
-  } finally {
-    setSubmitLoading(formEl, false);
-  }
+  // Legacy fallback: redirects to main submit logic
+  setReplyTarget(containerId, actualParentId || containerId, "Thành viên", false);
 };
 
 window.switchAccountTab = (tab) => {
