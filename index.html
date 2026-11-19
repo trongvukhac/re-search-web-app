@@ -28,7 +28,7 @@
         }
 
         var savedColor = localStorage.getItem("re_search_user_color_preference") || localStorage.getItem("re_search_user_theme_preference");
-        if (savedColor === "ruby" || savedColor === "mythic") {
+        if (savedColor === "ruby" || savedColor === "mythic" || savedColor === "super" || savedColor === "diamond") {
           document.documentElement.setAttribute("data-user-theme", savedColor);
         }
       } catch (e) { }
@@ -46,7 +46,7 @@
   <script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js" defer></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" defer></script>
-  <link rel="stylesheet" href="styles.css?v=189" />
+  <link rel="stylesheet" href="styles.css?v=190" />
 </head>
 
 <body>
@@ -3104,9 +3104,14 @@
               </button>
             </form>
           </div>
-          <button class="button button-dark" id="adminButton">
-            Mở quản trị <span>→</span>
-          </button>
+          <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px;">
+            <button class="button button-dark" id="adminButton" style="flex: 1; min-width: 140px;">
+              Mở quản trị <span>→</span>
+            </button>
+            <button type="button" class="button button-outline" onclick="adjustUserStreak(session?.id, session?.streak || 0)" style="font-size: 13px; white-space: nowrap;" title="Điều chỉnh chuỗi ngày của bạn để kiểm tra tính năng">
+              🔥 Chỉnh chuỗi test
+            </button>
+          </div>
         </aside>
       </div>
     </section>
@@ -4856,9 +4861,9 @@
               <span class="theme-card-status-badge">Chọn</span>
             </div>
 
-            <!-- Tím Hoàng gia (Mythic - 50d) -->
-            <div class="theme-card" data-theme-val="mythic" data-min-streak="50"
-              onclick="requestThemeSwitch('color', 'mythic', 'Tím Hoàng gia', 50)">
+            <!-- Tím Hoàng gia (Mythic - 100d) -->
+            <div class="theme-card" data-theme-val="mythic" data-min-streak="100"
+              onclick="requestThemeSwitch('color', 'mythic', 'Tím Hoàng gia', 100)">
               <div class="theme-demo-preview preview-mythic" aria-hidden="true">
                 <div class="demo-mock-bar"></div>
                 <div class="demo-mock-pill"></div>
@@ -4867,7 +4872,39 @@
                 <span class="theme-lock-overlay" aria-hidden="true">🔒</span>
               </div>
               <div class="theme-card-info">
-                <strong class="theme-card-name">Tím Hoàng gia</strong>
+                <strong class="theme-card-name">Tím Hoàng gia (100d)</strong>
+              </div>
+              <span class="theme-card-status-badge">Chọn</span>
+            </div>
+
+            <!-- Super Cosmic Neon (Super - 200d) -->
+            <div class="theme-card" data-theme-val="super" data-min-streak="200"
+              onclick="requestThemeSwitch('color', 'super', 'Super Cosmic', 200)">
+              <div class="theme-demo-preview preview-super" aria-hidden="true">
+                <div class="demo-mock-bar"></div>
+                <div class="demo-mock-pill"></div>
+                <div class="demo-mock-content"><span class="mock-line"></span><span
+                    class="mock-btn mock-btn-super"></span></div>
+                <span class="theme-lock-overlay" aria-hidden="true">🔒</span>
+              </div>
+              <div class="theme-card-info">
+                <strong class="theme-card-name">Super Cosmic (200d)</strong>
+              </div>
+              <span class="theme-card-status-badge">Chọn</span>
+            </div>
+
+            <!-- Bạch Kim Kim Cương (Diamond - 365d) -->
+            <div class="theme-card" data-theme-val="diamond" data-min-streak="365"
+              onclick="requestThemeSwitch('color', 'diamond', 'Bạch Kim Kim Cương', 365)">
+              <div class="theme-demo-preview preview-diamond" aria-hidden="true">
+                <div class="demo-mock-bar"></div>
+                <div class="demo-mock-pill"></div>
+                <div class="demo-mock-content"><span class="mock-line"></span><span
+                    class="mock-btn mock-btn-diamond"></span></div>
+                <span class="theme-lock-overlay" aria-hidden="true">🔒</span>
+              </div>
+              <div class="theme-card-info">
+                <strong class="theme-card-name">Bạch Kim Kim Cương (365d)</strong>
               </div>
               <span class="theme-card-status-badge">Chọn</span>
             </div>
@@ -8265,7 +8302,7 @@
     </div>
   </div>
 
-  <script src="app.js?v=189" defer></script>
+  <script src="app.js?v=190" defer></script>
 </body>
 
 </html>

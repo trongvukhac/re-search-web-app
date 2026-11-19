@@ -871,10 +871,10 @@ try {
         COMMIT;
       `);
     } catch (err) {
-      try { db.exec("ROLLBACK;"); } catch {}
+      try { db.exec("ROLLBACK;"); } catch { }
       throw err;
     } finally {
-      try { db.exec("PRAGMA foreign_keys = ON;"); } catch {}
+      try { db.exec("PRAGMA foreign_keys = ON;"); } catch { }
     }
   }
   const treeCols = db.prepare("PRAGMA table_info(christmas_tree_ornaments)").all();
@@ -892,6 +892,10 @@ try {
   }
   if (!treeCols.some((c) => c.name === "photo_full_data")) {
     db.exec("ALTER TABLE christmas_tree_ornaments ADD COLUMN photo_full_data TEXT NOT NULL DEFAULT ''");
+  }
+  const streakShieldCols = db.prepare("PRAGMA table_info(user_streak_shields)").all();
+  if (!streakShieldCols.some((c) => c.name === "custom_streak")) {
+    db.exec("ALTER TABLE user_streak_shields ADD COLUMN custom_streak INTEGER DEFAULT NULL");
   }
   db.exec(`
     CREATE TABLE IF NOT EXISTS christmas_tree_likes (
@@ -966,7 +970,7 @@ function broadcastNotification(title, content, link = "", actorId = null) {
     }
     db.exec("COMMIT;");
   } catch (err) {
-    try { db.exec("ROLLBACK;"); } catch (e) {}
+    try { db.exec("ROLLBACK;"); } catch (e) { }
     console.error("[broadcastNotification]", err.message);
   }
 }
@@ -1439,6 +1443,9 @@ function getAvatarEmoji(str) {
 
 function getStreakTier(streak) {
   const s = Number(streak) || 0;
+  if (s >= 365) return 8;
+  if (s >= 200) return 7;
+  if (s >= 100) return 6;
   if (s >= 50) return 5;
   if (s >= 30) return 4;
   if (s >= 14) return 3;
@@ -1475,6 +1482,25 @@ function calculateUserStreak(userId, todayDate, formatYMD) {
       streakStartDate: "9999-99-99",
       streakStartCreatedAt: "9999-99-99",
     };
+  }
+
+  // Check if admin has set a custom test streak for this user
+  try {
+    const shieldRow = db.prepare("SELECT * FROM user_streak_shields WHERE user_id = ?").get(userId);
+    if (shieldRow && shieldRow.custom_streak !== null && shieldRow.custom_streak !== undefined) {
+      const s = Math.max(0, Number(shieldRow.custom_streak) || 0);
+      return {
+        streak: s,
+        streakTier: getStreakTier(s),
+        shields: shieldRow.shields ?? 3,
+        autoShieldUsed: false,
+        streakStartDate: "2026-01-01",
+        streakStartCreatedAt: "2026-01-01T00:00:00Z",
+        isCustom: true
+      };
+    }
+  } catch (err) {
+    console.error("[calculateUserStreak custom_streak check]", err);
   }
 
   if (userId === 89) {
@@ -1674,11 +1700,14 @@ function getUserMaxStreak(userId) {
 function getStreakTitle(streak = 0, tier = 0) {
   const s = Number(streak) || 0;
   const t = Number(tier !== undefined ? tier : getStreakTier(s));
-  if (s >= 50 || t >= 5) return "Độc nhất vô nhị";
-  if (s >= 30 || t >= 4) return "Bậc thầy học thuật";
-  if (s >= 14 || t >= 3) return "Nhà nghiên cứu tài năng";
-  if (s >= 7 || t >= 2) return "Học giả bền bỉ";
-  if (s >= 3 || t >= 1) return "Sinh viên năng động";
+  if (s >= 365 || t >= 8) return "Học giả lưu danh";
+  if (s >= 200 || t >= 7) return "Bậc thầy học thuật";
+  if (s >= 100 || t >= 6) return "Nhà kiến tạo tri thức";
+  if (s >= 50 || t >= 5) return "Học giả uyên bác";
+  if (s >= 30 || t >= 4) return "Nhà nghiên cứu bền bỉ";
+  if (s >= 14 || t >= 3) return "Học viên tài năng";
+  if (s >= 7 || t >= 2) return "Sinh viên năng động";
+  if (s >= 3 || t >= 1) return "Người gieo mầm";
   return "Tân binh";
 }
 
@@ -6140,7 +6169,7 @@ async function api(request, response, url) {
       try {
         const target = path.join(TREE_PHOTO_DIR, basename);
         if (fs.existsSync(target)) fs.unlinkSync(target);
-      } catch {}
+      } catch { }
     }
   }
 
@@ -8062,6 +8091,7 @@ async function api(request, response, url) {
         studentId: u.student_id || null,
         realName: u.real_name || null,
         className: u.class_name || null,
+        streak: calculateUserStreak(u.id).streak,
         streakTier: getAuthorStreakTier(u.id),
       }));
     return json(response, 200, { users });
@@ -8133,6 +8163,43 @@ async function api(request, response, url) {
       typeof reason === "string" ? reason.slice(0, 500) : null,
     );
     return json(response, 200, { ok: true });
+  }
+  const streakMatch = pathName.match(/^\/api\/admin\/users\/(\d+)\/streak$/);
+  if (method === "PATCH" && streakMatch) {
+    const user = requireUser(request, response);
+    if (!user) return;
+    if (!requireCsrf(request, response, user)) return;
+    if (!isSuperAdmin(user))
+      return error(response, 403, "Chỉ TA/Admin mới có quyền này.");
+    const targetId = Number(streakMatch[1]);
+    const body = await readJSON(request);
+    const streakVal = (body.streak === null || body.streak === undefined || body.streak === "" || isNaN(Number(body.streak)))
+      ? null
+      : Math.max(0, parseInt(body.streak, 10));
+
+    db.prepare(`
+      INSERT INTO user_streak_shields (user_id, shields, last_milestone_rewarded, custom_streak)
+      VALUES (?, 3, 0, ?)
+      ON CONFLICT(user_id) DO UPDATE SET custom_streak = excluded.custom_streak, updated_at = CURRENT_TIMESTAMP
+    `).run(targetId, streakVal);
+
+    const info = calculateUserStreak(targetId);
+    db.prepare(
+      "INSERT INTO audit_logs(actor_id,action,subject_type,subject_id,reason) VALUES (?,?,?,?,?)",
+    ).run(
+      user.id,
+      "streak_adjusted",
+      "user",
+      targetId,
+      `Chỉnh chuỗi thành ${streakVal !== null ? streakVal + ' ngày' : 'Mặc định'}`,
+    );
+    return json(response, 200, {
+      success: true,
+      userId: targetId,
+      streak: info.streak,
+      streakTier: info.streakTier,
+      streakTitle: getStreakTitle(info.streak, info.streakTier)
+    });
   }
   const moderationMatch = pathName.match(
     /^\/api\/admin\/posts\/(\d+)\/status$/,

@@ -691,6 +691,9 @@ function stripHTML(html) {
 }
 function getStreakTier(streak) {
   const s = Number(streak) || 0;
+  if (s >= 365) return 8;
+  if (s >= 200) return 7;
+  if (s >= 100) return 6;
   if (s >= 50) return 5;
   if (s >= 30) return 4;
   if (s >= 14) return 3;
@@ -703,8 +706,47 @@ function getFlame2DSVG(tier = 0, size = 20, extraClass = '') {
   const t = Number(tier) || 0;
 
   let outerGrad = '', midGrad = '', coreGrad = '';
-  if (t === 5) {
-    // Mythic Prism: Celestial Violet -> Neon Fuchsia -> Ember Red -> Solar Gold
+  if (t === 8) {
+    // Pure Celestial Diamond Luxury (365d): Titanium Platinum Obsidian -> Silver Crystal -> Pure Brilliant Diamond White
+    outerGrad = `
+      <stop offset="0%" stop-color="#0b0f19"/>
+      <stop offset="25%" stop-color="#1e293b"/>
+      <stop offset="60%" stop-color="#64748b"/>
+      <stop offset="85%" stop-color="#cbd5e1"/>
+      <stop offset="100%" stop-color="#ffffff"/>
+    `;
+    midGrad = `
+      <stop offset="0%" stop-color="#475569"/>
+      <stop offset="35%" stop-color="#94a3b8"/>
+      <stop offset="70%" stop-color="#e2e8f0"/>
+      <stop offset="100%" stop-color="#ffffff"/>
+    `;
+    coreGrad = `
+      <stop offset="0%" stop-color="#cbd5e1"/>
+      <stop offset="50%" stop-color="#f0f9ff"/>
+      <stop offset="100%" stop-color="#ffffff"/>
+    `;
+  } else if (t === 7) {
+    // Super Duolingo Tricolor Neon (200d): Neon Green -> Electric Cyan -> Indigo -> Vibrant Magenta
+    outerGrad = `
+      <stop offset="0%" stop-color="#00b894"/>
+      <stop offset="30%" stop-color="#00cec9"/>
+      <stop offset="65%" stop-color="#6366f1"/>
+      <stop offset="100%" stop-color="#ec4899"/>
+    `;
+    midGrad = `
+      <stop offset="0%" stop-color="#00f59b"/>
+      <stop offset="40%" stop-color="#00d2ff"/>
+      <stop offset="75%" stop-color="#818cf8"/>
+      <stop offset="100%" stop-color="#f472b6"/>
+    `;
+    coreGrad = `
+      <stop offset="0%" stop-color="#a5f3fc"/>
+      <stop offset="55%" stop-color="#f0abfc"/>
+      <stop offset="100%" stop-color="#ffffff"/>
+    `;
+  } else if (t === 6) {
+    // Mythic Prism (100d): Celestial Violet -> Neon Fuchsia -> Ember Red -> Solar Gold
     outerGrad = `
       <stop offset="0%" stop-color="#4a154b"/>
       <stop offset="35%" stop-color="#7048e8"/>
@@ -720,6 +762,25 @@ function getFlame2DSVG(tier = 0, size = 20, extraClass = '') {
     coreGrad = `
       <stop offset="0%" stop-color="#ffd43b"/>
       <stop offset="60%" stop-color="#fff9db"/>
+      <stop offset="100%" stop-color="#ffffff"/>
+    `;
+  } else if (t === 5) {
+    // Rose Quartz (50d): #57223B -> #8A3157 -> #C45B83 -> #E8A9C1
+    outerGrad = `
+      <stop offset="0%" stop-color="#57223b"/>
+      <stop offset="35%" stop-color="#8a3157"/>
+      <stop offset="70%" stop-color="#c45b83"/>
+      <stop offset="100%" stop-color="#e8a9c1"/>
+    `;
+    midGrad = `
+      <stop offset="0%" stop-color="#8a3157"/>
+      <stop offset="45%" stop-color="#c45b83"/>
+      <stop offset="85%" stop-color="#f4a7c5"/>
+      <stop offset="100%" stop-color="#fde8ef"/>
+    `;
+    coreGrad = `
+      <stop offset="0%" stop-color="#f4a7c5"/>
+      <stop offset="60%" stop-color="#fde8ef"/>
       <stop offset="100%" stop-color="#ffffff"/>
     `;
   } else if (t === 4) {
@@ -822,26 +883,63 @@ function getFlame2DSVG(tier = 0, size = 20, extraClass = '') {
   const id = `flm_${t}_${size}_${Math.floor(Math.random() * 100000)}`;
 
   let embers = '';
-  if (t === 1) {
-    embers = `
-      <g class="flame-ember-group">
-        <path class="flame-ember flame-spark ember-1 spark-1" d="M15 3.5 C15.6 2.6 15.6 1.8 15 1 C14.4 1.8 14.4 2.6 15 3.5Z" fill="url(#core_${id})"/>
+  let diamondOverlay = '';
+
+  if (t === 8) {
+    // Diamond facets and crystalline geometry
+    diamondOverlay = `
+      <g class="flame-diamond-facets">
+        <polygon points="12,3.5 15.2,9.5 12,14.8 8.8,9.5" fill="url(#core_${id})" stroke="#ffffff" stroke-width="0.5" opacity="0.85"/>
+        <polygon points="12,14.8 15.5,18 12,21.8 8.5,18" fill="url(#mid_${id})" stroke="#ffffff" stroke-width="0.4" opacity="0.6"/>
+        <line x1="12" y1="3.5" x2="12" y2="21.8" stroke="#ffffff" stroke-width="0.6" opacity="0.9"/>
+        <line x1="8.8" y1="9.5" x2="15.2" y2="9.5" stroke="#ffffff" stroke-width="0.6" opacity="0.9"/>
       </g>
     `;
-  } else if (t === 2) {
     embers = `
       <g class="flame-ember-group">
-        <path class="flame-ember flame-spark ember-1 spark-1" d="M15.2 3.2 C15.8 2.2 15.8 1.4 15.2 0.5 C14.6 1.4 14.6 2.2 15.2 3.2Z" fill="url(#core_${id})"/>
-        <path class="flame-ember flame-spark ember-2 spark-2" d="M6.8 6.5 C7.4 5.6 7.4 4.8 6.8 4 C6.2 4.8 6.2 5.6 6.8 6.5Z" fill="url(#mid_${id})"/>
+        <path class="flame-sparkle flame-star sparkle-diamond star-1" d="M12 -3.5 L12.7 -1 L15.2 -1.2 L13.2 0.7 L14.4 2.8 L12 1.6 L9.6 2.8 L10.8 0.7 L8.8 -1.2 L11.3 -1 Z" fill="#ffffff"/>
+        <path class="flame-sparkle flame-star sparkle-diamond star-2" d="M21 6.5 L21.6 8 L23 7.8 L21.8 9 L22.5 10.5 L21 9.8 L19.5 10.5 L20.2 9 L19 7.8 L20.4 8 Z" fill="#ffffff"/>
+        <path class="flame-sparkle flame-star sparkle-diamond star-3" d="M3 7.5 L3.6 9 L5 8.8 L3.8 10 L4.5 11.5 L3 10.8 L1.5 11.5 L2.2 10 L1 8.8 L2.4 9 Z" fill="#ffffff"/>
+        <circle class="flame-ember flame-spark ember-1 flame-diamond-dust" cx="16.5" cy="1.5" r="0.85" fill="#ffffff"/>
+        <circle class="flame-ember flame-spark ember-2 flame-diamond-dust" cx="6" cy="3.5" r="0.75" fill="#ffffff"/>
+        <circle class="flame-ember flame-spark ember-3 flame-diamond-dust" cx="19.8" cy="4" r="0.7" fill="#ffffff"/>
+        <circle class="flame-ember flame-spark ember-4 flame-diamond-dust" cx="11.2" cy="-1.8" r="0.8" fill="#ffffff"/>
       </g>
     `;
-  } else if (t === 3) {
+  } else if (t === 7) {
     embers = `
       <g class="flame-ember-group">
-        <path class="flame-ember flame-spark ember-1 spark-1" d="M15.5 3 C16.2 2 16.2 1.2 15.5 0.2 C14.8 1.2 14.8 2 15.5 3Z" fill="url(#core_${id})"/>
-        <path class="flame-ember flame-spark ember-2 spark-2" d="M6.5 6 C7.2 5 7.2 4.2 6.5 3.2 C5.8 4.2 5.8 5 6.5 6Z" fill="url(#mid_${id})"/>
-        <path class="flame-ember flame-spark ember-3 spark-3" d="M19.2 6.5 C19.8 5.6 19.8 4.8 19.2 4 C18.6 4.8 18.6 5.6 19.2 6.5Z" fill="url(#mid_${id})"/>
-        <path class="flame-sparkle flame-star sparkle-1 star-1" d="M19 10 Q19 11.2 20 11.2 Q19 11.2 19 12.5 Q19 11.2 18 11.2 Q19 11.2 19 10Z" fill="#ffffff"/>
+        <path class="flame-ember flame-spark ember-1 spark-1" d="M15 1.5 C16.2 0.3 16.2 -0.8 15 -1.8 C13.8 -0.8 13.8 0.3 15 1.5Z" fill="url(#core_${id})"/>
+        <path class="flame-ember flame-spark ember-2 spark-2" d="M5.2 4.2 C6.2 3 6.2 2 5.2 0.9 C4.2 2 4.2 3 5.2 4.2Z" fill="url(#mid_${id})"/>
+        <path class="flame-ember flame-spark ember-3 spark-3" d="M20.2 4.2 C21.2 3.1 21.2 2.1 20.2 1 C19.2 2.1 19.2 3.1 20.2 4.2Z" fill="url(#core_${id})"/>
+        <path class="flame-ember flame-spark ember-4 spark-4" d="M11 -0.5 C12 -1.6 12 -2.5 11 -3.4 C10 -2.5 10 -1.6 11 -0.5Z" fill="url(#core_${id})"/>
+        <path class="flame-sparkle flame-star sparkle-1 star-1 sparkle-super" d="M20.5 7 Q20.5 8.8 22.2 8.8 Q20.5 8.8 20.5 10.6 Q20.5 8.8 18.8 8.8 Q20.5 8.8 20.5 7Z" fill="#00d2ff"/>
+        <path class="flame-sparkle flame-star sparkle-2 star-2 sparkle-super" d="M3.8 9 Q3.8 10.5 5.2 10.5 Q3.8 10.5 3.8 12 Q3.8 10.5 2.4 10.5 Q3.8 10.5 3.8 9Z" fill="#00f59b"/>
+        <path class="flame-sparkle flame-star sparkle-3 star-3 sparkle-super" d="M12 -2.8 Q12 -1.2 13.6 -1.2 Q12 -1.2 12 0.4 Q12 -1.2 10.4 -1.2 Q12 -1.2 12 -2.8Z" fill="#f472b6"/>
+      </g>
+    `;
+  } else if (t === 6) {
+    embers = `
+      <g class="flame-ember-group">
+        <path class="flame-ember flame-spark ember-1 spark-1" d="M15 2 C16 0.8 16 -0.2 15 -1.2 C14 -0.2 14 0.8 15 2Z" fill="url(#core_${id})"/>
+        <path class="flame-ember flame-spark ember-2 spark-2" d="M5.5 4.8 C6.4 3.6 6.4 2.6 5.5 1.5 C4.6 2.6 4.6 3.6 5.5 4.8Z" fill="url(#mid_${id})"/>
+        <path class="flame-ember flame-spark ember-3 spark-3" d="M20 4.8 C20.9 3.7 20.9 2.7 20 1.6 C19.1 2.7 19.1 3.7 20 4.8Z" fill="url(#core_${id})"/>
+        <path class="flame-ember flame-spark ember-4 spark-4" d="M11.2 -0.2 C12 -1.2 12 -2.1 11.2 -3 C10.4 -2.1 10.4 -1.2 11.2 -0.2Z" fill="url(#core_${id})"/>
+        <path class="flame-ember flame-spark ember-5 spark-5" d="M16.5 6.5 C17.3 5.5 17.3 4.6 16.5 3.7 C15.7 4.6 15.7 5.5 16.5 6.5Z" fill="url(#mid_${id})"/>
+        <path class="flame-sparkle flame-star sparkle-1 star-1 sparkle-mythic star-mythic" d="M20 7.5 Q20 9.2 21.6 9.2 Q20 9.2 20 11 Q20 9.2 18.4 9.2 Q20 9.2 20 7.5Z" fill="#ffffff"/>
+        <path class="flame-sparkle flame-star sparkle-2 star-2 sparkle-mythic star-mythic" d="M4 9.5 Q4 11 5.4 11 Q4 11 4 12.5 Q4 11 2.6 11 Q4 11 4 9.5Z" fill="#ffffff"/>
+        <path class="flame-sparkle flame-star sparkle-3 star-3 sparkle-mythic star-mythic" d="M12 -2.5 Q12 -1 13.5 -1 Q12 -1 12 0.5 Q12 -1 10.5 -1 Q12 -1 12 -2.5Z" fill="#ffffff"/>
+      </g>
+    `;
+  } else if (t === 5) {
+    embers = `
+      <g class="flame-ember-group">
+        <path class="flame-ember flame-spark ember-1 spark-1" d="M15 2.2 C15.8 1.1 15.8 0.2 15 -0.8 C14.2 0.2 14.2 1.1 15 2.2Z" fill="url(#core_${id})"/>
+        <path class="flame-ember flame-spark ember-2 spark-2" d="M5.8 5 C6.6 3.9 6.6 3 5.8 2 C5 3 5 3.9 5.8 5Z" fill="url(#mid_${id})"/>
+        <path class="flame-ember flame-spark ember-3 spark-3" d="M19.8 5 C20.6 4 20.6 3.1 19.8 2.1 C19 3.1 19 4 19.8 5Z" fill="url(#core_${id})"/>
+        <path class="flame-ember flame-spark ember-4 spark-4" d="M11.5 0 C12.2 -0.8 12.2 -1.5 11.5 -2.3 C10.8 -1.5 10.8 -0.8 11.5 0Z" fill="url(#core_${id})"/>
+        <path class="flame-sparkle flame-star sparkle-1 star-1" d="M19.8 8 Q19.8 9.5 21.2 9.5 Q19.8 9.5 19.8 11 Q19.8 9.5 18.4 9.5 Q19.8 9.5 19.8 8Z" fill="#fde8ef"/>
+        <path class="flame-sparkle flame-star sparkle-2 star-2" d="M4.2 10 Q4.2 11.4 5.5 11.4 Q4.2 11.4 4.2 12.6 Q4.2 11.4 2.9 11.4 Q4.2 11.4 4.2 10Z" fill="#fde8ef"/>
       </g>
     `;
   } else if (t === 4) {
@@ -855,17 +953,26 @@ function getFlame2DSVG(tier = 0, size = 20, extraClass = '') {
         <path class="flame-sparkle flame-star sparkle-2 star-2" d="M4.5 10.5 Q4.5 11.8 5.8 11.8 Q4.5 11.8 4.5 13 Q4.5 11.8 3.2 11.8 Q4.5 11.8 4.5 10.5Z" fill="#ffffff"/>
       </g>
     `;
-  } else if (t === 5) {
+  } else if (t === 3) {
     embers = `
       <g class="flame-ember-group">
-        <path class="flame-ember flame-spark ember-1 spark-1" d="M15 2 C16 0.8 16 -0.2 15 -1.2 C14 -0.2 14 0.8 15 2Z" fill="url(#core_${id})"/>
-        <path class="flame-ember flame-spark ember-2 spark-2" d="M5.5 4.8 C6.4 3.6 6.4 2.6 5.5 1.5 C4.6 2.6 4.6 3.6 5.5 4.8Z" fill="url(#mid_${id})"/>
-        <path class="flame-ember flame-spark ember-3 spark-3" d="M20 4.8 C20.9 3.7 20.9 2.7 20 1.6 C19.1 2.7 19.1 3.7 20 4.8Z" fill="url(#core_${id})"/>
-        <path class="flame-ember flame-spark ember-4 spark-4" d="M11.2 -0.2 C12 -1.2 12 -2.1 11.2 -3 C10.4 -2.1 10.4 -1.2 11.2 -0.2Z" fill="url(#core_${id})"/>
-        <path class="flame-ember flame-spark ember-5 spark-5" d="M16.5 6.5 C17.3 5.5 17.3 4.6 16.5 3.7 C15.7 4.6 15.7 5.5 16.5 6.5Z" fill="url(#mid_${id})"/>
-        <path class="flame-sparkle flame-star sparkle-1 star-1 sparkle-mythic star-mythic" d="M20 7.5 Q20 9.2 21.6 9.2 Q20 9.2 20 11 Q20 9.2 18.4 9.2 Q20 9.2 20 7.5Z" fill="#ffffff"/>
-        <path class="flame-sparkle flame-star sparkle-2 star-2 sparkle-mythic star-mythic" d="M4 9.5 Q4 11 5.4 11 Q4 11 4 12.5 Q4 11 2.6 11 Q4 11 4 9.5Z" fill="#ffffff"/>
-        <path class="flame-sparkle flame-star sparkle-3 star-3 sparkle-mythic star-mythic" d="M12 -2.5 Q12 -1 13.5 -1 Q12 -1 12 0.5 Q12 -1 10.5 -1 Q12 -1 12 -2.5Z" fill="#ffffff"/>
+        <path class="flame-ember flame-spark ember-1 spark-1" d="M15.5 3 C16.2 2 16.2 1.2 15.5 0.2 C14.8 1.2 14.8 2 15.5 3Z" fill="url(#core_${id})"/>
+        <path class="flame-ember flame-spark ember-2 spark-2" d="M6.5 6 C7.2 5 7.2 4.2 6.5 3.2 C5.8 4.2 5.8 5 6.5 6Z" fill="url(#mid_${id})"/>
+        <path class="flame-ember flame-spark ember-3 spark-3" d="M19.2 6.5 C19.8 5.6 19.8 4.8 19.2 4 C18.6 4.8 18.6 5.6 19.2 6.5Z" fill="url(#mid_${id})"/>
+        <path class="flame-sparkle flame-star sparkle-1 star-1" d="M19 10 Q19 11.2 20 11.2 Q19 11.2 19 12.5 Q19 11.2 18 11.2 Q19 11.2 19 10Z" fill="#ffffff"/>
+      </g>
+    `;
+  } else if (t === 2) {
+    embers = `
+      <g class="flame-ember-group">
+        <path class="flame-ember flame-spark ember-1 spark-1" d="M15.2 3.2 C15.8 2.2 15.8 1.4 15.2 0.5 C14.6 1.4 14.6 2.2 15.2 3.2Z" fill="url(#core_${id})"/>
+        <path class="flame-ember flame-spark ember-2 spark-2" d="M6.8 6.5 C7.4 5.6 7.4 4.8 6.8 4 C6.2 4.8 6.2 5.6 6.8 6.5Z" fill="url(#mid_${id})"/>
+      </g>
+    `;
+  } else if (t === 1) {
+    embers = `
+      <g class="flame-ember-group">
+        <path class="flame-ember flame-spark ember-1 spark-1" d="M15 3.5 C15.6 2.6 15.6 1.8 15 1 C14.4 1.8 14.4 2.6 15 3.5Z" fill="url(#core_${id})"/>
       </g>
     `;
   }
@@ -904,6 +1011,7 @@ function getFlame2DSVG(tier = 0, size = 20, extraClass = '') {
     <!-- Inner Core Heat (hot glowing heart) -->
     <path class="flame-core flame-inner" d="M12 21C10.2 21 8.8 19.5 8.8 17.6C8.8 15.8 10 14.2 11.2 12.8C11.6 14.2 12.4 15 13 15.2C12.6 13.8 13.2 12.2 14 11C14.8 13 15.2 15.2 14.5 17.2C14 19.4 12.8 21 12 21Z" fill="url(#core_${id})"/>
     
+    ${diamondOverlay}
     ${embers}
   </svg>`;
 }
@@ -1298,7 +1406,7 @@ const STREAK_MILESTONES = [
   {
     days: 3,
     tier: 1,
-    title: "Sinh viên năng động",
+    title: "Người gieo mầm",
     color: "Xanh lam",
     forumDesc: "Mở khoá giao diện thẻ thành tích mới",
     studyDesc: "Mở kho âm thanh môi trường cơ bản, mở khoá tính năng tương tác trong không gian chung"
@@ -1306,7 +1414,7 @@ const STREAK_MILESTONES = [
   {
     days: 7,
     tier: 2,
-    title: "Học giả bền bỉ",
+    title: "Sinh viên năng động",
     color: "Vàng ánh kim",
     forumDesc: "Mở khoá viền avatar đặc sắc",
     studyDesc: "Mở khoá âm thanh phối hợp & âm nhạc, phân loại nhãn màu sắc công việc tự học"
@@ -1314,7 +1422,7 @@ const STREAK_MILESTONES = [
   {
     days: 14,
     tier: 3,
-    title: "Nhà nghiên cứu tài năng",
+    title: "Học viên tài năng",
     color: "Tím huyền bí",
     forumDesc: "Mở khoá màu tên rực rỡ và avatar đặc sắc",
     studyDesc: "Mở khoá kho hình nền cơ bản và tinh chỉnh màu sắc đồng hồ số"
@@ -1322,7 +1430,7 @@ const STREAK_MILESTONES = [
   {
     days: 30,
     tier: 4,
-    title: "Bậc thầy học thuật",
+    title: "Nhà nghiên cứu bền bỉ",
     color: "Đỏ ruby",
     forumDesc: "Mở khóa giao diện độc quyền, màu tên rực rỡ và avatar đặc sắc",
     studyDesc: "Mở khoá tính năng tải âm thanh, cho phép bạn tuỳ biến theo sở thích cá nhân"
@@ -1330,10 +1438,34 @@ const STREAK_MILESTONES = [
   {
     days: 50,
     tier: 5,
-    title: "Độc nhất vô nhị",
-    color: "Gradient tím + đỏ",
-    forumDesc: "Mở khoá giao diện đẳng cấp sang trọng, hào quang rực rỡ đón chờ!",
+    title: "Học giả uyên bác",
+    color: "Thạch anh hồng Rose Quartz",
+    forumDesc: "Mở khoá giao diện thạch anh hồng tinh xảo, hào quang thanh tao!",
     studyDesc: "Mở khoá các giao diện độc quyền"
+  },
+  {
+    days: 100,
+    tier: 6,
+    title: "Nhà kiến tạo tri thức",
+    color: "Lăng kính huyền thoại Mythic Prism",
+    forumDesc: "Đặc quyền đang chờ bạn khám phá",
+    studyDesc: "Đặc quyền đang chờ bạn khám phá"
+  },
+  {
+    days: 200,
+    tier: 7,
+    title: "Bậc thầy học thuật",
+    color: "Tam sắc Neon Super",
+    forumDesc: "Đặc quyền đang chờ bạn khám phá",
+    studyDesc: "Đặc quyền đang chờ bạn khám phá"
+  },
+  {
+    days: 365,
+    tier: 8,
+    title: "Học giả lưu danh",
+    color: "Bạch kim kim cương thuần khiết Celestial Diamond",
+    forumDesc: "Đặc quyền đang chờ bạn khám phá",
+    studyDesc: "Đặc quyền đang chờ bạn khám phá"
   }
 ];
 
@@ -1342,11 +1474,14 @@ function getStreakTitle(streak = 0, tier) {
   const t = Number(tier !== undefined ? tier : getStreakTier(s));
   const milestone = STREAK_MILESTONES.slice().reverse().find(m => m.tier <= t && s >= m.days);
   if (milestone) return milestone.title;
-  if (t === 5) return "Độc nhất vô nhị";
-  if (t === 4) return "Bậc thầy học thuật";
-  if (t === 3) return "Nhà nghiên cứu tài năng";
-  if (t === 2) return "Học giả bền bỉ";
-  if (t === 1) return "Sinh viên năng động";
+  if (t === 8) return "Học giả lưu danh";
+  if (t === 7) return "Bậc thầy học thuật";
+  if (t === 6) return "Nhà kiến tạo tri thức";
+  if (t === 5) return "Học giả uyên bác";
+  if (t === 4) return "Nhà nghiên cứu bền bỉ";
+  if (t === 3) return "Học viên tài năng";
+  if (t === 2) return "Sinh viên năng động";
+  if (t === 1) return "Người gieo mầm";
   return "Tân binh";
 }
 
@@ -1669,6 +1804,9 @@ window.isStudentProfileCompleted = isStudentProfileCompleted;
 
 function applySession(user) {
   session = user || null;
+  if (typeof window !== "undefined") {
+    window.session = session;
+  }
   if (user) {
     setCachedUser(user);
   } else {
@@ -1686,28 +1824,29 @@ function applySession(user) {
 
   let effectiveTheme = null;
   const userStreak = typeof currentUserStreak === "number" ? currentUserStreak : (user?.streak || 0);
+  const isAdminOrTa = user?.role === "admin" || user?.role === "ta";
 
-  if (userThemePref === "ruby") {
-    // Only allow if unlocked (streakTier >= 4 or streak >= 30)
-    if (streakTier >= 4 || userStreak >= 30) {
-      effectiveTheme = "ruby";
+  if (userThemePref === "diamond") {
+    if (isAdminOrTa || streakTier >= 8 || userStreak >= 365) {
+      effectiveTheme = "diamond";
+    }
+  } else if (userThemePref === "super") {
+    if (isAdminOrTa || streakTier >= 7 || userStreak >= 200) {
+      effectiveTheme = "super";
     }
   } else if (userThemePref === "mythic") {
-    // Only allow if unlocked (streakTier >= 5 or streak >= 50)
-    if (streakTier >= 5 || userStreak >= 50) {
+    if (isAdminOrTa || streakTier >= 6 || userStreak >= 100 || userStreak >= 50) {
       effectiveTheme = "mythic";
+    }
+  } else if (userThemePref === "ruby") {
+    if (isAdminOrTa || streakTier >= 4 || userStreak >= 30) {
+      effectiveTheme = "ruby";
     }
   } else if (userThemePref === "default") {
     effectiveTheme = null;
   } else {
-    // No explicit preference saved: fallback to highest unlocked streak tier
-    if (streakTier >= 5) {
-      effectiveTheme = "mythic";
-    } else if (streakTier >= 4) {
-      effectiveTheme = "ruby";
-    } else {
-      effectiveTheme = null;
-    }
+    // No explicit preference saved: do not force unless explicitly selected, or default
+    effectiveTheme = null;
   }
 
   if (effectiveTheme) {
@@ -5630,12 +5769,13 @@ window.pendingThemeChange = null;
 
 function refreshThemeCustomizerActiveStates() {
   const userStreak = typeof currentUserStreak === "number" ? currentUserStreak : (session?.streak || 0);
+  const isAdmin = session?.role === "admin" || session?.role === "ta";
 
   // 1. Tông màu (color)
   const curColor = document.documentElement.getAttribute("data-user-theme") || "default";
   document.querySelectorAll('#themeColorOptionsGrid .theme-card').forEach(c => {
     const minStreak = Number(c.dataset.minStreak || 0);
-    const isLocked = minStreak > 0 && userStreak < minStreak;
+    const isLocked = (!isAdmin) && minStreak > 0 && userStreak < minStreak;
     c.classList.toggle("is-locked", isLocked);
     const lockEl = c.querySelector(".theme-lock-overlay");
     if (lockEl) lockEl.style.display = isLocked ? "flex" : "none";
@@ -5705,8 +5845,9 @@ function requestThemeSwitch(type, val, label, minStreak = 0) {
     return;
   }
 
-  // 2. Kiểm tra chuỗi ngày nếu bị khóa
-  if (type === "color" && minStreak > 0 && userStreak < minStreak) {
+  // 2. Kiểm tra chuỗi ngày nếu bị khóa (Admin & TA được miễn kiểm tra để test)
+  const isAdmin = session?.role === "admin" || session?.role === "ta";
+  if (type === "color" && (!isAdmin) && minStreak > 0 && userStreak < minStreak) {
     if (typeof toast === "function") {
       toast(`🔒 Cần đạt chuỗi ${minStreak} ngày để mở khóa.`);
     }
@@ -5798,7 +5939,7 @@ function initThemeCustomizerHandlers() {
   // Restore saved theme and nav style preference
   try {
     const savedColor = localStorage.getItem("re_search_user_color_preference") || localStorage.getItem("re_search_user_theme_preference");
-    if (savedColor === "ruby" || savedColor === "mythic") {
+    if (savedColor === "ruby" || savedColor === "mythic" || savedColor === "super" || savedColor === "diamond") {
       document.documentElement.setAttribute("data-user-theme", savedColor);
       document.body.setAttribute("data-user-theme", savedColor);
     } else if (savedColor === "default") {
@@ -7572,6 +7713,7 @@ function renderAdminUserRows(users) {
           <button class="button button-primary" style="padding: 4px 8px; font-size: 12px; white-space: nowrap;" onclick="openNamecard(${u.id})" title="Xem hồ sơ & thông tin chi tiết"><svg class="ui-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px; margin-right:2px;"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>Hồ sơ</button>
           <button class="button button-outline" style="padding: 4px 8px; font-size: 12px; white-space: nowrap;" onclick="changeUserRole(${u.id}, '${u.role}')">Đổi quyền</button>
           <button class="button button-outline" style="padding: 4px 8px; font-size: 12px; white-space: nowrap;" onclick="adjustUserPoints(${u.id})">Cộng/Trừ điểm</button>
+          <button class="button button-outline" style="padding: 4px 8px; font-size: 12px; white-space: nowrap;" onclick="adjustUserStreak(${u.id}, ${u.streak || 0})" title="Chỉnh chuỗi ngày của người dùng này">🔥 Chuỗi: ${u.streak || 0}d</button>
         </div>
       </td>
     </tr>
@@ -7668,6 +7810,57 @@ window.adjustUserPoints = async (id) => {
     toast("Điều chỉnh điểm thành công!");
   } catch (e) {
     toast(e.message);
+  }
+};
+
+window.adjustUserStreak = async (id, currentStreak = 0) => {
+  if (!session || (session.role !== "admin" && session.role !== "ta")) {
+    if (typeof toast === "function") toast("Bạn không có quyền quản trị.");
+    return;
+  }
+  const input = prompt(
+    `🔥 ĐIỀU CHỈNH CHUỖI TEST CHO NGƯỜI DÙNG #${id}\n\n` +
+    `Nhập số ngày chuỗi (0, 3, 7, 14, 30, 50, 100, 200, 365, ...)\n` +
+    `Hoặc nhập 'reset' để huỷ ghi đè và tính toán tự động.\n\n` +
+    `Hiện tại: ${currentStreak} ngày`,
+    String(currentStreak)
+  );
+  if (input === null) return;
+  const trimmed = input.trim();
+  let streakVal = null;
+  if (trimmed.toLowerCase() !== "reset") {
+    streakVal = parseInt(trimmed, 10);
+    if (isNaN(streakVal) || streakVal < 0) {
+      if (typeof toast === "function") toast("⚠️ Số ngày chuỗi không hợp lệ.");
+      return;
+    }
+  }
+
+  try {
+    const res = await requestAPI(`/api/admin/users/${id}/streak`, {
+      method: "PATCH",
+      body: JSON.stringify({ streak: streakVal }),
+    });
+    if (res && res.success) {
+      if (typeof toast === "function") {
+        toast(`✨ Đã đặt chuỗi: ${res.streak} ngày (${res.streakTitle})`);
+      }
+      if (session && session.id === id) {
+        session.streak = res.streak;
+        session.streakTier = res.streakTier;
+        window.currentUserStreak = res.streak;
+      }
+      if (typeof hydrateServer === "function") {
+        await hydrateServer(true);
+      }
+      if (typeof loadAdminMembers === "function") {
+        await loadAdminMembers();
+      }
+    } else {
+      if (typeof toast === "function") toast(res?.error || "Không thể cập nhật chuỗi.");
+    }
+  } catch (e) {
+    if (typeof toast === "function") toast("Lỗi: " + e.message);
   }
 };
 
@@ -22575,7 +22768,7 @@ function drawBottomSnowPile(ctx, w, h, pile, isDark) {
   ctx.restore();
 }
 
-const TREE_STREAK_REQUIREMENTS = [0, 3, 7, 14, 30, 50];
+const TREE_STREAK_REQUIREMENTS = [0, 3, 7, 14, 30, 50, 100, 200, 365];
 
 const TREE_POLAROID_FRAME_MAP = {
   classic: "#FFFAF0",
@@ -25749,7 +25942,8 @@ function getEffectiveViewerStreakAccess() {
     };
   }
   if (s.role === "admin" || s.role === "ta") {
-    return { streak: Math.max(52, Number(s.streak || 0)), streakTier: 5, canUploadPhoto: true };
+    const adminStreak = Math.max(52, Number(s.streak || 0));
+    return { streak: adminStreak, streakTier: Number(s.streakTier || getStreakTier(adminStreak)), canUploadPhoto: true };
   }
   const streak = Math.max(0, Number(s.streak || 0));
   let tier = Number(s.streakTier || 0);
@@ -25766,10 +25960,20 @@ function getEffectiveViewerStreakAccess() {
 
 function syncChristmasTreeStreakAccess() {
   const access = getEffectiveViewerStreakAccess();
-  const tierNames = ["Tân binh", "Khởi động (≥3d)", "Bền bỉ (≥7d)", "Kiên trì (≥14d)", "Tinh anh (≥30d)", "Huyền thoại (≥50d)"];
+  const tierNames = [
+    "Tân binh",
+    "Người gieo mầm (≥3d)",
+    "Sinh viên năng động (≥7d)",
+    "Học viên tài năng (≥14d)",
+    "Nhà nghiên cứu bền bỉ (≥30d)",
+    "Học giả uyên bác (≥50d)",
+    "Nhà kiến tạo tri thức (≥100d)",
+    "Bậc thầy học thuật (≥200d)",
+    "Học giả lưu danh (≥365d)"
+  ];
   const tierText = $("#xmasUserTierText");
   if (tierText) {
-    tierText.textContent = `Chuỗi ${access.streak} ngày · ${tierNames[Math.min(5, access.streakTier)] || "Tân binh"}`;
+    tierText.textContent = `Chuỗi ${access.streak} ngày · ${tierNames[Math.min(8, access.streakTier)] || "Tân binh"}`;
   }
 
   const uploadBox = $("#xmasPolaroidDropzone");
