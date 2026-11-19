@@ -1443,23 +1443,23 @@ const STREAK_MILESTONES = [
     days: 30,
     tier: 4,
     title: "Nhà nghiên cứu bền bỉ",
-    color: "Đỏ ruby",
-    forumDesc: "Mở khóa giao diện độc quyền, màu tên rực rỡ và avatar đặc sắc",
+    color: "Đỏ huyết sắc",
+    forumDesc: "Mở khoá giao diện Đỏ huyết sắc độc quyền, màu tên rực rỡ và avatar đặc sắc",
     studyDesc: "Mở khoá tính năng tải âm thanh, cho phép bạn tuỳ biến theo sở thích cá nhân"
   },
   {
     days: 50,
     tier: 5,
     title: "Học giả uyên bác",
-    color: "Thạch anh hồng Rose Quartz",
-    forumDesc: "Mở khoá giao diện Thạch anh hồng Rose Quartz độc quyền, màu tên rực rỡ và avatar đặc sắc",
+    color: "Thạch anh hồng",
+    forumDesc: "Mở khoá giao diện Thạch anh hồng độc quyền, màu tên rực rỡ và avatar đặc sắc",
     studyDesc: "Mở khoá các giao diện độc quyền"
   },
   {
     days: 100,
     tier: 6,
     title: "Nhà kiến tạo tri thức",
-    color: "Lăng kính huyền thoại Mythic Prism",
+    color: "Tím hoàng gia",
     forumDesc: "Đặc quyền đang chờ bạn khám phá",
     studyDesc: "Đặc quyền đang chờ bạn khám phá"
   },
@@ -1467,7 +1467,7 @@ const STREAK_MILESTONES = [
     days: 200,
     tier: 7,
     title: "Bậc thầy học thuật",
-    color: "Tam sắc Neon Super",
+    color: "Siêu tân tinh",
     forumDesc: "Đặc quyền đang chờ bạn khám phá",
     studyDesc: "Đặc quyền đang chờ bạn khám phá"
   },
@@ -1475,7 +1475,7 @@ const STREAK_MILESTONES = [
     days: 365,
     tier: 8,
     title: "Học giả lưu danh",
-    color: "Bạch kim kim cương thuần khiết Celestial Diamond",
+    color: "Đen huyền bí",
     forumDesc: "Đặc quyền đang chờ bạn khám phá",
     studyDesc: "Đặc quyền đang chờ bạn khám phá"
   }
