@@ -147,6 +147,40 @@ let anonymous = false;
 let homeLeaderboardPeriod = "week";
 let homeLeaderboardCategory = "contributions";
 let cachedHomeLeaderboardData = null;
+
+var HOME_LB_CATEGORIES = {
+  contributions: {
+    title: "Đại sứ tri thức",
+    hasPeriods: true,
+    scoreIconHtml: `<svg class="ui-icon champ-score-star" width="13" height="13" viewBox="0 0 24 24" fill="#f59e0b" stroke="#f59e0b" stroke-width="1.2" aria-hidden="true" style="margin-right: 3px;"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>`,
+    unit: ""
+  },
+  competition: {
+    title: "Tinh thông thần tốc",
+    hasPeriods: true,
+    scoreIconHtml: `<svg class="ui-icon" width="13" height="13" viewBox="0 0 24 24" fill="#f59e0b" stroke="#f59e0b" stroke-width="1.2" aria-hidden="true" style="margin-right: 3px;"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>`,
+    unit: "điểm"
+  },
+  study: {
+    title: "Ong chăm chỉ",
+    hasPeriods: true,
+    scoreIconHtml: `<svg class="ui-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#0ea5e9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="margin-right: 3px;"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`,
+    unit: "giờ"
+  },
+  streak: {
+    title: "Người giữ lửa",
+    hasPeriods: false,
+    scoreIconHtml: `<svg class="ui-icon" width="13" height="13" viewBox="0 0 24 24" fill="#f97316" stroke="#f97316" stroke-width="1.2" aria-hidden="true" style="margin-right: 3px;"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>`,
+    unit: "ngày"
+  },
+  likes: {
+    title: "Vạn người mê",
+    hasPeriods: false,
+    scoreIconHtml: `<svg class="ui-icon" width="13" height="13" viewBox="0 0 24 24" fill="#ec4899" stroke="#ec4899" stroke-width="1.2" aria-hidden="true" style="margin-right: 3px;"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>`,
+    unit: "tim"
+  }
+};
+window.HOME_LB_CATEGORIES = HOME_LB_CATEGORIES;
 let currentForumCommunitySlug = null;
 let forumCommunitiesList = [];
 let activeCommunityTab = "explore";
@@ -2529,7 +2563,9 @@ async function hydrateServer(force = false) {
       cachedHomeLeaderboardData = leaderboardData;
       renderLeaderboard();
       updateResponsiveAsidePlacement();
-      if (typeof renderHomeLeaderboardData === "function" && leaderboardData.periods?.[homeLeaderboardPeriod]) {
+      if (typeof renderCurrentHomeLeaderboard === "function") {
+        renderCurrentHomeLeaderboard();
+      } else if (typeof renderHomeLeaderboardData === "function" && leaderboardData.periods?.[homeLeaderboardPeriod]) {
         renderHomeLeaderboardData(leaderboardData.periods[homeLeaderboardPeriod]);
       }
     }
@@ -3225,7 +3261,8 @@ function renderPosts() {
 function renderHome() {
   updateCommunityStats();
   if (typeof initHomeBannerStack === "function") initHomeBannerStack();
-  if (typeof loadAndRenderHomeLeaderboard === "function") loadAndRenderHomeLeaderboard();
+  if (typeof renderCurrentHomeLeaderboard === "function") renderCurrentHomeLeaderboard();
+  else if (typeof loadAndRenderHomeLeaderboard === "function") loadAndRenderHomeLeaderboard();
   const visiblePosts = posts.filter((p) => p.status === "visible");
   const unpinned = visiblePosts.filter((p) => !p.isPinned);
   const homePosts = (unpinned.length > 0 ? unpinned : visiblePosts)
@@ -19583,9 +19620,21 @@ function buildArenaLeaderboardRowHtml(u, isCurrent, options = {}) {
   const rankBadgeClass = isPinnedMyRow ? "rank-me" : `rank-${u.rank}`;
   const rowExtraClass = isPinnedMyRow ? "top-11-plus-row lb-my-rank-row" : (isCurrent ? "is-current-user is-me" : "");
   const scoreVal = options.useLikesCount ? Number(u.likesCount || 0) : u.score;
+  const targetUserId = u.userId || u.id;
+
+  // Icon chuỗi chỉ xuất hiện ở bảng người giữ lửa (cạnh số chuỗi), không xuất hiện cạnh tên trên BXH trang chủ
+  const nameFlameHtml = options.isHomeLb ? "" : getFlameSVG(u.streakTier, 15);
+  let scoreDisplay = "";
+  if (options.isHomeLb && options.category === "streak") {
+    scoreDisplay = `<span style="display:inline-flex;align-items:center;gap:3px;">${getFlameSVG(u.streakTier, 14)} <span>${scoreVal} ngày</span></span>`;
+  } else if (options.isHomeLb && options.unit) {
+    scoreDisplay = `${scoreIconHtml}<span>${scoreVal} ${options.unit}</span>`;
+  } else {
+    scoreDisplay = `${scoreIconHtml}${scoreVal}`;
+  }
 
   return `
-    <div class="comp-lb-row leaderboard-item ${isPinnedMyRow ? "is-current-user is-me " + rowExtraClass : rowExtraClass}" data-namecard-user-id="${u.userId}" style="cursor: pointer;" title="Xem thẻ tên">
+    <div class="comp-lb-row leaderboard-item ${isPinnedMyRow ? "is-current-user is-me " + rowExtraClass : rowExtraClass}" data-namecard-user-id="${targetUserId}" style="cursor: pointer;" title="Xem thẻ tên">
       <div class="comp-lb-capsule lb-capsule">
         <div class="lb-cover-art-wrap">
           <div class="lb-cover-art" style="${coverStyle}"></div>
@@ -19597,14 +19646,14 @@ function buildArenaLeaderboardRowHtml(u, isCurrent, options = {}) {
         </div>
         <div class="comp-lb-user lb-info">
           <span class="comp-lb-name lb-name ${nameClass}">
-            ${getFlameSVG(u.streakTier, 15)}
+            ${nameFlameHtml}
             <span class="lb-name-text">${escapeHTML(u.displayName)}</span>
           </span>
           ${u.role && u.role !== 'student' ? `<span class="lb-role lb-role-${u.role}">${getRoleDisplay(u.role)}</span>` : ""}
           ${(isCurrent || isPinnedMyRow) ? '<span class="you-tag">(Bạn)</span>' : ""}
         </div>
       </div>
-      <span class="comp-lb-score lb-points">${scoreIconHtml}${scoreVal}</span>
+      <span class="comp-lb-score lb-points">${scoreDisplay}</span>
     </div>
   `;
 }
@@ -19621,28 +19670,46 @@ function renderArenaTop3(top1, top2, top3, isWeek = false, options = {}) {
     const nameClass = getNameClass(user.streakTier);
     const coverStyle = getMiniCoverStyle(user.coverImage);
     const activeFrame = (user.namecardFrame && user.namecardFrame !== "default") ? user.namecardFrame : "none";
+    const targetUserId = user.userId || user.id;
 
-    // BXH 3 Chặng (1, 2, 3): Top 1 / Top 2 / Top 3
-    // BXH Toàn tuần (week): Quán quân / Á quân / Quý quân
-    let rankTag = isWeek ? "Quán quân" : "Top 1";
+    // Trang chủ: Dùng Hạng 1 / Hạng 2 / Hạng 3 (Không dùng Quán quân/Á quân/Quý quân)
+    // Đấu trường: Chặng 1, 2, 3 dùng Top 1/2/3, Tuần dùng Quán/Á/Quý quân
+    let rankTag = `Hạng ${rank}`;
+    if (!options.isHomeLb) {
+      if (isWeek) {
+        rankTag = rank === 1 ? "Quán quân" : (rank === 2 ? "Á quân" : "Quý quân");
+      } else {
+        rankTag = `Top ${rank}`;
+      }
+    }
+
     let medalSize = 40;
     let flameSize = 16;
     let scoreClass = "gold-score";
     if (rank === 2) {
-      rankTag = isWeek ? "Á quân" : "Top 2";
       medalSize = 36;
       flameSize = 14;
       scoreClass = "silver-score";
     } else if (rank === 3) {
-      rankTag = isWeek ? "Quý quân" : "Top 3";
       medalSize = 32;
       flameSize = 14;
       scoreClass = "bronze-score";
     }
     const scoreVal = options.useLikesCount ? Number(user.likesCount || 0) : user.score;
 
+    // Icon chuỗi chỉ xuất hiện ở bảng người giữ lửa (cạnh số chuỗi), không xuất hiện cạnh tên trên BXH trang chủ
+    const nameFlameHtml = options.isHomeLb ? "" : getFlameSVG(user.streakTier, flameSize);
+    let scoreDisplay = "";
+    if (options.isHomeLb && options.category === "streak") {
+      scoreDisplay = `<span style="display:inline-flex;align-items:center;gap:3px;">${getFlameSVG(user.streakTier, 16)} <span>${scoreVal} ngày</span></span>`;
+    } else if (options.isHomeLb && options.unit) {
+      scoreDisplay = `${scoreIconHtml}<span>${scoreVal} ${options.unit}</span>`;
+    } else {
+      scoreDisplay = `${scoreIconHtml}${scoreVal}`;
+    }
+
     return `
-      <div class="arena-champion-card mini-namecard rank-${rank}" data-namecard-user-id="${user.userId}" data-frame="${activeFrame}" style="cursor: pointer;" title="Xem thẻ tên">
+      <div class="arena-champion-card mini-namecard rank-${rank}" data-namecard-user-id="${targetUserId}" data-frame="${activeFrame}" style="cursor: pointer;" title="Xem thẻ tên">
         <!-- Huy chương vinh danh nằm ngoài hẳn phía trên khung, căn giữa, không dính avatar -->
         <div class="champ-top-medal-anchor">
           <span class="champ-crown rank-medal rank-${rank}">${getArenaMedalSVG(rank, medalSize)}</span>
@@ -19666,17 +19733,17 @@ function renderArenaTop3(top1, top2, top3, isWeek = false, options = {}) {
             <div class="champ-info-group">
               <!-- Tên + Icon lửa chuỗi (Không có vai trò) -->
               <div class="champ-name ${rank === 1 ? 'font-bold' : ''} ${nameClass}" title="${escapeHTML(user.displayName)}">
-                ${getFlameSVG(user.streakTier, flameSize)} <span class="lb-name-text">${escapeHTML(user.displayName)}</span>
+                ${nameFlameHtml}<span class="lb-name-text">${escapeHTML(user.displayName)}</span>
               </div>
 
-              <!-- Tag: Top 1-2-3 (Chặng) hoặc Quán/Á/Quý quân (Toàn tuần) nằm giữa tên và điểm số -->
+              <!-- Tag: Hạng 1-2-3 (Trang chủ) hoặc Quán/Á/Quý quân / Top 1-2-3 (Đấu trường) -->
               <div class="champ-rank-tag-wrap">
                 <span class="champ-rank-pill pill-rank-${rank}">${rankTag}</span>
               </div>
 
-              <!-- Số điểm / lượt tim -->
+              <!-- Số điểm / lượt tim / số chuỗi -->
               <div class="champ-score ${scoreClass}">
-                ${scoreIconHtml}${scoreVal}
+                ${scoreDisplay}
               </div>
             </div>
           </div>
@@ -25063,6 +25130,7 @@ function removeCardEdgeSnowDom(el) {
 }
 
 function syncCardSnowCaps() {
+  if (typeof CARD_EDGE_SNOW_SELECTOR === "undefined" || !CARD_EDGE_SNOW_SELECTOR) return;
   const registry = getTrackedCardSnowRegistry();
   const active = isChristmas2026Season() && christmasSnowState.enabled && !christmasSnowState.reducedMotion;
   if (!active) {
@@ -28512,95 +28580,63 @@ if (typeof checkNotifUnreadCount === "function") {
 // BẢNG VINH DANH HỌC THUẬT TRANG CHỦ (HOMEPAGE GRAND LEADERBOARD)
 // =========================================================================
 
-const HOME_LB_CATEGORIES = {
-  contributions: {
-    title: "Gương mặt Tri thức & Đóng góp Tiêu biểu",
-    subtitle: "Tôn vinh những cá nhân xuất sắc có hoạt động nghiên cứu, chia sẻ tài liệu và lan tỏa tri thức bền bỉ nhất.",
-    hasPeriods: true,
-    scoreIconHtml: `<svg class="ui-icon champ-score-star" width="13" height="13" viewBox="0 0 24 24" fill="#f59e0b" stroke="#f59e0b" stroke-width="1.2" aria-hidden="true" style="margin-right: 3px;"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>`,
-    unit: ""
-  },
-  streak: {
-    title: "Bậc thầy Bền bỉ & Người giữ lửa",
-    subtitle: "Tôn vinh những học viên duy trì chuỗi học tập và nghiên cứu liên tục mỗi ngày.",
-    hasPeriods: false,
-    scoreIconHtml: `<svg class="ui-icon" width="13" height="13" viewBox="0 0 24 24" fill="#f97316" stroke="#f97316" stroke-width="1.2" aria-hidden="true" style="margin-right: 3px;"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>`,
-    unit: "ngày"
-  },
-  competition: {
-    title: "Tinh thông Thần tốc & Đấu trường Học thuật",
-    subtitle: "Bảng vàng tổng kết các chặng thi đấu học thuật hàng tuần tại Đấu trường RE:SEARCH.",
-    hasPeriods: false,
-    scoreIconHtml: `<svg class="ui-icon" width="13" height="13" viewBox="0 0 24 24" fill="#f59e0b" stroke="#f59e0b" stroke-width="1.2" aria-hidden="true" style="margin-right: 3px;"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>`,
-    unit: "điểm"
-  },
-  likes: {
-    title: "Gương mặt Truyền cảm hứng & Vạn người mê",
-    subtitle: "Những thẻ tên học thuật nhận được nhiều sự ngưỡng mộ và yêu thích nhất từ cộng đồng.",
-    hasPeriods: false,
-    scoreIconHtml: `<svg class="ui-icon" width="13" height="13" viewBox="0 0 24 24" fill="#ec4899" stroke="#ec4899" stroke-width="1.2" aria-hidden="true" style="margin-right: 3px;"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>`,
-    unit: "tim"
-  },
-  study: {
-    title: "Học giả Cần cù & Ong chăm chỉ",
-    subtitle: "Xếp hạng tổng thời lượng tự học và nghiên cứu sâu tại Phòng tự học.",
-    hasPeriods: false,
-    scoreIconHtml: `<svg class="ui-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#0ea5e9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="margin-right: 3px;"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`,
-    unit: "giờ"
+// HOME_LB_CATEGORIES is declared at the top of app.js
+
+let homeLbCountdownTimer = null;
+
+function updateHomeLeaderboardCountdown() {
+  const textEl = $("#homeLbCountdownText");
+  const noticeEl = $("#homeLbRefreshNotice");
+  if (!textEl || !noticeEl) return;
+
+  const cfg = HOME_LB_CATEGORIES[homeLeaderboardCategory];
+  if (!cfg || !cfg.hasPeriods) {
+    noticeEl.style.display = "none";
+    return;
   }
-};
+  noticeEl.style.display = "flex";
 
-async function loadAndRenderHomeLeaderboard(period, forceRefresh = false) {
-  if (period && ["week", "month", "quarter"].includes(period)) {
-    homeLeaderboardPeriod = period;
-  }
+  // Tính thời gian tới mốc làm mới theo giờ VN (GMT+7)
+  const now = new Date();
+  const utcMs = now.getTime() + now.getTimezoneOffset() * 60000;
+  const vnNow = new Date(utcMs + 7 * 3600000);
 
-  // Cập nhật tab chu kỳ active
-  $$(".home-lb-tab-btn").forEach((btn) => {
-    const isAct = btn.dataset.period === homeLeaderboardPeriod;
-    btn.classList.toggle("active", isAct);
-    btn.setAttribute("aria-selected", isAct ? "true" : "false");
-  });
-
-  const podiumWrap = $("#homeLbPodiumWrap");
-  const lbList = $("#homeLbList");
-  const listWrap = $("#homeLbListWrap");
-  if (!podiumWrap || !lbList) return;
-
-  // Nếu đang chọn danh mục khác đóng góp (streak, competition, likes, study)
-  if (homeLeaderboardCategory !== "contributions") {
-    renderHomeCategoryLeaderboard(homeLeaderboardCategory);
+  let targetDate = null;
+  if (homeLeaderboardPeriod === "week") {
+    // Thứ Hai tuần tới lúc 00:00:00 (0 = Chủ Nhật, 1 = Thứ Hai, ..., 6 = Thứ Bảy)
+    const day = vnNow.getDay();
+    const daysUntilNextMonday = ((8 - day) % 7) || 7;
+    targetDate = new Date(vnNow.getFullYear(), vnNow.getMonth(), vnNow.getDate() + daysUntilNextMonday, 0, 0, 0);
+  } else if (homeLeaderboardPeriod === "month") {
+    // Ngày 1 tháng sau lúc 00:00:00
+    targetDate = new Date(vnNow.getFullYear(), vnNow.getMonth() + 1, 1, 0, 0, 0);
+  } else if (homeLeaderboardPeriod === "quarter") {
+    // Ngày 1 của quý tiếp theo (Tháng 1, 4, 7, 10)
+    const currentQ = Math.floor(vnNow.getMonth() / 3);
+    targetDate = new Date(vnNow.getFullYear(), (currentQ + 1) * 3, 1, 0, 0, 0);
+  } else {
+    noticeEl.style.display = "none";
     return;
   }
 
-  // Sử dụng dữ liệu đã cache nếu có
-  if (!forceRefresh && cachedHomeLeaderboardData?.periods?.[homeLeaderboardPeriod]) {
-    renderHomeLeaderboardData(cachedHomeLeaderboardData.periods[homeLeaderboardPeriod], "contributions");
-    return;
-  }
+  const diffMs = targetDate.getTime() - vnNow.getTime();
+  const totalSec = Math.max(0, Math.floor(diffMs / 1000));
+  const days = Math.floor(totalSec / 86400);
+  const hours = Math.floor((totalSec % 86400) / 3600);
+  const mins = Math.floor((totalSec % 3600) / 60);
+  const secs = totalSec % 60;
 
-  try {
-    const data = await requestAPI(`/api/leaderboard?period=${homeLeaderboardPeriod}`);
-    if (data) {
-      cachedHomeLeaderboardData = data;
-      cachedLeaderboardData = data;
-      const periodData = data.periods?.[homeLeaderboardPeriod] || {
-        top10: data.top10 || [],
-        currentUserEntry: data.currentUserEntry || null,
-      };
-      renderHomeLeaderboardData(periodData, "contributions");
-    }
-  } catch (err) {
-    console.error("Lỗi nạp bảng vinh danh trang chủ:", err);
-    if (podiumWrap) {
-      podiumWrap.innerHTML = `<div class="comp-lb-empty">Không thể tải bảng vinh danh. Vui lòng thử lại sau.</div>`;
-    }
-  }
+  textEl.textContent = `Bảng xếp hạng làm mới sau ${days} ngày ${hours} giờ ${mins} phút ${secs} giây`;
 }
 
-function switchHomeLeaderboardCategory(cat) {
-  if (!HOME_LB_CATEGORIES[cat]) cat = "contributions";
-  homeLeaderboardCategory = cat;
+if (!homeLbCountdownTimer) {
+  homeLbCountdownTimer = setInterval(updateHomeLeaderboardCountdown, 1000);
+}
+
+function renderCurrentHomeLeaderboard() {
+  const cat = homeLeaderboardCategory || "contributions";
+  const period = homeLeaderboardPeriod || "week";
+  const cfg = HOME_LB_CATEGORIES[cat] || HOME_LB_CATEGORIES.contributions;
 
   // Cập nhật active button danh mục
   $$(".home-lb-cat-btn").forEach((btn) => {
@@ -28609,76 +28645,126 @@ function switchHomeLeaderboardCategory(cat) {
     btn.setAttribute("aria-selected", isAct ? "true" : "false");
   });
 
-  // Cập nhật tiêu đề & mô tả
-  const cfg = HOME_LB_CATEGORIES[cat];
-  const titleEl = $("#homeLbCategoryTitle");
-  const subtitleEl = $("#homeLbCategorySubtitle");
-  if (titleEl) titleEl.textContent = cfg.title;
-  if (subtitleEl) subtitleEl.textContent = cfg.subtitle;
-
-  // Ẩn / hiện bộ lọc chu kỳ Tuần/Tháng/Quý (chỉ Đại sứ tri thức có chu kỳ)
+  // Ẩn / hiện bộ lọc chu kỳ Tuần này / Tháng này / Quý này (chỉ 3 BXH chu kỳ mới hiện)
   const periodTabs = $("#homeLbPeriodTabs");
   if (periodTabs) {
     periodTabs.style.display = cfg.hasPeriods ? "inline-flex" : "none";
   }
+  $$(".home-lb-tab-btn").forEach((btn) => {
+    const isAct = btn.dataset.period === period;
+    btn.classList.toggle("active", isAct);
+    btn.setAttribute("aria-selected", isAct ? "true" : "false");
+  });
 
-  if (cat === "contributions") {
-    loadAndRenderHomeLeaderboard(homeLeaderboardPeriod);
-  } else {
-    renderHomeCategoryLeaderboard(cat);
-  }
-}
+  // Cập nhật countdown làm mới
+  updateHomeLeaderboardCountdown();
 
-function renderHomeCategoryLeaderboard(cat) {
   const data = cachedHomeLeaderboardData || cachedLeaderboardData;
   if (!data) {
-    requestAPI("/api/leaderboard").then(res => {
+    requestAPI(`/api/leaderboard?period=${period}`).then((res) => {
       if (res) {
         cachedHomeLeaderboardData = res;
         cachedLeaderboardData = res;
-        renderHomeCategoryLeaderboard(cat);
+        renderCurrentHomeLeaderboard();
       }
-    }).catch(() => { });
+    }).catch((err) => {
+      console.error("Lỗi tải dữ liệu bảng xếp hạng:", err);
+    });
     return;
   }
 
-  let rawList = [];
-  let unit = "";
-  if (cat === "streak") {
-    rawList = data.streakLeaderboard || [];
-    rawList = rawList.map((u, i) => ({
-      ...u,
-      rank: u.rank || (i + 1),
-      score: u.streak,
-      unit: "ngày"
-    }));
-  } else if (cat === "competition") {
-    rawList = data.arenaLeaderboard || [];
-    rawList = rawList.map((u, i) => ({
-      ...u,
-      rank: u.rank || (i + 1),
-      score: u.score != null ? u.score : (u.totalScore || 0),
-      unit: "điểm"
-    }));
-  } else if (cat === "likes") {
-    rawList = data.likesLeaderboard || [];
-    rawList = rawList.map((u, i) => ({
-      ...u,
-      rank: u.rank || (i + 1),
-      score: u.likesCount || 0,
-      unit: "tim"
-    }));
-  } else if (cat === "study") {
-    rawList = data.studyLeaderboard || [];
-    rawList = rawList.map((u, i) => ({
-      ...u,
-      rank: u.rank || (i + 1),
-      score: u.hours != null ? `${u.hours}h` : `${Math.floor((u.totalMinutes || 0) / 60)}h`,
-      unit: "giờ"
-    }));
+  let listData = { top10: [], currentUserEntry: null };
+
+  if (cfg.hasPeriods) {
+    // 3 bảng có chu kỳ: contributions, competition, study
+    if (data.periods?.[cat]?.[period]) {
+      listData = data.periods[cat][period];
+    } else if (cat === "contributions" && data.periods?.[period]) {
+      listData = data.periods[period];
+    } else if (cat === "competition" && data.arenaLeaderboard) {
+      listData = {
+        top10: (data.arenaLeaderboard || []).slice(0, 10).map((u, i) => ({
+          ...u,
+          userId: u.userId || u.id,
+          id: u.id || u.userId,
+          rank: u.rank || (i + 1),
+          score: u.score != null ? u.score : (u.totalScore || 0),
+          unit: "điểm"
+        })),
+        currentUserEntry: null
+      };
+    } else if (cat === "study" && data.studyLeaderboard) {
+      listData = {
+        top10: (data.studyLeaderboard || []).slice(0, 10).map((u, i) => ({
+          ...u,
+          userId: u.userId || u.id,
+          id: u.id || u.userId,
+          rank: u.rank || (i + 1),
+          score: u.hours != null ? `${u.hours}h` : `${Math.floor((u.totalMinutes || 0) / 60)}h`,
+          unit: "giờ"
+        })),
+        currentUserEntry: null
+      };
+    } else {
+      listData = { top10: data.top10 || [], currentUserEntry: data.currentUserEntry || null };
+    }
+  } else {
+    // 2 bảng liên tục / all-time: streak, likes
+    let rawList = [];
+    if (cat === "streak") {
+      rawList = (data.streakLeaderboard || []).map((u, i) => ({
+        ...u,
+        userId: u.userId || u.id,
+        id: u.id || u.userId,
+        rank: u.rank || (i + 1),
+        score: u.streak,
+        unit: "ngày"
+      }));
+    } else if (cat === "likes") {
+      rawList = (data.likesLeaderboard || []).map((u, i) => ({
+        ...u,
+        userId: u.userId || u.id,
+        id: u.id || u.userId,
+        rank: u.rank || (i + 1),
+        score: u.likesCount || 0,
+        unit: "tim"
+      }));
+    }
+    listData = { top10: rawList.slice(0, 10), currentUserEntry: null };
   }
 
-  renderHomeLeaderboardData({ top10: rawList.slice(0, 10), currentUserEntry: null }, cat);
+  renderHomeLeaderboardData(listData, cat);
+}
+
+async function loadAndRenderHomeLeaderboard(period, forceRefresh = false) {
+  if (period && ["week", "month", "quarter"].includes(period)) {
+    homeLeaderboardPeriod = period;
+  }
+  if (forceRefresh || !cachedHomeLeaderboardData) {
+    try {
+      const data = await requestAPI(`/api/leaderboard?period=${homeLeaderboardPeriod}`);
+      if (data) {
+        cachedHomeLeaderboardData = data;
+        cachedLeaderboardData = data;
+      }
+    } catch (err) {
+      console.error("Lỗi nạp bảng xếp hạng trang chủ:", err);
+    }
+  }
+  renderCurrentHomeLeaderboard();
+}
+
+function switchHomeLeaderboardCategory(cat) {
+  if (!HOME_LB_CATEGORIES[cat]) cat = "contributions";
+  homeLeaderboardCategory = cat;
+  renderCurrentHomeLeaderboard();
+}
+
+function switchHomeLeaderboardPeriod(period) {
+  if (period && ["week", "month", "quarter"].includes(period)) {
+    homeLeaderboardPeriod = period;
+  }
+  renderCurrentHomeLeaderboard();
 }
 
 function renderHomeLeaderboardData(periodData, category = "contributions") {
@@ -28687,8 +28773,8 @@ function renderHomeLeaderboardData(periodData, category = "contributions") {
   const listWrap = $("#homeLbListWrap");
   if (!podiumWrap || !lbList) return;
 
-  const top10 = Array.isArray(periodData.top10) ? periodData.top10 : [];
-  const currentUserEntry = periodData.currentUserEntry || null;
+  const top10 = Array.isArray(periodData?.top10) ? periodData.top10 : [];
+  const currentUserEntry = periodData?.currentUserEntry || null;
 
   if (top10.length === 0) {
     podiumWrap.innerHTML = `<div class="comp-lb-empty">Chưa có thành viên nào ghi nhận thành tích trong bảng này.</div>`;
@@ -28700,13 +28786,17 @@ function renderHomeLeaderboardData(periodData, category = "contributions") {
   if (listWrap) listWrap.style.display = "";
 
   const cfg = HOME_LB_CATEGORIES[category] || HOME_LB_CATEGORIES.contributions;
-  const isWeek = true; // Hiển thị Quán quân / Á quân / Quý quân trên bục
   const top1 = top10.find((u) => u.rank === 1) || null;
   const top2 = top10.find((u) => u.rank === 2) || null;
   const top3 = top10.find((u) => u.rank === 3) || null;
-  const opts = { scoreIconHtml: cfg.scoreIconHtml, unit: cfg.unit };
+  const opts = {
+    isHomeLb: true,
+    category: category,
+    scoreIconHtml: cfg.scoreIconHtml,
+    unit: cfg.unit
+  };
 
-  podiumWrap.innerHTML = renderArenaTop3(top1, top2, top3, isWeek, opts);
+  podiumWrap.innerHTML = renderArenaTop3(top1, top2, top3, false, opts);
 
   const rest = top10.filter((u) => u.rank >= 4);
   let rowsHtml = "";
@@ -28727,9 +28817,8 @@ function renderHomeLeaderboardData(periodData, category = "contributions") {
   lbList.innerHTML = rowsHtml;
 }
 
-function switchHomeLeaderboardPeriod(period) {
-  loadAndRenderHomeLeaderboard(period);
-}
+window.renderCurrentHomeLeaderboard = renderCurrentHomeLeaderboard;
+window.renderHomeLeaderboardData = renderHomeLeaderboardData;
 window.switchHomeLeaderboardPeriod = switchHomeLeaderboardPeriod;
 window.switchHomeLeaderboardCategory = switchHomeLeaderboardCategory;
 window.loadAndRenderHomeLeaderboard = loadAndRenderHomeLeaderboard;

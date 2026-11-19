@@ -1130,65 +1130,62 @@
         </aside>
       </div>
 
-      <!-- BẢNG VINH DANH HỌC THUẬT (Homepage Grand Leaderboard) -->
-      <section class="home-leaderboard-section" id="homeLeaderboardSection" aria-label="Bảng vinh danh học thuật">
+      <!-- BẢNG XẾP HẠNG TRANG CHỦ -->
+      <section class="home-leaderboard-section" id="homeLeaderboardSection" aria-label="Bảng xếp hạng">
         <div class="home-lb-container">
           <div class="home-lb-header">
-            <div class="home-lb-header-text">
-              <span class="home-lb-badge">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-                  <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-                </svg>
-                BẢNG VINH DANH HỌC THUẬT
-              </span>
-              <h2 class="home-lb-title" id="homeLbCategoryTitle">Gương mặt Tri thức &amp; Đóng góp Tiêu biểu</h2>
-              <p class="home-lb-subtitle" id="homeLbCategorySubtitle">Tôn vinh những cá nhân xuất sắc có hoạt động nghiên cứu, chia sẻ tài liệu và lan tỏa tri thức bền bỉ nhất.</p>
-            </div>
-            <!-- Bộ lọc chu kỳ xếp hạng: Tuần / Tháng / Quý (chỉ áp dụng khi chọn Đại sứ tri thức) -->
-            <div class="home-lb-period-tabs" id="homeLbPeriodTabs" role="tablist" aria-label="Chu kỳ xếp hạng">
-              <button type="button" class="home-lb-tab-btn active" data-period="week" onclick="switchHomeLeaderboardPeriod('week')" role="tab" aria-selected="true">
-                <span class="tab-label">Tuần này</span>
-              </button>
-              <button type="button" class="home-lb-tab-btn" data-period="month" onclick="switchHomeLeaderboardPeriod('month')" role="tab" aria-selected="false">
-                <span class="tab-label">Tháng này</span>
-              </button>
-              <button type="button" class="home-lb-tab-btn" data-period="quarter" onclick="switchHomeLeaderboardPeriod('quarter')" role="tab" aria-selected="false">
-                <span class="tab-label">Quý này</span>
-              </button>
-            </div>
+            <h2 class="home-lb-title">Bảng xếp hạng</h2>
           </div>
 
-          <!-- Thanh 5 danh mục bảng xếp hạng -->
+          <!-- Thanh 5 danh mục bảng xếp hạng (Đại sứ tri thức, Tinh thông thần tốc, Ong chăm chỉ, Người giữ lửa, Vạn người mê) -->
           <div class="home-lb-cat-nav" role="tablist" aria-label="Danh mục xếp hạng">
             <button type="button" class="home-lb-cat-btn active" data-category="contributions" onclick="switchHomeLeaderboardCategory('contributions')" role="tab" aria-selected="true">
               Đại sứ tri thức
             </button>
-            <button type="button" class="home-lb-cat-btn" data-category="streak" onclick="switchHomeLeaderboardCategory('streak')" role="tab" aria-selected="false">
-              Người giữ lửa
-            </button>
             <button type="button" class="home-lb-cat-btn" data-category="competition" onclick="switchHomeLeaderboardCategory('competition')" role="tab" aria-selected="false">
               Tinh thông thần tốc
+            </button>
+            <button type="button" class="home-lb-cat-btn" data-category="study" onclick="switchHomeLeaderboardCategory('study')" role="tab" aria-selected="false">
+              Ong chăm chỉ
+            </button>
+            <button type="button" class="home-lb-cat-btn" data-category="streak" onclick="switchHomeLeaderboardCategory('streak')" role="tab" aria-selected="false">
+              Người giữ lửa
             </button>
             <button type="button" class="home-lb-cat-btn" data-category="likes" onclick="switchHomeLeaderboardCategory('likes')" role="tab" aria-selected="false">
               Vạn người mê
             </button>
-            <button type="button" class="home-lb-cat-btn" data-category="study" onclick="switchHomeLeaderboardCategory('study')" role="tab" aria-selected="false">
-              Ong chăm chỉ
+          </div>
+
+          <!-- Bộ lọc chu kỳ xếp hạng: Tuần này / Tháng này / Quý này (nằm dưới khu vực chuyển đổi bảng xếp hạng) -->
+          <div class="home-lb-period-tabs" id="homeLbPeriodTabs" role="tablist" aria-label="Chu kỳ xếp hạng">
+            <button type="button" class="home-lb-tab-btn active" data-period="week" onclick="switchHomeLeaderboardPeriod('week')" role="tab" aria-selected="true">
+              <span class="tab-label">Tuần này</span>
+            </button>
+            <button type="button" class="home-lb-tab-btn" data-period="month" onclick="switchHomeLeaderboardPeriod('month')" role="tab" aria-selected="false">
+              <span class="tab-label">Tháng này</span>
+            </button>
+            <button type="button" class="home-lb-tab-btn" data-period="quarter" onclick="switchHomeLeaderboardPeriod('quarter')" role="tab" aria-selected="false">
+              <span class="tab-label">Quý này</span>
             </button>
           </div>
 
           <!-- Bục vinh danh Top 1, Top 2, Top 3 (Thẻ tên mini) -->
           <div class="home-lb-podium-wrap" id="homeLbPodiumWrap">
-            <div class="home-lb-loading">Đang tải bảng vinh danh...</div>
+            <div class="home-lb-loading">Đang tải bảng xếp hạng...</div>
           </div>
 
           <!-- Danh sách Top 4 - 10 (Ảnh bìa mini capsule) -->
           <div class="home-lb-list-wrap" id="homeLbListWrap">
-            <div class="home-lb-list-header">
-              <span class="home-lb-list-title" id="homeLbListTitle">Top 4 - 10 Thành viên Tiêu biểu</span>
-              <span class="home-lb-list-hint">Nhấp vào dòng để xem thẻ tên sinh viên</span>
-            </div>
             <div class="home-lb-list comp-lb-list" id="homeLbList"></div>
+          </div>
+
+          <!-- Dòng thông báo làm mới bảng xếp hạng phía cuối BXH -->
+          <div class="home-lb-refresh-notice" id="homeLbRefreshNotice">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"></circle>
+              <polyline points="12 6 12 12 16 14"></polyline>
+            </svg>
+            <span id="homeLbCountdownText">Bảng xếp hạng làm mới sau ...</span>
           </div>
         </div>
       </section>

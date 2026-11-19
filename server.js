@@ -5343,7 +5343,7 @@ async function api(request, response, url) {
     return "1970-01-01 00:00:00";
   }
 
-  function getPeriodLeaderboard(period, currentUserId) {
+  function getContributionsPeriodLeaderboard(period, currentUserId) {
     const threshold = getLeaderboardTimeThreshold(period);
     let rows = db.prepare(`
     SELECT u.id, u.display_name as displayName, u.avatar, u.role, u.cover_image as coverImage, u.namecard_frame as namecardFrame,
@@ -5381,6 +5381,7 @@ async function api(request, response, url) {
       coverImage: u.coverImage || "default",
       namecardFrame: u.namecardFrame || "none",
       score: Number(u.periodPoints),
+      unit: "",
       streakTier: getAuthorStreakTier(u.id),
       rank: idx + 1
     }));
@@ -5401,6 +5402,7 @@ async function api(request, response, url) {
           coverImage: u.coverImage || "default",
           namecardFrame: u.namecardFrame || "none",
           score: Number(u.periodPoints),
+          unit: "",
           streakTier: getAuthorStreakTier(u.id),
           rank: userIdx + 1,
           isParticipant: Boolean(isStudent),
@@ -5419,6 +5421,7 @@ async function api(request, response, url) {
             coverImage: u.coverImage || "default",
             namecardFrame: u.namecardFrame || "none",
             score: 0,
+            unit: "",
             streakTier: getAuthorStreakTier(u.id),
             rank: rows.length + 1,
             isParticipant: Boolean(isStudent),
@@ -5429,6 +5432,105 @@ async function api(request, response, url) {
     }
 
     return { top10, currentUserEntry };
+  }
+
+  function getCompetitionPeriodLeaderboard(period, currentUserId) {
+    const threshold = getLeaderboardTimeThreshold(period);
+    let rows = db.prepare(`
+      SELECT 
+        u.id, u.id as userId, u.display_name as displayName, u.avatar, u.role, u.cover_image as coverImage, u.namecard_frame as namecardFrame,
+        sum(r.best_score) as periodScore,
+        min(r.updated_at) as firstCompletedAt
+      FROM users u
+      JOIN competition_phase_results r ON u.id = r.user_id AND r.updated_at >= ?
+      WHERE u.role NOT IN ('admin', 'lecturer', 'member') AND u.id != 89
+      GROUP BY u.id
+      HAVING periodScore > 0
+      ORDER BY periodScore DESC, firstCompletedAt ASC, u.id ASC
+    `).all(threshold);
+
+    if (rows.length < 3) {
+      rows = db.prepare(`
+        SELECT 
+          u.id, u.id as userId, u.display_name as displayName, u.avatar, u.role, u.cover_image as coverImage, u.namecard_frame as namecardFrame,
+          sum(r.best_score) as periodScore,
+          min(r.updated_at) as firstCompletedAt
+        FROM users u
+        JOIN competition_phase_results r ON u.id = r.user_id
+        WHERE u.role NOT IN ('admin', 'lecturer', 'member') AND u.id != 89
+        GROUP BY u.id
+        ORDER BY periodScore DESC, firstCompletedAt ASC, u.id ASC
+        LIMIT 10
+      `).all();
+    }
+
+    const top10 = rows.slice(0, 10).map((u, idx) => ({
+      userId: u.id,
+      id: u.id,
+      displayName: u.displayName,
+      avatar: u.avatar,
+      initials: u.avatar || getAvatarEmoji(u.displayName),
+      role: u.role,
+      coverImage: u.coverImage || "default",
+      namecardFrame: u.namecardFrame || "none",
+      score: Number(u.periodScore || 0),
+      unit: "điểm",
+      streakTier: getAuthorStreakTier(u.id),
+      rank: idx + 1
+    }));
+
+    return { top10, currentUserEntry: null };
+  }
+
+  function getStudyPeriodLeaderboard(period, currentUserId) {
+    const threshold = getLeaderboardTimeThreshold(period);
+    let rows = db.prepare(`
+      SELECT 
+        u.id, u.id as userId, u.display_name as displayName, u.avatar, u.role, u.cover_image as coverImage, u.namecard_frame as namecardFrame,
+        sum(s.duration_minutes) as periodMinutes,
+        max(s.completed_at) as lastStudyAt
+      FROM users u
+      JOIN study_logs s ON u.id = s.user_id AND s.completed_at >= ?
+      WHERE u.role NOT IN ('admin', 'lecturer') AND u.id != 89
+      GROUP BY u.id
+      HAVING periodMinutes > 0
+      ORDER BY periodMinutes DESC, lastStudyAt ASC, u.id ASC
+    `).all(threshold);
+
+    if (rows.length < 3) {
+      rows = db.prepare(`
+        SELECT 
+          u.id, u.id as userId, u.display_name as displayName, u.avatar, u.role, u.cover_image as coverImage, u.namecard_frame as namecardFrame,
+          sum(s.duration_minutes) as periodMinutes,
+          max(s.completed_at) as lastStudyAt
+        FROM users u
+        JOIN study_logs s ON u.id = s.user_id
+        WHERE u.role NOT IN ('admin', 'lecturer') AND u.id != 89
+        GROUP BY u.id
+        ORDER BY periodMinutes DESC, lastStudyAt ASC, u.id ASC
+        LIMIT 10
+      `).all();
+    }
+
+    const top10 = rows.slice(0, 10).map((u, idx) => {
+      const mins = Number(u.periodMinutes || 0);
+      return {
+        userId: u.id,
+        id: u.id,
+        displayName: u.displayName,
+        avatar: u.avatar,
+        initials: u.avatar || getAvatarEmoji(u.displayName),
+        role: u.role,
+        coverImage: u.coverImage || "default",
+        namecardFrame: u.namecardFrame || "none",
+        score: `${Math.floor(mins / 60)}h`,
+        unit: "giờ",
+        streakTier: getAuthorStreakTier(u.id),
+        rank: idx + 1
+      };
+    });
+
+    return { top10, currentUserEntry: null };
   }
 
   if (method === "GET" && pathName === "/api/leaderboard") {
@@ -5448,6 +5550,7 @@ async function api(request, response, url) {
 
     const topUsers = allContribStudents.slice(0, 10).map((u, idx) => ({
       id: u.id,
+      userId: u.id,
       displayName: u.displayName,
       avatar: u.avatar,
       initials: u.avatar || getAvatarEmoji(u.displayName),
@@ -5475,6 +5578,7 @@ async function api(request, response, url) {
       const streakInfo = calculateUserStreak(s.id, todayDate, formatYMD);
       return {
         id: s.id,
+        userId: s.id,
         displayName: s.displayName,
         avatar: s.avatar,
         initials: s.avatar || getAvatarEmoji(s.displayName),
@@ -5496,6 +5600,7 @@ async function api(request, response, url) {
 
     const topStreakUsers = streakList.slice(0, 10).map((s, idx) => ({
       ...s,
+      userId: s.id,
       rank: idx + 1
     }));
 
@@ -5523,6 +5628,7 @@ async function api(request, response, url) {
 
     const topArenaUsers = arenaRows.slice(0, 10).map((row, idx) => ({
       id: row.userId,
+      userId: row.userId,
       displayName: row.displayName,
       avatar: row.avatar,
       initials: row.avatar || getAvatarEmoji(row.displayName),
@@ -5555,6 +5661,7 @@ async function api(request, response, url) {
 
     const topLikesUsers = allLikesUsers.slice(0, 10).map((u, idx) => ({
       id: u.id,
+      userId: u.id,
       displayName: u.displayName,
       avatar: u.avatar,
       initials: u.avatar || getAvatarEmoji(u.displayName),
@@ -5588,6 +5695,7 @@ async function api(request, response, url) {
 
     const topStudyUsers = allStudyUsers.slice(0, 10).map((u, idx) => ({
       id: u.id,
+      userId: u.id,
       displayName: u.displayName,
       avatar: u.avatar,
       initials: u.avatar || getAvatarEmoji(u.displayName),
@@ -5718,10 +5826,21 @@ async function api(request, response, url) {
 
     const reqPeriod = ["week", "month", "quarter"].includes(url.searchParams.get("period")) ? url.searchParams.get("period") : "week";
     const currentUserId = user ? user.id : null;
-    const weekData = getPeriodLeaderboard("week", currentUserId);
-    const monthData = getPeriodLeaderboard("month", currentUserId);
-    const quarterData = getPeriodLeaderboard("quarter", currentUserId);
-    const activePeriodData = reqPeriod === "month" ? monthData : (reqPeriod === "quarter" ? quarterData : weekData);
+    
+    // 3 bảng có chu kỳ reset: Đại sứ tri thức (contributions), Tinh thông thần tốc (competition), Ong chăm chỉ (study)
+    const contribWeek = getContributionsPeriodLeaderboard("week", currentUserId);
+    const contribMonth = getContributionsPeriodLeaderboard("month", currentUserId);
+    const contribQuarter = getContributionsPeriodLeaderboard("quarter", currentUserId);
+
+    const competitionWeek = getCompetitionPeriodLeaderboard("week", currentUserId);
+    const competitionMonth = getCompetitionPeriodLeaderboard("month", currentUserId);
+    const competitionQuarter = getCompetitionPeriodLeaderboard("quarter", currentUserId);
+
+    const studyWeek = getStudyPeriodLeaderboard("week", currentUserId);
+    const studyMonth = getStudyPeriodLeaderboard("month", currentUserId);
+    const studyQuarter = getStudyPeriodLeaderboard("quarter", currentUserId);
+
+    const activePeriodData = reqPeriod === "month" ? contribMonth : (reqPeriod === "quarter" ? contribQuarter : contribWeek);
 
     return json(response, 200, {
       leaderboard: topUsers,
@@ -5735,9 +5854,24 @@ async function api(request, response, url) {
       top10: activePeriodData.top10,
       currentUserEntry: activePeriodData.currentUserEntry,
       periods: {
-        week: weekData,
-        month: monthData,
-        quarter: quarterData
+        week: contribWeek,
+        month: contribMonth,
+        quarter: contribQuarter,
+        contributions: {
+          week: contribWeek,
+          month: contribMonth,
+          quarter: contribQuarter
+        },
+        competition: {
+          week: competitionWeek,
+          month: competitionMonth,
+          quarter: competitionQuarter
+        },
+        study: {
+          week: studyWeek,
+          month: studyMonth,
+          quarter: studyQuarter
+        }
       }
     });
   }

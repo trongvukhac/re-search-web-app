@@ -3123,8 +3123,11 @@ body.dark-theme[data-user-theme="diamond"] .pulse-dot,
 
 /* Flame SVG & Realistic Multi-directional Animations */
 .flame-svg {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   vertical-align: middle;
+  flex-shrink: 0;
   overflow: visible !important;
   transform-origin: 50% 92%;
   filter: none !important;
@@ -40117,7 +40120,10 @@ html.dark-theme .home-lb-subtitle {
   border: 1px solid var(--border, #e2e8f0);
 }
 
-[data-theme="dark"] .home-lb-period-tabs {
+[data-theme="dark"] .home-lb-period-tabs,
+body.dark-theme .home-lb-period-tabs,
+html.dark-theme .home-lb-period-tabs,
+body:not(.christmas-effects-off) .home-lb-period-tabs {
   background: rgba(255, 255, 255, 0.05);
   border-color: rgba(255, 255, 255, 0.08);
 }
@@ -40138,12 +40144,26 @@ html.dark-theme .home-lb-subtitle {
   user-select: none;
 }
 
+[data-theme="dark"] .home-lb-tab-btn,
+body.dark-theme .home-lb-tab-btn,
+html.dark-theme .home-lb-tab-btn,
+body:not(.christmas-effects-off) .home-lb-tab-btn {
+  color: #94a3b8;
+}
+
 .home-lb-tab-btn .tab-icon {
   font-size: 14px;
 }
 
 .home-lb-tab-btn:hover {
   color: var(--text, #0f172a);
+}
+
+[data-theme="dark"] .home-lb-tab-btn:hover,
+body.dark-theme .home-lb-tab-btn:hover,
+html.dark-theme .home-lb-tab-btn:hover,
+body:not(.christmas-effects-off) .home-lb-tab-btn:hover {
+  color: #f8fafc;
 }
 
 .home-lb-tab-btn.active {
@@ -40153,7 +40173,10 @@ html.dark-theme .home-lb-subtitle {
   box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04);
 }
 
-[data-theme="dark"] .home-lb-tab-btn.active {
+[data-theme="dark"] .home-lb-tab-btn.active,
+body.dark-theme .home-lb-tab-btn.active,
+html.dark-theme .home-lb-tab-btn.active,
+body:not(.christmas-effects-off) .home-lb-tab-btn.active {
   background: #1e293b;
   color: #38bdf8;
   box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
@@ -40225,6 +40248,45 @@ html.dark-theme .home-lb-list-title {
   gap: 8px;
 }
 
+/* Dòng thông báo làm mới bảng xếp hạng phía cuối BXH */
+.home-lb-refresh-notice {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 20px;
+  padding: 10px 16px;
+  border-radius: 12px;
+  background: var(--bg-alt, #f8fafc);
+  border: 1px dashed var(--border, #e2e8f0);
+  color: var(--muted, #64748b);
+  font-size: 13px;
+  font-weight: 500;
+  text-align: center;
+  transition: all 0.2s ease;
+}
+
+[data-theme="dark"] .home-lb-refresh-notice,
+body.dark-theme .home-lb-refresh-notice,
+html.dark-theme .home-lb-refresh-notice,
+body:not(.christmas-effects-off) .home-lb-refresh-notice {
+  background: rgba(255, 255, 255, 0.03);
+  border-color: rgba(255, 255, 255, 0.08);
+  color: #94a3b8;
+}
+
+.home-lb-refresh-notice svg {
+  color: var(--primary, #059669);
+  flex-shrink: 0;
+}
+
+[data-theme="dark"] .home-lb-refresh-notice svg,
+body.dark-theme .home-lb-refresh-notice svg,
+html.dark-theme .home-lb-refresh-notice svg,
+body:not(.christmas-effects-off) .home-lb-refresh-notice svg {
+  color: #38bdf8;
+}
+
 /* ==========================================================================
    CỘNG ĐỒNG HỌC THUẬT (COMMUNITIES / SUBREDDITS)
    ========================================================================== */
@@ -40289,7 +40351,10 @@ html.dark-theme .communities-card-title {
   gap: 2px;
 }
 
-[data-theme="dark"] .community-tabs {
+[data-theme="dark"] .community-tabs,
+body.dark-theme .community-tabs,
+html.dark-theme .community-tabs,
+body:not(.christmas-effects-off) .community-tabs {
   background: rgba(255, 255, 255, 0.05);
 }
 
@@ -40307,6 +40372,20 @@ html.dark-theme .communities-card-title {
   text-align: center;
 }
 
+[data-theme="dark"] .comm-tab,
+body.dark-theme .comm-tab,
+html.dark-theme .comm-tab,
+body:not(.christmas-effects-off) .comm-tab {
+  color: #94a3b8;
+}
+
+[data-theme="dark"] .comm-tab:hover,
+body.dark-theme .comm-tab:hover,
+html.dark-theme .comm-tab:hover,
+body:not(.christmas-effects-off) .comm-tab:hover {
+  color: #f8fafc;
+}
+
 .comm-tab.active {
   background: #ffffff;
   color: var(--text, #0f172a);
@@ -40314,7 +40393,10 @@ html.dark-theme .communities-card-title {
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
 }
 
-[data-theme="dark"] .comm-tab.active {
+[data-theme="dark"] .comm-tab.active,
+body.dark-theme .comm-tab.active,
+html.dark-theme .comm-tab.active,
+body:not(.christmas-effects-off) .comm-tab.active {
   background: #1e293b;
   color: #f1f5f9;
 }
@@ -41435,11 +41517,31 @@ dialog.modal.create-community-modal:not([open]) {
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
 }
 
-[data-theme="dark"] .comm-members-tabs-bar {
+[data-theme="dark"] .comm-members-tabs-bar,
+body.dark-theme .comm-members-tabs-bar,
+html.dark-theme .comm-members-tabs-bar,
+body:not(.christmas-effects-off) .comm-members-tabs-bar {
   background: rgba(255, 255, 255, 0.05);
 }
 
-[data-theme="dark"] .comm-members-tab.active {
+[data-theme="dark"] .comm-members-tab,
+body.dark-theme .comm-members-tab,
+html.dark-theme .comm-members-tab,
+body:not(.christmas-effects-off) .comm-members-tab {
+  color: #94a3b8;
+}
+
+[data-theme="dark"] .comm-members-tab:hover,
+body.dark-theme .comm-members-tab:hover,
+html.dark-theme .comm-members-tab:hover,
+body:not(.christmas-effects-off) .comm-members-tab:hover {
+  color: #f8fafc;
+}
+
+[data-theme="dark"] .comm-members-tab.active,
+body.dark-theme .comm-members-tab.active,
+html.dark-theme .comm-members-tab.active,
+body:not(.christmas-effects-off) .comm-members-tab.active {
   background: #1e293b;
   color: #f8fafc;
 }
