@@ -4177,12 +4177,12 @@ async function api(request, response, url) {
   function getCommunityMembersPreview(commId, creatorId) {
     try {
       const creator = db.prepare(`
-      SELECT id, display_name as displayName, avatar, role
+      SELECT id, display_name as displayName, avatar, role, namecard_frame as namecardFrame
       FROM users WHERE id = ?
     `).get(creatorId) || null;
 
       const recent = db.prepare(`
-      SELECT u.id, u.display_name as displayName, u.avatar, u.role
+      SELECT u.id, u.display_name as displayName, u.avatar, u.role, u.namecard_frame as namecardFrame
       FROM community_members cm
       JOIN users u ON u.id = cm.user_id
       WHERE cm.community_id = ? AND cm.user_id != ? AND (cm.status IS NULL OR cm.status = 'active')
@@ -4197,13 +4197,17 @@ async function api(request, response, url) {
           id: creator.id,
           displayName: creator.displayName,
           avatar: creator.avatar || getAvatarEmoji(creator.displayName),
-          role: creator.role
+          role: creator.role,
+          streakTier: getAuthorStreakTier(creator.id),
+          namecardFrame: creator.namecardFrame || "none"
         } : null,
         recent: recent.map(r => ({
           id: r.id,
           displayName: r.displayName,
           avatar: r.avatar || getAvatarEmoji(r.displayName),
-          role: r.role
+          role: r.role,
+          streakTier: getAuthorStreakTier(r.id),
+          namecardFrame: r.namecardFrame || "none"
         })),
         total: Number(total)
       };
@@ -4620,7 +4624,8 @@ async function api(request, response, url) {
       SELECT 
         cm.id, cm.user_id as userId, cm.role as commRole, cm.status, 
         cm.can_post as canPost, cm.can_comment as canComment, cm.created_at as joinedAt,
-        u.display_name as displayName, u.avatar, u.role as userRole, u.cover_image as coverImage, u.student_id as studentId
+        u.display_name as displayName, u.avatar, u.role as userRole, u.cover_image as coverImage, u.student_id as studentId,
+        u.namecard_frame as namecardFrame
       FROM community_members cm
       JOIN users u ON u.id = cm.user_id
       WHERE cm.community_id = ?
@@ -4633,6 +4638,7 @@ async function api(request, response, url) {
     const pendingMembers = [];
 
     rows.forEach(r => {
+      const isSelf = viewer && viewer.id === r.userId;
       const item = {
         id: r.id,
         userId: r.userId,
@@ -4646,7 +4652,9 @@ async function api(request, response, url) {
         canPost: r.canPost !== 0,
         canComment: r.canComment !== 0,
         joinedAt: r.joinedAt,
-        studentId: r.studentId
+        studentId: isSelf ? r.studentId : null,
+        streakTier: getAuthorStreakTier(r.userId),
+        namecardFrame: r.namecardFrame || "none"
       };
       if (r.status === "pending") {
         pendingMembers.push(item);
@@ -4686,6 +4694,15 @@ async function api(request, response, url) {
     }
 
     db.prepare("DELETE FROM community_members WHERE community_id = ? AND user_id = ?").run(commId, targetUserId);
+    createNotification(
+      targetUserId,
+      "activity",
+      "community",
+      `Cộng đồng ${comm.name}`,
+      `Bạn đã được quản trị viên mời rời khỏi cộng đồng "${comm.name}".`,
+      `/re/${comm.slug}`,
+      user.id
+    );
     return json(response, 200, { ok: true, message: "Đã mời thành viên rời khỏi cộng đồng." });
   }
 
@@ -4738,6 +4755,16 @@ async function api(request, response, url) {
         can_comment = ?
       WHERE community_id = ? AND user_id = ?
     `).run(canPost === false ? 0 : 1, canComment === false ? 0 : 1, commId, targetUserId);
+
+    createNotification(
+      targetUserId,
+      "activity",
+      "community",
+      `Gia nhập cộng đồng thành công`,
+      `Yêu cầu tham gia cộng đồng "${comm.name}" của bạn đã được quản trị viên phê duyệt.`,
+      `/re/${comm.slug}`,
+      user.id
+    );
 
     return json(response, 200, { ok: true, message: "Đã duyệt thành viên gia nhập cộng đồng." });
   }
@@ -11984,6 +12011,11 @@ function serveStatic(request, response, url) {
     url.pathname === "/" ? "/index.html" : decodeURIComponent(url.pathname);
   if (relative.includes("\0"))
     return error(response, 400, "Đường dẫn không hợp lệ.");
+
+  // Single Page App routing: Cho phép truy cập trực tiếp các deep link cộng đồng re/:slug
+  if ((url.pathname.startsWith("/re/") || url.pathname === "/re") && !path.extname(url.pathname)) {
+    relative = "/index.html";
+  }
 
   const lowerRel = relative.toLowerCase();
 

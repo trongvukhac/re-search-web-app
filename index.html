@@ -35,6 +35,7 @@
     })();
   </script>
   <title>RE:SEARCH — Cộng đồng học thuật</title>
+  <base href="/" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" />
   <link
@@ -216,7 +217,7 @@
               Liên kết ngoài
             </h2>
             <div id="externalLinkUrlText"
-              style="font-size: 11px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: monospace;">
+              style="font-size: 11px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: var(--sans);">
             </div>
           </div>
         </div>
@@ -388,6 +389,9 @@
         </button>
         <button type="button" class="omni-search-tab" data-scope="docs">
           Tài liệu <span class="omni-tab-badge" id="omniBadgeDocs">0</span>
+        </button>
+        <button type="button" class="omni-search-tab" data-scope="communities">
+          Cộng đồng <span class="omni-tab-badge" id="omniBadgeCommunities">0</span>
         </button>
       </div>
 
@@ -566,6 +570,8 @@
             <div class="notif-filter-bar" id="notifFilterBar">
               <button type="button" class="notif-filter-chip active" data-filter="all"
                 onclick="filterNotifCategory('all')">Tất cả</button>
+              <button type="button" class="notif-filter-chip" data-filter="community"
+                onclick="filterNotifCategory('community')">Cộng đồng</button>
               <button type="button" class="notif-filter-chip" data-filter="post"
                 onclick="filterNotifCategory('post')">Bài đăng</button>
               <button type="button" class="notif-filter-chip" data-filter="response"
@@ -1284,9 +1290,6 @@
           aria-label="Lọc theo chủ đề">
           <option value="all">Tất cả chủ đề</option>
         </select>
-        <select id="communityFilter" aria-label="Lọc theo cộng đồng">
-          <option value="all">Tất cả cộng đồng</option>
-        </select>
       </div>
       <div class="forum-layout">
         <div class="forum-feed-col">
@@ -1322,49 +1325,60 @@
                 </div>
               </div>
               <div class="community-hero-actions">
-                <!-- 1. Diễn đàn chung -->
-                <button type="button" class="button button-outline button-sm btn-comm-action" onclick="clearCommunityFilter()" title="Quay lại tất cả bài đăng trên diễn đàn">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
-                  <span>Diễn đàn chung</span>
-                </button>
+                <div class="comm-hero-left-actions">
+                  <!-- 1. Diễn đàn chung -->
+                  <button type="button" class="button button-outline button-sm btn-comm-action" onclick="clearCommunityFilter()" title="Quay lại tất cả bài đăng trên diễn đàn">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+                    <span>Diễn đàn chung</span>
+                  </button>
 
-                <!-- 2. Tham gia / Rời cộng đồng (hoặc Trạng thái Đã giải tán) -->
-                <button type="button" class="button button-primary button-sm btn-comm-action btn-join-comm-hero" id="btnCommJoinHero" onclick="toggleJoinCurrentCommunity()">
-                  <span>Tham gia</span>
-                </button>
-                <span id="commDissolvedNotice" class="comm-status-pill is-dissolved" style="display: none;">
-                  ⚠️ Cộng đồng đã giải tán
-                </span>
+                  <!-- 2. Tham gia (chỉ hiện khi chưa tham gia) -->
+                  <button type="button" class="button button-primary button-sm btn-comm-action btn-join-comm-hero" id="btnCommJoinHero" onclick="toggleJoinCurrentCommunity()">
+                    <span>Tham gia</span>
+                  </button>
 
-                <!-- 3. Thành viên / Quản trị -->
-                <button type="button" class="button button-outline button-sm btn-comm-action" id="btnCommMembersHero" onclick="openCommunityMembersModal()">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
-                  <span id="commMembersBtnText">Thành viên</span>
-                </button>
+                  <!-- 3. Thành viên -->
+                  <button type="button" class="button button-outline button-sm btn-comm-action" id="btnCommMembersHero" onclick="openCommunityMembersModal()">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+                    <span id="commMembersBtnText">Thành viên</span>
+                  </button>
 
-                <!-- 4. Nội quy -->
-                <button type="button" class="button button-outline button-sm btn-comm-action" id="btnCommRulesHero" onclick="openCommunityRulesModal()">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
-                  <span>Nội quy</span>
-                </button>
+                  <!-- 4. Nội quy -->
+                  <button type="button" class="button button-outline button-sm btn-comm-action" id="btnCommRulesHero" onclick="openCommunityRulesModal()">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                    <span>Nội quy</span>
+                  </button>
+                </div>
 
-                <!-- 5. Chia sẻ -->
-                <button type="button" class="button button-outline button-sm btn-comm-action" id="btnCommShareHero" onclick="shareCommunityLink()" title="Sao chép liên kết cộng đồng">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
-                  <span>Chia sẻ</span>
-                </button>
+                <div class="comm-hero-right-actions">
+                  <!-- 5. Chia sẻ (Chỉ hiện icon, không hiện text) -->
+                  <button type="button" class="button button-outline button-sm btn-comm-action btn-comm-icon-action" id="btnCommShareHero" onclick="shareCommunityLink()" title="Chia sẻ liên kết cộng đồng" aria-label="Chia sẻ">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
+                  </button>
 
-                <!-- 6. Chỉnh sửa (chỉ người sáng lập / admin) -->
-                <button type="button" class="button button-outline button-sm btn-comm-action" id="btnCommEditHero" onclick="openEditCommunityModal()" style="display: none;" title="Chỉnh sửa thông tin (14 ngày sửa 1 lần)">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
-                  <span>Chỉnh sửa</span>
-                </button>
+                  <!-- 6. Chỉnh sửa (Chỉ hiện icon, không hiện text, chỉ quản trị viên) -->
+                  <button type="button" class="button button-outline button-sm btn-comm-action btn-comm-icon-action" id="btnCommEditHero" onclick="openEditCommunityModal()" style="display: none;" title="Chỉnh sửa thông tin cộng đồng" aria-label="Chỉnh sửa">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                  </button>
 
-                <!-- 7. Thông báo -->
-                <button type="button" class="button button-outline button-sm btn-comm-action" id="btnCommNotifyHero" onclick="toggleCommunityNotifications()" title="Bật/Tắt thông báo bài đăng và cập nhật">
-                  <svg class="comm-notify-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
-                  <span id="commNotifyBtnText">Thông báo</span>
-                </button>
+                  <!-- 7. Thông báo (Chỉ hiện icon, không hiện text) -->
+                  <button type="button" class="button button-outline button-sm btn-comm-action btn-comm-icon-action" id="btnCommNotifyHero" onclick="toggleCommunityNotifications()" title="Cài đặt thông báo cộng đồng" aria-label="Thông báo">
+                    <svg class="comm-notify-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+                  </button>
+
+                  <!-- 8. Nút dời xuống cuối hàng: Rời cộng đồng (Màu đỏ) HOẶC Quản trị (Màu vàng, không tương tác) -->
+                  <button type="button" class="button button-sm btn-comm-action btn-leave-comm" id="btnCommLeaveHero" onclick="toggleJoinCurrentCommunity()" style="display: none;">
+                    <span>Rời cộng đồng</span>
+                  </button>
+                  <div class="comm-admin-tag-hero" id="tagCommAdminHero" style="display: none;">
+                    <span>Quản trị</span>
+                  </div>
+
+                  <!-- Thông báo giải tán nếu có -->
+                  <span id="commDissolvedNotice" class="comm-status-pill is-dissolved" style="display: none;">
+                    ⚠️ Cộng đồng đã giải tán
+                  </span>
+                </div>
               </div>
             </div>
           </div>

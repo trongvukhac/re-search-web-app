@@ -29970,7 +29970,7 @@ body.dark-theme .all-review-card-footer {
 }
 
 .mini-dig-display {
-  font-family: monospace;
+  font-family: var(--sans);
   font-size: 11px;
   font-weight: 800;
   color: var(--study-color-primary, #10b981);
@@ -34281,7 +34281,7 @@ body.dark-theme #christmasTreePage .xmas-card-tpl-opt {
 .xmas-card-sheet .xc-tpl-name {
   position: absolute;
   z-index: 2;
-  font-family: "Fraunces", "Be Vietnam Pro", Georgia, serif;
+  font-family: var(--serif);
   font-weight: 800;
   line-height: 1.15;
   white-space: nowrap;
@@ -34293,7 +34293,7 @@ body.dark-theme #christmasTreePage .xmas-card-tpl-opt {
 .xmas-card-sheet .xc-tpl-wish {
   position: absolute;
   z-index: 2;
-  font-family: "Be Vietnam Pro", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-family: var(--sans);
   font-weight: 600;
   text-align: left;
   word-break: break-word;
@@ -38552,6 +38552,11 @@ body.dark-theme .omni-item.selected {
   color: #0d9488;
 }
 
+.omni-item-icon-box.comm-icon-box {
+  background: rgba(16, 185, 129, 0.12);
+  color: #059669;
+}
+
 body.dark-theme .omni-item-icon-box {
   background: rgba(52, 211, 153, 0.15);
   color: #34d399;
@@ -38560,6 +38565,11 @@ body.dark-theme .omni-item-icon-box {
 body.dark-theme .omni-item-icon-box.doc-icon-box {
   background: rgba(45, 212, 191, 0.15);
   color: #2dd4bf;
+}
+
+body.dark-theme .omni-item-icon-box.comm-icon-box {
+  background: rgba(16, 185, 129, 0.2);
+  color: #34d399;
 }
 
 .omni-item-content {
@@ -40302,27 +40312,24 @@ body:not(.christmas-effects-off) .home-lb-refresh-notice svg {
 .communities-card-header {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
+  align-items: center;
   gap: 8px;
+  min-height: 28px;
 }
 
-.communities-card-title {
-  margin: 2px 0 0 0;
-  font-size: 17px;
-  font-weight: 800;
-  color: var(--text, #0f172a);
-}
-
-[data-theme="dark"] .communities-card-title,
-body.dark-theme .communities-card-title,
-html.dark-theme .communities-card-title {
-  color: #f8fafc;
+.communities-card-header .eyebrow {
+  margin: 0 !important;
+  line-height: 1 !important;
 }
 
 .btn-create-community {
   border: 1px solid var(--primary, #059669);
   background: rgba(5, 150, 105, 0.08);
   color: var(--primary, #059669);
+  margin: 0 !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   width: 28px;
   height: 28px;
   padding: 0;
@@ -40428,7 +40435,9 @@ body:not(.christmas-effects-off) .comm-tab.active {
   border-color: var(--border, #e2e8f0);
 }
 
-[data-theme="dark"] .community-sidebar-item:hover {
+[data-theme="dark"] .community-sidebar-item:hover,
+body.dark-theme .community-sidebar-item:hover,
+html.dark-theme .community-sidebar-item:hover {
   background: rgba(255, 255, 255, 0.04);
   border-color: rgba(255, 255, 255, 0.08);
 }
@@ -40438,7 +40447,9 @@ body:not(.christmas-effects-off) .comm-tab.active {
   border-color: var(--primary, #059669);
 }
 
-[data-theme="dark"] .community-sidebar-item.active {
+[data-theme="dark"] .community-sidebar-item.active,
+body.dark-theme .community-sidebar-item.active,
+html.dark-theme .community-sidebar-item.active {
   background: rgba(56, 189, 248, 0.12);
   border-color: #38bdf8;
 }
@@ -40455,7 +40466,9 @@ body:not(.christmas-effects-off) .comm-tab.active {
   border-radius: 8px;
 }
 
-[data-theme="dark"] .comm-item-avatar {
+[data-theme="dark"] .comm-item-avatar,
+body.dark-theme .comm-item-avatar,
+html.dark-theme .comm-item-avatar {
   background: rgba(255, 255, 255, 0.06);
 }
 
@@ -40502,7 +40515,9 @@ html.dark-theme .comm-item-name {
   color: #b45309;
 }
 
-[data-theme="dark"] .comm-item-role-badge.admin {
+[data-theme="dark"] .comm-item-role-badge.admin,
+body.dark-theme .comm-item-role-badge.admin,
+html.dark-theme .comm-item-role-badge.admin {
   background: rgba(245, 158, 11, 0.2);
   color: #fde68a;
 }
@@ -40560,13 +40575,17 @@ html.dark-theme .comm-item-name {
   border-color: transparent;
 }
 
-[data-theme="dark"] .btn-comm-join {
+[data-theme="dark"] .btn-comm-join,
+body.dark-theme .btn-comm-join,
+html.dark-theme .btn-comm-join {
   background: rgba(255, 255, 255, 0.08);
   border-color: rgba(255, 255, 255, 0.12);
   color: #f1f5f9;
 }
 
-[data-theme="dark"] .btn-comm-join.joined {
+[data-theme="dark"] .btn-comm-join.joined,
+body.dark-theme .btn-comm-join.joined,
+html.dark-theme .btn-comm-join.joined {
   background: rgba(56, 189, 248, 0.15);
   color: #38bdf8;
 }
@@ -40593,7 +40612,9 @@ html.dark-theme .comm-item-name {
   color: var(--text, #0f172a);
 }
 
-[data-theme="dark"] .btn-all-forum-link {
+[data-theme="dark"] .btn-all-forum-link,
+body.dark-theme .btn-all-forum-link,
+html.dark-theme .btn-all-forum-link {
   border-color: rgba(255, 255, 255, 0.12);
 }
 
@@ -40628,12 +40649,16 @@ html.dark-theme .comm-item-name {
   color: #9333ea !important;
 }
 
-[data-theme="dark"] .post-comm-tag {
+[data-theme="dark"] .post-comm-tag,
+body.dark-theme .post-comm-tag,
+html.dark-theme .post-comm-tag {
   background: rgba(56, 189, 248, 0.15) !important;
   color: #38bdf8 !important;
 }
 
-[data-theme="dark"] .post-comm-tag.is-private {
+[data-theme="dark"] .post-comm-tag.is-private,
+body.dark-theme .post-comm-tag.is-private,
+html.dark-theme .post-comm-tag.is-private {
   background: rgba(192, 132, 252, 0.15) !important;
   color: #c084fc !important;
 }
@@ -40714,7 +40739,7 @@ html.dark-theme .community-hero-avatar-box {
 .community-hero-title-row {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   flex-wrap: wrap;
 }
 
@@ -40734,8 +40759,18 @@ html.dark-theme .community-hero-title {
 .community-privacy-pill {
   font-size: 11px;
   font-weight: 600;
-  padding: 2px 8px;
+  padding: 3px 8px;
   border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  line-height: 1.2;
+  vertical-align: middle;
+}
+
+.community-privacy-pill .privacy-pill-icon {
+  display: block;
+  flex-shrink: 0;
 }
 
 .community-privacy-pill.is-public {
@@ -40794,8 +40829,88 @@ html.dark-theme .community-hero-desc {
 .community-hero-actions {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   flex-wrap: wrap;
+  gap: 10px;
+}
+
+.comm-hero-left-actions {
+  display: flex;
+  align-items: center;
   gap: 8px;
+  flex-wrap: wrap;
+}
+
+.comm-hero-right-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+  flex-wrap: wrap;
+}
+
+.btn-comm-icon-action {
+  width: 34px !important;
+  height: 34px !important;
+  padding: 0 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-radius: 8px !important;
+  flex-shrink: 0 !important;
+}
+
+.btn-leave-comm {
+  background: rgba(239, 68, 68, 0.12) !important;
+  color: #ef4444 !important;
+  border: 1px solid rgba(239, 68, 68, 0.3) !important;
+  font-weight: 600 !important;
+  padding: 6px 14px !important;
+  border-radius: 8px !important;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.btn-leave-comm:hover {
+  background: #ef4444 !important;
+  color: #ffffff !important;
+  border-color: #ef4444 !important;
+}
+
+body.dark-theme .btn-leave-comm,
+html.dark-theme .btn-leave-comm {
+  background: rgba(239, 68, 68, 0.18) !important;
+  color: #fca5a5 !important;
+  border-color: rgba(239, 68, 68, 0.4) !important;
+}
+
+body.dark-theme .btn-leave-comm:hover,
+html.dark-theme .btn-leave-comm:hover {
+  background: #ef4444 !important;
+  color: #ffffff !important;
+}
+
+.comm-admin-tag-hero {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 14px;
+  font-size: 13px;
+  font-weight: 700;
+  border-radius: 8px;
+  background: #eab308;
+  color: #1e1b4b;
+  box-shadow: 0 2px 8px rgba(234, 179, 8, 0.25);
+  pointer-events: none;
+  user-select: none;
+  cursor: default;
+}
+
+body.dark-theme .comm-admin-tag-hero,
+html.dark-theme .comm-admin-tag-hero {
+  background: #f59e0b;
+  color: #0f172a;
+  box-shadow: 0 2px 10px rgba(245, 158, 11, 0.3);
 }
 
 /* Create Community Modal */
@@ -40812,7 +40927,9 @@ html.dark-theme .community-hero-desc {
   margin-bottom: 16px;
 }
 
-[data-theme="dark"] .comm-create-preview {
+[data-theme="dark"] .comm-create-preview,
+body.dark-theme .comm-create-preview,
+html.dark-theme .comm-create-preview {
   background: rgba(255, 255, 255, 0.03);
   border-color: rgba(255, 255, 255, 0.08);
 }
@@ -40841,10 +40958,24 @@ html.dark-theme .community-hero-desc {
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
 }
 
+[data-theme="dark"] .comm-preview-avatar,
+body.dark-theme .comm-preview-avatar,
+html.dark-theme .comm-preview-avatar {
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+  color: #f8fafc;
+}
+
 .comm-preview-name {
   font-size: 15px;
   font-weight: 700;
   color: var(--text, #0f172a);
+}
+
+[data-theme="dark"] .comm-preview-name,
+body.dark-theme .comm-preview-name,
+html.dark-theme .comm-preview-name {
+  color: #f8fafc;
 }
 
 .comm-preview-slug {
@@ -40852,23 +40983,39 @@ html.dark-theme .community-hero-desc {
   color: var(--muted, #64748b);
 }
 
+[data-theme="dark"] .comm-preview-slug,
+body.dark-theme .comm-preview-slug,
+html.dark-theme .comm-preview-slug {
+  color: #94a3b8;
+}
+
 .input-prefix-wrap {
   display: flex;
   align-items: center;
   position: relative;
+  width: 100%;
 }
 
 .input-prefix {
   position: absolute;
   left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  line-height: 1;
+  font-size: 14px;
   font-weight: 700;
   color: var(--muted, #64748b);
   pointer-events: none;
+  z-index: 2;
+  user-select: none;
 }
 
 .input-prefix-wrap input {
-  padding-left: 28px !important;
+  padding-left: 42px !important;
   width: 100%;
+  box-sizing: border-box;
 }
 
 .emoji-picker-row {
@@ -40898,9 +41045,12 @@ html.dark-theme .community-hero-desc {
   border-color: var(--primary, #059669);
 }
 
-[data-theme="dark"] .emoji-chip {
+[data-theme="dark"] .emoji-chip,
+body.dark-theme .emoji-chip,
+html.dark-theme .emoji-chip {
   background: rgba(255, 255, 255, 0.06);
-  border-color: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.12);
+  color: #f8fafc;
 }
 
 .cover-presets-row {
@@ -41558,6 +41708,13 @@ body:not(.christmas-effects-off) .comm-members-tab.active {
   flex-shrink: 0;
 }
 
+[data-theme="dark"] .comm-members-search-wrap,
+body.dark-theme .comm-members-search-wrap,
+html.dark-theme .comm-members-search-wrap {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
 .comm-members-search-wrap svg {
   color: var(--muted, #64748b);
   flex-shrink: 0;
@@ -41571,6 +41728,18 @@ body:not(.christmas-effects-off) .comm-members-tab.active {
   width: 100%;
   outline: none;
   box-shadow: none !important;
+}
+
+[data-theme="dark"] .comm-members-search-wrap input,
+body.dark-theme .comm-members-search-wrap input,
+html.dark-theme .comm-members-search-wrap input {
+  color: #f8fafc !important;
+}
+
+[data-theme="dark"] .comm-members-search-wrap input::placeholder,
+body.dark-theme .comm-members-search-wrap input::placeholder,
+html.dark-theme .comm-members-search-wrap input::placeholder {
+  color: #94a3b8;
 }
 
 .comm-members-list-scroll {
@@ -41654,7 +41823,7 @@ body:not(.christmas-effects-off) .comm-members-tab.active {
   background: var(--bg-alt, #f1f5f9);
   padding: 1px 6px;
   border-radius: 4px;
-  font-family: monospace;
+  font-family: var(--sans);
 }
 
 .comm-member-actions {
@@ -41821,4 +41990,25 @@ body.dark-theme .comm-danger-zone,
 body:not(.christmas-effects-off) .comm-danger-zone {
   background: rgba(239, 68, 68, 0.08);
   border-color: rgba(239, 68, 68, 0.3);
+}
+
+/* Dark theme overrides for community modal inputs and labels */
+body.dark-theme #createCommunityModal .input,
+html.dark-theme #createCommunityModal .input,
+body.dark-theme #editCommunityModal .input,
+html.dark-theme #editCommunityModal .input,
+body.dark-theme #communityRulesModal textarea,
+html.dark-theme #communityRulesModal textarea {
+  background: #11161b !important;
+  border-color: rgba(255, 255, 255, 0.16) !important;
+  color: #f1f5f9 !important;
+}
+
+body.dark-theme #createCommunityModal label,
+html.dark-theme #createCommunityModal label,
+body.dark-theme #editCommunityModal label,
+html.dark-theme #editCommunityModal label,
+body.dark-theme #communityRulesModal label,
+html.dark-theme #communityRulesModal label {
+  color: #e2e8f0 !important;
 }
