@@ -1131,6 +1131,53 @@
         </aside>
       </div>
 
+      <!-- BẢNG VINH DANH HỌC THUẬT (Homepage Grand Leaderboard) -->
+      <section class="home-leaderboard-section" id="homeLeaderboardSection" aria-label="Bảng vinh danh học thuật">
+        <div class="home-lb-container">
+          <div class="home-lb-header">
+            <div class="home-lb-header-text">
+              <span class="home-lb-badge">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                  <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                </svg>
+                BẢNG VINH DANH HỌC THUẬT
+              </span>
+              <h2 class="home-lb-title">Gương mặt Tri thức &amp; Đóng góp Tiêu biểu</h2>
+              <p class="home-lb-subtitle">Tôn vinh những cá nhân xuất sắc có hoạt động nghiên cứu, chia sẻ tài liệu và lan tỏa tri thức bền bỉ nhất.</p>
+            </div>
+            <!-- Bộ lọc chu kỳ xếp hạng: Tuần / Tháng / Quý -->
+            <div class="home-lb-period-tabs" role="tablist" aria-label="Chu kỳ xếp hạng">
+              <button type="button" class="home-lb-tab-btn active" data-period="week" onclick="switchHomeLeaderboardPeriod('week')" role="tab" aria-selected="true">
+                <span class="tab-icon">⚡</span>
+                <span class="tab-label">Tuần này</span>
+              </button>
+              <button type="button" class="home-lb-tab-btn" data-period="month" onclick="switchHomeLeaderboardPeriod('month')" role="tab" aria-selected="false">
+                <span class="tab-icon">🏆</span>
+                <span class="tab-label">Tháng này</span>
+              </button>
+              <button type="button" class="home-lb-tab-btn" data-period="quarter" onclick="switchHomeLeaderboardPeriod('quarter')" role="tab" aria-selected="false">
+                <span class="tab-icon">👑</span>
+                <span class="tab-label">Quý này</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Bục vinh danh Top 1, Top 2, Top 3 (Thẻ tên mini) -->
+          <div class="home-lb-podium-wrap" id="homeLbPodiumWrap">
+            <div class="home-lb-loading">Đang tải bảng vinh danh...</div>
+          </div>
+
+          <!-- Danh sách Top 4 - 10 (Ảnh bìa mini capsule) -->
+          <div class="home-lb-list-wrap" id="homeLbListWrap">
+            <div class="home-lb-list-header">
+              <span class="home-lb-list-title">Top 4 - 10 Thành viên Tiêu biểu</span>
+              <span class="home-lb-list-hint">Nhấp vào dòng để xem thẻ tên sinh viên</span>
+            </div>
+            <div class="home-lb-list comp-lb-list" id="homeLbList"></div>
+          </div>
+        </div>
+      </section>
+
       <!-- ĐÁNH GIÁ & TRẢI NGHIỆM CỘNG ĐỒNG (Site Reviews Strip) -->
       <section class="site-reviews-strip" id="siteReviewsStrip" aria-label="Đánh giá từ cộng đồng">
         <div class="reviews-strip-inner">
@@ -1225,9 +1272,42 @@
           aria-label="Lọc theo chủ đề">
           <option value="all">Tất cả chủ đề</option>
         </select>
+        <select id="communityFilter" aria-label="Lọc theo cộng đồng">
+          <option value="all">Tất cả cộng đồng</option>
+        </select>
       </div>
       <div class="forum-layout">
         <div class="forum-feed-col">
+          <!-- Banner chi tiết Cộng đồng (Hiển thị khi lọc theo 1 cộng đồng cụ thể) -->
+          <div class="community-detail-hero" id="communityDetailHero" style="display: none;">
+            <div class="community-hero-cover" id="commHeroCover"></div>
+            <div class="community-hero-content">
+              <div class="community-hero-avatar-box">
+                <span class="community-hero-avatar" id="commHeroAvatar">📚</span>
+              </div>
+              <div class="community-hero-meta">
+                <div class="community-hero-title-row">
+                  <h2 class="community-hero-title" id="commHeroTitle">Phương pháp Nghiên cứu</h2>
+                  <span class="community-privacy-pill" id="commHeroPrivacy">Công khai</span>
+                </div>
+                <div class="community-hero-slug" id="commHeroSlug">r/phuong-phap-nghien-cuu</div>
+                <p class="community-hero-desc" id="commHeroDesc">Mô tả cộng đồng...</p>
+                <div class="community-hero-stats">
+                  <span id="commHeroMembersCount"><strong>0</strong> thành viên</span>
+                  <span class="stat-dot">•</span>
+                  <span id="commHeroPostsCount"><strong>0</strong> bài thảo luận</span>
+                </div>
+              </div>
+              <div class="community-hero-actions">
+                <button type="button" class="button button-outline button-sm btn-back-all-forum" onclick="clearCommunityFilter()">
+                  ← Diễn đàn chung
+                </button>
+                <button type="button" class="button button-primary button-sm btn-join-comm-hero" id="btnCommJoinHero" onclick="toggleJoinCurrentCommunity()">
+                  Tham gia
+                </button>
+              </div>
+            </div>
+          </div>
           <div class="forum-feed" id="forumFeed"></div>
           <div class="pag-container" id="forumPaginationContainer"></div>
         </div>
@@ -1252,48 +1332,34 @@
                 <strong id="statAnsweredRatio">--%</strong><span>đã có phản hồi</span>
               </div>
             </section>
-            <section class="mini-card leaderboard-card">
-              <p class="eyebrow">BẢNG XẾP HẠNG</p>
-              <div class="lb-carousel-header">
-                <button type="button" class="lb-nav-btn lb-prev-btn" id="lbPrevBtn" onclick="cycleLeaderboardTab(-1)"
-                  aria-label="Bảng xếp hạng trước" title="Bảng xếp hạng trước">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
-                    stroke-linecap="round" stroke-linejoin="round">
-                    <polyline points="15 18 9 12 15 6"></polyline>
-                  </svg>
-                </button>
-
-                <div class="lb-title-container" onclick="cycleLeaderboardTab(1)" title="Nhấn để đổi bảng xếp hạng">
-                  <span class="lb-active-title" id="lbActiveTitle">Đại sứ tri thức</span>
-                  <div class="lb-dots" id="lbDots">
-                    <span class="lb-dot active" data-tab="contributions"
-                      onclick="event.stopPropagation(); switchLeaderboardTab('contributions')"></span>
-                    <span class="lb-dot" data-tab="streak"
-                      onclick="event.stopPropagation(); switchLeaderboardTab('streak')"></span>
-                    <span class="lb-dot" data-tab="competition"
-                      onclick="event.stopPropagation(); switchLeaderboardTab('competition')"></span>
-                    <span class="lb-dot" data-tab="likes"
-                      onclick="event.stopPropagation(); switchLeaderboardTab('likes')"></span>
-                    <span class="lb-dot" data-tab="study"
-                      onclick="event.stopPropagation(); switchLeaderboardTab('study')"></span>
-                  </div>
+            <!-- CỘNG ĐỒNG HỌC THUẬT (Reddit & Group style) -->
+            <section class="mini-card forum-communities-card" id="forumCommunitiesCard">
+              <div class="communities-card-header">
+                <div>
+                  <p class="eyebrow">KHÔNG GIAN HỌC THUẬT</p>
+                  <h3 class="communities-card-title">Cộng đồng</h3>
                 </div>
-
-                <button type="button" class="lb-nav-btn lb-next-btn" id="lbNextBtn" onclick="cycleLeaderboardTab(1)"
-                  aria-label="Bảng xếp hạng tiếp theo" title="Bảng xếp hạng tiếp theo">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
-                    stroke-linecap="round" stroke-linejoin="round">
-                    <polyline points="9 18 15 12 9 6"></polyline>
-                  </svg>
+                <button type="button" class="btn-create-community" onclick="openCreateCommunityModal()" title="Tạo cộng đồng mới">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                  Tạo mới
                 </button>
               </div>
-              <div id="leaderboardList" style="
-                    display: flex;
-                    flex-direction: column;
-                    gap: 8px;
-                  ">
-                <!-- Dữ liệu bảng xếp hạng sẽ được nạp qua hydrateServer() -->
-                <p style="color: var(--sage); font-size: 13px">Đang tải...</p>
+
+              <!-- Tabs: Khám phá / Của tôi -->
+              <div class="community-tabs" role="tablist">
+                <button type="button" class="comm-tab active" data-comm-tab="explore" onclick="switchCommunityTab('explore')">Khám phá</button>
+                <button type="button" class="comm-tab" data-comm-tab="joined" onclick="switchCommunityTab('joined')">Của tôi</button>
+              </div>
+
+              <!-- Danh sách cộng đồng -->
+              <div class="community-list" id="forumCommunityList">
+                <p style="color: var(--sage); font-size: 13px">Đang tải cộng đồng...</p>
+              </div>
+
+              <div class="community-card-footer">
+                <button type="button" class="btn-all-forum-link" onclick="clearCommunityFilter()" id="btnAllForumFeed">
+                  <span>🌐</span> Xem diễn đàn chung
+                </button>
               </div>
             </section>
           </div>
@@ -3961,6 +4027,10 @@
       <div id="questionContentContainer" style="height: 150px; border-radius: 8px;"></div>
       <input type="hidden" id="questionContent" />
       <small style="display:block; margin-top:4px;">Ít nhất 25 ký tự để mọi người có đủ ngữ cảnh trả lời.</small>
+      <label style="margin-top: 12px; display: block; font-weight: 600;">Không gian đăng bài (Cộng đồng)</label>
+      <select id="questionCommunitySelect" style="margin-top: 4px; min-height: 42px; width: 100%;">
+        <option value="">🌐 Diễn đàn chung (Mặc định)</option>
+      </select>
       <label style="margin-top: 12px; display: block; font-weight: 600;">Chủ đề</label>
       <div style="margin-top: 4px; display: flex; align-items: stretch; gap: 8px;">
         <select id="questionTopic" style="flex: 1; margin: 0; min-height: 42px;"></select>
@@ -4021,6 +4091,118 @@
         <button class="button button-quiet" type="button" onclick="this.closest('dialog').close()">
           Hủy</button><button class="button button-primary" id="submitQuestion" value="default">
           Đăng bài <span>→</span>
+        </button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- MODAL TẠO CỘNG ĐỒNG MỚI (Reddit / Facebook Groups style) -->
+  <dialog id="createCommunityModal" class="modal create-community-modal">
+    <form method="dialog" id="createCommunityForm" onsubmit="event.preventDefault(); handleCreateCommunitySubmit();">
+      <div class="modal-head">
+        <div>
+          <p class="eyebrow">KHÔNG GIAN HỌC THUẬT</p>
+          <h2>Tạo Cộng đồng mới</h2>
+        </div>
+        <button class="close-modal" type="button" onclick="this.closest('dialog').close()" aria-label="Đóng">
+          <svg class="ui-icon modal-close-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Preview banner của cộng đồng -->
+      <div class="comm-create-preview" id="commCreatePreview">
+        <div class="comm-preview-cover" id="commPreviewCover" style="background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 50%, #93c5fd 100%);"></div>
+        <div class="comm-preview-info">
+          <span class="comm-preview-avatar" id="commPreviewAvatar">📚</span>
+          <div>
+            <div class="comm-preview-name" id="commPreviewName">Tên cộng đồng</div>
+            <div class="comm-preview-slug" id="commPreviewSlug">r/ten-cong-dong • Công khai</div>
+          </div>
+        </div>
+      </div>
+
+      <label>
+        Tên cộng đồng
+        <input id="newCommName" required minlength="3" maxlength="60" placeholder="Ví dụ: Khoa học Dữ liệu &amp; AI" oninput="updateCreateCommPreview()" />
+      </label>
+
+      <label>
+        Định danh URL (Slug)
+        <div class="input-prefix-wrap">
+          <span class="input-prefix">r/</span>
+          <input id="newCommSlug" required pattern="^[a-z0-9\-]+$" minlength="3" maxlength="50" placeholder="khoa-hoc-du-lieu-ai" oninput="updateCreateCommPreview()" />
+        </div>
+        <small style="display:block; margin-top:3px; color:var(--muted);">Chỉ dùng chữ thường không dấu, số và gạch ngang.</small>
+      </label>
+
+      <label>
+        Biểu tượng (Emoji Avatar)
+        <div class="emoji-picker-row">
+          <input id="newCommAvatar" maxlength="4" value="📚" style="width: 60px; text-align: center; font-size: 20px;" oninput="updateCreateCommPreview()" />
+          <div class="emoji-presets">
+            <button type="button" class="emoji-chip" onclick="selectCommEmoji('📚')">📚</button>
+            <button type="button" class="emoji-chip" onclick="selectCommEmoji('📊')">📊</button>
+            <button type="button" class="emoji-chip" onclick="selectCommEmoji('🧠')">🧠</button>
+            <button type="button" class="emoji-chip" onclick="selectCommEmoji('✍️')">✍️</button>
+            <button type="button" class="emoji-chip" onclick="selectCommEmoji('🔬')">🔬</button>
+            <button type="button" class="emoji-chip" onclick="selectCommEmoji('💡')">💡</button>
+            <button type="button" class="emoji-chip" onclick="selectCommEmoji('💻')">💻</button>
+            <button type="button" class="emoji-chip" onclick="selectCommEmoji('🎓')">🎓</button>
+          </div>
+        </div>
+      </label>
+
+      <label>
+        Màu chủ đề ảnh bìa
+        <div class="cover-presets-row">
+          <button type="button" class="cover-chip active" data-cover="linear-gradient(135deg, #1e3a8a 0%, #3b82f6 50%, #93c5fd 100%)" style="background: linear-gradient(135deg, #1e3a8a, #3b82f6);" onclick="selectCommCover(this)"></button>
+          <button type="button" class="cover-chip" data-cover="linear-gradient(135deg, #090d16 0%, #1e1b4b 40%, #4338ca 80%, #00f59b 100%)" style="background: linear-gradient(135deg, #1e1b4b, #00f59b);" onclick="selectCommCover(this)"></button>
+          <button type="button" class="cover-chip" data-cover="linear-gradient(135deg, #4c0519 0%, #db2777 50%, #fcd34d 100%)" style="background: linear-gradient(135deg, #db2777, #fcd34d);" onclick="selectCommCover(this)"></button>
+          <button type="button" class="cover-chip" data-cover="linear-gradient(135deg, #064e3b 0%, #059669 50%, #34d399 100%)" style="background: linear-gradient(135deg, #059669, #34d399);" onclick="selectCommCover(this)"></button>
+          <button type="button" class="cover-chip" data-cover="linear-gradient(135deg, #7c2d12 0%, #ea580c 50%, #facc15 100%)" style="background: linear-gradient(135deg, #ea580c, #facc15);" onclick="selectCommCover(this)"></button>
+          <button type="button" class="cover-chip" data-cover="linear-gradient(135deg, #312e81 0%, #6366f1 50%, #a855f7 100%)" style="background: linear-gradient(135deg, #6366f1, #a855f7);" onclick="selectCommCover(this)"></button>
+        </div>
+        <input id="newCommCover" type="hidden" value="linear-gradient(135deg, #1e3a8a 0%, #3b82f6 50%, #93c5fd 100%)" />
+      </label>
+
+      <label>
+        Mô tả cộng đồng
+        <textarea id="newCommDesc" rows="3" maxlength="280" placeholder="Mục đích thành lập cộng đồng, định hướng học tập hoặc đối tượng tham gia..."></textarea>
+      </label>
+
+      <div class="comm-privacy-select">
+        <label style="font-weight: 600; display: block; margin-bottom: 8px;">Quyền riêng tư</label>
+        <div class="privacy-options-grid">
+          <label class="privacy-option-card">
+            <input type="radio" name="newCommPrivacy" value="public" checked onchange="updateCreateCommPreview()" />
+            <div class="privacy-card-content">
+              <div class="privacy-card-head">
+                <span class="privacy-icon">🌐</span>
+                <strong>Công khai (Public)</strong>
+              </div>
+              <p>Mọi người đều có thể xem bài viết trên diễn đàn chung và tham gia thảo luận.</p>
+            </div>
+          </label>
+          <label class="privacy-option-card">
+            <input type="radio" name="newCommPrivacy" value="private" onchange="updateCreateCommPreview()" />
+            <div class="privacy-card-content">
+              <div class="privacy-card-head">
+                <span class="privacy-icon">🔒</span>
+                <strong>Riêng tư (Private)</strong>
+              </div>
+              <p>Chỉ thành viên mới có thể xem và tương tác với các bài viết trong cộng đồng này.</p>
+            </div>
+          </label>
+        </div>
+      </div>
+
+      <div class="modal-actions">
+        <button class="button button-quiet" type="button" onclick="this.closest('dialog').close()">Hủy</button>
+        <button class="button button-primary" id="btnSubmitCreateComm" type="submit">
+          Tạo cộng đồng <span>→</span>
         </button>
       </div>
     </form>
@@ -8320,7 +8502,7 @@
     </div>
   </div>
 
-  <script src="app.js?v=192" defer></script>
+  <script src="app.js?v=193" defer></script>
 </body>
 
 </html>

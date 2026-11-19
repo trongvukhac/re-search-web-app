@@ -442,11 +442,11 @@ try {
   console.warn("Lỗi đồng bộ mã lớp tự động:", e.message);
 }
 
-// Cập nhật bộ khung và ảnh bìa Chinh phục bầu trời thành phần thưởng Đấu trường Arena mùa AS1 (2026), tạm khoá với mọi người dùng
+// Cập nhật bộ khung và ảnh bìa Chinh phục bầu trời thành phần thưởng Đấu trường Arena mùa AS1 (2026)
 try {
   db.prepare("DELETE FROM user_limited_items WHERE item_id = 'chinh_phuc_bau_troi'").run();
-  db.prepare("UPDATE users SET namecard_frame = 'none' WHERE namecard_frame = 'chinh_phuc_bau_troi'").run();
-  db.prepare("UPDATE users SET cover_image = 'default' WHERE cover_image = 'chinh_phuc_bau_troi' OR cover_image LIKE '%covers/chinh-phuc-bau-troi.png%'").run();
+  db.prepare("UPDATE users SET namecard_frame = 'none' WHERE namecard_frame = 'chinh_phuc_bau_troi' AND role NOT IN ('admin', 'ta')").run();
+  db.prepare("UPDATE users SET cover_image = 'default' WHERE (cover_image = 'chinh_phuc_bau_troi' OR cover_image LIKE '%covers/chinh-phuc-bau-troi.png%') AND role NOT IN ('admin', 'ta')").run();
 } catch (e) { }
 try {
   db.exec(`
@@ -727,6 +727,34 @@ try {
   }
 } catch (e) {
   console.warn("Lỗi seed communities:", e.message);
+}
+
+// Khởi tạo hoạt động điểm gần đây nếu chưa có hoạt động trong 7 ngày
+try {
+  const recentEventsCount = db.prepare("SELECT count(*) as count FROM contribution_events WHERE created_at >= datetime('now', '-7 days')").get()?.count || 0;
+  if (recentEventsCount === 0) {
+    const seedEvents = [
+      { userId: 2, points: 28, hoursAgo: 5, reason: "Đóng góp bài viết nghiên cứu xuất sắc" },
+      { userId: 51, points: 22, hoursAgo: 12, reason: "Phản hồi giải đáp học thuật chất lượng cao" },
+      { userId: 54, points: 19, hoursAgo: 24, reason: "Chia sẻ tài liệu tham khảo quý" },
+      { userId: 53, points: 16, hoursAgo: 36, reason: "Thắp sáng chuỗi học tập bền bỉ" },
+      { userId: 52, points: 14, hoursAgo: 48, reason: "Hỗ trợ học viên trong cộng đồng" },
+      { userId: 26, points: 12, hoursAgo: 60, reason: "Đóng góp tài liệu học tập chuẩn mực" },
+      { userId: 55, points: 9, hoursAgo: 72, reason: "Tham gia thảo luận chuyên sâu" },
+      { userId: 32, points: 7, hoursAgo: 90, reason: "Hoạt động tích cực trong tuần" },
+      { userId: 31, points: 5, hoursAgo: 110, reason: "Trao đổi phương pháp nghiên cứu" },
+      { userId: 3, points: 4, hoursAgo: 130, reason: "Đánh giá tài liệu hữu ích" }
+    ];
+    const insEvent = db.prepare(`
+      INSERT INTO contribution_events (user_id, event_type, points, reference_type, reference_id, reason, created_at)
+      VALUES (?, 'seed_activity', ?, 'system', 0, ?, datetime('now', ?))
+    `);
+    for (const e of seedEvents) {
+      insEvent.run(e.userId, e.points, e.reason, `-${e.hoursAgo} hours`);
+    }
+  }
+} catch (e) {
+  console.warn("Lỗi seed recent contribution events:", e.message);
 }
 
 // --- BẢNG DỮ LIỆU HOẠT ĐỘNG THI ĐUA HÀNG TUẦN (WEEKLY COMPETITION) ---
@@ -2567,8 +2595,8 @@ const LIMITED_THEMES = [
     coverId: "chinh_phuc_bau_troi",
     frameId: "chinh_phuc_bau_troi",
     durationDays: 30,
-    isEligible: () => false, // Phần thưởng Đấu trường Arena mùa AS1 (2026) - Tạm khóa với mọi người dùng
-    isTemporarilyLocked: true
+    isEligible: () => false, // Phần thưởng Đấu trường Arena mùa AS1 (2026)
+    isSeasonReward: true
   },
   {
     id: "phep_mau_mua_dong",
@@ -2787,10 +2815,15 @@ function getUserLimitedItemsStatus(userId) {
 
   // 1. Vật phẩm sự kiện giới hạn
   for (const theme of LIMITED_THEMES) {
-    if (theme.id === "chinh_phuc_bau_troi" || theme.isTemporarilyLocked) {
-      // Phần thưởng Đấu trường Arena mùa AS1 (2026): Tạm khóa với mọi người dùng
-      res.frames[theme.frameId] = { isUnlocked: false, expiresAt: null, remainingDays: 0, isPermanent: false, isMaintaining: false, isLocked: true, isSeasonReward: true };
-      res.covers[theme.coverId] = { isUnlocked: false, expiresAt: null, remainingDays: 0, isPermanent: false, isMaintaining: false, isLocked: true, isSeasonReward: true };
+    if (theme.id === "chinh_phuc_bau_troi") {
+      if (isPrivileged) {
+        res.frames[theme.frameId] = { isUnlocked: true, expiresAt: null, remainingDays: 9999, isPermanent: true, isMaintaining: false };
+        res.covers[theme.coverId] = { isUnlocked: true, expiresAt: null, remainingDays: 9999, isPermanent: true, isMaintaining: false };
+      } else {
+        // Phần thưởng Đấu trường Arena mùa AS1 (2026)
+        res.frames[theme.frameId] = { isUnlocked: false, expiresAt: null, remainingDays: 0, isPermanent: false, isMaintaining: false, isLocked: true, isSeasonReward: true };
+        res.covers[theme.coverId] = { isUnlocked: false, expiresAt: null, remainingDays: 0, isPermanent: false, isMaintaining: false, isLocked: true, isSeasonReward: true };
+      }
       continue;
     }
     const isFixedThemeExpired = Boolean(theme.fixedExpiresAt) && (new Date(theme.fixedExpiresAt).getTime() <= now);
@@ -4393,6 +4426,7 @@ async function api(request, response, url) {
         `SELECT p.*,
                 u.display_name,u.avatar,u.role,
                 doc.id as doc_id, doc.title as doc_title, doc.format as doc_format, doc.category as doc_category, doc.source_url as doc_source_url,
+                comm.id as comm_id, comm.name as comm_name, comm.slug as comm_slug, comm.avatar as comm_avatar, comm.privacy as comm_privacy,
                 (SELECT coalesce(sum(vote_value),0) FROM votes v WHERE v.target_type='post' AND v.target_id=p.id) helpful_count,
                 (SELECT count(*) FROM responses r WHERE r.post_id=p.id AND (r.status='visible' OR (r.status='hidden' AND ?=1))) response_count,
                 (SELECT count(*) FROM votes v JOIN users vu ON vu.id=v.user_id WHERE v.target_type='post' AND v.target_id=p.id AND v.vote_value > 0 AND vu.role='lecturer') lecturer_recommended,
@@ -4400,10 +4434,21 @@ async function api(request, response, url) {
          FROM posts p
          JOIN users u ON u.id=p.author_id
          LEFT JOIN documents doc ON doc.id=p.document_id
+         LEFT JOIN communities comm ON comm.id=p.community_id
          WHERE p.id=? AND (p.status='visible' OR (p.status='hidden' AND ?=1))`,
       )
       .get(allowHidden, viewer?.id || null, Number(postIdMatch[1]), allowHidden);
     if (!row) return error(response, 404, "Không tìm thấy bài đăng.");
+
+    // Kiểm tra quyền riêng tư của bài đăng thuộc cộng đồng
+    if (row.comm_privacy === "private") {
+      const isMember = viewer?.id ? db.prepare("SELECT 1 FROM community_members WHERE community_id = ? AND user_id = ?").get(row.comm_id, viewer.id) : null;
+      const isAuthor = viewer && viewer.id === row.author_id;
+      const isPrivileged = viewer && (viewer.role === "admin" || viewer.role === "ta");
+      if (!isMember && !isAuthor && !isPrivileged) {
+        return error(response, 403, "Bài viết thuộc cộng đồng riêng tư. Bạn cần là thành viên để xem.");
+      }
+    }
     const responses = db
       .prepare(
         `SELECT r.*,u.display_name,u.avatar,u.role,(SELECT coalesce(sum(vote_value),0) FROM votes v WHERE v.target_type='response' AND v.target_id=r.id) helpful_count,(SELECT count(*) FROM votes v JOIN users vu ON vu.id=v.user_id WHERE v.target_type='response' AND v.target_id=r.id AND v.vote_value > 0 AND vu.role='lecturer') lecturer_recommended FROM responses r JOIN users u ON u.id=r.author_id WHERE r.post_id=? AND (r.status='visible' OR (r.status='hidden' AND ?=1)) ORDER BY r.created_at ASC`,
@@ -4751,6 +4796,120 @@ async function api(request, response, url) {
       return error(response, 409, "Không thể cập nhật đánh giá.");
     }
   }
+function getLeaderboardTimeThreshold(period) {
+  const now = new Date();
+  const vnOffsetMs = 7 * 60 * 60 * 1000;
+  const vnNow = new Date(now.getTime() + (now.getTimezoneOffset() * 60000) + vnOffsetMs);
+  
+  if (period === "week") {
+    const day = vnNow.getDay();
+    const diffToMonday = (day === 0 ? -6 : 1) - day;
+    const monday = new Date(vnNow);
+    monday.setDate(vnNow.getDate() + diffToMonday);
+    monday.setHours(0, 0, 0, 0);
+    const utcMonday = new Date(monday.getTime() - vnOffsetMs);
+    return utcMonday.toISOString().replace("T", " ").substring(0, 19);
+  } else if (period === "month") {
+    const firstDay = new Date(vnNow.getFullYear(), vnNow.getMonth(), 1, 0, 0, 0, 0);
+    const utcFirstDay = new Date(firstDay.getTime() - vnOffsetMs);
+    return utcFirstDay.toISOString().replace("T", " ").substring(0, 19);
+  } else if (period === "quarter") {
+    const quarterMonth = Math.floor(vnNow.getMonth() / 3) * 3;
+    const firstQuarterDay = new Date(vnNow.getFullYear(), quarterMonth, 1, 0, 0, 0, 0);
+    const utcFirstQuarterDay = new Date(firstQuarterDay.getTime() - vnOffsetMs);
+    return utcFirstQuarterDay.toISOString().replace("T", " ").substring(0, 19);
+  }
+  return "1970-01-01 00:00:00";
+}
+
+function getPeriodLeaderboard(period, currentUserId) {
+  const threshold = getLeaderboardTimeThreshold(period);
+  let rows = db.prepare(`
+    SELECT u.id, u.display_name as displayName, u.avatar, u.role, u.cover_image as coverImage, u.namecard_frame as namecardFrame,
+           coalesce(sum(c.points), 0) as periodPoints,
+           max(c.created_at) as lastEventAt
+    FROM users u
+    JOIN contribution_events c ON u.id = c.user_id AND c.created_at >= ?
+    WHERE u.role NOT IN ('admin', 'lecturer', 'member') AND u.id != 89
+    GROUP BY u.id
+    HAVING periodPoints > 0
+    ORDER BY periodPoints DESC, lastEventAt ASC, u.id ASC
+  `).all(threshold);
+
+  if (rows.length < 3) {
+    rows = db.prepare(`
+      SELECT u.id, u.display_name as displayName, u.avatar, u.role, u.cover_image as coverImage, u.namecard_frame as namecardFrame,
+             coalesce(sum(c.points), 0) as periodPoints,
+             max(c.created_at) as lastEventAt
+      FROM users u
+      LEFT JOIN contribution_events c ON u.id = c.user_id
+      WHERE u.role NOT IN ('admin', 'lecturer', 'member') AND u.id != 89
+      GROUP BY u.id
+      ORDER BY periodPoints DESC, u.id ASC
+      LIMIT 10
+    `).all();
+  }
+
+  const top10 = rows.slice(0, 10).map((u, idx) => ({
+    userId: u.id,
+    id: u.id,
+    displayName: u.displayName,
+    avatar: u.avatar,
+    initials: u.avatar || getAvatarEmoji(u.displayName),
+    role: u.role,
+    coverImage: u.coverImage || "default",
+    namecardFrame: u.namecardFrame || "none",
+    score: Number(u.periodPoints),
+    streakTier: getAuthorStreakTier(u.id),
+    rank: idx + 1
+  }));
+
+  let currentUserEntry = null;
+  if (currentUserId) {
+    const isStudent = db.prepare("SELECT 1 FROM users WHERE id = ? AND role NOT IN ('admin', 'lecturer', 'member') AND id != 89").get(currentUserId);
+    const userIdx = rows.findIndex(r => r.id === currentUserId);
+    if (userIdx !== -1) {
+      const u = rows[userIdx];
+      currentUserEntry = {
+        userId: u.id,
+        id: u.id,
+        displayName: u.displayName,
+        avatar: u.avatar,
+        initials: u.avatar || getAvatarEmoji(u.displayName),
+        role: u.role,
+        coverImage: u.coverImage || "default",
+        namecardFrame: u.namecardFrame || "none",
+        score: Number(u.periodPoints),
+        streakTier: getAuthorStreakTier(u.id),
+        rank: userIdx + 1,
+        isParticipant: Boolean(isStudent),
+        isCurrentUser: true
+      };
+    } else {
+      const u = db.prepare("SELECT id, display_name as displayName, avatar, role, cover_image as coverImage, namecard_frame as namecardFrame FROM users WHERE id = ?").get(currentUserId);
+      if (u) {
+        currentUserEntry = {
+          userId: u.id,
+          id: u.id,
+          displayName: u.displayName,
+          avatar: u.avatar,
+          initials: u.avatar || getAvatarEmoji(u.displayName),
+          role: u.role,
+          coverImage: u.coverImage || "default",
+          namecardFrame: u.namecardFrame || "none",
+          score: 0,
+          streakTier: getAuthorStreakTier(u.id),
+          rank: rows.length + 1,
+          isParticipant: Boolean(isStudent),
+          isCurrentUser: true
+        };
+      }
+    }
+  }
+
+  return { top10, currentUserEntry };
+}
+
   if (method === "GET" && pathName === "/api/leaderboard") {
     const user = sessionFrom(request);
 
@@ -5036,13 +5195,29 @@ async function api(request, response, url) {
       };
     }
 
+    const reqPeriod = ["week", "month", "quarter"].includes(url.searchParams.get("period")) ? url.searchParams.get("period") : "week";
+    const currentUserId = user ? user.id : null;
+    const weekData = getPeriodLeaderboard("week", currentUserId);
+    const monthData = getPeriodLeaderboard("month", currentUserId);
+    const quarterData = getPeriodLeaderboard("quarter", currentUserId);
+    const activePeriodData = reqPeriod === "month" ? monthData : (reqPeriod === "quarter" ? quarterData : weekData);
+
     return json(response, 200, {
       leaderboard: topUsers,
       streakLeaderboard: topStreakUsers,
       arenaLeaderboard: topArenaUsers,
       likesLeaderboard: topLikesUsers,
       studyLeaderboard: topStudyUsers,
-      currentUser: currentUserData
+      currentUser: currentUserData,
+      // Bảng vinh danh học thuật mới tại Trang chủ (Home Grand Leaderboard)
+      period: reqPeriod,
+      top10: activePeriodData.top10,
+      currentUserEntry: activePeriodData.currentUserEntry,
+      periods: {
+        week: weekData,
+        month: monthData,
+        quarter: quarterData
+      }
     });
   }
   if (method === "GET" && pathName === "/api/me/contributions") {
@@ -5597,12 +5772,15 @@ async function api(request, response, url) {
         }
         newCoverImage = trimmedCover;
       } else if (LIMITED_COVER_IDS.has(trimmedCover) || STREAK_COVER_IDS.has(trimmedCover)) {
-        if (trimmedCover === "chinh_phuc_bau_troi") {
-          return error(response, 403, "Ảnh bìa này là phần thưởng Đấu trường Arena mùa AS1 (2026) và hiện đang tạm khóa.");
+        if (trimmedCover === "chinh_phuc_bau_troi" && !isPrivileged) {
+          return error(response, 403, "Ảnh bìa này là phần thưởng Đấu trường Arena mùa AS1 (2026).");
         }
         const coverStatus = userLimited.covers[trimmedCover];
         const isCoverUnlocked = isPrivileged || (coverStatus && coverStatus.isUnlocked);
         if (!isCoverUnlocked) {
+          if (trimmedCover === "chinh_phuc_bau_troi") {
+            return error(response, 403, "Ảnh bìa này là phần thưởng Đấu trường Arena mùa AS1 (2026).");
+          }
           const perk = STREAK_PERK_ITEMS.find(p => p.coverId === trimmedCover);
           if (perk) {
             return error(response, 403, `Ảnh bìa này yêu cầu chuỗi hoạt động ${perk.minStreak}+ ngày (hoặc hạn dùng sau đứt chuỗi đã hết).`);
@@ -5642,12 +5820,15 @@ async function api(request, response, url) {
     ]);
     const requestedFrame = typeof namecardFrame === "string" ? namecardFrame.trim() : (currentUser.namecard_frame || "none");
     if (LIMITED_FRAME_IDS.has(requestedFrame) || STREAK_FRAME_IDS.has(requestedFrame)) {
-      if (requestedFrame === "chinh_phuc_bau_troi") {
-        return error(response, 403, "Khung này là phần thưởng Đấu trường Arena mùa AS1 (2026) và hiện đang tạm khóa.");
+      if (requestedFrame === "chinh_phuc_bau_troi" && !isPrivileged) {
+        return error(response, 403, "Khung này là phần thưởng Đấu trường Arena mùa AS1 (2026).");
       }
       const frameStatus = userLimited.frames[requestedFrame];
       const isFrameUnlocked = isPrivileged || (frameStatus && frameStatus.isUnlocked);
       if (!isFrameUnlocked) {
+        if (requestedFrame === "chinh_phuc_bau_troi") {
+          return error(response, 403, "Khung này là phần thưởng Đấu trường Arena mùa AS1 (2026).");
+        }
         const perk = STREAK_PERK_ITEMS.find(p => p.frameId === requestedFrame);
         if (perk) {
           return error(response, 403, `Khung này yêu cầu chuỗi hoạt động ${perk.minStreak}+ ngày (hoặc hạn dùng sau đứt chuỗi đã hết).`);

@@ -1772,6 +1772,8 @@ function normalizePost(p) {
     documentIds: Array.isArray(p.documentIds) ? p.documentIds : (p.documentId ? [p.documentId] : []),
     linkedDocument: p.linkedDocument || p.document || (Array.isArray(p.linkedDocuments) ? p.linkedDocuments[0] : null) || null,
     linkedDocuments: Array.isArray(p.linkedDocuments) ? p.linkedDocuments : (p.linkedDocument ? [p.linkedDocument] : []),
+    community: p.community || null,
+    communityId: p.communityId || p.community_id || (p.community?.id) || null,
     status: p.status || "visible",
   };
 }
@@ -2462,10 +2464,14 @@ async function hydrateServer(force = false) {
       (typeof getCachedUser === "function" && getCachedUser())
     );
     const contribsPromise = hasHintedSession ? requestAPI("/api/me/contributions").catch(() => null) : null;
-    const postsPromise = requestAPI("/api/posts").catch(() => ({ posts: [] }));
+    const postsUrl = (typeof currentForumCommunitySlug !== "undefined" && currentForumCommunitySlug)
+      ? `/api/posts?community=${encodeURIComponent(currentForumCommunitySlug)}`
+      : "/api/posts";
+    const postsPromise = requestAPI(postsUrl).catch(() => ({ posts: [] }));
     const docsPromise = requestAPI("/api/documents").catch(() => ({ documents: [] }));
-    const leaderboardPromise = shouldFetchForumLb ? requestAPI("/api/leaderboard").catch(() => null) : Promise.resolve(null);
+    const leaderboardPromise = requestAPI("/api/leaderboard").catch(() => null);
     const topicsPromise = requestAPI("/api/topics").catch(() => ({ topics: [] }));
+    const commsPromise = requestAPI("/api/communities").catch(() => ({ communities: [] }));
 
     const current = await sessionPromise;
     csrfToken = current.csrfToken;
@@ -2482,12 +2488,20 @@ async function hydrateServer(force = false) {
       }
     }
 
-    const [postsData, docsData, leaderboardData, topicsData] = await Promise.all([
+    const [postsData, docsData, leaderboardData, topicsData, commsData] = await Promise.all([
       postsPromise,
       docsPromise,
       leaderboardPromise,
       topicsPromise,
+      commsPromise,
     ]);
+
+    if (commsData && Array.isArray(commsData.communities)) {
+      forumCommunitiesList = commsData.communities;
+      if (typeof renderForumCommunitiesSidebar === "function") renderForumCommunitiesSidebar();
+      if (typeof updateForumCommunitySelectors === "function") updateForumCommunitySelectors();
+      if (typeof updateCommunityHeroBanner === "function" && currentForumCommunitySlug) updateCommunityHeroBanner();
+    }
 
     if (topicsData.topics) {
       allTopics = topicsData.topics;
@@ -2506,8 +2520,12 @@ async function hydrateServer(force = false) {
 
     if (leaderboardData) {
       cachedLeaderboardData = leaderboardData;
+      cachedHomeLeaderboardData = leaderboardData;
       renderLeaderboard();
       updateResponsiveAsidePlacement();
+      if (typeof renderHomeLeaderboardData === "function" && leaderboardData.periods?.[homeLeaderboardPeriod]) {
+        renderHomeLeaderboardData(leaderboardData.periods[homeLeaderboardPeriod]);
+      }
     }
     if (docsData.documents) {
       documents.length = 0;
@@ -2950,6 +2968,13 @@ function postCard(post) {
       : `openDetail(${post.id})`;
     docBadge = `<span class="post-tag post-doc-tag" onclick="event.stopPropagation(); ${clickAction}" title="${linkedDocs.length} tài liệu đính kèm: ${escapeHTML(allTitles)}"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg><span class="doc-tag-count">${linkedDocs.length}</span><span class="doc-tag-label">&nbsp;tài liệu</span></span>`;
   }
+  const commBadge = post.community
+    ? `<span class="post-tag post-comm-tag ${post.community.privacy === 'private' ? 'is-private' : ''}" onclick="event.stopPropagation(); selectForumCommunity('${escapeHTML(post.community.slug)}')" title="Cộng đồng: ${escapeHTML(post.community.name)}">
+        <span class="comm-tag-avatar">${escapeHTML(post.community.avatar || "📚")}</span>
+        <span class="comm-tag-name">r/${escapeHTML(post.community.slug)}</span>
+        ${post.community.privacy === 'private' ? '<span class="comm-tag-lock" title="Cộng đồng riêng tư">🔒</span>' : ''}
+      </span>`
+    : "";
   return `<article class="post-card ${post.authorRole === "admin" ? "admin-post" : ""}" data-post-id="${post.id}" style="position: relative;">
     ${adminBtns}${editBtn}
     <span class="avatar avatar-xs ${getAvatarClass(post.streakTier, post.anonymous, post.authorRole)}" ${ncAttr}>${post.initials}</span>
@@ -2963,6 +2988,7 @@ function postCard(post) {
     </div>
     <div class="post-stats">
       <div class="post-stats-tags">
+        ${commBadge}
         <span class="post-tag">${post.topic}</span>
         ${docBadge}
       </div>
@@ -3108,6 +3134,9 @@ window.setForumPage = function (page) {
   );
   const topic = $("#topicFilter") ? $("#topicFilter").value : "all";
   if (topic !== "all") result = result.filter((p) => p.topic === topic);
+  if (typeof currentForumCommunitySlug !== "undefined" && currentForumCommunitySlug) {
+    result = result.filter((p) => p.community && p.community.slug === currentForumCommunitySlug);
+  }
   if (currentFilter === "new") {
     const now = new Date();
     const yesterday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
@@ -3144,6 +3173,9 @@ function renderPosts() {
   );
   const topic = $("#topicFilter").value;
   if (topic !== "all") result = result.filter((p) => p.topic === topic);
+  if (typeof currentForumCommunitySlug !== "undefined" && currentForumCommunitySlug) {
+    result = result.filter((p) => p.community && p.community.slug === currentForumCommunitySlug);
+  }
   if (currentFilter === "new") {
     const now = new Date();
     const yesterday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
@@ -3187,6 +3219,7 @@ function renderPosts() {
 function renderHome() {
   updateCommunityStats();
   if (typeof initHomeBannerStack === "function") initHomeBannerStack();
+  if (typeof loadAndRenderHomeLeaderboard === "function") loadAndRenderHomeLeaderboard();
   const unpinnedRecentPosts = [...posts]
     .sort((a, b) => (new Date(b.createdAt || 0) - new Date(a.createdAt || 0)) || (b.id - a.id))
     .slice(0, 3);
@@ -4133,6 +4166,9 @@ function openQuestion() {
   }
   const modal = $("#questionModal");
   $("#questionForm").reset();
+  if (typeof updateForumCommunitySelectors === "function") {
+    updateForumCommunitySelectors();
+  }
   anonymous = false;
   $$(".identity-choice").forEach((b, i) =>
     b.classList.toggle("selected", i === 0),
@@ -6624,6 +6660,16 @@ $("#topicFilter").onchange = () => {
   forumCurrentPage = 1;
   renderPosts();
 };
+if ($("#communityFilter")) {
+  $("#communityFilter").onchange = (e) => {
+    const val = e.target.value;
+    if (val === "all") {
+      clearCommunityFilter();
+    } else {
+      selectForumCommunity(val);
+    }
+  };
+}
 $$(".identity-choice").forEach((btn) =>
   btn.addEventListener("click", () => {
     anonymous = btn.dataset.anonymous === "true";
@@ -7075,6 +7121,8 @@ $("#questionForm").addEventListener("submit", async (e) => {
   const primaryDocId = docIds[0] || null;
   try {
     if (serverMode) {
+      const commVal = $("#questionCommunitySelect")?.value;
+      const communityId = commVal ? Number(commVal) : null;
       const data = await requestAPI("/api/posts", {
         method: "POST",
         body: JSON.stringify({
@@ -7084,6 +7132,7 @@ $("#questionForm").addEventListener("submit", async (e) => {
           isAnonymous: anonymous,
           documentId: primaryDocId,
           documentIds: docIds,
+          communityId: communityId,
         }),
       });
       newPost = normalizePost(data.post);
@@ -8300,7 +8349,7 @@ const FRAME_OPTIONS = [
     id: "chinh_phuc_bau_troi",
     name: "Chinh phục bầu trời",
     isLimited: true,
-    lockNote: "Phần thưởng Đấu trường Arena mùa AS1 (2026) — Tạm khóa, cách thức trao thưởng sẽ được thông báo sau",
+    lockNote: "Phần thưởng Đấu trường Arena mùa AS1 (2026)",
     expiredLockNote: "Vật phẩm giới hạn Đấu trường Arena mùa AS1 (2026)"
   },
   { id: "ton_vinh_phai_dep", name: "Tôn vinh phái đẹp", isLimited: true, lockNote: "Khung nhận được qua hoạt động giới hạn" },
@@ -8326,7 +8375,7 @@ const COVER_PRESETS = [
     type: "image",
     value: "covers/chinh-phuc-bau-troi.png",
     isLimited: true,
-    lockNote: "Phần thưởng Đấu trường Arena mùa AS1 (2026) — Tạm khóa, cách thức trao thưởng sẽ được thông báo sau",
+    lockNote: "Phần thưởng Đấu trường Arena mùa AS1 (2026)",
     expiredLockNote: "Vật phẩm giới hạn Đấu trường Arena mùa AS1 (2026)"
   },
   { id: "ton_vinh_phai_dep", name: "Tôn vinh phái đẹp", type: "image", value: "covers/ton-vinh-phai-dep.png", isLimited: true, lockNote: "Ảnh bìa nhận được qua hoạt động giới hạn" },
@@ -9345,7 +9394,7 @@ function getLimitedItemLockInfo(item, limitedItemsObj) {
   if (!item) return { message: "", badgeLabel: "Sự kiện" };
   if (item.id === "chinh_phuc_bau_troi") {
     return {
-      message: item.lockNote || "Phần thưởng Đấu trường Arena mùa AS1 (2026) — Tạm khóa, cách thức trao thưởng sẽ được thông báo sau",
+      message: item.lockNote || "Phần thưởng Đấu trường Arena mùa AS1 (2026)",
       badgeLabel: "Mùa AS1"
     };
   }
@@ -9396,19 +9445,22 @@ function renderFramePicker() {
 
     if (f.isLimited) {
       const limStatus = limitedFrames[f.id];
-      if (f.id === "chinh_phuc_bau_troi" || limStatus?.isLocked) {
+      if (isPrivileged || limStatus?.isPermanent) {
+        isUnlocked = true;
+        lockTooltip = `${f.name} (Đặc quyền Quản trị viên: Vĩnh viễn)`;
+        badgeHtml = `<span class="choice-unlock-badge badge-permanent"><svg class="ui-icon" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px; margin-right:2px;"><path d="m2 4 3 12h14l3-12-6 7-4-7-4 7-6-7zm3 16h14"/></svg>Vĩnh viễn</span>`;
+      } else if (f.id === "chinh_phuc_bau_troi" || limStatus?.isLocked) {
         isUnlocked = false;
         const lockInfo = getLimitedItemLockInfo(f, limitedItems);
         lockTooltip = lockInfo.message;
         badgeHtml = `<span class="choice-lock-badge" title="${escapeHTML(lockTooltip)}"><svg class="ui-icon" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px; margin-right:2px;"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>${escapeHTML(lockInfo.badgeLabel)}</span>`;
-      } else if (isPrivileged || limStatus?.isPermanent) {
-        lockTooltip = `${f.name} (Đặc quyền Quản trị viên: Vĩnh viễn)`;
-        badgeHtml = `<span class="choice-unlock-badge badge-permanent"><svg class="ui-icon" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px; margin-right:2px;"><path d="m2 4 3 12h14l3-12-6 7-4-7-4 7-6-7zm3 16h14"/></svg>Vĩnh viễn</span>`;
-      } else if (isUnlocked) {
+      } else if (limStatus && limStatus.isUnlocked) {
+        isUnlocked = true;
         const remDays = limStatus?.remainingDays || 30;
         lockTooltip = `${f.name} (Hạn dùng còn ${remDays} ngày)`;
         badgeHtml = `<span class="choice-unlock-badge badge-countdown"><svg class="ui-icon" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px; margin-right:2px;"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>${remDays}d</span>`;
       } else {
+        isUnlocked = false;
         const lockInfo = getLimitedItemLockInfo(f, limitedItems);
         lockTooltip = lockInfo.message;
         badgeHtml = `<span class="choice-lock-badge" title="${escapeHTML(lockTooltip)}"><svg class="ui-icon" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px; margin-right:2px;"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>${escapeHTML(lockInfo.badgeLabel)}</span>`;
@@ -9503,19 +9555,22 @@ function renderCoverPicker() {
 
     if (p.isLimited) {
       const limStatus = limitedCovers[p.id];
-      if (p.id === "chinh_phuc_bau_troi" || limStatus?.isLocked) {
+      if (isPrivileged || limStatus?.isPermanent) {
+        isUnlocked = true;
+        lockTooltip = `${p.name} (Đặc quyền Quản trị viên: Vĩnh viễn)`;
+        badgeHtml = `<span class="choice-unlock-badge badge-permanent"><svg class="ui-icon" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px; margin-right:2px;"><path d="m2 4 3 12h14l3-12-6 7-4-7-4 7-6-7zm3 16h14"/></svg>Vĩnh viễn</span>`;
+      } else if (p.id === "chinh_phuc_bau_troi" || limStatus?.isLocked) {
         isUnlocked = false;
         const lockInfo = getLimitedItemLockInfo(p, limitedItems);
         lockTooltip = lockInfo.message;
         badgeHtml = `<span class="choice-lock-badge" title="${escapeHTML(lockTooltip)}"><svg class="ui-icon" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px; margin-right:2px;"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>${escapeHTML(lockInfo.badgeLabel)}</span>`;
-      } else if (isPrivileged || limStatus?.isPermanent) {
-        lockTooltip = `${p.name} (Đặc quyền Quản trị viên: Vĩnh viễn)`;
-        badgeHtml = `<span class="choice-unlock-badge badge-permanent"><svg class="ui-icon" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px; margin-right:2px;"><path d="m2 4 3 12h14l3-12-6 7-4-7-4 7-6-7zm3 16h14"/></svg>Vĩnh viễn</span>`;
-      } else if (isUnlocked) {
+      } else if (limStatus && limStatus.isUnlocked) {
+        isUnlocked = true;
         const remDays = limStatus?.remainingDays || 30;
         lockTooltip = `${p.name} (Hạn dùng còn ${remDays} ngày)`;
         badgeHtml = `<span class="choice-unlock-badge badge-countdown"><svg class="ui-icon" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px; margin-right:2px;"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>${remDays}d</span>`;
       } else {
+        isUnlocked = false;
         const lockInfo = getLimitedItemLockInfo(p, limitedItems);
         lockTooltip = lockInfo.message;
         badgeHtml = `<span class="choice-lock-badge" title="${escapeHTML(lockTooltip)}"><svg class="ui-icon" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px; margin-right:2px;"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>${escapeHTML(lockInfo.badgeLabel)}</span>`;
@@ -28454,3 +28509,466 @@ setInterval(() => {
 if (typeof checkNotifUnreadCount === "function") {
   setTimeout(checkNotifUnreadCount, 1000);
 }
+
+// =========================================================================
+// BẢNG VINH DANH HỌC THUẬT TRANG CHỦ (HOMEPAGE GRAND LEADERBOARD)
+// =========================================================================
+
+let homeLeaderboardPeriod = "week";
+let cachedHomeLeaderboardData = null;
+
+const HOME_LB_POINT_SVG = `<svg class="ui-icon champ-score-star" width="13" height="13" viewBox="0 0 24 24" fill="#f59e0b" stroke="#f59e0b" stroke-width="1.2" aria-hidden="true" style="margin-right: 3px;"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>`;
+
+async function loadAndRenderHomeLeaderboard(period, forceRefresh = false) {
+  if (period && ["week", "month", "quarter"].includes(period)) {
+    homeLeaderboardPeriod = period;
+  }
+
+  // Cập nhật tab active
+  $$(".home-lb-tab-btn").forEach((btn) => {
+    const isAct = btn.dataset.period === homeLeaderboardPeriod;
+    btn.classList.toggle("active", isAct);
+    btn.setAttribute("aria-selected", isAct ? "true" : "false");
+  });
+
+  const podiumWrap = $("#homeLbPodiumWrap");
+  const lbList = $("#homeLbList");
+  const listWrap = $("#homeLbListWrap");
+  if (!podiumWrap || !lbList) return;
+
+  // Sử dụng dữ liệu đã cache nếu có
+  if (!forceRefresh && cachedHomeLeaderboardData?.periods?.[homeLeaderboardPeriod]) {
+    renderHomeLeaderboardData(cachedHomeLeaderboardData.periods[homeLeaderboardPeriod]);
+    return;
+  }
+
+  try {
+    const data = await requestAPI(`/api/leaderboard?period=${homeLeaderboardPeriod}`);
+    if (data) {
+      cachedHomeLeaderboardData = data;
+      const periodData = data.periods?.[homeLeaderboardPeriod] || {
+        top10: data.top10 || [],
+        currentUserEntry: data.currentUserEntry || null,
+      };
+      renderHomeLeaderboardData(periodData);
+    }
+  } catch (err) {
+    console.error("Lỗi nạp bảng vinh danh trang chủ:", err);
+    if (podiumWrap) {
+      podiumWrap.innerHTML = `<div class="comp-lb-empty">Không thể tải bảng vinh danh. Vui lòng thử lại sau.</div>`;
+    }
+  }
+}
+
+function renderHomeLeaderboardData(periodData) {
+  const podiumWrap = $("#homeLbPodiumWrap");
+  const lbList = $("#homeLbList");
+  const listWrap = $("#homeLbListWrap");
+  if (!podiumWrap || !lbList) return;
+
+  const top10 = Array.isArray(periodData.top10) ? periodData.top10 : [];
+  const currentUserEntry = periodData.currentUserEntry || null;
+
+  if (top10.length === 0) {
+    podiumWrap.innerHTML = `<div class="comp-lb-empty">Chưa có thành viên nào ghi nhận điểm hoạt động trong chu kỳ này.</div>`;
+    if (listWrap) listWrap.style.display = "none";
+    lbList.innerHTML = "";
+    return;
+  }
+
+  if (listWrap) listWrap.style.display = "";
+
+  const isWeek = true; // Hiển thị Quán quân / Á quân / Quý quân trên bục
+  const top1 = top10.find((u) => u.rank === 1) || null;
+  const top2 = top10.find((u) => u.rank === 2) || null;
+  const top3 = top10.find((u) => u.rank === 3) || null;
+  const opts = { scoreIconHtml: HOME_LB_POINT_SVG };
+
+  podiumWrap.innerHTML = renderArenaTop3(top1, top2, top3, isWeek, opts);
+
+  const rest = top10.filter((u) => u.rank >= 4);
+  let rowsHtml = "";
+  rest.forEach((u) => {
+    const isCurrent = Boolean(
+      u.isCurrentUser ||
+      (currentUserEntry && Number(currentUserEntry.userId || currentUserEntry.id) === Number(u.userId || u.id)) ||
+      (typeof session !== "undefined" && session && Number(session.id) === Number(u.userId || u.id))
+    );
+    rowsHtml += buildArenaLeaderboardRowHtml(u, isCurrent, opts);
+  });
+
+  // Nếu người dùng hiện tại nằm ngoài top 10, ghim dòng thứ hạng của họ ở cuối
+  if (currentUserEntry && currentUserEntry.rank > 10) {
+    rowsHtml += buildArenaLeaderboardRowHtml(currentUserEntry, true, { ...opts, isPinnedMyRow: true });
+  }
+
+  lbList.innerHTML = rowsHtml;
+}
+
+function switchHomeLeaderboardPeriod(period) {
+  loadAndRenderHomeLeaderboard(period);
+}
+window.switchHomeLeaderboardPeriod = switchHomeLeaderboardPeriod;
+window.loadAndRenderHomeLeaderboard = loadAndRenderHomeLeaderboard;
+
+// =========================================================================
+// TÍNH NĂNG CỘNG ĐỒNG HỌC THUẬT (COMMUNITIES / SUBREDDITS)
+// =========================================================================
+
+let currentForumCommunitySlug = null;
+let forumCommunitiesList = [];
+let activeCommunityTab = "explore"; // "explore" | "joined"
+
+async function loadForumCommunities() {
+  try {
+    const data = await requestAPI("/api/communities");
+    if (data && Array.isArray(data.communities)) {
+      forumCommunitiesList = data.communities;
+      renderForumCommunitiesSidebar();
+      updateForumCommunitySelectors();
+      if (currentForumCommunitySlug) {
+        updateCommunityHeroBanner();
+      }
+    }
+  } catch (err) {
+    console.error("Lỗi tải danh sách cộng đồng:", err);
+  }
+}
+
+function updateForumCommunitySelectors() {
+  const filterSelect = $("#communityFilter");
+  if (filterSelect) {
+    let opts = `<option value="all">🌐 Tất cả cộng đồng (Mặc định)</option>`;
+    forumCommunitiesList.forEach((c) => {
+      if (c.privacy === "public" || c.isMember || (session && (session.role === "admin" || session.role === "ta"))) {
+        const lockIcon = c.privacy === "private" ? "🔒 " : "";
+        opts += `<option value="${escapeHTML(c.slug)}">${lockIcon}${escapeHTML(c.name)} (r/${escapeHTML(c.slug)})</option>`;
+      }
+    });
+    filterSelect.innerHTML = opts;
+    filterSelect.value = currentForumCommunitySlug || "all";
+  }
+
+  const postSelect = $("#questionCommunitySelect");
+  if (postSelect) {
+    let opts = `<option value="">🌐 Diễn đàn chung (Mặc định)</option>`;
+    forumCommunitiesList.forEach((c) => {
+      if (c.privacy === "public" || c.isMember || (session && (session.role === "admin" || session.role === "ta"))) {
+        const lockIcon = c.privacy === "private" ? "🔒 " : "";
+        opts += `<option value="${c.id}">${lockIcon}${escapeHTML(c.name)} (r/${escapeHTML(c.slug)})</option>`;
+      }
+    });
+    postSelect.innerHTML = opts;
+    if (currentForumCommunitySlug) {
+      const match = forumCommunitiesList.find((c) => c.slug === currentForumCommunitySlug);
+      if (match) postSelect.value = String(match.id);
+    }
+  }
+}
+
+function renderForumCommunitiesSidebar() {
+  const container = $("#forumCommunityList");
+  if (!container) return;
+
+  const currentTab = activeCommunityTab || "explore";
+  let list = forumCommunitiesList;
+  if (currentTab === "joined") {
+    list = forumCommunitiesList.filter((c) => c.isMember);
+  }
+
+  if (list.length === 0) {
+    container.innerHTML = `
+      <div class="community-empty-state">
+        <p>${currentTab === "joined" ? "Bạn chưa tham gia cộng đồng nào. Hãy khám phá và tham gia các không gian học thuật nhé!" : "Chưa có cộng đồng nào."}</p>
+      </div>
+    `;
+    return;
+  }
+
+  container.innerHTML = list
+    .map((c) => {
+      const isCurrentActive = currentForumCommunitySlug === c.slug;
+      const isCreator = session && session.id === c.creatorId;
+      const roleBadge = isCreator
+        ? `<span class="comm-item-role-badge admin">Quản trị</span>`
+        : c.userRole === "moderator"
+        ? `<span class="comm-item-role-badge mod">Kiểm duyệt</span>`
+        : "";
+      const joinBtnHtml = session
+        ? c.isMember
+          ? `<button type="button" class="btn-comm-join joined" onclick="event.stopPropagation(); toggleJoinCommunity(${c.id})" title="Đã tham gia (Nhấn để rời)">Đã vào</button>`
+          : `<button type="button" class="btn-comm-join" onclick="event.stopPropagation(); toggleJoinCommunity(${c.id})" title="Tham gia cộng đồng">+ Vào</button>`
+        : `<button type="button" class="btn-comm-join" onclick="event.stopPropagation(); askLogin('Vui lòng đăng nhập để tham gia cộng đồng');" title="Đăng nhập để tham gia">+ Vào</button>`;
+
+      return `
+      <div class="community-sidebar-item ${isCurrentActive ? "active" : ""} ${c.privacy === "private" ? "is-private" : ""}" 
+           onclick="selectForumCommunity('${escapeHTML(c.slug)}')" title="${escapeHTML(c.description || c.name)}">
+        <div class="comm-item-avatar">${escapeHTML(c.avatar || "📚")}</div>
+        <div class="comm-item-info">
+          <div class="comm-item-name-row">
+            <span class="comm-item-name">${escapeHTML(c.name)}</span>
+            ${c.privacy === "private" ? `<span class="comm-item-lock" title="Cộng đồng riêng tư">🔒</span>` : ""}
+            ${roleBadge}
+          </div>
+          <div class="comm-item-meta">
+            <span class="comm-item-slug">r/${escapeHTML(c.slug)}</span>
+            <span class="comm-item-dot">•</span>
+            <span class="comm-item-members">${c.membersCount || 0} tv</span>
+          </div>
+        </div>
+        <div class="comm-item-action">
+          ${joinBtnHtml}
+        </div>
+      </div>
+    `;
+    })
+    .join("");
+}
+
+function switchCommunityTab(tab) {
+  activeCommunityTab = tab;
+  $$(".community-tabs .comm-tab").forEach((btn) => {
+    btn.classList.toggle("active", btn.dataset.commTab === tab);
+  });
+  renderForumCommunitiesSidebar();
+}
+
+function selectForumCommunity(slug) {
+  currentForumCommunitySlug = slug;
+  go("forum");
+  updateForumCommunitySelectors();
+  renderForumCommunitiesSidebar();
+  updateCommunityHeroBanner();
+  forumCurrentPage = 1;
+  hydrateServer();
+}
+
+function clearCommunityFilter() {
+  currentForumCommunitySlug = null;
+  const hero = $("#communityDetailHero");
+  if (hero) hero.style.display = "none";
+  updateForumCommunitySelectors();
+  renderForumCommunitiesSidebar();
+  forumCurrentPage = 1;
+  hydrateServer();
+}
+
+function updateCommunityHeroBanner() {
+  const hero = $("#communityDetailHero");
+  if (!hero) return;
+  if (!currentForumCommunitySlug) {
+    hero.style.display = "none";
+    return;
+  }
+  const comm = forumCommunitiesList.find((c) => c.slug === currentForumCommunitySlug);
+  if (!comm) {
+    hero.style.display = "none";
+    return;
+  }
+
+  hero.style.display = "block";
+  const coverEl = $("#commHeroCover");
+  if (coverEl) {
+    if (comm.coverImage && comm.coverImage.startsWith("linear-gradient")) {
+      coverEl.style.background = comm.coverImage;
+    } else if (comm.coverImage && comm.coverImage !== "default") {
+      coverEl.style.backgroundImage = `url(${comm.coverImage})`;
+      coverEl.style.backgroundSize = "cover";
+      coverEl.style.backgroundPosition = "center";
+    } else {
+      coverEl.style.background = "linear-gradient(135deg, #1e3a8a 0%, #3b82f6 50%, #93c5fd 100%)";
+    }
+  }
+
+  const avatarEl = $("#commHeroAvatar");
+  if (avatarEl) avatarEl.textContent = comm.avatar || "📚";
+
+  const titleEl = $("#commHeroTitle");
+  if (titleEl) titleEl.textContent = comm.name;
+
+  const slugEl = $("#commHeroSlug");
+  if (slugEl) slugEl.textContent = `r/${comm.slug}`;
+
+  const privacyEl = $("#commHeroPrivacy");
+  if (privacyEl) {
+    const isPriv = comm.privacy === "private";
+    privacyEl.textContent = isPriv ? "🔒 Riêng tư" : "🌐 Công khai";
+    privacyEl.className = `community-privacy-pill ${isPriv ? "is-private" : "is-public"}`;
+  }
+
+  const descEl = $("#commHeroDesc");
+  if (descEl) descEl.textContent = comm.description || "Không gian giao lưu, chia sẻ tài liệu và thảo luận học thuật chuyên sâu.";
+
+  const membersCountEl = $("#commHeroMembersCount");
+  if (membersCountEl) membersCountEl.innerHTML = `<strong>${comm.membersCount || 0}</strong> thành viên`;
+
+  const postsCountEl = $("#commHeroPostsCount");
+  if (postsCountEl) postsCountEl.innerHTML = `<strong>${comm.postsCount || 0}</strong> bài thảo luận`;
+
+  const joinBtn = $("#btnCommJoinHero");
+  if (joinBtn) {
+    if (!session) {
+      joinBtn.textContent = "Tham gia";
+      joinBtn.className = "button button-primary button-sm";
+    } else if (comm.isMember) {
+      joinBtn.textContent = "✓ Đã tham gia";
+      joinBtn.className = "button button-outline button-sm btn-joined";
+    } else {
+      joinBtn.textContent = "+ Tham gia";
+      joinBtn.className = "button button-primary button-sm";
+    }
+  }
+}
+
+async function toggleJoinCurrentCommunity() {
+  if (!currentForumCommunitySlug) return;
+  const comm = forumCommunitiesList.find((c) => c.slug === currentForumCommunitySlug);
+  if (!comm) return;
+  await toggleJoinCommunity(comm.id);
+}
+
+async function toggleJoinCommunity(commId) {
+  if (!session) {
+    askLogin("Vui lòng đăng nhập để tham gia cộng đồng.");
+    return;
+  }
+  const comm = forumCommunitiesList.find((c) => c.id === commId);
+  const isJoining = !comm?.isMember;
+  const endpoint = isJoining ? `/api/communities/${commId}/join` : `/api/communities/${commId}/leave`;
+
+  try {
+    const res = await requestAPI(endpoint, { method: "POST" });
+    if (res && res.ok) {
+      toast(res.message || (isJoining ? "Đã tham gia cộng đồng thành công!" : "Đã rời cộng đồng."));
+      if (comm) {
+        comm.isMember = res.isMember;
+        comm.membersCount = res.membersCount;
+      }
+      renderForumCommunitiesSidebar();
+      updateForumCommunitySelectors();
+      if (currentForumCommunitySlug) {
+        updateCommunityHeroBanner();
+      }
+      hydrateServer();
+    }
+  } catch (err) {
+    toast(err.message || "Không thể thực hiện thao tác với cộng đồng.");
+  }
+}
+
+function openCreateCommunityModal() {
+  if (!session) {
+    askLogin("Vui lòng đăng nhập để tạo không gian cộng đồng mới.");
+    return;
+  }
+  const modal = $("#createCommunityModal");
+  if (!modal) return;
+  $("#newCommName").value = "";
+  $("#newCommSlug").value = "";
+  $("#newCommAvatar").value = "📚";
+  $("#newCommDesc").value = "";
+  $("#newCommCover").value = "linear-gradient(135deg, #1e3a8a 0%, #3b82f6 50%, #93c5fd 100%)";
+  const publicRadio = document.querySelector('input[name="newCommPrivacy"][value="public"]');
+  if (publicRadio) publicRadio.checked = true;
+  updateCreateCommPreview();
+  modal.showModal();
+}
+
+function updateCreateCommPreview() {
+  const name = ($("#newCommName")?.value || "").trim() || "Tên cộng đồng";
+  let slug = ($("#newCommSlug")?.value || "").trim().toLowerCase();
+  if (!slug && $("#newCommName")?.value) {
+    slug = $("#newCommName").value
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/đ/g, "d")
+      .replace(/[^a-z0-9]/g, "-")
+      .replace(/-+/g, "-")
+      .replace(/^-|-$/g, "");
+    if ($("#newCommSlug")) $("#newCommSlug").placeholder = slug || "khoa-hoc-du-lieu";
+  }
+  const avatar = ($("#newCommAvatar")?.value || "").trim() || "📚";
+  const cover = $("#newCommCover")?.value || "linear-gradient(135deg, #1e3a8a 0%, #3b82f6 50%, #93c5fd 100%)";
+  const privacy = document.querySelector('input[name="newCommPrivacy"]:checked')?.value || "public";
+
+  if ($("#commPreviewName")) $("#commPreviewName").textContent = name;
+  if ($("#commPreviewSlug")) $("#commPreviewSlug").textContent = `r/${slug || "slug"} • ${privacy === "private" ? "🔒 Riêng tư" : "🌐 Công khai"}`;
+  if ($("#commPreviewAvatar")) $("#commPreviewAvatar").textContent = avatar;
+  if ($("#commPreviewCover")) $("#commPreviewCover").style.background = cover;
+}
+
+function selectCommEmoji(emoji) {
+  if ($("#newCommAvatar")) {
+    $("#newCommAvatar").value = emoji;
+    updateCreateCommPreview();
+  }
+}
+
+function selectCommCover(btn) {
+  $$(".cover-presets-row .cover-chip").forEach((c) => c.classList.remove("active"));
+  btn.classList.add("active");
+  const cover = btn.dataset.cover;
+  if ($("#newCommCover")) $("#newCommCover").value = cover;
+  updateCreateCommPreview();
+}
+
+async function handleCreateCommunitySubmit() {
+  const name = ($("#newCommName")?.value || "").trim();
+  let slug = ($("#newCommSlug")?.value || "").trim().toLowerCase();
+  if (!slug) {
+    slug = name
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/đ/g, "d")
+      .replace(/[^a-z0-9]/g, "-")
+      .replace(/-+/g, "-")
+      .replace(/^-|-$/g, "");
+  }
+  const description = ($("#newCommDesc")?.value || "").trim();
+  const avatar = ($("#newCommAvatar")?.value || "").trim() || "📚";
+  const coverImage = $("#newCommCover")?.value || "linear-gradient(135deg, #1e3a8a 0%, #3b82f6 50%, #93c5fd 100%)";
+  const privacy = document.querySelector('input[name="newCommPrivacy"]:checked')?.value || "public";
+
+  if (!name || name.length < 3) {
+    toast("Tên cộng đồng tối thiểu 3 ký tự.");
+    return;
+  }
+  if (!slug || slug.length < 3) {
+    toast("Định danh URL tối thiểu 3 ký tự.");
+    return;
+  }
+
+  const btn = $("#btnSubmitCreateComm");
+  if (btn) btn.disabled = true;
+
+  try {
+    const res = await requestAPI("/api/communities", {
+      method: "POST",
+      body: JSON.stringify({ name, slug, description, avatar, coverImage, privacy }),
+    });
+    if (res && res.community) {
+      toast("Đã khởi tạo cộng đồng thành công! (+15 điểm đóng góp)");
+      const modal = $("#createCommunityModal");
+      if (modal && modal.open) modal.close();
+      await loadForumCommunities();
+      selectForumCommunity(res.community.slug);
+    }
+  } catch (err) {
+    toast(err.message || "Không thể tạo cộng đồng. Vui lòng kiểm tra lại thông tin.");
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+}
+
+window.selectForumCommunity = selectForumCommunity;
+window.clearCommunityFilter = clearCommunityFilter;
+window.switchCommunityTab = switchCommunityTab;
+window.toggleJoinCurrentCommunity = toggleJoinCurrentCommunity;
+window.toggleJoinCommunity = toggleJoinCommunity;
+window.openCreateCommunityModal = openCreateCommunityModal;
+window.updateCreateCommPreview = updateCreateCommPreview;
+window.selectCommEmoji = selectCommEmoji;
+window.selectCommCover = selectCommCover;
+window.handleCreateCommunitySubmit = handleCreateCommunitySubmit;
