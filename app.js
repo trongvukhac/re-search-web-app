@@ -5892,6 +5892,17 @@ window.closeQuickUserMenu = function () {
 window.handleQuickMenuAction = function (action) {
   closeQuickUserMenu();
   switch (action) {
+    case "search":
+      if (typeof openOmniSearch === "function") {
+        openOmniSearch();
+      } else {
+        const searchBtn = $("#openSearch");
+        if (searchBtn) searchBtn.click();
+      }
+      break;
+    case "notifications":
+      toggleNotificationPopover();
+      break;
     case "namecard":
       if (session && session.id) {
         if (typeof openMyNamecard === "function") openMyNamecard();
@@ -27610,3 +27621,576 @@ function initChristmasSeasonEffects() {
 
 initChristmasSeasonEffects();
 
+
+
+// =========================================================================
+// PUSH NOTIFICATIONS CONTROLLER (FLOATING POPOVER & DOCK)
+// =========================================================================
+
+let notifState = {
+  stream: "activity",
+  category: "all",
+  page: 1,
+  limit: 10,
+  total: 0,
+  totalPages: 1,
+  unreadCount: 0,
+  items: [],
+  selectedIds: new Set(),
+  selectMode: false,
+  isOpen: false,
+  loading: false,
+};
+
+function formatNotifTime(dateStr) {
+  if (!dateStr) return "";
+  const d = new Date(dateStr.endsWith("Z") ? dateStr : dateStr + "Z");
+  const diffMs = Date.now() - d.getTime();
+  const diffSec = Math.floor(diffMs / 1000);
+  if (diffSec < 60) return "Vừa xong";
+  const diffMin = Math.floor(diffSec / 60);
+  if (diffMin < 60) return `${diffMin} phút trước`;
+  const diffHour = Math.floor(diffMin / 60);
+  if (diffHour < 24) return `${diffHour} giờ trước`;
+  const diffDays = Math.floor(diffHour / 24);
+  if (diffDays === 1) return "Hôm qua";
+  if (diffDays < 7) return `${diffDays} ngày trước`;
+  return d.toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit" });
+}
+
+function getNotifCategoryIcon(category, stream) {
+  if (stream === "announcement") {
+    return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 11 18-5v12L3 14v-3z"></path><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"></path></svg>`;
+  }
+  switch (category) {
+    case "post":
+      return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>`;
+    case "response":
+      return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 17 4 12 9 7"></polyline><path d="M20 18v-2a4 4 0 0 0-4-4H4"></path></svg>`;
+    case "document":
+      return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>`;
+    case "saved":
+      return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m19 21-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>`;
+    case "study":
+      return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>`;
+    case "arena":
+      return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h2"></path><path d="M18 9h2a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2h-2"></path><path d="M6 3h12v7a6 6 0 0 1-12 0V3z"></path><path d="M12 16v4"></path><path d="M8 20h8"></path></svg>`;
+    default:
+      return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>`;
+  }
+}
+
+window.toggleNotificationPopover = function (e) {
+  if (e) {
+    if (typeof e.preventDefault === "function") e.preventDefault();
+    if (typeof e.stopPropagation === "function") e.stopPropagation();
+  }
+  const wrap = document.getElementById("notificationTriggerWrap");
+  if (!wrap) return;
+
+  if (typeof closeQuickUserMenu === "function") closeQuickUserMenu();
+
+  const isNowOpen = wrap.classList.toggle("open");
+  notifState.isOpen = isNowOpen;
+
+  if (isNowOpen) {
+    const currentSession = session || window.session;
+    const adminBar = document.getElementById("notifAdminBar");
+    if (adminBar) {
+      adminBar.style.display = (notifState.stream === "announcement" && currentSession && currentSession.role === "admin") ? "block" : "none";
+    }
+    fetchNotifications();
+  }
+};
+
+window.closeNotificationPopover = function () {
+  const wrap = document.getElementById("notificationTriggerWrap");
+  if (wrap) wrap.classList.remove("open");
+  notifState.isOpen = false;
+};
+
+window.switchNotifStream = function (stream) {
+  if (notifState.stream === stream) return;
+  notifState.stream = stream;
+  notifState.category = "all";
+  notifState.page = 1;
+  notifState.selectedIds.clear();
+  toggleNotifSelectMode(false);
+
+  const tabAct = document.getElementById("notifTabActivity");
+  const tabAnn = document.getElementById("notifTabAnnouncement");
+  const filterBar = document.getElementById("notifFilterBar");
+  const adminBar = document.getElementById("notifAdminBar");
+  const currentSession = session || window.session;
+
+  if (tabAct) {
+    tabAct.classList.toggle("active", stream === "activity");
+    tabAct.setAttribute("aria-selected", String(stream === "activity"));
+  }
+  if (tabAnn) {
+    tabAnn.classList.toggle("active", stream === "announcement");
+    tabAnn.setAttribute("aria-selected", String(stream === "announcement"));
+  }
+  if (filterBar) {
+    filterBar.style.display = stream === "activity" ? "flex" : "none";
+  }
+  if (adminBar) {
+    adminBar.style.display = (stream === "announcement" && currentSession && currentSession.role === "admin") ? "block" : "none";
+  }
+
+  // Reset chips active state
+  document.querySelectorAll(".notif-filter-chip").forEach(chip => {
+    chip.classList.toggle("active", chip.dataset.filter === "all");
+  });
+
+  fetchNotifications();
+};
+
+window.filterNotifCategory = function (category) {
+  notifState.category = category;
+  notifState.page = 1;
+  notifState.selectedIds.clear();
+  toggleNotifSelectMode(false);
+
+  document.querySelectorAll(".notif-filter-chip").forEach(chip => {
+    chip.classList.toggle("active", chip.dataset.filter === category);
+  });
+
+  fetchNotifications();
+};
+
+window.fetchNotifications = async function () {
+  const currentSession = session || window.session;
+  const listEl = document.getElementById("notifList");
+  if (!currentSession) {
+    if (listEl) {
+      listEl.innerHTML = `
+        <div class="notif-empty-state">
+          <div class="notif-empty-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+          </div>
+          <div class="notif-empty-title">Đăng nhập để xem thông báo</div>
+          <div class="notif-empty-desc">Theo dõi các phản hồi, tài liệu và cập nhật quan trọng của bạn.</div>
+          <button type="button" class="button button-primary button-sm" style="margin-top: 12px;" onclick="closeNotificationPopover(); if(typeof openAuth === 'function') openAuth();">Đăng nhập</button>
+        </div>
+      `;
+    }
+    return;
+  }
+
+  notifState.loading = true;
+  try {
+    const res = await requestAPI(`/api/notifications?stream=${notifState.stream}&category=${notifState.category}&page=${notifState.page}&limit=10`);
+    if (res) {
+      notifState.items = res.notifications || [];
+      notifState.total = res.total || 0;
+      notifState.totalPages = res.totalPages || 1;
+      notifState.unreadCount = res.unreadCount || 0;
+
+      // Update badges
+      updateNotifBadgeCounters(res.unreadCount, res.streamUnread);
+      renderNotifications();
+    }
+  } catch (err) {
+    console.error("[fetchNotifications]", err);
+  } finally {
+    notifState.loading = false;
+  }
+};
+
+function updateNotifBadgeCounters(totalUnread, streamUnread) {
+  const navBadge = document.getElementById("navNotificationBadge");
+  const quickBadge = document.getElementById("quickMenuNotifCount");
+  const actBadge = document.getElementById("notifActivityBadge");
+  const annBadge = document.getElementById("notifAnnouncementBadge");
+
+  const displayCount = totalUnread > 99 ? "99+" : String(totalUnread);
+
+  if (navBadge) {
+    navBadge.textContent = displayCount;
+    navBadge.style.display = totalUnread > 0 ? "block" : "none";
+  }
+  if (quickBadge) {
+    quickBadge.textContent = displayCount;
+    quickBadge.style.display = totalUnread > 0 ? "inline-block" : "none";
+  }
+  if (actBadge && streamUnread) {
+    actBadge.textContent = streamUnread.activity > 99 ? "99+" : String(streamUnread.activity);
+    actBadge.style.display = streamUnread.activity > 0 ? "inline-block" : "none";
+  }
+  if (annBadge && streamUnread) {
+    annBadge.textContent = streamUnread.announcement > 99 ? "99+" : String(streamUnread.announcement);
+    annBadge.style.display = streamUnread.announcement > 0 ? "inline-block" : "none";
+  }
+}
+
+window.renderNotifications = function () {
+  const listEl = document.getElementById("notifList");
+  if (!listEl) return;
+
+  if (notifState.items.length === 0) {
+    const isAct = notifState.stream === "activity";
+    listEl.innerHTML = `
+      <div class="notif-empty-state">
+        <div class="notif-empty-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+        </div>
+        <div class="notif-empty-title">Chưa có thông báo nào</div>
+        <div class="notif-empty-desc">${isAct ? "Các thông báo về thảo luận, tài liệu và hoạt động sẽ hiển thị tại đây." : "Hiện chưa có cập nhật hệ thống mới từ ban quản trị."}</div>
+      </div>
+    `;
+    updateNotifFooter(0, 0);
+    return;
+  }
+
+  let html = "";
+  for (const item of notifState.items) {
+    const isUnread = !item.is_read;
+    const isChecked = notifState.selectedIds.has(item.id);
+    const timeFormatted = formatNotifTime(item.created_at);
+    const iconSvg = getNotifCategoryIcon(item.category, item.stream);
+    const hasLink = Boolean(item.link && item.link.trim().length > 0);
+
+    html += `
+      <div class="notif-item ${isUnread ? "is-unread" : ""} ${isChecked ? "is-selected" : ""}" id="notif-item-${item.id}">
+        ${notifState.selectMode ? `
+          <div class="notif-item-select-wrap">
+            <input type="checkbox" class="notif-item-select-checkbox" data-id="${item.id}" ${isChecked ? "checked" : ""} onchange="toggleNotifItemSelect(${item.id}, this.checked)" />
+          </div>
+        ` : ""}
+        <span class="notif-unread-dot" aria-hidden="true"></span>
+        <div class="notif-item-icon-box" aria-hidden="true">
+          ${iconSvg}
+        </div>
+        <div class="notif-item-body">
+          <div class="notif-item-title">${escapeHTML(item.title)}</div>
+          <div class="notif-item-content">${escapeHTML(item.content)}</div>
+          <div class="notif-item-footer">
+            <span class="notif-item-time">${timeFormatted}</span>
+            <div class="notif-item-actions">
+              ${hasLink ? `
+                <button type="button" class="notif-action-btn-go" onclick="handleNotifNavigate(${item.id}, '${escapeHTML(item.link)}', event)" title="Xem chi tiết nguồn gửi">
+                  <span>Xem ngay</span>
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+                </button>
+              ` : ""}
+              <button type="button" class="notif-action-btn-del" onclick="deleteSingleNotif(${item.id}, event)" title="Xoá thông báo này">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  listEl.innerHTML = html;
+  updateNotifFooter(notifState.items.length, notifState.total);
+};
+
+function updateNotifFooter(count, total) {
+  const infoEl = document.getElementById("notifFooterInfo");
+  const pillsEl = document.getElementById("notifPaginationPills");
+  if (infoEl) {
+    if (total === 0) {
+      infoEl.textContent = "Không có thông báo";
+    } else {
+      infoEl.textContent = `Hiển thị ${count} / ${total} thông báo (Trang ${notifState.page}/${notifState.totalPages})`;
+    }
+  }
+
+  if (pillsEl) {
+    if (notifState.totalPages <= 1) {
+      pillsEl.innerHTML = "";
+    } else {
+      pillsEl.innerHTML = `
+        <button type="button" class="notif-page-pill-btn" onclick="changeNotifPage(-1)" ${notifState.page <= 1 ? "disabled" : ""} title="Trang trước">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"></polyline></svg>
+        </button>
+        <button type="button" class="notif-page-pill-btn" onclick="changeNotifPage(1)" ${notifState.page >= notifState.totalPages ? "disabled" : ""} title="Trang sau">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg>
+        </button>
+      `;
+    }
+  }
+}
+
+window.changeNotifPage = function (delta) {
+  const target = notifState.page + delta;
+  if (target >= 1 && target <= notifState.totalPages) {
+    notifState.page = target;
+    fetchNotifications(true);
+  }
+};
+
+window.handleNotifNavigate = async function (id, link, e) {
+  if (e) e.stopPropagation();
+  try {
+    await requestAPI(`/api/notifications/${id}/read`, { method: "PATCH" });
+    const item = notifState.items.find(x => x.id === id);
+    if (item) item.is_read = 1;
+    if (notifState.unreadCount > 0) notifState.unreadCount--;
+    updateNotifBadgeCounters(notifState.unreadCount);
+  } catch (err) { }
+
+  closeNotificationPopover();
+
+  if (!link) return;
+  if (link.startsWith("#post/")) {
+    const postId = Number(link.replace("#post/", ""));
+    if (postId && typeof openDetail === "function") {
+      openDetail(postId);
+      return;
+    }
+  }
+
+  const cleanHash = link.replace("#", "");
+  if (typeof go === "function") {
+    go(cleanHash);
+  } else {
+    window.location.hash = link;
+  }
+};
+
+window.deleteSingleNotif = async function (id, e) {
+  if (e) {
+    e.preventDefault();
+    e.stopPropagation();
+  }
+  const itemEl = document.getElementById(`notif-item-${id}`);
+  if (itemEl) {
+    itemEl.style.opacity = "0";
+    itemEl.style.transform = "translateX(10px)";
+    itemEl.style.transition = "all 0.15s ease";
+  }
+
+  try {
+    await requestAPI(`/api/notifications/${id}`, { method: "DELETE" });
+    notifState.items = notifState.items.filter(x => x.id !== id);
+    if (notifState.total > 0) notifState.total--;
+    notifState.selectedIds.delete(id);
+    renderNotifications();
+    checkNotifUnreadCount();
+  } catch (err) {
+    toast(err.message || "Không thể xoá thông báo.");
+    fetchNotifications();
+  }
+};
+
+window.toggleNotifSelectMode = function (forceState) {
+  notifState.selectMode = typeof forceState === "boolean" ? forceState : !notifState.selectMode;
+  if (!notifState.selectMode) {
+    notifState.selectedIds.clear();
+  }
+
+  const batchBar = document.getElementById("notifBatchBar");
+  const toggleBtn = document.getElementById("notifSelectToggleBtn");
+  const toggleLabel = document.getElementById("notifSelectToggleLabel");
+  const allCheckbox = document.getElementById("notifSelectAllCheckbox");
+
+  if (batchBar) batchBar.style.display = notifState.selectMode ? "flex" : "none";
+  if (toggleBtn) toggleBtn.classList.toggle("active", notifState.selectMode);
+  if (toggleLabel) toggleLabel.textContent = notifState.selectMode ? "Đóng chọn" : "Chọn";
+  if (allCheckbox) allCheckbox.checked = false;
+
+  updateNotifBatchSelectedText();
+  renderNotifications();
+};
+
+window.toggleNotifSelectAll = function (isChecked) {
+  if (isChecked) {
+    notifState.items.forEach(x => notifState.selectedIds.add(x.id));
+  } else {
+    notifState.selectedIds.clear();
+  }
+  updateNotifBatchSelectedText();
+  renderNotifications();
+};
+
+window.toggleNotifItemSelect = function (id, isChecked) {
+  if (isChecked) {
+    notifState.selectedIds.add(id);
+  } else {
+    notifState.selectedIds.delete(id);
+  }
+
+  const allCheckbox = document.getElementById("notifSelectAllCheckbox");
+  if (allCheckbox) {
+    allCheckbox.checked = notifState.items.length > 0 && notifState.items.every(x => notifState.selectedIds.has(x.id));
+  }
+
+  updateNotifBatchSelectedText();
+};
+
+function updateNotifBatchSelectedText() {
+  const textEl = document.getElementById("notifSelectedCountText");
+  if (textEl) {
+    textEl.textContent = `Đã chọn ${notifState.selectedIds.size}`;
+  }
+}
+
+window.batchMarkNotifsAsRead = async function () {
+  if (notifState.selectedIds.size === 0) {
+    toast("Vui lòng chọn ít nhất một thông báo.");
+    return;
+  }
+  try {
+    const ids = Array.from(notifState.selectedIds);
+    await requestAPI("/api/notifications/mark-read", {
+      method: "POST",
+      body: JSON.stringify({ ids }),
+    });
+    toast(`Đã đánh dấu ${ids.length} thông báo là đã đọc.`);
+    notifState.items.forEach(x => {
+      if (notifState.selectedIds.has(x.id)) x.is_read = 1;
+    });
+    toggleNotifSelectMode(false);
+    fetchNotifications();
+    checkNotifUnreadCount();
+  } catch (err) {
+    toast(err.message || "Không thể thực hiện thao tác.");
+  }
+};
+
+window.batchDeleteNotifs = async function () {
+  if (notifState.selectedIds.size === 0) {
+    toast("Vui lòng chọn ít nhất một thông báo để xoá.");
+    return;
+  }
+  try {
+    const ids = Array.from(notifState.selectedIds);
+    await requestAPI("/api/notifications/delete-batch", {
+      method: "POST",
+      body: JSON.stringify({ ids }),
+    });
+    toast(`Đã xoá ${ids.length} thông báo.`);
+    toggleNotifSelectMode(false);
+    fetchNotifications();
+    checkNotifUnreadCount();
+  } catch (err) {
+    toast(err.message || "Không thể xoá thông báo đã chọn.");
+  }
+};
+
+window.clearAllNotificationsInStream = async function () {
+  const isAct = notifState.stream === "activity";
+  const name = isAct ? "luồng Hoạt động" : "luồng Cập nhật mới";
+  if (!confirm(`Bạn có chắc chắn muốn xoá tất cả thông báo trong ${name}?`)) {
+    return;
+  }
+
+  try {
+    await requestAPI("/api/notifications/delete-batch", {
+      method: "POST",
+      body: JSON.stringify({
+        all: true,
+        stream: notifState.stream,
+        category: notifState.category,
+      }),
+    });
+    toast("Đã xoá toàn bộ thông báo.");
+    notifState.items = [];
+    notifState.total = 0;
+    notifState.selectedIds.clear();
+    toggleNotifSelectMode(false);
+    renderNotifications();
+    checkNotifUnreadCount();
+  } catch (err) {
+    toast(err.message || "Không thể xoá tất cả thông báo.");
+  }
+};
+
+window.checkNotifUnreadCount = async function () {
+  const currentSession = session || window.session;
+  if (!currentSession) {
+    updateNotifBadgeCounters(0, { activity: 0, announcement: 0 });
+    return;
+  }
+  try {
+    const res = await requestAPI("/api/notifications/unread-count");
+    if (res) {
+      updateNotifBadgeCounters(res.unreadCount || 0, res);
+    }
+  } catch (err) { }
+};
+
+window.openAdminBroadcastModal = function () {
+  const modal = document.getElementById("adminBroadcastModal");
+  if (modal) {
+    modal.style.display = "flex";
+    const titleInput = document.getElementById("adminBroadcastInputTitle");
+    if (titleInput) {
+      titleInput.value = "";
+      setTimeout(() => titleInput.focus(), 100);
+    }
+    const contentInput = document.getElementById("adminBroadcastInputContent");
+    if (contentInput) contentInput.value = "";
+    const linkInput = document.getElementById("adminBroadcastInputLink");
+    if (linkInput) linkInput.value = "";
+  }
+};
+
+window.closeAdminBroadcastModal = function () {
+  const modal = document.getElementById("adminBroadcastModal");
+  if (modal) modal.style.display = "none";
+};
+
+window.submitAdminBroadcast = async function () {
+  const title = (document.getElementById("adminBroadcastInputTitle")?.value || "").trim();
+  const content = (document.getElementById("adminBroadcastInputContent")?.value || "").trim();
+  const link = (document.getElementById("adminBroadcastInputLink")?.value || "").trim();
+
+  if (!title || !content) {
+    toast("Vui lòng điền đầy đủ tiêu đề và nội dung.");
+    return;
+  }
+
+  const btn = document.getElementById("adminBroadcastSubmitBtn");
+  if (btn) btn.disabled = true;
+
+  try {
+    await requestAPI("/api/notifications/broadcast", {
+      method: "POST",
+      body: JSON.stringify({ title, content, link }),
+    });
+    toast("Đã phát thông báo thành công đến toàn bộ thành viên.");
+    closeAdminBroadcastModal();
+    if (notifState.stream === "announcement") {
+      fetchNotifications();
+    }
+    checkNotifUnreadCount();
+  } catch (err) {
+    toast(err.message || "Không thể gửi thông báo.");
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+};
+
+// Document click to close notification popover when clicking outside
+document.addEventListener("click", (e) => {
+  const notifWrap = document.getElementById("notificationTriggerWrap");
+  if (notifWrap && notifWrap.classList.contains("open")) {
+    if (!notifWrap.contains(e.target)) {
+      closeNotificationPopover();
+    }
+  }
+});
+
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") {
+    closeNotificationPopover();
+    closeAdminBroadcastModal();
+  }
+});
+
+// Periodic check for notifications
+setInterval(() => {
+  if (typeof checkNotifUnreadCount === "function") {
+    checkNotifUnreadCount();
+  }
+}, 45000);
+
+// Initial unread check
+if (typeof checkNotifUnreadCount === "function") {
+  setTimeout(checkNotifUnreadCount, 1000);
+}

@@ -909,6 +909,97 @@ try {
   console.error("[DB Schema christmas_tree_ornaments]", e);
 }
 
+// =========================================================================
+// NOTIFICATIONS SYSTEM (SCHEMA, HELPERS & SEEDING)
+// =========================================================================
+try {
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS notifications (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      stream TEXT NOT NULL DEFAULT 'activity' CHECK(stream IN ('activity', 'announcement')),
+      category TEXT NOT NULL DEFAULT 'post' CHECK(category IN ('post', 'response', 'document', 'saved', 'study', 'arena', 'announcement')),
+      title TEXT NOT NULL,
+      content TEXT NOT NULL,
+      link TEXT NOT NULL DEFAULT '',
+      actor_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+      is_read INTEGER NOT NULL DEFAULT 0 CHECK(is_read IN (0, 1)),
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    );
+    CREATE INDEX IF NOT EXISTS idx_notifications_user_stream ON notifications(user_id, stream, created_at);
+    CREATE INDEX IF NOT EXISTS idx_notifications_user_unread ON notifications(user_id, is_read);
+  `);
+} catch (e) {
+  console.error("[DB Schema notifications]", e);
+}
+
+function createNotification(userId, stream, category, title, content, link = "", actorId = null) {
+  try {
+    if (!userId) return;
+    // Prevent duplicate unread notification on same day
+    const existing = db.prepare(`
+      SELECT id FROM notifications 
+      WHERE user_id = ? AND category = ? AND title = ? AND date(created_at) = date('now')
+      LIMIT 1
+    `).get(userId, category, title);
+    if (existing) return;
+
+    db.prepare(`
+      INSERT INTO notifications (user_id, stream, category, title, content, link, actor_id, is_read)
+      VALUES (?, ?, ?, ?, ?, ?, ?, 0)
+    `).run(userId, stream, category, title, content, link, actorId);
+  } catch (err) {
+    console.error("[createNotification]", err.message);
+  }
+}
+
+function broadcastNotification(title, content, link = "", actorId = null) {
+  try {
+    const allUsers = db.prepare("SELECT id FROM users").all();
+    const insertStmt = db.prepare(`
+      INSERT INTO notifications (user_id, stream, category, title, content, link, actor_id, is_read)
+      VALUES (?, 'announcement', 'announcement', ?, ?, ?, ?, 0)
+    `);
+    db.exec("BEGIN TRANSACTION;");
+    for (const u of allUsers) {
+      insertStmt.run(u.id, title, content, link, actorId);
+    }
+    db.exec("COMMIT;");
+  } catch (err) {
+    try { db.exec("ROLLBACK;"); } catch (e) {}
+    console.error("[broadcastNotification]", err.message);
+  }
+}
+
+// Initial seed announcements if notifications table is empty
+try {
+  const notifCount = db.prepare("SELECT count(*) as count FROM notifications").get()?.count || 0;
+  if (notifCount === 0) {
+    const adminUser = db.prepare("SELECT id FROM users WHERE role = 'admin' LIMIT 1").get();
+    const adminId = adminUser ? adminUser.id : null;
+    broadcastNotification(
+      "Mùa lễ hội Giáng sinh 2026 trên RE:SEARCH",
+      "Chào mừng Mùa lễ hội Giáng sinh! Giao diện cây thông Noel và hiệu ứng lễ hội đã chính thức mở. Hãy trang trí cây thông của bạn nhé!",
+      "#home",
+      adminId
+    );
+    broadcastNotification(
+      "Hệ thống Thông báo thời gian thực",
+      "RE:SEARCH chính thức ra mắt trung tâm thông báo thời gian thực. Theo dõi phản hồi, tài liệu và các cập nhật quan trọng ngay lập tức.",
+      "#home",
+      adminId
+    );
+    broadcastNotification(
+      "Đấu trường học thuật Arena Tuần mới",
+      "Đấu trường Arena Tuần mới đã mở cổng. Hãy tham gia thi đua và ghi danh trên bảng vàng!",
+      "#arena",
+      adminId
+    );
+  }
+} catch (e) {
+  console.error("[Notif Initial Seed]", e.message);
+}
+
 
 
 function cleanupExpiredTrash() {
@@ -4192,6 +4283,55 @@ async function api(request, response, url) {
       "response",
       result.lastInsertRowid,
     );
+
+    // Notification Hooks for Responses
+    try {
+      const postAuthor = db.prepare("SELECT author_id, title FROM posts WHERE id = ?").get(post.id);
+      if (postAuthor && postAuthor.author_id !== user.id) {
+        const authorName = anonymous ? "Thành viên ẩn danh" : user.display_name;
+        createNotification(
+          postAuthor.author_id,
+          "activity",
+          "post",
+          "Bình luận mới về bài viết",
+          `${authorName} đã phản hồi bài viết: "${postAuthor.title.substring(0, 45)}"`,
+          `#post/${post.id}`,
+          anonymous ? null : user.id
+        );
+      }
+      if (finalParentId) {
+        const parentResp = db.prepare("SELECT author_id FROM responses WHERE id = ?").get(finalParentId);
+        if (parentResp && parentResp.author_id !== user.id && parentResp.author_id !== postAuthor?.author_id) {
+          const authorName = anonymous ? "Thành viên ẩn danh" : user.display_name;
+          createNotification(
+            parentResp.author_id,
+            "activity",
+            "response",
+            "Phản hồi bình luận của bạn",
+            `${authorName} đã trả lời bình luận của bạn`,
+            `#post/${post.id}`,
+            anonymous ? null : user.id
+          );
+        }
+      }
+      const savedUsers = db.prepare("SELECT user_id FROM saved_posts WHERE post_id = ? AND user_id != ?").all(post.id, user.id);
+      for (const su of savedUsers) {
+        if (su.user_id !== postAuthor?.author_id) {
+          createNotification(
+            su.user_id,
+            "activity",
+            "saved",
+            "Bài viết đã lưu có phản hồi mới",
+            `Bài viết "${postAuthor?.title.substring(0, 45)}" bạn đã lưu vừa có thêm phản hồi mới`,
+            `#post/${post.id}`,
+            user.id
+          );
+        }
+      }
+    } catch (e) {
+      console.error("[Notif Hook Response]", e.message);
+    }
+
     return json(response, 201, { id: Number(result.lastInsertRowid) });
   }
 
@@ -4314,6 +4454,34 @@ async function api(request, response, url) {
           targetType,
           Number(idText),
         );
+      }
+      if (value > 0 && delta > 0 && target.author_id !== user.id) {
+        try {
+          if (targetType === "post") {
+            createNotification(
+              target.author_id,
+              "activity",
+              "post",
+              "Lượt hữu ích bài viết",
+              `${user.display_name} đã đánh giá bài viết của bạn hữu ích`,
+              `#post/${idText}`,
+              user.id
+            );
+          } else {
+            const respRow = db.prepare("SELECT post_id FROM responses WHERE id = ?").get(Number(idText));
+            createNotification(
+              target.author_id,
+              "activity",
+              "response",
+              "Lượt hữu ích bình luận",
+              `${user.display_name} đã đánh giá bình luận của bạn hữu ích`,
+              `#post/${respRow ? respRow.post_id : idText}`,
+              user.id
+            );
+          }
+        } catch (e) {
+          console.error("[Notif Hook Vote]", e.message);
+        }
       }
       return json(response, 201, { ok: true });
     } catch {
@@ -6698,6 +6866,39 @@ async function api(request, response, url) {
       `Bạn đã thảo luận về tài liệu "${doc.title.trim()}"`
     );
 
+    // Notification Hooks for Document Comments
+    try {
+      const docOwner = db.prepare("SELECT submitted_by, title FROM documents WHERE id = ?").get(docId);
+      if (docOwner && docOwner.submitted_by !== user.id) {
+        const commenterName = isAnonymous ? "Thành viên ẩn danh" : user.display_name;
+        createNotification(
+          docOwner.submitted_by,
+          "activity",
+          "document",
+          "Thảo luận mới về tài liệu",
+          `${commenterName} đã thảo luận về tài liệu "${docOwner.title.substring(0, 45)}"`,
+          "#documents",
+          isAnonymous ? null : user.id
+        );
+      }
+      const savedDocUsers = db.prepare("SELECT user_id FROM saved_documents WHERE document_id = ? AND user_id != ?").all(docId, user.id);
+      for (const su of savedDocUsers) {
+        if (su.user_id !== docOwner?.submitted_by) {
+          createNotification(
+            su.user_id,
+            "activity",
+            "saved",
+            "Tài liệu đã lưu có thảo luận mới",
+            `Tài liệu "${docOwner?.title.substring(0, 45)}" bạn đã lưu vừa có thảo luận mới`,
+            "#documents",
+            user.id
+          );
+        }
+      }
+    } catch (e) {
+      console.error("[Notif Hook Doc Comment]", e.message);
+    }
+
     const inserted = db
       .prepare(
         `SELECT c.*, u.display_name, u.avatar, u.role
@@ -7979,6 +8180,37 @@ async function api(request, response, url) {
           );
           db.prepare("UPDATE responses SET status='deleted', deleted_at=CURRENT_TIMESTAMP, updated_at=CURRENT_TIMESTAMP WHERE id=?").run(r.id);
         }
+
+        // Notification Hook: Post deleted by admin
+        try {
+          if (post.author_id !== user.id) {
+            createNotification(
+              post.author_id,
+              "activity",
+              "post",
+              "Bài viết bị chuyển vào Thùng rác",
+              `Bài viết "${post.title ? post.title.substring(0, 45) : ''}" đã bị chuyển vào thùng rác bởi quản trị viên`,
+              "#forum",
+              user.id
+            );
+          }
+          const savedUsers = db.prepare("SELECT user_id FROM saved_posts WHERE post_id = ?").all(postId);
+          for (const su of savedUsers) {
+            if (su.user_id !== post.author_id && su.user_id !== user.id) {
+              createNotification(
+                su.user_id,
+                "activity",
+                "saved",
+                "Bài viết đã lưu bị gỡ bỏ",
+                `Bài viết "${post.title ? post.title.substring(0, 45) : ''}" bạn đã lưu vừa bị gỡ bỏ`,
+                "#forum",
+                user.id
+              );
+            }
+          }
+        } catch (e) {
+          console.error("[Notif Hook Admin Delete Post]", e.message);
+        }
       }
       // 2. Chuyển từ hidden sang deleted (Chuyển bài đang ẩn vào thùng rác):
       // Điểm đã bị trừ lúc ẩn, không trừ thêm. Chuyển các phản hồi đang ẩn sang deleted
@@ -8208,13 +8440,13 @@ async function api(request, response, url) {
       return error(response, 400, "Trạng thái duyệt không hợp lệ.");
     const id = Number(documentReviewMatch[1]);
     const doc = db
-      .prepare("SELECT submitted_by FROM documents WHERE id=?")
+      .prepare("SELECT submitted_by, title FROM documents WHERE id=?")
       .get(id);
     if (!doc) return error(response, 404, "Không tìm thấy tài liệu.");
     db.prepare(
       "UPDATE documents SET status=?,reviewed_by=?,updated_at=CURRENT_TIMESTAMP WHERE id=?",
     ).run(status, user.id, id);
-    if (status === "approved")
+    if (status === "approved") {
       recordContribution(
         doc.submitted_by,
         "document_approved",
@@ -8222,6 +8454,22 @@ async function api(request, response, url) {
         "document",
         id,
       );
+      try {
+        if (doc.submitted_by !== user.id) {
+          createNotification(
+            doc.submitted_by,
+            "activity",
+            "document",
+            "Tài liệu được duyệt",
+            `Tài liệu "${doc.title ? doc.title.substring(0, 45) : ''}" của bạn đã được duyệt thành công`,
+            "#documents",
+            user.id
+          );
+        }
+      } catch (e) {
+        console.error("[Notif Hook Doc Approved]", e.message);
+      }
+    }
     db.prepare(
       "INSERT INTO audit_logs(actor_id,action,subject_type,subject_id,reason) VALUES (?,?,?,?,?)",
     ).run(
@@ -10404,6 +10652,185 @@ async function api(request, response, url) {
     const comp = getOrCreateCurrentCompetition(vnNow);
     const result = awardCompetitionSundayRewards(comp.id);
     return json(response, 200, { ok: true, result });
+  }
+
+  // =========================================================================
+  // NOTIFICATIONS API
+  // =========================================================================
+
+  if (method === "GET" && pathName === "/api/notifications") {
+    const user = sessionFrom(request);
+    if (!user) {
+      return json(response, 200, {
+        notifications: [],
+        total: 0,
+        page: 1,
+        limit: 10,
+        totalPages: 0,
+        unreadCount: 0,
+        streamUnread: { activity: 0, announcement: 0 }
+      });
+    }
+
+    const stream = url.searchParams.get("stream") || "activity";
+    const category = url.searchParams.get("category") || "all";
+    const page = Math.max(1, parseInt(url.searchParams.get("page") || "1", 10));
+    const limit = Math.min(50, Math.max(1, parseInt(url.searchParams.get("limit") || "10", 10)));
+    const offset = (page - 1) * limit;
+
+    // Check study room & arena reminders once per day for user
+    try {
+      const todayVN = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Ho_Chi_Minh" }).format(new Date());
+      const hasDailyStudyNotif = db.prepare("SELECT id FROM notifications WHERE user_id = ? AND category = 'study' AND date(created_at) = date(?)").get(user.id, todayVN);
+      if (!hasDailyStudyNotif) {
+        const sessionsCount = db.prepare("SELECT count(*) as count FROM study_sessions WHERE user_id = ? AND date(created_at) = date(?)").get(user.id, todayVN)?.count || 0;
+        if (sessionsCount > 0) {
+          createNotification(user.id, "activity", "study", "Hoàn thành tự học", `Hôm nay bạn đã hoàn thành ${sessionsCount} phiên tập trung. Tiếp tục phát huy nhé!`, "#study");
+        } else {
+          createNotification(user.id, "activity", "study", "Mục tiêu tự học hôm nay", "Hôm nay bạn có đến Phòng tự học không? Cùng vào tự học để giữ vững chuỗi tập trung nào!", "#study");
+        }
+      }
+
+      const hasDailyArenaNotif = db.prepare("SELECT id FROM notifications WHERE user_id = ? AND category = 'arena' AND date(created_at) = date(?)").get(user.id, todayVN);
+      if (!hasDailyArenaNotif) {
+        const comp = getOrCreateCurrentCompetition(getVietnamNow());
+        if (comp) {
+          createNotification(user.id, "activity", "arena", "Đấu trường Arena", "Đấu trường Arena tuần này đang mở. Thử sức ngay để ghi điểm và thăng hạng!", "#arena");
+        }
+      }
+    } catch (e) {
+      console.error("[Auto Notif Check]", e.message);
+    }
+
+    const categoryClause = (category && category !== "all") ? "AND n.category = ?" : "";
+    const params = (category && category !== "all")
+      ? [user.id, stream, category, limit, offset]
+      : [user.id, stream, limit, offset];
+
+    const rows = db.prepare(`
+      SELECT n.*, u.display_name as actor_name, u.avatar as actor_avatar
+      FROM notifications n
+      LEFT JOIN users u ON u.id = n.actor_id
+      WHERE n.user_id = ? AND n.stream = ? ${categoryClause}
+      ORDER BY n.created_at DESC, n.id DESC
+      LIMIT ? OFFSET ?
+    `).all(...params);
+
+    const countParams = (category && category !== "all")
+      ? [user.id, stream, category]
+      : [user.id, stream];
+    const total = db.prepare(`
+      SELECT count(*) as count FROM notifications 
+      WHERE user_id = ? AND stream = ? ${categoryClause}
+    `).get(...countParams).count;
+
+    const unreadTotal = db.prepare(`
+      SELECT count(*) as count FROM notifications 
+      WHERE user_id = ? AND is_read = 0
+    `).get(user.id).count;
+
+    const activityUnread = db.prepare(`
+      SELECT count(*) as count FROM notifications 
+      WHERE user_id = ? AND stream = 'activity' AND is_read = 0
+    `).get(user.id).count;
+
+    const announcementUnread = db.prepare(`
+      SELECT count(*) as count FROM notifications 
+      WHERE user_id = ? AND stream = 'announcement' AND is_read = 0
+    `).get(user.id).count;
+
+    return json(response, 200, {
+      notifications: rows,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit) || 1,
+      unreadCount: unreadTotal,
+      streamUnread: {
+        activity: activityUnread,
+        announcement: announcementUnread
+      }
+    });
+  }
+
+  if (method === "GET" && pathName === "/api/notifications/unread-count") {
+    const user = sessionFrom(request);
+    if (!user) return json(response, 200, { unreadCount: 0, activityUnread: 0, announcementUnread: 0 });
+
+    const unreadTotal = db.prepare("SELECT count(*) as count FROM notifications WHERE user_id = ? AND is_read = 0").get(user.id).count;
+    const activityUnread = db.prepare("SELECT count(*) as count FROM notifications WHERE user_id = ? AND stream = 'activity' AND is_read = 0").get(user.id).count;
+    const announcementUnread = db.prepare("SELECT count(*) as count FROM notifications WHERE user_id = ? AND stream = 'announcement' AND is_read = 0").get(user.id).count;
+
+    return json(response, 200, { unreadCount: unreadTotal, activityUnread, announcementUnread });
+  }
+
+  const notifReadMatch = pathName.match(/^\/api\/notifications\/(\d+)\/read$/);
+  if (method === "PATCH" && notifReadMatch) {
+    const user = requireUser(request, response);
+    if (!user || !requireCsrf(request, response, user)) return;
+    const notifId = Number(notifReadMatch[1]);
+    db.prepare("UPDATE notifications SET is_read = 1 WHERE id = ? AND user_id = ?").run(notifId, user.id);
+    return json(response, 200, { ok: true });
+  }
+
+  if (method === "POST" && pathName === "/api/notifications/mark-read") {
+    const user = requireUser(request, response);
+    if (!user || !requireCsrf(request, response, user)) return;
+    const { ids, all, stream } = await readJSON(request);
+    if (all) {
+      if (stream) {
+        db.prepare("UPDATE notifications SET is_read = 1 WHERE user_id = ? AND stream = ?").run(user.id, stream);
+      } else {
+        db.prepare("UPDATE notifications SET is_read = 1 WHERE user_id = ?").run(user.id);
+      }
+    } else if (Array.isArray(ids) && ids.length > 0) {
+      const placeholders = ids.map(() => "?").join(",");
+      db.prepare(`UPDATE notifications SET is_read = 1 WHERE user_id = ? AND id IN (${placeholders})`).run(user.id, ...ids);
+    }
+    return json(response, 200, { ok: true });
+  }
+
+  const notifDeleteMatch = pathName.match(/^\/api\/notifications\/(\d+)$/);
+  if (method === "DELETE" && notifDeleteMatch) {
+    const user = requireUser(request, response);
+    if (!user || !requireCsrf(request, response, user)) return;
+    const notifId = Number(notifDeleteMatch[1]);
+    db.prepare("DELETE FROM notifications WHERE id = ? AND user_id = ?").run(notifId, user.id);
+    return json(response, 200, { ok: true });
+  }
+
+  if (method === "POST" && pathName === "/api/notifications/delete-batch") {
+    const user = requireUser(request, response);
+    if (!user || !requireCsrf(request, response, user)) return;
+    const { ids, all, stream, category } = await readJSON(request);
+    if (all) {
+      if (stream && category && category !== "all") {
+        db.prepare("DELETE FROM notifications WHERE user_id = ? AND stream = ? AND category = ?").run(user.id, stream, category);
+      } else if (stream) {
+        db.prepare("DELETE FROM notifications WHERE user_id = ? AND stream = ?").run(user.id, stream);
+      } else {
+        db.prepare("DELETE FROM notifications WHERE user_id = ?").run(user.id);
+      }
+    } else if (Array.isArray(ids) && ids.length > 0) {
+      const placeholders = ids.map(() => "?").join(",");
+      db.prepare(`DELETE FROM notifications WHERE user_id = ? AND id IN (${placeholders})`).run(user.id, ...ids);
+    }
+    return json(response, 200, { ok: true });
+  }
+
+  if (method === "POST" && pathName === "/api/notifications/broadcast") {
+    const user = requireUser(request, response);
+    if (!user || !isAdmin(user)) return user ? error(response, 403, "Chỉ quản trị viên mới có quyền phát thông báo.") : undefined;
+    if (!requireCsrf(request, response, user)) return;
+    const { title, content, link } = await readJSON(request);
+    if (!title || typeof title !== "string" || title.trim().length === 0) {
+      return error(response, 400, "Tiêu đề không được để trống.");
+    }
+    if (!content || typeof content !== "string" || content.trim().length === 0) {
+      return error(response, 400, "Nội dung thông báo không được để trống.");
+    }
+    broadcastNotification(title.trim(), content.trim(), (link || "").trim(), user.id);
+    return json(response, 200, { ok: true, message: "Đã gửi thông báo đến toàn bộ thành viên." });
   }
 
   return error(response, 404, "Không tìm thấy API này.");
