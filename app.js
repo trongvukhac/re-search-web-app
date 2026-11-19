@@ -8361,14 +8361,8 @@ window.openNamecard = async function (userId) {
 
     const streakTier = Number(data.streakCard?.streakTier || 0);
 
-    const canvasEl = $("#namecardCanvas");
-    if (canvasEl) canvasEl.setAttribute("data-streak-tier", streakTier);
-    const stageEl = $("#namecardStage");
-    if (stageEl) stageEl.setAttribute("data-streak-tier", streakTier);
-    if (cardEl) {
-      cardEl.setAttribute("data-streak-tier", streakTier);
-      cardEl.scrollTop = 0;
-    }
+    // Header Identity
+    $("#namecardAvatar").textContent = data.user.avatar || "🌱";
     const avatarCircle = $("#namecardAvatarCircle");
     if (avatarCircle) {
       avatarCircle.className = "namecard-avatar-circle avatar " + getAvatarClass(streakTier, false, data.user.role);
@@ -9262,9 +9256,6 @@ window.openEditNamecardModal = function (section = "all") {
 
   const modal = $("#editNamecardModal");
   if (modal) {
-    const myStreakTier = Number(session?.streakTier || 0);
-    if ($("#demoNamecardStage")) $("#demoNamecardStage").setAttribute("data-streak-tier", myStreakTier);
-    if ($("#demoNamecardCanvas")) $("#demoNamecardCanvas").setAttribute("data-streak-tier", myStreakTier);
     modal.showModal();
     if (section === "name" && $("#namecardDisplayNameInput")) {
       setTimeout(() => {

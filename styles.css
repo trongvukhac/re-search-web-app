@@ -21813,84 +21813,6 @@ dialog.modal.namecard-modal {
   z-index: 10;
 }
 
-/* ==========================================================================
-   NAMECARD STREAK TIER 100+ RADIANT BORDER HALO AURA (VẦNG SÁNG VIỀN THẺ TÊN)
-   ========================================================================== */
-.namecard-stage[data-streak-tier="6"]::before,
-.namecard-stage[data-streak-tier="7"]::before,
-.namecard-stage[data-streak-tier="8"]::before {
-  content: "";
-  position: absolute;
-  inset: -8px;
-  border-radius: 68px;
-  pointer-events: none;
-  z-index: 5;
-  transition: opacity 0.5s ease;
-}
-
-/* Tier 6 (100d): Nhà kiến tạo tri thức - Mythic Prism Aura (Tím hoàng gia - Hồng ngọc - Hoàng kim) */
-.namecard-stage[data-streak-tier="6"]::before {
-  background: conic-gradient(from 0deg at 50% 50%, #7048e8, #d6336c, #ffe066, #ff6b6b, #7048e8);
-  filter: blur(14px);
-  opacity: 0.65;
-  animation: namecardAuraRotate 8s linear infinite;
-}
-
-.namecard-canvas[data-streak-tier="6"] {
-  border: 2px solid rgba(247, 131, 172, 0.7) !important;
-  box-shadow: 0 30px 70px -15px rgba(112, 72, 232, 0.4),
-              0 0 30px rgba(214, 51, 108, 0.3),
-              inset 0 0 0 1px rgba(255, 224, 102, 0.45) !important;
-}
-
-/* Tier 7 (200d): Bậc thầy học thuật - Super Cosmic Duolingo Aura (Xanh neon - Lam ngọc - Tím điện - Hồng magenta) */
-.namecard-stage[data-streak-tier="7"]::before {
-  background: conic-gradient(from 0deg at 50% 50%, #00f59b, #00d2ff, #818cf8, #ec4899, #00f59b);
-  filter: blur(16px);
-  opacity: 0.75;
-  animation: namecardAuraRotate 6s linear infinite;
-}
-
-.namecard-canvas[data-streak-tier="7"] {
-  border: 2.5px solid rgba(0, 210, 255, 0.75) !important;
-  box-shadow: 0 30px 75px -15px rgba(7, 9, 38, 0.65),
-              0 0 35px rgba(0, 245, 155, 0.35),
-              0 0 60px rgba(99, 102, 241, 0.25),
-              inset 0 0 0 1px rgba(0, 245, 155, 0.4) !important;
-}
-
-/* Tier 8 (365d): Học giả lưu danh - Celestial Diamond Starlight Aura (Bạch kim - Kim cương - Ánh sao) */
-.namecard-stage[data-streak-tier="8"]::before {
-  background: conic-gradient(from 0deg at 50% 50%, #ffffff, #94a3b8, #cbd5e1, #ffffff, #e0f2fe, #cbd5e1, #ffffff);
-  filter: blur(18px);
-  opacity: 0.85;
-  animation: namecardAuraRotate 7s linear infinite;
-}
-
-.namecard-canvas[data-streak-tier="8"] {
-  border: 2.5px solid rgba(255, 255, 255, 0.85) !important;
-  box-shadow: 0 32px 80px -15px rgba(15, 23, 42, 0.4),
-              0 0 35px rgba(255, 255, 255, 0.75),
-              0 0 70px rgba(203, 213, 225, 0.4),
-              inset 0 0 0 1px rgba(255, 255, 255, 0.95) !important;
-}
-
-body.dark-theme .namecard-canvas[data-streak-tier="8"] {
-  border-color: rgba(255, 255, 255, 0.9) !important;
-  box-shadow: 0 35px 85px -15px rgba(0, 0, 0, 0.9),
-              0 0 45px rgba(255, 255, 255, 0.8),
-              0 0 90px rgba(148, 163, 184, 0.5),
-              inset 0 0 0 1px rgba(255, 255, 255, 0.9) !important;
-}
-
-@keyframes namecardAuraRotate {
-  0% {
-    transform: rotate(0deg);
-  }
-  100% {
-    transform: rotate(360deg);
-  }
-}
 
 /* Stationary Cover Image - Cố định ở đỉnh canvas, mở rộng thêm 50px theo chiều dọc (265px) khớp khoảng đệm 250px của spacer */
 .namecard-cover {
@@ -22379,6 +22301,9 @@ body.dark-theme .namecard-canvas[data-streak-tier="8"] {
   padding: 0;
   width: 100%;
   height: 100%;
+  position: relative;
+  z-index: 3;
+  pointer-events: none;
 }
 
 /* Streak Tier Avatar Frames & Glow for Namecard (Stands still in place, no zoom) */
@@ -22640,11 +22565,11 @@ body.dark-theme .namecard-canvas .namecard-display-name.user-name-tier-7 {
 body.dark-theme .namecard-modal .namecard-display-name.user-name-tier-8,
 body.dark-theme .namecard-canvas .namecard-display-name.user-name-tier-8 {
   background-image: linear-gradient(90deg,
-      #94a3b8 0%,
-      #cbd5e1 25%,
-      #ffffff 50%,
-      #cbd5e1 75%,
-      #94a3b8 100%) !important;
+      #0f172a 0%,
+      #1e293b 25%,
+      #475569 50%,
+      #1e293b 75%,
+      #0f172a 100%) !important;
   background-size: 200% 100% !important;
   background-repeat: repeat-x !important;
   -webkit-background-clip: text !important;
@@ -22654,8 +22579,8 @@ body.dark-theme .namecard-canvas .namecard-display-name.user-name-tier-8 {
   font-weight: 800;
   display: inline-block !important;
   vertical-align: middle;
-  text-shadow: 0 0 12px rgba(255, 255, 255, 0.65) !important;
-  filter: drop-shadow(0 0 1.5px rgba(255, 255, 255, 0.85)) drop-shadow(0 1px 2px rgba(0, 0, 0, 0.8)) !important;
+  text-shadow: none !important;
+  filter: drop-shadow(0 1px 1px rgba(15, 23, 42, 0.22)) !important;
   animation: diamondShimmer 7s linear infinite !important;
   -webkit-animation: diamondShimmer 7s linear infinite !important;
   will-change: background-position;
