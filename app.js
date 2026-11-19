@@ -749,21 +749,21 @@ function getFlame2DSVG(tier = 0, size = 20, extraClass = '') {
   if (t === 8) {
     // Pure Celestial Diamond Luxury (365d): Titanium Platinum Obsidian -> Silver Crystal -> Pure Brilliant Diamond White
     outerGrad = `
-      <stop offset="0%" stop-color="#0b0f19"/>
-      <stop offset="25%" stop-color="#1e293b"/>
-      <stop offset="60%" stop-color="#64748b"/>
-      <stop offset="85%" stop-color="#cbd5e1"/>
+      <stop offset="0%" stop-color="#0f172a"/>
+      <stop offset="30%" stop-color="#334155"/>
+      <stop offset="65%" stop-color="#64748b"/>
+      <stop offset="88%" stop-color="#cbd5e1"/>
       <stop offset="100%" stop-color="#ffffff"/>
     `;
     midGrad = `
-      <stop offset="0%" stop-color="#475569"/>
-      <stop offset="35%" stop-color="#94a3b8"/>
-      <stop offset="70%" stop-color="#e2e8f0"/>
+      <stop offset="0%" stop-color="#334155"/>
+      <stop offset="40%" stop-color="#64748b"/>
+      <stop offset="75%" stop-color="#cbd5e1"/>
       <stop offset="100%" stop-color="#ffffff"/>
     `;
     coreGrad = `
-      <stop offset="0%" stop-color="#cbd5e1"/>
-      <stop offset="50%" stop-color="#f0f9ff"/>
+      <stop offset="0%" stop-color="#94a3b8"/>
+      <stop offset="50%" stop-color="#f1f5f9"/>
       <stop offset="100%" stop-color="#ffffff"/>
     `;
   } else if (t === 7) {
@@ -925,18 +925,16 @@ function getFlame2DSVG(tier = 0, size = 20, extraClass = '') {
   let embers = '';
 
   if (t === 8) {
-    // Tier 8: Học giả lưu danh - Ngọn lửa tự nhiên bạch kim kim cương với tia sáng starlight cao cấp
+    // Tier 8: Học giả lưu danh - Ngọn lửa bạch kim tự nhiên cao cấp với tàn lửa starlight tinh tế (loại bỏ hoàn toàn hình khối kim cương theo yêu cầu)
     embers = `
       <g class="flame-ember-group">
         <path class="flame-ember flame-spark ember-1 spark-1" d="M15 1.5 C16.2 0.3 16.2 -0.8 15 -1.8 C13.8 -0.8 13.8 0.3 15 1.5Z" fill="url(#core_${id})"/>
         <path class="flame-ember flame-spark ember-2 spark-2" d="M5.2 4.2 C6.2 3 6.2 2 5.2 0.9 C4.2 2 4.2 3 5.2 4.2Z" fill="url(#mid_${id})"/>
         <path class="flame-ember flame-spark ember-3 spark-3" d="M20.2 4.2 C21.2 3.1 21.2 2.1 20.2 1 C19.2 2.1 19.2 3.1 20.2 4.2Z" fill="url(#core_${id})"/>
         <path class="flame-ember flame-spark ember-4 spark-4" d="M11 -0.5 C12 -1.6 12 -2.5 11 -3.4 C10 -2.5 10 -1.6 11 -0.5Z" fill="url(#core_${id})"/>
-        <path class="flame-sparkle flame-diamond-glint glint-1" d="M12 -3 L12.5 -0.8 L14.5 -0.3 L12.5 0.2 L12 2.4 L11.5 0.2 L9.5 -0.3 L11.5 -0.8 Z" fill="#ffffff"/>
-        <path class="flame-sparkle flame-diamond-glint glint-2" d="M21.5 6.5 L21.9 8 L23.4 8.4 L21.9 8.8 L21.5 10.3 L21.1 8.8 L19.6 8.4 L21.1 8 Z" fill="#ffffff"/>
-        <path class="flame-sparkle flame-diamond-glint glint-3" d="M2.5 7.5 L2.9 9 L4.4 9.4 L2.9 9.8 L2.5 11.3 L2.1 9.8 L0.6 9.4 L2.1 9 Z" fill="#ffffff"/>
-        <circle class="flame-diamond-dust dust-1" cx="19.5" cy="3.5" r="0.65" fill="#ffffff"/>
-        <circle class="flame-diamond-dust dust-2" cx="4.5" cy="4" r="0.55" fill="#ffffff"/>
+        <path class="flame-sparkle flame-star sparkle-1 star-1" d="M20 7.5 Q20 9.2 21.6 9.2 Q20 9.2 20 11 Q20 9.2 18.4 9.2 Q20 9.2 20 7.5Z" fill="#ffffff"/>
+        <path class="flame-sparkle flame-star sparkle-2 star-2" d="M4 9.5 Q4 11 5.4 11 Q4 11 4 12.5 Q4 11 2.6 11 Q4 11 4 9.5Z" fill="#ffffff"/>
+        <path class="flame-sparkle flame-star sparkle-3 star-3" d="M12 -2.5 Q12 -1 13.5 -1 Q12 -1 12 0.5 Q12 -1 10.5 -1 Q12 -1 12 -2.5Z" fill="#ffffff"/>
       </g>
     `;
   } else if (t === 7) {
@@ -1521,7 +1519,33 @@ window.openStreakJourneyModal = function () {
   const modal = document.getElementById("streakJourneyModal");
   if (!modal) return;
 
-  const currentStreak = Number(session?.streak || window.currentStreakCount || 0);
+  const currentStreak = Number(session?.streak || window.session?.streak || window.currentStreakCount || 0);
+  const userRole = session?.role || window.session?.role || (typeof getCachedUser === "function" && getCachedUser()?.role);
+  const isAdmin = userRole === "admin" || userRole === "ta";
+
+  // Dedicated quick test streak toolbar for Admin/TA
+  const adminBar = document.getElementById("adminStreakTestBar");
+  if (adminBar) {
+    if (isAdmin) {
+      adminBar.style.display = "flex";
+      adminBar.innerHTML = `
+        <div style="font-size: 11px; font-weight: 700; color: var(--primary, #059669); display: flex; align-items: center; gap: 8px; width: 100%; flex-wrap: wrap; padding: 10px 12px; background: rgba(5, 150, 105, 0.08); border: 1px dashed rgba(5, 150, 105, 0.35); border-radius: 8px; margin-bottom: 12px;">
+          <span>🛠️ Test chuỗi Admin:</span>
+          <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+            <button type="button" class="btn-admin-streak-preset" onclick="window.adminSetQuickStreak(0)">0d (Mặc định)</button>
+            <button type="button" class="btn-admin-streak-preset" onclick="window.adminSetQuickStreak(30)">30d (Đỏ)</button>
+            <button type="button" class="btn-admin-streak-preset" onclick="window.adminSetQuickStreak(50)">50d (Hồng)</button>
+            <button type="button" class="btn-admin-streak-preset" onclick="window.adminSetQuickStreak(100)">100d (Tím)</button>
+            <button type="button" class="btn-admin-streak-preset" onclick="window.adminSetQuickStreak(200)">200d (Neon)</button>
+            <button type="button" class="btn-admin-streak-preset" onclick="window.adminSetQuickStreak(365)">365d (Obsidian)</button>
+          </div>
+        </div>
+      `;
+    } else {
+      adminBar.style.display = "none";
+    }
+  }
+
   const listEl = document.getElementById("journeyMilestonesList");
   if (listEl) {
     listEl.innerHTML = STREAK_MILESTONES.map(m => {
@@ -1556,6 +1580,39 @@ window.openStreakJourneyModal = function () {
 window.closeStreakJourneyModal = function () {
   const modal = document.getElementById("streakJourneyModal");
   if (modal) modal.close();
+};
+
+window.adminSetQuickStreak = async function (days) {
+  const currentRole = session?.role || window.session?.role || (typeof getCachedUser === "function" && getCachedUser()?.role);
+  const currentUserId = session?.id || window.session?.id || (typeof getCachedUser === "function" && getCachedUser()?.id);
+  if (currentRole !== "admin" && currentRole !== "ta") {
+    if (typeof toast === "function") toast("Chỉ Admin / TA mới có quyền test chuỗi.");
+    return;
+  }
+  try {
+    const res = await requestAPI(`/api/admin/users/${currentUserId}/streak`, {
+      method: "PATCH",
+      body: JSON.stringify({ streak: days === null ? null : Number(days) }),
+    });
+    if (res && res.success) {
+      if (typeof toast === "function") toast(`✨ Đã đổi chuỗi thành công: ${res.streak} ngày (${res.streakTitle})`);
+      if (session) {
+        session.streak = res.streak;
+        session.streakTier = res.streakTier;
+      }
+      if (window.session) {
+        window.session.streak = res.streak;
+        window.session.streakTier = res.streakTier;
+      }
+      window.currentUserStreak = res.streak;
+      if (typeof hydrateServer === "function") {
+        await hydrateServer(true);
+      }
+      openStreakJourneyModal();
+    }
+  } catch (err) {
+    if (typeof toast === "function") toast("Lỗi đặt chuỗi: " + err.message);
+  }
 };
 
 let currentShieldLogs = [];

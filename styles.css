@@ -241,8 +241,8 @@ select:focus-visible {
 
 .brand img,
 .brand-mark img {
-  width: 28px;
-  height: 28px;
+  width: 23px;
+  height: 23px;
   object-fit: contain;
   border-radius: 0 !important;
   display: block;
@@ -258,8 +258,8 @@ select:focus-visible {
   border-radius: 0 !important;
   flex-shrink: 0;
   position: relative;
-  width: 28px;
-  height: 28px;
+  width: 23px;
+  height: 23px;
 }
 
 .brand span {
@@ -1192,7 +1192,7 @@ h1 em {
   background: linear-gradient(135deg, #57223b 0%, #c45b83 30%, #e8a9c1 55%, #fde8ef 75%, #8a3157 100%);
   background-size: 280% 280%;
   filter: drop-shadow(0 0 5px rgba(196, 91, 131, 0.7));
-  animation: diagonalBorderShift 6.5s ease-in-out infinite;
+  animation: diagonalBorderShift 8.5s ease-in-out infinite;
 }
 
 /* Tier 6: Nhà kiến tạo tri thức (100d) - Mythic Prism (old tier 5) */
@@ -1212,7 +1212,7 @@ h1 em {
   background: linear-gradient(135deg, #7048e8 0%, #f783ac 20%, #ffd43b 40%, #ff6b6b 65%, #a61e4d 85%, #7048e8 100%);
   background-size: 300% 300%;
   filter: drop-shadow(0 0 5px rgba(247, 131, 172, 0.75));
-  animation: diagonalBorderShift 6.5s ease-in-out infinite;
+  animation: diagonalBorderShift 8.5s ease-in-out infinite;
 }
 
 /* Tier 7: Bậc thầy học thuật (200d) - Super Duolingo Neon */
@@ -1232,7 +1232,7 @@ h1 em {
   background: linear-gradient(135deg, #00f59b 0%, #00d2ff 30%, #ec4899 60%, #818cf8 80%, #00f59b 100%);
   background-size: 300% 300%;
   filter: drop-shadow(0 0 6px rgba(0, 210, 255, 0.85));
-  animation: diagonalBorderShift 5s ease-in-out infinite;
+  animation: diagonalBorderShift 8.5s ease-in-out infinite;
 }
 
 /* Tier 8: Học giả lưu danh (365d) - Pure Celestial Diamond Luxury */
@@ -1252,7 +1252,7 @@ h1 em {
   background: linear-gradient(135deg, #ffffff 0%, #cbd5e1 25%, #475569 50%, #ffffff 75%, #94a3b8 100%);
   background-size: 300% 300%;
   filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.95)) drop-shadow(0 0 14px rgba(203, 213, 225, 0.65));
-  animation: diagonalBorderShift 4.5s ease-in-out infinite;
+  animation: diagonalBorderShift 9s ease-in-out infinite;
 }
 
 @keyframes roseQuartzBgShift {
@@ -1436,8 +1436,8 @@ div.user-name-tier-5,
   -webkit-text-fill-color: transparent;
   color: transparent;
   font-weight: 800;
-  animation: shimmerName 6s linear infinite;
-  -webkit-animation: shimmerName 6s linear infinite;
+  animation: shimmerName 8.5s ease-in-out infinite;
+  -webkit-animation: shimmerName 8.5s ease-in-out infinite;
   will-change: background-position;
   transform: translateZ(0);
   -webkit-transform: translateZ(0);
@@ -1463,8 +1463,8 @@ body.dark-theme div.user-name-tier-5 {
       #f472b6 85%,
       #c45b83 100%) !important;
   background-size: 200% 100% !important;
-  animation: shimmerName 6s linear infinite !important;
-  -webkit-animation: shimmerName 6s linear infinite !important;
+  animation: shimmerName 8.5s ease-in-out infinite !important;
+  -webkit-animation: shimmerName 8.5s ease-in-out infinite !important;
 }
 
 /* Tier 6: Nhà kiến tạo tri thức (100d) - Mythic Prism (old tier 5) */
@@ -1497,8 +1497,8 @@ div.user-name-tier-6,
   -webkit-text-fill-color: transparent;
   color: transparent;
   font-weight: 800;
-  animation: shimmerName 6s linear infinite;
-  -webkit-animation: shimmerName 6s linear infinite;
+  animation: shimmerName 8.5s ease-in-out infinite;
+  -webkit-animation: shimmerName 8.5s ease-in-out infinite;
   will-change: background-position;
   transform: translateZ(0);
   -webkit-transform: translateZ(0);
@@ -1524,8 +1524,8 @@ body.dark-theme div.user-name-tier-6 {
       #f783ac 75%,
       #7048e8 100%) !important;
   background-size: 200% 100% !important;
-  animation: shimmerName 6s linear infinite !important;
-  -webkit-animation: shimmerName 6s linear infinite !important;
+  animation: shimmerName 8.5s ease-in-out infinite !important;
+  -webkit-animation: shimmerName 8.5s ease-in-out infinite !important;
 }
 
 /* Tier 7: Bậc thầy học thuật (200d) - Super Duolingo Neon */
@@ -1558,8 +1558,8 @@ div.user-name-tier-7,
   -webkit-text-fill-color: transparent;
   color: transparent;
   font-weight: 800;
-  animation: shimmerName 6s linear infinite;
-  -webkit-animation: shimmerName 6s linear infinite;
+  animation: shimmerName 8.5s ease-in-out infinite;
+  -webkit-animation: shimmerName 8.5s ease-in-out infinite;
   will-change: background-position;
   transform: translateZ(0);
   -webkit-transform: translateZ(0);
@@ -1585,8 +1585,8 @@ body.dark-theme div.user-name-tier-7 {
       #ec4899 85%,
       #00f59b 100%) !important;
   background-size: 200% 100% !important;
-  animation: shimmerName 6s linear infinite !important;
-  -webkit-animation: shimmerName 6s linear infinite !important;
+  animation: shimmerName 8.5s ease-in-out infinite !important;
+  -webkit-animation: shimmerName 8.5s ease-in-out infinite !important;
 }
 
 /* Tier 8: Học giả lưu danh (365d) - Pure Celestial Diamond Luxury (High-Contrast Platinum Titanium) */
@@ -1619,8 +1619,8 @@ div.user-name-tier-8,
   -webkit-text-fill-color: transparent;
   color: transparent;
   font-weight: 800;
-  animation: diamondShimmer 7s linear infinite;
-  -webkit-animation: diamondShimmer 7s linear infinite;
+  animation: diamondShimmer 9s ease-in-out infinite;
+  -webkit-animation: diamondShimmer 9s ease-in-out infinite;
   will-change: background-position;
   transform: translateZ(0);
   -webkit-transform: translateZ(0);
@@ -1629,7 +1629,7 @@ div.user-name-tier-8,
   display: inline-block;
   vertical-align: middle;
   text-shadow: none;
-  filter: drop-shadow(0 1px 1px rgba(15, 23, 42, 0.22));
+  filter: drop-shadow(0 1px 0 rgba(255, 255, 255, 0.7));
   box-shadow: none;
 }
 
@@ -1651,10 +1651,10 @@ body.dark-theme div.user-name-tier-8 {
   background-clip: text !important;
   -webkit-text-fill-color: transparent !important;
   color: transparent !important;
-  filter: drop-shadow(0 0 1.5px rgba(255, 255, 255, 0.85)) drop-shadow(0 1px 2px rgba(0, 0, 0, 0.8)) !important;
+  filter: drop-shadow(0 0 1px rgba(255, 255, 255, 0.4)) drop-shadow(0 1px 2px rgba(0, 0, 0, 0.6)) !important;
   text-shadow: none !important;
-  animation: diamondShimmer 7s linear infinite !important;
-  -webkit-animation: diamondShimmer 7s linear infinite !important;
+  animation: diamondShimmer 9s ease-in-out infinite !important;
+  -webkit-animation: diamondShimmer 9s ease-in-out infinite !important;
 }
 
 @keyframes diamondShimmer {
@@ -1662,8 +1662,12 @@ body.dark-theme div.user-name-tier-8 {
     background-position: 0% 50%;
   }
 
+  50% {
+    background-position: 100% 50%;
+  }
+
   100% {
-    background-position: 200% 50%;
+    background-position: 0% 50%;
   }
 }
 
@@ -1672,8 +1676,12 @@ body.dark-theme div.user-name-tier-8 {
     background-position: 0% 50%;
   }
 
+  50% {
+    background-position: 100% 50%;
+  }
+
   100% {
-    background-position: 200% 50%;
+    background-position: 0% 50%;
   }
 }
 
@@ -1682,8 +1690,12 @@ body.dark-theme div.user-name-tier-8 {
     background-position: 0% 50%;
   }
 
+  50% {
+    background-position: 100% 50%;
+  }
+
   100% {
-    background-position: 200% 50%;
+    background-position: 0% 50%;
   }
 }
 
@@ -1692,8 +1704,40 @@ body.dark-theme div.user-name-tier-8 {
     background-position: 0% 50%;
   }
 
+  50% {
+    background-position: 100% 50%;
+  }
+
   100% {
-    background-position: 200% 50%;
+    background-position: 0% 50%;
+  }
+}
+
+@keyframes seamlessNameShimmer {
+  0% {
+    background-position: 0% 50%;
+  }
+
+  50% {
+    background-position: 100% 50%;
+  }
+
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+@-webkit-keyframes seamlessNameShimmer {
+  0% {
+    background-position: 0% 50%;
+  }
+
+  50% {
+    background-position: 100% 50%;
+  }
+
+  100% {
+    background-position: 0% 50%;
   }
 }
 
@@ -3121,6 +3165,135 @@ body.dark-theme[data-user-theme="diamond"] .pulse-dot,
   color: #fff !important;
 }
 
+/* Community & Mobile Nav overrides to eliminate green leaks */
+/* Ruby (Đỏ huyết sắc) */
+[data-user-theme="ruby"] .btn-create-community {
+  border-color: #c92a2a;
+  background: rgba(201, 42, 42, 0.08);
+  color: #c92a2a;
+}
+[data-user-theme="ruby"] .btn-create-community:hover {
+  background: #c92a2a;
+  color: #ffffff;
+  box-shadow: 0 3px 8px rgba(201, 42, 42, 0.25);
+}
+[data-user-theme="ruby"] .community-sidebar-item.active {
+  background: rgba(201, 42, 42, 0.08);
+  border-color: #c92a2a;
+}
+[data-user-theme="ruby"] .mobile-link.active,
+[data-user-theme="ruby"] .mobile-link.active svg,
+[data-user-theme="ruby"] .mobile-link.active .mobile-nav-label {
+  color: #c92a2a !important;
+}
+
+/* Rose Quartz (Thạch anh hồng) */
+[data-user-theme="rosequartz"] .btn-create-community {
+  border-color: #8a3157;
+  background: rgba(138, 49, 87, 0.08);
+  color: #8a3157;
+}
+[data-user-theme="rosequartz"] .btn-create-community:hover {
+  background: #8a3157;
+  color: #ffffff;
+  box-shadow: 0 3px 8px rgba(138, 49, 87, 0.25);
+}
+[data-user-theme="rosequartz"] .community-sidebar-item.active {
+  background: rgba(138, 49, 87, 0.08);
+  border-color: #8a3157;
+}
+[data-user-theme="rosequartz"] .mobile-link.active,
+[data-user-theme="rosequartz"] .mobile-link.active svg,
+[data-user-theme="rosequartz"] .mobile-link.active .mobile-nav-label {
+  color: #8a3157 !important;
+}
+
+/* Mythic (Tím hoàng gia) */
+[data-user-theme="mythic"] .btn-create-community {
+  border-color: #7048e8;
+  background: rgba(112, 72, 232, 0.08);
+  color: #7048e8;
+}
+[data-user-theme="mythic"] .btn-create-community:hover {
+  background: #7048e8;
+  color: #ffffff;
+  box-shadow: 0 3px 8px rgba(112, 72, 232, 0.25);
+}
+[data-user-theme="mythic"] .community-sidebar-item.active {
+  background: rgba(112, 72, 232, 0.08);
+  border-color: #7048e8;
+}
+[data-user-theme="mythic"] .mobile-link.active,
+[data-user-theme="mythic"] .mobile-link.active svg,
+[data-user-theme="mythic"] .mobile-link.active .mobile-nav-label {
+  color: #7048e8 !important;
+}
+
+/* Super (Siêu tân tinh) */
+[data-user-theme="super"] .btn-create-community {
+  border-color: #00cec9;
+  background: rgba(0, 206, 201, 0.1);
+  color: #00897b;
+}
+[data-user-theme="super"] .btn-create-community:hover {
+  background: #00cec9;
+  color: #0b0d28;
+  box-shadow: 0 3px 8px rgba(0, 206, 201, 0.25);
+}
+[data-user-theme="super"] .community-sidebar-item.active {
+  background: rgba(0, 206, 201, 0.1);
+  border-color: #00cec9;
+}
+[data-user-theme="super"] .mobile-link.active,
+[data-user-theme="super"] .mobile-link.active svg,
+[data-user-theme="super"] .mobile-link.active .mobile-nav-label {
+  color: #00897b !important;
+}
+
+/* Diamond (Đen huyền bí) */
+[data-user-theme="diamond"] .btn-create-community {
+  border-color: #0f172a;
+  background: rgba(15, 23, 42, 0.08);
+  color: #0f172a;
+}
+[data-user-theme="diamond"] .btn-create-community:hover {
+  background: #0f172a;
+  color: #ffffff;
+  box-shadow: 0 3px 8px rgba(15, 23, 42, 0.25);
+}
+[data-user-theme="diamond"] .community-sidebar-item.active {
+  background: rgba(15, 23, 42, 0.08);
+  border-color: #0f172a;
+}
+[data-user-theme="diamond"] .mobile-link.active,
+[data-user-theme="diamond"] .mobile-link.active svg,
+[data-user-theme="diamond"] .mobile-link.active .mobile-nav-label {
+  color: #0f172a !important;
+}
+
+/* Dark mode variations for Diamond */
+body.dark-theme [data-user-theme="diamond"] .btn-create-community,
+[data-user-theme="diamond"] body.dark-theme .btn-create-community {
+  border-color: rgba(255, 255, 255, 0.35);
+  background: rgba(255, 255, 255, 0.08);
+  color: #ffffff;
+}
+body.dark-theme [data-user-theme="diamond"] .btn-create-community:hover,
+[data-user-theme="diamond"] body.dark-theme .btn-create-community:hover {
+  background: #ffffff;
+  color: #090d16;
+}
+body.dark-theme [data-user-theme="diamond"] .community-sidebar-item.active,
+[data-user-theme="diamond"] body.dark-theme .community-sidebar-item.active {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: #ffffff;
+}
+body.dark-theme [data-user-theme="diamond"] .mobile-link.active,
+body.dark-theme [data-user-theme="diamond"] .mobile-link.active svg,
+body.dark-theme [data-user-theme="diamond"] .mobile-link.active .mobile-nav-label {
+  color: #ffffff !important;
+}
+
 /* Flame SVG & Realistic Multi-directional Animations */
 .flame-svg {
   display: inline-flex;
@@ -3589,6 +3762,11 @@ body.dark-theme[data-user-theme="diamond"] .pulse-dot,
   pointer-events: none;
 }
 
+.contribution-card[data-streak-tier="7"]:after,
+.contribution-card[data-streak-tier="8"]:after {
+  display: none !important;
+}
+
 /* Tier 0 (0-2d): Sage Green */
 .contribution-card[data-streak-tier="0"] {
   background: linear-gradient(135deg, #123d30 0%, #1d503e 100%);
@@ -3695,6 +3873,9 @@ body.dark-theme[data-user-theme="diamond"] .pulse-dot,
   box-shadow: 0 16px 44px rgba(99, 102, 241, 0.45), 0 0 25px rgba(0, 245, 155, 0.3);
   position: relative;
   overflow: hidden;
+  max-width: 384px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .contribution-card[data-streak-tier="7"]::before {
@@ -3716,9 +3897,9 @@ body.dark-theme[data-user-theme="diamond"] .pulse-dot,
 }
 
 @keyframes cosmicStardustTwinkle {
-  0% { opacity: 0.35; transform: scale(1); }
-  50% { opacity: 0.85; transform: scale(1.02); }
-  100% { opacity: 0.45; transform: scale(1); }
+  0% { opacity: 0.35; }
+  50% { opacity: 0.85; }
+  100% { opacity: 0.45; }
 }
 
 .contribution-card[data-streak-tier="7"] > *:not(canvas) {
@@ -3739,12 +3920,15 @@ body.dark-theme[data-user-theme="diamond"] .pulse-dot,
 /* Tier 8 (365+d): Học giả lưu danh - Celestial Diamond Luxury (Concept Mảnh thủy tinh / Low-poly faceted glass shards) */
 .contribution-card[data-streak-tier="8"] {
   background-color: #f1f5f9;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 240' preserveAspectRatio='none'%3E%3Crect width='600' height='240' fill='%23f1f5f9'/%3E%3Cpolygon points='0,0 130,0 80,75' fill='%23ffffff' opacity='0.85'/%3E%3Cpolygon points='130,0 270,0 190,80' fill='%23e2e8f0' opacity='0.75'/%3E%3Cpolygon points='270,0 430,0 350,65' fill='%23cbd5e1' opacity='0.6'/%3E%3Cpolygon points='430,0 600,0 520,85' fill='%2394a3b8' opacity='0.35'/%3E%3Cpolygon points='0,0 80,75 0,140' fill='%23f8fafc' opacity='0.9'/%3E%3Cpolygon points='80,75 190,80 140,165' fill='%23e0e7ff' opacity='0.4'/%3E%3Cpolygon points='190,80 350,65 280,150' fill='%23ffffff' opacity='0.85'/%3E%3Cpolygon points='350,65 520,85 450,160' fill='%23e2e8f0' opacity='0.75'/%3E%3Cpolygon points='520,85 600,0 600,135' fill='%23cbd5e1' opacity='0.6'/%3E%3Cpolygon points='0,140 140,165 60,240' fill='%2394a3b8' opacity='0.35'/%3E%3Cpolygon points='140,165 280,150 220,240' fill='%23f8fafc' opacity='0.9'/%3E%3Cpolygon points='280,150 450,160 380,240' fill='%23e0e7ff' opacity='0.4'/%3E%3Cpolygon points='450,160 600,135 530,240' fill='%23ffffff' opacity='0.85'/%3E%3Cpolygon points='0,140 60,240 0,240' fill='%23e2e8f0' opacity='0.75'/%3E%3Cpolygon points='60,240 220,240 140,165' fill='%23cbd5e1' opacity='0.6'/%3E%3Cpolygon points='220,240 380,240 280,150' fill='%2394a3b8' opacity='0.35'/%3E%3Cpolygon points='380,240 530,240 450,160' fill='%23f8fafc' opacity='0.9'/%3E%3Cpolygon points='530,240 600,240 600,135' fill='%23e0e7ff' opacity='0.4'/%3E%3Cpath d='M0,0 L80,75 L190,80 L350,65 L520,85 L600,0 M80,75 L140,165 L280,150 L450,160 L520,85 M0,140 L140,165 L220,240 M280,150 L380,240 M450,160 L530,240 M600,135 L450,160' stroke='%23ffffff' stroke-width='0.8' opacity='0.7' fill='none'/%3E%3C/svg%3E");
+  background-image: url('covers/streak-faceted-platinum.svg');
   background-size: cover;
   background-position: center;
   border: 1.5px solid rgba(148, 163, 184, 0.7);
   box-shadow: 0 18px 44px rgba(15, 23, 42, 0.16), 0 0 24px rgba(255, 255, 255, 0.95);
   color: #0f172a;
+  max-width: 384px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .contribution-card[data-streak-tier="8"] > *:not(canvas) {
@@ -3755,7 +3939,9 @@ body.dark-theme[data-user-theme="diamond"] .pulse-dot,
 .contribution-card[data-streak-tier="8"]::after {
   content: "";
   position: absolute;
-  inset: 0;
+  inset: 0 !important;
+  width: auto !important;
+  height: auto !important;
   border-radius: inherit;
   background: linear-gradient(115deg, transparent 35%, rgba(255, 255, 255, 0.45) 50%, transparent 65%);
   background-size: 250% 250%;
@@ -3765,7 +3951,6 @@ body.dark-theme[data-user-theme="diamond"] .pulse-dot,
 }
 
 @keyframes diamondCardSheenSweep {
-
   0%,
   100% {
     background-position: 0% 0%;
@@ -3813,94 +3998,127 @@ body.dark-theme[data-user-theme="diamond"] .pulse-dot,
 }
 
 /* Tier 8 Contribution Card Day Labels in Light Mode (High Contrast Black) */
+html:not(.dark-theme) .contribution-card[data-streak-tier="8"] .day,
 body:not(.dark-theme) .contribution-card[data-streak-tier="8"] .day {
   color: #0f172a !important;
   font-weight: 700 !important;
 }
 
+html:not(.dark-theme) .contribution-card[data-streak-tier="8"] .day small,
+body:not(.dark-theme) .contribution-card[data-streak-tier="8"] .day small {
+  color: #0f172a !important;
+  font-weight: 700 !important;
+}
+
+html:not(.dark-theme) .contribution-card[data-streak-tier="8"] .day i,
 body:not(.dark-theme) .contribution-card[data-streak-tier="8"] .day i {
-  border-color: rgba(15, 23, 42, 0.22) !important;
-  background: rgba(15, 23, 42, 0.05) !important;
+  border-color: rgba(15, 23, 42, 0.28) !important;
+  background: rgba(15, 23, 42, 0.06) !important;
   color: #0f172a !important;
 }
 
+html:not(.dark-theme) .contribution-card[data-streak-tier="8"] .day.done i,
 body:not(.dark-theme) .contribution-card[data-streak-tier="8"] .day.done i {
-  background: rgba(15, 23, 42, 0.12) !important;
-  border-color: rgba(15, 23, 42, 0.45) !important;
+  background: rgba(15, 23, 42, 0.15) !important;
+  border-color: rgba(15, 23, 42, 0.55) !important;
   color: #0f172a !important;
 }
 
+html:not(.dark-theme) .contribution-card[data-streak-tier="8"] .day.today i,
 body:not(.dark-theme) .contribution-card[data-streak-tier="8"] .day.today i {
   border-color: #0f172a !important;
-  box-shadow: 0 0 8px rgba(15, 23, 42, 0.25) !important;
+  box-shadow: 0 0 10px rgba(15, 23, 42, 0.3) !important;
   color: #0f172a !important;
 }
 
 /* Tier 8 Contribution Card Day Labels in Dark Mode (Pure White & Starlight Contrast) */
+html.dark-theme .contribution-card[data-streak-tier="8"] .day,
 body.dark-theme .contribution-card[data-streak-tier="8"] .day {
   color: #ffffff !important;
   font-weight: 700 !important;
-  text-shadow: 0 0 8px rgba(255, 255, 255, 0.5);
+  text-shadow: 0 0 8px rgba(255, 255, 255, 0.6) !important;
 }
 
+html.dark-theme .contribution-card[data-streak-tier="8"] .day small,
+body.dark-theme .contribution-card[data-streak-tier="8"] .day small {
+  color: #ffffff !important;
+  font-weight: 700 !important;
+  text-shadow: 0 0 8px rgba(255, 255, 255, 0.6) !important;
+}
+
+html.dark-theme .contribution-card[data-streak-tier="8"] .day i,
 body.dark-theme .contribution-card[data-streak-tier="8"] .day i {
-  border-color: rgba(255, 255, 255, 0.35) !important;
+  border-color: rgba(255, 255, 255, 0.4) !important;
   background: rgba(255, 255, 255, 0.08) !important;
   color: #ffffff !important;
 }
 
+html.dark-theme .contribution-card[data-streak-tier="8"] .day.done i,
 body.dark-theme .contribution-card[data-streak-tier="8"] .day.done i {
-  background: rgba(255, 255, 255, 0.22) !important;
-  border-color: rgba(255, 255, 255, 0.8) !important;
+  background: rgba(255, 255, 255, 0.25) !important;
+  border-color: rgba(255, 255, 255, 0.85) !important;
   color: #ffffff !important;
-  box-shadow: 0 0 8px rgba(255, 255, 255, 0.4) !important;
+  box-shadow: 0 0 8px rgba(255, 255, 255, 0.5) !important;
 }
 
+html.dark-theme .contribution-card[data-streak-tier="8"] .day.today i,
 body.dark-theme .contribution-card[data-streak-tier="8"] .day.today i {
   border-color: #ffffff !important;
-  box-shadow: 0 0 12px rgba(255, 255, 255, 0.7) !important;
+  box-shadow: 0 0 14px rgba(255, 255, 255, 0.8) !important;
   color: #ffffff !important;
-  background: rgba(255, 255, 255, 0.3) !important;
+  background: rgba(255, 255, 255, 0.35) !important;
 }
 
-
+html.dark-theme .contribution-card[data-streak-tier="8"],
 body.dark-theme .contribution-card[data-streak-tier="8"] {
-  background-color: #090d16;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 240' preserveAspectRatio='none'%3E%3Crect width='600' height='240' fill='%23090d16'/%3E%3Cpolygon points='0,0 130,0 80,75' fill='%231e293b' opacity='0.85'/%3E%3Cpolygon points='130,0 270,0 190,80' fill='%230f172a' opacity='0.95'/%3E%3Cpolygon points='270,0 430,0 350,65' fill='%23334155' opacity='0.65'/%3E%3Cpolygon points='430,0 600,0 520,85' fill='%23475569' opacity='0.45'/%3E%3Cpolygon points='0,0 80,75 0,140' fill='%23141c2e' opacity='0.9'/%3E%3Cpolygon points='80,75 190,80 140,165' fill='%2325334a' opacity='0.7'/%3E%3Cpolygon points='190,80 350,65 280,150' fill='%231e293b' opacity='0.85'/%3E%3Cpolygon points='350,65 520,85 450,160' fill='%230f172a' opacity='0.95'/%3E%3Cpolygon points='520,85 600,0 600,135' fill='%23334155' opacity='0.65'/%3E%3Cpolygon points='0,140 140,165 60,240' fill='%23475569' opacity='0.45'/%3E%3Cpolygon points='140,165 280,150 220,240' fill='%23141c2e' opacity='0.9'/%3E%3Cpolygon points='280,150 450,160 380,240' fill='%2325334a' opacity='0.7'/%3E%3Cpolygon points='450,160 600,135 530,240' fill='%231e293b' opacity='0.85'/%3E%3Cpolygon points='0,140 60,240 0,240' fill='%230f172a' opacity='0.95'/%3E%3Cpolygon points='60,240 220,240 140,165' fill='%23334155' opacity='0.65'/%3E%3Cpolygon points='220,240 380,240 280,150' fill='%23475569' opacity='0.45'/%3E%3Cpolygon points='380,240 530,240 450,160' fill='%23141c2e' opacity='0.9'/%3E%3Cpolygon points='530,240 600,240 600,135' fill='%2325334a' opacity='0.7'/%3E%3Cpath d='M0,0 L80,75 L190,80 L350,65 L520,85 L600,0 M80,75 L140,165 L280,150 L450,160 L520,85 M0,140 L140,165 L220,240 M280,150 L380,240 M450,160 L530,240 M600,135 L450,160' stroke='%2394a3b8' stroke-width='0.8' opacity='0.45' fill='none'/%3E%3C/svg%3E");
-  background-size: cover;
-  background-position: center;
-  border: 1.5px solid rgba(255, 255, 255, 0.35);
-  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.8), 0 0 28px rgba(255, 255, 255, 0.22);
-  color: #ffffff;
+  background-color: #05070e !important;
+  background-image: url('covers/streak-faceted-obsidian.svg') !important;
+  background-size: cover !important;
+  background-position: center !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.4) !important;
+  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.85), 0 0 28px rgba(255, 255, 255, 0.18) !important;
+  color: #ffffff !important;
 }
 
+html.dark-theme .contribution-card[data-streak-tier="8"]::after,
+body.dark-theme .contribution-card[data-streak-tier="8"]::after {
+  background: linear-gradient(115deg, transparent 35%, rgba(255, 255, 255, 0.15) 50%, transparent 65%) !important;
+}
+
+html.dark-theme .contribution-card[data-streak-tier="8"] .card-topline,
 body.dark-theme .contribution-card[data-streak-tier="8"] .card-topline {
-  color: #e2e8f0 !important;
-  text-shadow: 0 0 10px rgba(255, 255, 255, 0.6);
+  color: #f8fafc !important;
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.6) !important;
 }
 
+html.dark-theme .contribution-card[data-streak-tier="8"] .streak-tier-label,
 body.dark-theme .contribution-card[data-streak-tier="8"] .streak-tier-label {
   color: #ffffff !important;
-  text-shadow: 0 0 14px rgba(255, 255, 255, 0.85);
+  text-shadow: 0 0 14px rgba(255, 255, 255, 0.85) !important;
 }
 
+html.dark-theme .contribution-card[data-streak-tier="8"] .streak-number,
 body.dark-theme .contribution-card[data-streak-tier="8"] .streak-number {
   color: #ffffff !important;
-  text-shadow: 0 0 16px rgba(255, 255, 255, 0.7);
+  text-shadow: 0 0 16px rgba(255, 255, 255, 0.7) !important;
 }
 
+html.dark-theme .contribution-card[data-streak-tier="8"] .streak-number span,
 body.dark-theme .contribution-card[data-streak-tier="8"] .streak-number span {
   color: #cbd5e1 !important;
 }
 
+html.dark-theme .contribution-card[data-streak-tier="8"] .streak-journey-btn,
 body.dark-theme .contribution-card[data-streak-tier="8"] .streak-journey-btn,
+html.dark-theme .contribution-card[data-streak-tier="8"] .streak-shield-badge,
 body.dark-theme .contribution-card[data-streak-tier="8"] .streak-shield-badge {
-  background: rgba(15, 23, 42, 0.75) !important;
+  background: rgba(15, 23, 42, 0.85) !important;
   color: #ffffff !important;
-  border-color: rgba(255, 255, 255, 0.3) !important;
+  border-color: rgba(255, 255, 255, 0.35) !important;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
 }
 
+html.dark-theme .contribution-card[data-streak-tier="8"] .streak-shield-badge .shield-icon,
 body.dark-theme .contribution-card[data-streak-tier="8"] .streak-shield-badge .shield-icon {
   color: #ffffff !important;
 }
@@ -4130,6 +4348,46 @@ body.dark-theme .contribution-card[data-streak-tier="8"] .streak-shield-badge .s
   padding: 0;
   box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
   background: var(--paper);
+}
+
+.admin-streak-test-bar {
+  margin: 0 0 16px 0;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.btn-admin-streak-preset {
+  font-family: var(--sans);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 8px;
+  border-radius: 6px;
+  border: 1px solid rgba(5, 150, 105, 0.4);
+  background: rgba(255, 255, 255, 0.95);
+  color: #065f46;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-admin-streak-preset:hover {
+  background: #059669;
+  color: #ffffff;
+  border-color: #059669;
+  transform: translateY(-1px);
+}
+
+html.dark-theme .btn-admin-streak-preset,
+body.dark-theme .btn-admin-streak-preset {
+  background: rgba(15, 23, 42, 0.7);
+  color: #34d399;
+  border-color: rgba(52, 211, 153, 0.4);
+}
+
+html.dark-theme .btn-admin-streak-preset:hover,
+body.dark-theme .btn-admin-streak-preset:hover {
+  background: #059669;
+  color: #ffffff;
 }
 
 .streak-journey-header {
@@ -22449,8 +22707,8 @@ body.dark-theme .namecard-canvas .namecard-display-name.user-name-tier-4 {
   font-weight: 800;
   display: inline-block !important;
   vertical-align: middle;
-  animation: shimmerName 6s linear infinite !important;
-  -webkit-animation: shimmerName 6s linear infinite !important;
+  animation: shimmerName 8.5s ease-in-out infinite !important;
+  -webkit-animation: shimmerName 8.5s ease-in-out infinite !important;
   will-change: background-position;
   transform: translateZ(0);
   -webkit-transform: translateZ(0);
@@ -22465,8 +22723,8 @@ body.dark-theme .namecard-canvas .namecard-display-name.user-name-tier-5 {
       #f472b6 85%,
       #c45b83 100%) !important;
   background-size: 200% 100% !important;
-  animation: shimmerName 6s linear infinite !important;
-  -webkit-animation: shimmerName 6s linear infinite !important;
+  animation: shimmerName 8.5s ease-in-out infinite !important;
+  -webkit-animation: shimmerName 8.5s ease-in-out infinite !important;
 }
 
 .namecard-display-name.user-name-tier-6,
@@ -22487,8 +22745,8 @@ body.dark-theme .namecard-canvas .namecard-display-name.user-name-tier-5 {
   font-weight: 800;
   display: inline-block !important;
   vertical-align: middle;
-  animation: shimmerName 6s linear infinite !important;
-  -webkit-animation: shimmerName 6s linear infinite !important;
+  animation: shimmerName 8.5s ease-in-out infinite !important;
+  -webkit-animation: shimmerName 8.5s ease-in-out infinite !important;
   will-change: background-position;
   transform: translateZ(0);
   -webkit-transform: translateZ(0);
@@ -22503,8 +22761,8 @@ body.dark-theme .namecard-canvas .namecard-display-name.user-name-tier-6 {
       #f783ac 75%,
       #7048e8 100%) !important;
   background-size: 200% 100% !important;
-  animation: shimmerName 6s linear infinite !important;
-  -webkit-animation: shimmerName 6s linear infinite !important;
+  animation: shimmerName 8.5s ease-in-out infinite !important;
+  -webkit-animation: shimmerName 8.5s ease-in-out infinite !important;
 }
 
 .namecard-display-name.user-name-tier-7,
@@ -22525,8 +22783,8 @@ body.dark-theme .namecard-canvas .namecard-display-name.user-name-tier-6 {
   font-weight: 800;
   display: inline-block !important;
   vertical-align: middle;
-  animation: shimmerName 6s linear infinite !important;
-  -webkit-animation: shimmerName 6s linear infinite !important;
+  animation: shimmerName 8.5s ease-in-out infinite !important;
+  -webkit-animation: shimmerName 8.5s ease-in-out infinite !important;
   will-change: background-position;
   transform: translateZ(0);
   -webkit-transform: translateZ(0);
@@ -22541,8 +22799,8 @@ body.dark-theme .namecard-canvas .namecard-display-name.user-name-tier-7 {
       #ec4899 85%,
       #00f59b 100%) !important;
   background-size: 200% 100% !important;
-  animation: shimmerName 6s linear infinite !important;
-  -webkit-animation: shimmerName 6s linear infinite !important;
+  animation: shimmerName 8.5s ease-in-out infinite !important;
+  -webkit-animation: shimmerName 8.5s ease-in-out infinite !important;
 }
 
 .namecard-display-name.user-name-tier-8,
@@ -22564,9 +22822,9 @@ body.dark-theme .namecard-canvas .namecard-display-name.user-name-tier-7 {
   display: inline-block !important;
   vertical-align: middle;
   text-shadow: none !important;
-  filter: drop-shadow(0 1px 1px rgba(15, 23, 42, 0.22)) !important;
-  animation: diamondShimmer 7s linear infinite !important;
-  -webkit-animation: diamondShimmer 7s linear infinite !important;
+  filter: drop-shadow(0 1px 0 rgba(255, 255, 255, 0.7)) !important;
+  animation: diamondShimmer 9s ease-in-out infinite !important;
+  -webkit-animation: diamondShimmer 9s ease-in-out infinite !important;
   will-change: background-position;
   transform: translateZ(0);
   -webkit-transform: translateZ(0);
@@ -22575,11 +22833,11 @@ body.dark-theme .namecard-canvas .namecard-display-name.user-name-tier-7 {
 body.dark-theme .namecard-modal .namecard-display-name.user-name-tier-8,
 body.dark-theme .namecard-canvas .namecard-display-name.user-name-tier-8 {
   background-image: linear-gradient(90deg,
-      #0f172a 0%,
-      #1e293b 25%,
-      #475569 50%,
-      #1e293b 75%,
-      #0f172a 100%) !important;
+      #94a3b8 0%,
+      #cbd5e1 25%,
+      #ffffff 50%,
+      #cbd5e1 75%,
+      #94a3b8 100%) !important;
   background-size: 200% 100% !important;
   background-repeat: repeat-x !important;
   -webkit-background-clip: text !important;
@@ -22590,9 +22848,9 @@ body.dark-theme .namecard-canvas .namecard-display-name.user-name-tier-8 {
   display: inline-block !important;
   vertical-align: middle;
   text-shadow: none !important;
-  filter: drop-shadow(0 1px 1px rgba(15, 23, 42, 0.22)) !important;
-  animation: diamondShimmer 7s linear infinite !important;
-  -webkit-animation: diamondShimmer 7s linear infinite !important;
+  filter: drop-shadow(0 0 1px rgba(255, 255, 255, 0.4)) drop-shadow(0 1px 2px rgba(0, 0, 0, 0.6)) !important;
+  animation: diamondShimmer 9s ease-in-out infinite !important;
+  -webkit-animation: diamondShimmer 9s ease-in-out infinite !important;
   will-change: background-position;
   transform: translateZ(0);
   -webkit-transform: translateZ(0);
@@ -31492,8 +31750,8 @@ body.dark-theme #postDetail .post-detail-pinned-reply {
   }
 
   header#siteHeader .brand-mark {
-    width: 28px;
-    height: 28px;
+    width: 23px;
+    height: 23px;
     border-radius: 0 !important;
     display: inline-flex;
     align-items: center;
@@ -31503,8 +31761,8 @@ body.dark-theme #postDetail .post-detail-pinned-reply {
   }
 
   header#siteHeader .brand-mark img {
-    width: 28px;
-    height: 28px;
+    width: 23px;
+    height: 23px;
     border-radius: 0 !important;
     object-fit: contain;
   }
@@ -37474,8 +37732,8 @@ body.dark-theme .theme-nav-card.active .theme-card-status-badge {
 
   html.nav-style-classic header#siteHeader .brand-mark,
   body.nav-style-classic header#siteHeader .brand-mark {
-    width: 28px !important;
-    height: 28px !important;
+    width: 23px !important;
+    height: 23px !important;
     border-radius: 0 !important;
     overflow: visible !important;
     display: inline-flex !important;
@@ -37485,8 +37743,8 @@ body.dark-theme .theme-nav-card.active .theme-card-status-badge {
 
   html.nav-style-classic header#siteHeader .brand-mark img,
   body.nav-style-classic header#siteHeader .brand-mark img {
-    width: 28px !important;
-    height: 28px !important;
+    width: 23px !important;
+    height: 23px !important;
     border-radius: 0 !important;
     object-fit: contain !important;
   }
