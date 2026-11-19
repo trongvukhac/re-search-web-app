@@ -4585,7 +4585,8 @@ dialog::backdrop {
   background: #ffffff !important;
   border: 1px solid rgba(18, 61, 48, 0.12) !important;
   box-shadow: 0 24px 70px rgba(10, 42, 32, 0.25) !important;
-  width: min(840px, calc(100vw - 32px)) !important;
+  width: min(980px, calc(100vw - 28px)) !important;
+  max-width: 980px !important;
   max-height: min(90vh, 760px) !important;
   overflow-y: auto !important;
   box-sizing: border-box !important;
@@ -23778,6 +23779,267 @@ body.dark-theme .admin-modal {
   background: #182028 !important;
   border-color: rgba(255, 255, 255, 0.12) !important;
   box-shadow: 0 24px 70px rgba(0, 0, 0, 0.7) !important;
+  color: #e2e8f0 !important;
+}
+
+body.dark-theme .admin-modal .modal-head h2 {
+  color: #f1f5f9 !important;
+}
+
+body.dark-theme .admin-modal .modal-head .eyebrow {
+  color: #34d399 !important;
+}
+
+body.dark-theme .admin-modal .close-modal {
+  background: rgba(255, 255, 255, 0.06) !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+  color: #94a3b8 !important;
+}
+
+body.dark-theme .admin-modal .close-modal:hover {
+  background: rgba(255, 255, 255, 0.12) !important;
+  color: #ffffff !important;
+}
+
+body.dark-theme .admin-modal .admin-tab {
+  color: #94a3b8 !important;
+  border-bottom: 2px solid transparent !important;
+}
+
+body.dark-theme .admin-modal .admin-tab:hover {
+  color: #f1f5f9 !important;
+}
+
+body.dark-theme .admin-modal .admin-tab.active {
+  color: #34d399 !important;
+  border-bottom: 2px solid #34d399 !important;
+}
+
+body.dark-theme .admin-modal .admin-tab.active:after {
+  background: #34d399 !important;
+}
+
+/* Admin Dashboard Metrics Cards in Dark Mode */
+body.dark-theme .admin-dashboard > div {
+  background: #11161b !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+body.dark-theme .admin-dashboard strong {
+  color: #34d399 !important;
+}
+
+body.dark-theme .admin-dashboard span {
+  color: #94a3b8 !important;
+}
+
+/* Quick Lookup Card */
+body.dark-theme .admin-quick-lookup-card {
+  background: #11161b !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+  color: #e2e8f0 !important;
+}
+
+body.dark-theme .admin-quick-lookup-card h4 {
+  color: #f1f5f9 !important;
+}
+
+body.dark-theme .admin-quick-lookup-card p {
+  color: #94a3b8 !important;
+}
+
+body.dark-theme .admin-quick-lookup-card code {
+  background: rgba(255, 255, 255, 0.08) !important;
+  color: #34d399 !important;
+}
+
+/* Admin Tables (Members, Resets, Trash, Hidden) in Dark Mode */
+body.dark-theme .admin-modal table th {
+  color: #94a3b8 !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12) !important;
+}
+
+body.dark-theme .admin-modal table td {
+  color: #e2e8f0 !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+body.dark-theme .admin-modal table tr:hover td {
+  background: rgba(255, 255, 255, 0.03) !important;
+}
+
+/* Admin Documents & Topics List in Dark Mode */
+body.dark-theme #adminDocList > div,
+body.dark-theme #adminTopicList > div {
+  background: #11161b !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  color: #e2e8f0 !important;
+}
+
+body.dark-theme #adminDocList h3,
+body.dark-theme #adminTopicList h3 {
+  color: #f1f5f9 !important;
+}
+
+body.dark-theme #adminDocList p,
+body.dark-theme #adminTopicList p {
+  color: #94a3b8 !important;
+}
+
+/* Admin Competition Simulator Bar */
+body.dark-theme .admin-comp-sim-bar {
+  background: #11161b !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  color: #e2e8f0 !important;
+}
+
+body.dark-theme .admin-comp-sim-bar strong {
+  color: #f1f5f9 !important;
+}
+
+body.dark-theme #adminSimCurrentTime {
+  background: rgba(52, 211, 153, 0.15) !important;
+  color: #34d399 !important;
+}
+
+/* Admin Competition Management Cards */
+body.dark-theme .admin-modal .admin-card,
+body.dark-theme .admin-modal .admin-card[style] {
+  background: #141c24 !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  color: #e2e8f0 !important;
+}
+
+body.dark-theme .admin-modal .admin-card h3,
+body.dark-theme .admin-modal .admin-card h4,
+body.dark-theme .admin-modal .admin-card label {
+  color: #f1f5f9 !important;
+}
+
+body.dark-theme .admin-modal .admin-card span[style*="color: #166534"],
+body.dark-theme .admin-modal .admin-card span[style*="color: #15803d"],
+body.dark-theme .admin-modal .admin-card h4[style*="color: #14532d"] {
+  color: #34d399 !important;
+}
+
+body.dark-theme .admin-modal .admin-card div[style*="background: #f0fdf4"],
+body.dark-theme .admin-modal .admin-card div[style*="background:#f0fdf4"],
+body.dark-theme .admin-modal .admin-card div[style*="background: var(--sage-2)"],
+body.dark-theme .admin-modal .admin-card div[style*="background:var(--sage-2)"] {
+  background: #11161b !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+body.dark-theme .admin-board-tab-btn.active,
+body.dark-theme .admin-track-btn.active,
+body.dark-theme .admin-phase-tab-btn.active {
+  background: #34d399 !important;
+  color: #0f172a !important;
+  border-color: #34d399 !important;
+}
+
+body.dark-theme .admin-board-tab-btn:not(.active),
+body.dark-theme .admin-track-btn:not(.active),
+body.dark-theme .admin-phase-tab-btn:not(.active) {
+  background: #16202c !important;
+  color: #94a3b8 !important;
+  border-color: rgba(255, 255, 255, 0.14) !important;
+}
+
+body.dark-theme #adminWeekDateRangeBadge {
+  background: rgba(52, 211, 153, 0.12) !important;
+  color: #34d399 !important;
+  border: 1px solid rgba(52, 211, 153, 0.25) !important;
+}
+
+body.dark-theme #adminSelectedWeekStatusText {
+  color: #4ade80 !important;
+}
+
+body.dark-theme #adminPhaseStatusBadge {
+  color: #34d399 !important;
+}
+
+body.dark-theme .admin-modal select.input-field,
+body.dark-theme .admin-modal input.input-field,
+body.dark-theme .admin-modal input.input {
+  background: #11161b !important;
+  border-color: rgba(255, 255, 255, 0.16) !important;
+  color: #f1f5f9 !important;
+}
+
+body.dark-theme .admin-q-card {
+  background: #11161b !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  color: #e2e8f0 !important;
+}
+
+body.dark-theme .admin-q-card strong {
+  color: #f1f5f9 !important;
+}
+
+body.dark-theme .admin-q-card input,
+body.dark-theme .admin-q-card select {
+  background: #16202c !important;
+  border: 1px solid rgba(255, 255, 255, 0.14) !important;
+  color: #f1f5f9 !important;
+}
+
+/* Account Page Admin Panel in Dark Mode */
+body.dark-theme .admin-panel {
+  background: #16202c !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  color: #f1f5f9 !important;
+}
+
+body.dark-theme .admin-panel .eyebrow {
+  color: #34d399 !important;
+}
+
+body.dark-theme .admin-panel h2 {
+  color: #ffffff !important;
+}
+
+body.dark-theme .admin-panel > p:not(.eyebrow) {
+  color: #cbd5e1 !important;
+}
+
+body.dark-theme .admin-metrics {
+  border-top-color: rgba(255, 255, 255, 0.12) !important;
+}
+
+body.dark-theme .admin-metrics span {
+  color: #94a3b8 !important;
+}
+
+body.dark-theme .admin-metrics b {
+  color: #ffffff !important;
+}
+
+/* Arena Admin Bar in Dark Mode */
+body.dark-theme .arena-admin-bar {
+  background: #16202c !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+  color: #f1f5f9 !important;
+}
+
+body.dark-theme .arena-admin-bar .admin-bar-left span {
+  color: #f1f5f9 !important;
+}
+
+body.dark-theme .arena-admin-bar .admin-bar-left small {
+  color: #94a3b8 !important;
+}
+
+body.dark-theme .admin-bar-actions .button {
+  background: #1c2632 !important;
+  color: #e2e8f0 !important;
+  border-color: rgba(255, 255, 255, 0.16) !important;
+}
+
+body.dark-theme .admin-bar-actions .button:hover {
+  background: #233140 !important;
+  color: #ffffff !important;
 }
 
 body.dark-theme .modal::backdrop,
@@ -25674,19 +25936,42 @@ body.dark-theme .namecard-tile .nc-tile-lbl {
 }
 
 body.dark-theme .nc-admin-table {
-  background: #ffffff !important;
-  border-color: #e2e8f0 !important;
+  background: #11161b !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+}
+
+body.dark-theme .nc-admin-row {
+  border-bottom-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+body.dark-theme .nc-admin-lbl {
+  color: #94a3b8 !important;
+}
+
+body.dark-theme .nc-admin-val {
+  color: #f1f5f9 !important;
 }
 
 body.dark-theme .nc-admin-copy-btn {
-  background: #f8fafc !important;
-  border-color: #e2e8f0 !important;
-  color: #64748b !important;
+  background: #1c2632 !important;
+  border-color: rgba(255, 255, 255, 0.14) !important;
+  color: #cbd5e1 !important;
+}
+
+body.dark-theme .nc-admin-copy-btn:hover {
+  background: #253344 !important;
+  color: #ffffff !important;
 }
 
 body.dark-theme .nc-copy-all-btn {
-  background: #ffffff !important;
-  color: #4f46e5 !important;
+  background: #1c2632 !important;
+  border-color: rgba(255, 255, 255, 0.14) !important;
+  color: #818cf8 !important;
+}
+
+body.dark-theme .nc-copy-all-btn:hover {
+  background: #253344 !important;
+  color: #a5b4fc !important;
 }
 
 /* ==========================================================================
@@ -35141,7 +35426,6 @@ body.dark-theme .omni-search-input {
   color: var(--primary, #123f31);
   background: var(--surface-hover, #f1f5f2);
 }
-}
 body.dark-theme .omni-search-close-btn {
   background: rgba(255, 255, 255, 0.06);
   border-color: rgba(255, 255, 255, 0.12);
@@ -36145,6 +36429,69 @@ body.dark-theme .omni-footer-hint kbd {
   overflow: hidden;
 }
 
+#adminBroadcastModal .modal-header {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  padding: 18px 22px 14px !important;
+  border-bottom: 1px solid var(--border, rgba(0, 0, 0, 0.08)) !important;
+}
+
+#adminBroadcastModal .modal-header h3 {
+  font-family: var(--sans) !important;
+  font-size: 16px !important;
+  font-weight: 700 !important;
+  color: var(--ink, #1e293b) !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  margin: 0 !important;
+}
+
+#adminBroadcastModal .modal-header h3 svg {
+  color: var(--primary, #123f31) !important;
+}
+
+#adminBroadcastModal .modal-close {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 32px !important;
+  height: 32px !important;
+  border-radius: 50% !important;
+  border: 1px solid rgba(0, 0, 0, 0.08) !important;
+  background: rgba(0, 0, 0, 0.04) !important;
+  color: var(--muted, #64748b) !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+  padding: 0 !important;
+}
+
+#adminBroadcastModal .modal-close:hover {
+  background: rgba(0, 0, 0, 0.08) !important;
+  color: var(--ink, #0f172a) !important;
+}
+
+#adminBroadcastModal label {
+  color: var(--ink, #1e293b) !important;
+}
+
+#adminBroadcastModal .input,
+#adminBroadcastModal .textarea {
+  background: var(--surface, #ffffff) !important;
+  border: 1px solid var(--border, #cbd5e1) !important;
+  color: var(--ink, #0f172a) !important;
+  font-family: var(--sans) !important;
+  transition: all 0.2s ease;
+}
+
+#adminBroadcastModal .input:focus,
+#adminBroadcastModal .textarea:focus {
+  border-color: var(--primary, #123f31) !important;
+  outline: none !important;
+  box-shadow: 0 0 0 3px rgba(18, 63, 49, 0.15) !important;
+}
+
 body.dark-theme #adminBroadcastModal {
   background: rgba(5, 15, 25, 0.75) !important;
 }
@@ -36153,6 +36500,46 @@ body.dark-theme #adminBroadcastModal .admin-broadcast-modal-card {
   background: #182230 !important;
   border-color: rgba(255, 255, 255, 0.12) !important;
   color: #f1f5f9 !important;
+}
+
+body.dark-theme #adminBroadcastModal .modal-header {
+  border-bottom-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+body.dark-theme #adminBroadcastModal .modal-header h3 {
+  color: #f1f5f9 !important;
+}
+
+body.dark-theme #adminBroadcastModal .modal-header h3 svg {
+  color: #34d399 !important;
+}
+
+body.dark-theme #adminBroadcastModal .modal-close {
+  background: rgba(255, 255, 255, 0.06) !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+  color: #94a3b8 !important;
+}
+
+body.dark-theme #adminBroadcastModal .modal-close:hover {
+  background: rgba(255, 255, 255, 0.12) !important;
+  color: #ffffff !important;
+}
+
+body.dark-theme #adminBroadcastModal label {
+  color: #cbd5e1 !important;
+}
+
+body.dark-theme #adminBroadcastModal .input,
+body.dark-theme #adminBroadcastModal .textarea {
+  background: #11161b !important;
+  border-color: rgba(255, 255, 255, 0.16) !important;
+  color: #f1f5f9 !important;
+}
+
+body.dark-theme #adminBroadcastModal .input:focus,
+body.dark-theme #adminBroadcastModal .textarea:focus {
+  border-color: #34d399 !important;
+  box-shadow: 0 0 0 3px rgba(52, 211, 153, 0.25) !important;
 }
 
 /* ==========================================================================

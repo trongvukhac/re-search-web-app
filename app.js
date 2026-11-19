@@ -7567,10 +7567,12 @@ function renderAdminUserRows(users) {
       <td style="padding: 12px 8px; font-size: 13px;">${u.className ? escapeHTML(u.className) : NA}</td>
       <td style="padding: 12px 8px;">${getRoleDisplay(u.role)}</td>
       <td style="padding: 12px 8px;"><strong style="color: var(--primary)">${u.totalPoints || 0}</strong></td>
-      <td style="padding: 12px 8px; display: flex; gap: 6px; flex-wrap: wrap;">
-        <button class="button button-primary" style="padding: 4px 8px; font-size: 12px;" onclick="openNamecard(${u.id})" title="Xem hồ sơ & thông tin chi tiết"><svg class="ui-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px; margin-right:2px;"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>Hồ sơ</button>
-        <button class="button button-outline" style="padding: 4px 8px; font-size: 12px;" onclick="changeUserRole(${u.id}, '${u.role}')">Đổi quyền</button>
-        <button class="button button-outline" style="padding: 4px 8px; font-size: 12px;" onclick="adjustUserPoints(${u.id})">Cộng/Trừ điểm</button>
+      <td style="padding: 10px 8px; white-space: nowrap;">
+        <div style="display: flex; gap: 6px; align-items: center; white-space: nowrap;">
+          <button class="button button-primary" style="padding: 4px 8px; font-size: 12px; white-space: nowrap;" onclick="openNamecard(${u.id})" title="Xem hồ sơ & thông tin chi tiết"><svg class="ui-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px; margin-right:2px;"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>Hồ sơ</button>
+          <button class="button button-outline" style="padding: 4px 8px; font-size: 12px; white-space: nowrap;" onclick="changeUserRole(${u.id}, '${u.role}')">Đổi quyền</button>
+          <button class="button button-outline" style="padding: 4px 8px; font-size: 12px; white-space: nowrap;" onclick="adjustUserPoints(${u.id})">Cộng/Trừ điểm</button>
+        </div>
       </td>
     </tr>
   `,
