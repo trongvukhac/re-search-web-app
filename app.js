@@ -883,39 +883,20 @@ function getFlame2DSVG(tier = 0, size = 20, extraClass = '') {
   const id = `flm_${t}_${size}_${Math.floor(Math.random() * 100000)}`;
 
   let embers = '';
-  let diamondOverlay = '';
 
   if (t === 8) {
-    // Diamond facets and precision crystalline geometry (No cartoon stars)
-    diamondOverlay = `
-      <g class="flame-diamond-facets">
-        <!-- Top Crown Facet -->
-        <polygon points="12,2 15.5,8 12,13.5 8.5,8" fill="url(#core_${id})" stroke="#ffffff" stroke-width="0.5" opacity="0.9"/>
-        <!-- Left Upper Facet -->
-        <polygon points="8.5,8 12,13.5 6,14.5 4,9.5" fill="url(#mid_${id})" stroke="#ffffff" stroke-width="0.35" opacity="0.65"/>
-        <!-- Right Upper Facet -->
-        <polygon points="15.5,8 20,9.5 18,14.5 12,13.5" fill="url(#mid_${id})" stroke="#ffffff" stroke-width="0.35" opacity="0.65"/>
-        <!-- Lower Pavilion Facet -->
-        <polygon points="12,13.5 16.5,18 12,22 7.5,18" fill="url(#outer_${id})" stroke="#ffffff" stroke-width="0.4" opacity="0.75"/>
-        <!-- Internal Reflection Cutlines -->
-        <line x1="12" y1="2" x2="12" y2="22" stroke="#ffffff" stroke-width="0.6" opacity="0.95"/>
-        <line x1="8.5" y1="8" x2="15.5" y2="8" stroke="#ffffff" stroke-width="0.6" opacity="0.95"/>
-        <line x1="6" y1="14.5" x2="18" y2="14.5" stroke="#ffffff" stroke-width="0.4" opacity="0.6"/>
-      </g>
-    `;
+    // Tier 8: Học giả lưu danh - Ngọn lửa tự nhiên bạch kim kim cương với tia sáng starlight cao cấp
     embers = `
       <g class="flame-ember-group">
-        <!-- 4-point sharp prismatic needle glints (Trang sức cao cấp) -->
+        <path class="flame-ember flame-spark ember-1 spark-1" d="M15 1.5 C16.2 0.3 16.2 -0.8 15 -1.8 C13.8 -0.8 13.8 0.3 15 1.5Z" fill="url(#core_${id})"/>
+        <path class="flame-ember flame-spark ember-2 spark-2" d="M5.2 4.2 C6.2 3 6.2 2 5.2 0.9 C4.2 2 4.2 3 5.2 4.2Z" fill="url(#mid_${id})"/>
+        <path class="flame-ember flame-spark ember-3 spark-3" d="M20.2 4.2 C21.2 3.1 21.2 2.1 20.2 1 C19.2 2.1 19.2 3.1 20.2 4.2Z" fill="url(#core_${id})"/>
+        <path class="flame-ember flame-spark ember-4 spark-4" d="M11 -0.5 C12 -1.6 12 -2.5 11 -3.4 C10 -2.5 10 -1.6 11 -0.5Z" fill="url(#core_${id})"/>
         <path class="flame-sparkle flame-diamond-glint glint-1" d="M12 -3 L12.5 -0.8 L14.5 -0.3 L12.5 0.2 L12 2.4 L11.5 0.2 L9.5 -0.3 L11.5 -0.8 Z" fill="#ffffff"/>
         <path class="flame-sparkle flame-diamond-glint glint-2" d="M21.5 6.5 L21.9 8 L23.4 8.4 L21.9 8.8 L21.5 10.3 L21.1 8.8 L19.6 8.4 L21.1 8 Z" fill="#ffffff"/>
         <path class="flame-sparkle flame-diamond-glint glint-3" d="M2.5 7.5 L2.9 9 L4.4 9.4 L2.9 9.8 L2.5 11.3 L2.1 9.8 L0.6 9.4 L2.1 9 Z" fill="#ffffff"/>
-        <!-- Precision Diamond Shards (Rhombus facets) -->
-        <polygon class="flame-diamond-shard shard-1" points="16,1 17.8,2.8 16,4.6 14.2,2.8" fill="#ffffff" stroke="rgba(255,255,255,0.8)" stroke-width="0.3"/>
-        <polygon class="flame-diamond-shard shard-2" points="6.5,3 8,4.5 6.5,6 5,4.5" fill="#ffffff" stroke="rgba(255,255,255,0.8)" stroke-width="0.3"/>
-        <!-- Micro diamond crystal dust -->
         <circle class="flame-diamond-dust dust-1" cx="19.5" cy="3.5" r="0.65" fill="#ffffff"/>
         <circle class="flame-diamond-dust dust-2" cx="4.5" cy="4" r="0.55" fill="#ffffff"/>
-        <circle class="flame-diamond-dust dust-3" cx="11.2" cy="-1.8" r="0.6" fill="#ffffff"/>
       </g>
     `;
   } else if (t === 7) {
@@ -1023,7 +1004,6 @@ function getFlame2DSVG(tier = 0, size = 20, extraClass = '') {
     <!-- Inner Core Heat (hot glowing heart) -->
     <path class="flame-core flame-inner" d="M12 21C10.2 21 8.8 19.5 8.8 17.6C8.8 15.8 10 14.2 11.2 12.8C11.6 14.2 12.4 15 13 15.2C12.6 13.8 13.2 12.2 14 11C14.8 13 15.2 15.2 14.5 17.2C14 19.4 12.8 21 12 21Z" fill="url(#core_${id})"/>
     
-    ${diamondOverlay}
     ${embers}
   </svg>`;
 }
@@ -8381,8 +8361,14 @@ window.openNamecard = async function (userId) {
 
     const streakTier = Number(data.streakCard?.streakTier || 0);
 
-    // Header Identity
-    $("#namecardAvatar").textContent = data.user.avatar || "🌱";
+    const canvasEl = $("#namecardCanvas");
+    if (canvasEl) canvasEl.setAttribute("data-streak-tier", streakTier);
+    const stageEl = $("#namecardStage");
+    if (stageEl) stageEl.setAttribute("data-streak-tier", streakTier);
+    if (cardEl) {
+      cardEl.setAttribute("data-streak-tier", streakTier);
+      cardEl.scrollTop = 0;
+    }
     const avatarCircle = $("#namecardAvatarCircle");
     if (avatarCircle) {
       avatarCircle.className = "namecard-avatar-circle avatar " + getAvatarClass(streakTier, false, data.user.role);
@@ -9276,6 +9262,9 @@ window.openEditNamecardModal = function (section = "all") {
 
   const modal = $("#editNamecardModal");
   if (modal) {
+    const myStreakTier = Number(session?.streakTier || 0);
+    if ($("#demoNamecardStage")) $("#demoNamecardStage").setAttribute("data-streak-tier", myStreakTier);
+    if ($("#demoNamecardCanvas")) $("#demoNamecardCanvas").setAttribute("data-streak-tier", myStreakTier);
     modal.showModal();
     if (section === "name" && $("#namecardDisplayNameInput")) {
       setTimeout(() => {
