@@ -1166,13 +1166,25 @@ try {
 function createNotification(userId, stream, category, title, content, link = "", actorId = null) {
   try {
     if (!userId) return;
-    // Prevent duplicate unread notification on same day (check title and link)
-    const existing = db.prepare(`
-      SELECT id FROM notifications 
-      WHERE user_id = ? AND category = ? AND title = ? AND (link = ? OR link = '') AND date(created_at) = date('now')
-      LIMIT 1
-    `).get(userId, category, title, link || '');
-    if (existing) return;
+    // Only deduplicate automated periodic reminders (study & arena) if already sent today
+    if (category === "study" || category === "arena") {
+      const existing = db.prepare(`
+        SELECT id FROM notifications 
+        WHERE user_id = ? AND category = ? AND title = ? AND date(created_at) = date('now')
+        LIMIT 1
+      `).get(userId, category, title);
+      if (existing) return;
+    }
+    // Prevent immediate duplicate spam (same user, same actor, same category, same link within last 60 seconds)
+    if (actorId && link) {
+      const recentDup = db.prepare(`
+        SELECT id FROM notifications
+        WHERE user_id = ? AND actor_id = ? AND category = ? AND link = ?
+          AND created_at >= datetime('now', '-60 seconds')
+        LIMIT 1
+      `).get(userId, actorId, category, link);
+      if (recentDup) return;
+    }
 
     db.prepare(`
       INSERT INTO notifications (user_id, stream, category, title, content, link, actor_id, is_read)
@@ -4274,7 +4286,8 @@ async function api(request, response, url) {
       const isMember = r.userRole != null && r.memberStatus === 'active';
       const isPending = r.userRole != null && r.memberStatus === 'pending';
       const isCreator = viewerId != null && viewerId === r.creatorId;
-      const isManager = Boolean(isAdminOrTa || isCreator);
+      const isCommAdmin = r.userRole === 'admin';
+      const isManager = Boolean(isCreator || isCommAdmin);
 
       return {
         id: r.id,
@@ -4341,7 +4354,8 @@ async function api(request, response, url) {
     const isMember = comm.userRole != null && comm.memberStatus === 'active';
     const isPending = comm.userRole != null && comm.memberStatus === 'pending';
     const isCreator = viewerId != null && viewerId === comm.creatorId;
-    const isManager = Boolean(isAdminOrTa || isCreator);
+    const isCommAdmin = comm.userRole === 'admin';
+    const isManager = Boolean(isCreator || isCommAdmin);
     const canView = comm.privacy !== "private" || isMember || isManager;
 
     return json(response, 200, {
@@ -12013,26 +12027,35 @@ async function api(request, response, url) {
       console.error("[Auto Notif Check]", e.message);
     }
 
-    const categoryClause = (category && category !== "all") ? "AND n.category = ?" : "";
-    const params = (category && category !== "all")
-      ? [user.id, stream, category, limit, offset]
-      : [user.id, stream, limit, offset];
+    let whereClause = "WHERE n.user_id = ?";
+    const params = [user.id];
+    const countParams = [user.id];
+
+    if (stream === "announcement") {
+      whereClause += " AND n.stream = 'announcement'";
+    } else {
+      if (category && category !== "all") {
+        whereClause += " AND n.category = ?";
+        params.push(category);
+        countParams.push(category);
+      }
+    }
+
+    params.push(limit, offset);
 
     const rows = db.prepare(`
       SELECT n.*, u.display_name as actor_name, u.avatar as actor_avatar
       FROM notifications n
       LEFT JOIN users u ON u.id = n.actor_id
-      WHERE n.user_id = ? AND n.stream = ? ${categoryClause}
+      ${whereClause}
       ORDER BY n.created_at DESC, n.id DESC
       LIMIT ? OFFSET ?
     `).all(...params);
 
-    const countParams = (category && category !== "all")
-      ? [user.id, stream, category]
-      : [user.id, stream];
     const total = db.prepare(`
-      SELECT count(*) as count FROM notifications 
-      WHERE user_id = ? AND stream = ? ${categoryClause}
+      SELECT count(*) as count 
+      FROM notifications n
+      ${whereClause}
     `).get(...countParams).count;
 
     const unreadTotal = db.prepare(`

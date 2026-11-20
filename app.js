@@ -3077,7 +3077,8 @@ function postCard(post) {
       : `openDetail(${post.id})`;
     docBadge = `<span class="post-tag post-doc-tag" onclick="event.stopPropagation(); ${clickAction}" title="${linkedDocs.length} tài liệu đính kèm: ${escapeHTML(allTitles)}"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg><span class="doc-tag-count">${linkedDocs.length}</span><span class="doc-tag-label">&nbsp;tài liệu</span></span>`;
   }
-  const commBadge = post.community
+  const showCommTagInFeed = Boolean(post.community && !currentForumCommunitySlug);
+  const commBadge = showCommTagInFeed
     ? `<span class="post-tag post-comm-tag ${post.community.privacy === 'private' ? 'is-private' : ''}" onclick="event.stopPropagation(); selectForumCommunity('${escapeHTML(post.community.slug)}')" title="Cộng đồng: ${escapeHTML(post.community.name)}">
         <span class="comm-tag-avatar">${escapeHTML(post.community.avatar || "📚")}</span>
         <span class="comm-tag-name">re/${escapeHTML(post.community.slug)}</span>
@@ -28370,12 +28371,14 @@ function updateNotifBadgeCounters(totalUnread, streamUnread) {
     quickGuestBadge.style.display = totalUnread > 0 ? "inline-block" : "none";
   }
   if (actBadge && streamUnread) {
-    actBadge.textContent = streamUnread.activity > 99 ? "99+" : String(streamUnread.activity);
-    actBadge.style.display = streamUnread.activity > 0 ? "inline-block" : "none";
+    const actCount = streamUnread.activity ?? streamUnread.activityUnread ?? 0;
+    actBadge.textContent = actCount > 99 ? "99+" : String(actCount);
+    actBadge.style.display = actCount > 0 ? "inline-block" : "none";
   }
   if (annBadge && streamUnread) {
-    annBadge.textContent = streamUnread.announcement > 99 ? "99+" : String(streamUnread.announcement);
-    annBadge.style.display = streamUnread.announcement > 0 ? "inline-block" : "none";
+    const annCount = streamUnread.announcement ?? streamUnread.announcementUnread ?? 0;
+    annBadge.textContent = annCount > 99 ? "99+" : String(annCount);
+    annBadge.style.display = annCount > 0 ? "inline-block" : "none";
   }
 }
 
@@ -29166,8 +29169,8 @@ function renderForumCommunitiesSidebar() {
   container.innerHTML = list
     .map((c) => {
       const isCurrentActive = currentForumCommunitySlug === c.slug;
-      const isCreator = session && session.id === c.creatorId;
-      const isAdmin = isCreator || c.userRole === "admin" || (session && session.role === "admin");
+      const isCreator = Boolean(session && session.id === c.creatorId);
+      const isAdmin = Boolean(isCreator || c.userRole === "admin");
       const roleBadge = (!isAdmin && c.userRole === "moderator")
         ? `<span class="comm-item-role-badge mod">Kiểm duyệt</span>`
         : "";
@@ -29374,7 +29377,7 @@ function updateCommunityHeroBanner() {
     membersBtnText.textContent = "Thành viên";
   }
 
-  const isManager = Boolean(comm.isManager || (session && (session.id === comm.creatorId || session.role === "admin" || session.role === "ta" || comm.userRole === "admin")));
+  const isManager = Boolean(session && (session.id === comm.creatorId || comm.userRole === "admin"));
   const isMember = Boolean(comm.isMember || isManager);
 
   // Nút Chỉnh sửa (chỉ hiện icon, chỉ dành cho quản trị viên/sáng lập)

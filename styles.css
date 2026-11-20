@@ -42646,10 +42646,19 @@ html.dark-theme .post-detail-community-tag.is-private {
   font-weight: 600 !important;
   padding: 6px 14px !important;
   white-space: nowrap !important;
-  display: inline-flex !important;
+  display: inline-flex;
   align-items: center !important;
   justify-content: center !important;
   box-sizing: border-box;
+}
+
+.btn-join-comm-hero[style*="display: none"],
+.btn-leave-comm[style*="display: none"],
+.comm-admin-tag-hero[style*="display: none"],
+#btnCommJoinHero[style*="display: none"],
+#btnCommLeaveHero[style*="display: none"],
+#tagCommAdminHero[style*="display: none"] {
+  display: none !important;
 }
 
 @media (max-width: 768px) {
