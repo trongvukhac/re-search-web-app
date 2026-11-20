@@ -18664,7 +18664,10 @@ function normalizeCompData(raw) {
     totalOnTimeBonus,
     defaultAvailablePhase,
     visible: raw.visible ?? raw.timeState?.visible ?? true,
-    isReady: raw.isReady ?? raw.timeState?.isReady ?? true
+    isReady: raw.isReady ?? raw.timeState?.isReady ?? true,
+    seasonCode: raw.seasonCode || raw.season_code || "MÙA AS1",
+    seasonTitle: raw.seasonTitle || raw.season_title || "Chinh phục bầu trời",
+    seasonDates: raw.seasonDates || raw.season_dates || "05/10/2026 – 20/12/2026"
   };
 }
 
@@ -19151,13 +19154,22 @@ function switchCompTab(tabName) {
 function renderCompetitionOverview(raw) {
   const data = normalizeCompData(raw);
   const heroStatusTag = $("#arenaHeroStatusTag");
-  if (heroStatusTag && data.phaseName) {
-    heroStatusTag.textContent = data.phaseName.toUpperCase();
+  if (heroStatusTag) {
+    heroStatusTag.textContent = data.seasonCode || "MÙA AS1";
   }
   const seasonTag = $("#arenaTagSeason");
   if (seasonTag) {
     const weekNum = data.weekNumber || 1;
     seasonTag.textContent = `TUẦN ${String(weekNum).padStart(2, "0")}`;
+  }
+  const heroTitle = $("#arenaHeroTitle");
+  if (heroTitle) {
+    heroTitle.textContent = data.seasonTitle || "Chinh phục bầu trời";
+  }
+  const heroSubtitle = $("#arenaHeroSubtitle");
+  if (heroSubtitle) {
+    const dates = data.seasonDates || "05/10/2026 – 20/12/2026";
+    heroSubtitle.innerHTML = `<svg class="ui-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1.5px; margin-right:4px; opacity:0.85;"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>${escapeHTML(dates)}`;
   }
 }
 
@@ -28887,6 +28899,8 @@ function renderCurrentHomeLeaderboard() {
         userId: u.userId || u.id,
         id: u.id || u.userId,
         rank: u.rank || (i + 1),
+        namecardFrame: (u.namecardFrame && u.namecardFrame !== "default") ? u.namecardFrame : "none",
+        coverImage: u.coverImage || "default",
         score: u.streak,
         unit: "ngày"
       }));
@@ -28896,6 +28910,8 @@ function renderCurrentHomeLeaderboard() {
         userId: u.userId || u.id,
         id: u.id || u.userId,
         rank: u.rank || (i + 1),
+        namecardFrame: (u.namecardFrame && u.namecardFrame !== "default") ? u.namecardFrame : "none",
+        coverImage: u.coverImage || "default",
         score: u.likesCount || 0,
         unit: "lượt yêu thích"
       }));
@@ -29044,6 +29060,42 @@ function updateForumCommunitySelectors() {
   }
 }
 
+function switchMobileForumTab(tab) {
+  const feedBtn = document.querySelector('.mobile-subnav-btn[data-forum-tab="feed"]');
+  const commBtn = document.querySelector('.mobile-subnav-btn[data-forum-tab="communities"]');
+  const forum = document.getElementById("forum");
+
+  if (tab === "communities") {
+    if (feedBtn) {
+      feedBtn.classList.remove("active");
+      feedBtn.setAttribute("aria-selected", "false");
+    }
+    if (commBtn) {
+      commBtn.classList.add("active");
+      commBtn.setAttribute("aria-selected", "true");
+    }
+    if (forum) {
+      forum.classList.add("mobile-show-communities");
+      forum.classList.remove("mobile-show-feed");
+    }
+  } else {
+    // feed is default
+    if (feedBtn) {
+      feedBtn.classList.add("active");
+      feedBtn.setAttribute("aria-selected", "true");
+    }
+    if (commBtn) {
+      commBtn.classList.remove("active");
+      commBtn.setAttribute("aria-selected", "false");
+    }
+    if (forum) {
+      forum.classList.remove("mobile-show-communities");
+      forum.classList.add("mobile-show-feed");
+    }
+  }
+}
+window.switchMobileForumTab = switchMobileForumTab;
+
 function renderForumCommunitiesSidebar() {
   const container = $("#forumCommunityList");
   if (!container) return;
@@ -29067,16 +29119,21 @@ function renderForumCommunitiesSidebar() {
     .map((c) => {
       const isCurrentActive = currentForumCommunitySlug === c.slug;
       const isCreator = session && session.id === c.creatorId;
-      const roleBadge = isCreator
-        ? `<span class="comm-item-role-badge admin">Quản trị</span>`
-        : c.userRole === "moderator"
+      const isAdmin = isCreator || c.userRole === "admin" || (session && session.role === "admin");
+      const roleBadge = (!isAdmin && c.userRole === "moderator")
         ? `<span class="comm-item-role-badge mod">Kiểm duyệt</span>`
         : "";
-      const joinBtnHtml = session
-        ? c.isMember
+
+      let joinBtnHtml = "";
+      if (isAdmin) {
+        joinBtnHtml = `<span class="btn-comm-join is-admin-badge" style="background: rgba(245, 158, 11, 0.15); color: #d97706; border: 1px solid rgba(245, 158, 11, 0.35); font-weight: 700; cursor: default;" title="Bạn là Quản trị viên của cộng đồng này">QUẢN TRỊ</span>`;
+      } else if (session) {
+        joinBtnHtml = c.isMember
           ? `<button type="button" class="btn-comm-join joined" onclick="event.stopPropagation(); toggleJoinCommunity(${c.id})" title="Đã tham gia (Nhấn để rời)">Đã vào</button>`
-          : `<button type="button" class="btn-comm-join" onclick="event.stopPropagation(); toggleJoinCommunity(${c.id})" title="Tham gia cộng đồng">+ Vào</button>`
-        : `<button type="button" class="btn-comm-join" onclick="event.stopPropagation(); askLogin('Vui lòng đăng nhập để tham gia cộng đồng');" title="Đăng nhập để tham gia">+ Vào</button>`;
+          : `<button type="button" class="btn-comm-join" onclick="event.stopPropagation(); toggleJoinCommunity(${c.id})" title="Tham gia cộng đồng">+ Vào</button>`;
+      } else {
+        joinBtnHtml = `<button type="button" class="btn-comm-join" onclick="event.stopPropagation(); askLogin('Vui lòng đăng nhập để tham gia cộng đồng');" title="Đăng nhập để tham gia">+ Vào</button>`;
+      }
 
       return `
       <div class="community-sidebar-item ${isCurrentActive ? "active" : ""} ${c.privacy === "private" ? "is-private" : ""}" 
@@ -29114,6 +29171,9 @@ function switchCommunityTab(tab) {
 function selectForumCommunity(slug, pushState = true) {
   currentForumCommunitySlug = slug;
   go("forum");
+  if (typeof switchMobileForumTab === "function") {
+    switchMobileForumTab("feed");
+  }
   if (pushState && window.history && window.history.pushState) {
     try {
       window.history.pushState({ community: slug }, "", `/re/${slug}`);

@@ -5566,7 +5566,7 @@ async function api(request, response, url) {
     // 1. TOP ĐÓNG GÓP (Không bao gồm admin, giảng viên, thành viên ngoài trường và tài khoản được miễn BXH)
     const allContribStudents = db
       .prepare(`
-        SELECT u.id, u.display_name as displayName, u.avatar, u.role, u.cover_image as coverImage, coalesce(sum(c.points), 0) as totalPoints
+        SELECT u.id, u.display_name as displayName, u.avatar, u.role, u.cover_image as coverImage, u.namecard_frame as namecardFrame, coalesce(sum(c.points), 0) as totalPoints
         FROM users u
         LEFT JOIN contribution_events c ON u.id = c.user_id
         WHERE u.role NOT IN ('admin', 'lecturer', 'member') AND u.id != 89
@@ -5583,6 +5583,7 @@ async function api(request, response, url) {
       initials: u.avatar || getAvatarEmoji(u.displayName),
       role: u.role,
       coverImage: u.coverImage || "default",
+      namecardFrame: u.namecardFrame || "none",
       totalPoints: Number(u.totalPoints),
       streakTier: getAuthorStreakTier(u.id),
       rank: idx + 1
@@ -5598,7 +5599,7 @@ async function api(request, response, url) {
     };
 
     const students = db
-      .prepare("SELECT id, display_name as displayName, avatar, role, cover_image as coverImage, student_id as studentId, class_name as className FROM users WHERE role NOT IN ('admin', 'lecturer') AND id != 89")
+      .prepare("SELECT id, display_name as displayName, avatar, role, cover_image as coverImage, namecard_frame as namecardFrame, student_id as studentId, class_name as className FROM users WHERE role NOT IN ('admin', 'lecturer') AND id != 89")
       .all();
 
     const streakList = students.map(s => {
@@ -5611,6 +5612,7 @@ async function api(request, response, url) {
         initials: s.avatar || getAvatarEmoji(s.displayName),
         role: s.role,
         coverImage: s.coverImage || "default",
+        namecardFrame: s.namecardFrame || "none",
         streak: streakInfo.streak,
         streakTier: streakInfo.streakTier,
         streakStartDate: streakInfo.streakStartDate,
@@ -5640,6 +5642,7 @@ async function api(request, response, url) {
         u.avatar,
         u.role,
         u.cover_image as coverImage,
+        u.namecard_frame as namecardFrame,
         u.student_id as studentId,
         u.class_name as className,
         sum(r.best_score) as totalScore,
@@ -5661,6 +5664,7 @@ async function api(request, response, url) {
       initials: row.avatar || getAvatarEmoji(row.displayName),
       role: row.role,
       coverImage: row.coverImage || "default",
+      namecardFrame: row.namecardFrame || "none",
       score: Number(row.totalScore || 0),
       streakTier: getAuthorStreakTier(row.userId),
       rank: idx + 1
@@ -5676,6 +5680,7 @@ async function api(request, response, url) {
           u.avatar, 
           u.role,
           u.cover_image as coverImage,
+          u.namecard_frame as namecardFrame,
           COUNT(nl.id) as likesCount,
           MAX(nl.created_at) as reachedAt
         FROM users u
@@ -5694,6 +5699,7 @@ async function api(request, response, url) {
       initials: u.avatar || getAvatarEmoji(u.displayName),
       role: u.role,
       coverImage: u.coverImage || "default",
+      namecardFrame: u.namecardFrame || "none",
       likesCount: Number(u.likesCount),
       streakTier: getAuthorStreakTier(u.id),
       reachedAt: u.reachedAt,
@@ -5709,6 +5715,7 @@ async function api(request, response, url) {
           u.avatar, 
           u.role,
           u.cover_image as coverImage,
+          u.namecard_frame as namecardFrame,
           coalesce(sum(s.duration_minutes), 0) as totalMinutes,
           max(s.completed_at) as reachedAt
         FROM users u
@@ -5728,6 +5735,7 @@ async function api(request, response, url) {
       initials: u.avatar || getAvatarEmoji(u.displayName),
       role: u.role,
       coverImage: u.coverImage || "default",
+      namecardFrame: u.namecardFrame || "none",
       totalMinutes: Number(u.totalMinutes),
       hours: Math.floor(Number(u.totalMinutes) / 60),
       streakTier: getAuthorStreakTier(u.id),
@@ -10099,6 +10107,9 @@ async function api(request, response, url) {
       ...timeState,
       isArenaPaused: compPaused,
       track,
+      seasonCode: "MÙA AS1",
+      seasonTitle: "Chinh phục bầu trời",
+      seasonDates: "05/10/2026 – 20/12/2026",
       userStatus
     });
   }
@@ -10391,7 +10402,10 @@ async function api(request, response, url) {
       defaultAvailablePhase,
       phasesStatus,
       isArenaPaused: paused,
-      track
+      track,
+      seasonCode: "MÙA AS1",
+      seasonTitle: "Chinh phục bầu trời",
+      seasonDates: "05/10/2026 – 20/12/2026"
     });
   }
 

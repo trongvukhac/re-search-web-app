@@ -15834,10 +15834,11 @@ body.dark-theme .doc-viewer-save-btn.is-saved {
   border-radius: 24px;
   overflow: hidden;
   margin-bottom: 22px;
-  background: #0f2e24;
-  box-shadow: 0 16px 40px -12px rgba(15, 46, 36, 0.25), 0 0 0 1px rgba(0, 0, 0, 0.06);
+  background: #0b1a2f;
+  box-shadow: 0 16px 40px -12px rgba(11, 26, 47, 0.25), 0 0 0 1px rgba(0, 0, 0, 0.06);
   display: flex;
-  align-items: flex-end;
+  flex-direction: column;
+  justify-content: space-between;
 }
 
 .arena-banner-bg-img {
@@ -15846,28 +15847,43 @@ body.dark-theme .doc-viewer-save-btn.is-saved {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  object-position: center 25%;
+  object-position: center 30%;
   z-index: 1;
   pointer-events: none;
 }
 
 .arena-banner-overlay {
-  display: none;
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(8, 20, 38, 0.5) 0%, rgba(8, 20, 38, 0.1) 40%, rgba(8, 20, 38, 0.75) 100%),
+              linear-gradient(90deg, rgba(8, 20, 38, 0.6) 0%, rgba(8, 20, 38, 0.18) 60%, transparent 100%);
+  z-index: 2;
+  pointer-events: none;
 }
 
 .arena-banner-content {
   position: relative;
   z-index: 3;
-  padding: 36px 36px 32px 36px;
-  max-width: 760px;
+  padding: 26px 32px 28px 32px;
+  width: 100%;
+  min-height: 290px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
 }
 
 .arena-banner-tags {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-bottom: 14px;
+  margin-bottom: auto;
   flex-wrap: wrap;
+}
+
+.arena-banner-bottom {
+  margin-top: auto;
+  max-width: 760px;
 }
 
 .arena-tag-gold {
@@ -15897,9 +15913,9 @@ body.dark-theme .doc-viewer-save-btn.is-saved {
 }
 
 .arena-tag-type {
-  background: rgba(0, 0, 0, 0.5);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  color: #f3f4f6;
+  background: rgba(15, 23, 42, 0.65);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  color: #f8fafc;
   font-size: 11px;
   font-weight: 800;
   padding: 5px 14px;
@@ -15913,18 +15929,21 @@ body.dark-theme .doc-viewer-save-btn.is-saved {
   font-size: 32px;
   font-weight: 900;
   color: #ffffff;
-  margin: 0 0 10px 0;
+  margin: 0 0 8px 0;
   line-height: 1.25;
   letter-spacing: -0.5px;
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.95), 0 4px 14px rgba(0, 0, 0, 0.9), 0 0 24px rgba(0, 0, 0, 0.8);
 }
 
 .arena-hero-subtitle {
-  font-size: 15px;
-  color: #ffffff;
+  font-size: 14.5px;
+  color: #e2e8f0;
   margin: 0;
-  line-height: 1.55;
-  font-weight: 500;
+  line-height: 1.5;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  display: inline-flex;
+  align-items: center;
   text-shadow: 0 1px 4px rgba(0, 0, 0, 0.95), 0 2px 8px rgba(0, 0, 0, 0.9);
 }
 
@@ -18675,26 +18694,28 @@ body.dark-theme .comp-tab-btn.active {
   }
 
   .arena-hero-banner {
-    min-height: 250px;
+    min-height: 240px;
     margin-bottom: 16px;
     border-radius: 18px;
   }
 
   .arena-banner-bg-img {
-    object-position: 65% center;
+    object-position: center center;
   }
 
   .arena-banner-overlay {
-    display: none;
+    display: block;
+    background: linear-gradient(180deg, rgba(8, 20, 38, 0.5) 0%, rgba(8, 20, 38, 0.15) 35%, rgba(8, 20, 38, 0.85) 100%);
   }
 
   .arena-banner-content {
-    padding: 20px 16px 18px 16px;
+    padding: 18px 16px 18px 16px;
+    min-height: 240px;
   }
 
   .arena-banner-tags {
     gap: 6px;
-    margin-bottom: 10px;
+    margin-bottom: auto;
   }
 
   .arena-tag-gold,
@@ -40293,9 +40314,9 @@ html:not([data-user-theme]) body.christmas-season:not(.christmas-effects-off) .n
 
 .home-leaderboard-section {
   width: 100%;
-  max-width: 1240px;
-  margin: 48px auto 28px;
-  padding: 0 16px;
+  max-width: 100%;
+  margin: 32px 0 24px;
+  padding: 0;
   box-sizing: border-box;
 }
 
@@ -40484,7 +40505,7 @@ body:not(.christmas-effects-off) .home-lb-tab-btn.active {
 
 /* Podium Top 3 */
 .home-lb-podium-wrap {
-  margin: 16px 0 28px;
+  margin: 14px 0 0;
 }
 
 .home-lb-podium-wrap .arena-top3-cards {
@@ -40492,7 +40513,7 @@ body:not(.christmas-effects-off) .home-lb-tab-btn.active {
   justify-content: center;
   align-items: flex-end;
   gap: 20px;
-  padding: 24px 8px 12px;
+  padding: 24px 8px 0;
   flex-wrap: nowrap;
 }
 
@@ -40505,9 +40526,9 @@ body:not(.christmas-effects-off) .home-lb-tab-btn.active {
 
 /* List Top 4 - 10 */
 .home-lb-list-wrap {
-  margin-top: 24px;
-  border-top: 1px solid var(--border, #e2e8f0);
-  padding-top: 24px;
+  margin-top: 10px;
+  border-top: none;
+  padding-top: 0;
 }
 
 [data-theme="dark"] .home-lb-list-wrap,
@@ -41904,8 +41925,10 @@ html.dark-theme .privacy-option-card input[type="radio"]:checked ~ .privacy-card
 
 @media (max-width: 768px) {
   .home-leaderboard-section {
-    padding: 0 12px;
-    margin: 32px auto 20px;
+    padding: 0;
+    margin: 24px 0 20px;
+    width: 100%;
+    max-width: 100%;
   }
 
   .home-lb-container {
@@ -41952,7 +41975,7 @@ html.dark-theme .privacy-option-card input[type="radio"]:checked ~ .privacy-card
 
   .home-lb-podium-wrap .arena-top3-cards {
     gap: 6px !important;
-    padding: 22px 0 10px !important;
+    padding: 22px 0 0 !important;
     justify-content: center !important;
     width: 100% !important;
   }
@@ -42397,4 +42420,122 @@ html.dark-theme #editCommunityModal label,
 body.dark-theme #communityRulesModal label,
 html.dark-theme #communityRulesModal label {
   color: #e2e8f0 !important;
+}
+
+/* ==========================================================================
+   MOBILE FORUM SUB-NAVIGATION (DIỄN ĐÀN CHUNG vs CỘNG ĐỒNG)
+   ========================================================================== */
+
+.mobile-forum-subnav {
+  display: none;
+}
+
+@media (max-width: 860px) {
+  .mobile-forum-subnav {
+    display: flex;
+    background: var(--bg-alt, #f1f5f9);
+    padding: 4px;
+    border-radius: 12px;
+    gap: 6px;
+    margin: 14px 0 18px;
+    border: 1px solid var(--border, #e2e8f0);
+    box-sizing: border-box;
+  }
+
+  [data-theme="dark"] .mobile-forum-subnav,
+  body.dark-theme .mobile-forum-subnav,
+  html.dark-theme .mobile-forum-subnav,
+  body:not(.christmas-effects-off) .mobile-forum-subnav {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.08);
+  }
+
+  .mobile-subnav-btn {
+    flex: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    padding: 10px 14px;
+    border-radius: 9px;
+    border: none;
+    background: transparent;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--muted, #64748b);
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  [data-theme="dark"] .mobile-subnav-btn,
+  body.dark-theme .mobile-subnav-btn,
+  html.dark-theme .mobile-subnav-btn,
+  body:not(.christmas-effects-off) .mobile-subnav-btn {
+    color: #94a3b8;
+  }
+
+  .mobile-subnav-btn.active {
+    background: #ffffff;
+    color: var(--primary, #059669);
+    font-weight: 700;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04);
+  }
+
+  [data-theme="dark"] .mobile-subnav-btn.active,
+  body.dark-theme .mobile-subnav-btn.active,
+  html.dark-theme .mobile-subnav-btn.active,
+  body:not(.christmas-effects-off) .mobile-subnav-btn.active {
+    background: #1e293b;
+    color: #38bdf8;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  }
+
+  /* Phân nhánh hiển thị trên mobile theo subnav */
+  #forum:not(.mobile-show-communities) .forum-layout > .forum-aside {
+    display: none !important;
+  }
+  #forum:not(.mobile-show-communities) .forum-feed-col {
+    display: block !important;
+    width: 100% !important;
+  }
+
+  #forum.mobile-show-communities .forum-heading button#askFromForum {
+    display: none !important;
+  }
+  #forum.mobile-show-communities .forum-tools,
+  #forum.mobile-show-communities .filters,
+  #forum.mobile-show-communities .forum-layout > .forum-feed-col {
+    display: none !important;
+  }
+  #forum.mobile-show-communities .forum-layout > .forum-aside {
+    display: block !important;
+    width: 100% !important;
+    margin: 0 !important;
+  }
+  #forum.mobile-show-communities .forum-layout {
+    display: block !important;
+  }
+}
+
+/* QUẢN TRỊ badge trong danh sách cộng đồng */
+.btn-comm-join.is-admin-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 11px;
+  letter-spacing: 0.03em;
+  user-select: none;
+}
+
+[data-theme="dark"] .btn-comm-join.is-admin-badge,
+body.dark-theme .btn-comm-join.is-admin-badge,
+html.dark-theme .btn-comm-join.is-admin-badge,
+body:not(.christmas-effects-off) .btn-comm-join.is-admin-badge {
+  background: rgba(245, 158, 11, 0.2) !important;
+  color: #fbbf24 !important;
+  border-color: rgba(245, 158, 11, 0.4) !important;
 }
