@@ -3084,14 +3084,13 @@ function postCard(post) {
         ${post.community.privacy === 'private' ? '<span class="comm-tag-lock" title="Cộng đồng riêng tư"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg></span>' : ''}
       </span>`
     : "";
-  const commRow = commBadge ? `<div class="post-community-badge-row">${commBadge}</div>` : "";
   return `<article class="post-card ${post.authorRole === "admin" ? "admin-post" : ""}" data-post-id="${post.id}" style="position: relative;">
     ${adminBtns}${editBtn}
     <span class="avatar avatar-xs ${getAvatarClass(post.streakTier, post.anonymous, post.authorRole)}" ${ncAttr}>${post.initials}</span>
     <div>
-      ${commRow}
-      <div class="post-meta" style="${post.lecturerRecommended ? 'margin: 0 0 2px 0;' : 'margin: 6px 0 2px 0;'}">
+      <div class="post-meta" style="${post.lecturerRecommended ? 'margin: 0 0 2px 0;' : 'margin: 4px 0 2px 0;'}">
         <div style="line-height: 1.2;">${pinnedIcon}<b class="${getNameClass(post.streakTier)}" ${ncAttr}>${escapeHTML(post.author)}</b>${post.authorRole === "lecturer" ? ' <span style="color: var(--primary); font-weight: 700; margin-left: 4px; font-size: 11px;">[Giảng viên]</span>' : ""}${post.anonymous ? " · Ẩn danh" : ""} · ${post.time}${getEditedIndicator(post.editedAt)}</div>
+        ${commBadge ? `<div class="post-author-comm-row">${commBadge}</div>` : ""}
         ${post.lecturerRecommended ? '<div style="font-size: 11px; color: var(--primary); font-weight: 600; margin-top: 3px; display: flex; align-items: center; gap: 4px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path></svg> Giảng viên đề xuất</div>' : ''}
       </div>
       <h3 style="margin-top: 0;">${escapeHTML(post.title)}</h3>
@@ -5337,6 +5336,13 @@ async function openDetail(id, updateHash = true, isBack = false, targetScrollY =
   `;
   $("#detailContent").setAttribute("data-current-post", id);
 
+  const commTagInit = $("#postDetailCommunityTag");
+  if (commTagInit) {
+    commTagInit.style.display = "none";
+    commTagInit.innerHTML = "";
+    commTagInit.onclick = null;
+  }
+
   // Gán sự kiện nút Quay lại ở góc trái trên cùng
   const backBtn = $("#postDetailBackBtn");
   if (backBtn) {
@@ -5428,6 +5434,30 @@ async function openDetail(id, updateHash = true, isBack = false, targetScrollY =
     const data = await requestAPI(`/api/posts/${id}`);
     const post = data.post;
     const replies = data.responses;
+
+    const commTagEl = $("#postDetailCommunityTag");
+    if (commTagEl) {
+      if (post.community) {
+        commTagEl.style.display = "inline-flex";
+        commTagEl.className = `post-detail-community-tag ${post.community.privacy === 'private' ? 'is-private' : ''}`;
+        commTagEl.innerHTML = `
+          <span class="comm-tag-avatar">${escapeHTML(post.community.avatar || "📚")}</span>
+          <span class="comm-tag-name">re/${escapeHTML(post.community.slug)}</span>
+          ${post.community.privacy === 'private' ? '<span class="comm-tag-lock" title="Cộng đồng riêng tư"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg></span>' : ''}
+        `;
+        commTagEl.onclick = (e) => {
+          e.stopPropagation();
+          if (typeof selectForumCommunity === "function") {
+            selectForumCommunity(post.community.slug);
+          }
+        };
+        commTagEl.title = `Cộng đồng: ${post.community.name} (re/${post.community.slug})`;
+      } else {
+        commTagEl.style.display = "none";
+        commTagEl.innerHTML = "";
+        commTagEl.onclick = null;
+      }
+    }
 
     const responseMap = new Map();
     replies.forEach(r => { r.children = []; responseMap.set(r.id, r); });
@@ -19735,6 +19765,44 @@ window.switchArenaPodiumConcept = switchArenaPodiumConcept;
 const ARENA_DEFAULT_SCORE_STAR_SVG = `<svg class="ui-icon champ-score-star" width="13" height="13" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>`;
 const XMAS_LIKE_HEART_SVG = `<svg class="ui-icon xmas-lb-heart-icon" width="13" height="13" viewBox="0 0 24 24" fill="#e11d48" stroke="#e11d48" stroke-width="1.2" aria-hidden="true"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>`;
 
+function getHomeLeaderboardScoreHtml(options, scoreVal, scoreIconHtml, streakTier, isTop3 = false) {
+  if (!options.isHomeLb) {
+    return `${scoreIconHtml}${scoreVal}`;
+  }
+
+  const flameSize = isTop3 ? 16 : 14;
+  const cat = options.category;
+  const cleanScore = (cat === "study" || options.unit === "giờ tự học")
+    ? String(scoreVal).replace(/h$/i, "")
+    : scoreVal;
+
+  let desktopScore = "";
+  let mobileScore = "";
+
+  if (cat === "streak") {
+    const flameSvg = getFlameSVG(streakTier, flameSize);
+    desktopScore = `${flameSvg} <span>${cleanScore} ngày</span>`;
+    mobileScore = `${flameSvg} <span>${cleanScore} ngày</span>`;
+  } else if (cat === "contributions") {
+    desktopScore = `${scoreIconHtml}<span>${cleanScore} điểm hoạt động</span>`;
+    mobileScore = `${scoreIconHtml}<span>${cleanScore} điểm</span>`;
+  } else if (cat === "competition") {
+    desktopScore = `${scoreIconHtml}<span>${cleanScore} điểm</span>`;
+    mobileScore = `${ARENA_DEFAULT_SCORE_STAR_SVG}<span>${cleanScore} điểm</span>`;
+  } else if (cat === "study") {
+    desktopScore = `${scoreIconHtml}<span>${cleanScore} giờ tự học</span>`;
+    mobileScore = `${scoreIconHtml}<span>${cleanScore}h</span>`;
+  } else if (cat === "likes") {
+    desktopScore = `${scoreIconHtml}<span>${cleanScore} lượt yêu thích</span>`;
+    mobileScore = `${scoreIconHtml}<span>${cleanScore}</span>`;
+  } else {
+    desktopScore = `${scoreIconHtml}<span>${cleanScore} ${options.unit || ""}</span>`;
+    mobileScore = `${scoreIconHtml}<span>${cleanScore}</span>`;
+  }
+
+  return `<span class="lb-score-desktop">${desktopScore}</span><span class="lb-score-mobile">${mobileScore}</span>`;
+}
+
 function buildArenaLeaderboardRowHtml(u, isCurrent, options = {}) {
   const avatarClass = getAvatarClass(u.streakTier, false, u.role);
   const nameClass = getNameClass(u.streakTier);
@@ -19749,17 +19817,7 @@ function buildArenaLeaderboardRowHtml(u, isCurrent, options = {}) {
 
   // Icon chuỗi chỉ xuất hiện ở bảng người giữ lửa (cạnh số chuỗi), không xuất hiện cạnh tên trên BXH trang chủ
   const nameFlameHtml = options.isHomeLb ? "" : getFlameSVG(u.streakTier, 15);
-  let scoreDisplay = "";
-  if (options.isHomeLb && options.category === "streak") {
-    scoreDisplay = `<span style="display:inline-flex;align-items:center;gap:3px;">${getFlameSVG(u.streakTier, 14)} <span>${scoreVal} ngày</span></span>`;
-  } else if (options.isHomeLb && options.unit) {
-    const cleanScore = (options.unit === "giờ tự học" || options.category === "study")
-      ? String(scoreVal).replace(/h$/i, "")
-      : scoreVal;
-    scoreDisplay = `${scoreIconHtml}<span>${cleanScore} ${options.unit}</span>`;
-  } else {
-    scoreDisplay = `${scoreIconHtml}${scoreVal}`;
-  }
+  const scoreDisplay = getHomeLeaderboardScoreHtml(options, scoreVal, scoreIconHtml, u.streakTier, false);
 
   return `
     <div class="comp-lb-row leaderboard-item ${isPinnedMyRow ? "is-current-user is-me " + rowExtraClass : rowExtraClass}" data-namecard-user-id="${targetUserId}" style="cursor: pointer;" title="Xem thẻ tên">
@@ -19827,17 +19885,7 @@ function renderArenaTop3(top1, top2, top3, isWeek = false, options = {}) {
 
     // Icon chuỗi chỉ xuất hiện ở bảng người giữ lửa (cạnh số chuỗi), không xuất hiện cạnh tên trên BXH trang chủ
     const nameFlameHtml = options.isHomeLb ? "" : getFlameSVG(user.streakTier, flameSize);
-    let scoreDisplay = "";
-    if (options.isHomeLb && options.category === "streak") {
-      scoreDisplay = `<span style="display:inline-flex;align-items:center;gap:3px;">${getFlameSVG(user.streakTier, 16)} <span>${scoreVal} ngày</span></span>`;
-    } else if (options.isHomeLb && options.unit) {
-      const cleanScore = (options.unit === "giờ tự học" || options.category === "study")
-        ? String(scoreVal).replace(/h$/i, "")
-        : scoreVal;
-      scoreDisplay = `${scoreIconHtml}<span>${cleanScore} ${options.unit}</span>`;
-    } else {
-      scoreDisplay = `${scoreIconHtml}${scoreVal}`;
-    }
+    const scoreDisplay = getHomeLeaderboardScoreHtml(options, scoreVal, scoreIconHtml, user.streakTier, true);
 
     return `
       <div class="arena-champion-card mini-namecard rank-${rank}" data-namecard-user-id="${targetUserId}" data-frame="${activeFrame}" style="cursor: pointer;" title="Xem thẻ tên">
@@ -29326,9 +29374,12 @@ function updateCommunityHeroBanner() {
     membersBtnText.textContent = "Thành viên";
   }
 
+  const isManager = Boolean(comm.isManager || (session && (session.id === comm.creatorId || session.role === "admin" || session.role === "ta" || comm.userRole === "admin")));
+  const isMember = Boolean(comm.isMember || isManager);
+
   // Nút Chỉnh sửa (chỉ hiện icon, chỉ dành cho quản trị viên/sáng lập)
   if (editBtn) {
-    editBtn.style.display = comm.isManager ? "inline-flex" : "none";
+    editBtn.style.display = isManager ? "inline-flex" : "none";
   }
 
   // Nút Thông báo (chỉ hiện icon, cập nhật độ mờ và tooltip)
@@ -29356,12 +29407,12 @@ function updateCommunityHeroBanner() {
       }
       if (leaveBtn) leaveBtn.style.display = "none";
       if (adminTag) adminTag.style.display = "none";
-    } else if (comm.isManager) {
+    } else if (isManager) {
       // Quản trị viên: ẩn nút Tham gia bên trái, hiện nút "Quản trị" màu vàng ở cuối hàng
       if (joinBtn) joinBtn.style.display = "none";
       if (leaveBtn) leaveBtn.style.display = "none";
       if (adminTag) adminTag.style.display = "inline-flex";
-    } else if (comm.isMember) {
+    } else if (isMember) {
       // Thành viên đã gia nhập: ẩn nút Tham gia bên trái, dời nút "Rời cộng đồng" màu đỏ về cuối hàng
       if (joinBtn) joinBtn.style.display = "none";
       if (adminTag) adminTag.style.display = "none";

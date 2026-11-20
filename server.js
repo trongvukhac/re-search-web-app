@@ -1118,7 +1118,7 @@ try {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
       stream TEXT NOT NULL DEFAULT 'activity' CHECK(stream IN ('activity', 'announcement')),
-      category TEXT NOT NULL DEFAULT 'post' CHECK(category IN ('post', 'response', 'document', 'saved', 'study', 'arena', 'announcement')),
+      category TEXT NOT NULL DEFAULT 'post' CHECK(category IN ('post', 'response', 'document', 'saved', 'study', 'arena', 'announcement', 'community')),
       title TEXT NOT NULL,
       content TEXT NOT NULL,
       link TEXT NOT NULL DEFAULT '',
@@ -1129,6 +1129,36 @@ try {
     CREATE INDEX IF NOT EXISTS idx_notifications_user_stream ON notifications(user_id, stream, created_at);
     CREATE INDEX IF NOT EXISTS idx_notifications_user_unread ON notifications(user_id, is_read);
   `);
+
+  // Migrate existing table if 'community' category CHECK constraint fails
+  try {
+    const testInsert = db.prepare("INSERT INTO notifications (user_id, stream, category, title, content) VALUES (1, 'activity', 'community', '__test__', '__test__')");
+    testInsert.run();
+    db.prepare("DELETE FROM notifications WHERE title = '__test__'").run();
+  } catch (e) {
+    if (e && e.message && e.message.includes("CHECK constraint failed")) {
+      db.exec(`
+        CREATE TABLE notifications_migrated (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+          stream TEXT NOT NULL DEFAULT 'activity' CHECK(stream IN ('activity', 'announcement')),
+          category TEXT NOT NULL DEFAULT 'post' CHECK(category IN ('post', 'response', 'document', 'saved', 'study', 'arena', 'announcement', 'community')),
+          title TEXT NOT NULL,
+          content TEXT NOT NULL,
+          link TEXT NOT NULL DEFAULT '',
+          actor_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+          is_read INTEGER NOT NULL DEFAULT 0 CHECK(is_read IN (0, 1)),
+          created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+        );
+        INSERT INTO notifications_migrated SELECT * FROM notifications;
+        DROP TABLE notifications;
+        ALTER TABLE notifications_migrated RENAME TO notifications;
+        CREATE INDEX IF NOT EXISTS idx_notifications_user_stream ON notifications(user_id, stream, created_at);
+        CREATE INDEX IF NOT EXISTS idx_notifications_user_unread ON notifications(user_id, is_read);
+      `);
+      console.log("[DB Migration] Successfully migrated notifications table to support 'community' category.");
+    }
+  }
 } catch (e) {
   console.error("[DB Schema notifications]", e);
 }
@@ -1136,12 +1166,12 @@ try {
 function createNotification(userId, stream, category, title, content, link = "", actorId = null) {
   try {
     if (!userId) return;
-    // Prevent duplicate unread notification on same day
+    // Prevent duplicate unread notification on same day (check title and link)
     const existing = db.prepare(`
       SELECT id FROM notifications 
-      WHERE user_id = ? AND category = ? AND title = ? AND date(created_at) = date('now')
+      WHERE user_id = ? AND category = ? AND title = ? AND (link = ? OR link = '') AND date(created_at) = date('now')
       LIMIT 1
-    `).get(userId, category, title);
+    `).get(userId, category, title, link || '');
     if (existing) return;
 
     db.prepare(`
@@ -4926,6 +4956,43 @@ async function api(request, response, url) {
       newPostId,
       "Đăng bài thảo luận",
     );
+
+    // Thông báo cho các thành viên trong cộng đồng khi có bài đăng mới
+    if (validCommId) {
+      try {
+        const commInfo = db.prepare("SELECT name, slug FROM communities WHERE id = ?").get(validCommId);
+        if (commInfo) {
+          const membersToNotify = db.prepare(`
+            SELECT cm.user_id 
+            FROM community_members cm
+            LEFT JOIN community_notification_settings cns ON cns.community_id = cm.community_id AND cns.user_id = cm.user_id
+            WHERE cm.community_id = ? 
+              AND cm.user_id != ? 
+              AND (cm.status IS NULL OR cm.status = 'active')
+              AND (cns.is_muted IS NULL OR cns.is_muted = 0)
+          `).all(validCommId, user.id);
+
+          const authorDisplayName = anonymous ? "Thành viên ẩn danh" : user.display_name;
+          const notifTitle = `Bài đăng mới trong ${commInfo.name}`;
+          const notifContent = `${authorDisplayName} vừa đăng bài: "${title.trim().substring(0, 45)}" trong cộng đồng "${commInfo.name}"`;
+          const notifLink = `#post-${newPostId}`;
+
+          for (const m of membersToNotify) {
+            createNotification(
+              m.user_id,
+              "activity",
+              "community",
+              notifTitle,
+              notifContent,
+              notifLink,
+              user.id
+            );
+          }
+        }
+      } catch (err) {
+        console.error("[Notif: new post in community]", err);
+      }
+    }
     const post = db
       .prepare(
         `SELECT p.*,
@@ -5142,15 +5209,24 @@ async function api(request, response, url) {
 
     // Notification Hooks for Responses
     try {
-      const postAuthor = db.prepare("SELECT author_id, title FROM posts WHERE id = ?").get(post.id);
+      const postAuthor = db.prepare("SELECT author_id, title, community_id FROM posts WHERE id = ?").get(post.id);
       if (postAuthor && postAuthor.author_id !== user.id) {
         const authorName = anonymous ? "Thành viên ẩn danh" : user.display_name;
+        let commInfo = null;
+        if (postAuthor.community_id) {
+          commInfo = db.prepare("SELECT name, slug FROM communities WHERE id = ?").get(postAuthor.community_id);
+        }
+        const notifTitle = commInfo ? `Phản hồi mới trong ${commInfo.name}` : "Bình luận mới về bài viết";
+        const notifContent = commInfo
+          ? `${authorName} đã phản hồi bài viết "${postAuthor.title.substring(0, 40)}" của bạn trong cộng đồng "${commInfo.name}"`
+          : `${authorName} đã phản hồi bài viết: "${postAuthor.title.substring(0, 45)}"`;
+
         createNotification(
           postAuthor.author_id,
           "activity",
-          "post",
-          "Bình luận mới về bài viết",
-          `${authorName} đã phản hồi bài viết: "${postAuthor.title.substring(0, 45)}"`,
+          commInfo ? "community" : "post",
+          notifTitle,
+          notifContent,
           `#post/${post.id}`,
           anonymous ? null : user.id
         );
@@ -5314,12 +5390,22 @@ async function api(request, response, url) {
       if (value > 0 && delta > 0 && target.author_id !== user.id) {
         try {
           if (targetType === "post") {
+            const postRow = db.prepare("SELECT title, community_id FROM posts WHERE id = ?").get(Number(idText));
+            let commInfo = null;
+            if (postRow && postRow.community_id) {
+              commInfo = db.prepare("SELECT name, slug FROM communities WHERE id = ?").get(postRow.community_id);
+            }
+            const notifTitle = commInfo ? `Lượt vote bài viết trong ${commInfo.name}` : "Lượt hữu ích bài viết";
+            const notifContent = commInfo
+              ? `${user.display_name} đã đánh giá bài viết "${postRow.title.substring(0, 40)}" của bạn trong cộng đồng "${commInfo.name}" hữu ích`
+              : `${user.display_name} đã đánh giá bài viết của bạn hữu ích`;
+
             createNotification(
               target.author_id,
               "activity",
-              "post",
-              "Lượt hữu ích bài viết",
-              `${user.display_name} đã đánh giá bài viết của bạn hữu ích`,
+              commInfo ? "community" : "post",
+              notifTitle,
+              notifContent,
               `#post/${idText}`,
               user.id
             );
@@ -11867,7 +11953,7 @@ async function api(request, response, url) {
       const todayVN = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Ho_Chi_Minh" }).format(new Date());
       const hasDailyStudyNotif = db.prepare("SELECT id FROM notifications WHERE user_id = ? AND category = 'study' AND date(created_at) = date(?)").get(user.id, todayVN);
       if (!hasDailyStudyNotif) {
-        const sessionsCount = db.prepare("SELECT count(*) as count FROM study_sessions WHERE user_id = ? AND date(created_at) = date(?)").get(user.id, todayVN)?.count || 0;
+        const sessionsCount = db.prepare("SELECT count(*) as count FROM study_sessions WHERE user_id = ? AND date(started_at) = date(?)").get(user.id, todayVN)?.count || 0;
         if (sessionsCount > 0) {
           createNotification(user.id, "activity", "study", "Hoàn thành tự học", `Hôm nay bạn đã hoàn thành ${sessionsCount} phiên tập trung. Tiếp tục phát huy nhé!`, "#study");
         } else {
@@ -11880,6 +11966,47 @@ async function api(request, response, url) {
         const comp = getOrCreateCurrentCompetition(getVietnamNow());
         if (comp) {
           createNotification(user.id, "activity", "arena", "Đấu trường Arena", "Đấu trường Arena tuần này đang mở. Thử sức ngay để ghi điểm và thăng hạng!", "#arena");
+        }
+      }
+
+      // Thông báo tăng trưởng thành viên tuần qua (không hiện nếu dưới 2)
+      const managedComms = db.prepare(`
+        SELECT c.id, c.name, c.slug 
+        FROM communities c
+        WHERE c.creator_id = ? OR EXISTS (
+          SELECT 1 FROM community_members cm 
+          WHERE cm.community_id = c.id AND cm.user_id = ? AND cm.role = 'admin'
+        )
+      `).all(user.id, user.id);
+
+      for (const mc of managedComms) {
+        const joinedCount = db.prepare(`
+          SELECT count(*) as count 
+          FROM community_members 
+          WHERE community_id = ? 
+            AND user_id != ? 
+            AND created_at >= datetime('now', '-7 days')
+        `).get(mc.id, user.id)?.count || 0;
+
+        if (joinedCount >= 2) {
+          const hasWeeklyJoinNotif = db.prepare(`
+            SELECT id FROM notifications 
+            WHERE user_id = ? 
+              AND category = 'community' 
+              AND link = ?
+              AND created_at >= datetime('now', '-7 days')
+          `).get(user.id, `/re/${mc.slug}`);
+
+          if (!hasWeeklyJoinNotif) {
+            createNotification(
+              user.id,
+              "activity",
+              "community",
+              `Cộng đồng ${mc.name} phát triển`,
+              `Tuần qua đã có ${joinedCount} thành viên mới tham gia cộng đồng "${mc.name}". Hãy tiếp tục xây dựng và tương tác cùng các thành viên nhé!`,
+              `/re/${mc.slug}`
+            );
+          }
         }
       }
     } catch (e) {

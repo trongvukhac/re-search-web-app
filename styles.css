@@ -42539,3 +42539,148 @@ body:not(.christmas-effects-off) .btn-comm-join.is-admin-badge {
   color: #fbbf24 !important;
   border-color: rgba(245, 158, 11, 0.4) !important;
 }
+
+/* Leaderboard units responsiveness: desktop vs mobile */
+.lb-score-desktop {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.lb-score-mobile {
+  display: none;
+  align-items: center;
+  gap: 3px;
+}
+
+@media (max-width: 768px) {
+  .lb-score-desktop {
+    display: none !important;
+  }
+  .lb-score-mobile {
+    display: inline-flex !important;
+  }
+}
+
+/* Post Card Author Community Row */
+.post-author-comm-row {
+  display: inline-flex;
+  align-items: center;
+  margin-top: 3px;
+  margin-bottom: 2px;
+}
+
+.post-author-comm-row .post-comm-tag {
+  border-radius: 9999px;
+  padding: 1.5px 7px;
+  font-size: 10.5px;
+  line-height: 1.3;
+}
+
+/* Post Detail Community Tag (beside share link button) */
+.post-detail-community-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(14, 165, 233, 0.1);
+  color: #0284c7;
+  font-weight: 600;
+  font-size: 11px;
+  padding: 3px 9px;
+  border-radius: 9999px;
+  border: 1px solid rgba(14, 165, 233, 0.25);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+  text-decoration: none;
+  flex-shrink: 0;
+}
+
+.post-detail-community-tag:hover {
+  background: rgba(14, 165, 233, 0.18);
+  border-color: rgba(14, 165, 233, 0.4);
+  transform: translateY(-1px);
+}
+
+.post-detail-community-tag.is-private {
+  background: rgba(168, 85, 247, 0.1);
+  color: #9333ea;
+  border-color: rgba(168, 85, 247, 0.25);
+}
+
+.post-detail-community-tag.is-private:hover {
+  background: rgba(168, 85, 247, 0.18);
+  border-color: rgba(168, 85, 247, 0.4);
+}
+
+[data-theme="dark"] .post-detail-community-tag,
+body.dark-theme .post-detail-community-tag,
+html.dark-theme .post-detail-community-tag {
+  background: rgba(56, 189, 248, 0.15);
+  color: #38bdf8;
+  border-color: rgba(56, 189, 248, 0.3);
+}
+
+[data-theme="dark"] .post-detail-community-tag.is-private,
+body.dark-theme .post-detail-community-tag.is-private,
+html.dark-theme .post-detail-community-tag.is-private {
+  background: rgba(192, 132, 252, 0.15);
+  color: #c084fc;
+  border-color: rgba(192, 132, 252, 0.3);
+}
+
+/* Mobile Community Action Buttons Override & Visibility */
+.btn-comm-action span,
+.btn-join-comm-hero span,
+.btn-leave-comm span,
+.comm-admin-tag-hero span,
+.btn-comm-join span {
+  display: inline !important;
+}
+
+.btn-join-comm-hero,
+.btn-leave-comm,
+.comm-admin-tag-hero {
+  min-height: 32px !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  padding: 6px 14px !important;
+  white-space: nowrap !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  box-sizing: border-box;
+}
+
+@media (max-width: 768px) {
+  .community-hero-actions {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+  .comm-hero-left-actions,
+  .comm-hero-right-actions {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-left: 0 !important;
+  }
+  .btn-join-comm-hero,
+  .btn-leave-comm,
+  .comm-admin-tag-hero {
+    flex: 1 1 auto;
+    text-align: center;
+    justify-content: center;
+  }
+  .comm-item-action {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+  }
+  .btn-comm-join {
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+}
