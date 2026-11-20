@@ -40378,7 +40378,16 @@ html.dark-theme .home-lb-subtitle {
   max-width: 620px;
 }
 
-/* Period Tabs: Tuần này / Tháng này / Quý này */
+/* Period Navigation: Tuần / Tháng / Quý & Period Detail Info */
+.home-lb-period-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
 .home-lb-period-tabs {
   display: inline-flex;
   background: var(--bg-alt, #f1f5f9);
@@ -40386,6 +40395,29 @@ html.dark-theme .home-lb-subtitle {
   border-radius: 14px;
   gap: 4px;
   border: 1px solid var(--border, #e2e8f0);
+}
+
+.home-lb-period-detail {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 16px;
+  border-radius: 12px;
+  background: rgba(14, 165, 233, 0.08);
+  border: 1px solid rgba(14, 165, 233, 0.22);
+  color: #0284c7;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+[data-theme="dark"] .home-lb-period-detail,
+body.dark-theme .home-lb-period-detail,
+html.dark-theme .home-lb-period-detail,
+body:not(.christmas-effects-off) .home-lb-period-detail {
+  background: rgba(56, 189, 248, 0.12);
+  border-color: rgba(56, 189, 248, 0.28);
+  color: #38bdf8;
 }
 
 [data-theme="dark"] .home-lb-period-tabs,
@@ -40514,6 +40546,72 @@ html.dark-theme .home-lb-list-title {
   display: flex;
   flex-direction: column;
   gap: 8px;
+}
+
+/* Expanded Mini Cover Canvas for Homepage Leaderboard Rows (Top 4 - 10) */
+.home-lb-list .comp-lb-capsule {
+  height: 48px;
+  padding: 4px 14px 4px 6px;
+  border-radius: 9999px;
+}
+
+.home-lb-list .comp-lb-avatar-wrap .avatar {
+  width: 32px;
+  height: 32px;
+  font-size: 16px;
+}
+
+.home-lb-list .lb-cover-art {
+  width: 84%;
+  background-size: cover;
+  background-position: center center;
+  opacity: 0.98;
+}
+
+.home-lb-list .lb-cover-overlay {
+  background: linear-gradient(90deg,
+      #ffffff 0%,
+      #ffffff 22%,
+      rgba(255, 255, 255, 0.88) 34%,
+      rgba(255, 255, 255, 0.45) 50%,
+      rgba(255, 255, 255, 0.12) 70%,
+      rgba(255, 255, 255, 0) 90%);
+}
+
+[data-theme="dark"] .home-lb-list .lb-cover-overlay,
+body.dark-theme .home-lb-list .lb-cover-overlay,
+html.dark-theme .home-lb-list .lb-cover-overlay,
+body:not(.christmas-effects-off) .home-lb-list .lb-cover-overlay {
+  background: linear-gradient(90deg,
+      #202c39 0%,
+      #202c39 22%,
+      rgba(32, 44, 57, 0.88) 34%,
+      rgba(32, 44, 57, 0.45) 50%,
+      rgba(32, 44, 57, 0.12) 70%,
+      rgba(32, 44, 57, 0) 90%) !important;
+}
+
+.home-lb-list .comp-lb-row.is-current-user .lb-cover-overlay {
+  background: linear-gradient(90deg,
+      #f0fdf4 0%,
+      #f0fdf4 22%,
+      rgba(240, 253, 244, 0.88) 34%,
+      rgba(240, 253, 244, 0.45) 50%,
+      rgba(240, 253, 244, 0.12) 70%,
+      rgba(240, 253, 244, 0) 90%);
+}
+
+[data-theme="dark"] .home-lb-list .comp-lb-row.is-current-user .lb-cover-overlay,
+body.dark-theme .home-lb-list .comp-lb-row.is-current-user .lb-cover-overlay,
+html.dark-theme .home-lb-list .comp-lb-row.is-current-user .lb-cover-overlay,
+body:not(.christmas-effects-off) .home-lb-list .comp-lb-row.is-current-user .lb-cover-overlay {
+  background: linear-gradient(90deg,
+      #0f241a 0%,
+      #0f241a 22%,
+      rgba(15, 36, 26, 0.88) 34%,
+      rgba(15, 36, 26, 0.45) 50%,
+      rgba(15, 36, 26, 0.12) 70%,
+      rgba(15, 36, 26, 0) 90%) !important;
 }
 
 /* Dòng thông báo làm mới bảng xếp hạng phía cuối BXH */
@@ -40881,6 +40979,36 @@ html.dark-theme .btn-all-forum-link {
   text-align: center;
   font-size: 12px;
   color: var(--muted, #64748b);
+}
+
+/* Separate Community Badge Row in Post Cards */
+.post-community-badge-row {
+  display: flex;
+  align-items: center;
+  margin-bottom: 5px;
+}
+
+.post-community-badge-row .post-comm-tag {
+  border-radius: 9999px;
+  padding: 3px 9px;
+  font-size: 11px;
+  border: 1px solid rgba(14, 165, 233, 0.2);
+}
+
+.post-community-badge-row .post-comm-tag.is-private {
+  border-color: rgba(168, 85, 247, 0.25);
+}
+
+[data-theme="dark"] .post-community-badge-row .post-comm-tag,
+body.dark-theme .post-community-badge-row .post-comm-tag,
+html.dark-theme .post-community-badge-row .post-comm-tag {
+  border-color: rgba(56, 189, 248, 0.28);
+}
+
+[data-theme="dark"] .post-community-badge-row .post-comm-tag.is-private,
+body.dark-theme .post-community-badge-row .post-comm-tag.is-private,
+html.dark-theme .post-community-badge-row .post-comm-tag.is-private {
+  border-color: rgba(192, 132, 252, 0.28);
 }
 
 /* Reddit-Style Community Pill on Post Cards */

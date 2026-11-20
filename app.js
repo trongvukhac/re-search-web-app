@@ -153,19 +153,19 @@ var HOME_LB_CATEGORIES = {
     title: "Đại sứ tri thức",
     hasPeriods: true,
     scoreIconHtml: `<svg class="ui-icon champ-score-star" width="13" height="13" viewBox="0 0 24 24" fill="#f59e0b" stroke="#f59e0b" stroke-width="1.2" aria-hidden="true" style="margin-right: 3px;"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>`,
-    unit: ""
+    unit: "điểm hoạt động"
   },
   competition: {
     title: "Tinh thông thần tốc",
     hasPeriods: true,
-    scoreIconHtml: `<svg class="ui-icon" width="13" height="13" viewBox="0 0 24 24" fill="#f59e0b" stroke="#f59e0b" stroke-width="1.2" aria-hidden="true" style="margin-right: 3px;"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>`,
+    scoreIconHtml: `<svg class="ui-icon" width="13" height="13" viewBox="0 0 24 24" fill="#f59e0b" stroke="#f59e0b" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="margin-right: 3px;"><path d="M8 21h8m-4-4v4M6 4h12v5a6 6 0 0 1-12 0V4zm0 2H3a2 2 0 0 0 0 4h3zm12 0h3a2 2 0 0 1 0 4h-3z"/></svg>`,
     unit: "điểm"
   },
   study: {
     title: "Ong chăm chỉ",
     hasPeriods: true,
     scoreIconHtml: `<svg class="ui-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#0ea5e9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="margin-right: 3px;"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`,
-    unit: "giờ"
+    unit: "giờ tự học"
   },
   streak: {
     title: "Người giữ lửa",
@@ -177,7 +177,7 @@ var HOME_LB_CATEGORIES = {
     title: "Vạn người mê",
     hasPeriods: false,
     scoreIconHtml: `<svg class="ui-icon" width="13" height="13" viewBox="0 0 24 24" fill="#ec4899" stroke="#ec4899" stroke-width="1.2" aria-hidden="true" style="margin-right: 3px;"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>`,
-    unit: "tim"
+    unit: "lượt yêu thích"
   }
 };
 window.HOME_LB_CATEGORIES = HOME_LB_CATEGORIES;
@@ -2561,10 +2561,8 @@ async function hydrateServer(force = false) {
       (typeof getCachedUser === "function" && getCachedUser())
     );
     const contribsPromise = hasHintedSession ? requestAPI("/api/me/contributions").catch(() => null) : null;
-    const postsUrl = (typeof currentForumCommunitySlug !== "undefined" && currentForumCommunitySlug)
-      ? `/api/posts?community=${encodeURIComponent(currentForumCommunitySlug)}`
-      : "/api/posts";
-    const postsPromise = requestAPI(postsUrl).catch(() => ({ posts: [] }));
+    // Thảo luận trang chủ luôn dùng danh sách toàn cục độc lập với bộ lọc diễn đàn
+    const postsPromise = requestAPI("/api/posts").catch(() => ({ posts: [] }));
     const docsPromise = requestAPI("/api/documents").catch(() => ({ documents: [] }));
     const leaderboardPromise = requestAPI("/api/leaderboard").catch(() => null);
     const topicsPromise = requestAPI("/api/topics").catch(() => ({ topics: [] }));
@@ -2619,6 +2617,7 @@ async function hydrateServer(force = false) {
 
     if (postsData.posts) {
       posts = postsData.posts.map(normalizePost);
+      window.allGlobalPosts = posts;
       // Only re-render home/forum if relevant to avoid scroll/DOM disruptions
       if (!currentActiveRoute || currentActiveRoute === "home") renderHome();
       if (currentActiveRoute === "forum") renderPosts();
@@ -3085,10 +3084,12 @@ function postCard(post) {
         ${post.community.privacy === 'private' ? '<span class="comm-tag-lock" title="Cộng đồng riêng tư"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg></span>' : ''}
       </span>`
     : "";
+  const commRow = commBadge ? `<div class="post-community-badge-row">${commBadge}</div>` : "";
   return `<article class="post-card ${post.authorRole === "admin" ? "admin-post" : ""}" data-post-id="${post.id}" style="position: relative;">
     ${adminBtns}${editBtn}
     <span class="avatar avatar-xs ${getAvatarClass(post.streakTier, post.anonymous, post.authorRole)}" ${ncAttr}>${post.initials}</span>
     <div>
+      ${commRow}
       <div class="post-meta" style="${post.lecturerRecommended ? 'margin: 0 0 2px 0;' : 'margin: 6px 0 2px 0;'}">
         <div style="line-height: 1.2;">${pinnedIcon}<b class="${getNameClass(post.streakTier)}" ${ncAttr}>${escapeHTML(post.author)}</b>${post.authorRole === "lecturer" ? ' <span style="color: var(--primary); font-weight: 700; margin-left: 4px; font-size: 11px;">[Giảng viên]</span>' : ""}${post.anonymous ? " · Ẩn danh" : ""} · ${post.time}${getEditedIndicator(post.editedAt)}</div>
         ${post.lecturerRecommended ? '<div style="font-size: 11px; color: var(--primary); font-weight: 600; margin-top: 3px; display: flex; align-items: center; gap: 4px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path></svg> Giảng viên đề xuất</div>' : ''}
@@ -3098,7 +3099,6 @@ function postCard(post) {
     </div>
     <div class="post-stats">
       <div class="post-stats-tags">
-        ${commBadge}
         <span class="post-tag">${post.topic}</span>
         ${docBadge}
       </div>
@@ -3331,7 +3331,11 @@ function renderHome() {
   if (typeof initHomeBannerStack === "function") initHomeBannerStack();
   if (typeof renderCurrentHomeLeaderboard === "function") renderCurrentHomeLeaderboard();
   else if (typeof loadAndRenderHomeLeaderboard === "function") loadAndRenderHomeLeaderboard();
-  const visiblePosts = posts.filter((p) => p.status === "visible");
+  // Thảo luận mới nhất: Luôn lấy từ danh sách bài đăng toàn cục, không bị chi phối bởi bất kỳ bộ lọc nào ở diễn đàn
+  const pool = (Array.isArray(window.allGlobalPosts) && window.allGlobalPosts.length > 0)
+    ? window.allGlobalPosts
+    : posts;
+  const visiblePosts = pool.filter((p) => p.status === "visible");
   const unpinned = visiblePosts.filter((p) => !p.isPinned);
   const homePosts = (unpinned.length > 0 ? unpinned : visiblePosts)
     .sort((a, b) => (new Date(b.createdAt || 0) - new Date(a.createdAt || 0)) || (b.id - a.id))
@@ -19737,7 +19741,10 @@ function buildArenaLeaderboardRowHtml(u, isCurrent, options = {}) {
   if (options.isHomeLb && options.category === "streak") {
     scoreDisplay = `<span style="display:inline-flex;align-items:center;gap:3px;">${getFlameSVG(u.streakTier, 14)} <span>${scoreVal} ngày</span></span>`;
   } else if (options.isHomeLb && options.unit) {
-    scoreDisplay = `${scoreIconHtml}<span>${scoreVal} ${options.unit}</span>`;
+    const cleanScore = (options.unit === "giờ tự học" || options.category === "study")
+      ? String(scoreVal).replace(/h$/i, "")
+      : scoreVal;
+    scoreDisplay = `${scoreIconHtml}<span>${cleanScore} ${options.unit}</span>`;
   } else {
     scoreDisplay = `${scoreIconHtml}${scoreVal}`;
   }
@@ -19812,7 +19819,10 @@ function renderArenaTop3(top1, top2, top3, isWeek = false, options = {}) {
     if (options.isHomeLb && options.category === "streak") {
       scoreDisplay = `<span style="display:inline-flex;align-items:center;gap:3px;">${getFlameSVG(user.streakTier, 16)} <span>${scoreVal} ngày</span></span>`;
     } else if (options.isHomeLb && options.unit) {
-      scoreDisplay = `${scoreIconHtml}<span>${scoreVal} ${options.unit}</span>`;
+      const cleanScore = (options.unit === "giờ tự học" || options.category === "study")
+        ? String(scoreVal).replace(/h$/i, "")
+        : scoreVal;
+      scoreDisplay = `${scoreIconHtml}<span>${cleanScore} ${options.unit}</span>`;
     } else {
       scoreDisplay = `${scoreIconHtml}${scoreVal}`;
     }
@@ -28754,6 +28764,38 @@ if (!homeLbCountdownTimer) {
   homeLbCountdownTimer = setInterval(updateHomeLeaderboardCountdown, 1000);
 }
 
+function formatLeaderboardPeriodDetail(period = "week") {
+  const now = new Date();
+  const utcMs = now.getTime() + now.getTimezoneOffset() * 60000;
+  const vnNow = new Date(utcMs + 7 * 3600000);
+  const pad = (n) => String(n).padStart(2, "0");
+
+  if (period === "month") {
+    return `Tháng ${vnNow.getMonth() + 1} năm ${vnNow.getFullYear()}`;
+  }
+  if (period === "quarter") {
+    const q = Math.floor(vnNow.getMonth() / 3) + 1;
+    return `Quý ${q} năm ${vnNow.getFullYear()}`;
+  }
+
+  // Mặc định: Tuần x từ DD/MM đến DD/MM
+  const day = vnNow.getDay();
+  const daysSinceMonday = day === 0 ? 6 : day - 1;
+  const monday = new Date(vnNow.getFullYear(), vnNow.getMonth(), vnNow.getDate() - daysSinceMonday);
+  const sunday = new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + 6);
+
+  const d = new Date(Date.UTC(vnNow.getFullYear(), vnNow.getMonth(), vnNow.getDate()));
+  const dayNum = d.getUTCDay() || 7;
+  d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  const weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+
+  const monStr = `${pad(monday.getDate())}/${pad(monday.getMonth() + 1)}`;
+  const sunStr = `${pad(sunday.getDate())}/${pad(sunday.getMonth() + 1)}`;
+  return `Tuần ${weekNo} từ ${monStr} đến ${sunStr}`;
+}
+window.formatLeaderboardPeriodDetail = formatLeaderboardPeriodDetail;
+
 function renderCurrentHomeLeaderboard() {
   const cat = homeLeaderboardCategory || "contributions";
   const period = homeLeaderboardPeriod || "week";
@@ -28766,10 +28808,17 @@ function renderCurrentHomeLeaderboard() {
     btn.setAttribute("aria-selected", isAct ? "true" : "false");
   });
 
-  // Ẩn / hiện bộ lọc chu kỳ Tuần này / Tháng này / Quý này (chỉ 3 BXH chu kỳ mới hiện)
+  // Ẩn / hiện bộ lọc chu kỳ Tuần / Tháng / Quý (chỉ 3 BXH chu kỳ mới hiện)
+  const periodRow = $("#homeLbPeriodRow");
   const periodTabs = $("#homeLbPeriodTabs");
-  if (periodTabs) {
+  const periodDetail = $("#homeLbPeriodDetail");
+  if (periodRow) {
+    periodRow.style.display = cfg.hasPeriods ? "flex" : "none";
+  } else if (periodTabs) {
     periodTabs.style.display = cfg.hasPeriods ? "inline-flex" : "none";
+  }
+  if (periodDetail) {
+    periodDetail.textContent = cfg.hasPeriods ? formatLeaderboardPeriodDetail(period) : "";
   }
   $$(".home-lb-tab-btn").forEach((btn) => {
     const isAct = btn.dataset.period === period;
@@ -28821,8 +28870,8 @@ function renderCurrentHomeLeaderboard() {
           userId: u.userId || u.id,
           id: u.id || u.userId,
           rank: u.rank || (i + 1),
-          score: u.hours != null ? `${u.hours}h` : `${Math.floor((u.totalMinutes || 0) / 60)}h`,
-          unit: "giờ"
+          score: u.hours != null ? Number(String(u.hours).replace(/h$/i, "")) : Math.floor((u.totalMinutes || 0) / 60),
+          unit: "giờ tự học"
         })),
         currentUserEntry: null
       };
@@ -28848,7 +28897,7 @@ function renderCurrentHomeLeaderboard() {
         id: u.id || u.userId,
         rank: u.rank || (i + 1),
         score: u.likesCount || 0,
-        unit: "tim"
+        unit: "lượt yêu thích"
       }));
     }
     listData = { top10: rawList.slice(0, 10), currentUserEntry: null };

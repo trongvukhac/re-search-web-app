@@ -1162,17 +1162,20 @@
             </button>
           </div>
 
-          <!-- Bộ lọc chu kỳ xếp hạng: Tuần này / Tháng này / Quý này (nằm dưới khu vực chuyển đổi bảng xếp hạng) -->
-          <div class="home-lb-period-tabs" id="homeLbPeriodTabs" role="tablist" aria-label="Chu kỳ xếp hạng">
-            <button type="button" class="home-lb-tab-btn active" data-period="week" onclick="switchHomeLeaderboardPeriod('week')" role="tab" aria-selected="true">
-              <span class="tab-label">Tuần này</span>
-            </button>
-            <button type="button" class="home-lb-tab-btn" data-period="month" onclick="switchHomeLeaderboardPeriod('month')" role="tab" aria-selected="false">
-              <span class="tab-label">Tháng này</span>
-            </button>
-            <button type="button" class="home-lb-tab-btn" data-period="quarter" onclick="switchHomeLeaderboardPeriod('quarter')" role="tab" aria-selected="false">
-              <span class="tab-label">Quý này</span>
-            </button>
+          <!-- Bộ lọc chu kỳ xếp hạng: Tuần / Tháng / Quý (nằm dưới khu vực chuyển đổi bảng xếp hạng) -->
+          <div class="home-lb-period-row" id="homeLbPeriodRow">
+            <div class="home-lb-period-tabs" id="homeLbPeriodTabs" role="tablist" aria-label="Chu kỳ xếp hạng">
+              <button type="button" class="home-lb-tab-btn active" data-period="week" onclick="switchHomeLeaderboardPeriod('week')" role="tab" aria-selected="true">
+                <span class="tab-label">Tuần</span>
+              </button>
+              <button type="button" class="home-lb-tab-btn" data-period="month" onclick="switchHomeLeaderboardPeriod('month')" role="tab" aria-selected="false">
+                <span class="tab-label">Tháng</span>
+              </button>
+              <button type="button" class="home-lb-tab-btn" data-period="quarter" onclick="switchHomeLeaderboardPeriod('quarter')" role="tab" aria-selected="false">
+                <span class="tab-label">Quý</span>
+              </button>
+            </div>
+            <div class="home-lb-period-detail" id="homeLbPeriodDetail" aria-live="polite"></div>
           </div>
 
           <!-- Bục vinh danh Top 1, Top 2, Top 3 (Thẻ tên mini) -->

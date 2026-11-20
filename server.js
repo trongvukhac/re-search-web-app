@@ -5381,7 +5381,7 @@ async function api(request, response, url) {
     WHERE u.role NOT IN ('admin', 'lecturer', 'member') AND u.id != 89
     GROUP BY u.id
     HAVING periodPoints > 0
-    ORDER BY periodPoints DESC, lastEventAt ASC, u.id ASC
+    ORDER BY periodPoints DESC, (SELECT count(*) FROM posts p WHERE p.author_id = u.id AND p.status = 'visible') DESC, lastEventAt ASC, u.id ASC
   `).all(threshold);
 
     if (rows.length < 3) {
@@ -5393,7 +5393,7 @@ async function api(request, response, url) {
       LEFT JOIN contribution_events c ON u.id = c.user_id
       WHERE u.role NOT IN ('admin', 'lecturer', 'member') AND u.id != 89
       GROUP BY u.id
-      ORDER BY periodPoints DESC, u.id ASC
+      ORDER BY periodPoints DESC, (SELECT count(*) FROM posts p WHERE p.author_id = u.id AND p.status = 'visible') DESC, u.id ASC
       LIMIT 10
     `).all();
     }
@@ -5408,7 +5408,7 @@ async function api(request, response, url) {
       coverImage: u.coverImage || "default",
       namecardFrame: u.namecardFrame || "none",
       score: Number(u.periodPoints),
-      unit: "",
+      unit: "điểm hoạt động",
       streakTier: getAuthorStreakTier(u.id),
       rank: idx + 1
     }));
@@ -5429,7 +5429,7 @@ async function api(request, response, url) {
           coverImage: u.coverImage || "default",
           namecardFrame: u.namecardFrame || "none",
           score: Number(u.periodPoints),
-          unit: "",
+          unit: "điểm hoạt động",
           streakTier: getAuthorStreakTier(u.id),
           rank: userIdx + 1,
           isParticipant: Boolean(isStudent),
@@ -5448,7 +5448,7 @@ async function api(request, response, url) {
             coverImage: u.coverImage || "default",
             namecardFrame: u.namecardFrame || "none",
             score: 0,
-            unit: "",
+            unit: "điểm hoạt động",
             streakTier: getAuthorStreakTier(u.id),
             rank: rows.length + 1,
             isParticipant: Boolean(isStudent),
@@ -5550,8 +5550,8 @@ async function api(request, response, url) {
         role: u.role,
         coverImage: u.coverImage || "default",
         namecardFrame: u.namecardFrame || "none",
-        score: `${Math.floor(mins / 60)}h`,
-        unit: "giờ",
+        score: Math.floor(mins / 60),
+        unit: "giờ tự học",
         streakTier: getAuthorStreakTier(u.id),
         rank: idx + 1
       };
