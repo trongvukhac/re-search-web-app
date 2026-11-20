@@ -15855,8 +15855,8 @@ body.dark-theme .doc-viewer-save-btn.is-saved {
 .arena-banner-overlay {
   position: absolute;
   inset: 0;
-  background: linear-gradient(180deg, rgba(8, 20, 38, 0.5) 0%, rgba(8, 20, 38, 0.1) 40%, rgba(8, 20, 38, 0.75) 100%),
-              linear-gradient(90deg, rgba(8, 20, 38, 0.6) 0%, rgba(8, 20, 38, 0.18) 60%, transparent 100%);
+  background: linear-gradient(180deg, rgba(8, 20, 38, 0.22) 0%, rgba(8, 20, 38, 0.05) 40%, rgba(8, 20, 38, 0.55) 100%),
+              linear-gradient(90deg, rgba(8, 20, 38, 0.3) 0%, rgba(8, 20, 38, 0.08) 60%, transparent 100%);
   z-index: 2;
   pointer-events: none;
 }
@@ -15886,42 +15886,42 @@ body.dark-theme .doc-viewer-save-btn.is-saved {
   max-width: 760px;
 }
 
+.arena-tag-gold,
+.arena-tag-season,
+.arena-tag-type {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 28px;
+  line-height: 1;
+  box-sizing: border-box;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 0 14px;
+  border-radius: 999px;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+
 .arena-tag-gold {
   background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
   color: #ffffff;
-  font-size: 11px;
-  font-weight: 800;
-  padding: 5px 14px;
-  border-radius: 999px;
-  letter-spacing: 0.5px;
   box-shadow: 0 2px 8px rgba(180, 83, 9, 0.35);
-  display: inline-flex;
-  align-items: center;
   gap: 4px;
 }
 
 .arena-tag-season {
-  background: rgba(16, 185, 129, 0.3);
-  border: 1px solid rgba(110, 231, 183, 0.5);
+  background: rgba(16, 185, 129, 0.35);
+  border: 1px solid rgba(110, 231, 183, 0.55);
   color: #ffffff;
-  font-size: 11px;
-  font-weight: 800;
-  padding: 5px 14px;
-  border-radius: 999px;
-  letter-spacing: 0.5px;
-  backdrop-filter: blur(8px);
+  backdrop-filter: blur(4px);
 }
 
 .arena-tag-type {
-  background: rgba(15, 23, 42, 0.65);
+  background: rgba(15, 23, 42, 0.55);
   border: 1px solid rgba(255, 255, 255, 0.35);
   color: #f8fafc;
-  font-size: 11px;
-  font-weight: 800;
-  padding: 5px 14px;
-  border-radius: 999px;
-  letter-spacing: 0.5px;
-  backdrop-filter: blur(8px);
+  backdrop-filter: blur(4px);
   text-transform: uppercase;
 }
 
@@ -18705,7 +18705,7 @@ body.dark-theme .comp-tab-btn.active {
 
   .arena-banner-overlay {
     display: block;
-    background: linear-gradient(180deg, rgba(8, 20, 38, 0.5) 0%, rgba(8, 20, 38, 0.15) 35%, rgba(8, 20, 38, 0.85) 100%);
+    background: linear-gradient(180deg, rgba(8, 20, 38, 0.25) 0%, rgba(8, 20, 38, 0.08) 35%, rgba(8, 20, 38, 0.6) 100%);
   }
 
   .arena-banner-content {
@@ -18721,8 +18721,9 @@ body.dark-theme .comp-tab-btn.active {
   .arena-tag-gold,
   .arena-tag-season,
   .arena-tag-type {
+    height: 24px;
     font-size: 10px;
-    padding: 3px 10px;
+    padding: 0 10px;
   }
 
   .arena-hero-title {
@@ -40315,7 +40316,7 @@ html:not([data-user-theme]) body.christmas-season:not(.christmas-effects-off) .n
 .home-leaderboard-section {
   width: 100%;
   max-width: 100%;
-  margin: 32px 0 24px;
+  margin: 18px 0 16px;
   padding: 0;
   box-sizing: border-box;
 }
@@ -40324,7 +40325,7 @@ html:not([data-user-theme]) body.christmas-season:not(.christmas-effects-off) .n
   background: var(--card-bg, #ffffff);
   border: 1px solid var(--border, #e2e8f0);
   border-radius: 28px;
-  padding: 36px 32px 32px;
+  padding: 24px 32px 28px;
   box-shadow: 0 12px 36px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.02);
   position: relative;
   overflow: hidden;
@@ -40352,11 +40353,10 @@ html.dark-theme .home-lb-subtitle {
 
 .home-lb-header {
   display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 20px;
-  margin-bottom: 32px;
-  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  margin-bottom: 16px;
 }
 
 .home-lb-header-text {
@@ -40384,11 +40384,14 @@ html.dark-theme .home-lb-subtitle {
 }
 
 .home-lb-title {
-  font-size: 26px;
-  font-weight: 800;
-  margin: 0 0 6px 0;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 28px;
+  font-weight: 700;
+  margin: 0;
   color: var(--text, #0f172a);
-  letter-spacing: -0.02em;
+  letter-spacing: -0.01em;
+  text-align: center;
+  width: 100%;
 }
 
 .home-lb-subtitle {
@@ -41932,19 +41935,20 @@ html.dark-theme .privacy-option-card input[type="radio"]:checked ~ .privacy-card
   }
 
   .home-lb-container {
-    padding: 24px 16px 20px;
+    padding: 18px 16px 18px;
     border-radius: 20px;
   }
 
   .home-lb-header {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 16px;
-    margin-bottom: 16px;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    margin-bottom: 14px;
   }
 
   .home-lb-title {
-    font-size: 20px;
+    font-size: 22px;
+    text-align: center;
   }
 
   .home-lb-subtitle {

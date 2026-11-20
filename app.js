@@ -2248,7 +2248,7 @@ function renderLeaderboard() {
   if (!list || list.length === 0) {
     let emptyMsg = "Chưa có dữ liệu đóng góp.";
     if (isStreak) emptyMsg = "Chưa có dữ liệu chuỗi.";
-    if (isArena) emptyMsg = "Chưa có dữ liệu thi đua từ các tuần đã chốt.";
+    if (isArena) emptyMsg = "Chưa có dữ liệu từ các tuần đấu trường đã chốt.";
     if (isLikes) emptyMsg = "Chưa có dữ liệu lượt yêu thích thẻ tên.";
     if (isStudy) emptyMsg = "Chưa có dữ liệu thời gian tự học.";
     lbEl.innerHTML = `<p style="color: var(--muted); font-size: 13px; text-align: center; padding: 12px 0;">${emptyMsg}</p>`;
@@ -17457,7 +17457,7 @@ function initAdaptiveGlassHeader() {
     forum: { label: "Diễn đàn" },
     documents: { label: "Tài liệu" },
     study: { label: "Phòng tự học" },
-    arena: { label: "Thi đua" },
+    arena: { label: "Đấu trường" },
     account: {
       label: "Tài khoản",
       svg: '<svg class="compact-nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M5 20a7 7 0 0 1 14 0"/></svg>',
@@ -18006,7 +18006,7 @@ const HOME_BANNERS_CONFIG = [
     expiresAt: new Date("2026-11-01T23:59:59+07:00").getTime(),
     action: () => {
       if (typeof go === "function") go("arena");
-      else toast("Bảng xếp hạng thi đua Đấu trường Arena Tuần 03!");
+      else toast("Bảng xếp hạng Đấu trường Arena Tuần 03!");
     }
   },
   {
@@ -18018,7 +18018,7 @@ const HOME_BANNERS_CONFIG = [
     expiresAt: new Date("2026-10-25T23:59:59+07:00").getTime(),
     action: () => {
       if (typeof go === "function") go("arena");
-      else toast("Bảng xếp hạng thi đua Đấu trường Arena Tuần 02!");
+      else toast("Bảng xếp hạng Đấu trường Arena Tuần 02!");
     }
   },
   {
@@ -18029,7 +18029,7 @@ const HOME_BANNERS_CONFIG = [
     expiresAt: new Date("2026-10-18T23:59:59+07:00").getTime(),
     action: () => {
       if (typeof go === "function") go("arena");
-      else toast("Bảng xếp hạng thi đua Đấu trường Arena Tuần 01!");
+      else toast("Bảng xếp hạng Đấu trường Arena Tuần 01!");
     }
   },
   {
@@ -19282,7 +19282,7 @@ function renderGatewayTab(raw) {
   const attemptsNoteText = $(".attempts-note-banner .note-banner-text");
   if (attemptsNoteText) {
     if (data.isSunday) {
-      attemptsNoteText.innerHTML = `🎯 <strong>Chế độ Luyện tập ngày Chủ Nhật:</strong> Thí sinh được làm lại toàn bộ câu hỏi của cả 3 chặng để ôn tập kiến thức. Bài làm <strong>không tính điểm thi đua</strong>, <strong>không tính thời gian</strong>, làm <strong>không giới hạn số lượt</strong>, có thể <strong>chuyển câu trước/sau tự do</strong> và <strong>hoàn toàn không ghi nhận vào thành tích Namecard hay Bảng xếp hạng</strong>.`;
+      attemptsNoteText.innerHTML = `🎯 <strong>Chế độ Luyện tập ngày Chủ Nhật:</strong> Thí sinh được làm lại toàn bộ câu hỏi của cả 3 chặng để ôn tập kiến thức. Bài làm <strong>không tính điểm đấu trường</strong>, <strong>không tính thời gian</strong>, làm <strong>không giới hạn số lượt</strong>, có thể <strong>chuyển câu trước/sau tự do</strong> và <strong>hoàn toàn không ghi nhận vào thành tích Namecard hay Bảng xếp hạng</strong>.`;
     } else {
       attemptsNoteText.innerHTML = `<strong>Mỗi chặng thi đấu chỉ có duy nhất 1 lượt thi!</strong> Thí sinh làm bài đúng hạn ở Chặng 1 &amp; Chặng 2 nhận thêm <strong>+50 ⭐</strong> mỗi đợt. Nếu lỡ, bạn vẫn có thể <strong>làm bù trong tuần</strong> (không cộng thưởng đúng hạn).`;
     }
@@ -19465,7 +19465,7 @@ function renderGatewayTab(raw) {
       blockedMsg.style.border = "1px solid rgba(14, 165, 233, 0.35)";
       blockedMsg.style.borderRadius = "8px";
       blockedMsg.style.padding = "10px 14px";
-      blockedMsg.innerHTML = `👀 <strong>Chế độ Khán giả:</strong> Bạn đang đăng nhập với vai trò <strong>Thành viên</strong> (được quyền theo dõi Bảng xếp hạng và Thể lệ thi đua). Thi đấu trực tiếp dành cho sinh viên Văn Lang thuộc lớp 06 &amp; 07.`;
+      blockedMsg.innerHTML = `👀 <strong>Chế độ Khán giả:</strong> Bạn đang đăng nhập với vai trò <strong>Thành viên</strong> (được quyền theo dõi Bảng xếp hạng và Thể lệ đấu trường). Thi đấu trực tiếp dành cho sinh viên Văn Lang thuộc lớp 06 &amp; 07.`;
     }
   } else if (data.isSunday) {
     if (actionContainer) {
@@ -19789,7 +19789,7 @@ function getHomeLeaderboardScoreHtml(options, scoreVal, scoreIconHtml, streakTie
     mobileScore = `${scoreIconHtml}<span>${cleanScore} điểm</span>`;
   } else if (cat === "competition") {
     desktopScore = `${scoreIconHtml}<span>${cleanScore} điểm</span>`;
-    mobileScore = `${ARENA_DEFAULT_SCORE_STAR_SVG}<span>${cleanScore} điểm</span>`;
+    mobileScore = `${scoreIconHtml}<span>${cleanScore}</span><span style="display:inline-flex;align-items:center;margin-left:2px;color:#f59e0b;">${ARENA_DEFAULT_SCORE_STAR_SVG}</span>`;
   } else if (cat === "study") {
     desktopScore = `${scoreIconHtml}<span>${cleanScore} giờ tự học</span>`;
     mobileScore = `${scoreIconHtml}<span>${cleanScore}h</span>`;
@@ -21250,7 +21250,7 @@ async function loadAdminCompetition(targetCompetitionId) {
     renderAdminBoardModeUI();
     await loadAdminPhaseQuestions(compState.adminSelectedPhase || 1);
   } catch (e) {
-    toast("Không thể tải thông tin thi đua quản trị.");
+    toast("Không thể tải thông tin đấu trường quản trị.");
   }
 }
 

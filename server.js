@@ -1233,7 +1233,7 @@ try {
     );
     broadcastNotification(
       "Đấu trường học thuật Arena Tuần mới",
-      "Đấu trường Arena Tuần mới đã mở cổng. Hãy tham gia thi đua và ghi danh trên bảng vàng!",
+      "Đấu trường Arena Tuần mới đã mở cổng. Hãy tham gia thử sức và ghi danh trên bảng vàng!",
       "#arena",
       adminId
     );
@@ -3790,7 +3790,7 @@ function awardCompetitionSundayRewards(competitionId) {
             rankActivityPoints,
             "competition",
             competitionId,
-            `Thưởng Top ${rank} Hoạt động thi đua tuần (${comp.week_key} - ${clsLabel}): +${rankActivityPoints}đ, +${shields} khiên bảo vệ chuỗi`
+            `Thưởng Top ${rank} Hoạt động Đấu trường tuần (${comp.week_key} - ${clsLabel}): +${rankActivityPoints}đ, +${shields} khiên bảo vệ chuỗi`
           );
 
           if (partBonus > 0) {
@@ -3800,7 +3800,7 @@ function awardCompetitionSundayRewards(competitionId) {
               partBonus,
               "competition",
               competitionId,
-              `Thưởng tham gia ${p.phasesParticipated}/3 chặng thi đua tuần (${comp.week_key} - ${clsLabel}): +${partBonus}đ hoạt động`
+              `Thưởng tham gia ${p.phasesParticipated}/3 chặng Đấu trường tuần (${comp.week_key} - ${clsLabel}): +${partBonus}đ hoạt động`
             );
           }
 
@@ -10519,7 +10519,7 @@ async function api(request, response, url) {
     const track = (studentClass === "TD") ? "free" : "main";
     const isPaused = (track === "free") ? Boolean(comp && comp.free_is_paused) : Boolean(comp && comp.is_paused);
     if (comp && isPaused && user.role !== "admin") {
-      return error(response, 403, "Đấu trường thi đua tạm ngưng hoạt động trong tuần này. Hãy chờ thông báo mới nhất từ Quản trị viên về các tuần thi đấu tiếp theo nhé!");
+      return error(response, 403, "Đấu trường tạm ngưng hoạt động trong tuần này. Hãy chờ thông báo mới nhất từ Quản trị viên về các tuần thi đấu tiếp theo nhé!");
     }
 
     if (!isVLUEmail(user)) {
@@ -10829,7 +10829,7 @@ async function api(request, response, url) {
     const track = (studentClass === "TD") ? "free" : "main";
     const isCompPaused = (track === "free") ? Boolean(curComp && curComp.free_is_paused) : Boolean(curComp && curComp.is_paused);
     if (curComp && isCompPaused && user.role !== "admin") {
-      return error(response, 403, "Đấu trường thi đua tạm ngưng hoạt động trong tuần này. Hãy chờ thông báo mới nhất từ Quản trị viên về các tuần thi đấu tiếp theo nhé!");
+      return error(response, 403, "Đấu trường tạm ngưng hoạt động trong tuần này. Hãy chờ thông báo mới nhất từ Quản trị viên về các tuần thi đấu tiếp theo nhé!");
     }
 
     if (!isVLUEmail(user)) {
@@ -11888,16 +11888,6 @@ async function api(request, response, url) {
       const target = new Date(realVnNow);
       if (target.getDay() === 0) target.setDate(target.getDate() + 1);
       target.setHours(19, 30, 0, 0);
-      simulatedTimeOffsetMs = target.getTime() - realVnNow.getTime();
-    } else if (preset === "reviewing" || preset === "10:00" || preset === "preparing") {
-      const target = new Date(realVnNow);
-      if (target.getDay() === 0) target.setDate(target.getDate() + 1);
-      target.setHours(10, 0, 0, 0);
-      simulatedTimeOffsetMs = target.getTime() - realVnNow.getTime();
-    } else if (preset === "sunday" || preset === "summary") {
-      const { sunday } = getWeekRange(realVnNow);
-      const target = new Date(sunday);
-      target.setHours(10, 0, 0, 0);
       simulatedTimeOffsetMs = target.getTime() - realVnNow.getTime();
     } else if (preset === "saturday_open" || preset === "sat_open" || preset === "sat_10:00") {
       const { monday } = getWeekRange(realVnNow);
