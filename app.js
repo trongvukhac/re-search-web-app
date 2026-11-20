@@ -667,7 +667,7 @@ function triggerAppUpdate(newBuildId) {
   banner.innerHTML = `
     <div style="font-size: 22px;">🚀</div>
     <div style="flex: 1;">
-      <div style="font-weight: 700; color: #38bdf8; margin-bottom: 3px;">RE:SEARCH có phiên bản mới!</div>
+      <div style="font-weight: 700; color: #38bdf8; margin-bottom: 3px;">Cập nhật phiên bản v4.7.1</div>
       <div style="font-size: 12px; color: #94a3b8; line-height: 1.4;">Tự động cập nhật sau <strong id="appUpdateSec" style="color: #fff; font-size: 13px;">${formatCountdown(countdown)}</strong> để nạp tính năng mới nhất...</div>
     </div>
     <button type="button" class="button button-small" style="background: #0284c7; color: #fff; border:none; padding: 7px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600; white-space: nowrap;" onclick="window.location.reload(true)">Làm mới ngay</button>
@@ -684,6 +684,101 @@ function triggerAppUpdate(newBuildId) {
   }, 1000);
 }
 
+window.APP_VERSION = "4.7.0";
+
+function isVersionAfter(vCurrent, vTarget = "4.7.1") {
+  if (!vCurrent) return false;
+  const parse = v => String(v).replace(/^v/i, "").split(".").map(n => parseInt(n, 10) || 0);
+  const [cMaj, cMin, cPatch] = parse(vCurrent);
+  const [tMaj, tMin, tPatch] = parse(vTarget);
+  if (cMaj !== tMaj) return cMaj > tMaj;
+  if (cMin !== tMin) return cMin > tMin;
+  return cPatch > tPatch;
+}
+window.isVersionAfter = isVersionAfter;
+
+function syncFooterVersionUI() {
+  const versionEl = document.getElementById("siteFooterVersion");
+  if (!versionEl) return;
+  const currentVer = window.APP_VERSION || "4.7.0";
+  versionEl.innerHTML = `<em>Phiên bản ${currentVer}</em>`;
+
+  // "Chỉ hiện nhật ký kể từ sau bản 4.7.1"
+  if (isVersionAfter(currentVer, "4.7.1")) {
+    versionEl.classList.add("is-clickable");
+    versionEl.title = "Bấm để xem nhật ký phiên bản";
+    versionEl.setAttribute("role", "button");
+    versionEl.setAttribute("tabindex", "0");
+  } else {
+    versionEl.classList.remove("is-clickable");
+    versionEl.removeAttribute("title");
+    versionEl.removeAttribute("role");
+    versionEl.removeAttribute("tabindex");
+  }
+}
+window.syncFooterVersionUI = syncFooterVersionUI;
+
+async function handleFooterVersionClick() {
+  const currentVer = window.APP_VERSION || "4.7.0";
+  // Chỉ hiện nhật ký kể từ sau bản 4.7.1
+  if (!isVersionAfter(currentVer, "4.7.1")) {
+    return;
+  }
+  try {
+    const res = await fetch("/api/changelog");
+    const data = await res.json();
+    const modal = document.getElementById("versionChangelogModal");
+    const titleEl = document.getElementById("versionChangelogHeaderTitle");
+    const textEl = document.getElementById("versionChangelogContentText");
+    if (titleEl) titleEl.textContent = `Nhật ký phiên bản v${data.version || currentVer}`;
+    if (textEl) textEl.textContent = data.changelog || "Nâng cao trải nghiệm người dùng";
+    if (modal) modal.style.display = "flex";
+  } catch (e) {
+    toast("Không thể tải nhật ký phiên bản: " + e.message);
+  }
+}
+window.handleFooterVersionClick = handleFooterVersionClick;
+
+function closeVersionChangelogModal() {
+  const modal = document.getElementById("versionChangelogModal");
+  if (modal) modal.style.display = "none";
+}
+window.closeVersionChangelogModal = closeVersionChangelogModal;
+
+async function loadAdminChangelog() {
+  try {
+    const res = await fetch("/api/changelog");
+    const data = await res.json();
+    const input = document.getElementById("adminChangelogInput");
+    if (input && data && data.changelog) {
+      input.value = data.changelog;
+    }
+  } catch (e) { }
+}
+window.loadAdminChangelog = loadAdminChangelog;
+
+async function saveAdminChangelog() {
+  const input = document.getElementById("adminChangelogInput");
+  const btn = document.getElementById("btnSaveAdminChangelog");
+  const text = input ? input.value.trim() : "";
+  if (btn) btn.disabled = true;
+  try {
+    const res = await fetchJSON("/api/admin/changelog", {
+      method: "POST",
+      body: JSON.stringify({ text: text || "Nâng cao trải nghiệm người dùng" })
+    });
+    toast("Đã lưu nhật ký phiên bản thành công!");
+    if (input && res && res.changelog) {
+      input.value = res.changelog;
+    }
+  } catch (e) {
+    toast("Lỗi lưu nhật ký: " + e.message);
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+}
+window.saveAdminChangelog = saveAdminChangelog;
+
 async function checkAppVersionInBackground() {
   const now = Date.now();
   if (now - lastVersionCheckTime < 45000) return; // Không check dồn dập trong 45s
@@ -691,8 +786,14 @@ async function checkAppVersionInBackground() {
   try {
     const res = await fetch("/api/app-version", { cache: "no-store", credentials: "same-origin" });
     const data = await res.json();
-    if (data && data.buildId) {
-      handleAppBuildVersion(data.buildId);
+    if (data) {
+      if (data.version) {
+        window.APP_VERSION = data.version;
+        syncFooterVersionUI();
+      }
+      if (data.buildId) {
+        handleAppBuildVersion(data.buildId);
+      }
     }
   } catch (e) { }
 }
@@ -7119,6 +7220,9 @@ document.addEventListener("DOMContentLoaded", () => {
     grid.innerHTML = days.map(d => `<div class="day"><small>${d}</small><i>○</i></div>`).join("");
   }
 
+  syncFooterVersionUI();
+  checkAppVersionInBackground();
+
   checkAndShowBanner();
 });
 
@@ -8215,6 +8319,7 @@ $("#adminButton").onclick = async () => {
     try {
       loadAdminTrash();
       loadAdminHidden();
+      loadAdminChangelog();
       $$(".admin-tab")[0].click(); // Click "Overview" tab to load it
     } catch (e) {
       toast("Không thể tải dữ liệu quản trị.");

@@ -39712,7 +39712,9 @@ body.dark-theme .omni-footer-hint kbd {
 
 /* Admin Broadcast Modal Container & Card (Guaranteed Top Layer) */
 .modal#adminBroadcastModal,
-#adminBroadcastModal {
+#adminBroadcastModal,
+.modal#versionChangelogModal,
+#versionChangelogModal {
   position: fixed !important;
   inset: 0 !important;
   width: 100vw !important;
@@ -39733,11 +39735,14 @@ body.dark-theme .omni-footer-hint kbd {
 }
 
 #adminBroadcastModal.open,
-#adminBroadcastModal[style*="display: flex"] {
+#adminBroadcastModal[style*="display: flex"],
+#versionChangelogModal.open,
+#versionChangelogModal[style*="display: flex"] {
   display: flex !important;
 }
 
-#adminBroadcastModal .admin-broadcast-modal-card {
+#adminBroadcastModal .admin-broadcast-modal-card,
+#versionChangelogModal .modal-card {
   position: relative !important;
   z-index: 10081 !important;
   max-width: 480px !important;
@@ -39751,7 +39756,8 @@ body.dark-theme .omni-footer-hint kbd {
   overflow: hidden;
 }
 
-#adminBroadcastModal .modal-header {
+#adminBroadcastModal .modal-header,
+#versionChangelogModal .modal-header {
   display: flex !important;
   align-items: center !important;
   justify-content: space-between !important;
@@ -39759,7 +39765,8 @@ body.dark-theme .omni-footer-hint kbd {
   border-bottom: 1px solid var(--border, rgba(0, 0, 0, 0.08)) !important;
 }
 
-#adminBroadcastModal .modal-header h3 {
+#adminBroadcastModal .modal-header h3,
+#versionChangelogModal .modal-header h3 {
   font-family: var(--sans) !important;
   font-size: 16px !important;
   font-weight: 700 !important;
@@ -39770,11 +39777,8 @@ body.dark-theme .omni-footer-hint kbd {
   margin: 0 !important;
 }
 
-#adminBroadcastModal .modal-header h3 svg {
-  color: var(--primary, #123f31) !important;
-}
-
-#adminBroadcastModal .modal-close {
+#adminBroadcastModal .modal-close,
+#versionChangelogModal .modal-close {
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
@@ -39789,54 +39793,30 @@ body.dark-theme .omni-footer-hint kbd {
   padding: 0 !important;
 }
 
-#adminBroadcastModal .modal-close:hover {
-  background: rgba(0, 0, 0, 0.08) !important;
-  color: var(--ink, #0f172a) !important;
-}
-
-#adminBroadcastModal label {
-  color: var(--ink, #1e293b) !important;
-}
-
-#adminBroadcastModal .input,
-#adminBroadcastModal .textarea {
-  background: var(--surface, #ffffff) !important;
-  border: 1px solid var(--border, #cbd5e1) !important;
-  color: var(--ink, #0f172a) !important;
-  font-family: var(--sans) !important;
-  transition: all 0.2s ease;
-}
-
-#adminBroadcastModal .input:focus,
-#adminBroadcastModal .textarea:focus {
-  border-color: var(--primary, #123f31) !important;
-  outline: none !important;
-  box-shadow: 0 0 0 3px rgba(18, 63, 49, 0.15) !important;
-}
-
-body.dark-theme #adminBroadcastModal {
+body.dark-theme #adminBroadcastModal,
+body.dark-theme #versionChangelogModal {
   background: rgba(5, 15, 25, 0.75) !important;
 }
 
-body.dark-theme #adminBroadcastModal .admin-broadcast-modal-card {
+body.dark-theme #adminBroadcastModal .admin-broadcast-modal-card,
+body.dark-theme #versionChangelogModal .modal-card {
   background: #182230 !important;
   border-color: rgba(255, 255, 255, 0.12) !important;
   color: #f1f5f9 !important;
 }
 
-body.dark-theme #adminBroadcastModal .modal-header {
+body.dark-theme #adminBroadcastModal .modal-header,
+body.dark-theme #versionChangelogModal .modal-header {
   border-bottom-color: rgba(255, 255, 255, 0.1) !important;
 }
 
-body.dark-theme #adminBroadcastModal .modal-header h3 {
+body.dark-theme #adminBroadcastModal .modal-header h3,
+body.dark-theme #versionChangelogModal .modal-header h3 {
   color: #f1f5f9 !important;
 }
 
-body.dark-theme #adminBroadcastModal .modal-header h3 svg {
-  color: #34d399 !important;
-}
-
-body.dark-theme #adminBroadcastModal .modal-close {
+body.dark-theme #adminBroadcastModal .modal-close,
+body.dark-theme #versionChangelogModal .modal-close {
   background: rgba(255, 255, 255, 0.06) !important;
   border-color: rgba(255, 255, 255, 0.12) !important;
   color: #94a3b8 !important;
@@ -42695,5 +42675,113 @@ html.dark-theme .post-detail-community-tag.is-private {
   .btn-comm-join {
     flex-shrink: 0;
     white-space: nowrap;
+  }
+}
+
+/* ==========================================================================
+   SITE-WIDE COMPACT FOOTER (FULL WIDTH, SLIM HEIGHT)
+   ========================================================================== */
+.site-footer {
+  width: 100%;
+  margin-top: auto;
+  background: var(--card, #ffffff);
+  border-top: 1px solid var(--border, rgba(0, 0, 0, 0.08));
+  color: var(--muted, #64748b);
+  font-size: 12.5px;
+  line-height: 1.4;
+  padding: 10px 84px 10px 28px;
+  box-sizing: border-box;
+  position: relative;
+  z-index: 5;
+  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+.site-footer-inner {
+  width: 100%;
+  max-width: 1280px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 24px;
+}
+
+.site-footer-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.site-footer-right {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font-weight: 400;
+  white-space: nowrap;
+}
+
+.site-footer-contact {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+}
+
+.site-footer-version {
+  font-style: italic;
+  color: var(--muted, #64748b);
+  cursor: default;
+  user-select: none;
+  transition: color 0.15s ease;
+}
+
+.site-footer-version.is-clickable {
+  cursor: pointer;
+}
+
+.site-footer-version.is-clickable:hover {
+  color: var(--primary, #1e5d46);
+  text-decoration: underline;
+}
+
+/* Dark mode */
+[data-user-theme="dark"] .site-footer,
+[data-user-theme="midnight"] .site-footer,
+body.dark-theme .site-footer {
+  background: #0d1319;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  color: #94a3b8;
+}
+
+[data-user-theme="dark"] .site-footer-version.is-clickable:hover,
+[data-user-theme="midnight"] .site-footer-version.is-clickable:hover,
+body.dark-theme .site-footer-version.is-clickable:hover {
+  color: #38bdf8;
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+  .site-footer {
+    padding: 8px 16px;
+    font-size: 11.5px;
+    margin-bottom: 74px; /* Ensure space above floating mobile nav dock */
+  }
+
+  .site-footer-inner {
+    flex-direction: row;
+    justify-content: space-between;
+    gap: 10px;
+  }
+}
+
+@media (max-width: 480px) {
+  .site-footer {
+    font-size: 11px;
+  }
+  .site-footer-inner {
+    font-size: 11px;
   }
 }

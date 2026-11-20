@@ -25,6 +25,7 @@ function computeAppBuildId() {
   }
 }
 const APP_BUILD_ID = computeAppBuildId();
+const APP_VERSION = "4.7.0";
 
 // ============================================================
 // FEATURE FLAG & ROSTER: Kích hoạt tính năng RE:SEARCH ARENA & 2 Bảng thi (Lớp 06 & 07)
@@ -229,6 +230,10 @@ db.exec(`
     last_ping TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
   );
 `);
+
+try {
+  db.prepare("INSERT OR IGNORE INTO kv_store (key, value) VALUES ('app_changelog', 'Nâng cao trải nghiệm người dùng');").run();
+} catch (e) { }
 
 try { db.exec("ALTER TABLE users ADD COLUMN student_id TEXT;"); } catch (e) { }
 try { db.exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_users_unique_student_id ON users(LOWER(TRIM(student_id))) WHERE student_id IS NOT NULL AND TRIM(student_id) != '';"); } catch (e) { }
@@ -9825,10 +9830,54 @@ async function api(request, response, url) {
 
   // --- APP VERSION CHECK ---
   if (method === "GET" && pathName === "/api/app-version") {
+    let changelogText = "Nâng cao trải nghiệm người dùng";
+    try {
+      const row = db.prepare("SELECT value FROM kv_store WHERE key = 'app_changelog'").get();
+      if (row && row.value) changelogText = row.value;
+    } catch (e) { }
     return json(response, 200, {
       ok: true,
+      version: APP_VERSION,
       buildId: APP_BUILD_ID,
+      changelog: changelogText,
       serverTime: new Date().toISOString()
+    });
+  }
+
+  // --- APP CHANGELOG ENDPOINTS ---
+  if (method === "GET" && pathName === "/api/changelog") {
+    let changelogText = "Nâng cao trải nghiệm người dùng";
+    try {
+      const row = db.prepare("SELECT value FROM kv_store WHERE key = 'app_changelog'").get();
+      if (row && row.value) changelogText = row.value;
+    } catch (e) { }
+    return json(response, 200, {
+      ok: true,
+      version: APP_VERSION,
+      changelog: changelogText
+    });
+  }
+
+  if (method === "POST" && pathName === "/api/admin/changelog") {
+    const user = requireUser(request, response);
+    if (!user || (!isAdmin(user) && !isSuperAdmin(user))) {
+      return error(response, 403, "Chỉ Quản trị viên mới có quyền cập nhật nhật ký phiên bản.");
+    }
+    const body = await parseBody(request);
+    const changelogText = String(body.changelog || body.text || "").trim() || "Nâng cao trải nghiệm người dùng";
+    try {
+      db.prepare(`
+        INSERT INTO kv_store (key, value)
+        VALUES ('app_changelog', ?)
+        ON CONFLICT(key) DO UPDATE SET value = excluded.value
+      `).run(changelogText);
+    } catch (e) {
+      return error(response, 500, "Lỗi khi lưu nhật ký phiên bản: " + e.message);
+    }
+    return json(response, 200, {
+      ok: true,
+      version: APP_VERSION,
+      changelog: changelogText
     });
   }
 
