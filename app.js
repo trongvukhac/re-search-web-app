@@ -18012,6 +18012,18 @@ const HOME_BANNERS_CONFIG = [
     action: null
   },
   {
+    id: "community-forum",
+    title: "Cộng đồng cùng bạn khám phá và chia sẻ — Khám phá ngay Diễn đàn RE:SEARCH!",
+    image: "public/assets/banner-community-forum.jpg?v=20261121_1",
+    // thời gian hiển thị: đến hết 16/12/2026, tương tác ra trang Diễn đàn
+    startsAt: new Date("2026-11-20T00:00:00+07:00").getTime(),
+    expiresAt: new Date("2026-12-16T23:59:59+07:00").getTime(),
+    action: () => {
+      if (typeof go === "function") go("forum");
+      else toast("Khám phá ngay Diễn đàn Cộng đồng RE:SEARCH!");
+    }
+  },
+  {
     id: "leaderboard-w05",
     title: "Bảng Vàng Tuần 05 — Mô Hình Nghiên Cứu Và Tư Duy Lý Thuyết",
     image: "public/assets/banner-leaderboard-w05.jpg?v=20261116_1",
