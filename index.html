@@ -47,7 +47,7 @@
   <script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js" defer></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" defer></script>
-  <link rel="stylesheet" href="styles.css?v=196" />
+  <link rel="stylesheet" href="styles.css?v=197" />
 </head>
 
 <body>
@@ -4010,7 +4010,7 @@
         <!-- Vùng mở rộng cho thông tin liên hệ sau này -->
         <span class="site-footer-contact" id="siteFooterContact" style="display: none;"></span>
         <span class="site-footer-version" id="siteFooterVersion" onclick="handleFooterVersionClick()"><em>Phiên bản
-            4.7.3</em></span>
+            4.7.4</em></span>
       </div>
     </div>
   </footer>
@@ -6485,13 +6485,23 @@
             <span>Nhật ký phiên bản (Changelog)</span>
           </h4>
           <span style="font-size: 12px; color: var(--muted, #64748b);">Phiên bản hiện tại: <strong
-              style="color: var(--primary, #1e5d46);">v4.7.0</strong></span>
+              id="adminCurrentVersionBadge" style="color: var(--primary, #1e5d46);">v4.7.4</strong></span>
         </div>
         <p style="margin: 0 0 10px 0; font-size: 12.5px; color: var(--muted, #64748b); line-height: 1.45;">
           Nhập nội dung cập nhật cho phiên bản. Mặc định là <em>"Nâng cao trải nghiệm người dùng"</em>. Nhật ký chỉ tự
           động hiển thị cho người dùng kể từ sau bản 4.7.1 (từ v4.7.2 trở đi).
         </p>
         <div style="display: flex; flex-direction: column; gap: 8px;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <label for="adminChangelogVersionSelect" style="font-size: 12.5px; font-weight: 600; white-space: nowrap;">Chọn phiên bản chỉnh sửa:</label>
+            <select id="adminChangelogVersionSelect" class="select" onchange="onAdminChangelogVersionChange(this.value)" style="padding: 4px 10px; font-size: 13px; border-radius: 6px; font-weight: 600;">
+              <option value="4.7.4" selected>Phiên bản 4.7.4 (Hiện tại)</option>
+              <option value="4.7.3">Phiên bản 4.7.3</option>
+              <option value="4.7.2">Phiên bản 4.7.2</option>
+              <option value="4.7.1">Phiên bản 4.7.1</option>
+              <option value="4.7.0">Phiên bản 4.7.0</option>
+            </select>
+          </div>
           <textarea id="adminChangelogInput" class="textarea" rows="2" placeholder="Nâng cao trải nghiệm người dùng"
             style="width: 100%; border-radius: 8px; font-size: 13px;"></textarea>
           <div style="display: flex; justify-content: flex-end;">
@@ -9034,7 +9044,7 @@
         <h3 id="versionChangelogTitle"
           style="font-size: 16px; font-weight: 700; margin: 0; display: flex; align-items: center; gap: 8px;">
           <span>🚀</span>
-          <span id="versionChangelogHeaderTitle">Nhật ký phiên bản v4.7.0</span>
+          <span id="versionChangelogHeaderTitle">Nhật ký phiên bản v4.7.4</span>
         </h3>
         <button type="button" class="modal-close" onclick="closeVersionChangelogModal()" aria-label="Đóng">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
@@ -9064,7 +9074,7 @@
     </div>
   </div>
 
-  <script src="app.js?v=196" defer></script>
+  <script src="app.js?v=197" defer></script>
 </body>
 
 </html>

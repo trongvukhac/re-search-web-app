@@ -17194,26 +17194,26 @@ body.dark-theme .doc-viewer-save-btn.is-saved {
 }
 
 .mini-card-frame-layer[data-frame="gold"] {
-  background-image: url("frames/v2/gold.png?v=6");
-  inset: calc(-77px * var(--mini-scale)) calc(-77px * var(--mini-scale)) calc(-81px * var(--mini-scale)) calc(-97px * var(--mini-scale));
+  background-image: url("frames/v2/gold.png?v=7");
+  inset: calc(-48px * var(--mini-scale)) calc(-44px * var(--mini-scale)) calc(-52px * var(--mini-scale)) calc(-46px * var(--mini-scale));
   background-size: 100% 100%;
 }
 
 .mini-card-frame-layer[data-frame="thung_lung_suong_thu"] {
-  background-image: url("frames/v2/thung_lung_suong_thu.png?v=1");
-  inset: calc(-135px * var(--mini-scale)) calc(-81px * var(--mini-scale)) calc(-96px * var(--mini-scale)) calc(-71px * var(--mini-scale));
+  background-image: url("frames/v2/thung_lung_suong_thu.png?v=2");
+  inset: calc(-54px * var(--mini-scale)) calc(-44px * var(--mini-scale)) calc(-52px * var(--mini-scale)) calc(-44px * var(--mini-scale));
   background-size: 100% 100%;
 }
 
 .mini-card-frame-layer[data-frame="thien_ha_huyen_ao"] {
-  background-image: url("frames/v2/thien_ha_huyen_ao.png?v=1");
-  inset: calc(-58px * var(--mini-scale)) calc(-96px * var(--mini-scale)) calc(-59px * var(--mini-scale)) calc(-85px * var(--mini-scale));
+  background-image: url("frames/v2/thien_ha_huyen_ao.png?v=2");
+  inset: calc(-44px * var(--mini-scale)) calc(-46px * var(--mini-scale)) calc(-44px * var(--mini-scale)) calc(-46px * var(--mini-scale));
   background-size: 100% 100%;
 }
 
 .mini-card-frame-layer[data-frame="pha_le_hoang_gia"] {
-  background-image: url("frames/v2/pha_le_hoang_gia.png?v=1");
-  inset: calc(-87px * var(--mini-scale)) calc(-80px * var(--mini-scale)) calc(-83px * var(--mini-scale)) calc(-93px * var(--mini-scale));
+  background-image: url("frames/v2/pha_le_hoang_gia.png?v=2");
+  inset: calc(-50px * var(--mini-scale)) calc(-46px * var(--mini-scale)) calc(-50px * var(--mini-scale)) calc(-48px * var(--mini-scale));
   background-size: 100% 100%;
 }
 
@@ -17237,8 +17237,8 @@ body.dark-theme .doc-viewer-save-btn.is-saved {
 }
 
 .mini-card-frame-layer[data-frame="phep_mau_mua_dong"] {
-  background-image: url("frames/v2/phep_mau_mua_dong.png?v=3");
-  inset: calc(-70px * var(--mini-scale)) calc(-51px * var(--mini-scale)) calc(-75px * var(--mini-scale)) calc(-66px * var(--mini-scale));
+  background-image: url("frames/v2/phep_mau_mua_dong.png?v=4");
+  inset: calc(-46px * var(--mini-scale)) calc(-38px * var(--mini-scale)) calc(-48px * var(--mini-scale)) calc(-42px * var(--mini-scale));
   background-size: 100% 100%;
 }
 
@@ -22267,26 +22267,26 @@ dialog.modal.namecard-modal {
 }
 
 .namecard-frame-layer[data-frame="gold"] {
-  background-image: url("frames/v2/gold.png?v=6");
-  inset: -77px -77px -81px -97px;
+  background-image: url("frames/v2/gold.png?v=7");
+  inset: -48px -44px -52px -46px;
   background-size: 100% 100%;
 }
 
 .namecard-frame-layer[data-frame="thung_lung_suong_thu"] {
-  background-image: url("frames/v2/thung_lung_suong_thu.png?v=1");
-  inset: -135px -81px -96px -71px;
+  background-image: url("frames/v2/thung_lung_suong_thu.png?v=2");
+  inset: -54px -44px -52px -44px;
   background-size: 100% 100%;
 }
 
 .namecard-frame-layer[data-frame="thien_ha_huyen_ao"] {
-  background-image: url("frames/v2/thien_ha_huyen_ao.png?v=1");
-  inset: -58px -96px -59px -85px;
+  background-image: url("frames/v2/thien_ha_huyen_ao.png?v=2");
+  inset: -44px -46px -44px -46px;
   background-size: 100% 100%;
 }
 
 .namecard-frame-layer[data-frame="pha_le_hoang_gia"] {
-  background-image: url("frames/v2/pha_le_hoang_gia.png?v=1");
-  inset: -87px -80px -83px -93px;
+  background-image: url("frames/v2/pha_le_hoang_gia.png?v=2");
+  inset: -50px -46px -50px -48px;
   background-size: 100% 100%;
 }
 
@@ -22310,8 +22310,8 @@ dialog.modal.namecard-modal {
 }
 
 .namecard-frame-layer[data-frame="phep_mau_mua_dong"] {
-  background-image: url("frames/v2/phep_mau_mua_dong.png?v=3");
-  inset: -70px -51px -75px -66px;
+  background-image: url("frames/v2/phep_mau_mua_dong.png?v=4");
+  inset: -46px -38px -48px -42px;
   background-size: 100% 100%;
 }
 

@@ -4,6 +4,18 @@ Tất cả các thay đổi đáng chú ý của dự án **RE:SEARCH — Cộng
 
 ---
 
+## [4.7.4] - 2026-11-21
+### Sửa lỗi & Hoàn thiện (Hotfix)
+- **Đồng nhất số phiên bản toàn diện (Version Number Synchronization)**:
+  - Đồng bộ hoá triệt để toàn bộ hệ thống về phiên bản `4.7.4` trên `package.json`, máy chủ `server.js` (header `X-App-Version`), client `app.js` (`window.APP_VERSION`), chân trang `index.html` và nhật ký phiên bản.
+  - Khắc phục lỗi hiển thị cứng `v4.7.1` tại thanh thông báo popup cập nhật phiên bản: chuyển sang hiển thị động chính xác phiên bản đích đang triển khai (`v${targetVersion}`).
+  - Khắc phục lỗi hiển thị cứng `v4.7.0` tại trang Quản trị (Admin Settings) và bổ sung bộ chọn phiên bản (`<select id="adminChangelogVersionSelect">`), cho phép Quản trị viên linh hoạt chọn xem và chỉnh sửa nhật ký của bất kỳ phiên bản nào (`v4.7.4`, `v4.7.3`, `v4.7.2`, `v4.7.1`, `v4.7.0`).
+- **Hiệu chuẩn kích thước khung Namecard chuẩn xác (Precision Frame Scaling)**:
+  - Khắc phục triệt để hiện tượng khung nghệ thuật bị phóng to đột biến hoặc lơ lửng ngoài mép thẻ do toạ độ inset âm quá đà.
+  - Tái hiệu chuẩn bộ thông số inset cân bằng chuẩn (`-44px` đến `-54px`) ôm khít vừa vặn viền bo cong 60px của Namecard Canvas (680×760) cũng như Namecard mini cho cả 5 khung: *Kỷ nguyên hoàng kim* (`gold`), *Phép màu mùa đông* (`phep_mau_mua_dong`), *Thung lũng sương thu* (`thung_lung_suong_thu`), *Thiên hà huyền ảo* (`thien_ha_huyen_ao`) và *Pha lê hoàng gia* (`pha_le_hoang_gia`).
+
+---
+
 ## [4.7.3] - 2026-11-21
 ### Sửa lỗi & Hoàn thiện (Hotfix)
 - **Khắc phục triệt để lỗi tràn ngang trên Mobile**: Chuẩn hoá thuộc tính `overflow-x: hidden`, `width: 100%`, `max-width: 100vw` và `min-width: 0` trên các phần tử gốc `html`, `body`, `main`, `#home`, `.page` và dải trang trí lễ hội, triệt tiêu hoàn toàn thanh cuộn ngang trên điện thoại di động (chiều rộng cố định chuẩn 390px).

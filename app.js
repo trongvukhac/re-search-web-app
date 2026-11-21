@@ -558,8 +558,9 @@ async function requestAPI(url, options = {}) {
     headers,
   });
   const serverBuild = response.headers.get("X-App-Build");
+  const serverVersion = response.headers.get("X-App-Version");
   if (serverBuild && typeof handleAppBuildVersion === "function") {
-    handleAppBuildVersion(serverBuild);
+    handleAppBuildVersion(serverBuild, serverVersion);
   }
   const data = await response.json();
   if (!response.ok)
@@ -571,17 +572,21 @@ async function requestAPI(url, options = {}) {
 // AUTO-UPDATE & REALTIME VERSION MANAGER
 // ============================================================
 let clientAppBuildId = null;
+let targetUpdateVersion = null;
 let isUpdatePromptShowing = false;
 let lastVersionCheckTime = 0;
 
-function handleAppBuildVersion(serverBuildId) {
+function handleAppBuildVersion(serverBuildId, serverVersion) {
+  if (serverVersion) {
+    targetUpdateVersion = serverVersion;
+  }
   if (!serverBuildId) return;
   if (!clientAppBuildId) {
     clientAppBuildId = serverBuildId;
     return;
   }
   if (clientAppBuildId !== serverBuildId) {
-    triggerAppUpdate(serverBuildId);
+    triggerAppUpdate(serverBuildId, serverVersion || targetUpdateVersion);
   }
 }
 
@@ -612,13 +617,13 @@ function isUserBusyWithCriticalTask() {
   return false;
 }
 
-function triggerAppUpdate(newBuildId) {
+function triggerAppUpdate(newBuildId, newVersion) {
   if (isUpdatePromptShowing) return;
 
   if (isUserBusyWithCriticalTask()) {
     // Nếu người dùng đang làm bài hoặc viết bài: hoãn lại và kiểm tra lại sau 30 giây
     setTimeout(() => {
-      if (clientAppBuildId !== newBuildId) triggerAppUpdate(newBuildId);
+      if (clientAppBuildId !== newBuildId) triggerAppUpdate(newBuildId, newVersion);
     }, 30000);
     return;
   }
@@ -664,10 +669,12 @@ function triggerAppUpdate(newBuildId) {
     return `${m}:${String(sec).padStart(2, "0")}`;
   };
 
+  const displayVer = newVersion || targetUpdateVersion || window.APP_VERSION || "4.7.4";
+
   banner.innerHTML = `
     <div style="font-size: 22px;">🚀</div>
     <div style="flex: 1;">
-      <div style="font-weight: 700; color: #38bdf8; margin-bottom: 3px;">Cập nhật phiên bản v4.7.1</div>
+      <div style="font-weight: 700; color: #38bdf8; margin-bottom: 3px;">Cập nhật phiên bản v${displayVer}</div>
       <div style="font-size: 12px; color: #94a3b8; line-height: 1.4;">Tự động cập nhật sau <strong id="appUpdateSec" style="color: #fff; font-size: 13px;">${formatCountdown(countdown)}</strong> để nạp tính năng mới nhất...</div>
     </div>
     <button type="button" class="button button-small" style="background: #0284c7; color: #fff; border:none; padding: 7px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600; white-space: nowrap;" onclick="window.location.reload(true)">Làm mới ngay</button>
@@ -684,7 +691,7 @@ function triggerAppUpdate(newBuildId) {
   }, 1000);
 }
 
-window.APP_VERSION = "4.7.3";
+window.APP_VERSION = "4.7.4";
 
 function isVersionAfter(vCurrent, vTarget = "4.7.1") {
   if (!vCurrent) return false;
@@ -745,19 +752,30 @@ function closeVersionChangelogModal() {
 }
 window.closeVersionChangelogModal = closeVersionChangelogModal;
 
-async function loadAdminChangelog() {
+async function loadAdminChangelog(version) {
+  const select = document.getElementById("adminChangelogVersionSelect");
+  const targetVer = version || (select ? select.value : (window.APP_VERSION || "4.7.4"));
+  const badge = document.getElementById("adminCurrentVersionBadge");
+  if (badge) badge.textContent = `v${window.APP_VERSION || "4.7.4"}`;
   try {
-    const res = await fetch("/api/changelog");
+    const res = await fetch(`/api/changelog?version=${encodeURIComponent(targetVer)}`);
     const data = await res.json();
     const input = document.getElementById("adminChangelogInput");
-    if (input && data && data.changelog) {
-      input.value = data.changelog;
+    if (input && data) {
+      input.value = data.changelog || "Nâng cao trải nghiệm người dùng";
     }
   } catch (e) { }
 }
 window.loadAdminChangelog = loadAdminChangelog;
 
+function onAdminChangelogVersionChange(version) {
+  loadAdminChangelog(version);
+}
+window.onAdminChangelogVersionChange = onAdminChangelogVersionChange;
+
 async function saveAdminChangelog() {
+  const select = document.getElementById("adminChangelogVersionSelect");
+  const targetVer = select ? select.value : (window.APP_VERSION || "4.7.4");
   const input = document.getElementById("adminChangelogInput");
   const btn = document.getElementById("btnSaveAdminChangelog");
   const text = input ? input.value.trim() : "";
@@ -765,9 +783,12 @@ async function saveAdminChangelog() {
   try {
     const res = await fetchJSON("/api/admin/changelog", {
       method: "POST",
-      body: JSON.stringify({ text: text || "Nâng cao trải nghiệm người dùng" })
+      body: JSON.stringify({
+        version: targetVer,
+        text: text || "Nâng cao trải nghiệm người dùng"
+      })
     });
-    toast("Đã lưu nhật ký phiên bản thành công!");
+    toast(`Đã lưu nhật ký cho phiên bản v${targetVer} thành công!`);
     if (input && res && res.changelog) {
       input.value = res.changelog;
     }
@@ -792,7 +813,7 @@ async function checkAppVersionInBackground() {
         syncFooterVersionUI();
       }
       if (data.buildId) {
-        handleAppBuildVersion(data.buildId);
+        handleAppBuildVersion(data.buildId, data.version);
       }
     }
   } catch (e) { }

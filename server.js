@@ -25,7 +25,7 @@ function computeAppBuildId() {
   }
 }
 const APP_BUILD_ID = computeAppBuildId();
-const APP_VERSION = "4.7.3";
+const APP_VERSION = "4.7.4";
 
 // ============================================================
 // FEATURE FLAG & ROSTER: Kích hoạt tính năng RE:SEARCH ARENA & 2 Bảng thi (Lớp 06 & 07)
@@ -1643,6 +1643,7 @@ function json(response, status, body, headers = {}) {
     "Content-Type": "application/json; charset=utf-8",
     "Cache-Control": "no-store",
     "X-App-Build": APP_BUILD_ID,
+    "X-App-Version": APP_VERSION,
     ...headers,
   });
   response.end(JSON.stringify(body));
@@ -9853,14 +9854,19 @@ async function api(request, response, url) {
 
   // --- APP CHANGELOG ENDPOINTS ---
   if (method === "GET" && pathName === "/api/changelog") {
+    const targetVersion = (url.searchParams.get("version") || APP_VERSION).trim();
     let changelogText = "Nâng cao trải nghiệm người dùng";
     try {
-      const row = db.prepare("SELECT value FROM kv_store WHERE key = 'app_changelog'").get();
+      let row = db.prepare("SELECT value FROM kv_store WHERE key = ?").get(`app_changelog_${targetVersion}`);
+      if (!row && targetVersion === APP_VERSION) {
+        row = db.prepare("SELECT value FROM kv_store WHERE key = 'app_changelog'").get();
+      }
       if (row && row.value) changelogText = row.value;
     } catch (e) { }
     return json(response, 200, {
       ok: true,
-      version: APP_VERSION,
+      version: targetVersion,
+      currentVersion: APP_VERSION,
       changelog: changelogText
     });
   }
@@ -9871,19 +9877,28 @@ async function api(request, response, url) {
       return error(response, 403, "Chỉ Quản trị viên mới có quyền cập nhật nhật ký phiên bản.");
     }
     const body = await parseBody(request);
+    const targetVersion = String(body.version || APP_VERSION).trim();
     const changelogText = String(body.changelog || body.text || "").trim() || "Nâng cao trải nghiệm người dùng";
     try {
       db.prepare(`
         INSERT INTO kv_store (key, value)
-        VALUES ('app_changelog', ?)
+        VALUES (?, ?)
         ON CONFLICT(key) DO UPDATE SET value = excluded.value
-      `).run(changelogText);
+      `).run(`app_changelog_${targetVersion}`, changelogText);
+      if (targetVersion === APP_VERSION) {
+        db.prepare(`
+          INSERT INTO kv_store (key, value)
+          VALUES ('app_changelog', ?)
+          ON CONFLICT(key) DO UPDATE SET value = excluded.value
+        `).run(changelogText);
+      }
     } catch (e) {
       return error(response, 500, "Lỗi khi lưu nhật ký phiên bản: " + e.message);
     }
     return json(response, 200, {
       ok: true,
-      version: APP_VERSION,
+      version: targetVersion,
+      currentVersion: APP_VERSION,
       changelog: changelogText
     });
   }
@@ -12287,6 +12302,7 @@ function serveStatic(request, response, url) {
     "X-Content-Type-Options": "nosniff",
     "Referrer-Policy": "same-origin",
     "X-App-Build": APP_BUILD_ID,
+    "X-App-Version": APP_VERSION,
   };
   if (extension === ".html") {
     headers["Cache-Control"] = "no-cache, no-store, must-revalidate";
