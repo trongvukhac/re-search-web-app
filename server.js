@@ -25,7 +25,7 @@ function computeAppBuildId() {
   }
 }
 const APP_BUILD_ID = computeAppBuildId();
-const APP_VERSION = "4.7.7";
+const APP_VERSION = "4.7.8";
 
 // ============================================================
 // FEATURE FLAG & ROSTER: Kích hoạt tính năng RE:SEARCH ARENA & 2 Bảng thi (Lớp 06 & 07)
@@ -9891,10 +9891,11 @@ async function api(request, response, url) {
 
   if (method === "POST" && pathName === "/api/admin/changelog") {
     const user = requireUser(request, response);
-    if (!user || (!isAdmin(user) && !isSuperAdmin(user))) {
+    if (!user) return;
+    if (!isAdmin(user) && !isSuperAdmin(user)) {
       return error(response, 403, "Chỉ Quản trị viên mới có quyền cập nhật nhật ký phiên bản.");
     }
-    const body = await parseBody(request);
+    const body = await readJSON(request);
     const targetVersion = String(body.version || APP_VERSION).trim();
     const changelogText = String(body.changelog || body.text || "").trim() || "Nâng cao trải nghiệm người dùng";
     try {
