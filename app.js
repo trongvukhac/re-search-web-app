@@ -671,7 +671,7 @@ function triggerAppUpdate(newBuildId, newVersion) {
     return `${m}:${String(sec).padStart(2, "0")}`;
   };
 
-  const displayVer = newVersion || targetUpdateVersion || window.APP_VERSION || "4.7.7";
+  const displayVer = newVersion || targetUpdateVersion || window.APP_VERSION || "4.7.8";
 
   banner.innerHTML = `
     <div style="font-size: 22px;">🚀</div>
@@ -693,7 +693,7 @@ function triggerAppUpdate(newBuildId, newVersion) {
   }, 1000);
 }
 
-window.APP_VERSION = "4.7.7";
+window.APP_VERSION = "4.7.8";
 
 function isVersionAfter(vCurrent, vTarget = "4.7.1") {
   if (!vCurrent) return false;
@@ -756,9 +756,9 @@ window.closeVersionChangelogModal = closeVersionChangelogModal;
 
 async function loadAdminChangelog(version) {
   const select = document.getElementById("adminChangelogVersionSelect");
-  const targetVer = version || (select ? select.value : (window.APP_VERSION || "4.7.7"));
+  const targetVer = version || (select ? select.value : (window.APP_VERSION || "4.7.8"));
   const badge = document.getElementById("adminCurrentVersionBadge");
-  if (badge) badge.textContent = `v${window.APP_VERSION || "4.7.7"}`;
+  if (badge) badge.textContent = `v${window.APP_VERSION || "4.7.8"}`;
   try {
     const res = await fetch(`/api/changelog?version=${encodeURIComponent(targetVer)}`);
     const data = await res.json();
@@ -777,7 +777,7 @@ window.onAdminChangelogVersionChange = onAdminChangelogVersionChange;
 
 async function saveAdminChangelog() {
   const select = document.getElementById("adminChangelogVersionSelect");
-  const targetVer = select ? select.value : (window.APP_VERSION || "4.7.7");
+  const targetVer = select ? select.value : (window.APP_VERSION || "4.7.8");
   const input = document.getElementById("adminChangelogInput");
   const btn = document.getElementById("btnSaveAdminChangelog");
   const text = input ? input.value.trim() : "";
