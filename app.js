@@ -671,7 +671,7 @@ function triggerAppUpdate(newBuildId, newVersion) {
     return `${m}:${String(sec).padStart(2, "0")}`;
   };
 
-  const displayVer = newVersion || targetUpdateVersion || window.APP_VERSION || "4.7.8";
+  const displayVer = newVersion || targetUpdateVersion || window.APP_VERSION || "4.7.9";
 
   banner.innerHTML = `
     <div style="font-size: 22px;">🚀</div>
@@ -693,7 +693,7 @@ function triggerAppUpdate(newBuildId, newVersion) {
   }, 1000);
 }
 
-window.APP_VERSION = "4.7.8";
+window.APP_VERSION = "4.7.9";
 
 function isVersionAfter(vCurrent, vTarget = "4.7.1") {
   if (!vCurrent) return false;
@@ -758,9 +758,9 @@ window.closeVersionChangelogModal = closeVersionChangelogModal;
 
 async function loadAdminChangelog(version) {
   const select = document.getElementById("adminChangelogVersionSelect");
-  const targetVer = version || (select ? select.value : (window.APP_VERSION || "4.7.8"));
+  const targetVer = version || (select ? select.value : (window.APP_VERSION || "4.7.9"));
   const badge = document.getElementById("adminCurrentVersionBadge");
-  if (badge) badge.textContent = `v${window.APP_VERSION || "4.7.8"}`;
+  if (badge) badge.textContent = `v${window.APP_VERSION || "4.7.9"}`;
   try {
     const res = await fetch(`/api/changelog?version=${encodeURIComponent(targetVer)}`);
     const data = await res.json();
@@ -779,7 +779,7 @@ window.onAdminChangelogVersionChange = onAdminChangelogVersionChange;
 
 async function saveAdminChangelog() {
   const select = document.getElementById("adminChangelogVersionSelect");
-  const targetVer = select ? select.value : (window.APP_VERSION || "4.7.8");
+  const targetVer = select ? select.value : (window.APP_VERSION || "4.7.9");
   const input = document.getElementById("adminChangelogInput");
   const btn = document.getElementById("btnSaveAdminChangelog");
   const text = input ? input.value.trim() : "";
@@ -12836,10 +12836,60 @@ function startLocalTimerTick() {
       if (cfg) {
         const live = getLibraryLiveState(cfg.focus, cfg.break, curNow);
         if (live.remainingSec !== studyState._lastTickedSec) {
+          const prevMode = studyState.mode;
           studyState._lastTickedSec = live.remainingSec;
           studyState.mode = live.isFocus ? 'focus' : 'shortbreak';
           studyState.durationMinutes = live.isFocus ? cfg.focus : cfg.break;
           studyState.remainingSeconds = live.remainingSec;
+
+          // Khi đang ở ca tập trung: tích lũy số giây học thực tế của người dùng
+          if (live.isFocus) {
+            studyState.elapsedSessionSeconds = (studyState.elapsedSessionSeconds || 0) + 1;
+            if (studySettings.tickingSound && studySettings.tickingSound !== 'off') {
+              playTickSound();
+            }
+          }
+
+          // Nhận diện chuyển ca: Vừa kết thúc ca tập trung (chuyển sang nghỉ giải lao)
+          if (prevMode === 'focus' && !live.isFocus) {
+            const minsToCredit = Math.round((studyState.elapsedSessionSeconds || 0) / 60);
+            triggerSessionAlarm();
+            sendStudyNotification();
+
+            if (minsToCredit >= 1) {
+              const fullCycleAchieved = (minsToCredit >= cfg.focus - 1);
+              if (fullCycleAchieved) {
+                recordTodayCompletedPomodoro();
+                studyState.completedFocusCycles = (studyState.completedFocusCycles || 0) + 1;
+              }
+
+              if (session) {
+                requestAPI("/api/study/complete", {
+                  method: "POST",
+                  body: JSON.stringify({
+                    durationMinutes: minsToCredit,
+                    cyclesCompleted: fullCycleAchieved ? 1 : 0,
+                    goal: `${cfg.name} (Thư viện 24/7)`
+                  })
+                }).then(res => {
+                  if (res && res.success) {
+                    toast(res.message || `🎉 Ca học Thư viện hoàn tất! Đã lưu ${minsToCredit} phút vào thành tích!`);
+                    loadContributions();
+                  }
+                }).catch(console.error);
+              } else {
+                toast(`🎉 Hoàn thành ca học Thư viện ${minsToCredit} phút! (Đăng nhập để lưu điểm)`);
+              }
+            }
+            studyState.elapsedSessionSeconds = 0;
+          } else if (prevMode === 'shortbreak' && live.isFocus) {
+            // Chuyển từ nghỉ giải lao sang ca học mới
+            triggerSessionAlarm();
+            sendStudyNotification();
+            toast(`🔔 Bắt đầu ca học mới tại ${cfg.name}! Chúc bạn tập trung hiệu quả!`);
+            studyState.elapsedSessionSeconds = 0;
+          }
+
           updateTimerDisplay();
           if (typeof updateAllCoStudyCards === 'function') {
             updateAllCoStudyCards(lastFetchedLearners);
@@ -14072,6 +14122,33 @@ function cancelSwitchSpaceModal() {
   }
 }
 
+// Tự động lưu số phút học dở dang (>= 1 phút) vào thành tích cá nhân
+async function savePartialStudyMinutesOnExit(contextGoal = "") {
+  const isFocus = (studyState.mode === 'focus' || studyState.mode === 'pomodoro');
+  const elapsedSecs = studyState.elapsedSessionSeconds || 0;
+  const elapsedMins = Math.round(elapsedSecs / 60);
+
+  if (isFocus && elapsedMins >= 1 && session) {
+    try {
+      const roomDesc = contextGoal || currentStudyRoomData?.name || (currentStudyRoomId?.startsWith('lib_') ? "Thư viện 24/7" : (studyState.goal || "Tự học NCKH"));
+      const res = await requestAPI("/api/study/complete", {
+        method: "POST",
+        body: JSON.stringify({
+          durationMinutes: elapsedMins,
+          cyclesCompleted: 0,
+          goal: roomDesc
+        })
+      });
+      if (res && res.success) {
+        toast(`🎉 Đã lưu ${elapsedMins} phút học vào thành tích cá nhân!`);
+        loadContributions();
+      }
+    } catch (e) {
+      console.warn("Could not save partial study session on exit:", e);
+    }
+  }
+}
+
 async function executeConfirmedSwitchSpace() {
   const modal = document.getElementById("studySwitchSpaceConfirmModal");
   if (modal && typeof modal.close === 'function' && modal.open) {
@@ -14080,6 +14157,9 @@ async function executeConfirmedSwitchSpace() {
 
   const action = pendingSwitchSpaceAction;
   pendingSwitchSpaceAction = null;
+
+  // Tự động lưu số phút học dở dang (>= 1 phút) trước khi đổi không gian học
+  await savePartialStudyMinutesOnExit();
 
   // Reset timer to clean state before entering new room
   await pauseStudyTimer(false);
@@ -14160,6 +14240,7 @@ async function joinStudySpace(roomId, pinCode = null, skipConfirm = false) {
         studyState.remainingSeconds = live.remainingSec;
         studyState.targetEndMs = live.targetEndMs;
         studyState.isRunning = true;
+        studyState.elapsedSessionSeconds = 0;
         if (!studyState.timerInterval) {
           startLocalTimerTick();
         }
@@ -14195,6 +14276,10 @@ async function executeLeaveCurrentRoom() {
   if (modal && typeof modal.close === 'function' && modal.open) {
     modal.close();
   }
+
+  // Tự động lưu số phút học dở dang (>= 1 phút) vào thành tích trước khi thoát phòng
+  await savePartialStudyMinutesOnExit();
+
   try {
     await requestAPI("/api/study/rooms/leave", {
       method: "POST",
@@ -14239,6 +14324,40 @@ async function executeLeaveCurrentRoom() {
   fetchStudyLounge();
   loadAndRenderStudyRooms();
 }
+
+// Cứu cánh số phút học dở dang khi tắt tab hoặc tải lại trang bằng navigator.sendBeacon
+function sendStudyBeaconIfActive() {
+  if (!session) return;
+  const isFocus = (studyState.mode === 'focus' || studyState.mode === 'pomodoro');
+  const elapsedSecs = studyState.elapsedSessionSeconds || 0;
+  const elapsedMins = Math.round(elapsedSecs / 60);
+
+  if (isFocus && elapsedMins >= 1) {
+    if (studyState._lastBeaconSentSecs === elapsedSecs) return;
+    studyState._lastBeaconSentSecs = elapsedSecs;
+
+    const roomDesc = currentStudyRoomData?.name || (currentStudyRoomId?.startsWith('lib_') ? "Thư viện 24/7" : (studyState.goal || "Tự học NCKH"));
+    const payload = JSON.stringify({
+      durationMinutes: elapsedMins,
+      cyclesCompleted: 0,
+      goal: roomDesc
+    });
+
+    if (navigator.sendBeacon) {
+      const blob = new Blob([payload], { type: "application/json" });
+      navigator.sendBeacon("/api/study/complete-beacon", blob);
+    }
+  }
+}
+
+window.addEventListener("pagehide", () => {
+  sendStudyBeaconIfActive();
+});
+window.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "hidden") {
+    sendStudyBeaconIfActive();
+  }
+});
 
 let pendingJoinMeetingId = null;
 

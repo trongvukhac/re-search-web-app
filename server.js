@@ -25,7 +25,7 @@ function computeAppBuildId() {
   }
 }
 const APP_BUILD_ID = computeAppBuildId();
-const APP_VERSION = "4.7.8";
+const APP_VERSION = "4.7.9";
 
 // ============================================================
 // FEATURE FLAG & ROSTER: Kích hoạt tính năng RE:SEARCH ARENA & 2 Bảng thi (Lớp 06 & 07)
@@ -9167,6 +9167,75 @@ async function api(request, response, url) {
     return json(response, 200, { success: true });
   }
 
+  // Helper ghi nhận ca học hoàn thành hoặc thời gian học lẻ (dùng chung cho complete & complete-beacon)
+  function recordCompletedStudySession(userId, minutes, cycles, goal) {
+    // Tính ngày Thứ Hai của tuần hiện tại theo giờ VN (GMT+7)
+    const vnNow = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Ho_Chi_Minh" }));
+    const vnDayIndex = vnNow.getDay() === 0 ? 6 : vnNow.getDay() - 1;
+    const mondayDate = new Date(vnNow);
+    mondayDate.setDate(vnNow.getDate() - vnDayIndex);
+    const y = mondayDate.getFullYear();
+    const m = String(mondayDate.getMonth() + 1).padStart(2, '0');
+    const d = String(mondayDate.getDate()).padStart(2, '0');
+    const mondayDateStr = `${y}-${m}-${d}`;
+
+    // Kiểm tra xem tuần này đã nhận điểm study_session (+10đ) chưa
+    const hasWeeklyStudyReward = db.prepare(`
+      SELECT count(*) as c FROM contribution_events 
+      WHERE user_id = ? AND event_type = 'study_session' AND points > 0 
+        AND date(datetime(created_at, '+7 hours')) >= ?
+    `).get(userId, mondayDateStr).c > 0;
+
+    let pointsAwarded = 0;
+    let toastMessage = "";
+    let reason = "";
+
+    // Tính tổng số phút đã học trong tuần này (tính từ ngày Thứ Hai theo giờ VN GMT+7)
+    const weeklyMinutesRow = db.prepare(`
+      SELECT coalesce(sum(duration_minutes), 0) as totalMins
+      FROM study_logs
+      WHERE user_id = ? AND date(datetime(completed_at, '+7 hours')) >= ?
+    `).get(userId, mondayDateStr);
+    const totalWeeklyMinsWithCurrent = (weeklyMinutesRow?.totalMins || 0) + minutes;
+
+    // Phải hoàn thành tối thiểu 2 lượt hoặc >= 40 phút (trong ca học này hoặc tích lũy trong tuần) và chưa nhận trong tuần
+    const meetsWeeklyReward = (cycles >= 2 || minutes >= 40 || totalWeeklyMinsWithCurrent >= 40);
+    if (meetsWeeklyReward) {
+      if (!hasWeeklyStudyReward) {
+        pointsAwarded = 10;
+        reason = `Hoàn thành tự học Pomodoro (${cycles > 0 ? cycles + ' lượt, ' : ''}${totalWeeklyMinsWithCurrent} phút/tuần) - Thưởng tuần +10đ`;
+        toastMessage = `🎉 Hoàn thành xuất sắc mục tiêu tự học tuần! +10 điểm thưởng tuần & giữ chuỗi thành công!`;
+      } else {
+        pointsAwarded = 0;
+        reason = `Hoàn thành ca tự học Pomodoro (${cycles > 0 ? cycles + ' lượt, ' : ''}${minutes} phút) - Đã nhận thưởng tuần này (1 lần/tuần)`;
+        toastMessage = `🎉 Hoàn tất ca học (${minutes} phút)! Hoạt động đã được ghi nhận giữ chuỗi!`;
+      }
+    } else {
+      pointsAwarded = 0;
+      reason = `Hoàn thành ca tự học (${minutes} phút, ${cycles} lượt) - Cần tối thiểu 2 lượt hoặc 40 phút/tuần để nhận thưởng (+10đ)`;
+      toastMessage = `🎉 Hoàn tất ca học (${minutes} phút)! Tích lũy đủ 40 phút hoặc 2 lượt trong tuần để nhận 10đ thưởng tuần. Hoạt động đã được ghi nhận giữ chuỗi!`;
+    }
+
+    if (minutes >= 10 || cycles >= 1 || totalWeeklyMinsWithCurrent >= 20) {
+      recordContribution(userId, "study_session", pointsAwarded, "study", null, reason);
+    }
+    if (minutes > 0) {
+      try {
+        db.prepare("INSERT INTO study_logs (user_id, duration_minutes) VALUES (?, ?)").run(userId, minutes);
+      } catch (e) { }
+    }
+    db.prepare("DELETE FROM study_sessions WHERE user_id = ?").run(userId);
+
+    const streakInfo = calculateUserStreak(userId);
+    return {
+      success: true,
+      pointsAwarded,
+      message: toastMessage,
+      streak: streakInfo.streak,
+      streakTier: streakInfo.streakTier
+    };
+  }
+
   if (method === "POST" && pathName === "/api/study/complete") {
     const user = requireUser(request, response);
     if (!user || !requireCsrf(request, response, user)) return;
@@ -9175,74 +9244,31 @@ async function api(request, response, url) {
       const minutes = Number(body.durationMinutes) || 0;
       const cycles = Math.max(0, Number(body.cyclesCompleted) || (minutes >= 40 ? 2 : (minutes >= 20 ? 1 : 0)));
       const goal = (body.goal || "Tự học NCKH").trim().slice(0, 100);
-
-      // Tính ngày Thứ Hai của tuần hiện tại theo giờ VN (GMT+7)
-      const vnNow = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Ho_Chi_Minh" }));
-      const vnDayIndex = vnNow.getDay() === 0 ? 6 : vnNow.getDay() - 1;
-      const mondayDate = new Date(vnNow);
-      mondayDate.setDate(vnNow.getDate() - vnDayIndex);
-      const y = mondayDate.getFullYear();
-      const m = String(mondayDate.getMonth() + 1).padStart(2, '0');
-      const d = String(mondayDate.getDate()).padStart(2, '0');
-      const mondayDateStr = `${y}-${m}-${d}`;
-
-      // Kiểm tra xem tuần này đã nhận điểm study_session (+10đ) chưa
-      const hasWeeklyStudyReward = db.prepare(`
-        SELECT count(*) as c FROM contribution_events 
-        WHERE user_id = ? AND event_type = 'study_session' AND points > 0 
-          AND date(datetime(created_at, '+7 hours')) >= ?
-      `).get(user.id, mondayDateStr).c > 0;
-
-      let pointsAwarded = 0;
-      let toastMessage = "";
-      let reason = "";
-
-      // Tính tổng số phút đã học trong tuần này (tính từ ngày Thứ Hai theo giờ VN GMT+7)
-      const weeklyMinutesRow = db.prepare(`
-        SELECT coalesce(sum(duration_minutes), 0) as totalMins
-        FROM study_logs
-        WHERE user_id = ? AND date(datetime(completed_at, '+7 hours')) >= ?
-      `).get(user.id, mondayDateStr);
-      const totalWeeklyMinsWithCurrent = (weeklyMinutesRow?.totalMins || 0) + minutes;
-
-      // Phải hoàn thành tối thiểu 2 lượt hoặc >= 40 phút (trong ca học này hoặc tích lũy trong tuần) và chưa nhận trong tuần
-      const meetsWeeklyReward = (cycles >= 2 || minutes >= 40 || totalWeeklyMinsWithCurrent >= 40);
-      if (meetsWeeklyReward) {
-        if (!hasWeeklyStudyReward) {
-          pointsAwarded = 10;
-          reason = `Hoàn thành tự học Pomodoro (${cycles > 0 ? cycles + ' lượt, ' : ''}${totalWeeklyMinsWithCurrent} phút/tuần) - Thưởng tuần +10đ`;
-          toastMessage = `🎉 Hoàn thành xuất sắc mục tiêu tự học tuần! +10 điểm thưởng tuần & giữ chuỗi thành công!`;
-        } else {
-          pointsAwarded = 0;
-          reason = `Hoàn thành ca tự học Pomodoro (${cycles > 0 ? cycles + ' lượt, ' : ''}${minutes} phút) - Đã nhận thưởng tuần này (1 lần/tuần)`;
-          toastMessage = `🎉 Hoàn tất ca học (${minutes} phút)! Hoạt động đã được ghi nhận giữ chuỗi!`;
-        }
-      } else {
-        pointsAwarded = 0;
-        reason = `Hoàn thành ca tự học (${minutes} phút, ${cycles} lượt) - Cần tối thiểu 2 lượt hoặc 40 phút/tuần để nhận thưởng (+10đ)`;
-        toastMessage = `🎉 Hoàn tất ca học (${minutes} phút)! Tích lũy đủ 40 phút hoặc 2 lượt trong tuần để nhận 10đ thưởng tuần. Hoạt động đã được ghi nhận giữ chuỗi!`;
-      }
-
-      if (minutes >= 10 || cycles >= 1 || totalWeeklyMinsWithCurrent >= 20) {
-        recordContribution(user.id, "study_session", pointsAwarded, "study", null, reason);
-      }
-      if (minutes > 0) {
-        try {
-          db.prepare("INSERT INTO study_logs (user_id, duration_minutes) VALUES (?, ?)").run(user.id, minutes);
-        } catch (e) { }
-      }
-      db.prepare("DELETE FROM study_sessions WHERE user_id = ?").run(user.id);
-
-      const streakInfo = calculateUserStreak(user.id);
-      return json(response, 200, {
-        success: true,
-        pointsAwarded,
-        message: toastMessage,
-        streak: streakInfo.streak,
-        streakTier: streakInfo.streakTier
-      });
+      const result = recordCompletedStudySession(user.id, minutes, cycles, goal);
+      return json(response, 200, result);
     } catch {
       return error(response, 400, "Không thể lưu ca tự học.");
+    }
+  }
+
+  // Cứu cánh số phút học dở dang khi tắt tab / tải lại trang (chạy ngầm qua navigator.sendBeacon)
+  if (method === "POST" && pathName === "/api/study/complete-beacon") {
+    const user = sessionFrom(request);
+    if (!user) {
+      return json(response, 401, { error: "Yêu cầu đăng nhập." });
+    }
+    try {
+      const body = await readJSON(request);
+      const minutes = Number(body.durationMinutes) || 0;
+      const cycles = Math.max(0, Number(body.cyclesCompleted) || 0);
+      const goal = (body.goal || "Tự học NCKH").trim().slice(0, 100);
+      if (minutes >= 1 && minutes <= 240) {
+        const result = recordCompletedStudySession(user.id, minutes, cycles, goal);
+        return json(response, 200, result);
+      }
+      return json(response, 200, { success: false, reason: "Số phút học không hợp lệ hoặc < 1 phút." });
+    } catch {
+      return error(response, 400, "Không thể lưu ca tự học qua beacon.");
     }
   }
 
