@@ -17836,10 +17836,10 @@ function initAdaptiveGlassHeader() {
       return;
     }
 
-    const navExpandedW = Math.ceil(navLinks.offsetWidth || 480);
-    if (navExpandedW > 60) {
-      header.style.setProperty("--nav-expanded-w", `${navExpandedW}px`);
-    }
+    // Ensure navigation width has enough room so "Trang chủ" and all 5 tabs are NEVER cut off
+    const intrinsicLinksW = Math.ceil(navLinks.scrollWidth || 495);
+    const navExpandedW = Math.max(508, intrinsicLinksW + 12);
+    header.style.setProperty("--nav-expanded-w", `${navExpandedW}px`);
 
     let naturalChipTextW = 0;
     if (profileChipText) {
@@ -17861,11 +17861,12 @@ function initAdaptiveGlassHeader() {
     const innerW = headerInner.clientWidth;
     const brandW = Math.ceil(brand.getBoundingClientRect().width || 148);
 
-    // Collision check for normal expanded view
-    const requiredFullW = brandW + navExpandedW + fullExpandedActionsW + 64;
+    // Collision check for normal expanded view:
+    // Required minimum room: brandW + navExpandedW + fullExpandedActionsW + 40px gaps
+    const requiredFullW = brandW + navExpandedW + fullExpandedActionsW + 40;
     const isChipCurrentlyCollapsed = header.classList.contains("is-chip-collapsed");
     const shouldCollapse = isChipCurrentlyCollapsed
-      ? (innerW < requiredFullW + 28) // Hysteresis buffer
+      ? (innerW < requiredFullW + 24) // Hysteresis buffer
       : (innerW < requiredFullW);
 
     if (shouldCollapse && !isCompact) {
@@ -17874,46 +17875,31 @@ function initAdaptiveGlassHeader() {
       header.classList.remove("is-chip-collapsed");
     }
 
-    // Precise dockRight:
-    // In compact state, dock right next to compact actions capsule with clean 14px gap
-    // In expanded state, dock relative to the actions width
-    const realCompactW = (header.classList.contains("is-compact") || header.classList.contains("is-chip-collapsed")) && headerActions
-      ? Math.max(compactActionsW, Math.ceil(headerActions.getBoundingClientRect().width))
-      : compactActionsW;
+    const isCollapsedNow = header.classList.contains("is-chip-collapsed") || isCompact;
+    const effectiveActionsW = isCollapsedNow
+      ? compactActionsW
+      : Math.max(fullExpandedActionsW, headerActions ? Math.ceil(headerActions.getBoundingClientRect().width) : fullExpandedActionsW);
 
-    const dockRight = isCompact
-      ? Math.round(realCompactW + 14)
-      : Math.round((header.classList.contains("is-chip-collapsed") ? realCompactW : fullExpandedActionsW) + 16);
-
-    header.style.setProperty("--nav-dock-right", `${dockRight}px`);
-
-    if (innerW > 0 && navExpandedW > 60 && brandW > 0) {
+    if (innerW > 0 && brandW > 0) {
       header.style.setProperty("--header-inner-w", `${innerW}px`);
       header.style.setProperty("--brand-w", `${brandW}px`);
 
-      // Centered position calculation
-      const idealLeft = Math.round((innerW - navExpandedW) / 2);
-      const minLeft = brandW + 16;
-      const effectiveActionsRight = isCompact
-        ? compactActionsW + 10
-        : (header.classList.contains("is-chip-collapsed") ? compactActionsW : fullExpandedActionsW) + 16;
-      const maxLeft = innerW - effectiveActionsRight - navExpandedW;
+      // 1. Equal gap calculation: Căn đều khoảng cách cụm logo bên trái và avatar bên phải
+      const availableSpace = Math.max(0, innerW - brandW - effectiveActionsW);
+      const equalGap = Math.max(8, Math.floor((availableSpace - navExpandedW) / 2));
+      const navExpandedLeft = Math.round(brandW + equalGap);
 
-      const targetLeft = minLeft <= maxLeft
-        ? Math.max(minLeft, Math.min(maxLeft, idealLeft))
-        : minLeft;
+      // 2. Thu nhỏ về bên cụm logo khi cuộn xuống (khoảng hở 12px cạnh phải logo)
+      const navCompactLeft = Math.round(brandW + 12);
 
-      const targetRightEdge = targetLeft + navExpandedW;
-      const dockRightEdge = innerW - dockRight;
-      // In expanded state, shift left towards target position
-      const shiftX = Math.min(0, Math.round(targetRightEdge - dockRightEdge));
-      header.style.setProperty("--nav-shift-x", `${shiftX}px`);
+      header.style.setProperty("--nav-expanded-left", `${navExpandedLeft}px`);
+      header.style.setProperty("--nav-compact-left", `${navCompactLeft}px`);
 
       // Channel for docked post-detail pill
       const docClientW = document.documentElement.clientWidth || window.innerWidth;
       const innerLeft = Math.max(28, (docClientW - innerW) / 2);
-      const slotLeft = innerLeft + brandW + 14;
-      const slotRight = innerLeft + innerW - dockRight - 48 - 14;
+      const slotLeft = innerLeft + brandW + 74; // brand + 12px gap + 48px orb + 14px padding
+      const slotRight = innerLeft + innerW - compactActionsW - 14;
       const slotFreeW = Math.max(0, slotRight - slotLeft);
       const detailDockW = Math.max(240, Math.min(740, Math.floor(slotFreeW)));
       const detailDockCenterX = Math.round((slotLeft + slotRight) / 2);

@@ -31912,22 +31912,21 @@ body.dark-theme #postDetail .post-detail-pinned-reply {
     color: var(--glass-colon) !important;
   }
 
-  /* 2. Center-Left Optical Glass Pill <-> Right-Docked Feature Icon Orb */
+  /* 2. Center Glass Pill (Equal gap) <-> Left-Docked Feature Icon Orb (near Logo) */
   header#siteHeader .desktop-nav {
     position: absolute;
     top: 0;
-    right: var(--nav-dock-right, 186px);
+    left: var(--nav-expanded-left, 220px);
     height: 48px;
     display: flex;
     align-items: center;
-    justify-content: flex-end;
+    justify-content: flex-start;
     flex: 0 0 auto;
     margin-left: 0 !important;
     pointer-events: none;
     z-index: 1002;
-    transform: translate3d(var(--nav-shift-x, 0px), 0, 0);
-    will-change: transform;
-    transition: transform 0.44s cubic-bezier(0.22, 1, 0.36, 1);
+    will-change: left;
+    transition: left 0.42s cubic-bezier(0.22, 1, 0.36, 1);
   }
 
   @media (prefers-reduced-motion: no-preference) {
@@ -31937,28 +31936,23 @@ body.dark-theme #postDetail .post-detail-pinned-reply {
     }
   }
 
+  /* Khi cuộn xuống: thu nhỏ về bên cụm logo (dock sát bên phải logo 12px) */
   header#siteHeader.is-compact:not(.is-nav-peek) .desktop-nav {
-    transform: translate3d(0px, 0, 0);
+    left: var(--nav-compact-left, calc(var(--brand-w, 150px) + 12px));
   }
 
-  /* Khi di chuột vào avatar ở trạng thái compact để mở rộng tên, đẩy orb sang trái mượt mà tránh va chạm */
-  header#siteHeader.is-compact:not(.is-nav-peek):has(.profile-chip:hover) .desktop-nav {
-    transform: translate3d(calc(-1 * (var(--chip-text-w, 130px) + 24px)), 0, 0);
-    transition: transform 0.36s cubic-bezier(0.22, 1, 0.36, 1);
-  }
-
+  /* Khi peek mở thanh điều hướng khi đang compact: giữ neo bên logo và mở rộng sang phải */
   header#siteHeader.is-compact.is-nav-peek .desktop-nav {
-    transform: translate3d(var(--nav-shift-x, 0px), 0, 0);
+    left: var(--nav-compact-left, calc(var(--brand-w, 150px) + 12px));
   }
 
   header#siteHeader .desktop-nav-shell {
     position: relative;
     display: flex;
     align-items: center;
-    justify-content: flex-end;
+    justify-content: flex-start;
     height: 48px;
     width: var(--nav-expanded-w, auto);
-    max-width: calc(var(--header-inner-w, 1208px) - var(--brand-w, 180px) - var(--nav-dock-right, 186px) - 12px);
     min-width: 48px;
     padding: 4px;
     border-radius: 9999px;
@@ -32051,7 +32045,7 @@ body.dark-theme #postDetail .post-detail-pinned-reply {
     width: max-content;
     opacity: 1;
     transform: scale(1);
-    transform-origin: right center;
+    transform-origin: left center;
     pointer-events: auto;
     visibility: visible;
     transition:
@@ -32216,7 +32210,7 @@ body.dark-theme #postDetail .post-detail-pinned-reply {
   @media (prefers-reduced-motion: no-preference) {
     header#siteHeader.is-morph-to-expand .desktop-nav-links .nav-link {
       animation: navLinkBloomIn 0.44s cubic-bezier(0.22, 1, 0.36, 1) backwards;
-      animation-delay: calc((4 - var(--nav-i, 0)) * 28ms);
+      animation-delay: calc(var(--nav-i, 0) * 28ms);
     }
   }
 
@@ -32565,7 +32559,7 @@ body.dark-theme #postDetail .post-detail-pinned-reply {
 @keyframes navLinkBloomIn {
   from {
     opacity: 0;
-    transform: translate3d(10px, 0, 0) scale(0.88);
+    transform: translate3d(-10px, 0, 0) scale(0.88);
   }
 
   to {
