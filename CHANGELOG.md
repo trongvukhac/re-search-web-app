@@ -4,6 +4,16 @@ Tất cả các thay đổi đáng chú ý của dự án **RE:SEARCH — Cộng
 
 ---
 
+## [4.7.3] - 2026-11-21
+### Sửa lỗi & Hoàn thiện (Hotfix)
+- **Khắc phục triệt để lỗi tràn ngang trên Mobile**: Chuẩn hoá thuộc tính `overflow-x: hidden`, `width: 100%`, `max-width: 100vw` và `min-width: 0` trên các phần tử gốc `html`, `body`, `main`, `#home`, `.page` và dải trang trí lễ hội, triệt tiêu hoàn toàn thanh cuộn ngang trên điện thoại di động (chiều rộng cố định chuẩn 390px).
+- **Cố định chân trang (Footer) sát đáy trên Mobile**: Loại bỏ khoảng hở chết (dead space 170px) bên dưới footer trên thiết bị di động bằng cách chuyển `padding-bottom: 0` cho `body` và neo chân trang trực tiếp chạm đáy màn hình với khoảng đệm nội bộ an toàn trên dock điều hướng.
+- **Hiệu chuẩn kích thước khung Namecard (Snug Fit Scaling)**: Đo đạc và hiệu chuẩn lại toạ độ inset cho 5 bộ khung nghệ thuật (`gold`, `thung_lung_suong_thu`, `thien_ha_huyen_ao`, `pha_le_hoang_gia`, `phep_mau_mua_dong`) ôm khít chính xác vào viền bo tròn 60px của Namecard Canvas (680x760), khắc phục triệt để hiện tượng khung bị lệch, che lấp chữ hoặc lơ lửng ngoài mép thẻ.
+- **Tối ưu thanh điều hướng Mobile (Header Controls)**: Đưa 2 nút Tìm kiếm đa năng (⌘K) và Chuông thông báo ra ngoài thanh header trên mobile, bố trí trực quan nằm ngay bên trái avatar người dùng, đồng thời loại bỏ các mục trùng lặp trong menu thao tác nhanh.
+- **Chống va chạm thanh điều hướng Desktop**: Hoàn thiện thuật toán nhận diện kích thước và neo vị trí dock, tự động thu gọn tên người dùng khi chiều ngang hẹp hoặc tên hiển thị dài, đảm bảo không bao giờ xảy ra va chạm hay đè chữ giữa các tab điều hướng và chip tài khoản.
+
+---
+
 ## [4.7.2] - 2026-11-21
 ### Sửa lỗi & Hoàn thiện (Patch)
 - **Hệ thống khung và ảnh bìa Namecard theo chuỗi**:

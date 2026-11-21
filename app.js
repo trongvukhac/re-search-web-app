@@ -684,7 +684,7 @@ function triggerAppUpdate(newBuildId) {
   }, 1000);
 }
 
-window.APP_VERSION = "4.7.2";
+window.APP_VERSION = "4.7.3";
 
 function isVersionAfter(vCurrent, vTarget = "4.7.1") {
   if (!vCurrent) return false;
@@ -17826,8 +17826,8 @@ function initAdaptiveGlassHeader() {
     const brandW = brand.offsetWidth;
 
     // Detect collision / lack of gap between desktop navigation and header actions
-    // Gap required: at least 18px between brand & navLinks, and at least 28px between navLinks & actions
-    const requiredFullW = brandW + 18 + navExpandedW + 28 + fullExpandedActionsW;
+    // Gap required: at least 20px between brand & navLinks, and at least 32px between navLinks & actions
+    const requiredFullW = brandW + 20 + navExpandedW + 32 + fullExpandedActionsW;
     const isChipCurrentlyCollapsed = header.classList.contains("is-chip-collapsed");
     const shouldCollapse = isChipCurrentlyCollapsed
       ? (innerW < requiredFullW + 36) // Hysteresis buffer to prevent oscillating
@@ -17846,7 +17846,7 @@ function initAdaptiveGlassHeader() {
       header.style.setProperty("--header-inner-w", `${innerW}px`);
       header.style.setProperty("--brand-w", `${brandW}px`);
 
-      const dockRight = Math.round(compactActionsW + 10);
+      const dockRight = Math.round(effectiveActionsW + 10);
       header.style.setProperty("--nav-dock-right", `${dockRight}px`);
 
       // Optical 44/56 split across free channel so narrower left logo and wider right capsule look visually balanced
@@ -17855,7 +17855,7 @@ function initAdaptiveGlassHeader() {
       const freeSpan = Math.max(0, maxRightEdge - minRightEdge);
       const targetRightEdge = minRightEdge <= maxRightEdge
         ? Math.round(minRightEdge + freeSpan * 0.44)
-        : Math.round((minRightEdge + maxRightEdge) / 2);
+        : maxRightEdge; // Clamp strictly so it never overlaps header-actions
       const dockRightEdge = innerW - dockRight;
       const shiftX = Math.round(targetRightEdge - dockRightEdge);
       header.style.setProperty("--nav-shift-x", `${shiftX}px`);
