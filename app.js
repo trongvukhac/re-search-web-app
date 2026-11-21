@@ -669,7 +669,7 @@ function triggerAppUpdate(newBuildId, newVersion) {
     return `${m}:${String(sec).padStart(2, "0")}`;
   };
 
-  const displayVer = newVersion || targetUpdateVersion || window.APP_VERSION || "4.7.5";
+  const displayVer = newVersion || targetUpdateVersion || window.APP_VERSION || "4.7.6";
 
   banner.innerHTML = `
     <div style="font-size: 22px;">🚀</div>
@@ -691,7 +691,7 @@ function triggerAppUpdate(newBuildId, newVersion) {
   }, 1000);
 }
 
-window.APP_VERSION = "4.7.5";
+window.APP_VERSION = "4.7.6";
 
 function isVersionAfter(vCurrent, vTarget = "4.7.1") {
   if (!vCurrent) return false;
@@ -754,9 +754,9 @@ window.closeVersionChangelogModal = closeVersionChangelogModal;
 
 async function loadAdminChangelog(version) {
   const select = document.getElementById("adminChangelogVersionSelect");
-  const targetVer = version || (select ? select.value : (window.APP_VERSION || "4.7.5"));
+  const targetVer = version || (select ? select.value : (window.APP_VERSION || "4.7.6"));
   const badge = document.getElementById("adminCurrentVersionBadge");
-  if (badge) badge.textContent = `v${window.APP_VERSION || "4.7.5"}`;
+  if (badge) badge.textContent = `v${window.APP_VERSION || "4.7.6"}`;
   try {
     const res = await fetch(`/api/changelog?version=${encodeURIComponent(targetVer)}`);
     const data = await res.json();
@@ -775,7 +775,7 @@ window.onAdminChangelogVersionChange = onAdminChangelogVersionChange;
 
 async function saveAdminChangelog() {
   const select = document.getElementById("adminChangelogVersionSelect");
-  const targetVer = select ? select.value : (window.APP_VERSION || "4.7.5");
+  const targetVer = select ? select.value : (window.APP_VERSION || "4.7.6");
   const input = document.getElementById("adminChangelogInput");
   const btn = document.getElementById("btnSaveAdminChangelog");
   const text = input ? input.value.trim() : "";
@@ -17844,19 +17844,20 @@ function initAdaptiveGlassHeader() {
       header.style.setProperty("--chip-text-w", `${naturalChipTextW}px`);
     }
 
-    const compactActionsW = measureCompactActionsWidth();
+    // Measure compact actions width (avatar + search + notif + quick menu)
+    const compactActionsW = Math.max(188, measureCompactActionsWidth() + 12);
     const naturalChipDelta = naturalChipTextW > 0 ? naturalChipTextW + 19 : 0;
     const fullExpandedActionsW = compactActionsW + naturalChipDelta;
 
     const innerW = headerInner.clientWidth;
-    const brandW = brand.offsetWidth;
+    const brandW = Math.ceil(brand.getBoundingClientRect().width);
 
     // Detect collision / lack of gap between desktop navigation and header actions
-    // Generous gap required: at least 36px between brand & navLinks, and at least 40px between navLinks & actions
-    const requiredFullW = brandW + 36 + navExpandedW + 40 + fullExpandedActionsW;
+    // Generous clearance required: brandW + 24 + navExpandedW + 24 + fullExpandedActionsW
+    const requiredFullW = brandW + 24 + navExpandedW + 24 + fullExpandedActionsW;
     const isChipCurrentlyCollapsed = header.classList.contains("is-chip-collapsed");
     const shouldCollapse = isChipCurrentlyCollapsed
-      ? (innerW < requiredFullW + 40) // Hysteresis buffer to prevent oscillating
+      ? (innerW < requiredFullW + 24) // Hysteresis buffer to prevent oscillating
       : (innerW < requiredFullW);
 
     if (shouldCollapse && !isCompact) {
@@ -17865,25 +17866,38 @@ function initAdaptiveGlassHeader() {
       header.classList.remove("is-chip-collapsed");
     }
 
+    // Effective actions width after state set
     const isCollapsedNow = header.classList.contains("is-chip-collapsed") || isCompact;
-    const effectiveActionsW = isCollapsedNow ? compactActionsW : fullExpandedActionsW;
+    const effectiveActionsW = isCollapsedNow
+      ? compactActionsW
+      : (headerActions ? Math.max(compactActionsW, Math.ceil(headerActions.getBoundingClientRect().width)) : fullExpandedActionsW);
 
     if (innerW > 0 && navExpandedW > 60 && brandW > 0) {
       header.style.setProperty("--header-inner-w", `${innerW}px`);
       header.style.setProperty("--brand-w", `${brandW}px`);
 
-      const dockRight = Math.round(effectiveActionsW + 10);
+      const dockRight = Math.round(effectiveActionsW + 18);
       header.style.setProperty("--nav-dock-right", `${dockRight}px`);
 
-      // Optical 44/56 split across free channel so narrower left logo and wider right capsule look visually balanced
-      const minRightEdge = brandW + 14 + navExpandedW;
-      const maxRightEdge = innerW - effectiveActionsW - 14;
-      const freeSpan = Math.max(0, maxRightEdge - minRightEdge);
-      const targetRightEdge = minRightEdge <= maxRightEdge
-        ? Math.round(minRightEdge + freeSpan * 0.44)
-        : maxRightEdge; // Clamp strictly so it never overlaps header-actions
+      // Safe clamp centering: center perfectly in header inner when room allows,
+      // strictly bounded between brandW + 14 and innerW - dockRight - navExpandedW
+      const idealLeft = Math.round((innerW - navExpandedW) / 2);
+      const minLeft = brandW + 14;
+      const maxLeft = innerW - dockRight - navExpandedW;
+
+      // In narrow views or long names, collapse chip immediately if bounds touch
+      if (minLeft > maxLeft && !header.classList.contains("is-chip-collapsed") && !isCompact) {
+        header.classList.add("is-chip-collapsed");
+      }
+
+      const targetLeft = minLeft <= maxLeft
+        ? Math.max(minLeft, Math.min(maxLeft, idealLeft))
+        : minLeft;
+
+      const targetRightEdge = targetLeft + navExpandedW;
       const dockRightEdge = innerW - dockRight;
-      const shiftX = Math.round(targetRightEdge - dockRightEdge);
+      // Strictly non-positive shiftX: nav can shift left towards center, but NEVER right into actions
+      const shiftX = Math.min(0, Math.round(targetRightEdge - dockRightEdge));
       header.style.setProperty("--nav-shift-x", `${shiftX}px`);
 
       // Exact clear center channel when scrolled compact for docked post-detail pill

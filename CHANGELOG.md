@@ -4,6 +4,23 @@ Tất cả các thay đổi đáng chú ý của dự án **RE:SEARCH — Cộng
 
 ---
 
+## [4.7.6] - 2026-11-21
+### Sửa lỗi & Hoàn thiện (Hotfix)
+- **Khắc phục triệt để lỗi tái diễn tràn ngang giao diện Mobile (Mobile Horizontal Overflow Lockdown)**:
+  - Khắc phục lỗi cú pháp CSS bị sót ngoặc nhọn ngắt quãng khiến khai báo `.page` không nhận diện đầy đủ.
+  - Bổ sung `flex-wrap: wrap; gap: 8px;` cho khối nút `.hero-actions`, triệt tiêu dãn cách quá khổ (~500px) gây phình to `.home-hero` trên màn hình điện thoại (390px).
+  - Áp dụng triệt để `overflow-x: hidden !important; width: 100% !important; max-width: 100vw !important;` trên `html`, `body`, `main`, `.page`, `.home-hero` và `contain: paint` trên dải đèn Giáng sinh, khoá cứng khung nhìn di động 100% không thể kéo trượt ngang.
+- **Căn chỉnh hoàn hảo Avatar và Tiểu sử (Bio) trên Namecard (Namecard Avatar & Bio Vertical Alignment)**:
+  - Dời khối avatar (`.namecard-avatar-wrap`) sang phải đúng 10px (`margin-left: 10px;`) theo yêu cầu.
+  - Căn lề tiểu sử (`.namecard-bio`) thẳng hàng 100% theo trục dọc với mép trái của avatar (`margin: 14px 0 0 10px; width: calc(100% - 10px); box-sizing: border-box;`), bảo đảm toạ độ X của avatar và bio hoàn toàn trùng khớp (sai lệch 0px).
+- **Tự động thu gọn tên trên thanh điều hướng khi không đủ khoảng trống (Responsive Nav Collision Auto-Collapse)**:
+  - Nâng cấp thuật toán phát hiện va chạm thanh điều hướng: đo đạc chính xác chiều rộng thực tế của logo `.brand`, thanh liên kết `.desktop-nav` và cụm người dùng `.header-actions`.
+  - Khi tên người dùng quá dài hoặc chiều ngang cửa sổ không đủ khoảng hở an toàn (ít nhất 24px), thanh điều hướng tự động thu gọn phần tên người dùng về avatar tối giản (`is-chip-collapsed`) hệt như trạng thái khi cuộn xuống trang, loại bỏ hoàn toàn hiện tượng các nút đè lên nhau.
+- **Đồng bộ phiên bản v4.7.6 toàn diện (Version Synchronization)**:
+  - Đồng bộ số hiệu `4.7.6` trên `package.json`, máy chủ `server.js`, `app.js`, chân trang `index.html`, huy hiệu quản trị và danh sách chọn phiên bản sửa nhật ký.
+
+---
+
 ## [4.7.5] - 2026-11-21
 ### Sửa lỗi & Hoàn thiện (Hotfix)
 - **Hiệu chuẩn triệt tiêu khoảng hở cạnh trên/dưới khung Namecard (Snug Frame Calibration)**:
