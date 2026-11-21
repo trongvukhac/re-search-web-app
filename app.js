@@ -4161,6 +4161,9 @@ function initPostDetailNavScrollHandler() {
     }
 
     if (isDesktop && !isClassic) {
+      if (typeof window.syncPostDetailTopNavState === "function") {
+        window.syncPostDetailTopNavState();
+      }
       showPostDetailTopNav();
       lastPostDetailScrollY = currentY;
       return;
@@ -17744,13 +17747,9 @@ function initAdaptiveGlassHeader() {
       isDetailActive &&
       isDesktopGlassViewport() &&
       !document.body.classList.contains("study-zen-fullscreen") &&
-      isCompact &&
       y > 50;
     topNav.classList.toggle("is-header-docked", desktopDock);
-    topNav.classList.toggle("is-peek-suppressed", desktopDock && isPeeking);
-    if (desktopDock) {
-      topNav.classList.remove("top-nav-hidden");
-    }
+    topNav.classList.remove("is-peek-suppressed", "top-nav-hidden");
   }
 
   window.syncPostDetailTopNavState = syncPostDetailTopNavState;
@@ -17760,39 +17759,15 @@ function initAdaptiveGlassHeader() {
       clearTimeout(scrollTopPeekTimer);
       scrollTopPeekTimer = null;
     }
-    const nextPeek = Boolean(open) && isCompact && isDesktopGlassViewport();
-    const changed = nextPeek !== isPeeking;
-    isPeeking = nextPeek;
-    if (nextPeek) {
-      peekScrollY = window.scrollY || window.pageYOffset || 0;
-    }
-    header.classList.toggle("is-nav-peek", nextPeek);
+    isPeeking = false;
+    header.classList.remove("is-nav-peek");
     syncFocusOrder();
     syncPostDetailTopNavState();
-    if (changed && isCompact) {
-      triggerNavMorph(nextPeek ? "expand" : "compact");
-      if (nextPeek) {
-        syncNavActiveGlider(true);
-      }
-    }
   }
 
   window.closeNavPeek = function closeNavPeek(opts) {
-    if (!isPeeking) return;
-    const scrollingToTop = Boolean(opts && opts.scrollingToTop) && (window.scrollY || window.pageYOffset || 0) >= 24;
-    if (scrollingToTop) {
-      suppressPeekAutoCloseUntil = Date.now() + 750;
-      if (scrollTopPeekTimer) clearTimeout(scrollTopPeekTimer);
-      scrollTopPeekTimer = setTimeout(() => {
-        scrollTopPeekTimer = null;
-        if (isCompact && (window.scrollY || window.pageYOffset || 0) >= 24) {
-          setNavPeekOpen(false);
-        }
-      }, 680);
-      return;
-    }
-    suppressPeekAutoCloseUntil = 0;
-    setNavPeekOpen(false);
+    isPeeking = false;
+    header.classList.remove("is-nav-peek");
   };
 
   function measureCompactActionsWidth() {
@@ -17800,7 +17775,6 @@ function initAdaptiveGlassHeader() {
     const searchBtn = headerActions.querySelector(".desktop-search");
     const notifBtn = headerActions.querySelector(".nav-notification-btn") || headerActions.querySelector(".notification-trigger-wrap");
     const quickBtn = headerActions.querySelector(".quick-menu-btn");
-    // Compact right pill: 6px L/R padding (12) + 2px border + 3 gaps (18) = 32px + 4 circular controls
     const avatarW = avatarEl ? Math.max(30, avatarEl.offsetWidth) : 31;
     const chipCompactW = Math.max(36, Math.ceil(avatarW + 6));
     const searchW = searchBtn && searchBtn.offsetParent !== null ? searchBtn.offsetWidth : 36;
@@ -17829,7 +17803,11 @@ function initAdaptiveGlassHeader() {
       return;
     }
 
-    const navExpandedW = Math.ceil(navLinks.offsetWidth + 10);
+    header.classList.remove("is-compact", "is-nav-peek");
+    isCompact = false;
+    isPeeking = false;
+
+    const navExpandedW = Math.ceil(navLinks.offsetWidth || 460);
     if (navExpandedW > 60) {
       header.style.setProperty("--nav-expanded-w", `${navExpandedW}px`);
     }
@@ -17841,97 +17819,43 @@ function initAdaptiveGlassHeader() {
         profileChipText._lastNaturalW = currentScrollW;
       }
       const rawNaturalW = profileChipText._lastNaturalW || currentScrollW;
-      const maxChipW = window.innerWidth <= 1080 ? 130 : 240;
+      const maxChipW = window.innerWidth <= 1080 ? 120 : 220;
       naturalChipTextW = Math.min(maxChipW, Math.ceil(rawNaturalW));
       header.style.setProperty("--chip-text-w", `${naturalChipTextW}px`);
     }
 
     // Measure compact actions width (avatar + search + notif + quick menu)
-    const compactActionsW = Math.max(188, measureCompactActionsWidth() + 12);
-    const naturalChipDelta = naturalChipTextW > 0 ? naturalChipTextW + 19 : 0;
+    const compactActionsW = Math.max(168, measureCompactActionsWidth() + 10);
+    const naturalChipDelta = naturalChipTextW > 0 ? naturalChipTextW + 18 : 0;
     const fullExpandedActionsW = compactActionsW + naturalChipDelta;
 
     const innerW = headerInner.clientWidth;
-    const brandW = Math.ceil(brand.getBoundingClientRect().width);
+    const brandW = Math.ceil(brand.getBoundingClientRect().width || 148);
 
-    // Detect collision / lack of gap between desktop navigation and header actions
-    // Generous clearance required: brandW + 32 + navExpandedW + 32 + fullExpandedActionsW
-    const requiredFullW = brandW + 32 + navExpandedW + 32 + fullExpandedActionsW;
+    // Collision check: brandW + navExpandedW + fullExpandedActionsW + clearances
+    const requiredFullW = brandW + navExpandedW + fullExpandedActionsW + 64;
     const isChipCurrentlyCollapsed = header.classList.contains("is-chip-collapsed");
     const shouldCollapse = isChipCurrentlyCollapsed
-      ? (innerW < requiredFullW + 28) // Hysteresis buffer to prevent oscillating
+      ? (innerW < requiredFullW + 28) // Hysteresis buffer to avoid flickering
       : (innerW < requiredFullW);
 
-    if (shouldCollapse && !isCompact) {
+    if (shouldCollapse) {
       header.classList.add("is-chip-collapsed");
     } else {
       header.classList.remove("is-chip-collapsed");
     }
 
-    // Effective actions width after state set
-    const isCollapsedNow = header.classList.contains("is-chip-collapsed") || isCompact;
-    const effectiveActionsW = isCollapsedNow
-      ? compactActionsW
-      : Math.max(fullExpandedActionsW, headerActions ? Math.ceil(headerActions.getBoundingClientRect().width) : fullExpandedActionsW);
-
-    if (innerW > 0 && navExpandedW > 60 && brandW > 0) {
-      header.style.setProperty("--header-inner-w", `${innerW}px`);
-      header.style.setProperty("--brand-w", `${brandW}px`);
-
-      const dockRight = Math.round(effectiveActionsW + 18);
-      header.style.setProperty("--nav-dock-right", `${dockRight}px`);
-
-      // Safe clamp centering: center perfectly in header inner when room allows,
-      // strictly bounded between brandW + 14 and innerW - dockRight - navExpandedW
-      const idealLeft = Math.round((innerW - navExpandedW) / 2);
-      const minLeft = brandW + 14;
-      const maxLeft = innerW - dockRight - navExpandedW;
-
-      // In narrow views or long names, collapse chip immediately if bounds touch
-      if (minLeft > maxLeft && !header.classList.contains("is-chip-collapsed") && !isCompact) {
+    // Direct DOM clearance guard: check distance between nav pill and side islands
+    const navShell = document.getElementById("desktopNavShell");
+    if (navShell && headerActions && brand && !header.classList.contains("is-chip-collapsed")) {
+      const nR = navShell.getBoundingClientRect();
+      const aR = headerActions.getBoundingClientRect();
+      const bR = brand.getBoundingClientRect();
+      if (nR.right + 18 > aR.left || nR.left < bR.right + 18) {
         header.classList.add("is-chip-collapsed");
       }
-
-      const targetLeft = minLeft <= maxLeft
-        ? Math.max(minLeft, Math.min(maxLeft, idealLeft))
-        : minLeft;
-
-      const targetRightEdge = targetLeft + navExpandedW;
-      const dockRightEdge = innerW - dockRight;
-      // Strictly non-positive shiftX: nav can shift left towards center, but NEVER right into actions
-      const shiftX = Math.min(0, Math.round(targetRightEdge - dockRightEdge));
-      header.style.setProperty("--nav-shift-x", `${shiftX}px`);
-
-      // Real DOM Collision Guard: if clearance is tight or overlapping, collapse chip immediately
-      const navShell = document.getElementById("desktopNavShell");
-      if (navShell && headerActions && brand && !isCompact && !header.classList.contains("is-chip-collapsed")) {
-        const nR = navShell.getBoundingClientRect();
-        const aR = headerActions.getBoundingClientRect();
-        const bR = brand.getBoundingClientRect();
-        if (nR.right + 18 > aR.left || nR.left < bR.right + 14) {
-          header.classList.add("is-chip-collapsed");
-          const newDockRight = Math.round(compactActionsW + 18);
-          header.style.setProperty("--nav-dock-right", `${newDockRight}px`);
-          const newMaxLeft = innerW - newDockRight - navExpandedW;
-          const newTargetLeft = minLeft <= newMaxLeft ? Math.max(minLeft, Math.min(newMaxLeft, idealLeft)) : minLeft;
-          const newShiftX = Math.min(0, Math.round(newTargetLeft + navExpandedW - (innerW - newDockRight)));
-          header.style.setProperty("--nav-shift-x", `${newShiftX}px`);
-        }
-      }
-
-      // Exact clear center channel when scrolled compact for docked post-detail pill
-      const docClientW = document.documentElement.clientWidth || window.innerWidth;
-      const innerLeft = Math.max(28, (docClientW - innerW) / 2);
-      const slotLeft = innerLeft + brandW + 14;
-      const slotRight = innerLeft + innerW - dockRight - 48 - 14;
-      const slotFreeW = Math.max(0, slotRight - slotLeft);
-      const detailDockW = Math.max(240, Math.min(740, Math.floor(slotFreeW)));
-      const detailDockCenterX = Math.round((slotLeft + slotRight) / 2);
-      document.documentElement.style.setProperty("--detail-dock-cx", `${detailDockCenterX}px`);
-      document.documentElement.style.setProperty("--detail-dock-w", `${detailDockW}px`);
-      document.body.classList.toggle("detail-dock-tight", slotFreeW < 580);
-      document.body.classList.toggle("detail-dock-compact-bc", slotFreeW < 470);
     }
+
     syncNavActiveGlider(true);
     syncPostDetailTopNavState();
   }
@@ -17939,19 +17863,11 @@ function initAdaptiveGlassHeader() {
   window.syncAdaptiveGlassHeaderMetrics = syncAdaptiveGlassHeaderMetrics;
 
   function applyCompactState(nextCompact) {
-    if (nextCompact === isCompact) return;
-    isCompact = nextCompact;
-    if (!nextCompact) {
-      suppressPeekAutoCloseUntil = 0;
-      setNavPeekOpen(false);
-    }
-    header.classList.toggle("is-compact", nextCompact);
+    isCompact = false;
+    header.classList.remove("is-compact", "is-nav-peek");
     syncFocusOrder();
     syncPostDetailTopNavState();
-    triggerNavMorph(nextCompact ? "compact" : "expand");
-    if (!nextCompact) {
-      syncNavActiveGlider(true);
-    }
+    syncNavActiveGlider(true);
   }
 
   function evaluateScrollState() {
@@ -17965,31 +17881,15 @@ function initAdaptiveGlassHeader() {
       return;
     }
     if (!isDesktopGlassViewport() || document.body.classList.contains("study-zen-fullscreen")) {
-      applyCompactState(false);
+      header.classList.remove("is-compact", "is-nav-peek", "is-scrolled");
+      isCompact = false;
+      isPeeking = false;
+      syncPostDetailTopNavState();
       return;
     }
     const y = window.scrollY || window.pageYOffset || 0;
-    const isDetailActive = document.body.classList.contains("page-post-detail") ||
-      Boolean(document.getElementById("postDetail")?.classList.contains("active-page"));
-
-    if (isDetailActive) {
-      if (!isCompact && y > 50) {
-        applyCompactState(true);
-      } else if (isCompact && y <= 30) {
-        applyCompactState(false);
-      } else if (isCompact && isPeeking && Date.now() > suppressPeekAutoCloseUntil && Math.abs(y - peekScrollY) > 56) {
-        setNavPeekOpen(false);
-      }
-      return;
-    }
-
-    if (!isCompact && y > 48) {
-      applyCompactState(true);
-    } else if (isCompact && y < 24) {
-      applyCompactState(false);
-    } else if (isCompact && isPeeking && Date.now() > suppressPeekAutoCloseUntil && Math.abs(y - peekScrollY) > 56) {
-      setNavPeekOpen(false);
-    }
+    header.classList.toggle("is-scrolled", y > 24);
+    syncPostDetailTopNavState();
   }
 
   let scrollTicking = false;
