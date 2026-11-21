@@ -4126,7 +4126,7 @@ async function api(request, response, url) {
       return error(response, 400, "Vui lòng nhập địa chỉ email hợp lệ.");
     }
     const user = db
-      .prepare("SELECT id, email, display_name, role FROM users WHERE email=?")
+      .prepare("SELECT id, email, display_name, role FROM users WHERE lower(email)=lower(?)")
       .get(cleanEmail);
     if (!user) {
       return error(
@@ -4135,21 +4135,39 @@ async function api(request, response, url) {
         "Không tìm thấy tài khoản với email này. Vui lòng kiểm tra lại chính xác email sinh viên của bạn.",
       );
     }
-    // Hủy và xóa các yêu cầu trước đó của user này để không lưu mã rác
-    db.prepare("DELETE FROM password_resets WHERE user_id=?").run(user.id);
 
-    // Sinh mã OTP 6 chữ số an toàn
-    const code = crypto.randomInt(100000, 1000000).toString();
-    // Hết hạn sau 24 giờ
-    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+    // Kiểm tra xem đã có mã pending nào còn hạn (trong vòng 24h) của user này chưa
+    const existing = db
+      .prepare(
+        "SELECT id, code, expires_at FROM password_resets WHERE user_id=? AND status='pending' AND datetime(expires_at) >= datetime('now') ORDER BY id DESC LIMIT 1",
+      )
+      .get(user.id);
 
-    db.prepare(
-      "INSERT INTO password_resets (user_id, email, code, status, expires_at) VALUES (?, ?, ?, 'pending', ?)",
-    ).run(user.id, user.email, code, expiresAt);
+    let code;
+    let expiresAt;
 
-    console.log(
-      `[PASSWORD_RESET_REQUEST] User: ${user.display_name} (${user.email}) -> Code: ${code} (Expires: ${expiresAt})`,
-    );
+    if (existing) {
+      // Nếu đã có mã hợp lệ đang chờ xác thực từ Admin, giữ nguyên mã này để tránh vô hiệu hóa mã Admin đã/đang cấp cho SV
+      code = existing.code;
+      expiresAt = existing.expires_at;
+      console.log(
+        `[PASSWORD_RESET_REQUEST] User: ${user.display_name} (${user.email}) -> Tái sử dụng mã pending còn hạn: ${code} (Expires: ${expiresAt})`,
+      );
+    } else {
+      // Nếu chưa có hoặc mã cũ đã hết hạn, xóa các mã cũ và sinh mã mới
+      db.prepare("DELETE FROM password_resets WHERE user_id=?").run(user.id);
+
+      code = crypto.randomInt(100000, 1000000).toString();
+      expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+
+      db.prepare(
+        "INSERT INTO password_resets (user_id, email, code, status, expires_at) VALUES (?, ?, ?, 'pending', ?)",
+      ).run(user.id, user.email.toLowerCase(), code, expiresAt);
+
+      console.log(
+        `[PASSWORD_RESET_REQUEST] User: ${user.display_name} (${user.email}) -> Sinh mã mới: ${code} (Expires: ${expiresAt})`,
+      );
+    }
 
     return json(response, 200, {
       ok: true,
@@ -4187,7 +4205,7 @@ async function api(request, response, url) {
 
     const resetReq = db
       .prepare(
-        "SELECT * FROM password_resets WHERE email=? AND code=? AND status='pending' ORDER BY id DESC LIMIT 1",
+        "SELECT * FROM password_resets WHERE lower(email)=lower(?) AND code=? AND status='pending' ORDER BY id DESC LIMIT 1",
       )
       .get(cleanEmail, cleanCode);
 

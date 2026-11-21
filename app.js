@@ -781,7 +781,7 @@ async function saveAdminChangelog() {
   const text = input ? input.value.trim() : "";
   if (btn) btn.disabled = true;
   try {
-    const res = await fetchJSON("/api/admin/changelog", {
+    const res = await requestAPI("/api/admin/changelog", {
       method: "POST",
       body: JSON.stringify({
         version: targetVer,
