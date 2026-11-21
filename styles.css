@@ -37861,14 +37861,18 @@ body.dark-theme .theme-nav-card.active .theme-card-status-badge {
 /* Nav style classic overrides - Restores authentic pre-glass RE:SEARCH header on desktop matching original reference */
 @media (min-width: 801px) and (min-height: 521px) {
 
-  html.nav-style-classic main,
-  body.nav-style-classic main {
-    padding-top: 0 !important;
+  html.nav-style-classic {
+    scroll-padding-top: 76px !important;
+  }
+
+  html.nav-style-classic:not(.tree-stage-fullscreen) main,
+  body.nav-style-classic:not(.study-zen-fullscreen):not(.tree-stage-fullscreen) main {
+    padding-top: 68px !important;
   }
 
   html.nav-style-classic header#siteHeader.site-header,
   body.nav-style-classic header#siteHeader.site-header {
-    position: sticky !important;
+    position: fixed !important;
     top: 0 !important;
     left: 0 !important;
     right: 0 !important;
@@ -37877,13 +37881,14 @@ body.dark-theme .theme-nav-card.active .theme-card-status-badge {
     max-width: 100% !important;
     margin: 0 !important;
     padding: 0 calc(max(36px, (100% - 1280px) / 2 + 36px)) !important;
+    box-sizing: border-box !important;
     border: none !important;
     border-bottom: 1px solid var(--line, rgba(0, 0, 0, 0.08)) !important;
     border-radius: 0 !important;
     background: #faf8f5 !important;
     backdrop-filter: blur(16px) !important;
     -webkit-backdrop-filter: blur(16px) !important;
-    box-shadow: 0 1px 2px rgba(10, 44, 30, 0.02) !important;
+    box-shadow: 0 1px 3px rgba(10, 44, 30, 0.04) !important;
     display: flex !important;
     align-items: center !important;
     justify-content: space-between !important;
