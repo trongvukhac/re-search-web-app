@@ -567,6 +567,8 @@ async function requestAPI(url, options = {}) {
     throw new Error(data.error || "Không thể kết nối với máy chủ.");
   return data;
 }
+window.requestAPI = requestAPI;
+window.fetchJSON = requestAPI;
 
 // ============================================================
 // AUTO-UPDATE & REALTIME VERSION MANAGER
