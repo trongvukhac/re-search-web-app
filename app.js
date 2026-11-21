@@ -671,7 +671,7 @@ function triggerAppUpdate(newBuildId, newVersion) {
     return `${m}:${String(sec).padStart(2, "0")}`;
   };
 
-  const displayVer = newVersion || targetUpdateVersion || window.APP_VERSION || "4.7.6";
+  const displayVer = newVersion || targetUpdateVersion || window.APP_VERSION || "4.7.7";
 
   banner.innerHTML = `
     <div style="font-size: 22px;">🚀</div>
@@ -693,7 +693,7 @@ function triggerAppUpdate(newBuildId, newVersion) {
   }, 1000);
 }
 
-window.APP_VERSION = "4.7.6";
+window.APP_VERSION = "4.7.7";
 
 function isVersionAfter(vCurrent, vTarget = "4.7.1") {
   if (!vCurrent) return false;
@@ -756,9 +756,9 @@ window.closeVersionChangelogModal = closeVersionChangelogModal;
 
 async function loadAdminChangelog(version) {
   const select = document.getElementById("adminChangelogVersionSelect");
-  const targetVer = version || (select ? select.value : (window.APP_VERSION || "4.7.6"));
+  const targetVer = version || (select ? select.value : (window.APP_VERSION || "4.7.7"));
   const badge = document.getElementById("adminCurrentVersionBadge");
-  if (badge) badge.textContent = `v${window.APP_VERSION || "4.7.6"}`;
+  if (badge) badge.textContent = `v${window.APP_VERSION || "4.7.7"}`;
   try {
     const res = await fetch(`/api/changelog?version=${encodeURIComponent(targetVer)}`);
     const data = await res.json();
@@ -777,7 +777,7 @@ window.onAdminChangelogVersionChange = onAdminChangelogVersionChange;
 
 async function saveAdminChangelog() {
   const select = document.getElementById("adminChangelogVersionSelect");
-  const targetVer = select ? select.value : (window.APP_VERSION || "4.7.6");
+  const targetVer = select ? select.value : (window.APP_VERSION || "4.7.7");
   const input = document.getElementById("adminChangelogInput");
   const btn = document.getElementById("btnSaveAdminChangelog");
   const text = input ? input.value.trim() : "";
@@ -2079,10 +2079,15 @@ function applySession(user) {
     document.body.removeAttribute("data-user-theme");
   }
 
+  const rawDisplayName = String(user ? (user.displayName || user.name || user.username || "") : "");
+  const trimmedDisplayName = rawDisplayName.length > 20
+    ? rawDisplayName.slice(0, 19) + "…"
+    : rawDisplayName;
+
   $$(".profile-chip-text").forEach(
     (el) =>
     (el.innerHTML = user
-      ? `<span class="${getNameClass(streakTier)}">${escapeHTML(user.displayName)}</span> <b>${roleDisplay}</b>`
+      ? `<span class="${getNameClass(streakTier)}" title="${escapeHTML(rawDisplayName)}">${escapeHTML(trimmedDisplayName)}</span> <b>${roleDisplay}</b>`
       : "Đăng nhập"),
   );
   if (typeof window.syncAdaptiveGlassHeaderMetrics === "function") {
@@ -17747,9 +17752,13 @@ function initAdaptiveGlassHeader() {
       isDetailActive &&
       isDesktopGlassViewport() &&
       !document.body.classList.contains("study-zen-fullscreen") &&
+      isCompact &&
       y > 50;
     topNav.classList.toggle("is-header-docked", desktopDock);
-    topNav.classList.remove("is-peek-suppressed", "top-nav-hidden");
+    topNav.classList.toggle("is-peek-suppressed", desktopDock && isPeeking);
+    if (desktopDock) {
+      topNav.classList.remove("top-nav-hidden");
+    }
   }
 
   window.syncPostDetailTopNavState = syncPostDetailTopNavState;
@@ -17759,15 +17768,39 @@ function initAdaptiveGlassHeader() {
       clearTimeout(scrollTopPeekTimer);
       scrollTopPeekTimer = null;
     }
-    isPeeking = false;
-    header.classList.remove("is-nav-peek");
+    const nextPeek = Boolean(open) && isCompact && isDesktopGlassViewport();
+    const changed = nextPeek !== isPeeking;
+    isPeeking = nextPeek;
+    if (nextPeek) {
+      peekScrollY = window.scrollY || window.pageYOffset || 0;
+    }
+    header.classList.toggle("is-nav-peek", nextPeek);
     syncFocusOrder();
     syncPostDetailTopNavState();
+    if (changed && isCompact) {
+      triggerNavMorph(nextPeek ? "expand" : "compact");
+      if (nextPeek) {
+        syncNavActiveGlider(true);
+      }
+    }
   }
 
   window.closeNavPeek = function closeNavPeek(opts) {
-    isPeeking = false;
-    header.classList.remove("is-nav-peek");
+    if (!isPeeking) return;
+    const scrollingToTop = Boolean(opts && opts.scrollingToTop) && (window.scrollY || window.pageYOffset || 0) >= 24;
+    if (scrollingToTop) {
+      suppressPeekAutoCloseUntil = Date.now() + 750;
+      if (scrollTopPeekTimer) clearTimeout(scrollTopPeekTimer);
+      scrollTopPeekTimer = setTimeout(() => {
+        scrollTopPeekTimer = null;
+        if (isCompact && (window.scrollY || window.pageYOffset || 0) >= 24) {
+          setNavPeekOpen(false);
+        }
+      }, 680);
+      return;
+    }
+    suppressPeekAutoCloseUntil = 0;
+    setNavPeekOpen(false);
   };
 
   function measureCompactActionsWidth() {
@@ -17780,7 +17813,7 @@ function initAdaptiveGlassHeader() {
     const searchW = searchBtn && searchBtn.offsetParent !== null ? searchBtn.offsetWidth : 36;
     const notifW = notifBtn && notifBtn.offsetParent !== null ? notifBtn.offsetWidth : 36;
     const quickW = quickBtn ? quickBtn.offsetWidth : 36;
-    return Math.max(168, chipCompactW + searchW + notifW + quickW + 32);
+    return Math.max(168, chipCompactW + searchW + notifW + quickW + 28);
   }
 
   function syncAdaptiveGlassHeaderMetrics() {
@@ -17803,11 +17836,7 @@ function initAdaptiveGlassHeader() {
       return;
     }
 
-    header.classList.remove("is-compact", "is-nav-peek");
-    isCompact = false;
-    isPeeking = false;
-
-    const navExpandedW = Math.ceil(navLinks.offsetWidth || 460);
+    const navExpandedW = Math.ceil(navLinks.offsetWidth || 480);
     if (navExpandedW > 60) {
       header.style.setProperty("--nav-expanded-w", `${navExpandedW}px`);
     }
@@ -17815,45 +17844,83 @@ function initAdaptiveGlassHeader() {
     let naturalChipTextW = 0;
     if (profileChipText) {
       const currentScrollW = profileChipText.scrollWidth || 0;
-      if (currentScrollW > 0 && !header.classList.contains("is-chip-collapsed")) {
+      if (currentScrollW > 0 && !header.classList.contains("is-chip-collapsed") && !isCompact) {
         profileChipText._lastNaturalW = currentScrollW;
       }
       const rawNaturalW = profileChipText._lastNaturalW || currentScrollW;
-      const maxChipW = window.innerWidth <= 1080 ? 120 : 220;
+      const maxChipW = window.innerWidth <= 1080 ? 110 : 160;
       naturalChipTextW = Math.min(maxChipW, Math.ceil(rawNaturalW));
       header.style.setProperty("--chip-text-w", `${naturalChipTextW}px`);
     }
 
     // Measure compact actions width (avatar + search + notif + quick menu)
-    const compactActionsW = Math.max(168, measureCompactActionsWidth() + 10);
+    const compactActionsW = Math.max(168, measureCompactActionsWidth());
     const naturalChipDelta = naturalChipTextW > 0 ? naturalChipTextW + 18 : 0;
     const fullExpandedActionsW = compactActionsW + naturalChipDelta;
 
     const innerW = headerInner.clientWidth;
     const brandW = Math.ceil(brand.getBoundingClientRect().width || 148);
 
-    // Collision check: brandW + navExpandedW + fullExpandedActionsW + clearances
+    // Collision check for normal expanded view
     const requiredFullW = brandW + navExpandedW + fullExpandedActionsW + 64;
     const isChipCurrentlyCollapsed = header.classList.contains("is-chip-collapsed");
     const shouldCollapse = isChipCurrentlyCollapsed
-      ? (innerW < requiredFullW + 28) // Hysteresis buffer to avoid flickering
+      ? (innerW < requiredFullW + 28) // Hysteresis buffer
       : (innerW < requiredFullW);
 
-    if (shouldCollapse) {
+    if (shouldCollapse && !isCompact) {
       header.classList.add("is-chip-collapsed");
-    } else {
+    } else if (!shouldCollapse && !isCompact) {
       header.classList.remove("is-chip-collapsed");
     }
 
-    // Direct DOM clearance guard: check distance between nav pill and side islands
-    const navShell = document.getElementById("desktopNavShell");
-    if (navShell && headerActions && brand && !header.classList.contains("is-chip-collapsed")) {
-      const nR = navShell.getBoundingClientRect();
-      const aR = headerActions.getBoundingClientRect();
-      const bR = brand.getBoundingClientRect();
-      if (nR.right + 18 > aR.left || nR.left < bR.right + 18) {
-        header.classList.add("is-chip-collapsed");
-      }
+    // Precise dockRight:
+    // In compact state, dock right next to compact actions capsule with clean 14px gap
+    // In expanded state, dock relative to the actions width
+    const realCompactW = (header.classList.contains("is-compact") || header.classList.contains("is-chip-collapsed")) && headerActions
+      ? Math.max(compactActionsW, Math.ceil(headerActions.getBoundingClientRect().width))
+      : compactActionsW;
+
+    const dockRight = isCompact
+      ? Math.round(realCompactW + 14)
+      : Math.round((header.classList.contains("is-chip-collapsed") ? realCompactW : fullExpandedActionsW) + 16);
+
+    header.style.setProperty("--nav-dock-right", `${dockRight}px`);
+
+    if (innerW > 0 && navExpandedW > 60 && brandW > 0) {
+      header.style.setProperty("--header-inner-w", `${innerW}px`);
+      header.style.setProperty("--brand-w", `${brandW}px`);
+
+      // Centered position calculation
+      const idealLeft = Math.round((innerW - navExpandedW) / 2);
+      const minLeft = brandW + 16;
+      const effectiveActionsRight = isCompact
+        ? compactActionsW + 10
+        : (header.classList.contains("is-chip-collapsed") ? compactActionsW : fullExpandedActionsW) + 16;
+      const maxLeft = innerW - effectiveActionsRight - navExpandedW;
+
+      const targetLeft = minLeft <= maxLeft
+        ? Math.max(minLeft, Math.min(maxLeft, idealLeft))
+        : minLeft;
+
+      const targetRightEdge = targetLeft + navExpandedW;
+      const dockRightEdge = innerW - dockRight;
+      // In expanded state, shift left towards target position
+      const shiftX = Math.min(0, Math.round(targetRightEdge - dockRightEdge));
+      header.style.setProperty("--nav-shift-x", `${shiftX}px`);
+
+      // Channel for docked post-detail pill
+      const docClientW = document.documentElement.clientWidth || window.innerWidth;
+      const innerLeft = Math.max(28, (docClientW - innerW) / 2);
+      const slotLeft = innerLeft + brandW + 14;
+      const slotRight = innerLeft + innerW - dockRight - 48 - 14;
+      const slotFreeW = Math.max(0, slotRight - slotLeft);
+      const detailDockW = Math.max(240, Math.min(740, Math.floor(slotFreeW)));
+      const detailDockCenterX = Math.round((slotLeft + slotRight) / 2);
+      document.documentElement.style.setProperty("--detail-dock-cx", `${detailDockCenterX}px`);
+      document.documentElement.style.setProperty("--detail-dock-w", `${detailDockW}px`);
+      document.body.classList.toggle("detail-dock-tight", slotFreeW < 580);
+      document.body.classList.toggle("detail-dock-compact-bc", slotFreeW < 470);
     }
 
     syncNavActiveGlider(true);
@@ -17863,11 +17930,20 @@ function initAdaptiveGlassHeader() {
   window.syncAdaptiveGlassHeaderMetrics = syncAdaptiveGlassHeaderMetrics;
 
   function applyCompactState(nextCompact) {
-    isCompact = false;
-    header.classList.remove("is-compact", "is-nav-peek");
+    if (nextCompact === isCompact) return;
+    isCompact = nextCompact;
+    if (!nextCompact) {
+      suppressPeekAutoCloseUntil = 0;
+      setNavPeekOpen(false);
+    }
+    header.classList.toggle("is-compact", nextCompact);
     syncFocusOrder();
     syncPostDetailTopNavState();
-    syncNavActiveGlider(true);
+    triggerNavMorph(nextCompact ? "compact" : "expand");
+    syncAdaptiveGlassHeaderMetrics();
+    if (!nextCompact) {
+      syncNavActiveGlider(true);
+    }
   }
 
   function evaluateScrollState() {
@@ -17881,14 +17957,34 @@ function initAdaptiveGlassHeader() {
       return;
     }
     if (!isDesktopGlassViewport() || document.body.classList.contains("study-zen-fullscreen")) {
-      header.classList.remove("is-compact", "is-nav-peek", "is-scrolled");
-      isCompact = false;
-      isPeeking = false;
-      syncPostDetailTopNavState();
+      applyCompactState(false);
       return;
     }
     const y = window.scrollY || window.pageYOffset || 0;
     header.classList.toggle("is-scrolled", y > 24);
+
+    const isDetailActive = document.body.classList.contains("page-post-detail") ||
+      Boolean(document.getElementById("postDetail")?.classList.contains("active-page"));
+
+    if (isDetailActive) {
+      if (!isCompact && y > 50) {
+        applyCompactState(true);
+      } else if (isCompact && y <= 30) {
+        applyCompactState(false);
+      } else if (isCompact && isPeeking && Date.now() > suppressPeekAutoCloseUntil && Math.abs(y - peekScrollY) > 56) {
+        setNavPeekOpen(false);
+      }
+      syncPostDetailTopNavState();
+      return;
+    }
+
+    if (!isCompact && y > 48) {
+      applyCompactState(true);
+    } else if (isCompact && y < 24) {
+      applyCompactState(false);
+    } else if (isCompact && isPeeking && Date.now() > suppressPeekAutoCloseUntil && Math.abs(y - peekScrollY) > 56) {
+      setNavPeekOpen(false);
+    }
     syncPostDetailTopNavState();
   }
 

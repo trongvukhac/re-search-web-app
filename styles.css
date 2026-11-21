@@ -31912,36 +31912,54 @@ body.dark-theme #postDetail .post-detail-pinned-reply {
     color: var(--glass-colon) !important;
   }
 
-  /* 2. Center-Aligned Frosted Glass Navigation Island */
+  /* 2. Center-Left Optical Glass Pill <-> Right-Docked Feature Icon Orb */
   header#siteHeader .desktop-nav {
     position: absolute;
-    left: 50%;
     top: 0;
-    right: auto;
-    transform: translateX(-50%);
+    right: var(--nav-dock-right, 186px);
     height: 48px;
     display: flex;
     align-items: center;
-    justify-content: center;
+    justify-content: flex-end;
     flex: 0 0 auto;
-    margin: 0 !important;
+    margin-left: 0 !important;
     pointer-events: none;
     z-index: 1002;
+    transform: translate3d(var(--nav-shift-x, 0px), 0, 0);
+    will-change: transform;
+    transition: transform 0.44s cubic-bezier(0.22, 1, 0.36, 1);
   }
 
-  header#siteHeader.is-compact .desktop-nav {
-    transform: translateX(-50%);
+  @media (prefers-reduced-motion: no-preference) {
+    header#siteHeader .desktop-nav {
+      transition-timing-function: linear(0, 0.088 4%, 0.304 10%, 0.618 18%, 0.896 27%, 1.032 37%,
+          1.052 44%, 1.032 53%, 1.005 66%, 0.996 78%, 1.002 90%, 1);
+    }
+  }
+
+  header#siteHeader.is-compact:not(.is-nav-peek) .desktop-nav {
+    transform: translate3d(0px, 0, 0);
+  }
+
+  /* Khi di chuột vào avatar ở trạng thái compact để mở rộng tên, đẩy orb sang trái mượt mà tránh va chạm */
+  header#siteHeader.is-compact:not(.is-nav-peek):has(.profile-chip:hover) .desktop-nav {
+    transform: translate3d(calc(-1 * (var(--chip-text-w, 130px) + 24px)), 0, 0);
+    transition: transform 0.36s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  header#siteHeader.is-compact.is-nav-peek .desktop-nav {
+    transform: translate3d(var(--nav-shift-x, 0px), 0, 0);
   }
 
   header#siteHeader .desktop-nav-shell {
     position: relative;
     display: flex;
     align-items: center;
-    justify-content: center;
+    justify-content: flex-end;
     height: 48px;
-    width: auto;
-    max-width: none;
-    min-width: 0;
+    width: var(--nav-expanded-w, auto);
+    max-width: calc(var(--header-inner-w, 1208px) - var(--brand-w, 180px) - var(--nav-dock-right, 186px) - 12px);
+    min-width: 48px;
     padding: 4px;
     border-radius: 9999px;
     overflow: hidden;
@@ -31953,10 +31971,75 @@ body.dark-theme #postDetail .post-detail-pinned-reply {
     -webkit-backdrop-filter: blur(22px) saturate(185%);
     border: 1px solid var(--glass-border);
     box-shadow: inset 0 1px 0 var(--glass-highlight), var(--glass-shadow);
+    will-change: width;
     transition:
+      width 0.42s cubic-bezier(0.22, 1, 0.36, 1),
       background 0.22s ease,
       border-color 0.22s ease,
       box-shadow 0.22s ease;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+
+    /* Specular glass sheen layer sweeping across the capsule on state morph */
+    header#siteHeader .desktop-nav-shell::after {
+      content: "";
+      position: absolute;
+      inset: -2px;
+      background: linear-gradient(112deg,
+          transparent 22%,
+          rgba(255, 255, 255, 0.38) 48%,
+          rgba(255, 255, 255, 0.12) 56%,
+          transparent 78%);
+      transform: translate3d(-120%, 0, 0);
+      opacity: 0;
+      pointer-events: none;
+      z-index: 4;
+    }
+
+    body.dark-theme header#siteHeader .desktop-nav-shell::after {
+      background: linear-gradient(112deg,
+          transparent 24%,
+          rgba(255, 255, 255, 0.16) 49%,
+          rgba(196, 181, 253, 0.08) 57%,
+          transparent 78%);
+    }
+
+    header#siteHeader:not(.is-compact) .desktop-nav-shell,
+    header#siteHeader.is-nav-peek .desktop-nav-shell {
+      transition-timing-function:
+        linear(0, 0.095 5%, 0.34 12%, 0.69 21%, 0.96 31%, 1.036 42%, 1.042 49%, 1.018 61%, 0.998 76%, 1.002 90%, 1),
+        ease, ease, ease;
+    }
+
+    header#siteHeader.is-morph-to-expand .desktop-nav-shell::after {
+      animation: navGlassSheen 0.62s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    }
+
+    header#siteHeader.is-morph-to-compact .desktop-nav-shell {
+      animation: navOrbSquish 0.56s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    header#siteHeader.is-morph-to-compact .desktop-nav-shell::after {
+      animation: navGlassSheenReverse 0.48s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    }
+  }
+
+  header#siteHeader.is-compact:not(.is-nav-peek) .desktop-nav-shell {
+    width: 48px;
+    box-shadow:
+      inset 0 1px 0 var(--glass-highlight),
+      0 10px 26px -8px rgba(15, 23, 42, 0.2),
+      0 0 0 1px var(--glass-nav-pill-border);
+  }
+
+  header#siteHeader.is-compact:not(.is-nav-peek) .desktop-nav-shell:hover {
+    background: var(--glass-bg-elevated);
+    border-color: var(--glass-border-strong);
+    box-shadow:
+      inset 0 1px 0 var(--glass-highlight),
+      0 14px 32px -8px rgba(15, 23, 42, 0.26),
+      0 0 18px -4px var(--glass-accent-dot);
   }
 
   header#siteHeader .desktop-nav-links {
@@ -31966,10 +32049,26 @@ body.dark-theme #postDetail .post-detail-pinned-reply {
     gap: 4px;
     flex: 0 0 auto;
     width: max-content;
-    opacity: 1 !important;
-    transform: none !important;
-    pointer-events: auto !important;
-    visibility: visible !important;
+    opacity: 1;
+    transform: scale(1);
+    transform-origin: right center;
+    pointer-events: auto;
+    visibility: visible;
+    transition:
+      opacity 0.24s ease 0.08s,
+      transform 0.36s cubic-bezier(0.22, 1, 0.36, 1) 0.04s,
+      visibility 0s linear 0s;
+  }
+
+  header#siteHeader.is-compact:not(.is-nav-peek) .desktop-nav-links {
+    opacity: 0;
+    transform: scale(0.86);
+    pointer-events: none;
+    visibility: hidden;
+    transition:
+      opacity 0.13s ease,
+      transform 0.24s cubic-bezier(0.22, 1, 0.36, 1),
+      visibility 0s linear 0.14s;
   }
 
   /* Responsive spacing on narrow desktop/tablet screens */
@@ -32126,9 +32225,72 @@ body.dark-theme #postDetail .post-detail-pinned-reply {
     vertical-align: middle;
   }
 
-  /* Compact Circular Active-Feature Icon Trigger permanently hidden */
+  /* Compact Circular Active-Feature Icon Trigger */
   header#siteHeader .desktop-nav-compact-trigger {
-    display: none !important;
+    position: absolute;
+    inset: 0;
+    margin: auto;
+    width: 46px;
+    height: 46px;
+    border: none;
+    border-radius: 9999px;
+    background: transparent;
+    color: var(--glass-nav-active-ink) !important;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transform: scale(0.55);
+    transition:
+      opacity 0.12s ease,
+      transform 0.22s cubic-bezier(0.22, 1, 0.36, 1),
+      background 0.2s ease,
+      color 0.2s ease,
+      visibility 0s linear 0.14s;
+  }
+
+  header#siteHeader.is-compact:not(.is-nav-peek) .desktop-nav-compact-trigger {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transform: scale(1);
+    transition:
+      opacity 0.22s ease 0.12s,
+      transform 0.4s cubic-bezier(0.22, 1, 0.36, 1) 0.08s,
+      background 0.2s ease,
+      color 0.2s ease,
+      visibility 0s linear 0s;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    header#siteHeader.is-compact:not(.is-nav-peek) .desktop-nav-compact-trigger {
+      transition-timing-function:
+        ease,
+        linear(0, 0.22 8%, 0.71 21%, 1.06 36%, 1.09 45%, 1.03 60%, 0.992 76%, 1.003 90%, 1),
+        ease, ease, linear;
+    }
+
+    header#siteHeader.is-morph-to-compact .desktop-nav-compact-trigger .compact-nav-icon {
+      animation: compactIconBloom 0.42s cubic-bezier(0.22, 1, 0.36, 1) 0.08s backwards;
+    }
+  }
+
+  header#siteHeader.is-compact:not(.is-nav-peek) .desktop-nav-compact-trigger:hover {
+    background: var(--glass-nav-pill-bg);
+    transform: scale(1.08) translateY(-1px);
+  }
+
+  header#siteHeader.is-compact:not(.is-nav-peek) .desktop-nav-compact-trigger:active {
+    transform: scale(0.92);
+  }
+
+  header#siteHeader .compact-nav-icon {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
   }
 
   /* 3. Right Glass Pill: Profile + Search + Hamburger */
@@ -32231,6 +32393,26 @@ body.dark-theme #postDetail .post-detail-pinned-reply {
       width var(--glass-dur) var(--glass-ease),
       margin-left var(--glass-dur) var(--glass-ease),
       opacity 0.16s ease;
+  }
+
+  /* Đóng mở tên: di chuột vào avatar khi đang thu gọn sẽ tự mở rộng tên với hiệu ứng lò xo */
+  header#siteHeader.is-compact .profile-chip:hover,
+  header#siteHeader.is-chip-collapsed .profile-chip:hover {
+    padding: 2px 12px 2px 2.5px !important;
+    background: var(--glass-control-hover-bg) !important;
+    border: 1px solid var(--glass-control-border) !important;
+    box-shadow: 0 4px 14px -2px rgba(0, 0, 0, 0.12) !important;
+  }
+
+  header#siteHeader.is-compact .profile-chip:hover .profile-chip-text,
+  header#siteHeader.is-chip-collapsed .profile-chip:hover .profile-chip-text {
+    width: var(--chip-text-w, auto) !important;
+    max-width: 180px !important;
+    margin-left: 8px !important;
+    padding: 0 !important;
+    opacity: 1 !important;
+    overflow: hidden !important;
+    pointer-events: auto !important;
   }
 
   header#siteHeader .desktop-search,
