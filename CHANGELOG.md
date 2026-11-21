@@ -4,6 +4,25 @@ Tất cả các thay đổi đáng chú ý của dự án **RE:SEARCH — Cộng
 
 ---
 
+## [4.7.5] - 2026-11-21
+### Sửa lỗi & Hoàn thiện (Hotfix)
+- **Hiệu chuẩn triệt tiêu khoảng hở cạnh trên/dưới khung Namecard (Snug Frame Calibration)**:
+  - Phân tích pixel alpha thực tế và tính toán lại toàn bộ toạ độ inset cho 5 bộ khung nghệ thuật (`gold`, `phep_mau_mua_dong`, `thung_lung_suong_thu`, `thien_ha_huyen_ao`, `pha_le_hoang_gia`).
+  - Khắc phục triệt để hiện tượng khung nghệ thuật bị dãn cách xa hoặc hở viền ở mép trên/dưới, ôm khít 100% đường viền canvas 680×760 với 0 pixel khoảng hở.
+- **Ghim cố định thanh Header trên Mobile (Screen-Fixed Mobile Header)**:
+  - Chuyển thanh header trên mobile sang `position: fixed !important; top: 0; width: 100%; z-index: 1000;` và thay thế `overflow-x: hidden` trên `html/body/main` thành `overflow-x: clip;` để không phá vỡ cơ chế cuộn.
+  - Cụm điều hướng phía trên (logo, avatar, thông báo, tìm kiếm, menu) luôn ghim cố định theo màn hình khi người dùng cuộn xuống trang.
+- **Khắc phục thanh điều hướng bài viết (Post Detail Action Bar)**:
+  - Khôi phục container `#postDetail .post-detail-top-nav-slot` dạng khối riêng biệt (`min-height: 48px; margin-bottom: 18px;`), tách rời rõ ràng khỏi thẻ tiêu đề bài viết thay vì dính chặt đè lên tiêu đề.
+  - Neo thanh công cụ (Quay lại, chép link, lưu bài viết) cố định mượt mà khi cuộn trang cả trên mobile (`position: sticky`) lẫn desktop (docked floating glass header), không bao giờ bị biến mất khi lướt đọc bài viết.
+- **Khôi phục bố cục Avatar & Bio trên Namecard (Namecard Layout Restoration)**:
+  - Khôi phục `padding: 0;` cho `.namecard-bio` và đưa `.namecard-body` về khoảng cách lề chuẩn `padding: 0 28px 90px;` đồng bộ với `.namecard-header`.
+  - Giữ khoảng cách an toàn rộng rãi giúp avatar và tiểu sử không bị co cụm hay che khuất bởi các chi tiết trang trí của khung viền.
+- **Ngăn chặn triệt để chồng chéo trên thanh điều hướng Desktop (Nav Overlap Prevention)**:
+  - Tối ưu thuật toán đo đạc kích thước và phát hiện va chạm: tự động thu gọn chip tài khoản người dùng về avatar tối giản (`is-chip-collapsed`) khi tên hiển thị quá dài hoặc chiều ngang màn hình không đủ khoảng hở an toàn.
+
+---
+
 ## [4.7.4] - 2026-11-21
 ### Sửa lỗi & Hoàn thiện (Hotfix)
 - **Đồng nhất số phiên bản toàn diện (Version Number Synchronization)**:

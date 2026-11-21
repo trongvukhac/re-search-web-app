@@ -669,7 +669,7 @@ function triggerAppUpdate(newBuildId, newVersion) {
     return `${m}:${String(sec).padStart(2, "0")}`;
   };
 
-  const displayVer = newVersion || targetUpdateVersion || window.APP_VERSION || "4.7.4";
+  const displayVer = newVersion || targetUpdateVersion || window.APP_VERSION || "4.7.5";
 
   banner.innerHTML = `
     <div style="font-size: 22px;">🚀</div>
@@ -691,7 +691,7 @@ function triggerAppUpdate(newBuildId, newVersion) {
   }, 1000);
 }
 
-window.APP_VERSION = "4.7.4";
+window.APP_VERSION = "4.7.5";
 
 function isVersionAfter(vCurrent, vTarget = "4.7.1") {
   if (!vCurrent) return false;
@@ -754,9 +754,9 @@ window.closeVersionChangelogModal = closeVersionChangelogModal;
 
 async function loadAdminChangelog(version) {
   const select = document.getElementById("adminChangelogVersionSelect");
-  const targetVer = version || (select ? select.value : (window.APP_VERSION || "4.7.4"));
+  const targetVer = version || (select ? select.value : (window.APP_VERSION || "4.7.5"));
   const badge = document.getElementById("adminCurrentVersionBadge");
-  if (badge) badge.textContent = `v${window.APP_VERSION || "4.7.4"}`;
+  if (badge) badge.textContent = `v${window.APP_VERSION || "4.7.5"}`;
   try {
     const res = await fetch(`/api/changelog?version=${encodeURIComponent(targetVer)}`);
     const data = await res.json();
@@ -775,7 +775,7 @@ window.onAdminChangelogVersionChange = onAdminChangelogVersionChange;
 
 async function saveAdminChangelog() {
   const select = document.getElementById("adminChangelogVersionSelect");
-  const targetVer = select ? select.value : (window.APP_VERSION || "4.7.4");
+  const targetVer = select ? select.value : (window.APP_VERSION || "4.7.5");
   const input = document.getElementById("adminChangelogInput");
   const btn = document.getElementById("btnSaveAdminChangelog");
   const text = input ? input.value.trim() : "";
@@ -17834,8 +17834,13 @@ function initAdaptiveGlassHeader() {
 
     let naturalChipTextW = 0;
     if (profileChipText) {
+      const currentScrollW = profileChipText.scrollWidth || 0;
+      if (currentScrollW > 0 && !header.classList.contains("is-chip-collapsed")) {
+        profileChipText._lastNaturalW = currentScrollW;
+      }
+      const rawNaturalW = profileChipText._lastNaturalW || currentScrollW;
       const maxChipW = window.innerWidth <= 1080 ? 130 : 240;
-      naturalChipTextW = Math.min(maxChipW, Math.ceil(profileChipText.scrollWidth));
+      naturalChipTextW = Math.min(maxChipW, Math.ceil(rawNaturalW));
       header.style.setProperty("--chip-text-w", `${naturalChipTextW}px`);
     }
 
@@ -17847,11 +17852,11 @@ function initAdaptiveGlassHeader() {
     const brandW = brand.offsetWidth;
 
     // Detect collision / lack of gap between desktop navigation and header actions
-    // Gap required: at least 20px between brand & navLinks, and at least 32px between navLinks & actions
-    const requiredFullW = brandW + 20 + navExpandedW + 32 + fullExpandedActionsW;
+    // Generous gap required: at least 36px between brand & navLinks, and at least 40px between navLinks & actions
+    const requiredFullW = brandW + 36 + navExpandedW + 40 + fullExpandedActionsW;
     const isChipCurrentlyCollapsed = header.classList.contains("is-chip-collapsed");
     const shouldCollapse = isChipCurrentlyCollapsed
-      ? (innerW < requiredFullW + 36) // Hysteresis buffer to prevent oscillating
+      ? (innerW < requiredFullW + 40) // Hysteresis buffer to prevent oscillating
       : (innerW < requiredFullW);
 
     if (shouldCollapse && !isCompact) {
