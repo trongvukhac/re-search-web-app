@@ -4,6 +4,21 @@ Tất cả các thay đổi đáng chú ý của dự án **RE:SEARCH — Cộng
 
 ---
 
+## [4.7.2] - 2026-11-21
+### Sửa lỗi & Hoàn thiện (Patch)
+- **Hệ thống khung và ảnh bìa Namecard theo chuỗi**:
+  - Bổ sung 3 theme mới: *Thung lũng sương thu* (chuỗi 100 ngày), *Thiên hà huyền ảo* (chuỗi 200 ngày), *Pha lê hoàng gia* (chuỗi 365 ngày).
+  - Cập nhật, thay thế khung nghệ thuật chất lượng cao cho *Kỷ nguyên hoàng kim* (`gold`) và *Phép màu mùa đông* (`phep_mau_mua_dong`).
+  - Đồng bộ tỷ lệ hiển thị chuẩn xác trên sân khấu Namecard gốc (680x760), thẻ Namecard mini và xem trước trong Namecard Studio.
+- **Thanh điều hướng Desktop (Navigation Bar Collision Detection)**:
+  - Tự động nhận diện trường hợp tên hiển thị người dùng quá dài dẫn đến nguy cơ va chạm hoặc thiếu khoảng hở với thanh điều hướng chính.
+  - Thu gọn tên người dùng (`is-chip-collapsed`) về trạng thái avatar tròn tối giản mượt mà tương tự như khi cuộn trang, giữ trọn vẹn bố cục cân đối và không bị chồng lấn.
+- **Cố định chân trang (Sticky Page Footer)**:
+  - Tối ưu cấu trúc `flex-direction: column` và `min-height: 100vh` cho khung trang toàn hệ thống, đảm bảo chân trang luôn neo cố định tại đáy màn hình trên mọi trang, kể cả khi nội dung ngắn.
+- **Thử thách học tập**: Cập nhật tiêu đề biểu ngữ trong modal chi tiết chuỗi thành *"Thử thách học tập bền bỉ cùng &ldquo;RE:SEARCH&rdquo;"*.
+
+---
+
 ## [4.7.0] - 2026-11-20
 ### Thay đổi & Nâng cấp (Minor)
 - **Đấu trường RE:SEARCH Arena**: Đổi tên toàn bộ hệ thống từ "Thi đua" sang "Đấu trường" (Desktop Nav, Mobile Dock, bộ lọc thông báo, banner, toast, thể lệ và tab quản trị).

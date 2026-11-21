@@ -684,7 +684,7 @@ function triggerAppUpdate(newBuildId) {
   }, 1000);
 }
 
-window.APP_VERSION = "4.7.0";
+window.APP_VERSION = "4.7.2";
 
 function isVersionAfter(vCurrent, vTarget = "4.7.1") {
   if (!vCurrent) return false;
@@ -1517,6 +1517,9 @@ function getMiniCoverStyle(coverVal) {
     "vuong_quoc_mua_dong": "/covers/vuong-quoc-mua-dong.png",
     "tinh_tu_sao_troi": "/covers/tinh-tu-sao-troi.png",
     "ky_nguyen_hoang_kim": "/covers/ky-nguyen-hoang-kim.png",
+    "thung_lung_suong_thu": "/covers/thung-lung-suong-thu.png",
+    "thien_ha_huyen_ao": "/covers/thien-ha-huyen-ao.png",
+    "pha_le_hoang_gia": "/covers/pha-le-hoang-gia.png",
   };
   if (fallbackImages[val]) {
     return `background-image: url('${fallbackImages[val]}');`;
@@ -1579,7 +1582,7 @@ const STREAK_MILESTONES = [
     tier: 6,
     title: "Nhà kiến tạo tri thức",
     color: "Tím hoàng gia",
-    forumDesc: "Đặc quyền đang chờ bạn khám phá",
+    forumDesc: "Mở khoá giao diện Thung lũng sương thu độc quyền",
     studyDesc: "Đặc quyền đang chờ bạn khám phá"
   },
   {
@@ -1587,7 +1590,7 @@ const STREAK_MILESTONES = [
     tier: 7,
     title: "Bậc thầy học thuật",
     color: "Siêu tân tinh",
-    forumDesc: "Đặc quyền đang chờ bạn khám phá",
+    forumDesc: "Mở khoá giao diện Thiên hà huyền ảo độc quyền",
     studyDesc: "Đặc quyền đang chờ bạn khám phá"
   },
   {
@@ -1595,7 +1598,7 @@ const STREAK_MILESTONES = [
     tier: 8,
     title: "Học giả lưu danh",
     color: "Đen huyền bí",
-    forumDesc: "Đặc quyền đang chờ bạn khám phá",
+    forumDesc: "Mở khoá giao diện Pha lê hoàng gia độc quyền",
     studyDesc: "Đặc quyền đang chờ bạn khám phá"
   }
 ];
@@ -8612,12 +8615,15 @@ const FRAME_OPTIONS = [
   { id: "basic_deep_green", name: "Xanh rừng sâu", minDays: 0 },
   { id: "basic_pure_black", name: "Đen tuyền", minDays: 0 },
 
-  // 5 Khung nghệ thuật độc quyền theo chuỗi ngày (sử dụng 5 thumb mới)
+  // Khung nghệ thuật độc quyền theo chuỗi ngày (sử dụng thumb tương ứng)
   { id: "leaves", name: "Khu rừng tri thức", minDays: 3 },
   { id: "sakura", name: "Mùa anh đào nở", minDays: 7 },
   { id: "ice", name: "Vương quốc băng giá", minDays: 14 },
   { id: "stars", name: "Tinh tú sao trời", minDays: 30 },
   { id: "gold", name: "Kỷ nguyên hoàng kim", minDays: 50 },
+  { id: "thung_lung_suong_thu", name: "Thung lũng sương thu", minDays: 100 },
+  { id: "thien_ha_huyen_ao", name: "Thiên hà huyền ảo", minDays: 200 },
+  { id: "pha_le_hoang_gia", name: "Pha lê hoàng gia", minDays: 365 },
 
   // Khung hữu hạn nhận qua hoạt động giới hạn
   {
@@ -8665,12 +8671,15 @@ const COVER_PRESETS = [
   { id: "ton_vinh_phai_dep", name: "Tôn vinh phái đẹp", type: "image", value: "covers/ton-vinh-phai-dep.png", isLimited: true, lockNote: "Ảnh bìa nhận được qua hoạt động giới hạn" },
   { id: "bua_tiec_ma_mi", name: "Bữa tiệc ma mị", type: "image", value: "covers/bua-tiec-ma-mi.png", isLimited: true, lockNote: "Ảnh bìa nhận được qua hoạt động giới hạn" },
 
-  // 5 ảnh bìa Namecard độc quyền theo chuỗi
+  // Ảnh bìa Namecard độc quyền theo chuỗi
   { id: "khu_rung_tri_thuc", name: "Khu rừng tri thức", type: "image", value: "covers/khu-rung-tri-thuc.png", minDays: 3 },
   { id: "mua_anh_dao_no", name: "Mùa anh đào nở", type: "image", value: "covers/mua-anh-dao-no.png", minDays: 7 },
   { id: "vuong_quoc_mua_dong", name: "Vương quốc băng giá", type: "image", value: "covers/vuong-quoc-mua-dong.png", minDays: 14 },
   { id: "tinh_tu_sao_troi", name: "Tinh tú sao trời", type: "image", value: "covers/tinh-tu-sao-troi.png", minDays: 30 },
   { id: "ky_nguyen_hoang_kim", name: "Kỷ nguyên hoàng kim", type: "image", value: "covers/ky-nguyen-hoang-kim.png", minDays: 50 },
+  { id: "thung_lung_suong_thu", name: "Thung lũng sương thu", type: "image", value: "covers/thung-lung-suong-thu.png", minDays: 100 },
+  { id: "thien_ha_huyen_ao", name: "Thiên hà huyền ảo", type: "image", value: "covers/thien-ha-huyen-ao.png", minDays: 200 },
+  { id: "pha_le_hoang_gia", name: "Pha lê hoàng gia", type: "image", value: "covers/pha-le-hoang-gia.png", minDays: 365 },
   // Màu sắc và dải chuyển màu có sẵn
   { id: "default", name: "Xanh đại dương", type: "gradient", value: "linear-gradient(135deg, #1e3a8a 0%, #3b82f6 50%, #93c5fd 100%)", minDays: 0 },
   { id: "emerald_gradient", name: "Ngọc lục bảo", type: "gradient", value: "linear-gradient(135deg, #064e3b 0%, #059669 50%, #6ee7b7 100%)", minDays: 0 },
@@ -17779,7 +17788,7 @@ function initAdaptiveGlassHeader() {
 
   function syncAdaptiveGlassHeaderMetrics() {
     if (document.body.classList.contains("nav-style-classic")) {
-      header.classList.remove("is-compact", "is-nav-peek", "is-scrolled");
+      header.classList.remove("is-compact", "is-nav-peek", "is-scrolled", "is-chip-collapsed");
       document.body.classList.remove("detail-dock-tight", "detail-dock-compact-bc");
       isCompact = false;
       isPeeking = false;
@@ -17788,7 +17797,7 @@ function initAdaptiveGlassHeader() {
       return;
     }
     if (!isDesktopGlassViewport()) {
-      header.classList.remove("is-compact", "is-nav-peek");
+      header.classList.remove("is-compact", "is-nav-peek", "is-chip-collapsed");
       document.body.classList.remove("detail-dock-tight", "detail-dock-compact-bc");
       isCompact = false;
       isPeeking = false;
@@ -17802,19 +17811,36 @@ function initAdaptiveGlassHeader() {
       header.style.setProperty("--nav-expanded-w", `${navExpandedW}px`);
     }
 
-    let chipTextW = 0;
+    let naturalChipTextW = 0;
     if (profileChipText) {
       const maxChipW = window.innerWidth <= 1080 ? 130 : 240;
-      chipTextW = Math.min(maxChipW, Math.ceil(profileChipText.scrollWidth));
-      header.style.setProperty("--chip-text-w", `${chipTextW}px`);
+      naturalChipTextW = Math.min(maxChipW, Math.ceil(profileChipText.scrollWidth));
+      header.style.setProperty("--chip-text-w", `${naturalChipTextW}px`);
     }
 
     const compactActionsW = measureCompactActionsWidth();
-    const chipDelta = chipTextW > 0 ? chipTextW + 19 : 0;
-    const expandedActionsW = compactActionsW + chipDelta;
+    const naturalChipDelta = naturalChipTextW > 0 ? naturalChipTextW + 19 : 0;
+    const fullExpandedActionsW = compactActionsW + naturalChipDelta;
 
     const innerW = headerInner.clientWidth;
     const brandW = brand.offsetWidth;
+
+    // Detect collision / lack of gap between desktop navigation and header actions
+    // Gap required: at least 18px between brand & navLinks, and at least 28px between navLinks & actions
+    const requiredFullW = brandW + 18 + navExpandedW + 28 + fullExpandedActionsW;
+    const isChipCurrentlyCollapsed = header.classList.contains("is-chip-collapsed");
+    const shouldCollapse = isChipCurrentlyCollapsed
+      ? (innerW < requiredFullW + 36) // Hysteresis buffer to prevent oscillating
+      : (innerW < requiredFullW);
+
+    if (shouldCollapse && !isCompact) {
+      header.classList.add("is-chip-collapsed");
+    } else {
+      header.classList.remove("is-chip-collapsed");
+    }
+
+    const isCollapsedNow = header.classList.contains("is-chip-collapsed") || isCompact;
+    const effectiveActionsW = isCollapsedNow ? compactActionsW : fullExpandedActionsW;
 
     if (innerW > 0 && navExpandedW > 60 && brandW > 0) {
       header.style.setProperty("--header-inner-w", `${innerW}px`);
@@ -17825,7 +17851,7 @@ function initAdaptiveGlassHeader() {
 
       // Optical 44/56 split across free channel so narrower left logo and wider right capsule look visually balanced
       const minRightEdge = brandW + 14 + navExpandedW;
-      const maxRightEdge = innerW - expandedActionsW - 14;
+      const maxRightEdge = innerW - effectiveActionsW - 14;
       const freeSpan = Math.max(0, maxRightEdge - minRightEdge);
       const targetRightEdge = minRightEdge <= maxRightEdge
         ? Math.round(minRightEdge + freeSpan * 0.44)

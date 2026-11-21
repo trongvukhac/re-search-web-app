@@ -69,13 +69,29 @@ body {
   font: 15px/1.65 var(--sans);
   color: var(--ink);
   background: var(--paper);
-  padding-bottom: 24px;
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  padding-bottom: 0 !important;
   overflow-x: clip;
   word-break: normal;
   overflow-wrap: break-word;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
+}
+
+main#mainContent,
+main {
+  flex: 1 0 auto;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.page.active-page {
+  flex: 1 0 auto;
 }
 
 /* Tối ưu typography chống rớt chữ và cân bằng dòng tự động */
@@ -17161,8 +17177,26 @@ body.dark-theme .doc-viewer-save-btn.is-saved {
 }
 
 .mini-card-frame-layer[data-frame="gold"] {
-  background-image: url("frames/v2/gold.png?v=5");
-  inset: calc(-60px * var(--mini-scale)) calc(-30px * var(--mini-scale)) calc(-68px * var(--mini-scale)) calc(-44px * var(--mini-scale));
+  background-image: url("frames/v2/gold.png?v=6");
+  inset: calc(-65px * var(--mini-scale)) calc(-62px * var(--mini-scale)) calc(-69px * var(--mini-scale)) calc(-79px * var(--mini-scale));
+  background-size: 100% 100%;
+}
+
+.mini-card-frame-layer[data-frame="thung_lung_suong_thu"] {
+  background-image: url("frames/v2/thung_lung_suong_thu.png?v=1");
+  inset: calc(-115px * var(--mini-scale)) calc(-68px * var(--mini-scale)) calc(-77px * var(--mini-scale)) calc(-60px * var(--mini-scale));
+  background-size: 100% 100%;
+}
+
+.mini-card-frame-layer[data-frame="thien_ha_huyen_ao"] {
+  background-image: url("frames/v2/thien_ha_huyen_ao.png?v=1");
+  inset: calc(-47px * var(--mini-scale)) calc(-76px * var(--mini-scale)) calc(-47px * var(--mini-scale)) calc(-67px * var(--mini-scale));
+  background-size: 100% 100%;
+}
+
+.mini-card-frame-layer[data-frame="pha_le_hoang_gia"] {
+  background-image: url("frames/v2/pha_le_hoang_gia.png?v=1");
+  inset: calc(-74px * var(--mini-scale)) calc(-65px * var(--mini-scale)) calc(-70px * var(--mini-scale)) calc(-77px * var(--mini-scale));
   background-size: 100% 100%;
 }
 
@@ -17186,8 +17220,8 @@ body.dark-theme .doc-viewer-save-btn.is-saved {
 }
 
 .mini-card-frame-layer[data-frame="phep_mau_mua_dong"] {
-  background-image: url("frames/v2/phep_mau_mua_dong.png?v=2");
-  inset: calc(-84px * var(--mini-scale)) calc(-67px * var(--mini-scale)) calc(-74px * var(--mini-scale)) calc(-69px * var(--mini-scale));
+  background-image: url("frames/v2/phep_mau_mua_dong.png?v=3");
+  inset: calc(-56px * var(--mini-scale)) calc(-37px * var(--mini-scale)) calc(-60px * var(--mini-scale)) calc(-52px * var(--mini-scale));
   background-size: 100% 100%;
 }
 
@@ -22216,8 +22250,26 @@ dialog.modal.namecard-modal {
 }
 
 .namecard-frame-layer[data-frame="gold"] {
-  background-image: url("frames/v2/gold.png?v=5");
-  inset: -60px -30px -68px -44px;
+  background-image: url("frames/v2/gold.png?v=6");
+  inset: -65px -62px -69px -79px;
+  background-size: 100% 100%;
+}
+
+.namecard-frame-layer[data-frame="thung_lung_suong_thu"] {
+  background-image: url("frames/v2/thung_lung_suong_thu.png?v=1");
+  inset: -115px -68px -77px -60px;
+  background-size: 100% 100%;
+}
+
+.namecard-frame-layer[data-frame="thien_ha_huyen_ao"] {
+  background-image: url("frames/v2/thien_ha_huyen_ao.png?v=1");
+  inset: -47px -76px -47px -67px;
+  background-size: 100% 100%;
+}
+
+.namecard-frame-layer[data-frame="pha_le_hoang_gia"] {
+  background-image: url("frames/v2/pha_le_hoang_gia.png?v=1");
+  inset: -74px -65px -70px -77px;
   background-size: 100% 100%;
 }
 
@@ -22241,8 +22293,8 @@ dialog.modal.namecard-modal {
 }
 
 .namecard-frame-layer[data-frame="phep_mau_mua_dong"] {
-  background-image: url("frames/v2/phep_mau_mua_dong.png?v=2");
-  inset: -84px -67px -74px -69px;
+  background-image: url("frames/v2/phep_mau_mua_dong.png?v=3");
+  inset: -56px -37px -60px -52px;
   background-size: 100% 100%;
 }
 
@@ -22368,7 +22420,22 @@ dialog.modal.namecard-modal {
 }
 
 .frame-choice-preview[data-frame-preview="gold"] {
-  background-image: url("frames/v2/thumbs/gold.png?v=6");
+  background-image: url("frames/v2/thumbs/gold.png?v=7");
+  background-size: 100% 100%;
+}
+
+.frame-choice-preview[data-frame-preview="thung_lung_suong_thu"] {
+  background-image: url("frames/v2/thumbs/thung_lung_suong_thu.png?v=1");
+  background-size: 100% 100%;
+}
+
+.frame-choice-preview[data-frame-preview="thien_ha_huyen_ao"] {
+  background-image: url("frames/v2/thumbs/thien_ha_huyen_ao.png?v=1");
+  background-size: 100% 100%;
+}
+
+.frame-choice-preview[data-frame-preview="pha_le_hoang_gia"] {
+  background-image: url("frames/v2/thumbs/pha_le_hoang_gia.png?v=1");
   background-size: 100% 100%;
 }
 
@@ -22398,10 +22465,8 @@ dialog.modal.namecard-modal {
 }
 
 .frame-choice-preview[data-frame-preview="phep_mau_mua_dong"] {
-  background-image: url("frames/v2/thumbs/phep_mau_mua_dong.png?v=2");
-  background-size: contain;
-  background-repeat: no-repeat;
-  background-position: center;
+  background-image: url("frames/v2/thumbs/phep_mau_mua_dong.png?v=3");
+  background-size: 100% 100%;
 }
 
 /* Khung cơ bản miễn phí swatch (viền 4px, góc ngoài 8px - góc trong chuẩn: 8px - 4px = 4px) */
@@ -32215,13 +32280,15 @@ body.dark-theme #postDetail .post-detail-pinned-reply {
     flex-shrink: 0;
   }
 
-  header#siteHeader.is-compact .profile-chip {
+  header#siteHeader.is-compact .profile-chip,
+  header#siteHeader.is-chip-collapsed .profile-chip {
     padding: 2px;
     background: transparent !important;
     border-color: transparent !important;
   }
 
-  header#siteHeader.is-compact .profile-chip .profile-chip-text {
+  header#siteHeader.is-compact .profile-chip .profile-chip-text,
+  header#siteHeader.is-chip-collapsed .profile-chip .profile-chip-text {
     width: 0 !important;
     margin-left: 0 !important;
     opacity: 0;
@@ -42684,6 +42751,7 @@ html.dark-theme .post-detail-community-tag.is-private {
 .site-footer {
   width: 100%;
   margin-top: auto;
+  flex-shrink: 0;
   background: var(--card, #ffffff);
   border-top: 1px solid var(--border, rgba(0, 0, 0, 0.08));
   color: var(--muted, #64748b);

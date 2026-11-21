@@ -25,7 +25,7 @@ function computeAppBuildId() {
   }
 }
 const APP_BUILD_ID = computeAppBuildId();
-const APP_VERSION = "4.7.0";
+const APP_VERSION = "4.7.2";
 
 // ============================================================
 // FEATURE FLAG & ROSTER: Kích hoạt tính năng RE:SEARCH ARENA & 2 Bảng thi (Lớp 06 & 07)
@@ -2665,6 +2665,9 @@ const STREAK_PERK_ITEMS = [
   { minStreak: 14, graceDays: 14, frameId: "ice", coverId: "vuong_quoc_mua_dong" },
   { minStreak: 30, graceDays: 30, frameId: "stars", coverId: "tinh_tu_sao_troi", customCover: true },
   { minStreak: 50, graceDays: 45, frameId: "gold", coverId: "ky_nguyen_hoang_kim" },
+  { minStreak: 100, graceDays: 60, frameId: "thung_lung_suong_thu", coverId: "thung_lung_suong_thu" },
+  { minStreak: 200, graceDays: 90, frameId: "thien_ha_huyen_ao", coverId: "thien_ha_huyen_ao" },
+  { minStreak: 365, graceDays: 120, frameId: "pha_le_hoang_gia", coverId: "pha_le_hoang_gia" },
 ];
 
 const STREAK_FRAME_IDS = new Set(STREAK_PERK_ITEMS.map(p => p.frameId));
@@ -2822,8 +2825,8 @@ function sweepExpiredUserDecorations() {
       SELECT id FROM users 
       WHERE role NOT IN ('admin', 'ta') 
         AND (
-          namecard_frame IN ('ton_vinh_phai_dep', 'bua_tiec_ma_mi', 'chinh_phuc_bau_troi', 'phep_mau_mua_dong', 'leaves', 'sakura', 'ice', 'stars', 'gold')
-          OR cover_image IN ('ton_vinh_phai_dep', 'bua_tiec_ma_mi', 'chinh_phuc_bau_troi', 'phep_mau_mua_dong', 'khu_rung_tri_thuc', 'mua_anh_dao_no', 'vuong_quoc_mua_dong', 'tinh_tu_sao_troi', 'ky_nguyen_hoang_kim')
+          namecard_frame IN ('ton_vinh_phai_dep', 'bua_tiec_ma_mi', 'chinh_phuc_bau_troi', 'phep_mau_mua_dong', 'leaves', 'sakura', 'ice', 'stars', 'gold', 'thung_lung_suong_thu', 'thien_ha_huyen_ao', 'pha_le_hoang_gia')
+          OR cover_image IN ('ton_vinh_phai_dep', 'bua_tiec_ma_mi', 'chinh_phuc_bau_troi', 'phep_mau_mua_dong', 'khu_rung_tri_thuc', 'mua_anh_dao_no', 'vuong_quoc_mua_dong', 'tinh_tu_sao_troi', 'ky_nguyen_hoang_kim', 'thung_lung_suong_thu', 'thien_ha_huyen_ao', 'pha_le_hoang_gia')
           OR cover_image LIKE 'data:image/%'
         )
     `).all();
@@ -6548,6 +6551,9 @@ async function api(request, response, url) {
       ["vuong_quoc_mua_dong", 14],
       ["tinh_tu_sao_troi", 30],
       ["ky_nguyen_hoang_kim", 50],
+      ["thung_lung_suong_thu", 100],
+      ["thien_ha_huyen_ao", 200],
+      ["pha_le_hoang_gia", 365],
     ]);
 
     // Cập nhật cấp vật phẩm giới hạn nếu đủ điều kiện
@@ -6612,6 +6618,7 @@ async function api(request, response, url) {
       ["basic_aurora", 0], ["basic_royal", 0], ["basic_midnight", 0],
       ["basic_slate", 0], ["basic_deep_green", 0], ["basic_pure_black", 0],
       ["leaves", 3], ["sakura", 7], ["ice", 14], ["stars", 30], ["gold", 50],
+      ["thung_lung_suong_thu", 100], ["thien_ha_huyen_ao", 200], ["pha_le_hoang_gia", 365],
     ]);
     const requestedFrame = typeof namecardFrame === "string" ? namecardFrame.trim() : (currentUser.namecard_frame || "none");
     if (LIMITED_FRAME_IDS.has(requestedFrame) || STREAK_FRAME_IDS.has(requestedFrame)) {
