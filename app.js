@@ -727,14 +727,15 @@ function syncFooterVersionUI() {
 }
 window.syncFooterVersionUI = syncFooterVersionUI;
 
-async function handleFooterVersionClick() {
-  const currentVer = window.APP_VERSION || "4.7.0";
+async function handleFooterVersionClick(targetVer) {
+  const currentVer = targetVer || window.APP_VERSION || "4.7.0";
   // Chỉ hiện nhật ký kể từ sau bản 4.7.1
   if (!isVersionAfter(currentVer, "4.7.1")) {
     return;
   }
   try {
-    const res = await fetch("/api/changelog");
+    const url = targetVer ? `/api/changelog?version=${encodeURIComponent(targetVer)}` : "/api/changelog";
+    const res = await fetch(url);
     const data = await res.json();
     const modal = document.getElementById("versionChangelogModal");
     const titleEl = document.getElementById("versionChangelogHeaderTitle");
@@ -747,6 +748,7 @@ async function handleFooterVersionClick() {
   }
 }
 window.handleFooterVersionClick = handleFooterVersionClick;
+window.openVersionChangelogModal = handleFooterVersionClick;
 
 function closeVersionChangelogModal() {
   const modal = document.getElementById("versionChangelogModal");
@@ -3779,6 +3781,24 @@ let savedForumScrollY = 0; // Lưu vị trí cuộn của Diễn đàn khi xem b
 function go(rawRoute, scrollToTop = true) {
   const route = (rawRoute || "home").trim();
   const baseRoute = route.split("?")[0].split("&")[0] || "home";
+
+  if (baseRoute === "changelog" || baseRoute === "version" || baseRoute.startsWith("changelog/") || baseRoute.startsWith("version/")) {
+    let verParam = "";
+    if (baseRoute.includes("/")) {
+      verParam = baseRoute.split("/")[1];
+    } else if (route.includes("?v=")) {
+      verParam = route.split("?v=")[1].split("&")[0];
+    } else if (route.includes("?version=")) {
+      verParam = route.split("?version=")[1].split("&")[0];
+    }
+    if (!currentActiveRoute) {
+      go("home", false);
+    }
+    if (typeof handleFooterVersionClick === "function") {
+      handleFooterVersionClick(verParam);
+    }
+    return;
+  }
 
   if (baseRoute === "study" && !canAccessStudyLounge()) {
     toast(STUDY_MAINTENANCE_MSG);
@@ -28678,6 +28698,21 @@ window.handleNotifNavigate = async function (id, link, e) {
   closeNotificationPopover();
 
   if (!link) return;
+  if (link.startsWith("#changelog") || link.startsWith("#version")) {
+    const cleanLink = link.replace(/^#/, "");
+    let verParam = "";
+    if (cleanLink.includes("/")) {
+      verParam = cleanLink.split("/")[1];
+    } else if (cleanLink.includes("?v=")) {
+      verParam = cleanLink.split("?v=")[1].split("&")[0];
+    } else if (cleanLink.includes("?version=")) {
+      verParam = cleanLink.split("?version=")[1].split("&")[0];
+    }
+    if (typeof handleFooterVersionClick === "function") {
+      handleFooterVersionClick(verParam);
+    }
+    return;
+  }
   if (link.startsWith("#post/")) {
     const postId = Number(link.replace("#post/", ""));
     if (postId && typeof openDetail === "function") {
