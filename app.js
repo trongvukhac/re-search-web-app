@@ -17853,11 +17853,11 @@ function initAdaptiveGlassHeader() {
     const brandW = Math.ceil(brand.getBoundingClientRect().width);
 
     // Detect collision / lack of gap between desktop navigation and header actions
-    // Generous clearance required: brandW + 24 + navExpandedW + 24 + fullExpandedActionsW
-    const requiredFullW = brandW + 24 + navExpandedW + 24 + fullExpandedActionsW;
+    // Generous clearance required: brandW + 32 + navExpandedW + 32 + fullExpandedActionsW
+    const requiredFullW = brandW + 32 + navExpandedW + 32 + fullExpandedActionsW;
     const isChipCurrentlyCollapsed = header.classList.contains("is-chip-collapsed");
     const shouldCollapse = isChipCurrentlyCollapsed
-      ? (innerW < requiredFullW + 24) // Hysteresis buffer to prevent oscillating
+      ? (innerW < requiredFullW + 28) // Hysteresis buffer to prevent oscillating
       : (innerW < requiredFullW);
 
     if (shouldCollapse && !isCompact) {
@@ -17870,7 +17870,7 @@ function initAdaptiveGlassHeader() {
     const isCollapsedNow = header.classList.contains("is-chip-collapsed") || isCompact;
     const effectiveActionsW = isCollapsedNow
       ? compactActionsW
-      : (headerActions ? Math.max(compactActionsW, Math.ceil(headerActions.getBoundingClientRect().width)) : fullExpandedActionsW);
+      : Math.max(fullExpandedActionsW, headerActions ? Math.ceil(headerActions.getBoundingClientRect().width) : fullExpandedActionsW);
 
     if (innerW > 0 && navExpandedW > 60 && brandW > 0) {
       header.style.setProperty("--header-inner-w", `${innerW}px`);
@@ -17899,6 +17899,23 @@ function initAdaptiveGlassHeader() {
       // Strictly non-positive shiftX: nav can shift left towards center, but NEVER right into actions
       const shiftX = Math.min(0, Math.round(targetRightEdge - dockRightEdge));
       header.style.setProperty("--nav-shift-x", `${shiftX}px`);
+
+      // Real DOM Collision Guard: if clearance is tight or overlapping, collapse chip immediately
+      const navShell = document.getElementById("desktopNavShell");
+      if (navShell && headerActions && brand && !isCompact && !header.classList.contains("is-chip-collapsed")) {
+        const nR = navShell.getBoundingClientRect();
+        const aR = headerActions.getBoundingClientRect();
+        const bR = brand.getBoundingClientRect();
+        if (nR.right + 18 > aR.left || nR.left < bR.right + 14) {
+          header.classList.add("is-chip-collapsed");
+          const newDockRight = Math.round(compactActionsW + 18);
+          header.style.setProperty("--nav-dock-right", `${newDockRight}px`);
+          const newMaxLeft = innerW - newDockRight - navExpandedW;
+          const newTargetLeft = minLeft <= newMaxLeft ? Math.max(minLeft, Math.min(newMaxLeft, idealLeft)) : minLeft;
+          const newShiftX = Math.min(0, Math.round(newTargetLeft + navExpandedW - (innerW - newDockRight)));
+          header.style.setProperty("--nav-shift-x", `${newShiftX}px`);
+        }
+      }
 
       // Exact clear center channel when scrolled compact for docked post-detail pill
       const docClientW = document.documentElement.clientWidth || window.innerWidth;
