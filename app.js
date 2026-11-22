@@ -7032,13 +7032,11 @@ function setAuthMode(mode) {
   $("#authModal")?.classList.toggle("registering", isRegister);
   $$(".auth-tab[data-auth-mode]").forEach((t) => t.classList.toggle("active", t.dataset.authMode === mode));
   const title = $("#authTitle");
-  const sub = $("#authSubTitle");
   const submitBtn = $("#authSubmit");
   const submitText = submitBtn?.querySelector(".auth-cutout-btn-text");
   const authName = $("#authName");
   const authPass = $("#authPassword");
   if (title) title.textContent = isRegister ? "Tạo tài khoản mới" : "Đăng nhập để tiếp tục";
-  if (sub) sub.textContent = isRegister ? "Gia nhập cộng đồng học thuật RE:SEARCH với hơn 30.000 sinh viên" : "Chào mừng bạn quay trở lại với không gian nghiên cứu RE:SEARCH";
   if (submitText) {
     submitText.textContent = isRegister ? "Tạo tài khoản" : "Đăng nhập";
   } else if (submitBtn) {

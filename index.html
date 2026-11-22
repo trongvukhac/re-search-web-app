@@ -4085,50 +4085,64 @@
       <!-- Sân khấu sách 2 cánh khớp nối liền mạch (Desktop) & Khối kính mờ (Mobile) -->
       <div class="auth-book-stage">
         
-        <!-- NỬA TRÁI: Khung trắng không nền dày nổi bật, nhìn xuyên thấu cảnh thư viện phía sau -->
+        <!-- NỬA TRÁI: Ngoài vuông trong bo, viền trắng dày nổi bật, nhìn xuyên thấu cảnh thư viện phía sau KHÔNG MỜ -->
         <div class="auth-book-wing auth-wing-left">
           <div class="auth-cutout-frame">
-            <!-- Huy hiệu thương hiệu phía trên (100% SVG Vector Icons) -->
-            <div class="auth-proof-badge">
-              <div class="auth-avatar-stack">
-                <span class="avatar-circle av-1" title="Học thuật">
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M22 10v6M2 10l10-5 10 5-10 5z"></path>
-                    <path d="M6 12v5c3 3 9 3 12 0v-5"></path>
-                  </svg>
-                </span>
-                <span class="avatar-circle av-2" title="Nghiên cứu">
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M6 18h8"></path>
-                    <path d="M3 22h18"></path>
-                    <path d="M14 22a7 7 0 1 0 0-14h-1"></path>
-                    <path d="M9 14h2"></path>
-                    <path d="M9 12a2 2 0 0 1-2-2V6h6v4a2 2 0 0 1-2 2z"></path>
-                    <path d="M12 6V3a1 1 0 0 0-1-1H9a1 1 0 0 0-1 1v3"></path>
-                  </svg>
-                </span>
-                <span class="avatar-circle av-3" title="Tri thức">
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
-                    <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
-                  </svg>
-                </span>
-              </div>
-              <div class="auth-proof-text">
-                <strong class="auth-proof-count">RE:SEARCH</strong>
-                <span class="auth-proof-label">Cộng đồng học thuật</span>
-              </div>
+            <!-- Khung viền trắng ngoài vuông trong bo chuẩn Ortiz Reference -->
+            <div class="auth-frame-border" aria-hidden="true">
+              <div class="frame-edge frame-edge-top"></div>
+              <div class="frame-edge frame-edge-bottom"></div>
+              <div class="frame-edge frame-edge-left"></div>
+              <div class="frame-edge frame-edge-right"></div>
+              <div class="frame-corner frame-corner-tl"></div>
+              <div class="frame-corner frame-corner-tr"></div>
+              <div class="frame-corner frame-corner-bl"></div>
+              <div class="frame-corner frame-corner-br"></div>
             </div>
 
-            <!-- Khối chữ lớn nghệ thuật đẩy xuống góc dưới -->
-            <div class="auth-hero-copy">
-              <h1 class="auth-hero-headline">
-                Khám phá &amp;<br>
-                <span class="auth-hero-accent">Kiến tạo Tri thức.</span>
-              </h1>
-              <p class="auth-hero-desc">
-                Nền tảng chia sẻ phương pháp nghiên cứu khoa học, ngân hàng tài liệu và bài giảng chính khóa dành riêng cho sinh viên.
-              </p>
+            <div class="auth-cutout-content">
+              <!-- Huy hiệu thương hiệu phía trên (100% SVG Vector Icons) -->
+              <div class="auth-proof-badge">
+                <div class="auth-avatar-stack">
+                  <span class="avatar-circle av-1" title="Học thuật">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M22 10v6M2 10l10-5 10 5-10 5z"></path>
+                      <path d="M6 12v5c3 3 9 3 12 0v-5"></path>
+                    </svg>
+                  </span>
+                  <span class="avatar-circle av-2" title="Nghiên cứu">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M6 18h8"></path>
+                      <path d="M3 22h18"></path>
+                      <path d="M14 22a7 7 0 1 0 0-14h-1"></path>
+                      <path d="M9 14h2"></path>
+                      <path d="M9 12a2 2 0 0 1-2-2V6h6v4a2 2 0 0 1-2 2z"></path>
+                      <path d="M12 6V3a1 1 0 0 0-1-1H9a1 1 0 0 0-1 1v3"></path>
+                    </svg>
+                  </span>
+                  <span class="avatar-circle av-3" title="Tri thức">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+                      <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+                    </svg>
+                  </span>
+                </div>
+                <div class="auth-proof-text">
+                  <strong class="auth-proof-count">RE:SEARCH</strong>
+                  <span class="auth-proof-label">Cộng đồng học thuật</span>
+                </div>
+              </div>
+
+              <!-- Khối chữ lớn nghệ thuật đẩy xuống góc dưới -->
+              <div class="auth-hero-copy">
+                <h1 class="auth-hero-headline">
+                  Khám phá &amp;<br>
+                  <span class="auth-hero-accent">Kiến tạo Tri thức.</span>
+                </h1>
+                <p class="auth-hero-desc">
+                  Nền tảng chia sẻ phương pháp nghiên cứu khoa học, ngân hàng tài liệu và bài giảng chính khóa dành riêng cho sinh viên.
+                </p>
+              </div>
             </div>
           </div>
         </div>
@@ -4141,7 +4155,6 @@
             <form id="authForm" class="auth-active-form" method="dialog">
               <div class="auth-panel-head">
                 <h2 id="authTitle" class="auth-panel-title">Đăng nhập để tiếp tục</h2>
-                <p class="auth-panel-sub" id="authSubTitle">Chào mừng bạn quay trở lại với không gian nghiên cứu RE:SEARCH</p>
               </div>
 
               <!-- Thanh chuyển Tab Đăng nhập / Tạo tài khoản -->
@@ -4213,11 +4226,7 @@
                 </button>
               </div>
 
-              <p class="auth-note auth-register-only" id="authNote" style="margin: 4px 0 10px 0; font-size: 11.5px; color: rgba(255, 255, 255, 0.75); line-height: 1.35;">
-                Chỉ TA/Admin do quản trị viên cấp quyền. Tài khoản mới mặc định là Sinh viên.
-              </p>
-
-              <!-- Nút hành động Lỗ hở nhìn xuyên thấu cảnh phía sau như hình mẫu -->
+              <!-- Nút hành động chính -->
               <button type="submit" class="auth-cutout-action-btn" id="authSubmit" value="default">
                 <span class="auth-cutout-btn-text">Đăng nhập</span>
                 <span class="auth-cutout-arrow-bubble">
@@ -8483,6 +8492,69 @@
     <div class="study-rooms-modal-tabs">
       <button type="button" class="room-modal-tab-btn active" data-room-tab="browse"
         onclick="switchStudyRoomModalTab('browse')">🏛️ Duyệt không gian học</button>
+      <button type="button" class="room-modal-tab-btn" data-room-tab="create"
+        onclick="switchStudyRoomModalTab('create')">➕ Tạo không gian mới</button>
+    </div>
+
+    <div class="room-modal-body">
+      <!-- TAB 1: BROWSE ROOMS -->
+      <div class="room-modal-pane active" id="paneBrowseStudyRooms">
+        <div class="room-cards-grid" id="browseRoomsGrid">
+          <!-- Rendered by JS -->
+        </div>
+      </div>
+
+      <!-- TAB 2: CREATE ROOM -->
+      <div class="room-modal-pane" id="paneCreateStudyRoom" style="display: none;">
+        <form id="createStudyRoomForm" onsubmit="event.preventDefault(); handleCreateStudyRoomSubmit();">
+          <div class="form-row-grid">
+            <div class="form-group" style="flex: 2;">
+              <label for="newRoomName">Tên không gian / Bàn học <span class="required">*</span></label>
+              <input type="text" id="newRoomName" placeholder="VD: Nhóm Khóa luận NCKH K28 - Marketing xanh"
+                maxlength="60" required />
+            </div>
+            <div class="form-group" style="flex: 1;">
+              <label for="newRoomIcon">Biểu tượng (Icon)</label>
+              <select id="newRoomIcon">
+                <option value="✍️">✍️ Viết bài / Luận văn</option>
+                <option value="📊">📊 Xử lý số liệu / SPSS</option>
+                <option value="🔬">🔬 Phương pháp NCKH</option>
+                <option value="📖">📖 Đọc &amp; Tổng quan</option>
+                <option value="💻">💻 Lập trình &amp; AI</option>
+                <option value="💡">💡 Thảo luận ý tưởng</option>
+                <option value="☕">☕ Cà phê tự học</option>
+                <option value="🌿">🌿 Góc tĩnh lặng</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-row-grid">
+            <div class="form-group" style="flex: 1;">
+              <label for="newRoomType">Loại không gian</label>
+              <select id="newRoomType" onchange="handleNewRoomTypeChange(this.value)">
+                <option value="shared_task">🎯 Phòng Task chung (Nhóm đề tài)</option>
+                <option value="private">🔒 Phòng học cá nhân (Có mã PIN)</option>
+              </select>
+            </div>
+            <div class="form-group" style="flex: 1;">
+              <label for="newRoomSeats">Sĩ số bàn (Ghế ngồi)</label>
+              <input type="number" id="newRoomSeats" min="2" max="25" value="8" />
+            </div>
+            <div class="form-group" id="groupNewRoomPin" style="flex: 1; display: none;">
+              <label for="newRoomPin">Mã PIN bảo mật (4-6 ký tự)</label>
+              <input type="text" id="newRoomPin" placeholder="VD: 1234" maxlength="10" />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="newRoomObjective">Mục tiêu chung của phòng</label>
+            <input type="text" id="newRoomObjective"
+              placeholder="VD: Cùng hoàn thành bản thảo chương 2 &amp; xử lý mô hình hồi quy" maxlength="120" />
+          </div>
+
+          <div class="form-group" id="groupInitialTasks">
+            <label for="newRoomInitialTasks">Nhiệm vụ chung ban đầu (Mỗi việc 1 dòng)</label>
+            <textarea id="newRoomInitialTasks" rows="3"
       <button type="button" class="room-modal-tab-btn" data-room-tab="create"
         onclick="switchStudyRoomModalTab('create')">➕ Tạo không gian mới</button>
     </div>
