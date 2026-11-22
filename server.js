@@ -32,7 +32,7 @@ function computeAppBuildId() {
   }
 }
 const APP_BUILD_ID = computeAppBuildId();
-const APP_VERSION = "4.7.10";
+const APP_VERSION = "4.7.11";
 
 // ============================================================
 // FEATURE FLAG & ROSTER: Kích hoạt tính năng RE:SEARCH ARENA & 2 Bảng thi (Lớp 06 & 07)
@@ -5708,28 +5708,35 @@ async function api(request, response, url) {
   }
   function getLeaderboardTimeThreshold(period) {
     const now = new Date();
-    const vnOffsetMs = 7 * 60 * 60 * 1000;
-    const vnNow = new Date(now.getTime() + (now.getTimezoneOffset() * 60000) + vnOffsetMs);
+    // Vietnam is UTC+7
+    const vnTime = new Date(now.getTime() + (7 * 60 * 60 * 1000));
+    const year = vnTime.getUTCFullYear();
+    const month = vnTime.getUTCMonth();
+    const date = vnTime.getUTCDate();
+    const day = vnTime.getUTCDay();
+
+    let startYear = year;
+    let startMonth = month;
+    let startDate = date;
 
     if (period === "week") {
-      const day = vnNow.getDay();
       const diffToMonday = (day === 0 ? -6 : 1) - day;
-      const monday = new Date(vnNow);
-      monday.setDate(vnNow.getDate() + diffToMonday);
-      monday.setHours(0, 0, 0, 0);
-      const utcMonday = new Date(monday.getTime() - vnOffsetMs);
-      return utcMonday.toISOString().replace("T", " ").substring(0, 19);
+      const mondayVN = new Date(Date.UTC(year, month, date + diffToMonday));
+      startYear = mondayVN.getUTCFullYear();
+      startMonth = mondayVN.getUTCMonth();
+      startDate = mondayVN.getUTCDate();
     } else if (period === "month") {
-      const firstDay = new Date(vnNow.getFullYear(), vnNow.getMonth(), 1, 0, 0, 0, 0);
-      const utcFirstDay = new Date(firstDay.getTime() - vnOffsetMs);
-      return utcFirstDay.toISOString().replace("T", " ").substring(0, 19);
+      startDate = 1;
     } else if (period === "quarter") {
-      const quarterMonth = Math.floor(vnNow.getMonth() / 3) * 3;
-      const firstQuarterDay = new Date(vnNow.getFullYear(), quarterMonth, 1, 0, 0, 0, 0);
-      const utcFirstQuarterDay = new Date(firstQuarterDay.getTime() - vnOffsetMs);
-      return utcFirstQuarterDay.toISOString().replace("T", " ").substring(0, 19);
+      startMonth = Math.floor(month / 3) * 3;
+      startDate = 1;
+    } else {
+      return "1970-01-01 00:00:00";
     }
-    return "1970-01-01 00:00:00";
+
+    const utcStartMs = Date.UTC(startYear, startMonth, startDate, 0, 0, 0) - (7 * 60 * 60 * 1000);
+    const utcStartDate = new Date(utcStartMs);
+    return utcStartDate.toISOString().replace("T", " ").substring(0, 19);
   }
 
   function getContributionsPeriodLeaderboard(period, currentUserId) {
@@ -5745,20 +5752,6 @@ async function api(request, response, url) {
     HAVING periodPoints > 0
     ORDER BY periodPoints DESC, (SELECT count(*) FROM posts p WHERE p.author_id = u.id AND p.status = 'visible') DESC, lastEventAt ASC, u.id ASC
   `).all(threshold);
-
-    if (rows.length < 3) {
-      rows = db.prepare(`
-      SELECT u.id, u.display_name as displayName, u.avatar, u.role, u.cover_image as coverImage, u.namecard_frame as namecardFrame,
-             coalesce(sum(c.points), 0) as periodPoints,
-             max(c.created_at) as lastEventAt
-      FROM users u
-      LEFT JOIN contribution_events c ON u.id = c.user_id
-      WHERE u.role NOT IN ('admin', 'lecturer', 'member') AND u.id != 89
-      GROUP BY u.id
-      ORDER BY periodPoints DESC, (SELECT count(*) FROM posts p WHERE p.author_id = u.id AND p.status = 'visible') DESC, u.id ASC
-      LIMIT 10
-    `).all();
-    }
 
     const top10 = rows.slice(0, 10).map((u, idx) => ({
       userId: u.id,
@@ -5838,21 +5831,6 @@ async function api(request, response, url) {
       ORDER BY periodScore DESC, firstCompletedAt ASC, u.id ASC
     `).all(threshold);
 
-    if (rows.length < 3) {
-      rows = db.prepare(`
-        SELECT 
-          u.id, u.id as userId, u.display_name as displayName, u.avatar, u.role, u.cover_image as coverImage, u.namecard_frame as namecardFrame,
-          sum(r.best_score) as periodScore,
-          min(r.updated_at) as firstCompletedAt
-        FROM users u
-        JOIN competition_phase_results r ON u.id = r.user_id
-        WHERE u.role NOT IN ('admin', 'lecturer', 'member') AND u.id != 89
-        GROUP BY u.id
-        ORDER BY periodScore DESC, firstCompletedAt ASC, u.id ASC
-        LIMIT 10
-      `).all();
-    }
-
     const top10 = rows.slice(0, 10).map((u, idx) => ({
       userId: u.id,
       id: u.id,
@@ -5868,7 +5846,52 @@ async function api(request, response, url) {
       rank: idx + 1
     }));
 
-    return { top10, currentUserEntry: null };
+    let currentUserEntry = null;
+    if (currentUserId) {
+      const isStudent = db.prepare("SELECT 1 FROM users WHERE id = ? AND role NOT IN ('admin', 'lecturer', 'member') AND id != 89").get(currentUserId);
+      const userIdx = rows.findIndex(r => r.id === currentUserId);
+      if (userIdx !== -1) {
+        const u = rows[userIdx];
+        currentUserEntry = {
+          userId: u.id,
+          id: u.id,
+          displayName: u.displayName,
+          avatar: u.avatar,
+          initials: u.avatar || getAvatarEmoji(u.displayName),
+          role: u.role,
+          coverImage: u.coverImage || "default",
+          namecardFrame: u.namecardFrame || "none",
+          score: Number(u.periodScore || 0),
+          unit: "điểm",
+          streakTier: getAuthorStreakTier(u.id),
+          rank: userIdx + 1,
+          isParticipant: Boolean(isStudent),
+          isCurrentUser: true
+        };
+      } else {
+        const u = db.prepare("SELECT id, display_name as displayName, avatar, role, cover_image as coverImage, namecard_frame as namecardFrame FROM users WHERE id = ?").get(currentUserId);
+        if (u) {
+          currentUserEntry = {
+            userId: u.id,
+            id: u.id,
+            displayName: u.displayName,
+            avatar: u.avatar,
+            initials: u.avatar || getAvatarEmoji(u.displayName),
+            role: u.role,
+            coverImage: u.coverImage || "default",
+            namecardFrame: u.namecardFrame || "none",
+            score: 0,
+            unit: "điểm",
+            streakTier: getAuthorStreakTier(u.id),
+            rank: rows.length + 1,
+            isParticipant: Boolean(isStudent),
+            isCurrentUser: true
+          };
+        }
+      }
+    }
+
+    return { top10, currentUserEntry };
   }
 
   function getStudyPeriodLeaderboard(period, currentUserId) {
@@ -5885,21 +5908,6 @@ async function api(request, response, url) {
       HAVING periodMinutes > 0
       ORDER BY periodMinutes DESC, lastStudyAt ASC, u.id ASC
     `).all(threshold);
-
-    if (rows.length < 3) {
-      rows = db.prepare(`
-        SELECT 
-          u.id, u.id as userId, u.display_name as displayName, u.avatar, u.role, u.cover_image as coverImage, u.namecard_frame as namecardFrame,
-          sum(s.duration_minutes) as periodMinutes,
-          max(s.completed_at) as lastStudyAt
-        FROM users u
-        JOIN study_logs s ON u.id = s.user_id
-        WHERE u.role NOT IN ('admin', 'lecturer') AND u.id != 89
-        GROUP BY u.id
-        ORDER BY periodMinutes DESC, lastStudyAt ASC, u.id ASC
-        LIMIT 10
-      `).all();
-    }
 
     const top10 = rows.slice(0, 10).map((u, idx) => {
       const mins = Number(u.periodMinutes || 0);
@@ -5919,7 +5927,52 @@ async function api(request, response, url) {
       };
     });
 
-    return { top10, currentUserEntry: null };
+    let currentUserEntry = null;
+    if (currentUserId) {
+      const isStudent = db.prepare("SELECT 1 FROM users WHERE id = ? AND role NOT IN ('admin', 'lecturer') AND id != 89").get(currentUserId);
+      const userIdx = rows.findIndex(r => r.id === currentUserId);
+      if (userIdx !== -1) {
+        const u = rows[userIdx];
+        currentUserEntry = {
+          userId: u.id,
+          id: u.id,
+          displayName: u.displayName,
+          avatar: u.avatar,
+          initials: u.avatar || getAvatarEmoji(u.displayName),
+          role: u.role,
+          coverImage: u.coverImage || "default",
+          namecardFrame: u.namecardFrame || "none",
+          score: Math.floor(Number(u.periodMinutes || 0) / 60),
+          unit: "giờ tự học",
+          streakTier: getAuthorStreakTier(u.id),
+          rank: userIdx + 1,
+          isParticipant: Boolean(isStudent),
+          isCurrentUser: true
+        };
+      } else {
+        const u = db.prepare("SELECT id, display_name as displayName, avatar, role, cover_image as coverImage, namecard_frame as namecardFrame FROM users WHERE id = ?").get(currentUserId);
+        if (u) {
+          currentUserEntry = {
+            userId: u.id,
+            id: u.id,
+            displayName: u.displayName,
+            avatar: u.avatar,
+            initials: u.avatar || getAvatarEmoji(u.displayName),
+            role: u.role,
+            coverImage: u.coverImage || "default",
+            namecardFrame: u.namecardFrame || "none",
+            score: 0,
+            unit: "giờ tự học",
+            streakTier: getAuthorStreakTier(u.id),
+            rank: rows.length + 1,
+            isParticipant: Boolean(isStudent),
+            isCurrentUser: true
+          };
+        }
+      }
+    }
+
+    return { top10, currentUserEntry };
   }
 
   if (method === "GET" && pathName === "/api/leaderboard") {

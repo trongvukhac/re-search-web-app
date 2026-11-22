@@ -4,6 +4,19 @@ Tất cả các thay đổi đáng chú ý của dự án **RE:SEARCH — Cộng
 
 ---
 
+## [4.7.11] - 2026-11-23
+### Chuẩn hoá cơ chế reset Bảng xếp hạng theo chu kỳ
+- **Xoá bỏ cơ chế Fallback toàn thời gian khi qua giờ reset**:
+  - Loại bỏ hoàn toàn khối truy vấn dự phòng `if (rows.length < 3)` ở cả 3 bảng xếp hạng chu kỳ (Đại sứ tri thức, Tinh thông thần tốc, Ong chăm chỉ).
+  - Khi qua mốc reset (00:00 thứ Hai cho Tuần, ngày 01 cho Tháng, đầu Quý cho Quý), điểm số của chu kỳ mới được tính độc lập và chính xác từ 0.
+  - Tích hợp tính năng hiển thị thông tin thứ hạng cá nhân (`currentUserEntry`) theo chu kỳ cho mọi sinh viên.
+- **Tối ưu hoá tính toán mốc thời gian chu kỳ (Timezone-Independent Thresholds)**:
+  - Cập nhật hàm tính toán mốc thời gian bắt đầu chu kỳ theo giờ Việt Nam (UTC+7) chuẩn xác và độc lập với múi giờ của máy chủ (Fly.io UTC hoặc môi trường máy tính cá nhân).
+- **Đồng bộ phiên bản v4.7.11 toàn diện (Version Synchronization)**:
+  - Cập nhật số hiệu `4.7.11` trên `package.json`, `server.js`, `app.js`, `index.html`, admin badge và changelog.
+
+---
+
 ## [4.7.10] - 2026-11-22
 ### Hoàn thiện & Tối ưu giao diện Xác thực (#login)
 - **Tối ưu triệt để hiển thị trên Mobile (Full Mobile Responsiveness)**:
