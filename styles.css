@@ -43111,7 +43111,7 @@ body.page-login main {
   margin: 0 !important;
   padding: 0 !important;
   box-sizing: border-box;
-  background: url('public/assets/auth-bg.jpg') center center / cover no-repeat;
+  background: url('public/assets/auth-bg.jpg?v=5') center center / cover no-repeat;
   color: #ffffff;
   position: relative;
   overflow: hidden;
@@ -43914,7 +43914,7 @@ body.page-login main {
     min-height: 100vh !important;
     max-height: none !important;
     overflow-y: auto !important;
-    background: url('public/assets/auth-bg.jpg') top center / cover no-repeat fixed, #0b2920 !important;
+    background: url('public/assets/auth-bg.jpg?v=5') top center / cover no-repeat fixed, #0b2920 !important;
     padding: 0 !important;
     display: flex !important;
     flex-direction: column !important;
