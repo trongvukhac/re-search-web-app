@@ -1,0 +1,32 @@
+{
+  "name": "RE:SEARCH — Cộng đồng học thuật",
+  "short_name": "RE:SEARCH",
+  "description": "Nền tảng học thuật và cộng đồng sinh viên môn Phương pháp Nghiên cứu Khoa học.",
+  "start_url": "/?pwa=1",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0d2b21",
+  "theme_color": "#123f31",
+  "categories": ["education", "academic"],
+  "icons": [
+    {
+      "src": "/public/assets/app-ios-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/public/assets/app-ios-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/public/assets/app-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

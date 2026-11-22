@@ -283,6 +283,40 @@ select:focus-visible {
   box-shadow: none !important;
 }
 
+/* Logo linh hoạt theo nền sáng / tối */
+.brand-mark .brand-logo-dark {
+  display: none !important;
+}
+.brand-mark .brand-logo-light {
+  display: block !important;
+}
+
+html.dark-theme .brand-mark .brand-logo-light,
+body.dark-theme .brand-mark .brand-logo-light {
+  display: none !important;
+}
+html.dark-theme .brand-mark .brand-logo-dark,
+body.dark-theme .brand-mark .brand-logo-dark {
+  display: block !important;
+}
+
+/* PWA App Icon bo góc iOS theo nền sáng / tối */
+.pwa-install-banner .pwa-icon-dark {
+  display: none !important;
+}
+.pwa-install-banner .pwa-icon-light {
+  display: block !important;
+}
+
+html.dark-theme .pwa-install-banner .pwa-icon-light,
+body.dark-theme .pwa-install-banner .pwa-icon-light {
+  display: none !important;
+}
+html.dark-theme .pwa-install-banner .pwa-icon-dark,
+body.dark-theme .pwa-install-banner .pwa-icon-dark {
+  display: block !important;
+}
+
 .brand-mark {
   display: inline-flex;
   align-items: center;

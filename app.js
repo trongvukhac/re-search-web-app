@@ -7127,7 +7127,7 @@ if ($("#forgotRequestSubmitBtn")) {
         method: "POST",
         body: JSON.stringify({ email }),
       });
-      toast(data.message || "Đã gửi yêu cầu! Vui lòng liên hệ với TA/Admin để lấy mã xác thực 6 chữ số.");
+      toast(data.message || "Mã xác thực 6 chữ số đã được gửi đến email của bạn! Vui lòng kiểm tra hộp thư.");
       if ($("#forgotStep2Email")) {
         $("#forgotStep2Email").value = data.email || email;
       }

@@ -8,6 +8,13 @@ const crypto = require("node:crypto");
 const { DatabaseSync } = require("node:sqlite");
 
 const ROOT = __dirname;
+if (fs.existsSync(path.join(ROOT, ".env"))) {
+  try {
+    process.loadEnvFile(path.join(ROOT, ".env"));
+  } catch (err) {
+    console.warn("Failed to load .env file:", err);
+  }
+}
 const PORT = Number(process.env.PORT || 3000);
 const DATABASE_DIR = process.env.RESEARCH_DB_DIR || path.join(ROOT, "data");
 const DATABASE_PATH = process.env.RESEARCH_DB_PATH || path.join(DATABASE_DIR, "research.db");
@@ -58,6 +65,9 @@ const MIME = {
   ".wav": "audio/wav",
   ".ogg": "audio/ogg",
   ".webm": "audio/webm",
+  ".txt": "text/plain; charset=utf-8",
+  ".xml": "application/xml; charset=utf-8",
+  ".json": "application/json; charset=utf-8",
 };
 
 fs.mkdirSync(DATABASE_DIR, { recursive: true });
@@ -2135,6 +2145,88 @@ function createSession(response, userId, request = null) {
   );
   return csrf;
 }
+async function sendPasswordResetEmail(toEmail, displayName, code) {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) {
+    console.warn("[EMAIL] RESEND_API_KEY is not set. Skipped sending email.");
+    return false;
+  }
+  try {
+    const res = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        from: "RE:SEARCH <noreply@research.id.vn>",
+        to: [toEmail],
+        subject: `[RE:SEARCH] Mã xác thực đặt lại mật khẩu: ${code}`,
+        html: `
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <title>Mã xác thực đặt lại mật khẩu</title>
+</head>
+<body style="margin: 0; padding: 24px 0; background-color: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+  <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="100%" style="max-width: 540px; margin: 0 auto; background: #ffffff; border-radius: 16px; border: 1px solid #e2e8f0; box-shadow: 0 4px 18px rgba(0,0,0,0.05); overflow: hidden;">
+          <tr>
+            <td style="background: linear-gradient(135deg, #123f31 0%, #1e5a47 100%); padding: 32px 24px; text-align: center;">
+              <h1 style="margin: 0; color: #ffffff; font-size: 24px; letter-spacing: 2px; font-weight: 800;">RE<span style="color: #6ee7b7;">:</span>SEARCH</h1>
+              <p style="margin: 6px 0 0 0; color: rgba(255,255,255,0.85); font-size: 13px;">Cộng đồng học thuật &amp; Nghiên cứu khoa học</p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 32px 28px;">
+              <p style="margin: 0 0 16px 0; font-size: 15px; color: #1e293b; line-height: 1.6;">
+                Xin chào <strong>${displayName || "bạn"}</strong>,
+              </p>
+              <p style="margin: 0 0 24px 0; font-size: 14px; color: #475569; line-height: 1.6;">
+                Hệ thống nhận được yêu cầu đặt lại mật khẩu cho tài khoản RE:SEARCH gắn với email này. Dưới đây là mã xác thực 6 chữ số của bạn:
+              </p>
+              
+              <div style="background: #f0fdf4; border: 2px dashed #123f31; border-radius: 12px; padding: 18px 20px; text-align: center; margin: 28px 0;">
+                <span style="display: inline-block; font-size: 36px; font-weight: 800; letter-spacing: 8px; color: #123f31; font-family: monospace;">${code}</span>
+              </div>
+
+              <p style="margin: 0 0 12px 0; font-size: 13px; color: #64748b; line-height: 1.6;">
+                ⏱️ Mã xác thực này có hiệu lực trong vòng <strong>24 giờ</strong> và sẽ tự động bị xóa sau khi bạn đổi mật khẩu thành công.
+              </p>
+              <p style="margin: 0; font-size: 13px; color: #94a3b8; line-height: 1.6;">
+                Nếu bạn không thực hiện yêu cầu này, vui lòng bỏ qua email và tài khoản của bạn vẫn được bảo vệ an toàn.
+              </p>
+            </td>
+          </tr>
+          <tr>
+            <td style="background: #f8fafc; padding: 20px; text-align: center; border-top: 1px solid #f1f5f9;">
+              <p style="margin: 0; font-size: 12px; color: #94a3b8; line-height: 1.5;">
+                Đây là email tự động từ máy chủ RE:SEARCH (research.id.vn).<br>
+                Vui lòng không trả lời trực tiếp email này.
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+        `,
+      }),
+    });
+    const result = await res.json();
+    console.log(`[EMAIL_SENT] Resend result for ${toEmail}:`, result);
+    return res.ok;
+  } catch (err) {
+    console.error("[EMAIL_ERROR] Failed to send email via Resend:", err);
+    return false;
+  }
+}
+
 function clearSession(request, response) {
   const token = parseCookies(request).research_session;
   if (token)
@@ -4169,10 +4261,15 @@ async function api(request, response, url) {
       );
     }
 
+    // Tự động gửi email mã OTP qua Resend
+    sendPasswordResetEmail(user.email, user.display_name, code).catch((err) => {
+      console.error("[PASSWORD_RESET] Error in async email send:", err);
+    });
+
     return json(response, 200, {
       ok: true,
       message:
-        "Yêu cầu cấp mã thành công! Vui lòng liên hệ với TA/Admin để lấy mã xác thực 6 chữ số.",
+        "Mã xác thực 6 chữ số đã được gửi đến email của bạn! Vui lòng kiểm tra Hộp thư đến (hoặc Thư rác/Spam).",
       email: user.email,
     });
   }
@@ -12307,7 +12404,7 @@ function serveStatic(request, response, url) {
     lowerRel.endsWith(".sql") ||
     lowerRel.endsWith(".env") ||
     lowerRel.endsWith(".toml") ||
-    lowerRel.endsWith(".json") ||
+    (lowerRel.endsWith(".json") && lowerRel !== "/manifest.json") ||
     lowerRel.endsWith(".log") ||
     lowerRel.endsWith(".sh") ||
     lowerRel.endsWith(".md")
@@ -12330,15 +12427,15 @@ function serveStatic(request, response, url) {
   const allowedExtensions = [
     ".html", ".css", ".js", ".png", ".jpg", ".jpeg", ".webp",
     ".gif", ".svg", ".ico", ".mp3", ".m4a", ".wav", ".ogg",
-    ".webm", ".woff2", ".ttf"
+    ".webm", ".woff2", ".ttf", ".txt", ".xml", ".json"
   ];
 
   if (!allowedExtensions.includes(extension)) {
     return error(response, 404, "Không tìm thấy trang.");
   }
 
-  // Đối với file .js, chỉ cho phép app.js hoặc script trong public/
-  if (extension === ".js" && relative !== "/app.js" && !relative.startsWith("/public/")) {
+  // Đối với file .js, chỉ cho phép app.js, sw.js hoặc script trong public/
+  if (extension === ".js" && relative !== "/app.js" && relative !== "/sw.js" && !relative.startsWith("/public/")) {
     return error(response, 404, "Không tìm thấy trang.");
   }
 
@@ -12349,7 +12446,10 @@ function serveStatic(request, response, url) {
     "X-App-Build": APP_BUILD_ID,
     "X-App-Version": APP_VERSION,
   };
-  if (extension === ".html") {
+  if (relative === "/sw.js") {
+    headers["Cache-Control"] = "no-cache, no-store, must-revalidate";
+    headers["Service-Worker-Allowed"] = "/";
+  } else if (extension === ".html") {
     headers["Cache-Control"] = "no-cache, no-store, must-revalidate";
     headers["Pragma"] = "no-cache";
     headers["Expires"] = "0";
