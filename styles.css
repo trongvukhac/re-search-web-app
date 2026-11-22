@@ -43824,7 +43824,32 @@ body.page-login main {
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
 }
 
-/* Nút đăng nhập Google duy nhất theo yêu cầu */
+/* Nút đăng nhập Google & GIS wrapper */
+.auth-google-wrapper {
+  width: 100% !important;
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+  position: relative !important;
+  min-height: 42px !important;
+  flex-shrink: 0 !important;
+}
+
+.google-gis-btn-container {
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+  width: 100% !important;
+}
+
+.google-gis-btn-container iframe {
+  margin: 0 auto !important;
+}
+
+.auth-google-wrapper.gis-loaded #customGoogleBtn {
+  display: none !important;
+}
+
 .auth-google-full-btn {
   width: 100% !important;
   height: 42px !important;

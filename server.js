@@ -2131,17 +2131,19 @@ function isSecureRequest(request) {
   );
 }
 
-function createSession(response, userId, request = null) {
+function createSession(response, userId, request = null, rememberMe = true) {
+  const ageSeconds = rememberMe ? (30 * 24 * 60 * 60) : (24 * 60 * 60);
   const token = randomToken(),
     csrf = randomToken(),
-    expiresAt = new Date(Date.now() + SESSION_AGE_SECONDS * 1000).toISOString();
+    expiresAt = new Date(Date.now() + ageSeconds * 1000).toISOString();
   db.prepare(
     "INSERT INTO sessions(token_hash,user_id,csrf_token,expires_at) VALUES (?,?,?,?)",
   ).run(sha(token), userId, csrf, expiresAt);
   const secureAttr = isSecureRequest(request) ? "; Secure" : "";
+  const maxAgeAttr = rememberMe ? `; Max-Age=${ageSeconds}` : "";
   response.setHeader(
     "Set-Cookie",
-    `research_session=${encodeURIComponent(token)}; HttpOnly; SameSite=Lax; Path=/; Max-Age=${SESSION_AGE_SECONDS}${secureAttr}`,
+    `research_session=${encodeURIComponent(token)}; HttpOnly; SameSite=Lax; Path=/${maxAgeAttr}${secureAttr}`,
   );
   return csrf;
 }
@@ -4214,7 +4216,7 @@ async function api(request, response, url) {
       !rateLimit(`register:${clientIp}`, 5, 60 * 60 * 1000)
     )
       return error(response, 429, "Bạn đã thử đăng ký quá nhiều lần.");
-    const { email, password, displayName } = await readJSON(request);
+    const { email, password, displayName, rememberMe } = await readJSON(request);
     if (
       !/^\S+@\S+\.\S+$/.test(email || "") ||
       typeof displayName !== "string" ||
@@ -4251,7 +4253,8 @@ async function api(request, response, url) {
       logShieldTransaction(user.id, 'add', 1, 1, 'Tặng 1 khiên khởi đầu chào đón thành viên mới');
       recordEventLoginDay(user.id);
       checkAndGrantLimitedItems(user.id);
-      const csrfToken = createSession(response, user.id, request);
+      const isRemember = rememberMe !== false;
+      const csrfToken = createSession(response, user.id, request, isRemember);
       const freshRegUser = db.prepare("SELECT * FROM users WHERE id=?").get(user.id);
       return json(response, 201, { user: publicUser(freshRegUser), csrfToken });
     } catch (e) {
@@ -4268,7 +4271,7 @@ async function api(request, response, url) {
     const clientIp = getClientIp(request);
     if (!rateLimit(`login:${clientIp}`, 10, 15 * 60 * 1000))
       return error(response, 429, "Bạn đã thử đăng nhập quá nhiều lần.");
-    const { email, password } = await readJSON(request);
+    const { email, password, rememberMe } = await readJSON(request);
     const user = db
       .prepare("SELECT * FROM users WHERE email=?")
       .get((email || "").trim().toLowerCase());
@@ -4289,12 +4292,13 @@ async function api(request, response, url) {
     }
     recordEventLoginDay(user.id);
     checkAndGrantLimitedItems(user.id);
-    const csrfToken = createSession(response, user.id, request);
+    const isRemember = rememberMe !== false;
+    const csrfToken = createSession(response, user.id, request, isRemember);
     const freshUser = db.prepare("SELECT * FROM users WHERE id=?").get(user.id);
     return json(response, 200, { user: publicUser(freshUser), csrfToken });
   }
   if (method === "POST" && pathName === "/api/auth/google") {
-    const { credential } = await readJSON(request);
+    const { credential, rememberMe } = await readJSON(request);
     if (!credential) return error(response, 400, "Thiếu Google credential token.");
     try {
       const gRes = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(credential)}`);
@@ -4323,7 +4327,8 @@ async function api(request, response, url) {
       recordUserActivity(user.id);
       recordEventLoginDay(user.id);
       checkAndGrantLimitedItems(user.id);
-      const csrfToken = createSession(response, user.id, request);
+      const isRemember = rememberMe !== false;
+      const csrfToken = createSession(response, user.id, request, isRemember);
       const freshUser = db.prepare("SELECT * FROM users WHERE id=?").get(user.id);
       return json(response, 200, { user: publicUser(freshUser), csrfToken });
     } catch (err) {

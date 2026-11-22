@@ -538,7 +538,7 @@ function initEditor(containerId, placeholder = "") {
 }
 async function requestAPI(url, options = {}) {
   const method = (options.method || "GET").toUpperCase();
-  if (!csrfToken && method !== "GET" && url !== "/api/session" && url !== "/api/auth/login" && url !== "/api/auth/register") {
+  if (!csrfToken && method !== "GET" && url !== "/api/session" && url !== "/api/auth/login" && url !== "/api/auth/register" && url !== "/api/auth/google") {
     try {
       const sRes = await fetch("/api/session", { credentials: "same-origin" });
       const sData = await sRes.json();
@@ -3896,6 +3896,7 @@ function go(rawRoute, scrollToTop = true) {
   if (baseRoute === "login") {
     document.body.classList.add("page-login");
     if (typeof hideMobileNav === "function") hideMobileNav();
+    if (typeof initGoogleSignIn === "function") initGoogleSignIn();
   } else {
     document.body.classList.remove("page-login");
   }
@@ -7246,9 +7247,11 @@ $("#authForm").addEventListener("submit", async (e) => {
   setSubmitLoading(e, true);
   const registering = $("#loginPage")?.classList.contains("registering") || $("#authModal")?.classList.contains("registering");
   try {
+    const rememberMe = $("#authRememberCheckbox") ? $("#authRememberCheckbox").checked : true;
     const payload = {
       email: $("#authEmail").value.trim(),
       password: $("#authPassword").value,
+      rememberMe,
     };
     if (registering) payload.displayName = $("#authName").value.trim();
     const data = await requestAPI(
@@ -7274,9 +7277,77 @@ $("#authForm").addEventListener("submit", async (e) => {
   }
 });
 
+const GOOGLE_CLIENT_ID = "838549953640-0ch4jommu6tto7ppippv9504tr7c362e.apps.googleusercontent.com";
+
+async function handleGoogleCredentialResponse(response) {
+  if (!response || !response.credential) {
+    toast("Không nhận được token xác thực từ Google.");
+    return;
+  }
+  const rememberCheckbox = document.getElementById("authRememberCheckbox");
+  const rememberMe = rememberCheckbox ? rememberCheckbox.checked : true;
+  try {
+    toast("Đang xác thực tài khoản Google...");
+    const data = await requestAPI("/api/auth/google", {
+      method: "POST",
+      body: JSON.stringify({ credential: response.credential, rememberMe }),
+    });
+    csrfToken = data.csrfToken;
+    applySession(data.user);
+    const authModal = $("#authModal");
+    if (authModal && typeof authModal.close === "function" && authModal.open) authModal.close();
+    await hydrateServer();
+    toast(`Đăng nhập Google thành công! Chào mừng, ${data.user.displayName || data.user.email}`);
+    checkAndShowBanner();
+    exitAuthPage();
+  } catch (err) {
+    toast(err.message || "Đăng nhập Google thất bại.");
+  }
+}
+
+function initGoogleSignIn() {
+  const container = document.getElementById("g_id_signin");
+  const wrapper = document.querySelector(".auth-google-wrapper");
+  if (!window.google || !window.google.accounts || !window.google.accounts.id) {
+    setTimeout(initGoogleSignIn, 350);
+    return;
+  }
+  try {
+    window.google.accounts.id.initialize({
+      client_id: GOOGLE_CLIENT_ID,
+      callback: handleGoogleCredentialResponse,
+      auto_select: false,
+      cancel_on_tap_outside: true,
+    });
+    if (container) {
+      window.google.accounts.id.renderButton(container, {
+        type: "standard",
+        theme: "outline",
+        size: "large",
+        text: "signin_with",
+        shape: "pill",
+        logo_alignment: "left",
+        width: Math.min(320, Math.max(220, window.innerWidth - 60)),
+      });
+      if (wrapper) wrapper.classList.add("gis-loaded");
+    }
+  } catch (e) {
+    console.warn("[GOOGLE_GIS_INIT]", e);
+  }
+}
+window.initGoogleSignIn = initGoogleSignIn;
+
 window.handleSocialClick = function (provider) {
   if (provider === "google") {
-    toast("Tính năng đăng nhập Google đang sẵn sàng (kết nối trực tiếp miễn phí).");
+    if (window.google && window.google.accounts && window.google.accounts.id) {
+      window.google.accounts.id.prompt((notification) => {
+        if (notification && (notification.isNotDisplayed() || notification.isSkippedMoment())) {
+          console.warn("One Tap not displayed:", notification.getNotDisplayedReason());
+        }
+      });
+    } else {
+      toast("Đang tải kết nối Google, vui lòng thử lại sau giây lát.");
+    }
   } else if (provider === "microsoft") {
     toast("Tính năng đăng nhập Microsoft sinh viên Văn Lang (@vanlanguni.vn) đang sẵn sàng.");
   } else if (provider === "apple") {
@@ -7315,6 +7386,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   syncFooterVersionUI();
   checkAppVersionInBackground();
+  initGoogleSignIn();
 
   checkAndShowBanner();
 });
