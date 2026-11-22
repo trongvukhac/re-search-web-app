@@ -4,6 +4,23 @@ Tất cả các thay đổi đáng chú ý của dự án **RE:SEARCH — Cộng
 
 ---
 
+## [4.7.10] - 2026-11-22
+### Hoàn thiện & Tối ưu giao diện Xác thực (#login)
+- **Tối ưu triệt để hiển thị trên Mobile (Full Mobile Responsiveness)**:
+  - Khắc phục lỗi Grid 2 cột trên điện thoại khiến khung kính mờ bị thu hẹp còn 50% bề ngang; chuyển đổi sang Flexbox trải rộng 100% chiều ngang màn hình ôm trọn nội dung.
+  - Tối ưu khoảng không gian nền phía trên và thanh điều hướng góc, cuộn chạm tự nhiên và mượt mà.
+- **Tái cấu trúc bố cục Đăng nhập / Tạo tài khoản (Top-Tabs & Content Centering)**:
+  - Đưa 2 nút chuyển đổi "Đăng nhập / Tạo tài khoản" lên sát mép trên đầu khung kính mờ với khoảng cách tối thiểu, thẩm mỹ cao.
+  - Toàn bộ khối nội dung chính (Tiêu đề, các trường nhập liệu, nút thao tác) được bao bọc trong `.auth-form-center-body` và căn giữa tuyệt đối theo trục dọc cho cả trạng thái Đăng nhập lẫn Tạo tài khoản mới.
+- **Tinh giản Đăng nhập xã hội (Single Google Sign-In)**:
+  - Lược bỏ các nút đăng nhập Microsoft và Apple ID theo yêu cầu; nâng cấp nút Đăng nhập với Google thành viên thuốc trắng thanh lịch toàn chiều rộng.
+- **Căn chỉnh nút Điều hướng**:
+  - Đẩy nút "Quay lại đăng nhập" tại giao diện Khôi phục mật khẩu lên cao hơn (`top: 10px`), tạo khoảng không gian thanh thoát cho form nhập mã OTP.
+- **Đồng bộ phiên bản v4.7.10 toàn diện (Version Synchronization)**:
+  - Cập nhật số hiệu `4.7.10` trên toàn bộ hệ thống (`package.json`, `server.js`, `app.js`, `index.html`, admin badge và changelog).
+
+---
+
 ## [4.7.6] - 2026-11-21
 ### Sửa lỗi & Hoàn thiện (Hotfix)
 - **Khắc phục triệt để lỗi tái diễn tràn ngang giao diện Mobile (Mobile Horizontal Overflow Lockdown)**:

@@ -43489,12 +43489,12 @@ body.page-login main {
   border: 2px solid rgba(255, 255, 255, 0.45) !important;
   border-radius: 24px !important;
   box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45), inset 0 1px 1px rgba(255, 255, 255, 0.6) !important;
-  padding: 26px 30px !important;
+  padding: 18px 28px !important;
   box-sizing: border-box !important;
   color: #ffffff !important;
   display: flex !important;
   flex-direction: column !important;
-  justify-content: center !important;
+  justify-content: flex-start !important;
   position: relative !important;
   overflow: hidden !important;
 }
@@ -43505,7 +43505,15 @@ body.page-login main {
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  justify-content: center;
+}
+
+.auth-form-center-body {
+  width: 100%;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center; /* CĂN GIỮA HOÀN TOÀN CỤM NỘI DUNG */
+  box-sizing: border-box;
 }
 
 .auth-forgot-panel {
@@ -43554,7 +43562,7 @@ body.page-login main {
   display: none !important; /* Xoá bỏ hoàn toàn text phụ để title không bị cách xa */
 }
 
-/* Switch Tabs (Đăng nhập / Tạo tài khoản) - Chia đều đúng 2 nửa khung 50% - 50% */
+/* Switch Tabs (Đăng nhập / Tạo tài khoản) - Đặt lên trên đầu, sát mép khung */
 .auth-switch-tabs {
   width: 100% !important;
   display: grid !important;
@@ -43566,9 +43574,11 @@ body.page-login main {
   padding: 4px !important;
   border-radius: 14px !important;
   border: 1.5px solid rgba(255, 255, 255, 0.25) !important;
-  margin-bottom: 16px !important;
+  margin-top: 0 !important;
+  margin-bottom: 6px !important; /* GIÃN CÁCH KHÔNG QUÁ NHIỀU VỚI KHUNG */
   box-sizing: border-box !important;
-  height: 46px !important;
+  height: 44px !important;
+  flex-shrink: 0 !important;
 }
 
 .auth-switch-tabs .auth-tab {
@@ -43814,35 +43824,32 @@ body.page-login main {
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
 }
 
-/* Các nút mạng xã hội (Google / Microsoft / Apple ID) */
-.auth-social-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
-  flex-shrink: 0 !important;
-}
-
-.auth-social-tile {
-  height: 38px;
-  border-radius: 999px;
+/* Nút đăng nhập Google duy nhất theo yêu cầu */
+.auth-google-full-btn {
+  width: 100% !important;
+  height: 42px !important;
+  border-radius: 999px !important;
   border: 1.5px solid rgba(255, 255, 255, 0.7) !important;
-  background: rgba(255, 255, 255, 0.92) !important;
+  background: rgba(255, 255, 255, 0.94) !important;
   color: #1e293b !important;
-  font-size: 12.5px;
-  font-weight: 600;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+  font-size: 13.5px !important;
+  font-weight: 700 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 10px !important;
+  cursor: pointer !important;
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.22) !important;
+  flex-shrink: 0 !important;
+  box-sizing: border-box !important;
 }
 
-.auth-social-tile:hover {
+.auth-google-full-btn:hover {
   background: #ffffff !important;
   border-color: #ffffff !important;
-  transform: translateY(-1px);
+  transform: translateY(-1px) !important;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.3) !important;
 }
 
 /* ======================================================== */
@@ -43851,8 +43858,8 @@ body.page-login main {
 
 .auth-pane-top-back-btn {
   position: absolute;
-  top: 18px;
-  left: 30px;
+  top: 10px; /* ĐẨY LÊN CAO THEO YÊU CẦU */
+  left: 24px;
   background: none;
   border: none;
   padding: 0;
@@ -44045,13 +44052,15 @@ body.page-login main {
     font-size: 16px !important;
   }
 
-  /* Khoảng không gian trên mobile để hình nền thư viện lộ rõ ~14vh */
+  /* SÂN KHẤU SÁCH TRÊN MOBILE: CHUYỂN HOÀN TOÀN TỪ GRID SANG FLEX COLUMN */
   .auth-book-stage {
+    display: flex !important;
     flex-direction: column !important;
+    grid-template-columns: unset !important;
     height: auto !important;
     min-height: unset !important;
     max-height: none !important;
-    margin: 14vh 0 0 0 !important;
+    margin: 10vh 0 0 0 !important;
     padding: 0 !important;
     width: 100% !important;
     max-width: 100vw !important;
@@ -44065,13 +44074,21 @@ body.page-login main {
   }
 
   .auth-book-wing.auth-wing-right {
+    display: block !important;
     width: 100% !important;
+    max-width: 100vw !important;
     height: auto !important;
+    min-height: calc(100vh - 10vh) !important;
     max-height: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    box-sizing: border-box !important;
   }
 
-  /* Cánh phải chuyển thành tấm kính mờ trượt lên từ dưới */
+  /* Cánh phải chuyển thành tấm kính mờ trượt lên từ dưới PHỦ TRỌN 100% CHIỀU NGANG MOBILE */
   .auth-glass-panel {
+    width: 100% !important;
+    max-width: 100vw !important;
     border-radius: 28px 28px 0 0 !important;
     border: 2px solid rgba(255, 255, 255, 0.45) !important;
     border-bottom: none !important;
@@ -44081,23 +44098,36 @@ body.page-login main {
     backdrop-filter: blur(28px) saturate(190%) !important;
     -webkit-backdrop-filter: blur(28px) saturate(190%) !important;
     box-shadow: 0 -12px 40px rgba(0, 0, 0, 0.45) !important;
-    padding: 24px 20px calc(48px + env(safe-area-inset-bottom, 20px)) 20px !important;
+    padding: 18px 20px calc(48px + env(safe-area-inset-bottom, 20px)) 20px !important;
     box-sizing: border-box !important;
     height: auto !important;
-    min-height: calc(100vh - 14vh) !important;
+    min-height: calc(100vh - 10vh) !important;
     max-height: none !important;
     overflow-y: visible !important;
     display: flex !important;
     flex-direction: column !important;
     justify-content: flex-start !important;
+    align-items: stretch !important;
     color: #ffffff !important;
+  }
+
+  .auth-active-form {
+    width: 100% !important;
+    max-width: 440px !important;
+    margin: 0 auto !important;
+  }
+
+  .auth-forgot-panel {
+    width: 100% !important;
+    max-width: 440px !important;
+    margin: 0 auto !important;
   }
 
   .auth-pane-top-back-btn {
     position: relative !important;
-    top: 0 !important;
+    top: -8px !important;
     left: 0 !important;
-    margin-bottom: 14px !important;
+    margin-bottom: 6px !important;
   }
 
   .auth-panel-title {
