@@ -43200,9 +43200,10 @@ body.page-login main {
 }
 
 .auth-spring-brand {
-  display: inline-flex;
-  align-items: center;
-  text-decoration: none;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  text-decoration: none !important;
 }
 
 @keyframes authSpringFromCorner {
@@ -43223,14 +43224,36 @@ body.page-login main {
   }
 }
 
-.auth-spring-brand .brand-mark img {
-  filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.4));
+.auth-spring-brand .brand-mark,
+.auth-brand-mark,
+.auth-logo-icon-wrap {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 28px !important;
+  height: 28px !important;
+  overflow: visible !important;
+  flex-shrink: 0 !important;
+}
+
+.auth-spring-brand .brand-mark img,
+.auth-logo-img,
+.auth-logo-symbol,
+.auth-logo-icon-wrap img,
+.auth-logo-glass-capsule img {
+  display: block !important;
+  width: 28px !important;
+  height: 28px !important;
+  object-fit: contain !important;
+  filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.4)) !important;
 }
 
 .auth-spring-brand .brand-text {
-  color: #ffffff;
+  color: #ffffff !important;
   text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
-  font-size: 19px;
+  font-size: 19px !important;
+  font-weight: 800;
+  letter-spacing: -0.3px;
 }
 
 /* Sân khấu sách 2 cánh cân xứng 100% (Desktop) - CỐ ĐỊNH KÍCH THƯỚC ĐỒNG NHẤT 100% */
@@ -43452,25 +43475,25 @@ body.page-login main {
   text-shadow: 0 2px 10px rgba(0, 0, 0, 0.6);
 }
 
-/* Cánh phải: Kính mờ sang trọng, cân xứng 100% với cánh trái, chữ tối tương phản cao */
+/* Cánh phải: Kính mờ sang trọng (Frosted Glass), cân xứng 100% với cánh trái, lộ rõ cảnh thư viện phía sau */
 .auth-glass-panel {
   width: 100%;
   height: 100%;
   max-height: 100%;
-  background: rgba(255, 255, 255, 0.94); /* Nền kính sáng sang trọng */
-  backdrop-filter: blur(24px) saturate(180%);
-  -webkit-backdrop-filter: blur(24px) saturate(180%);
-  border: 2px solid rgba(255, 255, 255, 0.98);
-  border-radius: 24px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
-  padding: 26px 30px;
-  box-sizing: border-box;
-  color: #0f172a;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  position: relative;
-  overflow: hidden;
+  background: rgba(255, 255, 255, 0.2) !important; /* Kính mờ trong suốt cao cấp */
+  backdrop-filter: blur(28px) saturate(190%) !important;
+  -webkit-backdrop-filter: blur(28px) saturate(190%) !important;
+  border: 2px solid rgba(255, 255, 255, 0.45) !important;
+  border-radius: 24px !important;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45), inset 0 1px 1px rgba(255, 255, 255, 0.6) !important;
+  padding: 26px 30px !important;
+  box-sizing: border-box !important;
+  color: #ffffff !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: center !important;
+  position: relative !important;
+  overflow: hidden !important;
 }
 
 .auth-active-form,
@@ -43498,39 +43521,49 @@ body.page-login main {
   font-size: 22px;
   font-weight: 800;
   letter-spacing: -0.4px;
-  color: #061a14;
+  color: #ffffff !important;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.7);
 }
 
 .auth-panel-sub {
   display: none !important; /* Xoá bỏ hoàn toàn text phụ để title không bị cách xa */
 }
 
-/* Switch Tabs (Đăng nhập / Tạo tài khoản) - Nút chuyển sắc nét, không gạch chân xanh */
+/* Switch Tabs (Đăng nhập / Tạo tài khoản) - Chia đều đúng 2 nửa khung 50% - 50% */
 .auth-switch-tabs {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 4px;
-  background: rgba(15, 23, 42, 0.08);
-  padding: 4px;
-  border-radius: 999px;
-  margin-bottom: 14px;
-  border: 1px solid rgba(15, 23, 42, 0.08);
+  width: 100% !important;
+  display: grid !important;
+  grid-template-columns: 1fr 1fr !important;
+  gap: 0 !important;
+  background: rgba(0, 0, 0, 0.32) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  padding: 4px !important;
+  border-radius: 14px !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.25) !important;
+  margin-bottom: 16px !important;
+  box-sizing: border-box !important;
+  height: 46px !important;
 }
 
 .auth-switch-tabs .auth-tab {
-  height: 36px;
-  border-radius: 999px;
-  border: none;
-  background: transparent;
-  font-size: 13.5px;
-  font-weight: 600;
-  color: #475569;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  position: relative;
+  width: 100% !important;
+  height: 100% !important;
+  border-radius: 10px !important;
+  border: none !important;
+  background: transparent !important;
+  font-size: 13.5px !important;
+  font-weight: 600 !important;
+  color: rgba(255, 255, 255, 0.75) !important;
+  cursor: pointer !important;
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  position: relative !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  user-select: none !important;
 }
 
 .auth-switch-tabs .auth-tab:after {
@@ -43538,14 +43571,14 @@ body.page-login main {
 }
 
 .auth-switch-tabs .auth-tab:hover {
-  color: #061a14;
+  color: #ffffff !important;
 }
 
 .auth-switch-tabs .auth-tab.active {
   background: #ffffff !important;
-  color: #061a14 !important; /* CHỮ ĐẬM RÕ NÉT TRÊN NỀN TRẮNG */
-  font-weight: 700;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+  color: #0b2920 !important; /* CHỮ ĐẬM RÕ NÉT TRÊN NỀN TRẮNG */
+  font-weight: 800 !important;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.28) !important;
 }
 
 /* Ẩn hiện trường Tên khi đăng ký */
@@ -43572,7 +43605,8 @@ body.page-login main {
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  color: #1e293b;
+  color: rgba(255, 255, 255, 0.95) !important;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
   margin-bottom: 4px;
 }
 
@@ -43587,7 +43621,7 @@ body.page-login main {
   position: absolute;
   left: 12px;
   pointer-events: none;
-  color: #64748b;
+  color: rgba(255, 255, 255, 0.8) !important;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -43599,22 +43633,25 @@ body.page-login main {
   box-sizing: border-box;
   padding: 0 38px 0 38px;
   border-radius: 12px;
-  border: 1.5px solid #cbd5e1;
-  background: #ffffff;
-  color: #0f172a;
+  border: 1.5px solid rgba(255, 255, 255, 0.45) !important;
+  background: rgba(255, 255, 255, 0.16) !important;
+  color: #ffffff !important;
   font-size: 13.5px;
   outline: none;
   transition: all 0.2s ease;
-  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.04);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.15);
 }
 
 .auth-input-container input::placeholder {
-  color: #94a3b8;
+  color: rgba(255, 255, 255, 0.65) !important;
 }
 
 .auth-input-container input:focus {
-  border-color: #047857;
-  box-shadow: 0 0 0 3px rgba(4, 120, 87, 0.15);
+  background: rgba(255, 255, 255, 0.24) !important;
+  border-color: #bef264 !important;
+  box-shadow: 0 0 0 3px rgba(190, 242, 100, 0.25) !important;
 }
 
 .auth-input-container .password-toggle-btn {
@@ -43624,14 +43661,14 @@ body.page-login main {
   border: none;
   padding: 0;
   cursor: pointer;
-  color: #64748b;
+  color: rgba(255, 255, 255, 0.8) !important;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .auth-input-container .password-toggle-btn:hover {
-  color: #0f172a;
+  color: #ffffff !important;
 }
 
 /* Tiện ích (Ghi nhớ & Quên mật khẩu) */
@@ -43648,23 +43685,30 @@ body.page-login main {
   align-items: center;
   gap: 6px;
   cursor: pointer;
-  color: #475569;
+  color: rgba(255, 255, 255, 0.95) !important;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
   user-select: none;
+}
+
+.auth-remember-check input[type="checkbox"] {
+  accent-color: #bef264;
+  cursor: pointer;
 }
 
 .auth-forgot-trigger-link {
   background: none;
   border: none;
   padding: 0;
-  color: #047857 !important; /* XANH ĐẬM RÕ NÉT, KHÔNG BỊ CHÌM VÀO KÍNH SÁNG */
+  color: #bef264 !important;
   font-weight: 700;
   font-size: 12.5px;
   cursor: pointer;
   text-decoration: underline;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
 }
 
 .auth-forgot-trigger-link:hover {
-  color: #065f46 !important;
+  color: #d9f99d !important;
 }
 
 /* NÚT LỖ HỞ (CUTOUT ACTION BUTTON - NHƯ HÌNH MẪU REFERENCE) */
@@ -43676,30 +43720,31 @@ body.page-login main {
   justify-content: space-between;
   padding: 0 6px 0 20px;
   border-radius: 999px;
-  background: #0b2920;
-  border: 1.5px solid #0e3b2e;
-  color: #ffffff;
+  background: rgba(11, 41, 32, 0.75) !important;
+  border: 2px solid rgba(255, 255, 255, 0.5) !important;
+  color: #ffffff !important;
   font-family: var(--unbounded);
   font-size: 13.5px;
   font-weight: 700;
   cursor: pointer;
   transition: all 0.25s ease;
-  box-shadow: 0 6px 18px rgba(11, 41, 32, 0.25);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
   box-sizing: border-box;
 }
 
 .auth-cutout-action-btn:hover {
-  background: #123f31;
+  background: rgba(18, 63, 49, 0.9) !important;
+  border-color: #bef264 !important;
   transform: translateY(-1px);
-  box-shadow: 0 10px 24px rgba(11, 41, 32, 0.35);
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.45);
 }
 
 .auth-cutout-arrow-bubble {
   width: 34px;
   height: 34px;
   border-radius: 50%;
-  background: #a3e635;
-  color: #061a14;
+  background: #bef264 !important;
+  color: #061a14 !important;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -43725,16 +43770,20 @@ body.page-login main {
   left: 0;
   right: 0;
   height: 1px;
-  background: #e2e8f0;
+  background: rgba(255, 255, 255, 0.3) !important;
 }
 
 .auth-social-separator span {
   position: relative;
-  background: rgba(255, 255, 255, 0.95);
-  padding: 0 10px;
+  background: rgba(11, 41, 32, 0.6) !important;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  padding: 2px 10px;
+  border-radius: 6px;
   font-size: 11px;
-  color: #64748b;
+  color: rgba(255, 255, 255, 0.85) !important;
   font-weight: 500;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
 }
 
 /* Các nút mạng xã hội (Google / Microsoft / Apple ID) */
@@ -43747,9 +43796,9 @@ body.page-login main {
 .auth-social-tile {
   height: 38px;
   border-radius: 999px;
-  border: 1.5px solid #e2e8f0;
-  background: #ffffff;
-  color: #1e293b;
+  border: 1.5px solid rgba(255, 255, 255, 0.7) !important;
+  background: rgba(255, 255, 255, 0.92) !important;
+  color: #1e293b !important;
   font-size: 12.5px;
   font-weight: 600;
   display: flex;
@@ -43758,12 +43807,12 @@ body.page-login main {
   gap: 6px;
   cursor: pointer;
   transition: all 0.2s ease;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
 }
 
 .auth-social-tile:hover {
-  background: #f8fafc;
-  border-color: #cbd5e1;
+  background: #ffffff !important;
+  border-color: #ffffff !important;
   transform: translateY(-1px);
 }
 
@@ -43781,7 +43830,7 @@ body.page-login main {
   border: none;
   padding: 0;
   margin-bottom: 12px;
-  color: #047857 !important; /* XANH ĐẬM RÕ NÉT */
+  color: #bef264 !important; /* XANH LIME NỔI BẬT TRÊN KÍNH MỜ */
   font-weight: 700;
   font-size: 13px;
   cursor: pointer;
@@ -43789,29 +43838,33 @@ body.page-login main {
   align-items: center;
   gap: 6px;
   width: fit-content;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
 }
 
 .auth-pane-top-back-btn:hover {
-  color: #065f46 !important;
+  color: #d9f99d !important;
 }
 
 .auth-info-card {
   display: flex;
   align-items: flex-start;
   gap: 8px;
-  background: #f0fdf4;
-  border: 1px solid #bbf7d0;
+  background: rgba(240, 253, 244, 0.2) !important;
+  border: 1px solid rgba(187, 247, 208, 0.35) !important;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   padding: 10px 12px;
   border-radius: 12px;
   margin-bottom: 14px;
   font-size: 12px;
-  color: #166534;
+  color: #ffffff !important;
   line-height: 1.45;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
 }
 
 .auth-info-icon {
   flex-shrink: 0;
-  color: #16a34a;
+  color: #bef264 !important;
   display: flex;
   align-items: center;
 }
@@ -43842,22 +43895,23 @@ body.page-login main {
 
 .auth-button-row .button-outline {
   flex: 1;
-  background: #ffffff;
-  border: 1.5px solid #cbd5e1;
-  color: #1e293b;
+  background: rgba(255, 255, 255, 0.2) !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.5) !important;
+  color: #ffffff !important;
+  backdrop-filter: blur(8px);
 }
 
 .auth-button-row .button-outline:hover {
-  background: #f1f5f9;
-  border-color: #94a3b8;
+  background: rgba(255, 255, 255, 0.3) !important;
+  border-color: #ffffff !important;
 }
 
 .auth-button-row .auth-btn-prominent {
   flex: 1.6;
   background: #0b2920 !important;
   color: #ffffff !important;
-  border: none;
-  box-shadow: 0 6px 18px rgba(11, 41, 32, 0.25);
+  border: 1.5px solid #bef264 !important;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
 }
 
 .auth-button-row .auth-btn-prominent:hover {
@@ -43868,14 +43922,15 @@ body.page-login main {
 .auth-code-switch-box {
   margin-top: 14px;
   padding: 10px 12px;
-  background: #f8fafc;
-  border: 1px dashed #cbd5e1;
+  background: rgba(0, 0, 0, 0.3) !important;
+  border: 1px dashed rgba(255, 255, 255, 0.35) !important;
   border-radius: 12px;
   text-align: center;
+  color: #ffffff;
 }
 
 .auth-code-switch-link {
-  color: #047857 !important;
+  color: #bef264 !important;
   text-decoration: none;
   font-weight: 700;
   font-size: 12px;
@@ -43886,7 +43941,7 @@ body.page-login main {
 }
 
 .auth-code-switch-link:hover {
-  color: #065f46 !important;
+  color: #d9f99d !important;
   text-decoration: underline;
 }
 
@@ -43899,9 +43954,11 @@ body.page-login main {
   text-align: center !important;
   height: 48px !important;
   padding: 0 12px !important;
-  border: 2px solid #047857 !important;
-  background: #f8fafc !important;
-  color: #064e3b !important;
+  border: 2px solid #bef264 !important;
+  background: rgba(255, 255, 255, 0.22) !important;
+  color: #ffffff !important;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(8px);
 }
 
 /* ======================================================== */
@@ -43969,136 +44026,134 @@ body.page-login main {
     max-height: none !important;
   }
 
-  /* Cánh phải chuyển thành tấm kính mờ trượt lên từ dưới với ĐỘ TƯƠNG PHẢN CAO, KHÔNG BỊ TRẮNG TRÊN TRẮNG */
+  /* Cánh phải chuyển thành tấm kính mờ trượt lên từ dưới */
   .auth-glass-panel {
     border-radius: 28px 28px 0 0 !important;
-    border: 2px solid rgba(255, 255, 255, 0.95) !important;
+    border: 2px solid rgba(255, 255, 255, 0.45) !important;
     border-bottom: none !important;
     border-left: none !important;
     border-right: none !important;
-    background: rgba(255, 255, 255, 0.88) !important; /* Nền kính mờ sáng rõ */
-    backdrop-filter: blur(28px) !important;
-    -webkit-backdrop-filter: blur(28px) !important;
-    box-shadow: 0 -12px 40px rgba(0, 0, 0, 0.4) !important;
+    background: rgba(255, 255, 255, 0.2) !important;
+    backdrop-filter: blur(28px) saturate(190%) !important;
+    -webkit-backdrop-filter: blur(28px) saturate(190%) !important;
+    box-shadow: 0 -12px 40px rgba(0, 0, 0, 0.45) !important;
     padding: 26px 20px calc(80px + env(safe-area-inset-bottom, 20px)) 20px !important;
     height: auto !important;
     min-height: 68vh !important;
     max-height: none !important;
-    color: #0f172a !important; /* Chữ tối màu tương phản rõ rệt trên nền sáng */
+    color: #ffffff !important;
   }
 
   .auth-panel-title {
-    color: #061a14 !important;
+    color: #ffffff !important;
     font-size: 21px !important;
-    text-shadow: none !important;
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.7) !important;
   }
 
   .auth-panel-sub {
-    color: #475569 !important;
-    text-shadow: none !important;
+    color: rgba(255, 255, 255, 0.8) !important;
   }
 
   .auth-switch-tabs {
-    background: rgba(15, 23, 42, 0.08) !important;
-    border-color: rgba(0, 0, 0, 0.1) !important;
+    background: rgba(0, 0, 0, 0.32) !important;
+    border-color: rgba(255, 255, 255, 0.25) !important;
   }
 
   .auth-switch-tabs .auth-tab {
-    color: #475569 !important;
+    color: rgba(255, 255, 255, 0.75) !important;
   }
 
   .auth-switch-tabs .auth-tab.active {
     background: #ffffff !important;
-    color: #061a14 !important;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12) !important;
+    color: #0b2920 !important;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.28) !important;
   }
 
   .auth-form-group label {
-    color: #1e293b !important;
-    text-shadow: none !important;
+    color: rgba(255, 255, 255, 0.95) !important;
+    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6) !important;
   }
 
   .auth-input-container input {
-    background: #ffffff !important;
-    border-color: #cbd5e1 !important;
-    color: #0f172a !important;
-    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.05) !important;
+    background: rgba(255, 255, 255, 0.16) !important;
+    border-color: rgba(255, 255, 255, 0.45) !important;
+    color: #ffffff !important;
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.15) !important;
   }
 
   .auth-input-container input::placeholder {
-    color: #94a3b8 !important;
+    color: rgba(255, 255, 255, 0.65) !important;
   }
 
   .auth-input-container input:focus {
-    border-color: #123f31 !important;
-    box-shadow: 0 0 0 3px rgba(18, 63, 49, 0.15) !important;
+    border-color: #bef264 !important;
+    box-shadow: 0 0 0 3px rgba(190, 242, 100, 0.25) !important;
   }
 
   .auth-input-icon {
-    color: #64748b !important;
+    color: rgba(255, 255, 255, 0.8) !important;
   }
 
   .auth-remember-check {
-    color: #475569 !important;
-    text-shadow: none !important;
+    color: rgba(255, 255, 255, 0.95) !important;
+    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6) !important;
   }
 
   .auth-forgot-trigger-link {
-    color: #123f31 !important;
-    text-shadow: none !important;
+    color: #bef264 !important;
+    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6) !important;
   }
 
   .auth-cutout-action-btn {
-    background: #0b2920 !important;
+    background: rgba(11, 41, 32, 0.75) !important;
     color: #ffffff !important;
-    border-color: #123f31 !important;
-    box-shadow: 0 6px 18px rgba(11, 41, 32, 0.25) !important;
+    border-color: rgba(255, 255, 255, 0.5) !important;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35) !important;
   }
 
   .auth-social-separator::before {
-    background: #cbd5e1 !important;
+    background: rgba(255, 255, 255, 0.3) !important;
   }
 
   .auth-social-separator span {
-    background: rgba(255, 255, 255, 0.95) !important;
-    color: #64748b !important;
+    background: rgba(11, 41, 32, 0.6) !important;
+    color: rgba(255, 255, 255, 0.85) !important;
   }
 
   .auth-social-tile {
-    background: #ffffff !important;
-    border-color: #e2e8f0 !important;
+    background: rgba(255, 255, 255, 0.92) !important;
+    border-color: rgba(255, 255, 255, 0.7) !important;
     color: #1e293b !important;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05) !important;
   }
 
   .auth-info-card {
-    background: #f0fdf4 !important;
-    border-color: #bbf7d0 !important;
-    color: #166534 !important;
+    background: rgba(240, 253, 244, 0.2) !important;
+    border-color: rgba(187, 247, 208, 0.35) !important;
+    color: #ffffff !important;
   }
 
   .auth-info-icon {
-    color: #16a34a !important;
+    color: #bef264 !important;
   }
 
   .auth-pane-top-back-btn {
-    color: #123f31 !important;
-    text-shadow: none !important;
+    color: #bef264 !important;
+    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6) !important;
   }
 
   .auth-code-switch-box {
-    background: rgba(18, 63, 49, 0.05) !important;
-    border-color: rgba(18, 63, 49, 0.25) !important;
+    background: rgba(0, 0, 0, 0.3) !important;
+    border-color: rgba(255, 255, 255, 0.35) !important;
   }
 
   .auth-code-switch-link {
-    color: #123f31 !important;
+    color: #bef264 !important;
   }
 
   .auth-unbounded-otp {
-    background: #f0fdf4 !important;
-    border-color: #123f31 !important;
-    color: #123f31 !important;
+    background: rgba(255, 255, 255, 0.22) !important;
+    border-color: #bef264 !important;
+    color: #ffffff !important;
   }
 
   .auth-button-row {
@@ -44112,8 +44167,8 @@ body.page-login main {
   }
 
   .auth-button-row .button-outline {
-    background: #ffffff !important;
-    border-color: #cbd5e1 !important;
-    color: #1e293b !important;
+    background: rgba(255, 255, 255, 0.2) !important;
+    border-color: rgba(255, 255, 255, 0.5) !important;
+    color: #ffffff !important;
   }
 }
