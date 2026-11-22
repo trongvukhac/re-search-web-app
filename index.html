@@ -4059,7 +4059,7 @@
     <!-- TRANG XÁC THỰC / ĐĂNG NHẬP / ĐĂNG KÝ / QUÊN MẬT KHẨU (#LOGIN) -->
     <!-- ======================================================== -->
     <section id="loginPage" class="page login-page" data-page="login" aria-label="Trang đăng nhập RE:SEARCH">
-      <!-- Thanh điều khiển trên cùng (Nút quay lại, Logo lò xo động, Đổi theme) -->
+      <!-- Thanh điều khiển trên cùng (Nút quay lại, Cụm logo RE:SEARCH lò xo, Đổi theme Sáng/Tối) -->
       <header class="auth-top-bar">
         <button type="button" class="auth-nav-pill auth-back-pill" onclick="exitAuthPage()" title="Quay về trang trước">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
@@ -4069,16 +4069,17 @@
           <span>Trang chủ</span>
         </button>
 
-        <!-- Cụm logo RE:SEARCH hiệu ứng lò xo -->
-        <div class="auth-spring-logo-wrap" onclick="exitAuthPage()" title="RE:SEARCH">
-          <div class="auth-spring-logo-inner">
+        <!-- Cụm logo RE:SEARCH chuẩn trang chủ với hiệu ứng lò xo xuất hiện từ góc -->
+        <a class="brand auth-spring-brand" href="#home" onclick="exitAuthPage(); return false;" title="Trang chủ RE:SEARCH">
+          <span class="brand-mark">
             <img class="brand-logo-light" src="public/assets/logo.png?v=4" alt="RE:SEARCH" />
             <img class="brand-logo-dark" src="public/assets/logodark.png?v=4" alt="RE:SEARCH" />
-            <span class="auth-spring-badge">CỘNG ĐỒNG HỌC THUẬT</span>
-          </div>
-        </div>
+          </span>
+          <span class="brand-text">RE<span class="brand-colon">:</span>SEARCH</span>
+        </a>
 
-        <button type="button" class="auth-nav-pill auth-theme-pill" onclick="toggleTheme()" aria-label="Đổi giao diện Sáng / Tối" title="Chuyển chế độ Sáng / Tối">
+        <!-- Nút đổi theme Sáng / Tối với SVG chuẩn (Clickable 100%) -->
+        <button type="button" class="auth-nav-pill auth-theme-pill" onclick="toggleDarkMode(event)" aria-label="Đổi giao diện Sáng / Tối" title="Chuyển chế độ Sáng / Tối">
           <svg class="theme-sun-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <circle cx="12" cy="12" r="5"></circle>
             <line x1="12" y1="1" x2="12" y2="3"></line>
@@ -4090,21 +4091,44 @@
             <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
             <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
           </svg>
+          <svg class="theme-moon-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+          </svg>
+          <span class="auth-theme-label">Giao diện</span>
         </button>
       </header>
 
-      <!-- Sân khấu sách 2 trang (Desktop) & Khối trượt kính mờ (Mobile) -->
+      <!-- Sân khấu sách 2 cánh khớp nối liền mạch (Desktop) & Khối kính mờ (Mobile) -->
       <div class="auth-book-stage">
         
-        <!-- NỬA TRÁI: Khung trắng không nền nhìn xuyên thấu cảnh thư viện phía sau -->
+        <!-- NỬA TRÁI: Khung trắng không nền dày nổi bật, nhìn xuyên thấu cảnh thư viện phía sau -->
         <div class="auth-book-wing auth-wing-left">
           <div class="auth-cutout-frame">
-            <!-- Huy hiệu cộng đồng phía trên -->
+            <!-- Huy hiệu cộng đồng phía trên (100% SVG Vector Icons) -->
             <div class="auth-proof-badge">
               <div class="auth-avatar-stack">
-                <span class="avatar-circle av-1">🎓</span>
-                <span class="avatar-circle av-2">🔬</span>
-                <span class="avatar-circle av-3">📚</span>
+                <span class="avatar-circle av-1" title="Học thuật">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M22 10v6M2 10l10-5 10 5-10 5z"></path>
+                    <path d="M6 12v5c3 3 9 3 12 0v-5"></path>
+                  </svg>
+                </span>
+                <span class="avatar-circle av-2" title="Nghiên cứu">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M6 18h8"></path>
+                    <path d="M3 22h18"></path>
+                    <path d="M14 22a7 7 0 1 0 0-14h-1"></path>
+                    <path d="M9 14h2"></path>
+                    <path d="M9 12a2 2 0 0 1-2-2V6h6v4a2 2 0 0 1-2 2z"></path>
+                    <path d="M12 6V3a1 1 0 0 0-1-1H9a1 1 0 0 0-1 1v3"></path>
+                  </svg>
+                </span>
+                <span class="avatar-circle av-3" title="Tri thức">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+                    <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+                  </svg>
+                </span>
               </div>
               <div class="auth-proof-text">
                 <strong class="auth-proof-count">30.000+ Sinh viên</strong>
@@ -4123,14 +4147,25 @@
               </p>
             </div>
 
-            <!-- Footer học thuật -->
+            <!-- Footer học thuật với SVG Landmark -->
             <div class="auth-wing-footer">
-              <span class="auth-uni-pill">🏛️ Trường Đại học Văn Lang &amp; Mạng lưới Học thuật</span>
+              <span class="auth-uni-pill">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: -2px; margin-right: 6px;">
+                  <line x1="2" y1="22" x2="22" y2="22"></line>
+                  <line x1="4" y1="18" x2="20" y2="18"></line>
+                  <line x1="6" y1="18" x2="6" y2="10"></line>
+                  <line x1="10" y1="18" x2="10" y2="10"></line>
+                  <line x1="14" y1="18" x2="14" y2="10"></line>
+                  <line x1="18" y1="18" x2="18" y2="10"></line>
+                  <polygon points="12 2 2 8 22 8 12 2"></polygon>
+                </svg>
+                Trường Đại học Văn Lang &amp; Mạng lưới Học thuật
+              </span>
             </div>
           </div>
         </div>
 
-        <!-- NỬA PHẢI: Khối kính mờ hiện đại chứa Form Đăng nhập / Đăng ký / Quên mật khẩu -->
+        <!-- NỬA PHẢI: Khối kính mờ cao cấp chứa Form Đăng nhập / Đăng ký / Quên mật khẩu -->
         <div class="auth-book-wing auth-wing-right">
           <div class="auth-glass-panel">
             
@@ -4155,7 +4190,12 @@
               <div class="auth-form-group auth-register-only">
                 <label for="authName">Tên hiển thị của bạn</label>
                 <div class="auth-input-container">
-                  <span class="auth-input-icon">👤</span>
+                  <span class="auth-input-icon">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                      <circle cx="12" cy="7" r="4"></circle>
+                    </svg>
+                  </span>
                   <input id="authName" type="text" minlength="2" maxlength="80" placeholder="Ví dụ: Nguyễn Minh Anh" />
                 </div>
               </div>
@@ -4164,7 +4204,12 @@
               <div class="auth-form-group">
                 <label for="authEmail">Email sinh viên / Email tài khoản</label>
                 <div class="auth-input-container">
-                  <span class="auth-input-icon">✉️</span>
+                  <span class="auth-input-icon">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                      <polyline points="22,6 12,13 2,6"></polyline>
+                    </svg>
+                  </span>
                   <input id="authEmail" type="email" required autocomplete="email" placeholder="Nhập email trường học (@vanlanguni.vn)" />
                 </div>
               </div>
@@ -4173,7 +4218,12 @@
               <div class="auth-form-group">
                 <label for="authPassword">Mật khẩu</label>
                 <div class="auth-input-container">
-                  <span class="auth-input-icon">🔒</span>
+                  <span class="auth-input-icon">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                      <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                    </svg>
+                  </span>
                   <input id="authPassword" type="password" required minlength="12" autocomplete="current-password" placeholder="Tối thiểu 12 ký tự" />
                   <button type="button" class="password-toggle-btn" aria-label="Hiện mật khẩu" title="Hiện mật khẩu" onclick="togglePasswordVisibility(this)">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -4195,7 +4245,7 @@
                 </button>
               </div>
 
-              <p class="auth-note" id="authNote" style="margin: 8px 0 16px 0; font-size: 12.5px; color: var(--muted); line-height: 1.5;">
+              <p class="auth-note" id="authNote" style="margin: 6px 0 14px 0; font-size: 12px; color: rgba(255, 255, 255, 0.75); line-height: 1.4;">
                 Chỉ TA/Admin do quản trị viên cấp quyền. Tài khoản mới mặc định là Sinh viên.
               </p>
 
@@ -4250,7 +4300,11 @@
             <div id="forgotForm" class="auth-forgot-panel" style="display: none;">
               <!-- Nút quay lại đăng nhập trên đầu -->
               <button type="button" class="auth-pane-top-back-btn" id="forgotCancelTopBtn" onclick="closeForgotPasswordView()">
-                ← Quay lại đăng nhập
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="19" y1="12" x2="5" y2="12"></line>
+                  <polyline points="12 19 5 12 12 5"></polyline>
+                </svg>
+                <span>Quay lại đăng nhập</span>
               </button>
 
               <!-- BƯỚC 1: Gửi yêu cầu mã OTP -->
@@ -4263,7 +4317,13 @@
                 </div>
 
                 <div class="auth-info-card">
-                  <span class="auth-info-icon">📢</span>
+                  <span class="auth-info-icon">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <circle cx="12" cy="12" r="10"></circle>
+                      <line x1="12" y1="16" x2="12" y2="12"></line>
+                      <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                    </svg>
+                  </span>
                   <div class="auth-info-text">
                     Mã xác thực có hiệu lực trong 24 giờ. Vui lòng kiểm tra cả mục <strong>Hộp thư đến (Inbox)</strong> và <strong>Thư rác (Spam)</strong>.
                   </div>
@@ -4272,7 +4332,12 @@
                 <div class="auth-form-group">
                   <label for="forgotEmail">Địa chỉ Email của bạn</label>
                   <div class="auth-input-container">
-                    <span class="auth-input-icon">✉️</span>
+                    <span class="auth-input-icon">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                        <polyline points="22,6 12,13 2,6"></polyline>
+                      </svg>
+                    </span>
                     <input id="forgotEmail" type="email" required autocomplete="email" placeholder="Nhập email sinh viên của bạn" />
                   </div>
                 </div>
@@ -4280,16 +4345,33 @@
                 <!-- Hàng nút cùng độ cao 48px, không tràn trên mobile -->
                 <div class="auth-button-row">
                   <button type="button" class="button button-outline auth-equal-btn" id="forgotCancelBtn">
-                    ← Đăng nhập
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px;">
+                      <line x1="19" y1="12" x2="5" y2="12"></line>
+                      <polyline points="12 19 5 12 12 5"></polyline>
+                    </svg>
+                    Đăng nhập
                   </button>
                   <button type="button" class="button button-primary auth-equal-btn auth-btn-prominent" id="forgotRequestSubmitBtn">
-                    Gửi mã xác thực về Email <span>→</span>
+                    Gửi mã xác thực về Email
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="margin-left: 6px;">
+                      <line x1="5" y1="12" x2="19" y2="12"></line>
+                      <polyline points="12 5 19 12 12 19"></polyline>
+                    </svg>
                   </button>
                 </div>
 
                 <div class="auth-code-switch-box">
                   <a href="javascript:void(0)" id="alreadyHaveCodeLink" class="auth-code-switch-link">
-                    🔑 Đã nhận được mã xác thực? Bấm vào đây để nhập mã →
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <circle cx="7.5" cy="15.5" r="5.5"></circle>
+                      <path d="m21 2-9.6 9.6"></path>
+                      <path d="m15.5 7.5 3 3M17.5 5.5l3 3"></path>
+                    </svg>
+                    <span>Đã nhận được mã xác thực? Bấm vào đây để nhập mã</span>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <line x1="5" y1="12" x2="19" y2="12"></line>
+                      <polyline points="12 5 19 12 12 19"></polyline>
+                    </svg>
                   </a>
                 </div>
               </div>
@@ -4306,7 +4388,12 @@
                 <div class="auth-form-group">
                   <label for="forgotStep2Email">Email xác nhận</label>
                   <div class="auth-input-container">
-                    <span class="auth-input-icon">✉️</span>
+                    <span class="auth-input-icon">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                        <polyline points="22,6 12,13 2,6"></polyline>
+                      </svg>
+                    </span>
                     <input id="forgotStep2Email" type="email" required placeholder="Nhập lại email của bạn" />
                   </div>
                 </div>
@@ -4321,7 +4408,12 @@
                 <div class="auth-form-group">
                   <label for="forgotNewPassword">Mật khẩu mới (tối thiểu 12 ký tự)</label>
                   <div class="auth-input-container">
-                    <span class="auth-input-icon">🔒</span>
+                    <span class="auth-input-icon">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                        <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                      </svg>
+                    </span>
                     <input id="forgotNewPassword" type="password" required minlength="12" autocomplete="new-password" placeholder="Tối thiểu 12 ký tự" />
                     <button type="button" class="password-toggle-btn" aria-label="Hiện mật khẩu" title="Hiện mật khẩu" onclick="togglePasswordVisibility(this)">
                       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -4335,7 +4427,12 @@
                 <div class="auth-form-group">
                   <label for="forgotConfirmPassword">Xác nhận mật khẩu mới</label>
                   <div class="auth-input-container">
-                    <span class="auth-input-icon">🔒</span>
+                    <span class="auth-input-icon">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                        <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                      </svg>
+                    </span>
                     <input id="forgotConfirmPassword" type="password" required minlength="12" autocomplete="new-password" placeholder="Nhập lại mật khẩu mới" />
                     <button type="button" class="password-toggle-btn" aria-label="Hiện mật khẩu" title="Hiện mật khẩu" onclick="togglePasswordVisibility(this)">
                       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -4349,10 +4446,17 @@
                 <!-- Hàng nút cùng độ cao 48px, không tràn, dễ bấm trên mobile -->
                 <div class="auth-button-row">
                   <button type="button" class="button button-outline auth-equal-btn" id="forgotBackToStep1Btn">
-                    ← Quay lại
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px;">
+                      <line x1="19" y1="12" x2="5" y2="12"></line>
+                      <polyline points="12 19 5 12 12 5"></polyline>
+                    </svg>
+                    Quay lại
                   </button>
                   <button type="button" class="button button-primary auth-equal-btn auth-btn-prominent" id="forgotResetSubmitBtn">
-                    Đổi mật khẩu mới <span>✓</span>
+                    Đổi mật khẩu mới
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-left: 6px;">
+                      <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
                   </button>
                 </div>
               </div>

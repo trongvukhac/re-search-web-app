@@ -6070,6 +6070,7 @@ function toggleDarkMode(e) {
   }
 }
 window.toggleDarkMode = toggleDarkMode;
+window.toggleTheme = toggleDarkMode;
 
 function initDarkMode() {
   try {
