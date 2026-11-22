@@ -43103,25 +43103,27 @@ body.page-login main {
 }
 
 #loginPage.page {
-  display: none;
-  width: 100vw;
+  display: none !important;
+  position: fixed !important;
+  inset: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
   max-width: 100vw !important;
-  height: 100vh;
-  max-height: 100vh;
+  max-height: 100vh !important;
   margin: 0 !important;
   padding: 0 !important;
-  box-sizing: border-box;
+  box-sizing: border-box !important;
   background: url('public/assets/auth-bg.jpg?v=5') center center / cover no-repeat;
   color: #ffffff;
-  position: relative;
-  overflow: hidden;
+  z-index: 9999 !important;
+  overflow: hidden !important;
 }
 
 #loginPage.page.active-page {
   display: flex !important;
-  flex-direction: column;
-  justify-content: center; /* ĐỒNG NHẤT CANH GIỮA 100% CẢ CHIỀU DỌC VÀ NGANG */
-  align-items: center;
+  flex-direction: column !important;
+  justify-content: center !important;
+  align-items: center !important;
 }
 
 /* Thanh điều khiển trên cùng (Tọa độ tuyệt đối để không kéo lệch khung sách) */
@@ -43492,29 +43494,47 @@ body.page-login main {
   color: #ffffff !important;
   display: flex !important;
   flex-direction: column !important;
-  justify-content: flex-start !important;
+  justify-content: center !important;
   position: relative !important;
   overflow: hidden !important;
 }
 
-.auth-active-form,
+.auth-active-form {
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
 .auth-forgot-panel {
   width: 100%;
-  height: 100% !important;
-  min-height: 100% !important;
-  box-sizing: border-box !important;
-  display: flex !important;
-  flex-direction: column !important;
-  justify-content: flex-start !important;
+  height: 100%;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  position: relative;
 }
 
 .auth-step-container {
   width: 100%;
-  height: 100% !important;
-  box-sizing: border-box !important;
-  display: flex !important;
-  flex-direction: column !important;
-  justify-content: flex-start !important;
+  height: 100%;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+#authForm[style*="display: none"],
+#forgotForm[style*="display: none"],
+#forgotStep1[style*="display: none"],
+#forgotStep2[style*="display: none"],
+.auth-step-container[style*="display: none"],
+.auth-forgot-panel[style*="display: none"],
+.auth-active-form[style*="display: none"] {
+  display: none !important;
 }
 
 .auth-panel-head {
@@ -43735,7 +43755,7 @@ body.page-login main {
   transition: all 0.25s ease;
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
   box-sizing: border-box;
-  margin-top: auto !important; /* Neo cố định sát đáy đồng nhất cho cả Đăng nhập & Tạo tài khoản */
+  margin-top: 6px;
   flex-shrink: 0 !important;
 }
 
@@ -43829,16 +43849,14 @@ body.page-login main {
 /* GIAO DIỆN KHÔI PHỤC MẬT KHẨU (FORGOT PASSWORD PANE)       */
 /* ======================================================== */
 
-.auth-forgot-panel {
-  display: flex;
-  flex-direction: column;
-}
-
 .auth-pane-top-back-btn {
+  position: absolute;
+  top: 18px;
+  left: 30px;
   background: none;
   border: none;
   padding: 0;
-  margin-bottom: 12px;
+  margin: 0;
   color: #bef264 !important; /* XANH LIME NỔI BẬT TRÊN KÍNH MỜ */
   font-weight: 700;
   font-size: 13px;
@@ -43848,10 +43866,13 @@ body.page-login main {
   gap: 6px;
   width: fit-content;
   text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
+  z-index: 5;
+  transition: all 0.2s ease;
 }
 
 .auth-pane-top-back-btn:hover {
   color: #d9f99d !important;
+  transform: translateX(-2px);
 }
 
 .auth-info-card {
@@ -43982,13 +44003,21 @@ body.page-login main {
 
 @media (max-width: 860px) {
   #loginPage.page {
-    height: auto !important;
+    display: none !important;
+  }
+
+  #loginPage.page.active-page {
+    display: flex !important;
+    position: fixed !important;
+    inset: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
     min-height: 100vh !important;
-    max-height: none !important;
+    max-height: 100vh !important;
     overflow-y: auto !important;
+    z-index: 9999 !important;
     background: url('public/assets/auth-bg.jpg?v=5') top center / cover no-repeat fixed, #0b2920 !important;
     padding: 0 !important;
-    display: flex !important;
     flex-direction: column !important;
     justify-content: flex-start !important;
     align-items: center !important;
@@ -44016,13 +44045,13 @@ body.page-login main {
     font-size: 16px !important;
   }
 
-  /* Khoảng không gian trên mobile để hình nền thư viện lộ rõ ~18vh */
+  /* Khoảng không gian trên mobile để hình nền thư viện lộ rõ ~14vh */
   .auth-book-stage {
     flex-direction: column !important;
     height: auto !important;
     min-height: unset !important;
     max-height: none !important;
-    margin: 16vh 0 0 0 !important;
+    margin: 14vh 0 0 0 !important;
     padding: 0 !important;
     width: 100% !important;
     max-width: 100vw !important;
@@ -44041,7 +44070,7 @@ body.page-login main {
     max-height: none !important;
   }
 
-  /* Cánh phải chuyển thành tấm kính mờ trượt lên từ dưới - CỐ ĐỊNH CHIỀU CAO 520px ĐỒNG NHẤT KHÔNG NHẢY */
+  /* Cánh phải chuyển thành tấm kính mờ trượt lên từ dưới */
   .auth-glass-panel {
     border-radius: 28px 28px 0 0 !important;
     border: 2px solid rgba(255, 255, 255, 0.45) !important;
@@ -44052,16 +44081,23 @@ body.page-login main {
     backdrop-filter: blur(28px) saturate(190%) !important;
     -webkit-backdrop-filter: blur(28px) saturate(190%) !important;
     box-shadow: 0 -12px 40px rgba(0, 0, 0, 0.45) !important;
-    padding: 24px 20px calc(36px + env(safe-area-inset-bottom, 20px)) 20px !important;
+    padding: 24px 20px calc(48px + env(safe-area-inset-bottom, 20px)) 20px !important;
     box-sizing: border-box !important;
-    height: 520px !important;
-    min-height: 520px !important;
-    max-height: 520px !important;
-    overflow-y: auto !important;
+    height: auto !important;
+    min-height: calc(100vh - 14vh) !important;
+    max-height: none !important;
+    overflow-y: visible !important;
     display: flex !important;
     flex-direction: column !important;
     justify-content: flex-start !important;
     color: #ffffff !important;
+  }
+
+  .auth-pane-top-back-btn {
+    position: relative !important;
+    top: 0 !important;
+    left: 0 !important;
+    margin-bottom: 14px !important;
   }
 
   .auth-panel-title {

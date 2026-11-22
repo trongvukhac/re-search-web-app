@@ -7085,8 +7085,8 @@ document.addEventListener("click", (e) => {
 // --- FORGOT PASSWORD FLOW ---
 function openForgotPasswordView() {
   if ($("#authForm")) $("#authForm").style.display = "none";
-  if ($("#forgotForm")) $("#forgotForm").style.display = "block";
-  if ($("#forgotStep1")) $("#forgotStep1").style.display = "block";
+  if ($("#forgotForm")) $("#forgotForm").style.display = "flex";
+  if ($("#forgotStep1")) $("#forgotStep1").style.display = "flex";
   if ($("#forgotStep2")) $("#forgotStep2").style.display = "none";
   if ($("#authEmail") && $("#forgotEmail") && $("#authEmail").value) {
     $("#forgotEmail").value = $("#authEmail").value.trim();
@@ -7096,8 +7096,8 @@ function openForgotPasswordView() {
 
 function closeForgotPasswordView() {
   if ($("#forgotForm")) $("#forgotForm").style.display = "none";
-  if ($("#authForm")) $("#authForm").style.display = "block";
-  if ($("#forgotStep1")) $("#forgotStep1").style.display = "block";
+  if ($("#authForm")) $("#authForm").style.display = "flex";
+  if ($("#forgotStep1")) $("#forgotStep1").style.display = "flex";
   if ($("#forgotStep2")) $("#forgotStep2").style.display = "none";
 }
 window.closeForgotPasswordView = closeForgotPasswordView;
@@ -7124,7 +7124,7 @@ if ($("#alreadyHaveCodeLink")) {
       $("#forgotStep2Email").value = $("#forgotEmail").value.trim();
     }
     $("#forgotStep1").style.display = "none";
-    $("#forgotStep2").style.display = "block";
+    $("#forgotStep2").style.display = "flex";
     if ($("#forgotCode")) $("#forgotCode").focus();
   });
 }
@@ -7133,7 +7133,7 @@ if ($("#forgotBackToStep1Btn")) {
   $("#forgotBackToStep1Btn").addEventListener("click", (e) => {
     e.preventDefault();
     $("#forgotStep2").style.display = "none";
-    $("#forgotStep1").style.display = "block";
+    $("#forgotStep1").style.display = "flex";
   });
 }
 
@@ -7159,7 +7159,7 @@ if ($("#forgotRequestSubmitBtn")) {
         $("#forgotStep2Email").value = data.email || email;
       }
       $("#forgotStep1").style.display = "none";
-      $("#forgotStep2").style.display = "block";
+      $("#forgotStep2").style.display = "flex";
       if ($("#forgotCode")) $("#forgotCode").focus();
     } catch (err) {
       toast(err.message);
