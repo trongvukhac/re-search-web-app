@@ -2145,12 +2145,48 @@ function createSession(response, userId, request = null) {
   );
   return csrf;
 }
-async function sendPasswordResetEmail(toEmail, displayName, code) {
+function escapeEmailHtml(str) {
+  return String(str || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function formatExpirationVN(expiresAt) {
+  try {
+    let dateStr = expiresAt || new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+    if (typeof dateStr === "string" && !dateStr.includes("T") && !dateStr.endsWith("Z")) {
+      dateStr = dateStr.replace(" ", "T") + "Z";
+    }
+    const d = new Date(dateStr);
+    const parts = new Intl.DateTimeFormat("vi-VN", {
+      timeZone: "Asia/Ho_Chi_Minh",
+      hour: "2-digit",
+      minute: "2-digit",
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour12: false,
+    }).formatToParts(d);
+    const p = {};
+    for (const part of parts) p[part.type] = part.value;
+    return `${p.hour}:${p.minute}, ngày ${p.day}/${p.month}/${p.year}`;
+  } catch (e) {
+    return new Date(expiresAt).toLocaleString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh" });
+  }
+}
+
+async function sendPasswordResetEmail(toEmail, displayName, code, expiresAt) {
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) {
     console.warn("[EMAIL] RESEND_API_KEY is not set. Skipped sending email.");
     return false;
   }
+  const formattedExpiresAt = formatExpirationVN(expiresAt);
+  const safeName = escapeEmailHtml(displayName || "bạn");
+
   try {
     const res = await fetch("https://api.resend.com/emails", {
       method: "POST",
@@ -2162,49 +2198,109 @@ async function sendPasswordResetEmail(toEmail, displayName, code) {
         from: "RE:SEARCH <noreply@research.id.vn>",
         to: [toEmail],
         subject: `[RE:SEARCH] Mã xác thực đặt lại mật khẩu: ${code}`,
-        html: `
-<!DOCTYPE html>
+        html: `<!DOCTYPE html>
 <html lang="vi">
 <head>
   <meta charset="utf-8">
-  <title>Mã xác thực đặt lại mật khẩu</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mã xác thực đặt lại mật khẩu - RE:SEARCH</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Unbounded:wght@600;700;800&display=swap" rel="stylesheet">
+  <!--[if mso]>
+  <style type="text/css">
+    body, table, td, p, div, span { font-family: Arial, sans-serif !important; }
+  </style>
+  <![endif]-->
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Unbounded:wght@600;700;800&display=swap');
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: #f1f5f9;
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+    .unbounded-font {
+      font-family: 'Unbounded', 'Trebuchet MS', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+    }
+  </style>
 </head>
-<body style="margin: 0; padding: 24px 0; background-color: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+<body style="margin: 0; padding: 32px 12px; background-color: #f1f5f9; font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
   <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0">
     <tr>
       <td align="center">
-        <table role="presentation" width="100%" style="max-width: 540px; margin: 0 auto; background: #ffffff; border-radius: 16px; border: 1px solid #e2e8f0; box-shadow: 0 4px 18px rgba(0,0,0,0.05); overflow: hidden;">
+        <!-- Main Card Container -->
+        <table role="presentation" width="100%" style="max-width: 580px; margin: 0 auto; background: #ffffff; border-radius: 18px; border: 1px solid #e2e8f0; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.06), 0 8px 10px -6px rgba(0,0,0,0.04); overflow: hidden;">
+          
+          <!-- Header Banner -->
           <tr>
-            <td style="background: linear-gradient(135deg, #123f31 0%, #1e5a47 100%); padding: 32px 24px; text-align: center;">
-              <h1 style="margin: 0; color: #ffffff; font-size: 24px; letter-spacing: 2px; font-weight: 800;">RE<span style="color: #6ee7b7;">:</span>SEARCH</h1>
-              <p style="margin: 6px 0 0 0; color: rgba(255,255,255,0.85); font-size: 13px;">Cộng đồng học thuật &amp; Nghiên cứu khoa học</p>
+            <td style="padding: 0; line-height: 0; background-color: #0b2920; border-top-left-radius: 18px; border-top-right-radius: 18px; overflow: hidden;">
+              <img src="https://research.id.vn/public/assets/email-banner.jpg" alt="RE:SEARCH" width="580" style="display: block; width: 100%; max-width: 580px; height: auto; border: 0; outline: none; text-decoration: none;" />
             </td>
           </tr>
+
+          <!-- Card Content -->
           <tr>
             <td style="padding: 32px 28px;">
-              <p style="margin: 0 0 16px 0; font-size: 15px; color: #1e293b; line-height: 1.6;">
-                Xin chào <strong>${displayName || "bạn"}</strong>,
-              </p>
-              <p style="margin: 0 0 24px 0; font-size: 14px; color: #475569; line-height: 1.6;">
-                Hệ thống nhận được yêu cầu đặt lại mật khẩu cho tài khoản RE:SEARCH gắn với email này. Dưới đây là mã xác thực 6 chữ số của bạn:
+              <p style="margin: 0 0 16px 0; font-size: 15.5px; color: #1e293b; line-height: 1.6;">
+                Chào <strong>${safeName}</strong>,
               </p>
               
-              <div style="background: #f0fdf4; border: 2px dashed #123f31; border-radius: 12px; padding: 18px 20px; text-align: center; margin: 28px 0;">
-                <span style="display: inline-block; font-size: 36px; font-weight: 800; letter-spacing: 8px; color: #123f31; font-family: monospace;">${code}</span>
+              <p style="margin: 0 0 22px 0; font-size: 14.5px; color: #475569; line-height: 1.6;">
+                RE:SEARCH đã nhận được yêu cầu đặt lại mật khẩu cho tài khoản của bạn. Dưới đây là thông tin xác thực:
+              </p>
+              
+              <!-- Mã xác thực Box -->
+              <div style="margin: 0 0 16px 0; background-color: #f0fdf4; border: 2px dashed #123f31; border-radius: 14px; padding: 18px 20px; text-align: center;">
+                <div style="font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; color: #166534; margin-bottom: 8px;">
+                  Mã xác thực
+                </div>
+                <div class="unbounded-font" style="font-family: 'Unbounded', 'Trebuchet MS', -apple-system, BlinkMacSystemFont, monospace, sans-serif; font-size: 36px; font-weight: 800; letter-spacing: 8px; color: #123f31; line-height: 1.2;">
+                  ${code}
+                </div>
               </div>
 
-              <p style="margin: 0 0 12px 0; font-size: 13px; color: #64748b; line-height: 1.6;">
-                ⏱️ Mã xác thực này có hiệu lực trong vòng <strong>24 giờ</strong> và sẽ tự động bị xóa sau khi bạn đổi mật khẩu thành công.
+              <!-- Thời hạn sử dụng Box -->
+              <div style="margin: 0 0 24px 0; background-color: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 14px; padding: 14px 20px; text-align: center;">
+                <div style="font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; color: #64748b; margin-bottom: 6px;">
+                  Thời hạn sử dụng
+                </div>
+                <div class="unbounded-font" style="font-family: 'Unbounded', 'Trebuchet MS', -apple-system, BlinkMacSystemFont, sans-serif; font-size: 18px; font-weight: 700; color: #0f172a; line-height: 1.3;">
+                  ${formattedExpiresAt}
+                </div>
+              </div>
+
+              <p style="margin: 0 0 20px 0; font-size: 14px; color: #334155; line-height: 1.6;">
+                Vui lòng nhập mã xác thực trên tại trang đặt lại mật khẩu để tiếp tục.
               </p>
-              <p style="margin: 0; font-size: 13px; color: #94a3b8; line-height: 1.6;">
-                Nếu bạn không thực hiện yêu cầu này, vui lòng bỏ qua email và tài khoản của bạn vẫn được bảo vệ an toàn.
+
+              <!-- Lưu ý Box -->
+              <div style="margin: 0 0 20px 0; background-color: #fffbeb; border-left: 4px solid #f59e0b; border-radius: 6px; padding: 14px 16px;">
+                <p style="margin: 0 0 8px 0; font-size: 13.5px; font-weight: 700; color: #92400e;">
+                  Lưu ý:
+                </p>
+                <ul style="margin: 0; padding-left: 18px; font-size: 13px; color: #78350f; line-height: 1.6;">
+                  <li style="margin-bottom: 5px;">Mã xác thực chỉ có hiệu lực đến thời gian nêu trên.</li>
+                  <li>Không chia sẻ mã xác thực với bất kỳ ai.</li>
+                </ul>
+              </div>
+
+              <p style="margin: 0 0 20px 0; font-size: 13px; color: #64748b; line-height: 1.6;">
+                Trong trường hợp bạn không thực hiện yêu cầu này, vui lòng bỏ qua email. Tài khoản của bạn sẽ không bị thay đổi.
+              </p>
+
+              <p style="margin: 0; font-size: 14.5px; font-weight: 700; color: #123f31; line-height: 1.5;">
+                Cảm ơn bạn đã sử dụng RE:SEARCH!
               </p>
             </td>
           </tr>
+
+          <!-- Subtle Footer in card -->
           <tr>
-            <td style="background: #f8fafc; padding: 20px; text-align: center; border-top: 1px solid #f1f5f9;">
+            <td style="background-color: #f8fafc; padding: 18px 24px; text-align: center; border-top: 1px solid #f1f5f9;">
               <p style="margin: 0; font-size: 12px; color: #94a3b8; line-height: 1.5;">
-                Đây là email tự động từ máy chủ RE:SEARCH (research.id.vn).<br>
+                Đây là email tự động từ máy chủ <strong style="color: #64748b;">RE:SEARCH</strong> (<a href="https://research.id.vn" target="_blank" style="color: #123f31; text-decoration: none; font-weight: 600;">research.id.vn</a>).<br>
                 Vui lòng không trả lời trực tiếp email này.
               </p>
             </td>
@@ -2214,8 +2310,7 @@ async function sendPasswordResetEmail(toEmail, displayName, code) {
     </tr>
   </table>
 </body>
-</html>
-        `,
+</html>`,
       }),
     });
     const result = await res.json();
@@ -4262,7 +4357,7 @@ async function api(request, response, url) {
     }
 
     // Tự động gửi email mã OTP qua Resend
-    sendPasswordResetEmail(user.email, user.display_name, code).catch((err) => {
+    sendPasswordResetEmail(user.email, user.display_name, code, expiresAt).catch((err) => {
       console.error("[PASSWORD_RESET] Error in async email send:", err);
     });
 
@@ -6085,7 +6180,7 @@ async function api(request, response, url) {
 
     const reqPeriod = ["week", "month", "quarter"].includes(url.searchParams.get("period")) ? url.searchParams.get("period") : "week";
     const currentUserId = user ? user.id : null;
-    
+
     // 3 bảng có chu kỳ reset: Đại sứ tri thức (contributions), Tinh thông thần tốc (competition), Ong chăm chỉ (study)
     const contribWeek = getContributionsPeriodLeaderboard("week", currentUserId);
     const contribMonth = getContributionsPeriodLeaderboard("month", currentUserId);
