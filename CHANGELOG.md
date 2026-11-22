@@ -4,6 +4,19 @@ Tất cả các thay đổi đáng chú ý của dự án **RE:SEARCH — Cộng
 
 ---
 
+## [4.7.12] - 2026-11-23
+### Nâng cấp hiển thị thời gian Bảng xếp hạng Ong chăm chỉ
+- **Hiển thị đầy đủ giờ và phút tự học linh hoạt**:
+  - Tích hợp số phút thực tế vào điểm số thời gian học tập (ví dụ: `10g 9p tự học` trên máy tính và `10g 9p` trên điện thoại di động).
+  - Đối với thời lượng dưới 1 giờ (< 60 phút): tự động rút gọn chỉ hiển thị số phút (ví dụ: `40p tự học` trên máy tính và `40p` trên điện thoại di động, thay vì `0g 40p`).
+  - Đối với số giờ chẵn (phút = 0): hiển thị gọn gàng (ví dụ: `1g tự học`, `1g`).
+- **Bảo toàn số phút trong dữ liệu API máy chủ**:
+  - Cập nhật các endpoint BXH Ong chăm chỉ theo chu kỳ và toàn thời gian trả về đầy đủ `totalMinutes` và `score` theo phút, không làm tròn mất số lẻ.
+- **Đồng bộ phiên bản v4.7.12 toàn diện (Version Synchronization)**:
+  - Cập nhật số hiệu `4.7.12` trên toàn bộ hệ thống (`package.json`, `server.js`, `app.js`, `index.html`, admin badge và changelog).
+
+---
+
 ## [4.7.11] - 2026-11-23
 ### Chuẩn hoá cơ chế reset Bảng xếp hạng theo chu kỳ
 - **Xoá bỏ cơ chế Fallback toàn thời gian khi qua giờ reset**:

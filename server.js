@@ -32,7 +32,7 @@ function computeAppBuildId() {
   }
 }
 const APP_BUILD_ID = computeAppBuildId();
-const APP_VERSION = "4.7.11";
+const APP_VERSION = "4.7.12";
 
 // ============================================================
 // FEATURE FLAG & ROSTER: Kích hoạt tính năng RE:SEARCH ARENA & 2 Bảng thi (Lớp 06 & 07)
@@ -5920,7 +5920,9 @@ async function api(request, response, url) {
         role: u.role,
         coverImage: u.coverImage || "default",
         namecardFrame: u.namecardFrame || "none",
-        score: Math.floor(mins / 60),
+        totalMinutes: mins,
+        score: mins,
+        hours: Math.floor(mins / 60),
         unit: "giờ tự học",
         streakTier: getAuthorStreakTier(u.id),
         rank: idx + 1
@@ -5933,6 +5935,7 @@ async function api(request, response, url) {
       const userIdx = rows.findIndex(r => r.id === currentUserId);
       if (userIdx !== -1) {
         const u = rows[userIdx];
+        const mins = Number(u.periodMinutes || 0);
         currentUserEntry = {
           userId: u.id,
           id: u.id,
@@ -5942,7 +5945,9 @@ async function api(request, response, url) {
           role: u.role,
           coverImage: u.coverImage || "default",
           namecardFrame: u.namecardFrame || "none",
-          score: Math.floor(Number(u.periodMinutes || 0) / 60),
+          totalMinutes: mins,
+          score: mins,
+          hours: Math.floor(mins / 60),
           unit: "giờ tự học",
           streakTier: getAuthorStreakTier(u.id),
           rank: userIdx + 1,
@@ -5961,7 +5966,9 @@ async function api(request, response, url) {
             role: u.role,
             coverImage: u.coverImage || "default",
             namecardFrame: u.namecardFrame || "none",
+            totalMinutes: 0,
             score: 0,
+            hours: 0,
             unit: "giờ tự học",
             streakTier: getAuthorStreakTier(u.id),
             rank: rows.length + 1,
@@ -6152,6 +6159,7 @@ async function api(request, response, url) {
       coverImage: u.coverImage || "default",
       namecardFrame: u.namecardFrame || "none",
       totalMinutes: Number(u.totalMinutes),
+      score: Number(u.totalMinutes),
       hours: Math.floor(Number(u.totalMinutes) / 60),
       streakTier: getAuthorStreakTier(u.id),
       reachedAt: u.reachedAt,
@@ -6269,6 +6277,7 @@ async function api(request, response, url) {
           rank: myStudyRank,
           totalMinutes: myStudyMinutes,
           hours: myStudyHours,
+          score: myStudyMinutes,
           isParticipant: !isAdmin && !isLecturer
         }
       };

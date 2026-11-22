@@ -671,7 +671,7 @@ function triggerAppUpdate(newBuildId, newVersion) {
     return `${m}:${String(sec).padStart(2, "0")}`;
   };
 
-  const displayVer = newVersion || targetUpdateVersion || window.APP_VERSION || "4.7.11";
+  const displayVer = newVersion || targetUpdateVersion || window.APP_VERSION || "4.7.12";
 
   banner.innerHTML = `
     <div style="font-size: 22px;">🚀</div>
@@ -693,7 +693,7 @@ function triggerAppUpdate(newBuildId, newVersion) {
   }, 1000);
 }
 
-window.APP_VERSION = "4.7.11";
+window.APP_VERSION = "4.7.12";
 
 function isVersionAfter(vCurrent, vTarget = "4.7.1") {
   if (!vCurrent) return false;
@@ -758,9 +758,9 @@ window.closeVersionChangelogModal = closeVersionChangelogModal;
 
 async function loadAdminChangelog(version) {
   const select = document.getElementById("adminChangelogVersionSelect");
-  const targetVer = version || (select ? select.value : (window.APP_VERSION || "4.7.11"));
+  const targetVer = version || (select ? select.value : (window.APP_VERSION || "4.7.12"));
   const badge = document.getElementById("adminCurrentVersionBadge");
-  if (badge) badge.textContent = `v${window.APP_VERSION || "4.7.11"}`;
+  if (badge) badge.textContent = `v${window.APP_VERSION || "4.7.12"}`;
   try {
     const res = await fetch(`/api/changelog?version=${encodeURIComponent(targetVer)}`);
     const data = await res.json();
@@ -779,7 +779,7 @@ window.onAdminChangelogVersionChange = onAdminChangelogVersionChange;
 
 async function saveAdminChangelog() {
   const select = document.getElementById("adminChangelogVersionSelect");
-  const targetVer = select ? select.value : (window.APP_VERSION || "4.7.11");
+  const targetVer = select ? select.value : (window.APP_VERSION || "4.7.12");
   const input = document.getElementById("adminChangelogInput");
   const btn = document.getElementById("btnSaveAdminChangelog");
   const text = input ? input.value.trim() : "";
@@ -2361,10 +2361,11 @@ function renderLeaderboard() {
     list = cachedLeaderboardData.studyLeaderboard || [];
     if (cachedLeaderboardData.currentUser && cachedLeaderboardData.currentUser.study?.isParticipant) {
       const myStudy = cachedLeaderboardData.currentUser.study;
+      const myMins = myStudy.totalMinutes ?? (myStudy.hours != null ? myStudy.hours * 60 : 0);
       userRankInfo = {
         ...cachedLeaderboardData.currentUser,
         rank: myStudy.rank,
-        valDisplay: `${myStudy.hours ?? Math.floor((myStudy.totalMinutes || 0) / 60)}h`
+        valDisplay: formatStudyDurationText(myMins).mobile
       };
     }
   }
@@ -2404,7 +2405,7 @@ function renderLeaderboard() {
             ? `⭐ ${user.score || 0}`
             : (isLikes
               ? `<span style="display:inline-flex;align-items:center;gap:4px;color:#e11d48;font-weight:700;"><svg width="13" height="13" viewBox="0 0 24 24" fill="#e11d48"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg> ${user.likesCount || 0}</span>`
-              : `${user.hours ?? Math.floor((user.totalMinutes || 0) / 60)}h`)));
+              : formatStudyDurationText(user.totalMinutes ?? (user.hours != null ? user.hours * 60 : (user.score || 0))).mobile)));
 
       const coverStyle = getMiniCoverStyle(user.coverImage);
 
@@ -20200,7 +20201,41 @@ window.switchArenaPodiumConcept = switchArenaPodiumConcept;
 const ARENA_DEFAULT_SCORE_STAR_SVG = `<svg class="ui-icon champ-score-star" width="13" height="13" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>`;
 const XMAS_LIKE_HEART_SVG = `<svg class="ui-icon xmas-lb-heart-icon" width="13" height="13" viewBox="0 0 24 24" fill="#e11d48" stroke="#e11d48" stroke-width="1.2" aria-hidden="true"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>`;
 
-function getHomeLeaderboardScoreHtml(options, scoreVal, scoreIconHtml, streakTier, isTop3 = false) {
+function formatStudyDurationText(rawVal) {
+  let totalMins = 0;
+  if (typeof rawVal === "number") {
+    totalMins = rawVal;
+  } else if (typeof rawVal === "string") {
+    const trimmed = rawVal.trim();
+    if (trimmed.endsWith("h") || trimmed.endsWith("g")) {
+      totalMins = (parseFloat(trimmed) || 0) * 60;
+    } else {
+      totalMins = parseFloat(trimmed) || 0;
+    }
+  }
+  totalMins = Math.max(0, Math.round(totalMins));
+
+  const hours = Math.floor(totalMins / 60);
+  const mins = totalMins % 60;
+
+  let baseTime = "";
+  if (hours > 0 && mins > 0) {
+    baseTime = `${hours}g ${mins}p`;
+  } else if (hours > 0) {
+    baseTime = `${hours}g`;
+  } else {
+    // Dưới 1 giờ (hoặc 0 phút) chỉ hiện số phút
+    baseTime = `${mins}p`;
+  }
+
+  return {
+    desktop: `${baseTime} tự học`,
+    mobile: baseTime
+  };
+}
+window.formatStudyDurationText = formatStudyDurationText;
+
+function getHomeLeaderboardScoreHtml(options, scoreVal, scoreIconHtml, streakTier, isTop3 = false, userObj = null) {
   if (!options.isHomeLb) {
     return `${scoreIconHtml}${scoreVal}`;
   }
@@ -20225,8 +20260,12 @@ function getHomeLeaderboardScoreHtml(options, scoreVal, scoreIconHtml, streakTie
     desktopScore = `${scoreIconHtml}<span>${cleanScore} điểm</span>`;
     mobileScore = `${scoreIconHtml}<span>${cleanScore}</span><span style="display:inline-flex;align-items:center;margin-left:2px;color:#f59e0b;">${ARENA_DEFAULT_SCORE_STAR_SVG}</span>`;
   } else if (cat === "study") {
-    desktopScore = `${scoreIconHtml}<span>${cleanScore} giờ tự học</span>`;
-    mobileScore = `${scoreIconHtml}<span>${cleanScore}h</span>`;
+    const actualMins = (userObj && userObj.totalMinutes != null)
+      ? userObj.totalMinutes
+      : scoreVal;
+    const studyFmt = formatStudyDurationText(actualMins);
+    desktopScore = `${scoreIconHtml}<span>${studyFmt.desktop}</span>`;
+    mobileScore = `${scoreIconHtml}<span>${studyFmt.mobile}</span>`;
   } else if (cat === "likes") {
     desktopScore = `${scoreIconHtml}<span>${cleanScore} lượt yêu thích</span>`;
     mobileScore = `${scoreIconHtml}<span>${cleanScore}</span>`;
@@ -20247,12 +20286,14 @@ function buildArenaLeaderboardRowHtml(u, isCurrent, options = {}) {
   const rankBadgeText = isPinnedMyRow ? `#${u.rank}` : String(u.rank);
   const rankBadgeClass = isPinnedMyRow ? "rank-me" : `rank-${u.rank}`;
   const rowExtraClass = isPinnedMyRow ? "top-11-plus-row lb-my-rank-row" : (isCurrent ? "is-current-user is-me" : "");
-  const scoreVal = options.useLikesCount ? Number(u.likesCount || 0) : u.score;
+  const scoreVal = options.useLikesCount
+    ? Number(u.likesCount || 0)
+    : (options.category === "study" && u.totalMinutes != null ? u.totalMinutes : u.score);
   const targetUserId = u.userId || u.id;
 
   // Icon chuỗi chỉ xuất hiện ở bảng người giữ lửa (cạnh số chuỗi), không xuất hiện cạnh tên trên BXH trang chủ
   const nameFlameHtml = options.isHomeLb ? "" : getFlameSVG(u.streakTier, 15);
-  const scoreDisplay = getHomeLeaderboardScoreHtml(options, scoreVal, scoreIconHtml, u.streakTier, false);
+  const scoreDisplay = getHomeLeaderboardScoreHtml(options, scoreVal, scoreIconHtml, u.streakTier, false, u);
 
   return `
     <div class="comp-lb-row leaderboard-item ${isPinnedMyRow ? "is-current-user is-me " + rowExtraClass : rowExtraClass}" data-namecard-user-id="${targetUserId}" style="cursor: pointer;" title="Xem thẻ tên">
@@ -20316,11 +20357,13 @@ function renderArenaTop3(top1, top2, top3, isWeek = false, options = {}) {
       flameSize = 14;
       scoreClass = "bronze-score";
     }
-    const scoreVal = options.useLikesCount ? Number(user.likesCount || 0) : user.score;
+    const scoreVal = options.useLikesCount
+      ? Number(user.likesCount || 0)
+      : (options.category === "study" && user.totalMinutes != null ? user.totalMinutes : user.score);
 
     // Icon chuỗi chỉ xuất hiện ở bảng người giữ lửa (cạnh số chuỗi), không xuất hiện cạnh tên trên BXH trang chủ
     const nameFlameHtml = options.isHomeLb ? "" : getFlameSVG(user.streakTier, flameSize);
-    const scoreDisplay = getHomeLeaderboardScoreHtml(options, scoreVal, scoreIconHtml, user.streakTier, true);
+    const scoreDisplay = getHomeLeaderboardScoreHtml(options, scoreVal, scoreIconHtml, user.streakTier, true, user);
 
     return `
       <div class="arena-champion-card mini-namecard rank-${rank}" data-namecard-user-id="${targetUserId}" data-frame="${activeFrame}" style="cursor: pointer;" title="Xem thẻ tên">
@@ -29377,14 +29420,18 @@ function renderCurrentHomeLeaderboard() {
       };
     } else if (cat === "study" && data.studyLeaderboard) {
       listData = {
-        top10: (data.studyLeaderboard || []).slice(0, 10).map((u, i) => ({
-          ...u,
-          userId: u.userId || u.id,
-          id: u.id || u.userId,
-          rank: u.rank || (i + 1),
-          score: u.hours != null ? Number(String(u.hours).replace(/h$/i, "")) : Math.floor((u.totalMinutes || 0) / 60),
-          unit: "giờ tự học"
-        })),
+        top10: (data.studyLeaderboard || []).slice(0, 10).map((u, i) => {
+          const m = u.totalMinutes != null ? u.totalMinutes : (u.hours != null ? Number(String(u.hours).replace(/h$/i, "")) * 60 : (u.score || 0));
+          return {
+            ...u,
+            userId: u.userId || u.id,
+            id: u.id || u.userId,
+            rank: u.rank || (i + 1),
+            totalMinutes: m,
+            score: m,
+            unit: "giờ tự học"
+          };
+        }),
         currentUserEntry: null
       };
     } else {
