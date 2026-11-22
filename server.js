@@ -4293,6 +4293,44 @@ async function api(request, response, url) {
     const freshUser = db.prepare("SELECT * FROM users WHERE id=?").get(user.id);
     return json(response, 200, { user: publicUser(freshUser), csrfToken });
   }
+  if (method === "POST" && pathName === "/api/auth/google") {
+    const { credential } = await readJSON(request);
+    if (!credential) return error(response, 400, "Thiếu Google credential token.");
+    try {
+      const gRes = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(credential)}`);
+      if (!gRes.ok) {
+        return error(response, 401, "Google token không hợp lệ hoặc đã hết hạn.");
+      }
+      const gUser = await gRes.json();
+      const email = (gUser.email || "").trim().toLowerCase();
+      if (!email) return error(response, 400, "Không lấy được email từ tài khoản Google.");
+
+      let user = db.prepare("SELECT * FROM users WHERE email=?").get(email);
+      if (!user) {
+        const isVLU = isVanLangDomain(email);
+        const role = isVLU ? "student" : "member";
+        const displayName = (gUser.name || email.split("@")[0]).slice(0, 80);
+        const now = Date.now();
+        const randPass = crypto.randomBytes(32).toString("hex");
+        const res = db.prepare(
+          "INSERT INTO users(email,password_hash,display_name,role,last_active_at) VALUES (?,?,?,?,?)"
+        ).run(email, hashPassword(randPass), displayName, role, now);
+        user = db.prepare("SELECT * FROM users WHERE id=?").get(res.lastInsertRowid);
+        db.prepare("INSERT OR IGNORE INTO user_streak_shields (user_id, shields, last_milestone_rewarded) VALUES (?, 1, 0)").run(user.id);
+        logShieldTransaction(user.id, "add", 1, 1, "Tặng 1 khiên khởi đầu chào đón thành viên mới");
+      }
+
+      recordUserActivity(user.id);
+      recordEventLoginDay(user.id);
+      checkAndGrantLimitedItems(user.id);
+      const csrfToken = createSession(response, user.id, request);
+      const freshUser = db.prepare("SELECT * FROM users WHERE id=?").get(user.id);
+      return json(response, 200, { user: publicUser(freshUser), csrfToken });
+    } catch (err) {
+      console.error("[GOOGLE_AUTH_ERROR]", err);
+      return error(response, 500, "Lỗi kết nối tới máy chủ Google.");
+    }
+  }
   if (method === "POST" && pathName === "/api/auth/logout") {
     const user = requireUser(request, response);
     if (!user || !requireCsrf(request, response, user)) return;

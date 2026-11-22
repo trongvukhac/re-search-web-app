@@ -2974,16 +2974,22 @@ async function hydrateServer(force = false) {
   }
 }
 function openAuth() {
-  const modal = $("#authModal");
-  modal.classList.remove("registering");
-  $$(".auth-tab").forEach((tab, i) => tab.classList.toggle("active", i === 0));
-  $("#authTitle").textContent = "Đăng nhập để tiếp tục";
-  $("#authSubmit").innerHTML = "Đăng nhập <span>→</span>";
-  $("#authName").required = false;
-  $("#authForm").reset();
-  modal.showModal();
-  $("#authEmail").focus();
+  if (currentActiveRoute !== "login") {
+    window.authReturnRoute = currentActiveRoute || "home";
+  }
+  closeForgotPasswordView();
+  setAuthMode("login");
+  go("login");
 }
+window.openAuth = openAuth;
+
+function exitAuthPage() {
+  const target = (window.authReturnRoute && window.authReturnRoute !== "login") ? window.authReturnRoute : "home";
+  window.authReturnRoute = null;
+  go(target);
+}
+window.exitAuthPage = exitAuthPage;
+
 
 function stripHtml(html) {
   if (!html) return "";
@@ -3885,6 +3891,13 @@ function go(rawRoute, scrollToTop = true) {
   } else {
     document.body.classList.add("page-post-detail");
     $("#christmasHeaderGarland")?.style.setProperty("display", "none", "important");
+  }
+
+  if (baseRoute === "login") {
+    document.body.classList.add("page-login");
+    if (typeof hideMobileNav === "function") hideMobileNav();
+  } else {
+    document.body.classList.remove("page-login");
   }
 
   const isSameRoute = (currentActiveRoute === baseRoute);
@@ -7012,24 +7025,35 @@ $$(".identity-choice").forEach((btn) =>
     );
   }),
 );
-$$("#authModal .auth-tab[data-auth-mode]").forEach((tab) =>
+function setAuthMode(mode) {
+  const isRegister = (mode === "register");
+  $("#loginPage")?.classList.toggle("registering", isRegister);
+  $("#authModal")?.classList.toggle("registering", isRegister);
+  $$(".auth-tab[data-auth-mode]").forEach((t) => t.classList.toggle("active", t.dataset.authMode === mode));
+  const title = $("#authTitle");
+  const sub = $("#authSubTitle");
+  const submitBtn = $("#authSubmit");
+  const submitText = submitBtn?.querySelector(".auth-cutout-btn-text");
+  const authName = $("#authName");
+  const authPass = $("#authPassword");
+  if (title) title.textContent = isRegister ? "Tạo tài khoản mới" : "Đăng nhập để tiếp tục";
+  if (sub) sub.textContent = isRegister ? "Gia nhập cộng đồng học thuật RE:SEARCH với hơn 30.000 sinh viên" : "Chào mừng bạn quay trở lại với không gian nghiên cứu RE:SEARCH";
+  if (submitText) {
+    submitText.textContent = isRegister ? "Tạo tài khoản" : "Đăng nhập";
+  } else if (submitBtn) {
+    submitBtn.innerHTML = isRegister ? "Tạo tài khoản <span>→</span>" : "Đăng nhập <span>→</span>";
+  }
+  if (authName) authName.required = isRegister;
+  if (authPass) authPass.autocomplete = isRegister ? "new-password" : "current-password";
+  if ($("#authForgotWrapper")) {
+    $("#authForgotWrapper").style.display = isRegister ? "none" : "flex";
+  }
+}
+window.setAuthMode = setAuthMode;
+
+$$(".auth-tab[data-auth-mode]").forEach((tab) =>
   tab.addEventListener("click", () => {
-    const registering = tab.dataset.authMode === "register";
-    $("#authModal").classList.toggle("registering", registering);
-    $$("#authModal .auth-tab[data-auth-mode]").forEach((t) => t.classList.toggle("active", t === tab));
-    $("#authTitle").textContent = registering
-      ? "Tạo tài khoản mới"
-      : "Đăng nhập để tiếp tục";
-    $("#authSubmit").innerHTML = registering
-      ? "Tạo tài khoản <span>→</span>"
-      : "Đăng nhập <span>→</span>";
-    $("#authName").required = registering;
-    $("#authPassword").autocomplete = registering
-      ? "new-password"
-      : "current-password";
-    if ($("#authForgotWrapper")) {
-      $("#authForgotWrapper").style.display = registering ? "none" : "flex";
-    }
+    setAuthMode(tab.dataset.authMode);
   }),
 );
 
@@ -7074,7 +7098,11 @@ function openForgotPasswordView() {
 function closeForgotPasswordView() {
   if ($("#forgotForm")) $("#forgotForm").style.display = "none";
   if ($("#authForm")) $("#authForm").style.display = "block";
+  if ($("#forgotStep1")) $("#forgotStep1").style.display = "block";
+  if ($("#forgotStep2")) $("#forgotStep2").style.display = "none";
 }
+window.closeForgotPasswordView = closeForgotPasswordView;
+window.openForgotPasswordView = openForgotPasswordView;
 
 if ($("#authForgotPasswordBtn")) {
   $("#authForgotPasswordBtn").addEventListener("click", (e) => {
@@ -7217,7 +7245,7 @@ $("#forgotEmail")?.addEventListener("keydown", (e) => {
 $("#authForm").addEventListener("submit", async (e) => {
   e.preventDefault();
   setSubmitLoading(e, true);
-  const registering = $("#authModal").classList.contains("registering");
+  const registering = $("#loginPage")?.classList.contains("registering") || $("#authModal")?.classList.contains("registering");
   try {
     const payload = {
       email: $("#authEmail").value.trim(),
@@ -7230,7 +7258,8 @@ $("#authForm").addEventListener("submit", async (e) => {
     );
     csrfToken = data.csrfToken;
     applySession(data.user);
-    $("#authModal").close();
+    const authModal = $("#authModal");
+    if (authModal && typeof authModal.close === "function" && authModal.open) authModal.close();
     await hydrateServer();
     toast(
       registering
@@ -7238,12 +7267,23 @@ $("#authForm").addEventListener("submit", async (e) => {
         : "Đăng nhập thành công.",
     );
     checkAndShowBanner();
+    exitAuthPage();
   } catch (err) {
     toast(err.message);
   } finally {
     setSubmitLoading(e, false);
   }
 });
+
+window.handleSocialClick = function (provider) {
+  if (provider === "google") {
+    toast("Tính năng đăng nhập Google đang sẵn sàng (kết nối trực tiếp miễn phí).");
+  } else if (provider === "microsoft") {
+    toast("Tính năng đăng nhập Microsoft sinh viên Văn Lang (@vanlanguni.vn) đang sẵn sàng.");
+  } else if (provider === "apple") {
+    toast("Tính năng đăng nhập Apple ID đang sẵn sàng.");
+  }
+};
 let questionEditor;
 let docDescEditor;
 let editEditor;

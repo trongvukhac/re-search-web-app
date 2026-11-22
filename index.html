@@ -4054,6 +4054,315 @@
       </div>
       </div>
     </section>
+
+    <!-- ======================================================== -->
+    <!-- TRANG XÁC THỰC / ĐĂNG NHẬP / ĐĂNG KÝ / QUÊN MẬT KHẨU (#LOGIN) -->
+    <!-- ======================================================== -->
+    <section id="loginPage" class="page login-page" data-page="login" aria-label="Trang đăng nhập RE:SEARCH">
+      <!-- Thanh điều khiển trên cùng (Nút quay lại, Logo lò xo động, Đổi theme) -->
+      <header class="auth-top-bar">
+        <button type="button" class="auth-nav-pill auth-back-pill" onclick="exitAuthPage()" title="Quay về trang trước">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="19" y1="12" x2="5" y2="12"></line>
+            <polyline points="12 19 5 12 12 5"></polyline>
+          </svg>
+          <span>Trang chủ</span>
+        </button>
+
+        <!-- Cụm logo RE:SEARCH hiệu ứng lò xo -->
+        <div class="auth-spring-logo-wrap" onclick="exitAuthPage()" title="RE:SEARCH">
+          <div class="auth-spring-logo-inner">
+            <img class="brand-logo-light" src="public/assets/logo.png?v=4" alt="RE:SEARCH" />
+            <img class="brand-logo-dark" src="public/assets/logodark.png?v=4" alt="RE:SEARCH" />
+            <span class="auth-spring-badge">CỘNG ĐỒNG HỌC THUẬT</span>
+          </div>
+        </div>
+
+        <button type="button" class="auth-nav-pill auth-theme-pill" onclick="toggleTheme()" aria-label="Đổi giao diện Sáng / Tối" title="Chuyển chế độ Sáng / Tối">
+          <svg class="theme-sun-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="5"></circle>
+            <line x1="12" y1="1" x2="12" y2="3"></line>
+            <line x1="12" y1="21" x2="12" y2="23"></line>
+            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+            <line x1="1" y1="12" x2="3" y2="12"></line>
+            <line x1="21" y1="12" x2="23" y2="12"></line>
+            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+          </svg>
+        </button>
+      </header>
+
+      <!-- Sân khấu sách 2 trang (Desktop) & Khối trượt kính mờ (Mobile) -->
+      <div class="auth-book-stage">
+        
+        <!-- NỬA TRÁI: Khung trắng không nền nhìn xuyên thấu cảnh thư viện phía sau -->
+        <div class="auth-book-wing auth-wing-left">
+          <div class="auth-cutout-frame">
+            <!-- Huy hiệu cộng đồng phía trên -->
+            <div class="auth-proof-badge">
+              <div class="auth-avatar-stack">
+                <span class="avatar-circle av-1">🎓</span>
+                <span class="avatar-circle av-2">🔬</span>
+                <span class="avatar-circle av-3">📚</span>
+              </div>
+              <div class="auth-proof-text">
+                <strong class="auth-proof-count">30.000+ Sinh viên</strong>
+                <span class="auth-proof-label">Cộng đồng học thuật &amp; NCKH</span>
+              </div>
+            </div>
+
+            <!-- Khối chữ lớn nghệ thuật (Unbounded) -->
+            <div class="auth-hero-copy">
+              <h1 class="auth-hero-headline">
+                Khám phá &amp;<br>
+                <span class="auth-hero-accent">Kiến tạo Tri thức.</span>
+              </h1>
+              <p class="auth-hero-desc">
+                Nền tảng chia sẻ phương pháp nghiên cứu khoa học, ngân hàng tài liệu và bài giảng chính khóa dành riêng cho sinh viên.
+              </p>
+            </div>
+
+            <!-- Footer học thuật -->
+            <div class="auth-wing-footer">
+              <span class="auth-uni-pill">🏛️ Trường Đại học Văn Lang &amp; Mạng lưới Học thuật</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- NỬA PHẢI: Khối kính mờ hiện đại chứa Form Đăng nhập / Đăng ký / Quên mật khẩu -->
+        <div class="auth-book-wing auth-wing-right">
+          <div class="auth-glass-panel">
+            
+            <!-- FORM CHÍNH: ĐĂNG NHẬP & TẠO TÀI KHOẢN -->
+            <form id="authForm" class="auth-active-form" method="dialog">
+              <div class="auth-panel-head">
+                <h2 id="authTitle" class="auth-panel-title">Đăng nhập để tiếp tục</h2>
+                <p class="auth-panel-sub" id="authSubTitle">Chào mừng bạn quay trở lại với không gian nghiên cứu RE:SEARCH</p>
+              </div>
+
+              <!-- Thanh chuyển Tab Đăng nhập / Tạo tài khoản -->
+              <div class="auth-tabs auth-switch-tabs">
+                <button type="button" class="auth-tab active" data-auth-mode="login">
+                  Đăng nhập
+                </button>
+                <button type="button" class="auth-tab" data-auth-mode="register">
+                  Tạo tài khoản
+                </button>
+              </div>
+
+              <!-- Trường Tên (chỉ hiện khi Đăng ký) -->
+              <div class="auth-form-group auth-register-only">
+                <label for="authName">Tên hiển thị của bạn</label>
+                <div class="auth-input-container">
+                  <span class="auth-input-icon">👤</span>
+                  <input id="authName" type="text" minlength="2" maxlength="80" placeholder="Ví dụ: Nguyễn Minh Anh" />
+                </div>
+              </div>
+
+              <!-- Trường Email -->
+              <div class="auth-form-group">
+                <label for="authEmail">Email sinh viên / Email tài khoản</label>
+                <div class="auth-input-container">
+                  <span class="auth-input-icon">✉️</span>
+                  <input id="authEmail" type="email" required autocomplete="email" placeholder="Nhập email trường học (@vanlanguni.vn)" />
+                </div>
+              </div>
+
+              <!-- Trường Mật khẩu -->
+              <div class="auth-form-group">
+                <label for="authPassword">Mật khẩu</label>
+                <div class="auth-input-container">
+                  <span class="auth-input-icon">🔒</span>
+                  <input id="authPassword" type="password" required minlength="12" autocomplete="current-password" placeholder="Tối thiểu 12 ký tự" />
+                  <button type="button" class="password-toggle-btn" aria-label="Hiện mật khẩu" title="Hiện mật khẩu" onclick="togglePasswordVisibility(this)">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                      <circle cx="12" cy="12" r="3" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Hàng tiện ích: Ghi nhớ & Quên mật khẩu -->
+              <div class="auth-utility-bar" id="authForgotWrapper">
+                <label class="auth-remember-check">
+                  <input type="checkbox" id="authRememberCheckbox" checked />
+                  <span>Ghi nhớ 30 ngày</span>
+                </label>
+                <button type="button" id="authForgotPasswordBtn" class="auth-forgot-trigger-link">
+                  Quên mật khẩu?
+                </button>
+              </div>
+
+              <p class="auth-note" id="authNote" style="margin: 8px 0 16px 0; font-size: 12.5px; color: var(--muted); line-height: 1.5;">
+                Chỉ TA/Admin do quản trị viên cấp quyền. Tài khoản mới mặc định là Sinh viên.
+              </p>
+
+              <!-- Nút hành động Lỗ hở nhìn xuyên thấu cảnh phía sau như hình mẫu -->
+              <button type="submit" class="auth-cutout-action-btn" id="authSubmit" value="default">
+                <span class="auth-cutout-btn-text">Đăng nhập</span>
+                <span class="auth-cutout-arrow-bubble">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="7" y1="17" x2="17" y2="7"></line>
+                    <polyline points="7 7 17 7 17 17"></polyline>
+                  </svg>
+                </span>
+              </button>
+
+              <!-- Phân cách Đăng nhập xã hội -->
+              <div class="auth-social-separator">
+                <span>hoặc tiếp tục với</span>
+              </div>
+
+              <!-- Nút mạng xã hội Google / Microsoft / Apple ID (Hoàn toàn miễn phí) -->
+              <div class="auth-social-grid">
+                <button type="button" class="auth-social-tile" onclick="handleSocialClick('google')" title="Đăng nhập tài khoản Google">
+                  <svg width="18" height="18" viewBox="0 0 24 24">
+                    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                    <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+                    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+                  </svg>
+                  <span>Google</span>
+                </button>
+
+                <button type="button" class="auth-social-tile" onclick="handleSocialClick('microsoft')" title="Đăng nhập tài khoản Microsoft sinh viên">
+                  <svg width="18" height="18" viewBox="0 0 23 23">
+                    <path fill="#f35325" d="M1 1h10v10H1z"/>
+                    <path fill="#81bc06" d="M12 1h10v10H12z"/>
+                    <path fill="#05a6f0" d="M1 12h10v10H1z"/>
+                    <path fill="#ffba08" d="M12 12h10v10H12z"/>
+                  </svg>
+                  <span>Microsoft</span>
+                </button>
+
+                <button type="button" class="auth-social-tile" onclick="handleSocialClick('apple')" title="Đăng nhập Apple ID">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 6.38c.62-.75 1.04-1.8 0.93-2.85-.9.04-1.99.6-2.63 1.35-.58.67-.99 1.74-.88 2.76 1.01.08 2.05-.51 2.58-1.26z"/>
+                  </svg>
+                  <span>Apple ID</span>
+                </button>
+              </div>
+            </form>
+
+            <!-- GIAO DIỆN KHÔI PHỤC MẬT KHẨU (FORGOT PASSWORD PANE) -->
+            <div id="forgotForm" class="auth-forgot-panel" style="display: none;">
+              <!-- Nút quay lại đăng nhập trên đầu -->
+              <button type="button" class="auth-pane-top-back-btn" id="forgotCancelTopBtn" onclick="closeForgotPasswordView()">
+                ← Quay lại đăng nhập
+              </button>
+
+              <!-- BƯỚC 1: Gửi yêu cầu mã OTP -->
+              <div id="forgotStep1" class="auth-step-container">
+                <div class="auth-panel-head">
+                  <h2 class="auth-panel-title">Khôi phục mật khẩu</h2>
+                  <p class="auth-panel-sub">
+                    Nhập email tài khoản của bạn. Hệ thống sẽ <strong>tự động gửi mã xác thực 6 chữ số</strong> về hòm thư của bạn.
+                  </p>
+                </div>
+
+                <div class="auth-info-card">
+                  <span class="auth-info-icon">📢</span>
+                  <div class="auth-info-text">
+                    Mã xác thực có hiệu lực trong 24 giờ. Vui lòng kiểm tra cả mục <strong>Hộp thư đến (Inbox)</strong> và <strong>Thư rác (Spam)</strong>.
+                  </div>
+                </div>
+
+                <div class="auth-form-group">
+                  <label for="forgotEmail">Địa chỉ Email của bạn</label>
+                  <div class="auth-input-container">
+                    <span class="auth-input-icon">✉️</span>
+                    <input id="forgotEmail" type="email" required autocomplete="email" placeholder="Nhập email sinh viên của bạn" />
+                  </div>
+                </div>
+
+                <!-- Hàng nút cùng độ cao 48px, không tràn trên mobile -->
+                <div class="auth-button-row">
+                  <button type="button" class="button button-outline auth-equal-btn" id="forgotCancelBtn">
+                    ← Đăng nhập
+                  </button>
+                  <button type="button" class="button button-primary auth-equal-btn auth-btn-prominent" id="forgotRequestSubmitBtn">
+                    Gửi mã xác thực về Email <span>→</span>
+                  </button>
+                </div>
+
+                <div class="auth-code-switch-box">
+                  <a href="javascript:void(0)" id="alreadyHaveCodeLink" class="auth-code-switch-link">
+                    🔑 Đã nhận được mã xác thực? Bấm vào đây để nhập mã →
+                  </a>
+                </div>
+              </div>
+
+              <!-- BƯỚC 2: Nhập OTP 6 số và Mật khẩu mới (Cuộn mượt, không kẹt trên Mobile) -->
+              <div id="forgotStep2" class="auth-step-container" style="display: none;">
+                <div class="auth-panel-head">
+                  <h2 class="auth-panel-title">Nhập mã xác thực</h2>
+                  <p class="auth-panel-sub">
+                    Mã xác thực đã được gửi về email! Vui lòng kiểm tra hòm thư và hoàn tất đặt lại mật khẩu mới.
+                  </p>
+                </div>
+
+                <div class="auth-form-group">
+                  <label for="forgotStep2Email">Email xác nhận</label>
+                  <div class="auth-input-container">
+                    <span class="auth-input-icon">✉️</span>
+                    <input id="forgotStep2Email" type="email" required placeholder="Nhập lại email của bạn" />
+                  </div>
+                </div>
+
+                <div class="auth-form-group">
+                  <label for="forgotCode">Mã xác thực (6 chữ số)</label>
+                  <div class="auth-input-container otp-input-wrap">
+                    <input id="forgotCode" type="text" maxlength="6" pattern="[0-9]{6}" required placeholder="962262" class="auth-unbounded-otp" />
+                  </div>
+                </div>
+
+                <div class="auth-form-group">
+                  <label for="forgotNewPassword">Mật khẩu mới (tối thiểu 12 ký tự)</label>
+                  <div class="auth-input-container">
+                    <span class="auth-input-icon">🔒</span>
+                    <input id="forgotNewPassword" type="password" required minlength="12" autocomplete="new-password" placeholder="Tối thiểu 12 ký tự" />
+                    <button type="button" class="password-toggle-btn" aria-label="Hiện mật khẩu" title="Hiện mật khẩu" onclick="togglePasswordVisibility(this)">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                        <circle cx="12" cy="12" r="3" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+
+                <div class="auth-form-group">
+                  <label for="forgotConfirmPassword">Xác nhận mật khẩu mới</label>
+                  <div class="auth-input-container">
+                    <span class="auth-input-icon">🔒</span>
+                    <input id="forgotConfirmPassword" type="password" required minlength="12" autocomplete="new-password" placeholder="Nhập lại mật khẩu mới" />
+                    <button type="button" class="password-toggle-btn" aria-label="Hiện mật khẩu" title="Hiện mật khẩu" onclick="togglePasswordVisibility(this)">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                        <circle cx="12" cy="12" r="3" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Hàng nút cùng độ cao 48px, không tràn, dễ bấm trên mobile -->
+                <div class="auth-button-row">
+                  <button type="button" class="button button-outline auth-equal-btn" id="forgotBackToStep1Btn">
+                    ← Quay lại
+                  </button>
+                  <button type="button" class="button button-primary auth-equal-btn auth-btn-prominent" id="forgotResetSubmitBtn">
+                    Đổi mật khẩu mới <span>✓</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+    </section>
   </main>
 
   <!-- SITE-WIDE COMPACT FOOTER -->
@@ -4881,167 +5190,7 @@
     </form>
   </dialog>
 
-  <dialog id="authModal" class="modal auth-modal">
-    <form method="dialog" id="authForm">
-      <div class="modal-head">
-        <div>
-          <p class="eyebrow">TÀI KHOẢN RE:SEARCH</p>
-          <h2 id="authTitle">Đăng nhập để tiếp tục</h2>
-        </div>
-        <button class="close-modal" type="button" onclick="this.closest('dialog').close()" aria-label="Đóng">
-          <svg class="ui-icon modal-close-icon" width="18" height="18" viewBox="0 0 24 24" fill="none"
-            stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="18" y1="6" x2="6" y2="18"></line>
-            <line x1="6" y1="6" x2="18" y2="18"></line>
-          </svg>
-        </button>
-      </div>
-      <div class="auth-tabs">
-        <button type="button" class="auth-tab active" data-auth-mode="login">
-          Đăng nhập</button><button type="button" class="auth-tab" data-auth-mode="register">
-          Tạo tài khoản
-        </button>
-      </div>
-      <label>Tên hiển thị<input id="authName" minlength="2" maxlength="80"
-          placeholder="Nguyễn Minh Anh" /></label><label>Email<input id="authEmail" type="email" required
-          autocomplete="email" placeholder="Nhập email do Nhà trường cung cấp" /></label><label>Mật khẩu<div
-          class="password-input-wrap"><input id="authPassword" type="password" required minlength="12"
-            autocomplete="current-password" placeholder="Ít nhất 12 ký tự" /><button type="button"
-            class="password-toggle-btn" aria-label="Hiện mật khẩu" title="Hiện mật khẩu"
-            onclick="togglePasswordVisibility(this)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"
-              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-              <circle cx="12" cy="12" r="3" />
-            </svg></button></div></label>
-      <div style="display: flex; justify-content: flex-end; margin-top: 4px; margin-bottom: 8px;"
-        id="authForgotWrapper">
-        <button type="button" id="authForgotPasswordBtn"
-          style="background: none; border: none; padding: 0; font-size: 12px; color: var(--accent, #347553); text-decoration: underline; cursor: pointer;">
-          Quên mật khẩu?
-        </button>
-      </div>
-      <p class="auth-note" id="authNote">
-        Chỉ TA/Admin do quản trị viên cấp quyền. Tài khoản mới mặc định là
-        Sinh viên.
-      </p>
-      <div class="modal-actions">
-        <button class="button button-primary" id="authSubmit" value="default">
-          Đăng nhập <span>→</span>
-        </button>
-      </div>
-    </form>
-
-    <!-- GIAO DIỆN KHÔI PHỤC MẬT KHẨU (GỬI MÃ TỚI ADMIN) -->
-    <div id="forgotForm" style="display: none;">
-      <div class="modal-head">
-        <div>
-          <p class="eyebrow">TÀI KHOẢN RE:SEARCH</p>
-          <h2>Khôi phục mật khẩu</h2>
-        </div>
-        <button class="close-modal" type="button" onclick="this.closest('dialog').close()" aria-label="Đóng">
-          <svg class="ui-icon modal-close-icon" width="18" height="18" viewBox="0 0 24 24" fill="none"
-            stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="18" y1="6" x2="6" y2="18"></line>
-            <line x1="6" y1="6" x2="18" y2="18"></line>
-          </svg>
-        </button>
-      </div>
-
-      <!-- BƯỚC 1: Gửi yêu cầu -->
-      <div id="forgotStep1">
-        <p style="font-size: 13.5px; color: var(--muted); line-height: 1.6; margin-bottom: 16px;">
-          Nhập email tài khoản của bạn. Hệ thống sẽ <strong>tự động gửi mã xác thực 6 chữ số</strong> về hòm thư của bạn để đặt lại mật khẩu.
-        </p>
-        <div
-          style="background: #eaf4ee; border: 1px solid #cce5d6; padding: 11px 14px; border-radius: 8px; margin-bottom: 18px; font-size: 12.5px; color: #1e4d34; line-height: 1.5;">
-          📢 <strong>Lưu ý:</strong> Vui lòng kiểm tra cả mục <strong>Hộp thư đến (Inbox)</strong> và <strong>Thư rác (Spam)</strong>. Mã có hiệu lực trong 24 giờ và sẽ tự động bị xóa sau khi bạn đổi mật khẩu thành công.
-        </div>
-        <div style="margin-bottom: 18px;">
-          <label for="forgotEmail"
-            style="display: block; font-weight: 700; margin-bottom: 8px; font-size: 12px; color: #2f4d3e; text-transform: uppercase; letter-spacing: 0.5px;">Địa
-            chỉ Email của bạn:</label>
-          <input id="forgotEmail" type="email" required autocomplete="email" placeholder="Nhập email sinh viên của bạn"
-            style="display: block; width: 100%; box-sizing: border-box; padding: 11px 13px; font-size: 14px; border: 1px solid #c9d6cb; border-radius: 8px; background: #fff;" />
-        </div>
-        <div class="modal-actions" style="margin-top: 24px; gap: 10px;">
-          <button type="button" class="button button-outline" id="forgotCancelBtn" style="padding: 10px 18px;">
-            ← Đăng nhập
-          </button>
-          <button type="button" class="button button-primary" id="forgotRequestSubmitBtn" style="padding: 10px 20px;">
-            Gửi mã xác thực về Email <span>→</span>
-          </button>
-        </div>
-        <div style="margin-top: 18px; padding: 10px 14px; background: #f4faf6; border: 1px dashed #a3c4b0; border-radius: 8px; text-align: center;">
-          <a href="javascript:void(0)" id="alreadyHaveCodeLink"
-            style="color: var(--accent, #347553); text-decoration: none; font-weight: 700; font-size: 13px; display: inline-flex; align-items: center; justify-content: center; gap: 6px;">
-            <span>🔑 Đã nhận được mã xác thực? Bấm vào đây để nhập mã →</span>
-          </a>
-        </div>
-      </div>
-
-      <!-- BƯỚC 2: Nhập OTP 6 số và Mật khẩu mới -->
-      <div id="forgotStep2" style="display: none;">
-        <div
-          style="background: #eaf4ee; border: 1px solid #cce5d6; padding: 13px 15px; border-radius: 8px; margin-bottom: 18px;">
-          <p style="font-size: 13px; color: #1e4d34; margin: 0; line-height: 1.6;">
-            ℹ️ <strong>Mã xác thực đã được gửi!</strong> Vui lòng mở hộp thư email của bạn (kiểm tra cả mục <strong>Thư rác/Spam</strong> nếu không thấy ở Hộp thư chính) và nhập <strong>Mã 6 chữ số</strong> bên dưới.
-          </p>
-        </div>
-        <div style="margin-bottom: 16px;">
-          <label for="forgotStep2Email"
-            style="display: block; font-weight: 700; margin-bottom: 6px; font-size: 12px; color: #2f4d3e; text-transform: uppercase; letter-spacing: 0.5px;">Email
-            xác nhận:</label>
-          <input id="forgotStep2Email" type="email" required placeholder="Nhập lại email của bạn"
-            style="display: block; width: 100%; box-sizing: border-box; padding: 11px 13px; font-size: 14px; border: 1px solid #c9d6cb; border-radius: 8px; background: #fff;" />
-        </div>
-        <div style="margin-bottom: 16px;">
-          <label for="forgotCode"
-            style="display: block; font-weight: 700; margin-bottom: 6px; font-size: 12px; color: #2f4d3e; text-transform: uppercase; letter-spacing: 0.5px;">Mã
-            xác thực (6 số):</label>
-          <input id="forgotCode" type="text" maxlength="6" pattern="[0-9]{6}" required placeholder="Ví dụ: 839201"
-            style="display: block; width: 100%; box-sizing: border-box; padding: 11px 13px; font-family: var(--unbounded); font-size: 19px; letter-spacing: 6px; font-weight: 800; text-align: center; border: 1.5px solid #a3c4b0; border-radius: 8px; background: #f0f7f3; color: #153b27;" />
-        </div>
-        <div style="margin-bottom: 16px;">
-          <label for="forgotNewPassword"
-            style="display: block; font-weight: 700; margin-bottom: 6px; font-size: 12px; color: #2f4d3e; text-transform: uppercase; letter-spacing: 0.5px;">Mật
-            khẩu mới (tối thiểu 12 ký tự):</label>
-          <div class="password-input-wrap"><input id="forgotNewPassword" type="password" required minlength="12"
-              autocomplete="new-password" placeholder="Tối thiểu 12 ký tự"
-              style="display: block; width: 100%; box-sizing: border-box; padding: 11px 42px 11px 13px; font-size: 14px; border: 1px solid #c9d6cb; border-radius: 8px; background: #fff;" /><button
-              type="button" class="password-toggle-btn" aria-label="Hiện mật khẩu" title="Hiện mật khẩu"
-              onclick="togglePasswordVisibility(this)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"
-                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                aria-hidden="true">
-                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                <circle cx="12" cy="12" r="3" />
-              </svg></button></div>
-        </div>
-        <div style="margin-bottom: 16px;">
-          <label for="forgotConfirmPassword"
-            style="display: block; font-weight: 700; margin-bottom: 6px; font-size: 12px; color: #2f4d3e; text-transform: uppercase; letter-spacing: 0.5px;">Xác
-            nhận mật khẩu mới:</label>
-          <div class="password-input-wrap"><input id="forgotConfirmPassword" type="password" required minlength="12"
-              autocomplete="new-password" placeholder="Nhập lại mật khẩu mới"
-              style="display: block; width: 100%; box-sizing: border-box; padding: 11px 42px 11px 13px; font-size: 14px; border: 1px solid #c9d6cb; border-radius: 8px; background: #fff;" /><button
-              type="button" class="password-toggle-btn" aria-label="Hiện mật khẩu" title="Hiện mật khẩu"
-              onclick="togglePasswordVisibility(this)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"
-                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                aria-hidden="true">
-                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                <circle cx="12" cy="12" r="3" />
-              </svg></button></div>
-        </div>
-        <div class="modal-actions" style="margin-top: 24px; gap: 10px;">
-          <button type="button" class="button button-outline" id="forgotBackToStep1Btn" style="padding: 10px 18px;">
-            ← Quay lại
-          </button>
-          <button type="button" class="button button-primary" id="forgotResetSubmitBtn" style="padding: 10px 20px;">
-            Đổi mật khẩu mới <span>✓</span>
-          </button>
-        </div>
-      </div>
-    </div>
-  </dialog>
+  <dialog id="authModal" class="modal auth-modal" style="display:none"></dialog>
   <!-- MODAL NAMECARD (THẺ TÊN CÁ NHÂN) -->
   <dialog class="modal namecard-modal" id="namecardModal" aria-labelledby="namecardDisplayName">
     <div class="namecard-stage" id="namecardStage">
