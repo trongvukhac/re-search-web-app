@@ -34,49 +34,72 @@
       } catch (e) { }
     })();
   </script>
-  <title>RE:SEARCH — Cộng đồng học thuật</title>
+  <title>RE:SEARCH - Cộng đồng học thuật</title>
   <meta name="description"
-    content="RE:SEARCH — Nền tảng học thuật và cộng đồng sinh viên môn Phương pháp Nghiên cứu Khoa học. Tra cứu tài liệu, thảo luận và tham gia đấu trường học thuật RE:SEARCH ARENA." />
+    content="RE:SEARCH là cộng đồng học thuật dành cho sinh viên, nơi kết nối người học, chia sẻ tài liệu, trao đổi kiến thức và phát triển tư duy nghiên cứu. Khám phá &amp; Kiến tạo tri thức." />
   <meta name="keywords"
-    content="RE:SEARCH, phương pháp nghiên cứu khoa học, nghiên cứu khoa học, NCKH, Văn Lang, VLU, tài liệu học thuật, học thuật sinh viên, ARENA" />
+    content="RE:SEARCH, cộng đồng học thuật, nghiên cứu khoa học, NCKH, Văn Lang, VLU, tài liệu học thuật, học thuật sinh viên, ARENA" />
   <meta name="author" content="RE:SEARCH Team" />
-  <meta name="robots" content="index, follow" />
+  <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
   <link rel="canonical" href="https://research.id.vn/" />
 
   <!-- Open Graph / Facebook / Zalo -->
   <meta property="og:type" content="website" />
   <meta property="og:url" content="https://research.id.vn/" />
-  <meta property="og:title" content="RE:SEARCH — Cộng đồng học thuật" />
+  <meta property="og:title" content="RE:SEARCH - Cộng đồng học thuật" />
   <meta property="og:description"
-    content="Nền tảng học thuật, tra cứu tài liệu và đấu trường học thuật RE:SEARCH ARENA." />
-  <meta property="og:image" content="https://research.id.vn/public/assets/app-ios-512.png?v=4" />
+    content="RE:SEARCH là cộng đồng học thuật dành cho sinh viên, nơi kết nối người học, chia sẻ tài liệu, trao đổi kiến thức và phát triển tư duy nghiên cứu. Khám phá &amp; Kiến tạo tri thức." />
+  <meta property="og:image" content="https://research.id.vn/public/assets/app-ios-512.png" />
   <meta property="og:site_name" content="RE:SEARCH" />
   <meta property="og:locale" content="vi_VN" />
 
   <!-- Twitter Card -->
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:url" content="https://research.id.vn/" />
-  <meta name="twitter:title" content="RE:SEARCH — Cộng đồng học thuật" />
+  <meta name="twitter:title" content="RE:SEARCH - Cộng đồng học thuật" />
   <meta name="twitter:description"
-    content="Nền tảng học thuật, tra cứu tài liệu và đấu trường học thuật RE:SEARCH ARENA." />
-  <meta name="twitter:image" content="https://research.id.vn/public/assets/app-ios-512.png?v=4" />
+    content="RE:SEARCH là cộng đồng học thuật dành cho sinh viên, nơi kết nối người học, chia sẻ tài liệu, trao đổi kiến thức và phát triển tư duy nghiên cứu. Khám phá &amp; Kiến tạo tri thức." />
+  <meta name="twitter:image" content="https://research.id.vn/public/assets/app-ios-512.png" />
 
   <link rel="manifest" href="/manifest.json" />
 
-  <!-- Structured Data (JSON-LD) for Google Search -->
+  <!-- Structured Data (JSON-LD) for Google Search & Logo -->
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
-    "@type": "WebSite",
-    "name": "RE:SEARCH",
-    "alternateName": "RE:SEARCH Cộng Đồng Học Thuật",
-    "url": "https://research.id.vn/",
-    "description": "Nền tảng học thuật & phương pháp nghiên cứu khoa học dành cho sinh viên.",
-    "potentialAction": {
-      "@type": "SearchAction",
-      "target": "https://research.id.vn/?q={search_term_string}",
-      "query-input": "required name=search_term_string"
-    }
+    "@graph": [
+      {
+        "@type": "Organization",
+        "@id": "https://research.id.vn/#organization",
+        "name": "RE:SEARCH",
+        "url": "https://research.id.vn/",
+        "logo": {
+          "@type": "ImageObject",
+          "url": "https://research.id.vn/public/assets/app-ios-512.png",
+          "width": 512,
+          "height": 512,
+          "caption": "Logo RE:SEARCH"
+        },
+        "image": "https://research.id.vn/public/assets/app-ios-512.png",
+        "description": "RE:SEARCH là cộng đồng học thuật dành cho sinh viên, nơi kết nối người học, chia sẻ tài liệu, trao đổi kiến thức và phát triển tư duy nghiên cứu. Khám phá & Kiến tạo tri thức."
+      },
+      {
+        "@type": "WebSite",
+        "@id": "https://research.id.vn/#website",
+        "url": "https://research.id.vn/",
+        "name": "RE:SEARCH - Cộng đồng học thuật",
+        "alternateName": ["RE:SEARCH", "RE:SEARCH Cộng đồng học thuật"],
+        "description": "RE:SEARCH là cộng đồng học thuật dành cho sinh viên, nơi kết nối người học, chia sẻ tài liệu, trao đổi kiến thức và phát triển tư duy nghiên cứu. Khám phá & Kiến tạo tri thức.",
+        "publisher": {
+          "@id": "https://research.id.vn/#organization"
+        },
+        "potentialAction": {
+          "@type": "SearchAction",
+          "target": "https://research.id.vn/?q={search_term_string}",
+          "query-input": "required name=search_term_string"
+        }
+      }
+    ]
   }
   </script>
   <base href="/" />
@@ -85,10 +108,14 @@
   <link
     href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Unbounded:wght@400;500;600;700;800;900&display=swap&subset=vietnamese"
     rel="stylesheet" />
-  <link rel="icon" type="image/png" href="public/assets/favicon-light.png?v=4" media="(prefers-color-scheme: light)" />
-  <link rel="icon" type="image/png" href="public/assets/favicon-dark.png?v=4" media="(prefers-color-scheme: dark)" />
-  <link rel="icon" type="image/png" href="public/assets/favicon-light.png?v=4" />
-  <link rel="shortcut icon" href="favicon.ico?v=4" />
+
+  <!-- Google Search Favicon Standards (Multi-size & 48px multiples) -->
+  <link rel="icon" type="image/png" sizes="192x192" href="https://research.id.vn/public/assets/app-ios-192.png" />
+  <link rel="icon" type="image/png" sizes="512x512" href="https://research.id.vn/public/assets/app-ios-512.png" />
+  <link rel="icon" type="image/png" sizes="48x48" href="https://research.id.vn/public/assets/favicon-48.png" />
+  <link rel="icon" type="image/png" sizes="32x32" href="https://research.id.vn/public/assets/favicon-light.png" />
+  <link rel="icon" type="image/png" href="https://research.id.vn/public/assets/favicon-light.png" />
+  <link rel="shortcut icon" href="https://research.id.vn/favicon.ico" />
   <link href="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.snow.css" rel="stylesheet" />
   <script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js" defer></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js" defer></script>
@@ -8592,9 +8619,6 @@
             <input type="text" id="newRoomObjective"
               placeholder="VD: Cùng hoàn thành bản thảo chương 2 &amp; xử lý mô hình hồi quy" maxlength="120" />
           </div>
-
-          <div class="form-group" id="groupInitialTasks">
-            <label for="newRoomInitialTasks">Nhiệm vụ chung ban đầu (Mỗi việc 1 dòng)</label>
 
           <div class="form-group" id="groupInitialTasks">
             <label for="newRoomInitialTasks">Nhiệm vụ chung ban đầu (Mỗi việc 1 dòng)</label>

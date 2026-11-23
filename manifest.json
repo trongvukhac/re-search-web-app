@@ -1,7 +1,7 @@
 {
-  "name": "RE:SEARCH — Cộng đồng học thuật",
+  "name": "RE:SEARCH - Cộng đồng học thuật",
   "short_name": "RE:SEARCH",
-  "description": "Nền tảng học thuật và cộng đồng sinh viên môn Phương pháp Nghiên cứu Khoa học.",
+  "description": "RE:SEARCH là cộng đồng học thuật dành cho sinh viên, nơi kết nối người học, chia sẻ tài liệu, trao đổi kiến thức và phát triển tư duy nghiên cứu. Khám phá & Kiến tạo tri thức.",
   "start_url": "/?pwa=1",
   "scope": "/",
   "display": "standalone",
