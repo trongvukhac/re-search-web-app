@@ -672,7 +672,7 @@ function triggerAppUpdate(newBuildId, newVersion) {
     return `${m}:${String(sec).padStart(2, "0")}`;
   };
 
-  const displayVer = newVersion || targetUpdateVersion || window.APP_VERSION || "4.7.13";
+  const displayVer = newVersion || targetUpdateVersion || window.APP_VERSION || "4.7.14";
 
   banner.innerHTML = `
     <div style="font-size: 22px;">🚀</div>
@@ -694,7 +694,7 @@ function triggerAppUpdate(newBuildId, newVersion) {
   }, 1000);
 }
 
-window.APP_VERSION = "4.7.13";
+window.APP_VERSION = "4.7.14";
 
 function isVersionAfter(vCurrent, vTarget = "4.7.1") {
   if (!vCurrent) return false;
@@ -759,9 +759,9 @@ window.closeVersionChangelogModal = closeVersionChangelogModal;
 
 async function loadAdminChangelog(version) {
   const select = document.getElementById("adminChangelogVersionSelect");
-  const targetVer = version || (select ? select.value : (window.APP_VERSION || "4.7.13"));
+  const targetVer = version || (select ? select.value : (window.APP_VERSION || "4.7.14"));
   const badge = document.getElementById("adminCurrentVersionBadge");
-  if (badge) badge.textContent = `v${window.APP_VERSION || "4.7.13"}`;
+  if (badge) badge.textContent = `v${window.APP_VERSION || "4.7.14"}`;
   try {
     const res = await fetch(`/api/changelog?version=${encodeURIComponent(targetVer)}`);
     const data = await res.json();
@@ -780,7 +780,7 @@ window.onAdminChangelogVersionChange = onAdminChangelogVersionChange;
 
 async function saveAdminChangelog() {
   const select = document.getElementById("adminChangelogVersionSelect");
-  const targetVer = select ? select.value : (window.APP_VERSION || "4.7.13");
+  const targetVer = select ? select.value : (window.APP_VERSION || "4.7.14");
   const input = document.getElementById("adminChangelogInput");
   const btn = document.getElementById("btnSaveAdminChangelog");
   const text = input ? input.value.trim() : "";
@@ -3755,6 +3755,7 @@ window.viewDocumentById = async function (docId) {
     const modal = $("#documentViewerModal");
     if (modal && typeof modal.showModal === "function") {
       if (!modal.open) modal.showModal();
+      document.body.classList.add("viewing-doc");
     }
     if (location.hash !== `#doc-${doc.id}`) {
       history.pushState(null, "", `#doc-${doc.id}`);
@@ -3893,6 +3894,12 @@ function go(rawRoute, scrollToTop = true) {
   } else {
     document.body.classList.add("page-post-detail");
     $("#christmasHeaderGarland")?.style.setProperty("display", "none", "important");
+  }
+
+  if (baseRoute === "christmas-tree") {
+    document.body.classList.add("page-christmas-tree");
+  } else {
+    document.body.classList.remove("page-christmas-tree");
   }
 
   if (baseRoute === "login") {
@@ -5006,6 +5013,7 @@ window.deleteDocComment = async function (commentId) {
 const docViewerModalEl = $("#documentViewerModal");
 if (docViewerModalEl) {
   docViewerModalEl.addEventListener("close", () => {
+    document.body.classList.remove("viewing-doc");
     stopDocReadTracking();
     const iframe = $("#viewerIframe");
     if (iframe) iframe.src = "about:blank";
@@ -29272,16 +29280,17 @@ if (typeof checkNotifUnreadCount === "function") {
 let homeLbCountdownTimer = null;
 
 function updateHomeLeaderboardCountdown() {
+  const badgeEl = $("#homeLbCountdownBadge") || $("#homeLbRefreshNotice");
+  const timeEl = $("#homeLbCountdownTime");
   const textEl = $("#homeLbCountdownText");
-  const noticeEl = $("#homeLbRefreshNotice");
-  if (!textEl || !noticeEl) return;
+  if (!badgeEl) return;
 
   const cfg = HOME_LB_CATEGORIES[homeLeaderboardCategory];
   if (!cfg || !cfg.hasPeriods) {
-    noticeEl.style.display = "none";
+    badgeEl.style.display = "none";
     return;
   }
-  noticeEl.style.display = "flex";
+  badgeEl.style.display = "inline-flex";
 
   // Tính thời gian tới mốc làm mới theo giờ VN (GMT+7)
   const now = new Date();
@@ -29302,7 +29311,7 @@ function updateHomeLeaderboardCountdown() {
     const currentQ = Math.floor(vnNow.getMonth() / 3);
     targetDate = new Date(vnNow.getFullYear(), (currentQ + 1) * 3, 1, 0, 0, 0);
   } else {
-    noticeEl.style.display = "none";
+    badgeEl.style.display = "none";
     return;
   }
 
@@ -29313,7 +29322,21 @@ function updateHomeLeaderboardCountdown() {
   const mins = Math.floor((totalSec % 3600) / 60);
   const secs = totalSec % 60;
 
-  textEl.textContent = `Bảng xếp hạng làm mới sau ${days} ngày ${hours} giờ ${mins} phút ${secs} giây`;
+  // Hiển thị tối đa 2 đơn vị: (ngày + giờ) hoặc (giờ + phút) hoặc (phút + giây)
+  let timeStr = "";
+  if (days > 0) {
+    timeStr = `${days} ngày ${hours} giờ`;
+  } else if (hours > 0) {
+    timeStr = `${hours} giờ ${mins} phút`;
+  } else {
+    timeStr = `${mins} phút ${secs} giây`;
+  }
+
+  if (timeEl) {
+    timeEl.textContent = timeStr;
+  } else if (textEl) {
+    textEl.textContent = `Làm mới sau ${timeStr}`;
+  }
 }
 
 if (!homeLbCountdownTimer) {

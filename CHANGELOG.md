@@ -4,6 +4,27 @@ Tất cả các thay đổi đáng chú ý của dự án **RE:SEARCH — Cộng
 
 ---
 
+## [4.7.14] - 2026-11-24
+### Tinh chỉnh thẩm mỹ Bảng xếp hạng, Cụm đếm ngược thông minh, Cố định chiều cao 11 vị trí & Ẩn footer giao diện sâu
+- **Tiêu đề Bảng xếp hạng màu trắng sáng nổi bật**:
+  - Chuyển màu chữ tiêu đề Bảng xếp hạng sang trắng sáng (`#ffffff`) kèm bóng đổ mờ ảo để hiển thị tương phản sắc nét trên toàn bộ các nền tối và nghệ thuật.
+- **Di chuyển và rút gọn thông minh cụm đếm ngược "Làm mới sau"**:
+  - Di chuyển cụm đếm ngược từ chân bảng xếp hạng lên cạnh bên phải nhãn chu kỳ Tuần/Tháng/Quý.
+  - Thu gọn tiền tố thành "Làm mới sau ..."; trên điện thoại (Mobile) tự động ẩn tiền tố và chỉ hiển thị giá trị thời gian.
+  - Định dạng hiển thị tối đa 2 đơn vị thời gian thông minh: `X ngày Y giờ` (nếu còn ngày); `X giờ Y phút` (nếu còn 0 ngày); và `X phút Y giây` (khi còn 0 ngày 0 giờ).
+- **Tăng độ đục nhãn chu kỳ & thời gian trên giao diện sáng**:
+  - Tăng độ đục nền cho nhãn chu kỳ (xanh dương) và nhãn làm mới (xanh lá) ở giao diện sáng kèm `backdrop-filter: blur(8px)` giúp chữ đọc rõ nét trên nền ảnh mà vẫn giữ hiệu ứng trong suốt tinh tế.
+- **Cố định chiều cao chuẩn 11 vị trí (Fixed Height)**:
+  - Cố định chiều cao thống nhất cho khu vực bảng xếp hạng tương ứng với chuẩn 11 vị trí (Top 3 bục vinh danh bên trái, 8 dòng Top 4 - 10 và thứ hạng cá nhân bên phải), loại bỏ hoàn toàn hiện tượng co giật kích thước "lúc ngắn lúc dài" khi chuyển đổi giữa các chu kỳ hoặc khi dữ liệu ít dòng.
+- **Tối ưu tỷ lệ 2 nửa Desktop & Scale Top 3**:
+  - Kéo gọn danh sách Top 10 bên phải một mức vừa phải (`1.22fr` / `0.78fr`) và phóng lớn bục vinh danh Top 3 lên kích thước nổi bật hơn (`--mini-scale: 0.33` cho Hạng 1 và `0.285` cho Hạng 2 & 3).
+- **Ẩn Footer toàn trang ở các giao diện sâu**:
+  - Tự động ẩn thanh chân trang (`#siteFooter`) khi người dùng đang ở các giao diện tác vụ sâu: xem chi tiết bài đăng, trang trí cây thông Noel, hoặc đọc tài liệu; chỉ hiển thị footer ở các trang ngoài cấp cao.
+- **Đồng bộ phiên bản v4.7.14 toàn diện (Version Synchronization)**:
+  - Cập nhật số hiệu `4.7.14` đồng nhất trên toàn hệ thống (`package.json`, `server.js`, `app.js`, `index.html`, admin badge và changelog).
+
+---
+
 ## [4.7.13] - 2026-11-24
 ### Nâng cấp giao diện Bảng xếp hạng: Bố cục 2 nửa Desktop, Lật xem Kỳ trước/Kỳ này & Hình nền nghệ thuật
 - **Bố cục 2 nửa tối ưu không gian chiều dọc trên máy tính (Desktop Split Layout)**:
