@@ -146,6 +146,7 @@ let currentDocFilter = "all";
 let anonymous = false;
 let homeLeaderboardPeriod = "week";
 let homeLeaderboardCategory = "contributions";
+let homeLeaderboardCycle = "current"; // "current" | "previous"
 let cachedHomeLeaderboardData = null;
 
 var HOME_LB_CATEGORIES = {
@@ -671,7 +672,7 @@ function triggerAppUpdate(newBuildId, newVersion) {
     return `${m}:${String(sec).padStart(2, "0")}`;
   };
 
-  const displayVer = newVersion || targetUpdateVersion || window.APP_VERSION || "4.7.12";
+  const displayVer = newVersion || targetUpdateVersion || window.APP_VERSION || "4.7.13";
 
   banner.innerHTML = `
     <div style="font-size: 22px;">🚀</div>
@@ -693,7 +694,7 @@ function triggerAppUpdate(newBuildId, newVersion) {
   }, 1000);
 }
 
-window.APP_VERSION = "4.7.12";
+window.APP_VERSION = "4.7.13";
 
 function isVersionAfter(vCurrent, vTarget = "4.7.1") {
   if (!vCurrent) return false;
@@ -758,9 +759,9 @@ window.closeVersionChangelogModal = closeVersionChangelogModal;
 
 async function loadAdminChangelog(version) {
   const select = document.getElementById("adminChangelogVersionSelect");
-  const targetVer = version || (select ? select.value : (window.APP_VERSION || "4.7.12"));
+  const targetVer = version || (select ? select.value : (window.APP_VERSION || "4.7.13"));
   const badge = document.getElementById("adminCurrentVersionBadge");
-  if (badge) badge.textContent = `v${window.APP_VERSION || "4.7.12"}`;
+  if (badge) badge.textContent = `v${window.APP_VERSION || "4.7.13"}`;
   try {
     const res = await fetch(`/api/changelog?version=${encodeURIComponent(targetVer)}`);
     const data = await res.json();
@@ -779,7 +780,7 @@ window.onAdminChangelogVersionChange = onAdminChangelogVersionChange;
 
 async function saveAdminChangelog() {
   const select = document.getElementById("adminChangelogVersionSelect");
-  const targetVer = select ? select.value : (window.APP_VERSION || "4.7.12");
+  const targetVer = select ? select.value : (window.APP_VERSION || "4.7.13");
   const input = document.getElementById("adminChangelogInput");
   const btn = document.getElementById("btnSaveAdminChangelog");
   const text = input ? input.value.trim() : "";
@@ -29319,37 +29320,59 @@ if (!homeLbCountdownTimer) {
   homeLbCountdownTimer = setInterval(updateHomeLeaderboardCountdown, 1000);
 }
 
-function formatLeaderboardPeriodDetail(period = "week") {
+function formatLeaderboardPeriodDetail(period = "week", isPrevious = false) {
   const now = new Date();
   const utcMs = now.getTime() + now.getTimezoneOffset() * 60000;
   const vnNow = new Date(utcMs + 7 * 3600000);
   const pad = (n) => String(n).padStart(2, "0");
 
   if (period === "month") {
+    if (isPrevious) {
+      const prevDate = new Date(vnNow.getFullYear(), vnNow.getMonth() - 1, 1);
+      return `Tháng ${prevDate.getMonth() + 1} năm ${prevDate.getFullYear()}`;
+    }
     return `Tháng ${vnNow.getMonth() + 1} năm ${vnNow.getFullYear()}`;
   }
   if (period === "quarter") {
-    const q = Math.floor(vnNow.getMonth() / 3) + 1;
-    return `Quý ${q} năm ${vnNow.getFullYear()}`;
+    const currentQ = Math.floor(vnNow.getMonth() / 3) + 1;
+    if (isPrevious) {
+      let prevQ = currentQ - 1;
+      let prevYear = vnNow.getFullYear();
+      if (prevQ === 0) {
+        prevQ = 4;
+        prevYear -= 1;
+      }
+      return `Quý ${prevQ} năm ${prevYear}`;
+    }
+    return `Quý ${currentQ} năm ${vnNow.getFullYear()}`;
   }
 
   // Mặc định: Tuần x từ DD/MM đến DD/MM
   const day = vnNow.getDay();
   const daysSinceMonday = day === 0 ? 6 : day - 1;
-  const monday = new Date(vnNow.getFullYear(), vnNow.getMonth(), vnNow.getDate() - daysSinceMonday);
-  const sunday = new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + 6);
+  const currentMonday = new Date(vnNow.getFullYear(), vnNow.getMonth(), vnNow.getDate() - daysSinceMonday);
+  const targetMonday = isPrevious
+    ? new Date(currentMonday.getFullYear(), currentMonday.getMonth(), currentMonday.getDate() - 7)
+    : currentMonday;
+  const targetSunday = new Date(targetMonday.getFullYear(), targetMonday.getMonth(), targetMonday.getDate() + 6);
 
-  const d = new Date(Date.UTC(vnNow.getFullYear(), vnNow.getMonth(), vnNow.getDate()));
+  const d = new Date(Date.UTC(targetMonday.getFullYear(), targetMonday.getMonth(), targetMonday.getDate()));
   const dayNum = d.getUTCDay() || 7;
   d.setUTCDate(d.getUTCDate() + 4 - dayNum);
   const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
   const weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
 
-  const monStr = `${pad(monday.getDate())}/${pad(monday.getMonth() + 1)}`;
-  const sunStr = `${pad(sunday.getDate())}/${pad(sunday.getMonth() + 1)}`;
+  const monStr = `${pad(targetMonday.getDate())}/${pad(targetMonday.getMonth() + 1)}`;
+  const sunStr = `${pad(targetSunday.getDate())}/${pad(targetSunday.getMonth() + 1)}`;
   return `Tuần ${weekNo} từ ${monStr} đến ${sunStr}`;
 }
 window.formatLeaderboardPeriodDetail = formatLeaderboardPeriodDetail;
+
+function toggleHomeLeaderboardCycle() {
+  homeLeaderboardCycle = homeLeaderboardCycle === "current" ? "previous" : "current";
+  renderCurrentHomeLeaderboard();
+}
+window.toggleHomeLeaderboardCycle = toggleHomeLeaderboardCycle;
 
 function renderCurrentHomeLeaderboard() {
   const cat = homeLeaderboardCategory || "contributions";
@@ -29367,13 +29390,19 @@ function renderCurrentHomeLeaderboard() {
   const periodRow = $("#homeLbPeriodRow");
   const periodTabs = $("#homeLbPeriodTabs");
   const periodDetail = $("#homeLbPeriodDetail");
+  const cycleBtn = $("#homeLbCycleBtn");
   if (periodRow) {
     periodRow.style.display = cfg.hasPeriods ? "flex" : "none";
   } else if (periodTabs) {
     periodTabs.style.display = cfg.hasPeriods ? "inline-flex" : "none";
   }
+  if (cycleBtn) {
+    cycleBtn.textContent = homeLeaderboardCycle === "previous" ? "Kỳ này" : "Kỳ trước";
+    cycleBtn.classList.toggle("active", homeLeaderboardCycle === "previous");
+    cycleBtn.setAttribute("aria-pressed", homeLeaderboardCycle === "previous" ? "true" : "false");
+  }
   if (periodDetail) {
-    periodDetail.textContent = cfg.hasPeriods ? formatLeaderboardPeriodDetail(period) : "";
+    periodDetail.textContent = cfg.hasPeriods ? formatLeaderboardPeriodDetail(period, homeLeaderboardCycle === "previous") : "";
   }
   $$(".home-lb-tab-btn").forEach((btn) => {
     const isAct = btn.dataset.period === period;
@@ -29402,10 +29431,16 @@ function renderCurrentHomeLeaderboard() {
 
   if (cfg.hasPeriods) {
     // 3 bảng có chu kỳ: contributions, competition, study
-    if (data.periods?.[cat]?.[period]) {
-      listData = data.periods[cat][period];
-    } else if (cat === "contributions" && data.periods?.[period]) {
-      listData = data.periods[period];
+    const periodsStore = (homeLeaderboardCycle === "previous" && data.previousPeriods)
+      ? data.previousPeriods
+      : data.periods;
+
+    if (periodsStore?.[cat]?.[period]) {
+      listData = periodsStore[cat][period];
+    } else if (cat === "contributions" && periodsStore?.[period]) {
+      listData = periodsStore[period];
+    } else if (homeLeaderboardCycle === "previous") {
+      listData = { top10: [], currentUserEntry: null };
     } else if (cat === "competition" && data.arenaLeaderboard) {
       listData = {
         top10: (data.arenaLeaderboard || []).slice(0, 10).map((u, i) => ({
@@ -29554,6 +29589,7 @@ window.renderCurrentHomeLeaderboard = renderCurrentHomeLeaderboard;
 window.renderHomeLeaderboardData = renderHomeLeaderboardData;
 window.switchHomeLeaderboardPeriod = switchHomeLeaderboardPeriod;
 window.switchHomeLeaderboardCategory = switchHomeLeaderboardCategory;
+window.toggleHomeLeaderboardCycle = toggleHomeLeaderboardCycle;
 window.loadAndRenderHomeLeaderboard = loadAndRenderHomeLeaderboard;
 
 // =========================================================================

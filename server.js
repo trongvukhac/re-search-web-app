@@ -32,7 +32,7 @@ function computeAppBuildId() {
   }
 }
 const APP_BUILD_ID = computeAppBuildId();
-const APP_VERSION = "4.7.12";
+const APP_VERSION = "4.7.13";
 
 // ============================================================
 // FEATURE FLAG & ROSTER: Kích hoạt tính năng RE:SEARCH ARENA & 2 Bảng thi (Lớp 06 & 07)
@@ -5706,7 +5706,7 @@ async function api(request, response, url) {
       return error(response, 409, "Không thể cập nhật đánh giá.");
     }
   }
-  function getLeaderboardTimeThreshold(period) {
+  function getLeaderboardPeriodRange(period, isPrevious = false) {
     const now = new Date();
     // Vietnam is UTC+7
     const vnTime = new Date(now.getTime() + (7 * 60 * 60 * 1000));
@@ -5719,39 +5719,86 @@ async function api(request, response, url) {
     let startMonth = month;
     let startDate = date;
 
+    let endYear = null;
+    let endMonth = null;
+    let endDate = null;
+
     if (period === "week") {
       const diffToMonday = (day === 0 ? -6 : 1) - day;
       const mondayVN = new Date(Date.UTC(year, month, date + diffToMonday));
-      startYear = mondayVN.getUTCFullYear();
-      startMonth = mondayVN.getUTCMonth();
-      startDate = mondayVN.getUTCDate();
+      if (isPrevious) {
+        const prevMondayVN = new Date(Date.UTC(mondayVN.getUTCFullYear(), mondayVN.getUTCMonth(), mondayVN.getUTCDate() - 7));
+        startYear = prevMondayVN.getUTCFullYear();
+        startMonth = prevMondayVN.getUTCMonth();
+        startDate = prevMondayVN.getUTCDate();
+
+        endYear = mondayVN.getUTCFullYear();
+        endMonth = mondayVN.getUTCMonth();
+        endDate = mondayVN.getUTCDate();
+      } else {
+        startYear = mondayVN.getUTCFullYear();
+        startMonth = mondayVN.getUTCMonth();
+        startDate = mondayVN.getUTCDate();
+      }
     } else if (period === "month") {
-      startDate = 1;
+      if (isPrevious) {
+        const prevMonthDate = new Date(Date.UTC(year, month - 1, 1));
+        startYear = prevMonthDate.getUTCFullYear();
+        startMonth = prevMonthDate.getUTCMonth();
+        startDate = 1;
+
+        endYear = year;
+        endMonth = month;
+        endDate = 1;
+      } else {
+        startDate = 1;
+      }
     } else if (period === "quarter") {
-      startMonth = Math.floor(month / 3) * 3;
-      startDate = 1;
+      const currentQMonth = Math.floor(month / 3) * 3;
+      if (isPrevious) {
+        const prevQDate = new Date(Date.UTC(year, currentQMonth - 3, 1));
+        startYear = prevQDate.getUTCFullYear();
+        startMonth = prevQDate.getUTCMonth();
+        startDate = 1;
+
+        endYear = year;
+        endMonth = currentQMonth;
+        endDate = 1;
+      } else {
+        startMonth = currentQMonth;
+        startDate = 1;
+      }
     } else {
-      return "1970-01-01 00:00:00";
+      return { start: "1970-01-01 00:00:00", end: null };
     }
 
     const utcStartMs = Date.UTC(startYear, startMonth, startDate, 0, 0, 0) - (7 * 60 * 60 * 1000);
-    const utcStartDate = new Date(utcStartMs);
-    return utcStartDate.toISOString().replace("T", " ").substring(0, 19);
+    const startStr = new Date(utcStartMs).toISOString().replace("T", " ").substring(0, 19);
+
+    let endStr = null;
+    if (endYear !== null) {
+      const utcEndMs = Date.UTC(endYear, endMonth, endDate, 0, 0, 0) - (7 * 60 * 60 * 1000);
+      endStr = new Date(utcEndMs).toISOString().replace("T", " ").substring(0, 19);
+    }
+
+    return { start: startStr, end: endStr };
   }
 
-  function getContributionsPeriodLeaderboard(period, currentUserId) {
-    const threshold = getLeaderboardTimeThreshold(period);
+  function getContributionsPeriodLeaderboard(period, currentUserId, isPrevious = false) {
+    const range = getLeaderboardPeriodRange(period, isPrevious);
+    const timeFilter = range.end ? "c.created_at >= ? AND c.created_at < ?" : "c.created_at >= ?";
+    const params = range.end ? [range.start, range.end] : [range.start];
     let rows = db.prepare(`
     SELECT u.id, u.display_name as displayName, u.avatar, u.role, u.cover_image as coverImage, u.namecard_frame as namecardFrame,
            coalesce(sum(c.points), 0) as periodPoints,
            max(c.created_at) as lastEventAt
     FROM users u
-    JOIN contribution_events c ON u.id = c.user_id AND c.created_at >= ?
+    JOIN contribution_events c ON u.id = c.user_id AND ${timeFilter}
     WHERE u.role NOT IN ('admin', 'lecturer', 'member') AND u.id != 89
     GROUP BY u.id
     HAVING periodPoints > 0
     ORDER BY periodPoints DESC, (SELECT count(*) FROM posts p WHERE p.author_id = u.id AND p.status = 'visible') DESC, lastEventAt ASC, u.id ASC
-  `).all(threshold);
+  `).all(...params);
 
     const top10 = rows.slice(0, 10).map((u, idx) => ({
       userId: u.id,
@@ -5816,20 +5863,22 @@ async function api(request, response, url) {
     return { top10, currentUserEntry };
   }
 
-  function getCompetitionPeriodLeaderboard(period, currentUserId) {
-    const threshold = getLeaderboardTimeThreshold(period);
+  function getCompetitionPeriodLeaderboard(period, currentUserId, isPrevious = false) {
+    const range = getLeaderboardPeriodRange(period, isPrevious);
+    const timeFilter = range.end ? "r.updated_at >= ? AND r.updated_at < ?" : "r.updated_at >= ?";
+    const params = range.end ? [range.start, range.end] : [range.start];
     let rows = db.prepare(`
       SELECT 
         u.id, u.id as userId, u.display_name as displayName, u.avatar, u.role, u.cover_image as coverImage, u.namecard_frame as namecardFrame,
         sum(r.best_score) as periodScore,
         min(r.updated_at) as firstCompletedAt
       FROM users u
-      JOIN competition_phase_results r ON u.id = r.user_id AND r.updated_at >= ?
+      JOIN competition_phase_results r ON u.id = r.user_id AND ${timeFilter}
       WHERE u.role NOT IN ('admin', 'lecturer', 'member') AND u.id != 89
       GROUP BY u.id
       HAVING periodScore > 0
       ORDER BY periodScore DESC, firstCompletedAt ASC, u.id ASC
-    `).all(threshold);
+    `).all(...params);
 
     const top10 = rows.slice(0, 10).map((u, idx) => ({
       userId: u.id,
@@ -5894,20 +5943,22 @@ async function api(request, response, url) {
     return { top10, currentUserEntry };
   }
 
-  function getStudyPeriodLeaderboard(period, currentUserId) {
-    const threshold = getLeaderboardTimeThreshold(period);
+  function getStudyPeriodLeaderboard(period, currentUserId, isPrevious = false) {
+    const range = getLeaderboardPeriodRange(period, isPrevious);
+    const timeFilter = range.end ? "s.completed_at >= ? AND s.completed_at < ?" : "s.completed_at >= ?";
+    const params = range.end ? [range.start, range.end] : [range.start];
     let rows = db.prepare(`
       SELECT 
         u.id, u.id as userId, u.display_name as displayName, u.avatar, u.role, u.cover_image as coverImage, u.namecard_frame as namecardFrame,
         sum(s.duration_minutes) as periodMinutes,
         max(s.completed_at) as lastStudyAt
       FROM users u
-      JOIN study_logs s ON u.id = s.user_id AND s.completed_at >= ?
+      JOIN study_logs s ON u.id = s.user_id AND ${timeFilter}
       WHERE u.role NOT IN ('admin', 'lecturer') AND u.id != 89
       GROUP BY u.id
       HAVING periodMinutes > 0
       ORDER BY periodMinutes DESC, lastStudyAt ASC, u.id ASC
-    `).all(threshold);
+    `).all(...params);
 
     const top10 = rows.slice(0, 10).map((u, idx) => {
       const mins = Number(u.periodMinutes || 0);
@@ -6284,20 +6335,33 @@ async function api(request, response, url) {
     }
 
     const reqPeriod = ["week", "month", "quarter"].includes(url.searchParams.get("period")) ? url.searchParams.get("period") : "week";
+    const reqCycle = url.searchParams.get("cycle") === "previous" ? "previous" : "current";
     const currentUserId = user ? user.id : null;
 
     // 3 bảng có chu kỳ reset: Đại sứ tri thức (contributions), Tinh thông thần tốc (competition), Ong chăm chỉ (study)
-    const contribWeek = getContributionsPeriodLeaderboard("week", currentUserId);
-    const contribMonth = getContributionsPeriodLeaderboard("month", currentUserId);
-    const contribQuarter = getContributionsPeriodLeaderboard("quarter", currentUserId);
+    const contribWeek = getContributionsPeriodLeaderboard("week", currentUserId, false);
+    const contribMonth = getContributionsPeriodLeaderboard("month", currentUserId, false);
+    const contribQuarter = getContributionsPeriodLeaderboard("quarter", currentUserId, false);
 
-    const competitionWeek = getCompetitionPeriodLeaderboard("week", currentUserId);
-    const competitionMonth = getCompetitionPeriodLeaderboard("month", currentUserId);
-    const competitionQuarter = getCompetitionPeriodLeaderboard("quarter", currentUserId);
+    const competitionWeek = getCompetitionPeriodLeaderboard("week", currentUserId, false);
+    const competitionMonth = getCompetitionPeriodLeaderboard("month", currentUserId, false);
+    const competitionQuarter = getCompetitionPeriodLeaderboard("quarter", currentUserId, false);
 
-    const studyWeek = getStudyPeriodLeaderboard("week", currentUserId);
-    const studyMonth = getStudyPeriodLeaderboard("month", currentUserId);
-    const studyQuarter = getStudyPeriodLeaderboard("quarter", currentUserId);
+    const studyWeek = getStudyPeriodLeaderboard("week", currentUserId, false);
+    const studyMonth = getStudyPeriodLeaderboard("month", currentUserId, false);
+    const studyQuarter = getStudyPeriodLeaderboard("quarter", currentUserId, false);
+
+    const prevContribWeek = getContributionsPeriodLeaderboard("week", currentUserId, true);
+    const prevContribMonth = getContributionsPeriodLeaderboard("month", currentUserId, true);
+    const prevContribQuarter = getContributionsPeriodLeaderboard("quarter", currentUserId, true);
+
+    const prevCompetitionWeek = getCompetitionPeriodLeaderboard("week", currentUserId, true);
+    const prevCompetitionMonth = getCompetitionPeriodLeaderboard("month", currentUserId, true);
+    const prevCompetitionQuarter = getCompetitionPeriodLeaderboard("quarter", currentUserId, true);
+
+    const prevStudyWeek = getStudyPeriodLeaderboard("week", currentUserId, true);
+    const prevStudyMonth = getStudyPeriodLeaderboard("month", currentUserId, true);
+    const prevStudyQuarter = getStudyPeriodLeaderboard("quarter", currentUserId, true);
 
     const activePeriodData = reqPeriod === "month" ? contribMonth : (reqPeriod === "quarter" ? contribQuarter : contribWeek);
 
@@ -6310,6 +6374,7 @@ async function api(request, response, url) {
       currentUser: currentUserData,
       // Bảng vinh danh học thuật mới tại Trang chủ (Home Grand Leaderboard)
       period: reqPeriod,
+      cycle: reqCycle,
       top10: activePeriodData.top10,
       currentUserEntry: activePeriodData.currentUserEntry,
       periods: {
@@ -6330,6 +6395,26 @@ async function api(request, response, url) {
           week: studyWeek,
           month: studyMonth,
           quarter: studyQuarter
+        }
+      },
+      previousPeriods: {
+        week: prevContribWeek,
+        month: prevContribMonth,
+        quarter: prevContribQuarter,
+        contributions: {
+          week: prevContribWeek,
+          month: prevContribMonth,
+          quarter: prevContribQuarter
+        },
+        competition: {
+          week: prevCompetitionWeek,
+          month: prevCompetitionMonth,
+          quarter: prevCompetitionQuarter
+        },
+        study: {
+          week: prevStudyWeek,
+          month: prevStudyMonth,
+          quarter: prevStudyQuarter
         }
       }
     });

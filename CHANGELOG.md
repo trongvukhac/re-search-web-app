@@ -4,6 +4,25 @@ Tất cả các thay đổi đáng chú ý của dự án **RE:SEARCH — Cộng
 
 ---
 
+## [4.7.13] - 2026-11-24
+### Nâng cấp giao diện Bảng xếp hạng: Bố cục 2 nửa Desktop, Lật xem Kỳ trước/Kỳ này & Hình nền nghệ thuật
+- **Bố cục 2 nửa tối ưu không gian chiều dọc trên máy tính (Desktop Split Layout)**:
+  - Chia tách bảng xếp hạng trang chủ trên desktop thành 2 nửa cân xứng: Nửa trái là Bục vinh danh Top 3 (`podium`), Nửa phải là Danh sách Top 4 - 10 cùng dòng thứ hạng cá nhân (`capsule rows`).
+  - Tiết kiệm hơn 50% diện tích chiều dọc màn hình máy tính so với thiết kế dàn dọc trước đó.
+  - Thiết bị di động (Mobile) được giữ nguyên vẹn 100% bố cục dạng cột ban đầu.
+- **Nút chuyển đổi duy nhất xem dữ liệu "Kỳ trước" / "Kỳ này" (Cycle Toggle)**:
+  - Bổ sung nút duy nhất (không icon) đặt ngay cạnh chi tiết chu kỳ (ở góc phải hàng chọn Tuần/Tháng/Quý).
+  - Bấm "Kỳ trước" để lật xem dữ liệu của tuần trước, tháng trước hoặc quý trước; nút tự động chuyển thành "Kỳ này".
+  - Bấm "Kỳ này" để quay về chu kỳ hiện tại một cách tức thời, không tải lại trang.
+  - Áp dụng đầy đủ cho cả 3 bảng xếp hạng có cơ chế luân phiên (Đại sứ tri thức, Tinh thông thần tốc, Ong chăm chỉ).
+- **Hình nền nghệ thuật theo chủ đề sáng/tối và thiết bị (Artistic Adaptive Backgrounds)**:
+  - Tích hợp 4 phiên bản hình nền nghệ thuật riêng biệt cho Desktop Sáng/Tối và Mobile Sáng/Tối.
+  - Cơ chế scale hình nền neo ở cạnh dưới (`background-position: center bottom`), nếu dư tỉ lệ sẽ cắt xén ở cạnh trên, không scale trung tâm.
+- **Đồng bộ phiên bản v4.7.13 toàn diện (Version Synchronization)**:
+  - Cập nhật số hiệu `4.7.13` trên toàn bộ hệ thống (`package.json`, `server.js`, `app.js`, `index.html`, admin badge và changelog).
+
+---
+
 ## [4.7.12] - 2026-11-23
 ### Nâng cấp hiển thị thời gian Bảng xếp hạng Ong chăm chỉ
 - **Hiển thị đầy đủ giờ và phút tự học linh hoạt**:

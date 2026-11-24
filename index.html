@@ -129,7 +129,7 @@
   <link rel="apple-touch-icon" sizes="192x192" href="public/assets/app-ios-192.png?v=4" />
   <link rel="apple-touch-icon" sizes="512x512" href="public/assets/app-ios-512.png?v=4" />
 
-  <link rel="stylesheet" href="styles.css?v=4.7.12" />
+  <link rel="stylesheet" href="styles.css?v=4.7.13" />
   <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 
@@ -1272,17 +1272,22 @@
                 <span class="tab-label">Quý</span>
               </button>
             </div>
-            <div class="home-lb-period-detail" id="homeLbPeriodDetail" aria-live="polite"></div>
+            <div class="home-lb-period-right" id="homeLbPeriodRight">
+              <button type="button" class="home-lb-cycle-btn" id="homeLbCycleBtn" onclick="toggleHomeLeaderboardCycle()">Kỳ trước</button>
+              <div class="home-lb-period-detail" id="homeLbPeriodDetail" aria-live="polite"></div>
+            </div>
           </div>
 
-          <!-- Bục vinh danh Top 1, Top 2, Top 3 (Thẻ tên mini) -->
-          <div class="home-lb-podium-wrap" id="homeLbPodiumWrap">
-            <div class="home-lb-loading">Đang tải bảng xếp hạng...</div>
-          </div>
+          <div class="home-lb-body-grid" id="homeLbBodyGrid">
+            <!-- Bục vinh danh Top 1, Top 2, Top 3 (Thẻ tên mini) -->
+            <div class="home-lb-podium-wrap" id="homeLbPodiumWrap">
+              <div class="home-lb-loading">Đang tải bảng xếp hạng...</div>
+            </div>
 
-          <!-- Danh sách Top 4 - 10 (Ảnh bìa mini capsule) -->
-          <div class="home-lb-list-wrap" id="homeLbListWrap">
-            <div class="home-lb-list comp-lb-list" id="homeLbList"></div>
+            <!-- Danh sách Top 4 - 10 (Ảnh bìa mini capsule) -->
+            <div class="home-lb-list-wrap" id="homeLbListWrap">
+              <div class="home-lb-list comp-lb-list" id="homeLbList"></div>
+            </div>
           </div>
 
           <!-- Dòng thông báo làm mới bảng xếp hạng phía cuối BXH -->
@@ -4519,7 +4524,7 @@
           Hỗ trợ: <a href="mailto:support@research.id.vn" class="site-footer-link">support@research.id.vn</a>
         </span>
         <span class="site-footer-version" id="siteFooterVersion" onclick="handleFooterVersionClick()"><em>Phiên bản
-            4.7.12</em></span>
+            4.7.13</em></span>
       </div>
     </div>
   </footer>
@@ -6830,7 +6835,7 @@
             <span>Nhật ký phiên bản (Changelog)</span>
           </h4>
           <span style="font-size: 12px; color: var(--muted, #64748b);">Phiên bản hiện tại: <strong
-              id="adminCurrentVersionBadge" style="color: var(--primary, #1e5d46);">v4.7.12</strong></span>
+              id="adminCurrentVersionBadge" style="color: var(--primary, #1e5d46);">v4.7.13</strong></span>
         </div>
         <p style="margin: 0 0 10px 0; font-size: 12.5px; color: var(--muted, #64748b); line-height: 1.45;">
           Nhập nội dung cập nhật cho phiên bản. Mặc định là <em>"Nâng cao trải nghiệm người dùng"</em>. Nhật ký chỉ tự
@@ -6842,7 +6847,8 @@
               style="font-size: 12.5px; font-weight: 600; white-space: nowrap;">Chọn phiên bản chỉnh sửa:</label>
             <select id="adminChangelogVersionSelect" class="select" onchange="onAdminChangelogVersionChange(this.value)"
               style="padding: 4px 10px; font-size: 13px; border-radius: 6px; font-weight: 600;">
-              <option value="4.7.12" selected>Phiên bản 4.7.12 (Hiện tại)</option>
+              <option value="4.7.13" selected>Phiên bản 4.7.13 (Hiện tại)</option>
+              <option value="4.7.12">Phiên bản 4.7.12</option>
               <option value="4.7.11">Phiên bản 4.7.11</option>
               <option value="4.7.10">Phiên bản 4.7.10</option>
               <option value="4.7.9">Phiên bản 4.7.9</option>
@@ -9383,7 +9389,7 @@
         <h3 id="versionChangelogTitle"
           style="font-size: 16px; font-weight: 700; margin: 0; display: flex; align-items: center; gap: 8px;">
           <span>🚀</span>
-          <span id="versionChangelogHeaderTitle">Nhật ký phiên bản v4.7.12</span>
+          <span id="versionChangelogHeaderTitle">Nhật ký phiên bản v4.7.13</span>
         </h3>
         <button type="button" class="modal-close" onclick="closeVersionChangelogModal()" aria-label="Đóng">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
@@ -9577,7 +9583,7 @@
     })();
   </script>
 
-  <script src="app.js?v=4.7.12" defer></script>
+  <script src="app.js?v=4.7.13" defer></script>
 </body>
 
 </html>
