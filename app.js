@@ -20669,6 +20669,12 @@ async function startPracticeQuiz(targetPhase) {
 
     const practiceNavBar = $("#quizPracticeNavBar");
     if (practiceNavBar) practiceNavBar.style.display = "flex";
+    const examActionBar = $("#quizExamActionBar");
+    if (examActionBar) examActionBar.style.display = "none";
+    const triesPill = $("#quizTriesPill");
+    if (triesPill) triesPill.style.display = "inline-flex";
+    const hintBtn = $("#quizHintBtn");
+    if (hintBtn) hintBtn.style.display = "inline-flex";
 
     try {
       if (quizModal.open) quizModal.close();
@@ -21027,18 +21033,20 @@ async function executeStartQuizSession(targetPhase) {
       body: JSON.stringify(payload)
     });
 
+    if (compState.practice) compState.practice.active = false;
     compState.sessionToken = res.sessionToken;
     compState.activeQuestions = res.questions || [];
     compState.currentQIndex = res.currentQuestionIndex ? Math.max(0, res.currentQuestionIndex - 1) : 0;
-    compState.questionTries = res.currentTriesCount || 0;
-    const rawRemSec = typeof res.remainingSeconds === "number" ? res.remainingSeconds : (res.durationSeconds || 600);
-    compState.quizRemainingSeconds = Math.min(600, Math.max(0, rawRemSec));
+    compState.questionTries = 0;
+    compState.selectedOption = null;
+    const rawRemSec = typeof res.remainingSeconds === "number" ? res.remainingSeconds : (res.durationSeconds || 60);
+    compState.quizRemainingSeconds = Math.min(60, Math.max(0, rawRemSec));
     compState.exitCount = res.exitCount || 0;
-    compState.quizLiveStars = (res.correctPoints || 0) + (res.firstTryBonus || 0);
-    compState.quizTotalCorrect = res.correctCount || 0;
-    compState.quizFirstTryBonusCount = res.firstTryCorrectCount || 0;
+    compState.quizLiveStars = 0;
+    compState.quizTotalCorrect = 0;
+    compState.quizFirstTryBonusCount = 0;
     compState.isSubmittingAnswer = false;
-    compState.initialDisabledOptions = Array.isArray(res.disabledOptions) ? res.disabledOptions : [];
+    compState.initialDisabledOptions = [];
     compState.currentSessionPhase = res.phase;
     compState.potentialOnTimeBonus = res.potentialOnTimeBonus || 0;
 
@@ -21048,10 +21056,32 @@ async function executeStartQuizSession(targetPhase) {
 
     $("#quizPlayView").style.display = "flex";
     $("#quizResultView").style.display = "none";
+
+    const practiceNavBar = $("#quizPracticeNavBar");
+    if (practiceNavBar) practiceNavBar.style.display = "none";
+    const examActionBar = $("#quizExamActionBar");
+    if (examActionBar) examActionBar.style.display = "flex";
+    const triesPill = $("#quizTriesPill");
+    if (triesPill) triesPill.style.display = "none";
+    const hintBtn = $("#quizHintBtn");
+    if (hintBtn) hintBtn.style.display = "none";
+    const hintBox = $("#quizHintBox");
+    if (hintBox) hintBox.style.display = "none";
+
+    const exitBtn = $("#quizExitBtn");
+    if (exitBtn) {
+      exitBtn.onclick = promptQuizExit;
+      const exitText = exitBtn.querySelector(".exit-btn-text");
+      if (exitText) exitText.textContent = "Tạm dừng & Thoát";
+    }
+
     if (res.phase) {
       const phaseBadge = $("#quizPhaseBadge");
       const bonusTag = res.isOnTime ? " (+50⭐ đúng hạn)" : (res.isCatchUp ? " (Làm bù)" : "");
-      if (phaseBadge) phaseBadge.textContent = `Chặng ${res.phase}${bonusTag}`;
+      if (phaseBadge) {
+        phaseBadge.classList.remove("practice-mode");
+        phaseBadge.textContent = `Chặng ${res.phase}${bonusTag}`;
+      }
     }
 
     try {
@@ -21095,7 +21125,7 @@ function promptQuizExit() {
     currentQEl.textContent = `Câu ${compState.currentQIndex + 1} / ${totalQ}`;
   }
   if (currentStarsEl) {
-    currentStarsEl.textContent = `⭐ ${compState.quizLiveStars || 0}`;
+    currentStarsEl.textContent = "🔒 Đáp án ẩn";
   }
   if (exitCountEl) {
     exitCountEl.textContent = `${currentExits} / 2`;
@@ -21226,13 +21256,14 @@ function startQuizTimer() {
 
   updateQuizTimerUI();
   compState.quizTimerInterval = setInterval(() => {
+    if (compState.isSubmittingAnswer) return;
     compState.quizRemainingSeconds--;
     if (compState.quizRemainingSeconds <= 0) {
       compState.quizRemainingSeconds = 0;
       updateQuizTimerUI();
       clearInterval(compState.quizTimerInterval);
-      toast("⏱️ Đã hết 10 phút làm bài!");
-      finishQuizSessionTimeExpired();
+      compState.quizTimerInterval = null;
+      handleQuestionTimeExpired();
     } else {
       updateQuizTimerUI();
     }
@@ -21244,7 +21275,7 @@ function updateQuizTimerUI() {
   const bar = $("#quizTimerProgressBar");
   const displayWrap = $("#quizTimerDisplay");
 
-  const sec = Math.min(600, Math.max(0, Number(compState.quizRemainingSeconds) || 0));
+  const sec = Math.min(60, Math.max(0, Number(compState.quizRemainingSeconds) || 0));
   compState.quizRemainingSeconds = sec;
   const timeFormatted = formatCompSeconds(sec);
   if (digits) digits.textContent = timeFormatted;
@@ -21253,10 +21284,10 @@ function updateQuizTimerUI() {
   const exitTimeLeftEl = $("#quizExitTimeLeft");
   if (exitTimeLeftEl) exitTimeLeftEl.textContent = timeFormatted;
 
-  const pct = Math.max(0, Math.min(100, (sec / 600) * 100));
+  const pct = Math.max(0, Math.min(100, (sec / 60) * 100));
   if (bar) {
     bar.style.width = `${pct}%`;
-    if (sec <= 60) {
+    if (sec <= 10) {
       bar.classList.add("is-danger");
       if (displayWrap) displayWrap.classList.add("low-time");
     } else {
@@ -21266,13 +21297,16 @@ function updateQuizTimerUI() {
   }
 
   const starsBadge = $("#quizLiveStars");
-  if (starsBadge) starsBadge.textContent = `⭐ ${compState.quizLiveStars}`;
+  if (starsBadge && !compState.practice?.active) {
+    starsBadge.textContent = "🔒 Đáp án ẩn";
+  }
 }
 
 function renderQuizQuestion() {
   const q = compState.activeQuestions[compState.currentQIndex];
   if (!q) return;
 
+  compState.selectedOption = null;
   const counter = $("#quizQuestionCounter");
   const questionText = $("#quizQuestionText");
   const optA = $("#quizOptA");
@@ -21285,34 +21319,66 @@ function renderQuizQuestion() {
   if (optB) optB.textContent = q.optionB;
   if (optC) optC.textContent = q.optionC;
 
-  updateTriesUI(compState.questionTries || 0);
-
-  // Reset hint box - chỉ khi người dùng chủ động bấm bóng đèn mới hiện Hint
+  // Ẩn thanh 3 lần thử & gợi ý trong lúc thi thật để không lộ đáp án
+  const triesPill = $("#quizTriesPill");
+  if (triesPill) triesPill.style.display = "none";
   const hintBox = $("#quizHintBox");
   const hintBtn = $("#quizHintBtn");
   if (hintBox) hintBox.style.display = "none";
-  if (hintBtn) hintBtn.classList.remove("active");
+  if (hintBtn) {
+    hintBtn.style.display = "none";
+    hintBtn.classList.remove("active");
+  }
 
-  const disabledOpts = compState.initialDisabledOptions || [];
   $$(".quiz-option-btn").forEach(btn => {
     const opt = btn.getAttribute("data-option");
-    btn.onclick = () => submitQuizAnswer(opt);
-    if (disabledOpts.includes(opt)) {
-      btn.disabled = true;
-      btn.className = "quiz-option-btn opt-wrong";
-      btn.style.pointerEvents = "none";
-    } else {
-      btn.disabled = false;
-      btn.className = "quiz-option-btn";
-      btn.style.pointerEvents = "auto";
-    }
+    btn.onclick = () => selectQuizOption(opt);
+    btn.disabled = false;
+    btn.className = "quiz-option-btn";
+    btn.style.pointerEvents = "auto";
   });
-  compState.initialDisabledOptions = [];
 
+  const confirmBtn = $("#quizConfirmNextBtn");
+  const confirmText = $("#quizConfirmNextText");
+  const isLastQ = compState.currentQIndex >= compState.activeQuestions.length - 1;
+  if (confirmBtn) confirmBtn.disabled = true;
+  if (confirmText) confirmText.textContent = isLastQ ? "Chốt & Nộp bài" : "Qua câu tiếp theo";
+
+  compState.initialDisabledOptions = [];
   compState.isSubmittingAnswer = false;
 }
 
+function selectQuizOption(selectedOption) {
+  if (compState.practice && compState.practice.active) {
+    submitPracticeAnswer(selectedOption);
+    return;
+  }
+  if (compState.isSubmittingAnswer) return;
+
+  compState.selectedOption = selectedOption;
+  $$(".quiz-option-btn").forEach(btn => {
+    const opt = btn.getAttribute("data-option");
+    btn.classList.toggle("opt-selected", opt === selectedOption);
+  });
+
+  const confirmBtn = $("#quizConfirmNextBtn");
+  if (confirmBtn) confirmBtn.disabled = false;
+}
+window.selectQuizOption = selectQuizOption;
+
+function confirmQuizAnswer() {
+  if (compState.practice && compState.practice.active) return;
+  if (compState.isSubmittingAnswer) return;
+  if (!compState.selectedOption) {
+    toast("Vui lòng chọn một đáp án trước khi qua câu tiếp theo.");
+    return;
+  }
+  submitBlindQuizAnswer(compState.selectedOption);
+}
+window.confirmQuizAnswer = confirmQuizAnswer;
+
 function toggleQuizHint(forceState) {
+  if (!compState.practice || !compState.practice.active) return;
   const hintBox = $("#quizHintBox");
   const hintBtn = $("#quizHintBtn");
   const hintContent = $("#quizHintContent");
@@ -21321,14 +21387,8 @@ function toggleQuizHint(forceState) {
   const isHidden = (hintBox.style.display === "none" || !hintBox.style.display);
   const shouldOpen = (typeof forceState === "boolean") ? forceState : isHidden;
 
-  let rawExplanation = "";
-  if (compState.practice && compState.practice.active) {
-    const q = compState.practice.questions ? compState.practice.questions[compState.practice.currentIndex] : null;
-    rawExplanation = (q && (q.explanation || q.hint)) ? String(q.explanation || q.hint).trim() : "";
-  } else {
-    const q = compState.activeQuestions ? compState.activeQuestions[compState.currentQIndex] : null;
-    rawExplanation = (q && (q.explanation || q.hint)) ? String(q.explanation || q.hint).trim() : "";
-  }
+  const q = compState.practice.questions ? compState.practice.questions[compState.practice.currentIndex] : null;
+  const rawExplanation = (q && (q.explanation || q.hint)) ? String(q.explanation || q.hint).trim() : "";
 
   if (shouldOpen) {
     const explanationText = rawExplanation || "Chưa có lời giải thích chi tiết cho câu hỏi này.";
@@ -21366,9 +21426,9 @@ function updateTriesUI(triesUsed) {
   }
 }
 
-async function submitQuizAnswer(selectedOption) {
+async function submitBlindQuizAnswer(chosenOption, isTimeoutAuto = false) {
   if (compState.practice && compState.practice.active) {
-    submitPracticeAnswer(selectedOption);
+    submitPracticeAnswer(chosenOption);
     return;
   }
   if (compState.isSubmittingAnswer) return;
@@ -21376,7 +21436,13 @@ async function submitQuizAnswer(selectedOption) {
   if (!q) return;
 
   compState.isSubmittingAnswer = true;
-  const btn = document.querySelector(`.quiz-option-btn[data-option="${selectedOption}"]`);
+  if (compState.quizTimerInterval) {
+    clearInterval(compState.quizTimerInterval);
+    compState.quizTimerInterval = null;
+  }
+
+  const confirmBtn = $("#quizConfirmNextBtn");
+  if (confirmBtn) confirmBtn.disabled = true;
 
   try {
     const res = await requestAPI("/api/competition/session/answer", {
@@ -21384,117 +21450,46 @@ async function submitQuizAnswer(selectedOption) {
       body: JSON.stringify({
         sessionToken: compState.sessionToken,
         questionId: q.id,
-        selectedOption: selectedOption,
-        answerIndex: compState.questionTries + 1
+        questionIndex: compState.currentQIndex + 1,
+        selectedOption: chosenOption || "TIMEOUT"
       })
     });
 
-    if (res.isCorrect) {
-      if (btn) btn.classList.add("opt-correct");
-      playCompSound("correct");
-
-      const bonusToast = $("#quizBonusToast");
-      if (bonusToast) {
-        bonusToast.textContent = res.isFirstTryBonus ? `+${res.pointsEarned} ⭐ (Thưởng lần đầu!)` : `+${res.pointsEarned} ⭐`;
-        bonusToast.style.display = "block";
-        setTimeout(() => { bonusToast.style.display = "none"; }, 1200);
-      }
-
-      compState.quizLiveStars += res.pointsEarned;
-      compState.quizTotalCorrect++;
-      if (res.isFirstTryBonus) compState.quizFirstTryBonusCount++;
-      if (typeof res.remainingTime === "number") {
-        compState.quizRemainingSeconds = Math.min(600, Math.max(0, res.remainingTime));
-      } else if (typeof res.remainingSeconds === "number") {
-        compState.quizRemainingSeconds = Math.min(600, Math.max(0, res.remainingSeconds));
-      }
-      updateQuizTimerUI();
-
-      setTimeout(() => {
-        if (res.isQuizCompleted || compState.currentQIndex >= compState.activeQuestions.length - 1) {
-          showQuizFinalResult(res.finalResult);
-        } else {
-          compState.currentQIndex++;
-          compState.questionTries = 0;
-          renderQuizQuestion();
-        }
-      }, 700);
-
+    if (res.isQuizCompleted || compState.currentQIndex >= compState.activeQuestions.length - 1) {
+      showQuizFinalResult(res.finalResult);
     } else {
-      if (btn) {
-        btn.classList.add("opt-wrong");
-        btn.disabled = true;
+      if (isTimeoutAuto || res.questionTimeExpired) {
+        toast("⏱️ Hết 60 giây! Đã chuyển sang câu tiếp theo.");
       }
-      playCompSound("wrong");
-
-      const penaltyToast = $("#quizPenaltyToast");
-      if (penaltyToast) {
-        penaltyToast.textContent = "-30 GIÂY ⏱️";
-        penaltyToast.style.display = "block";
-        setTimeout(() => { penaltyToast.style.display = "none"; }, 1200);
-      }
-
-      if (typeof res.remainingTime === "number") {
-        compState.quizRemainingSeconds = Math.min(600, Math.max(0, res.remainingTime));
-      } else if (typeof res.remainingSeconds === "number") {
-        compState.quizRemainingSeconds = Math.min(600, Math.max(0, res.remainingSeconds));
-      } else {
-        compState.quizRemainingSeconds = Math.min(600, Math.max(0, compState.quizRemainingSeconds - 30));
-      }
-      updateQuizTimerUI();
-
-      compState.questionTries++;
-
-      if (res.isQuizCompleted || compState.quizRemainingSeconds <= 0) {
-        setTimeout(() => {
-          showQuizFinalResult(res.finalResult);
-        }, 800);
-      } else if (res.isLocked || compState.questionTries >= 3) {
-        toast("❌ Đã hết 3 lần thử ở câu này! Chuyển sang câu tiếp theo.");
-        setTimeout(() => {
-          if (compState.currentQIndex >= compState.activeQuestions.length - 1) {
-            showQuizFinalResult(res.finalResult);
-          } else {
-            compState.currentQIndex++;
-            compState.questionTries = 0;
-            renderQuizQuestion();
-          }
-        }, 900);
-      } else {
-        updateTriesUI(compState.questionTries);
-        compState.isSubmittingAnswer = false;
-      }
+      compState.currentQIndex++;
+      compState.questionTries = 0;
+      compState.selectedOption = null;
+      const nextRem = typeof res.remainingSeconds === "number" ? res.remainingSeconds : 60;
+      compState.quizRemainingSeconds = Math.min(60, Math.max(0, nextRem));
+      renderQuizQuestion();
+      startQuizTimer();
     }
   } catch (e) {
-    toast(e.message || "Lỗi khi nộp câu trả lời.");
+    toast(e.message || "Lỗi khi chốt đáp án.");
     compState.isSubmittingAnswer = false;
+    if (confirmBtn && compState.selectedOption) confirmBtn.disabled = false;
+    if (!isTimeoutAuto && compState.quizRemainingSeconds > 0) {
+      startQuizTimer();
+    }
   }
 }
 
+function submitQuizAnswer(selectedOption) {
+  selectQuizOption(selectedOption);
+}
+
+async function handleQuestionTimeExpired() {
+  const autoChoice = compState.selectedOption || "TIMEOUT";
+  await submitBlindQuizAnswer(autoChoice, true);
+}
+
 async function finishQuizSessionTimeExpired() {
-  try {
-    const res = await requestAPI("/api/competition/session/answer", {
-      method: "POST",
-      body: JSON.stringify({
-        sessionToken: compState.sessionToken,
-        questionId: compState.activeQuestions[compState.currentQIndex]?.id || 0,
-        selectedOption: "TIMEOUT",
-        answerIndex: 1
-      })
-    });
-    showQuizFinalResult(res.finalResult);
-  } catch (e) {
-    showQuizFinalResult({
-      totalScore: compState.quizLiveStars,
-      correctPoints: compState.quizTotalCorrect * 40,
-      firstTryBonusPoints: compState.quizFirstTryBonusCount * 10,
-      timePoints: 0,
-      correctAnswersCount: compState.quizTotalCorrect,
-      firstTryCount: compState.quizFirstTryBonusCount,
-      remainingSeconds: 0,
-      phaseBestScore: compState.quizLiveStars
-    });
-  }
+  await handleQuestionTimeExpired();
 }
 
 function showQuizFinalResult(result, options = {}) {
@@ -21542,7 +21537,7 @@ function showQuizFinalResult(result, options = {}) {
   if ($("#resultCorrectPts")) $("#resultCorrectPts").textContent = `+${correctPts} ⭐`;
   if ($("#resultFirstTryCount")) $("#resultFirstTryCount").textContent = `${firstTryCount} / 10`;
   if ($("#resultFirstTryPts")) $("#resultFirstTryPts").textContent = `+${firstTryPts} ⭐`;
-  if ($("#resultRemainingTime")) $("#resultRemainingTime").textContent = `${remainingSec} giây`;
+  if ($("#resultRemainingTime")) $("#resultRemainingTime").textContent = `${timePts} giây`;
   if ($("#resultTimePts")) $("#resultTimePts").textContent = `+${timePts} ⭐`;
 
   const onTimeBonus = result?.onTimeBonus ?? 0;

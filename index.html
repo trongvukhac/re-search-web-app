@@ -129,7 +129,7 @@
   <link rel="apple-touch-icon" sizes="192x192" href="public/assets/app-ios-192.png?v=4" />
   <link rel="apple-touch-icon" sizes="512x512" href="public/assets/app-ios-512.png?v=4" />
 
-  <link rel="stylesheet" href="styles.css?v=4.7.14.1" />
+  <link rel="stylesheet" href="styles.css?v=4.7.15" />
   <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 
@@ -3085,22 +3085,22 @@
                     <circle cx="12" cy="12" r="10"></circle>
                     <circle cx="12" cy="12" r="6"></circle>
                     <circle cx="12" cy="12" r="2"></circle>
-                  </svg> 3. Cơ chế làm bài, Tính điểm &amp; Trừ thời gian</h3>
+                  </svg> 3. Cơ chế làm bài, Tính điểm &amp; Thời gian</h3>
                 <div class="rules-formula-card">
-                  <div class="formula-title">TỔNG ĐIỂM = ĐIỂM ĐÚNG (400⭐) + THƯỞNG LẦN 1 (100⭐) + GIÂY CÒN LẠI (600⭐) +
+                  <div class="formula-title">TỔNG ĐIỂM = ĐIỂM ĐÚNG (500⭐) + GIÂY CÒN LẠI MỖI CÂU ĐÚNG (600⭐) +
                     THƯỞNG ĐÚNG HẠN (+50⭐)</div>
                   <div class="formula-grid">
                     <div class="f-item">
-                      <span class="f-num">+40 ⭐</span>
-                      <span class="f-label">Mỗi câu trả lời đúng (Tối đa 400 sao)</span>
+                      <span class="f-num">+50 ⭐</span>
+                      <span class="f-label">Mỗi câu trả lời đúng (Tối đa 500 sao)</span>
                     </div>
                     <div class="f-item">
-                      <span class="f-num">+10 ⭐</span>
-                      <span class="f-label">Thưởng đúng ngay lần 1 (Tối đa 100 sao)</span>
+                      <span class="f-num">60s / câu</span>
+                      <span class="f-label">Đếm ngược riêng cho từng câu hỏi</span>
                     </div>
                     <div class="f-item">
                       <span class="f-num">+1 ⭐ / s</span>
-                      <span class="f-label">Thời gian còn lại (Tối đa 600 sao)</span>
+                      <span class="f-label">Giây còn lại của câu đúng (Tối đa 600 sao)</span>
                     </div>
                     <div class="f-item">
                       <span class="f-num">+50 ⭐ / Chặng</span>
@@ -3120,24 +3120,20 @@
                         <line x1="12" y1="9" x2="12" y2="13"></line>
                         <line x1="12" y1="17" x2="12.01" y2="17"></line>
                       </svg></span>
-                    <h4>Quy tắc trả lời sai theo từng câu (Tối đa 3 lần chọn):</h4>
+                    <h4>Quy tắc chọn &amp; chốt đáp án (Bảo mật tuyệt đối):</h4>
                   </div>
                   <div class="penalty-steps-grid">
                     <div class="penalty-step">
-                      <div class="step-badge step-1">Lần 1</div>
-                      <div class="step-info"><strong>Trừ 30 giây</strong>, được chọn lại câu đó</div>
+                      <div class="step-badge step-1">1 lần chốt</div>
+                      <div class="step-info"><strong>Chọn tự do A/B/C</strong> rồi bấm <strong>Qua câu tiếp theo</strong> để chốt</div>
                     </div>
                     <div class="penalty-step">
-                      <div class="step-badge step-2">Lần 2</div>
-                      <div class="step-info"><strong>Trừ tiếp 30 giây</strong>, chọn lại lần cuối</div>
-                    </div>
-                    <div class="penalty-step">
-                      <div class="step-badge step-3">Lần 3</div>
-                      <div class="step-info"><strong>Khóa câu (0 điểm)</strong>, sang câu kế tiếp</div>
+                      <div class="step-badge step-2">Ẩn đáp án</div>
+                      <div class="step-info"><strong>Không hiển thị đúng/sai</strong> trong suốt thời gian thi</div>
                     </div>
                     <div class="penalty-step step-timeout">
                       <div class="step-badge step-zero">0 giây</div>
-                      <div class="step-info"><strong>Hết giờ</strong>, dừng và nộp bài ngay</div>
+                      <div class="step-info"><strong>Hết 60s/câu</strong> tự động chốt câu hiện tại và qua câu kế</div>
                     </div>
                   </div>
                 </div>
@@ -8716,7 +8712,7 @@
                   <circle cx="12" cy="12" r="10"></circle>
                   <polyline points="12 6 12 12 16 14"></polyline>
                 </svg></span>
-              <span id="quizTimerDigits">10:00</span>
+              <span id="quizTimerDigits">01:00</span>
             </div>
           </div>
           <div class="quiz-score-right">
@@ -8777,17 +8773,28 @@
         </div>
 
         <div class="quiz-options-grid" id="quizOptionsGrid">
-          <button type="button" class="quiz-option-btn" data-option="A" onclick="submitQuizAnswer('A')">
+          <button type="button" class="quiz-option-btn" data-option="A" onclick="selectQuizOption('A')">
             <span class="opt-letter">A</span>
             <span class="opt-text" id="quizOptA">Đáp án A</span>
           </button>
-          <button type="button" class="quiz-option-btn" data-option="B" onclick="submitQuizAnswer('B')">
+          <button type="button" class="quiz-option-btn" data-option="B" onclick="selectQuizOption('B')">
             <span class="opt-letter">B</span>
             <span class="opt-text" id="quizOptB">Đáp án B</span>
           </button>
-          <button type="button" class="quiz-option-btn" data-option="C" onclick="submitQuizAnswer('C')">
+          <button type="button" class="quiz-option-btn" data-option="C" onclick="selectQuizOption('C')">
             <span class="opt-letter">C</span>
             <span class="opt-text" id="quizOptC">Đáp án C</span>
+          </button>
+        </div>
+
+        <!-- NÚT CHỐT ĐÁP ÁN & QUA CÂU TIẾP THEO (CHẾ ĐỘ THI THẬT) -->
+        <div class="quiz-exam-action-bar" id="quizExamActionBar" style="display: none;">
+          <button type="button" class="quiz-confirm-next-btn" id="quizConfirmNextBtn" onclick="confirmQuizAnswer()" disabled>
+            <span id="quizConfirmNextText">Qua câu tiếp theo</span>
+            <svg class="ui-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+              <polyline points="12 5 19 12 12 19"></polyline>
+            </svg>
           </button>
         </div>
 
@@ -8916,7 +8923,7 @@
           <div class="warning-content">
             <div class="warning-prompt" id="quizStartPromptText">Bạn chỉ có 1 lượt thi duy nhất cho chặng thi đấu này,
               bắt đầu thi chứ?</div>
-            <p class="warning-subtext">Sau khi bắt đầu, hệ thống sẽ kích hoạt đồng hồ đếm ngược 10 phút và ghi nhận lượt
+            <p class="warning-subtext">Sau khi bắt đầu, mỗi câu hỏi sẽ có đồng hồ đếm ngược 60 giây và ghi nhận lượt
               thi chính thức.</p>
           </div>
         </div>
@@ -8934,8 +8941,8 @@
                 <polyline points="12 6 12 12 16 14"></polyline>
               </svg></span>
             <div class="qsr-info">
-              <strong>10 phút / 10 câu hỏi</strong>
-              <span>Cộng điểm theo giây còn lại (Tối đa +600 ⭐)</span>
+              <strong>60 giây / mỗi câu hỏi</strong>
+              <span>10 câu hỏi • Cộng giây còn lại khi đúng (Tối đa +600 ⭐)</span>
             </div>
           </div>
           <div class="qsr-item">
@@ -8946,8 +8953,8 @@
                 <circle cx="12" cy="12" r="2"></circle>
               </svg></span>
             <div class="qsr-info">
-              <strong>Đúng ngay lần đầu: +50 ⭐/câu</strong>
-              <span>(+40 ⭐ đúng + 10 ⭐ thưởng lần 1)</span>
+              <strong>Đáp án đúng: +50 ⭐/câu</strong>
+              <span>Chọn đáp án rồi bấm "Qua câu tiếp theo" để chốt (ẩn đúng/sai)</span>
             </div>
           </div>
           <div class="qsr-item">
@@ -9584,7 +9591,7 @@
     })();
   </script>
 
-  <script src="app.js?v=4.7.14" defer></script>
+  <script src="app.js?v=4.7.15" defer></script>
 </body>
 
 </html>
