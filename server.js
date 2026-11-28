@@ -2909,6 +2909,7 @@ const AUDIO_TRACK_URLS = {
 };
 
 const azureAudioUrlCache = new Map(); // trackId -> { url: string, expiresAt: number }
+const azureAudioInflight = new Map(); // trackId -> Promise<string|null>
 
 function resolveGitHubRedirectOnce(targetUrl, remainingHops = 5) {
   return new Promise((resolve, reject) => {
@@ -2956,21 +2957,33 @@ async function getAudioAzureUrl(trackId, forceRefresh = false) {
   }
   const ghUrl = AUDIO_TRACK_URLS[trackId];
   if (!ghUrl) return null;
-  try {
-    const directUrl = await resolveGitHubRedirect(ghUrl);
-    azureAudioUrlCache.set(trackId, {
-      url: directUrl,
-      expiresAt: Date.now() + 15 * 60 * 1000 // Cache 15 mins (Azure SAS token typically expires in 60 mins)
-    });
-    return directUrl;
-  } catch (err) {
-    console.error(`Failed to resolve GitHub redirect for ${trackId}:`, err.message);
-    // If refresh failed but we have a stale cached URL, keep using it as fallback
-    if (cached && cached.url) {
-      return cached.url;
-    }
-    return null;
+
+  if (!forceRefresh && azureAudioInflight.has(trackId)) {
+    return await azureAudioInflight.get(trackId);
   }
+
+  const inflight = (async () => {
+    try {
+      const directUrl = await resolveGitHubRedirect(ghUrl);
+      azureAudioUrlCache.set(trackId, {
+        url: directUrl,
+        expiresAt: Date.now() + 15 * 60 * 1000 // Cache 15 mins (Azure SAS token typically expires in 60 mins)
+      });
+      return directUrl;
+    } catch (err) {
+      console.error(`Failed to resolve GitHub redirect for ${trackId}:`, err.message);
+      // If refresh failed but we have a stale cached URL, keep using it as fallback
+      if (cached && cached.url) {
+        return cached.url;
+      }
+      return null;
+    } finally {
+      azureAudioInflight.delete(trackId);
+    }
+  })();
+
+  azureAudioInflight.set(trackId, inflight);
+  return await inflight;
 }
 
 async function fetchAzureAudioStream(trackId, reqMethod, headers, isRetry = false) {
@@ -3105,14 +3118,13 @@ async function streamAudioTrack(request, response, trackId) {
 
 async function prewarmAudioUrls() {
   const trackIds = Object.keys(AUDIO_TRACK_URLS);
-  for (const trackId of trackIds) {
-    try {
-      await getAudioAzureUrl(trackId, false);
-      await new Promise(r => setTimeout(r, 250));
-    } catch (e) { }
+  const batchSize = 6;
+  for (let i = 0; i < trackIds.length; i += batchSize) {
+    const batch = trackIds.slice(i, i + batchSize);
+    await Promise.allSettled(batch.map(id => getAudioAzureUrl(id, false).catch(() => null)));
   }
 }
-setTimeout(prewarmAudioUrls, 2000);
+prewarmAudioUrls().catch(() => { });
 setInterval(prewarmAudioUrls, 10 * 60 * 1000);
 
 // =========================================================================

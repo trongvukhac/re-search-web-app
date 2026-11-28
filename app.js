@@ -15226,18 +15226,20 @@ function createOrRestoreAudioPlayer(cacheObj, key, src) {
   const prevPos = player && Number.isFinite(player.currentTime) && player.currentTime > 0
     ? player.currentTime
     : (Number(player?._savedPosition) || 0);
-  const broken = !player || player.error || player.networkState === 3;
+  const broken = !player || player.error || player.networkState === 3 || (player.paused && player.readyState === 0 && player.networkState === 0);
   if (broken) {
     if (player) { try { player.pause(); player.src = ""; } catch (e) { } }
     player = createStudyAudioPlayer(src);
     if (prevPos > 0) player._savedPosition = prevPos;
     cacheObj[key] = player;
   }
+  player._retriedOnce = false;
   return player;
 }
 
-function fadeAudioIn(player, targetVol, durationMs = 250) {
+function fadeAudioIn(player, targetVol, durationMs = 250, opts = {}) {
   if (!player) return;
+  const onPlayFailed = typeof opts.onPlayFailed === "function" ? opts.onPlayFailed : null;
   // Cancel any pending fade-out so toggling off/on preserves position cleanly and doesn't re-pause
   if (player._fadeInterval) {
     clearInterval(player._fadeInterval);
@@ -15270,10 +15272,11 @@ function fadeAudioIn(player, targetVol, durationMs = 250) {
     playPromise.then(() => {
       player.volume = target;
     }).catch(e => {
-      if (e.name === "AbortError") return;
+      if (e.name === "AbortError" || player._isExplicitlyStopped) return;
       console.warn("Audio play warning:", e);
       if (e.name === "NotAllowedError") {
         toast("Chạm vào màn hình để cho phép phát âm thanh.");
+        if (onPlayFailed) onPlayFailed(e);
         return;
       }
       // Recover once if source failed to decode or network was temporarily stale
@@ -15283,9 +15286,12 @@ function fadeAudioIn(player, targetVol, durationMs = 250) {
         try {
           player.load();
           const retryPlay = () => {
+            if (player._isExplicitlyStopped) return;
             if (pos > 0) { try { player.currentTime = pos; } catch (_) { } }
-            player.play().catch(() => {
+            player.play().catch((retryErr) => {
+              if (retryErr && retryErr.name === "AbortError") return;
               toast("Không thể phát âm thanh này lúc này. Vui lòng thử lại sau.");
+              if (onPlayFailed) onPlayFailed(retryErr || e);
             });
           };
           if (player.readyState >= 1) retryPlay();
@@ -15294,6 +15300,7 @@ function fadeAudioIn(player, targetVol, durationMs = 250) {
         } catch (_) { }
       }
       toast("Không thể phát âm thanh này lúc này.");
+      if (onPlayFailed) onPlayFailed(e);
     });
   }
 }
@@ -15532,15 +15539,25 @@ function toggleMixTrack(trackId) {
     if (ext) {
       fadeAudioOut(ext, 180);
     }
+    toast(`Đã tắt ${track ? track.name : trackId}.`);
   } else {
     // START TRACK
     studyState.activeMixSounds[trackId] = true;
     const savedVol = studyState.mixVolumes[trackId] ?? (track ? track.defaultVol : 40);
     const userVol = savedVol / 100;
 
+    getAudioContext();
+
     if (DEFAULT_MIX_AUDIO_SOURCES && DEFAULT_MIX_AUDIO_SOURCES[trackId]) {
       const player = createOrRestoreAudioPlayer(studyState.mixAudioPlayers, trackId, DEFAULT_MIX_AUDIO_SOURCES[trackId]);
-      fadeAudioIn(player, userVol, 250);
+      fadeAudioIn(player, userVol, 250, {
+        onPlayFailed: () => {
+          studyState.activeMixSounds[trackId] = false;
+          updateMixGridDOM(trackId);
+          updateMasterAmbientButtonState();
+        }
+      });
+      toast(`Đang phối: ${track ? track.name : trackId} 🎛️`);
     }
   }
 
@@ -17207,6 +17224,7 @@ window.switchStudySettingsTab = function (tabName) {
   } else if (tabName === "tasks") {
     renderTaskLabelsManagerList();
   } else if (tabName === "audio") {
+    if (typeof updateStudyStreakPerks === "function") updateStudyStreakPerks();
     renderEnvironmentAudioGrid();
     renderMixAudioGrid();
     renderMusicAudioGrid();
