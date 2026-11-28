@@ -2339,11 +2339,18 @@ function getStreakTitle(streak = 0, tier = 0) {
   return "Tân binh";
 }
 
+const _streakTierCache = new Map();
 function getAuthorStreakTier(userId) {
   if (!userId) return 0;
+  const now = Date.now();
+  const cached = _streakTierCache.get(userId);
+  if (cached && now - cached.ts < 15000) return cached.tier;
   try {
     const info = calculateUserStreak(userId);
-    return info.streakTier || 0;
+    const tier = info.streakTier || 0;
+    if (_streakTierCache.size > 500) _streakTierCache.clear();
+    _streakTierCache.set(userId, { tier, ts: now });
+    return tier;
   } catch (e) {
     return 0;
   }
@@ -6661,6 +6668,14 @@ async function api(request, response, url) {
 
   if (method === "GET" && pathName === "/api/leaderboard") {
     const user = sessionFrom(request);
+    const reqPeriod = ["week", "month", "quarter"].includes(url.searchParams.get("period")) ? url.searchParams.get("period") : "week";
+    const reqCycle = url.searchParams.get("cycle") === "previous" ? "previous" : "current";
+    const lbCacheKey = `${user ? user.id : 0}:${reqPeriod}:${reqCycle}`;
+    if (!global._leaderboardCache) global._leaderboardCache = new Map();
+    const lbCached = global._leaderboardCache.get(lbCacheKey);
+    if (lbCached && Date.now() - lbCached.ts < 15000) {
+      return json(response, 200, lbCached.data);
+    }
 
     // 1. TOP ĐÓNG GÓP (Không bao gồm admin, giảng viên, thành viên ngoài trường và tài khoản được miễn BXH)
     const allContribStudents = db
@@ -6960,8 +6975,6 @@ async function api(request, response, url) {
       };
     }
 
-    const reqPeriod = ["week", "month", "quarter"].includes(url.searchParams.get("period")) ? url.searchParams.get("period") : "week";
-    const reqCycle = url.searchParams.get("cycle") === "previous" ? "previous" : "current";
     const currentUserId = user ? user.id : null;
 
     // 3 bảng có chu kỳ reset: Đại sứ tri thức (contributions), Tinh thông thần tốc (competition), Ong chăm chỉ (study)
@@ -6991,7 +7004,7 @@ async function api(request, response, url) {
 
     const activePeriodData = reqPeriod === "month" ? contribMonth : (reqPeriod === "quarter" ? contribQuarter : contribWeek);
 
-    return json(response, 200, {
+    const leaderboardPayload = {
       leaderboard: topUsers,
       streakLeaderboard: topStreakUsers,
       arenaLeaderboard: topArenaUsers,
@@ -7043,7 +7056,10 @@ async function api(request, response, url) {
           quarter: prevStudyQuarter
         }
       }
-    });
+    };
+    if (global._leaderboardCache.size > 200) global._leaderboardCache.clear();
+    global._leaderboardCache.set(lbCacheKey, { data: leaderboardPayload, ts: Date.now() });
+    return json(response, 200, leaderboardPayload);
   }
   if (method === "GET" && pathName === "/api/me/contributions") {
     const user = requireUser(request, response);
