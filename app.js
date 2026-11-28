@@ -759,9 +759,24 @@ window.closeVersionChangelogModal = closeVersionChangelogModal;
 
 async function loadAdminChangelog(version) {
   const select = document.getElementById("adminChangelogVersionSelect");
-  const targetVer = version || (select ? select.value : (window.APP_VERSION || "5.0.2"));
+  const curVer = String(window.APP_VERSION || "5.0.2").trim();
+  if (select && curVer) {
+    let curOpt = Array.from(select.options).find(o => o.value === curVer);
+    if (!curOpt) {
+      curOpt = document.createElement("option");
+      curOpt.value = curVer;
+      select.insertBefore(curOpt, select.firstChild);
+    }
+    Array.from(select.options).forEach(o => {
+      o.textContent = o.value === curVer ? `Phiên bản ${o.value} (Hiện tại)` : `Phiên bản ${o.value}`;
+    });
+    if (!version) {
+      select.value = curVer;
+    }
+  }
+  const targetVer = version || (select ? select.value : curVer);
   const badge = document.getElementById("adminCurrentVersionBadge");
-  if (badge) badge.textContent = `v${window.APP_VERSION || "5.0.2"}`;
+  if (badge) badge.textContent = `v${curVer}`;
   try {
     const res = await fetch(`/api/changelog?version=${encodeURIComponent(targetVer)}`);
     const data = await res.json();

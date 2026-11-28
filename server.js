@@ -10944,7 +10944,7 @@ async function api(request, response, url) {
 
   if (method === "POST" && pathName === "/api/admin/changelog") {
     const user = requireUser(request, response);
-    if (!user) return;
+    if (!user || !requireCsrf(request, response, user)) return;
     if (!isAdmin(user) && !isSuperAdmin(user)) {
       return error(response, 403, "Chỉ Quản trị viên mới có quyền cập nhật nhật ký phiên bản.");
     }
