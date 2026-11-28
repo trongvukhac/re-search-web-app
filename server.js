@@ -13637,7 +13637,7 @@ try {
   db.prepare("DELETE FROM kv_store WHERE key LIKE 'reward_given_%'").run();
 } catch (e) { }
 
-// Chạy kiểm tra khi khởi động và định kỳ mỗi 1 phút (trao điểm Arena từng Chặng sau khi kết thúc và tổng kết Chủ Nhật >= 12h)
+// Chạy kiểm tra khi khởi động và định kỳ mỗi 1 phút (chốt & trao điểm cả 3 Chặng đồng loạt khi Tổng kết tuần Chủ Nhật >= 12:00)
 function checkAndAwardSundayCompetitionRewards() {
   try {
     const vnNow = getVietnamNow();
@@ -13659,15 +13659,7 @@ function checkAndAwardSundayCompetitionRewards() {
     if (comp && comp.status !== 'concluded') {
       const day = vnNow.getDay();
       const h = vnNow.getHours();
-      // Chặng 1: cộng thưởng ngay sau khung làm bù Thứ Tư 15:00 (hoặc ngày T5/T6/T7/CN)
-      if ((day === 3 && h >= 15) || day >= 4 || day === 0) {
-        handbook.awardArenaPhasePoints(db, comp.id, 1);
-      }
-      // Chặng 2: cộng thưởng ngay sau khung làm bù Thứ Sáu 15:00 (hoặc ngày T7/CN)
-      if ((day === 5 && h >= 15) || day === 6 || day === 0) {
-        handbook.awardArenaPhasePoints(db, comp.id, 2);
-      }
-      // Chặng 3 & tổng kết tuần: Chủ Nhật từ 12:00 trở đi
+      // Chốt đồng loạt cả 3 Chặng & tổng kết tuần: Chủ Nhật từ 12:00 trở đi (bảo toàn quyền làm bù Chặng 1 & 2)
       if (day === 0 && h >= 12) {
         awardCompetitionSundayRewards(comp.id);
       }

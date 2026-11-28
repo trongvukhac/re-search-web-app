@@ -13,6 +13,7 @@ Tất cả các thay đổi đáng chú ý của dự án **RE:SEARCH — Cộng
   - Sửa lỗi `Áo choàng tiên tri`: trả về chính xác nội dung câu hỏi (`questionText`) và đáp án đã chọn sai (`selectedOption`), phân biệt rõ với trạng thái `"Hết giờ"` và chặn chọn lại phương án sai cũ.
   - Khắc phục giao diện quản lý câu hỏi Arena Admin: hiển thị, giữ bản nháp và lưu đầy đủ 4 đáp án (`A/B/C/D`) cùng gợi ý (`hint`).
   - Áp dụng quy tắc riêng tuần `23/11 – 29/11/2026`: giới hạn Chặng 1 & Chặng 2 còn tối đa 1 lượt thi, tự động xóa lượt 2 và đồng bộ kết quả từ lượt 1; giữ nguyên 2 lượt ở Chặng 3 và các tuần tiếp theo.
+  - Chuyển mốc chốt và trao điểm hoạt động cả 3 Chặng sang thời điểm Tổng kết tuần (Chủ Nhật `12:00`), bảo toàn đầy đủ cơ chế làm bù giữa tuần.
 - **Bảng xếp hạng Cộng đồng**:
   - Phân tách chu kỳ: chỉ bảng **Tinh thông thần tốc** reset theo **Mùa** (`Mùa AS1`), hai bảng **Đại sứ tri thức** và **Ong chăm chỉ** reset theo **Quý** dương lịch.
 - **Giao diện, Điều hướng & Quà tặng Admin**:
