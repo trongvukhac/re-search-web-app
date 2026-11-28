@@ -2344,7 +2344,7 @@ function getAuthorStreakTier(userId) {
   if (!userId) return 0;
   const now = Date.now();
   const cached = _streakTierCache.get(userId);
-  if (cached && now - cached.ts < 15000) return cached.tier;
+  if (cached && now - cached.ts < 10 * 60 * 1000) return cached.tier;
   try {
     const info = calculateUserStreak(userId);
     const tier = info.streakTier || 0;
@@ -6673,7 +6673,7 @@ async function api(request, response, url) {
     const lbCacheKey = `${user ? user.id : 0}:${reqPeriod}:${reqCycle}`;
     if (!global._leaderboardCache) global._leaderboardCache = new Map();
     const lbCached = global._leaderboardCache.get(lbCacheKey);
-    if (lbCached && Date.now() - lbCached.ts < 15000) {
+    if (lbCached && Date.now() - lbCached.ts < 10 * 60 * 1000) {
       return json(response, 200, lbCached.data);
     }
 
