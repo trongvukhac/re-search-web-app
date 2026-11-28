@@ -1179,6 +1179,44 @@ function revokeNov23MidweekPhase12Rewards() {
 }
 revokeNov23MidweekPhase12Rewards();
 
+/** Idempotently grant one-time +10 review_platform points to students who reviewed before the bug fix. */
+function backfillSiteReviewRewards() {
+  const migrationKey = "site_reviews_backfill_reward_v1";
+  try {
+    if (db.prepare("SELECT 1 FROM kv_store WHERE key = ?").get(migrationKey)) return;
+    const pendingStudents = db.prepare(`
+      SELECT DISTINCT r.user_id as userId
+      FROM site_reviews r
+      JOIN users u ON u.id = r.user_id
+      WHERE u.role = 'student'
+        AND NOT EXISTS (
+          SELECT 1 FROM contribution_events c
+          WHERE c.user_id = r.user_id AND c.event_type = 'review_platform'
+        )
+    `).all();
+    db.exec("BEGIN IMMEDIATE");
+    const insEvent = db.prepare(`
+      INSERT INTO contribution_events (user_id, event_type, points, reference_type, reference_id, reason)
+      VALUES (?, 'review_platform', 10, 'site_review', ?, 'Đóng góp đánh giá & phản hồi website')
+    `);
+    const insKv = db.prepare("INSERT OR IGNORE INTO kv_store (key, value) VALUES (?, CURRENT_TIMESTAMP)");
+    for (const s of pendingStudents) {
+      insEvent.run(s.userId, s.userId);
+      insKv.run(`site_review_rewarded_${s.userId}`);
+    }
+    const existingRewardUsers = db.prepare("SELECT DISTINCT user_id FROM contribution_events WHERE event_type = 'review_platform'").all();
+    for (const r of existingRewardUsers) {
+      insKv.run(`site_review_rewarded_${r.user_id}`);
+    }
+    insKv.run(migrationKey);
+    db.exec("COMMIT");
+  } catch (err) {
+    try { db.exec("ROLLBACK"); } catch (_) { }
+    console.error("[Migration Site Review Backfill]", err.message);
+  }
+}
+backfillSiteReviewRewards();
+
 try { db.exec("ALTER TABLE posts ADD COLUMN deleted_at TEXT;"); } catch (e) { }
 try { db.exec("ALTER TABLE responses ADD COLUMN deleted_at TEXT;"); } catch (e) { }
 try { db.exec("ALTER TABLE posts ADD COLUMN document_id INTEGER REFERENCES documents(id);"); } catch (e) { }
@@ -7955,9 +7993,17 @@ async function api(request, response, url) {
           updated_at = CURRENT_TIMESTAMP
       `).run(user.id, rating, content, tagsJson);
 
-      if (!existing) {
+      const rewardKvKey = `site_review_rewarded_${user.id}`;
+      const alreadyRewarded = Boolean(
+        db.prepare("SELECT 1 FROM kv_store WHERE key = ?").get(rewardKvKey) ||
+        db.prepare("SELECT 1 FROM contribution_events WHERE user_id = ? AND event_type = 'review_platform' LIMIT 1").get(user.id)
+      );
+      if (alreadyRewarded) {
+        db.prepare("INSERT OR IGNORE INTO kv_store (key, value) VALUES (?, CURRENT_TIMESTAMP)").run(rewardKvKey);
+      } else if (!existing) {
         try {
           recordContribution(user.id, "review_platform", 10, "site_review", user.id, "Đóng góp đánh giá & phản hồi website");
+          db.prepare("INSERT OR IGNORE INTO kv_store (key, value) VALUES (?, CURRENT_TIMESTAMP)").run(rewardKvKey);
         } catch (e) { }
       }
 
