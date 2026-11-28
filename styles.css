@@ -1043,7 +1043,7 @@ body.dark-theme #quickMenuThemeToggle .theme-switch-thumb {
   display: grid;
   grid-template-columns: 1fr 384px;
   gap: 60px;
-  align-items: center;
+  align-items: start;
 }
 
 .hero-copy h1,
@@ -1064,11 +1064,23 @@ h1 em {
   color: #2f7354;
 }
 
+.hero-copy h1 {
+  font-size: clamp(38px, 4.6vw, 54px);
+}
+
 .hero-intro {
   max-width: 505px;
   color: #587067;
   font-size: 15px;
   margin: 18px 0 24px;
+}
+
+.hero-intro p {
+  margin: 0;
+}
+
+.hero-intro p + p {
+  margin-top: 10px;
 }
 
 .hero-actions {
