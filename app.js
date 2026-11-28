@@ -3135,6 +3135,18 @@ function renderActivityRow(r) {
       type: "purple",
       svg: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/><line x1="12" y1="22" x2="12" y2="7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/></svg>`
     },
+    gacha_convert: {
+      type: "purple",
+      svg: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>`
+    },
+    admin_gift_points: {
+      type: "amber",
+      svg: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/><line x1="12" y1="22" x2="12" y2="7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/></svg>`
+    },
+    review_platform: {
+      type: "green",
+      svg: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>`
+    },
     double_card_bonus: {
       type: "amber",
       svg: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>`
@@ -3180,6 +3192,9 @@ function renderActivityRow(r) {
       case "document_comment_deleted": return escapeHTML(stripHtml(r.reason) || `Thảo luận tài liệu đã bị xóa`);
       case "gacha_points":
       case "gacha_point": return escapeHTML(stripHtml(r.reason) || `Điểm hoạt động nhận từ Rương may mắn`);
+      case "gacha_convert": return escapeHTML(stripHtml(r.reason) || `Quy đổi vật phẩm trùng từ Rương may mắn sang Điểm hoạt động`);
+      case "admin_gift_points": return escapeHTML(stripHtml(r.reason) || `Quà tặng điểm hoạt động từ RE:SEARCH`);
+      case "review_platform": return escapeHTML(stripHtml(r.reason) || `Đóng góp đánh giá & phản hồi nền tảng`);
       case "double_card_bonus": return escapeHTML(stripHtml(r.reason) || `Thẻ nhân đôi điểm hoạt động`);
       case "arena_phase_reward": return escapeHTML(stripHtml(r.reason) || `Thưởng xếp hạng Chặng Đấu trường Arena`);
       case "handbook_create_post":

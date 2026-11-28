@@ -1110,6 +1110,75 @@ function reconcileNov23WeekSingleAttempt() {
 }
 reconcileNov23WeekSingleAttempt();
 
+/** Idempotently revoke mid-week Phase 1 & 2 activity points for week 2026-11-23 so Sunday concludes all 3 phases together. */
+function revokeNov23MidweekPhase12Rewards() {
+  const migrationKey = "arena_nov23_revoke_midweek_p12_v1";
+  try {
+    if (db.prepare("SELECT 1 FROM kv_store WHERE key = ?").get(migrationKey)) return;
+    const targetComps = db.prepare(
+      "SELECT id, week_key FROM weekly_competitions WHERE start_date = '2026-11-23' AND status != 'concluded'"
+    ).all();
+    db.exec("BEGIN IMMEDIATE");
+    for (const c of targetComps) {
+      db.prepare("DELETE FROM competition_phase_rewards WHERE competition_id = ? AND phase IN (1, 2)").run(c.id);
+      db.prepare(`
+        DELETE FROM contribution_events
+        WHERE event_type = 'arena_phase_reward'
+          AND reference_type = 'competition'
+          AND reference_id = ?
+          AND (reason LIKE '%Chặng 1 Đấu trường%' OR reason LIKE '%Chặng 2 Đấu trường%')
+      `).run(c.id);
+      const weekPat1 = `%Chặng 1 Đấu trường (${c.week_key}%`;
+      const weekPat2 = `%Chặng 2 Đấu trường (${c.week_key}%`;
+      const doubleRows = db.prepare(`
+        SELECT id, user_id, points, reference_id
+        FROM contribution_events
+        WHERE event_type = 'double_card_bonus'
+          AND (reason LIKE ? OR reason LIKE ?)
+      `).all(weekPat1, weekPat2);
+      const restoreByCard = new Map();
+      for (const dr of doubleRows) {
+        const restorePts = Math.max(0, Number(dr.points) || 0);
+        db.prepare("DELETE FROM contribution_events WHERE id = ?").run(dr.id);
+        if (restorePts > 0) {
+          const mapKey = `${dr.user_id}:${dr.reference_id || `ev_${dr.id}`}`;
+          const prev = restoreByCard.get(mapKey);
+          if (prev) {
+            prev.points += restorePts;
+          } else {
+            restoreByCard.set(mapKey, { userId: dr.user_id, refId: dr.reference_id, points: restorePts });
+          }
+        }
+      }
+      for (const entry of restoreByCard.values()) {
+        let restored = false;
+        if (entry.refId) {
+          const upd = db.prepare(`
+            UPDATE user_inventory
+            SET remaining_bonus = remaining_bonus + ?, activated_at = COALESCE(activated_at, CURRENT_TIMESTAMP)
+            WHERE id = ? AND user_id = ? AND category = 'the_diem'
+          `).run(entry.points, entry.refId, entry.userId);
+          if (upd.changes > 0) restored = true;
+        }
+        if (!restored) {
+          const lv = entry.points > 10 ? 3 : (entry.points > 5 ? 2 : 1);
+          const rarity = lv === 3 ? "legendary" : (lv === 2 ? "epic" : "rare");
+          db.prepare(`
+            INSERT INTO user_inventory (user_id, item_key, category, rarity, level, quantity, remaining_bonus, activated_at)
+            VALUES (?, ?, 'the_diem', ?, ?, 1, ?, CURRENT_TIMESTAMP)
+          `).run(entry.userId, `double_pts_${lv}`, rarity, lv, entry.points);
+        }
+      }
+    }
+    db.prepare("INSERT OR IGNORE INTO kv_store (key, value) VALUES (?, CURRENT_TIMESTAMP)").run(migrationKey);
+    db.exec("COMMIT");
+  } catch (err) {
+    try { db.exec("ROLLBACK"); } catch (_) { }
+    console.error("[Arena Migration 2026-11-23 Revoke Midweek P12]", err.message);
+  }
+}
+revokeNov23MidweekPhase12Rewards();
+
 try { db.exec("ALTER TABLE posts ADD COLUMN deleted_at TEXT;"); } catch (e) { }
 try { db.exec("ALTER TABLE responses ADD COLUMN deleted_at TEXT;"); } catch (e) { }
 try { db.exec("ALTER TABLE posts ADD COLUMN document_id INTEGER REFERENCES documents(id);"); } catch (e) { }
@@ -2351,8 +2420,16 @@ function recordContribution(
   db.prepare(
     "INSERT INTO contribution_events(user_id,event_type,points,reference_type,reference_id,reason) VALUES (?,?,?,?,?,?)",
   ).run(userId, type, points, referenceType, referenceId, reason);
-  if (points > 0) {
-    handbook.applyActiveDoubleBonus(db, userId, points, reason || type);
+  const nonDoubleTypes = new Set([
+    "post_unhidden",
+    "post_restored",
+    "response_unhidden",
+    "response_restored",
+    "admin_adjustment",
+  ]);
+  if (points > 0 && !nonDoubleTypes.has(type)) {
+    const doublePts = type === "helpful_received" ? Math.min(1, points) : points;
+    handbook.applyActiveDoubleBonus(db, userId, doublePts, reason || type);
   }
 }
 
@@ -7868,7 +7945,7 @@ async function api(request, response, url) {
 
       if (!existing) {
         try {
-          recordContributionEvent(user.id, "review_platform", 10, "site_review", user.id, "Đóng góp đánh giá & phản hồi website");
+          recordContribution(user.id, "review_platform", 10, "site_review", user.id, "Đóng góp đánh giá & phản hồi website");
         } catch (e) { }
       }
 

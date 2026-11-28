@@ -1075,7 +1075,15 @@
             </ul>
             <p>Mỗi lượt khai mở trong <b>Khai mở x10</b> vẫn được tính riêng vào bộ đếm bảo chứng.</p>
 
-            <h4>4. Kỳ hạn đổi thưởng</h4>
+            <h4>4. Quy đổi vật phẩm trùng (Quy đổi điểm)</h4>
+            <p>Khi khai mở Rương trúng vật phẩm trang trí thuộc nhóm sử dụng lâu dài mà bạn đã sở hữu, hệ thống sẽ tự động quy đổi thành Điểm hoạt động:</p>
+            <ul>
+              <li><b>Thẻ trang trí hạn giờ (Khung / Ảnh bìa):</b> Nếu tài khoản đã sở hữu vĩnh viễn món trang trí được rút ra, thẻ tự động quy đổi thành <b>+1đ</b> (gói 1 ngày), <b>+2đ</b> (gói 3 ngày) hoặc <b>+3đ</b> (gói 7 ngày).</li>
+              <li><b>Ảnh nền Phòng tự học:</b> Nếu đã sở hữu ảnh nền đó (hoặc kho ảnh nền trong Rương đã đầy), hệ thống tự động quy đổi thành <b>+2 Điểm hoạt động</b>.</li>
+              <li>Điểm quy đổi được cộng trực tiếp vào Điểm hoạt động &amp; Bảng xếp hạng (có áp dụng nhân đôi nếu bạn đang kích hoạt <b>Thẻ x2 Điểm</b>).</li>
+            </ul>
+
+            <h4>5. Kỳ hạn đổi thưởng</h4>
             <p><span class="hb-rar-mythic">${tokenName}</span> là tài nguyên đặc biệt, không có thời hạn sử dụng và có thể được tích trữ qua nhiều kỳ đổi thưởng.</p>
             <p>Banner Đổi Thưởng Giới Hạn cung cấp các phần thưởng độc quyền như Khung Namecard, Ảnh bìa và Nền Phòng tự học. Danh mục phần thưởng được làm mới theo chu kỳ 30 ngày.</p>
             <ul>
@@ -1085,7 +1093,7 @@
               <li><b>Tiến trình bảo chứng được bảo toàn khi qua kỳ mới.</b> Số lượt khai mở đã tích lũy không bị đặt lại khi chuyển sang kỳ mới.</li>
             </ul>
 
-            <h4>5. Lưu trữ tài nguyên</h4>
+            <h4>6. Lưu trữ tài nguyên</h4>
             <ul>
               <li>Chìa Khóa chưa sử dụng được bảo lưu khi chuyển sang tháng mới.</li>
               <li><span class="hb-rar-mythic">${tokenName}</span> đã tích lũy không bị thu hồi khi kết thúc tháng hoặc kỳ đổi thưởng.</li>
@@ -1579,10 +1587,10 @@
 
     const inMatchHtml = inMatchItems.length
       ? inMatchItems.map((it) => {
-          const rar = it.rarity || "common";
-          const sum = summarizeMatchItem(it);
-          const tip = `${it.name} (${rarityLabel(rar)} · ${sum.limitText}) — ${it.desc || sum.effect}`;
-          return `
+        const rar = it.rarity || "common";
+        const sum = summarizeMatchItem(it);
+        const tip = `${it.name} (${rarityLabel(rar)} · ${sum.limitText}) — ${it.desc || sum.effect}`;
+        return `
             <div class="arena-inmatch-chip rarity-${rar}" title="${escapeHtml(tip)}">
               ${getItemIconSVG(it.itemKey, 16)}
               <div class="arena-inmatch-chip-body">
@@ -1595,7 +1603,7 @@
               </div>
             </div>
           `;
-        }).join("")
+      }).join("")
       : `<div class="arena-inmatch-chip-empty">Chưa có vật phẩm hỗ trợ trong trận.</div>`;
 
     container.innerHTML = `

@@ -129,7 +129,7 @@ const ITEM_METADATA = {
   double_pts_2: { name: "Thẻ x2 Điểm (Cấp II)", category: "the_diem", rarity: "epic", bonusCap: 10, desc: "Nhân đôi điểm hoạt động nhận được (tối đa cộng thêm 10 điểm).", whereUsed: "Kích hoạt trong Túi đồ" },
   double_pts_3: { name: "Thẻ x2 Điểm (Cấp III)", category: "the_diem", rarity: "legendary", bonusCap: 15, desc: "Nhân đôi điểm hoạt động nhận được (tối đa cộng thêm 15 điểm).", whereUsed: "Kích hoạt trong Túi đồ" },
 
-  trial_decor: { name: "Thẻ trang trí hạn giờ", category: "trang_tri", rarity: "epic", desc: "Tự động mở dùng thử Khung hoặc Ảnh bìa giới hạn trong 1 / 3 / 7 ngày. Trùng món đã có quy đổi điểm hoạt động.", whereUsed: "Thẻ tên cá nhân" },
+  trial_decor: { name: "Thẻ trang trí hạn giờ", category: "trang_tri", rarity: "epic", desc: "Tự động mở dùng thử Khung hoặc Ảnh bìa giới hạn trong 1 / 3 / 7 ngày. Nếu đã sở hữu vĩnh viễn món đồ đó, hệ thống tự động quy đổi thành +1 / +2 / +3 Điểm hoạt động (cơ chế Quy đổi trùng).", whereUsed: "Thẻ tên cá nhân" },
 
   mythic_mushroom: { name: "Nấm thần kỳ", category: "cuc_pham", rarity: "mythic", desc: "Vật phẩm Cực phẩm vĩnh viễn không hạn dùng. Dùng để đổi Khung thẻ tên, Ảnh bìa hoặc Ảnh nền Phòng tự học tại mục Đổi thưởng giới hạn (làm mới danh mục theo từng kỳ). Có thể tích trữ chờ các kỳ sau.", whereUsed: "Đổi thưởng giới hạn" }
 };
