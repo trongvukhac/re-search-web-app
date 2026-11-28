@@ -1044,6 +1044,7 @@ body.dark-theme #quickMenuThemeToggle .theme-switch-thumb {
   grid-template-columns: 1fr 384px;
   gap: 60px;
   align-items: start;
+  padding-top: 16px;
 }
 
 .hero-copy h1,
