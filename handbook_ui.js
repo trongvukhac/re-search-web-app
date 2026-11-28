@@ -1085,6 +1085,7 @@
 
             <h4>5. Kỳ hạn đổi thưởng</h4>
             <p><span class="hb-rar-mythic">${tokenName}</span> là tài nguyên đặc biệt, không có thời hạn sử dụng và có thể được tích trữ qua nhiều kỳ đổi thưởng.</p>
+            <p><b style="color:#16a34a;">${escapeHtml(tokenName)} chỉ được sử dụng để đổi phần thưởng trong banner đổi thưởng giới hạn "Thảo nguyên Kỳ bí".</b></p>
             <p>Banner Đổi Thưởng Giới Hạn cung cấp các phần thưởng độc quyền như Khung Namecard, Ảnh bìa và Nền Phòng tự học. Danh mục phần thưởng được làm mới theo chu kỳ 30 ngày.</p>
             <ul>
               <li><b>Thời gian kỳ đổi thưởng ${bannerName}:</b> ${periodRangeText}.</li>
@@ -1281,7 +1282,7 @@
         <div class="hb-chest-aura" style="opacity:0.55;"></div>
         <div class="hb-chest-result-top">${SVG_ICONS.chestOpen(42)}<span>Chúc mừng! Bạn nhận được</span></div>
         <div class="hb-gacha-grid ${isSingle ? "is-single" : ""}">${cardsHtml}</div>
-        <div style="z-index:2;margin-top:6px;">
+        <div class="hb-chest-result-actions">
           <button type="button" class="button button-primary" onclick="document.getElementById('handbookChestModal').close()">Nhận tất cả</button>
         </div>
       `;

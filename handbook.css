@@ -1143,7 +1143,12 @@ html.dark-theme .hb-rarity-pill-legendary { color: #fcd34d; }
   color: #f8fafc;
   padding: 0;
   overflow: hidden;
+  max-height: min(92dvh, 780px);
   box-shadow: 0 28px 80px rgba(0, 0, 0, 0.72);
+}
+.hb-chest-dialog[open] {
+  display: flex;
+  flex-direction: column;
 }
 
 .hb-chest-dialog::backdrop {
@@ -1159,7 +1164,22 @@ html.dark-theme .hb-rarity-pill-legendary { color: #fcd34d; }
   gap: 16px;
   position: relative;
   min-height: 360px;
+  justify-content: safe center;
+  flex: 1;
+  min-width: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.hb-chest-result-actions {
+  z-index: 5;
+  margin-top: 6px;
+  position: sticky;
+  bottom: 0;
+  width: 100%;
+  display: flex;
   justify-content: center;
+  padding: 10px 0 4px;
+  background: linear-gradient(to top, #0b111a 68%, rgba(11, 17, 26, 0));
 }
 
 .hb-chest-aura {
@@ -1738,6 +1758,23 @@ html.dark-theme .hb-rarity-pill-legendary { color: #fcd34d; }
 
   .hb-gacha-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+  .hb-gacha-card {
+    padding: 8px 6px;
+    gap: 4px;
+    border-radius: 12px;
+  }
+  .hb-gacha-card-name {
+    font-size: 11px;
+  }
+  .hb-gacha-card-sub {
+    font-size: 9.5px;
+  }
+  .hb-chest-stage {
+    padding: 16px 14px 12px;
+    gap: 12px;
+    min-height: 280px;
   }
 
   .arena-loadout-grid,
