@@ -1217,6 +1217,49 @@ function backfillSiteReviewRewards() {
 }
 backfillSiteReviewRewards();
 
+/** One-time: tặng 3 chìa khoá đền bù bảo trì cho tất cả tài khoản (28/11/2026). */
+function bulkMaintenanceGift20261128() {
+  const GUARD = "bulk_gift_maintenance_2026_1128";
+  try {
+    if (db.prepare("SELECT 1 FROM kv_store WHERE key = ?").get(GUARD)) return;
+    const users = db.prepare(
+      "SELECT id FROM users WHERE id != 89 ORDER BY id ASC"
+    ).all();
+    const ensureWallet = db.prepare(`
+      INSERT OR IGNORE INTO user_chest_wallet (user_id, keys_count, pity_counter, total_opened)
+      VALUES (?, 0, 0, 0)
+    `);
+    const addKeys = db.prepare(`
+      UPDATE user_chest_wallet SET keys_count = keys_count + 3, updated_at = CURRENT_TIMESTAMP
+      WHERE user_id = ?
+    `);
+    const insNotif = db.prepare(`
+      INSERT INTO notifications (user_id, stream, category, title, content, link, actor_id, is_read, created_at)
+      VALUES (?, 'activity', 'handbook',
+        'Quà đền bù bảo trì từ RE:SEARCH',
+        'Cảm ơn bạn đã kiên nhẫn chờ đợi trong thời gian RE:SEARCH bảo trì và cập nhật hệ thống. Một phần quà nhỏ đã được gửi đến bạn như lời cảm ơn vì đã luôn đồng hành. Chúc bạn có thêm nhiều trải nghiệm thú vị tại RE:SEARCH nhé! ❤️',
+        '#handbook', 89, 0, CURRENT_TIMESTAMP)
+    `);
+    db.exec("BEGIN IMMEDIATE");
+    let count = 0;
+    for (const u of users) {
+      ensureWallet.run(u.id);
+      addKeys.run(u.id);
+      insNotif.run(u.id);
+      count++;
+    }
+    db.prepare("INSERT OR REPLACE INTO kv_store (key, value) VALUES (?, ?)").run(
+      GUARD, new Date().toISOString()
+    );
+    db.exec("COMMIT");
+    console.log(`[Maintenance Gift] Đã tặng 3 chìa khoá cho ${count} tài khoản.`);
+  } catch (err) {
+    try { db.exec("ROLLBACK"); } catch (_) { }
+    console.error("[Maintenance Gift] Lỗi:", err.message);
+  }
+}
+bulkMaintenanceGift20261128();
+
 try { db.exec("ALTER TABLE posts ADD COLUMN deleted_at TEXT;"); } catch (e) { }
 try { db.exec("ALTER TABLE responses ADD COLUMN deleted_at TEXT;"); } catch (e) { }
 try { db.exec("ALTER TABLE posts ADD COLUMN document_id INTEGER REFERENCES documents(id);"); } catch (e) { }
