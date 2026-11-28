@@ -4,10 +4,29 @@ Tất cả các thay đổi đáng chú ý của dự án **RE:SEARCH — Cộng
 
 ---
 
+## [5.0.2] - 2026-11-28
+### Bản vá v5.0.2: Sửa lỗi Sổ tay khám phá, Phòng tự học, Arena & Giao diện Mobile
+- **Phòng tự học (Hình nền & Hệ thống âm thanh)**:
+  - Loại bỏ 4 hình nền cũ (`Thư viện Đêm mưa`, `Gác mái Hoa anh đào`, `Đại sảnh Hoàng kim`, `Nhà gỗ Mùa đông`), giữ an toàn mặc định cho tài khoản từng chọn.
+  - Sửa lỗi phát & nối lại luồng âm thanh proxy (`/api/audio/`): theo dõi đầy đủ chuyển hướng GitHub/Azure, thử lại khi gặp lỗi HTTP >= 400, khôi phục player lỗi và giữ nguyên vị trí phát hiện tại (`currentTime`) khi bật/tắt từng âm thanh hoặc nút Bật/Tắt tất cả thay vì tua lại từ đầu.
+- **Đấu trường Arena**:
+  - Sửa lỗi `Áo choàng tiên tri`: trả về chính xác nội dung câu hỏi (`questionText`) và đáp án đã chọn sai (`selectedOption`), phân biệt rõ với trạng thái `"Hết giờ"` và chặn chọn lại phương án sai cũ.
+  - Khắc phục giao diện quản lý câu hỏi Arena Admin: hiển thị, giữ bản nháp và lưu đầy đủ 4 đáp án (`A/B/C/D`) cùng gợi ý (`hint`).
+  - Áp dụng quy tắc riêng tuần `23/11 – 29/11/2026`: giới hạn Chặng 1 & Chặng 2 còn tối đa 1 lượt thi, tự động xóa lượt 2 và đồng bộ kết quả từ lượt 1; giữ nguyên 2 lượt ở Chặng 3 và các tuần tiếp theo.
+- **Bảng xếp hạng Cộng đồng**:
+  - Phân tách chu kỳ: chỉ bảng **Tinh thông thần tốc** reset theo **Mùa** (`Mùa AS1`), hai bảng **Đại sứ tri thức** và **Ong chăm chỉ** reset theo **Quý** dương lịch.
+- **Giao diện, Điều hướng & Quà tặng Admin**:
+  - Cập nhật biểu tượng tab **Sổ tay khám phá** trên thanh điều hướng kính mờ thu gọn (`compact`).
+  - Căn chỉnh banner trang chủ trên Mobile chuẩn tỷ lệ `16:9` (`object-fit: cover`), loại bỏ hoàn toàn khoảng đen dư thừa.
+  - Bổ sung giao diện trống yêu cầu đăng nhập cho **Tài khoản Khách** tại `#handbook`.
+  - Bổ sung công cụ Admin tặng Chìa khoá hoặc Vật phẩm số lượng tùy chọn kèm thông báo **Quà tặng từ RE:SEARCH** với nút nhận quà trực tiếp `Nhận x<số lượng> <Tên vật phẩm>`.
+
+---
+
 ## [4.7.14] - 2026-11-24
 ### Tinh chỉnh thẩm mỹ Bảng xếp hạng, Cụm đếm ngược thông minh, Cố định chiều cao 11 vị trí & Ẩn footer giao diện sâu
 - **Tiêu đề Bảng xếp hạng màu trắng sáng nổi bật**:
-  - Chuyển màu chữ tiêu đề Bảng xếp hạng sang trắng sáng (`#ffffff`) kèm bóng đổ mờ ảo để hiển thị tương phản sắc nét trên toàn bộ các nền tối và nghệ thuật.
+  - Chuyển màu chữ tiêu đề Bảng xếp hạng sang trắng sáng (`#ffffff`) kèm bóng đổ mờ ảo để hiển thị tương phản sắc nét trên toàn bộ các nền tối và nghệ thuật; bỏ in đậm (`font-weight: 400`) theo phong cách serif thanh thoát.
 - **Di chuyển và rút gọn thông minh cụm đếm ngược "Làm mới sau"**:
   - Di chuyển cụm đếm ngược từ chân bảng xếp hạng lên cạnh bên phải nhãn chu kỳ Tuần/Tháng/Quý.
   - Thu gọn tiền tố thành "Làm mới sau ..."; trên điện thoại (Mobile) tự động ẩn tiền tố và chỉ hiển thị giá trị thời gian.
@@ -15,7 +34,7 @@ Tất cả các thay đổi đáng chú ý của dự án **RE:SEARCH — Cộng
 - **Tăng độ đục nhãn chu kỳ & thời gian trên giao diện sáng**:
   - Tăng độ đục nền cho nhãn chu kỳ (xanh dương) và nhãn làm mới (xanh lá) ở giao diện sáng kèm `backdrop-filter: blur(8px)` giúp chữ đọc rõ nét trên nền ảnh mà vẫn giữ hiệu ứng trong suốt tinh tế.
 - **Cố định chiều cao chuẩn 11 vị trí (Fixed Height)**:
-  - Cố định chiều cao thống nhất cho khu vực bảng xếp hạng tương ứng với chuẩn 11 vị trí (Top 3 bục vinh danh bên trái, 8 dòng Top 4 - 10 và thứ hạng cá nhân bên phải), loại bỏ hoàn toàn hiện tượng co giật kích thước "lúc ngắn lúc dài" khi chuyển đổi giữa các chu kỳ hoặc khi dữ liệu ít dòng.
+  - Cố định chiều cao thống nhất cho khu vực bảng xếp hạng tương ứng với chuẩn 11 vị trí (Top 3 bục vinh danh bên trái, 8 dòng Top 4 - 10 và thứ hạng cá nhân bên phải với chiều cao 468px), loại bỏ hoàn toàn hiện tượng co giật kích thước "lúc ngắn lúc dài" và đảm bảo dòng thứ hạng cá nhân cuối cùng không bị cắt xén.
 - **Tối ưu tỷ lệ 2 nửa Desktop & Scale Top 3**:
   - Kéo gọn danh sách Top 10 bên phải một mức vừa phải (`1.22fr` / `0.78fr`) và phóng lớn bục vinh danh Top 3 lên kích thước nổi bật hơn (`--mini-scale: 0.33` cho Hạng 1 và `0.285` cho Hạng 2 & 3).
 - **Ẩn Footer toàn trang ở các giao diện sâu**:

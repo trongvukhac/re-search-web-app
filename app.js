@@ -672,7 +672,7 @@ function triggerAppUpdate(newBuildId, newVersion) {
     return `${m}:${String(sec).padStart(2, "0")}`;
   };
 
-  const displayVer = newVersion || targetUpdateVersion || window.APP_VERSION || "4.7.14";
+  const displayVer = newVersion || targetUpdateVersion || window.APP_VERSION || "5.0.2";
 
   banner.innerHTML = `
     <div style="font-size: 22px;">🚀</div>
@@ -694,7 +694,7 @@ function triggerAppUpdate(newBuildId, newVersion) {
   }, 1000);
 }
 
-window.APP_VERSION = "4.7.14";
+window.APP_VERSION = "5.0.2";
 
 function isVersionAfter(vCurrent, vTarget = "4.7.1") {
   if (!vCurrent) return false;
@@ -759,9 +759,9 @@ window.closeVersionChangelogModal = closeVersionChangelogModal;
 
 async function loadAdminChangelog(version) {
   const select = document.getElementById("adminChangelogVersionSelect");
-  const targetVer = version || (select ? select.value : (window.APP_VERSION || "4.7.14"));
+  const targetVer = version || (select ? select.value : (window.APP_VERSION || "5.0.2"));
   const badge = document.getElementById("adminCurrentVersionBadge");
-  if (badge) badge.textContent = `v${window.APP_VERSION || "4.7.14"}`;
+  if (badge) badge.textContent = `v${window.APP_VERSION || "5.0.2"}`;
   try {
     const res = await fetch(`/api/changelog?version=${encodeURIComponent(targetVer)}`);
     const data = await res.json();
@@ -780,7 +780,7 @@ window.onAdminChangelogVersionChange = onAdminChangelogVersionChange;
 
 async function saveAdminChangelog() {
   const select = document.getElementById("adminChangelogVersionSelect");
-  const targetVer = select ? select.value : (window.APP_VERSION || "4.7.14");
+  const targetVer = select ? select.value : (window.APP_VERSION || "5.0.2");
   const input = document.getElementById("adminChangelogInput");
   const btn = document.getElementById("btnSaveAdminChangelog");
   const text = input ? input.value.trim() : "";
@@ -1534,18 +1534,19 @@ function getMiniCoverStyle(coverVal) {
     return `background-color: ${foundPreset.value};`;
   }
   const fallbackImages = {
-    "chinh_phuc_bau_troi": "/covers/chinh-phuc-bau-troi.png",
-    "ton_vinh_phai_dep": "/covers/ton-vinh-phai-dep.png",
-    "bua_tiec_ma_mi": "/covers/bua-tiec-ma-mi.png",
-    "phep_mau_mua_dong": "/covers/phepmaumuadong.png",
-    "khu_rung_tri_thuc": "/covers/khu-rung-tri-thuc.png",
-    "mua_anh_dao_no": "/covers/mua-anh-dao-no.png",
-    "vuong_quoc_mua_dong": "/covers/vuong-quoc-mua-dong.png",
-    "tinh_tu_sao_troi": "/covers/tinh-tu-sao-troi.png",
-    "ky_nguyen_hoang_kim": "/covers/ky-nguyen-hoang-kim.png",
-    "thung_lung_suong_thu": "/covers/thung-lung-suong-thu.png",
-    "thien_ha_huyen_ao": "/covers/thien-ha-huyen-ao.png",
-    "pha_le_hoang_gia": "/covers/pha-le-hoang-gia.png",
+    "chinh_phuc_bau_troi": "/covers/chinh-phuc-bau-troi.webp",
+    "ton_vinh_phai_dep": "/covers/ton-vinh-phai-dep.webp",
+    "bua_tiec_ma_mi": "/covers/bua-tiec-ma-mi.webp",
+    "phep_mau_mua_dong": "/covers/phepmaumuadong.webp",
+    "khu_rung_tri_thuc": "/covers/khu-rung-tri-thuc.webp",
+    "mua_anh_dao_no": "/covers/mua-anh-dao-no.webp",
+    "vuong_quoc_mua_dong": "/covers/vuong-quoc-mua-dong.webp",
+    "tinh_tu_sao_troi": "/covers/tinh-tu-sao-troi.webp",
+    "ky_nguyen_hoang_kim": "/covers/ky-nguyen-hoang-kim.webp",
+    "thung_lung_suong_thu": "/covers/thung-lung-suong-thu.webp",
+    "thien_ha_huyen_ao": "/covers/thien-ha-huyen-ao.webp",
+    "pha_le_hoang_gia": "/covers/pha-le-hoang-gia.webp",
+    "thao_nguyen_ky_bi": "/covers/thao-nguyen-ky-bi.webp",
   };
   if (fallbackImages[val]) {
     return `background-image: url('${fallbackImages[val]}');`;
@@ -1747,6 +1748,21 @@ window.adminSetQuickStreak = async function (days) {
 
 let currentShieldLogs = [];
 let shieldHistoryFilter = "all";
+let currentShieldMax = 3;
+
+function getFallbackShieldSVG(itemKey, size = 22) {
+  if (typeof window.hbGetShieldIconSVG === "function") {
+    return window.hbGetShieldIconSVG(itemKey, size);
+  }
+  const fillMap = {
+    shield_radiant: "#f59e0b",
+    shield_sparkle: "#8b5cf6",
+    shield_milestone: "#10b981",
+    shield_normal: "#3b82f6"
+  };
+  const fill = fillMap[itemKey] || "#38bdf8";
+  return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="${fill}" stroke="#ffffff" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L4 5.5v6c0 5.1 3.4 9.6 8 11 4.6-1.4 8-5.9 8-11v-6L12 2z"/></svg>`;
+}
 
 window.openStreakShieldModal = async function () {
   const modal = document.getElementById("streakShieldModal");
@@ -1776,27 +1792,69 @@ window.openStreakShieldModal = async function () {
 
     const count = Number(res.shields) || 0;
     const max = Number(res.maxShields) || 3;
+    currentShieldMax = max;
     currentShieldLogs = Array.isArray(res.logs) ? res.logs : [];
+    const activeShields = Array.isArray(res.activeShields) ? res.activeShields : [];
 
-    // Cập nhật số khiên trên modal
+    // Cập nhật số khiên trên modal (count riêng & max riêng)
     const countEl = document.getElementById("shieldModalCount");
+    const maxEl = document.getElementById("shieldModalMax");
     if (countEl) countEl.textContent = count;
+    if (maxEl) maxEl.textContent = `/ ${max} khiên`;
 
     // Cập nhật số khiên trên badge trang chủ và hành trình
     const b1 = document.getElementById("streakShieldsCount");
     const b2 = document.getElementById("journeyShieldsCount");
-    if (b1) b1.textContent = count;
-    if (b2) b2.textContent = count;
+    if (b1) b1.textContent = `${count}/${max}`;
+    if (b2) b2.textContent = `${count}/${max}`;
 
-    // Render 3 slots khiên
+    // Mở rộng danh sách từng khiên để hiển thị đúng icon phân loại theo từng ô
+    const expandedShields = [];
+    for (const sh of activeShields) {
+      const q = Math.max(1, Number(sh.quantity || 1));
+      for (let k = 0; k < q; k++) expandedShields.push(sh);
+    }
+    while (expandedShields.length < count) {
+      expandedShields.push({ itemKey: "shield_normal", name: "Khiên Thường", rarity: "common", isPermanent: false, remainingDays: 3 });
+    }
+
     const slotsEl = document.getElementById("shieldModalSlots");
     if (slotsEl) {
       let slotsHTML = "";
       for (let i = 1; i <= max; i++) {
-        const isFilled = i <= count;
-        slotsHTML += `<div class="shield-slot ${isFilled ? 'filled' : 'empty'}" title="${isFilled ? `Khiên số ${i} (Đang kích hoạt)` : `Ô khiên ${i} (Trống)`}">${isFilled ? '<svg class="shield-icon-svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>' : '<svg class="ui-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>'}</div>`;
+        const sh = expandedShields[i - 1] || null;
+        const isFilled = i <= count && sh;
+        if (isFilled) {
+          const expLabel = sh.isPermanent ? "Vĩnh viễn" : `Còn ${sh.remainingDays || 1} ngày`;
+          const rarCls = sh.rarity ? `rarity-${sh.rarity}` : "";
+          slotsHTML += `<div class="shield-slot filled ${rarCls}" title="${escapeHTML(`${sh.name} (${expLabel})`)}">${getFallbackShieldSVG(sh.itemKey, 24)}</div>`;
+        } else {
+          slotsHTML += `<div class="shield-slot empty" title="Ô khiên ${i} (Trống)"><svg class="ui-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></div>`;
+        }
       }
       slotsEl.innerHTML = slotsHTML;
+    }
+
+    // Danh sách chi tiết các loại khiên đang sở hữu
+    const breakdownEl = document.getElementById("shieldActiveBreakdown");
+    if (breakdownEl) {
+      if (activeShields.length) {
+        breakdownEl.style.display = "flex";
+        breakdownEl.innerHTML = activeShields.map((sh) => {
+          const expLabel = sh.isPermanent ? "Vĩnh viễn" : `Còn ${sh.remainingDays || 1} ngày`;
+          return `
+            <div class="shield-breakdown-pill rarity-${escapeHTML(sh.rarity || "common")}" title="${escapeHTML(`${sh.name} · ${expLabel}`)}">
+              ${getFallbackShieldSVG(sh.itemKey, 18)}
+              <span class="shield-bp-name">${escapeHTML(sh.name)}</span>
+              <span class="shield-bp-qty">x${sh.quantity}</span>
+              <span class="shield-bp-exp">${escapeHTML(expLabel)}</span>
+            </div>
+          `;
+        }).join("");
+      } else {
+        breakdownEl.style.display = "none";
+        breakdownEl.innerHTML = "";
+      }
     }
 
     // Status pill
@@ -1808,7 +1866,7 @@ window.openStreakShieldModal = async function () {
         statusText.textContent = `Đang sẵn sàng tự động giữ chuỗi: Bạn có ${count} khiên bảo vệ phòng khi bận rộn.`;
       } else {
         statusDot.innerHTML = `<svg width="10" height="10" viewBox="0 0 24 24" fill="#94a3b8"><circle cx="12" cy="12" r="10"/></svg>`;
-        statusText.textContent = "Đang cạn khiên: Hãy duy trì hoạt động hoặc tham gia Đấu trường Arena để nhận thêm!";
+        statusText.textContent = "Đang cạn khiên: Hãy duy trì hoạt động hoặc mở Rương may mắn trong Sổ tay khám phá để nhận thêm!";
       }
     }
 
@@ -1891,7 +1949,7 @@ function renderShieldHistoryUI(logs = [], filterType = "all") {
         </div>
         <div class="shield-log-right">
           <span class="shield-log-delta ${badgeClass}">${deltaText} khiên</span>
-          <span class="shield-log-balance">Số dư: ${item.balanceAfter}/3</span>
+          <span class="shield-log-balance">Số dư: ${item.balanceAfter}/${currentShieldMax}</span>
         </div>
       </div>
     `;
@@ -2027,6 +2085,9 @@ function applySession(user) {
   session = user || null;
   if (typeof window !== "undefined") {
     window.session = session;
+    if (session && typeof window.loadHandbookState === "function") {
+      setTimeout(() => window.loadHandbookState(true), 120);
+    }
   }
   if (user) {
     setCachedUser(user);
@@ -2543,6 +2604,7 @@ function renderProfileStats(profileData) {
     contribCard.setAttribute("data-streak-tier", streakTier);
   }
 
+  window.getFlameSVG = getFlameSVG;
   const flameHero = $("#streakFlameHero");
   if (flameHero) {
     flameHero.innerHTML = getFlameSVG(streakTier, 46);
@@ -2556,13 +2618,15 @@ function renderProfileStats(profileData) {
     tierLabel.textContent = getStreakTitle(streak, streakTier);
   }
 
+  const maxShields = profileData.maxShields || (streak >= 365 ? 8 : streak >= 200 ? 6 : streak >= 100 ? 5 : streak >= 50 ? 4 : 3);
+  const syncedShieldVal = `${profileData.shields || 0}/${maxShields}`;
   const shieldsCount = $("#streakShieldsCount");
   if (shieldsCount) {
-    shieldsCount.textContent = profileData.shields || 0;
+    shieldsCount.textContent = syncedShieldVal;
   }
   const journeyShieldsCount = $("#journeyShieldsCount");
   if (journeyShieldsCount) {
-    journeyShieldsCount.textContent = profileData.shields || 0;
+    journeyShieldsCount.textContent = syncedShieldVal;
   }
 
   const shieldNotice = $("#streakShieldNotice");
@@ -2707,6 +2771,9 @@ async function hydrateServer(force = false) {
     const current = await sessionPromise;
     csrfToken = current.csrfToken;
     applySession(current.user);
+    if (current.user?.limitedItems?.studyBackgrounds) {
+      window.handbookUnlockedStudyBackgrounds = current.user.limitedItems.studyBackgrounds;
+    }
 
     // Only navigate to requested study route ONCE on initial app boot
     const initialRouteBase = (typeof initialRequestedRoute !== "undefined" && initialRequestedRoute) ? initialRequestedRoute.split("?")[0].split("&")[0] : "";
@@ -3056,6 +3123,22 @@ function renderActivityRow(r) {
       type: "amber",
       svg: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.45 1-1 1H7v4h10v-4h-2c-.55 0-1-.45-1-1v-2.34c3.27-.67 5.75-3.54 5.75-7.66V4H4.25v3c0 4.12 2.48 6.99 5.75 7.66z"/></svg>`
     },
+    arena_phase_reward: {
+      type: "amber",
+      svg: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.45 1-1 1H7v4h10v-4h-2c-.55 0-1-.45-1-1v-2.34c3.27-.67 5.75-3.54 5.75-7.66V4H4.25v3c0 4.12 2.48 6.99 5.75 7.66z"/></svg>`
+    },
+    gacha_points: {
+      type: "purple",
+      svg: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/><line x1="12" y1="22" x2="12" y2="7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/></svg>`
+    },
+    gacha_point: {
+      type: "purple",
+      svg: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/><line x1="12" y1="22" x2="12" y2="7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/></svg>`
+    },
+    double_card_bonus: {
+      type: "amber",
+      svg: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>`
+    },
     competition_phase_bonus: {
       type: "amber",
       svg: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>`
@@ -3092,9 +3175,18 @@ function renderActivityRow(r) {
       case "document_approved": return `Tài liệu${getSnippet()} đã được duyệt`;
       case "post_read": return `Đọc bài thảo luận${getSnippet()}`;
       case "document_read": return `Xem tài liệu${getSnippet()}`;
-      case "study_session": return `Hoàn thành ca tự học NCKH: ${escapeHTML(stripHtml(r.reason) || 'Tự học tập trung')}`;
+      case "study_session": return escapeHTML(stripHtml(r.reason) || `Hoàn thành ca tự học NCKH trong ngày`);
       case "document_discussion": return escapeHTML(stripHtml(r.reason) || `Đã thảo luận về tài liệu`);
       case "document_comment_deleted": return escapeHTML(stripHtml(r.reason) || `Thảo luận tài liệu đã bị xóa`);
+      case "gacha_points":
+      case "gacha_point": return escapeHTML(stripHtml(r.reason) || `Điểm hoạt động nhận từ Rương may mắn`);
+      case "double_card_bonus": return escapeHTML(stripHtml(r.reason) || `Thẻ nhân đôi điểm hoạt động`);
+      case "arena_phase_reward": return escapeHTML(stripHtml(r.reason) || `Thưởng xếp hạng Chặng Đấu trường Arena`);
+      case "handbook_create_post":
+      case "handbook_reply_post":
+      case "handbook_study_25m": return escapeHTML(stripHtml(r.reason) || `Sổ tay khám phá`);
+      case "community_created": return escapeHTML(stripHtml(r.reason) || `Sáng lập cộng đồng`);
+      case "penalty": return escapeHTML(stripHtml(r.reason) || `Vi phạm quy chuẩn cộng đồng`);
       case "admin_adjustment": return r.points > 0 ? `Được TA cộng điểm: ${escapeHTML(stripHtml(r.reason) || '')}` : `Bị trừ điểm: ${escapeHTML(stripHtml(r.reason) || '')}`;
       case "response_deleted": return `Phản hồi đã bị xóa`;
       case "post_deleted": return `Bài viết đã bị chuyển vào Thùng rác`;
@@ -3263,13 +3355,13 @@ function postCard(post) {
 }
 
 window.hidePost = async (id) => {
-  if (confirm("Bạn có chắc chắn muốn ẩn bài đăng này?\n- Bài đăng sẽ bị ẩn khỏi diễn đàn (không bị tự động xóa sau 7 ngày).\n- Tác giả sẽ bị trừ điểm hoạt động (-2 điểm).\n- Bạn có thể mở lại bài bất cứ lúc nào trong bảng quản trị để hoàn lại điểm.")) {
+  if (confirm("Bạn có chắc chắn muốn ẩn bài đăng này?\n- Bài đăng sẽ bị ẩn khỏi diễn đàn (không bị tự động xóa sau 7 ngày).\n- Tác giả sẽ bị trừ lại đúng số điểm hoạt động đã nhận của bài đăng (tương đương +0 nếu vượt giới hạn ngày).\n- Bạn có thể mở lại bài bất cứ lúc nào trong bảng quản trị để hoàn lại điểm.")) {
     try {
       await requestAPI(`/api/admin/posts/${id}/status`, {
         method: "PATCH",
         body: JSON.stringify({ status: "hidden" }),
       });
-      toast("Đã ẩn bài đăng và trừ điểm hoạt động.");
+      toast("Đã ẩn bài đăng và trừ điểm hoạt động tương ứng.");
       if (currentActiveRoute === "post-detail" && window.currentDetailPostId == id) {
         openDetail(id, false);
       } else {
@@ -3282,13 +3374,13 @@ window.hidePost = async (id) => {
 };
 
 window.deletePost = async (id) => {
-  if (confirm("Chuyển bài đăng này vào Thùng rác (lưu trữ 7 ngày)?\n- Tác giả sẽ bị trừ điểm hoạt động (-2 điểm).\n- Sau 7 ngày, bài viết và toàn bộ nội dung sẽ bị xóa vĩnh viễn.\n- Trong vòng 7 ngày, Admin có thể khôi phục từ Thùng rác để cộng lại điểm.")) {
+  if (confirm("Chuyển bài đăng này vào Thùng rác (lưu trữ 7 ngày)?\n- Tác giả sẽ bị trừ lại đúng số điểm hoạt động đã nhận của bài viết (tương đương -0 nếu bài đã vượt giới hạn).\n- Sau 7 ngày, bài viết và toàn bộ nội dung sẽ bị xóa vĩnh viễn.\n- Trong vòng 7 ngày, Admin có thể khôi phục từ Thùng rác để hoàn lại số điểm đã trừ.")) {
     try {
       await requestAPI(`/api/admin/posts/${id}/status`, {
         method: "PATCH",
         body: JSON.stringify({ status: "deleted" }),
       });
-      toast("Đã chuyển bài đăng vào Thùng rác và trừ điểm hoạt động.");
+      toast("Đã chuyển bài đăng vào Thùng rác và trừ điểm hoạt động tương ứng.");
       go("forum");
       hydrateServer();
     } catch (e) {
@@ -3298,7 +3390,7 @@ window.deletePost = async (id) => {
 };
 
 window.unhidePost = async (id) => {
-  if (confirm("Mở lại (huỷ ẩn) bài đăng này trên diễn đàn?\n- Bài đăng sẽ hiển thị công khai trở lại.\n- Điểm hoạt động sẽ được cộng lại cho tác giả (+2 điểm).")) {
+  if (confirm("Mở lại (huỷ ẩn) bài đăng này trên diễn đàn?\n- Bài đăng sẽ hiển thị công khai trở lại.\n- Điểm hoạt động sẽ được hoàn lại đúng với số điểm đã trừ trước đó.")) {
     try {
       await requestAPI(`/api/admin/posts/${id}/status`, {
         method: "PATCH",
@@ -3954,6 +4046,9 @@ function go(rawRoute, scrollToTop = true) {
 
   if (baseRoute === "home") {
     renderHome();
+    if (typeof window.loadHandbookState === "function" && session) {
+      window.loadHandbookState(true);
+    }
     if (!cachedLeaderboardData?.leaderboard?.length && !cachedLeaderboardData?.arenaLeaderboard?.length && !cachedLeaderboardData?.likesLeaderboard?.length) {
       requestAPI("/api/leaderboard").then(data => {
         if (data && (data.leaderboard || data.streakLeaderboard || data.arenaLeaderboard || data.likesLeaderboard)) {
@@ -3986,6 +4081,10 @@ function go(rawRoute, scrollToTop = true) {
   else onLeaveStudyLounge();
   if (baseRoute === "arena") onEnterArena();
   else onLeaveArena();
+  if (baseRoute === "handbook") {
+    if (typeof window.hbPlayEntranceAnimations === "function") window.hbPlayEntranceAnimations();
+    if (typeof window.loadHandbookState === "function") window.loadHandbookState(false);
+  }
   document.body.classList.toggle("page-christmas-tree", baseRoute === "christmas-tree");
   if (baseRoute === "christmas-tree") onEnterChristmasTree();
   else onLeaveChristmasTree();
@@ -4733,6 +4832,7 @@ function stopDocReadTracking() {
     docReadTimer = null;
   }
   docReadActiveDocId = null;
+  window.currentViewingDocId = null;
   docReadTracked = false;
   docReadAccumulatedMs = 0;
   docReadLastActiveTime = null;
@@ -4751,6 +4851,7 @@ function startDocReadTracking(docId) {
   if (docReadActiveDocId !== docId) {
     stopDocReadTracking();
     docReadActiveDocId = docId;
+    window.currentViewingDocId = docId;
     docReadTracked = false;
     docReadAccumulatedMs = 0;
     docReadLastActiveTime = document.visibilityState === "visible" ? Date.now() : null;
@@ -5565,6 +5666,7 @@ async function openDetail(id, updateHash = true, isBack = false, targetScrollY =
   if (postReadActivePostId !== id) {
     stopPostReadTracking();
     postReadActivePostId = id;
+    window.postReadActivePostId = id;
     postReadTracked = false;
     postReadAccumulatedMs = 0;
     postReadLastActiveTime = document.visibilityState === "visible" ? Date.now() : null;
@@ -5667,10 +5769,10 @@ async function openDetail(id, updateHash = true, isBack = false, targetScrollY =
       const editBtn = r.isAuthor ? renderEditBtn(r.id, r.createdAt, 'responses') : "";
       const targetParentId = level >= 2 ? r.parentId : r.id;
 
-          const isSelf = Boolean(r.isAuthor || (session && r.authorId === session.id));
-          const authorDisplayName = r.anonymous ? "Ẩn danh" : (r.author?.displayName || "Thành viên");
+      const isSelf = Boolean(r.isAuthor || (session && r.authorId === session.id));
+      const authorDisplayName = r.anonymous ? "Ẩn danh" : (r.author?.displayName || "Thành viên");
 
-          return `
+      return `
       <div class="response" id="response-${r.id}" data-response-id="${r.id}" style="position: relative;">
         ${editBtn}
         <span class="avatar avatar-xs ${getAvatarClass(r.author?.streakTier, r.anonymous, r.author?.role)}" ${!r.anonymous && r.author?.id ? `data-namecard-user-id="${r.author.id}" style="cursor: pointer;" title="Xem thẻ tên"` : ''}>${r.author.initials}</span>
@@ -6757,23 +6859,23 @@ function executeOmniSearch() {
   // Filter posts
   const matchedPosts = query
     ? (Array.isArray(posts) ? posts : []).filter(p =>
-        `${p.title || ""} ${p.excerpt || ""} ${p.topic || ""} ${p.author || ""}`.toLowerCase().includes(query)
-      )
+      `${p.title || ""} ${p.excerpt || ""} ${p.topic || ""} ${p.author || ""}`.toLowerCase().includes(query)
+    )
     : [];
 
   // Filter documents (matching both raw type and localized Vietnamese category label)
   const matchedDocs = query
     ? (Array.isArray(documents) ? documents : []).filter(d => {
-        const catLabel = getDocCategoryLabel(d.type || d.category || "");
-        return `${d.title || ""} ${d.subtitle || ""} ${d.desc || ""} ${d.type || ""} ${catLabel} ${d.author || ""}`.toLowerCase().includes(query);
-      })
+      const catLabel = getDocCategoryLabel(d.type || d.category || "");
+      return `${d.title || ""} ${d.subtitle || ""} ${d.desc || ""} ${d.type || ""} ${catLabel} ${d.author || ""}`.toLowerCase().includes(query);
+    })
     : [];
 
   // Filter communities
   const matchedCommunities = query
     ? (Array.isArray(forumCommunitiesList) ? forumCommunitiesList : []).filter(c =>
-        `${c.name || ""} ${c.slug || ""} ${c.desc || ""} ${c.rules || ""}`.toLowerCase().includes(query)
-      )
+      `${c.name || ""} ${c.slug || ""} ${c.desc || ""} ${c.rules || ""}`.toLowerCase().includes(query)
+    )
     : [];
 
   // Update badge counts
@@ -7600,7 +7702,7 @@ $("#questionForm").addEventListener("submit", async (e) => {
     renderPosts();
     renderHome();
     go("forum");
-    toast("Bài thảo luận đã được đăng. +2 Điểm đóng góp");
+    toast("Bài thảo luận đã được đăng.");
     hydrateServer();
   } catch (err) {
     toast(err.message);
@@ -7623,7 +7725,7 @@ window.openEditDocumentModal = function (e, docId) {
     e.preventDefault();
   }
   const doc = (typeof getAppDocument === "function" ? getAppDocument(docId) : null) ||
-              (documents ? documents.find(d => d.id === Number(docId)) : null);
+    (documents ? documents.find(d => d.id === Number(docId)) : null);
   if (!doc) {
     toast("Không tìm thấy thông tin tài liệu.");
     return;
@@ -8217,6 +8319,7 @@ function renderAdminUserRows(users) {
           <button class="button button-outline" style="padding: 4px 8px; font-size: 12px; white-space: nowrap;" onclick="changeUserRole(${u.id}, '${u.role}')">Đổi quyền</button>
           <button class="button button-outline" style="padding: 4px 8px; font-size: 12px; white-space: nowrap;" onclick="adjustUserPoints(${u.id})">Cộng/Trừ điểm</button>
           <button class="button button-outline" style="padding: 4px 8px; font-size: 12px; white-space: nowrap;" onclick="adjustUserStreak(${u.id}, ${u.streak || 0})" title="Chỉnh chuỗi ngày của người dùng này">🔥 Chuỗi: ${u.streak || 0}d</button>
+          <button class="button button-primary" style="padding: 4px 8px; font-size: 12px; white-space: nowrap; background:#0f766e;" onclick="openAdminGiftModal(${u.id}, '${escapeHTML(u.displayName).replace(/'/g, "&#39;")}')" title="Tặng chìa khoá hoặc vật phẩm kèm thông báo">🎁 Tặng quà</button>
         </div>
       </td>
     </tr>
@@ -8364,6 +8467,101 @@ window.adjustUserStreak = async (id, currentStreak = 0) => {
     }
   } catch (e) {
     if (typeof toast === "function") toast("Lỗi: " + e.message);
+  }
+};
+
+const ADMIN_GIFT_ITEM_OPTIONS = [
+  { key: "mythic_mushroom", name: "Nấm thần kỳ (Cực phẩm)", hasLevel: false },
+  { key: "arena_loupe_1", name: "Kính lúp thường", hasLevel: false },
+  { key: "arena_loupe_2", name: "Kính lúp vạn năng", hasLevel: false },
+  { key: "arena_hourglass", name: "Đồng hồ cát", hasLevel: true },
+  { key: "arena_lamp", name: "Đèn thần", hasLevel: false },
+  { key: "arena_hammer", name: "Búa thần", hasLevel: false },
+  { key: "arena_eye", name: "Mắt thần", hasLevel: true },
+  { key: "arena_cloak", name: "Áo choàng tiên tri", hasLevel: true },
+  { key: "double_pts_1", name: "Thẻ x2 Điểm (Cấp I)", hasLevel: false },
+  { key: "double_pts_2", name: "Thẻ x2 Điểm (Cấp II)", hasLevel: false },
+  { key: "double_pts_3", name: "Thẻ x2 Điểm (Cấp III)", hasLevel: false },
+  { key: "shield_normal", name: "Khiên Thường (3 ngày)", hasLevel: false },
+  { key: "shield_sparkle", name: "Khiên Lấp Lánh (7 ngày)", hasLevel: false },
+  { key: "shield_radiant", name: "Khiên Long Lanh (30 ngày)", hasLevel: false },
+  { key: "shield_milestone", name: "Khiên Bền Bỉ (Vĩnh viễn)", hasLevel: false },
+  { key: "pts_1", name: "1 Điểm hoạt động", hasLevel: false },
+  { key: "pts_2", name: "2 Điểm hoạt động", hasLevel: false },
+  { key: "pts_3", name: "3 Điểm hoạt động", hasLevel: false },
+  { key: "pts_5", name: "5 Điểm hoạt động", hasLevel: false }
+];
+
+window.updateAdminGiftPreview = () => {
+  const kind = $("#adminGiftRewardKind")?.value || "keys";
+  const itemKey = $("#adminGiftItemKey")?.value || "mythic_mushroom";
+  const lv = Number($("#adminGiftItemLevel")?.value || 1);
+  const qty = Math.max(1, parseInt($("#adminGiftQty")?.value || "1", 10) || 1);
+
+  const itemRow = $("#adminGiftItemSelectRow");
+  const levelRow = $("#adminGiftLevelRow");
+  if (itemRow) itemRow.style.display = kind === "item" ? "block" : "none";
+
+  const optCfg = ADMIN_GIFT_ITEM_OPTIONS.find((x) => x.key === itemKey);
+  if (levelRow) {
+    levelRow.style.display = (kind === "item" && optCfg && optCfg.hasLevel) ? "block" : "none";
+  }
+
+  let labelName = "Chìa khoá";
+  if (kind === "item" && optCfg) {
+    const baseName = optCfg.name.replace(/\s*\([^)]*\)\s*$/, "");
+    labelName = optCfg.hasLevel && lv > 1 ? `${baseName} (Cấp ${lv === 3 ? "III" : "II"})` : baseName;
+  }
+  const previewBtn = $("#adminGiftCtaPreview");
+  if (previewBtn) previewBtn.textContent = `Nhận x${qty} ${labelName}`;
+};
+
+window.openAdminGiftModal = (userId, displayName = "") => {
+  const modal = $("#adminGiftModal");
+  if (!modal) return;
+  $("#adminGiftTargetUserId").value = String(userId);
+  const targetLabel = $("#adminGiftTargetUserLabel");
+  if (targetLabel) {
+    targetLabel.textContent = `${displayName || "Thành viên"} (#${String(userId).padStart(5, "0")})`;
+  }
+  const itemSel = $("#adminGiftItemKey");
+  if (itemSel && !itemSel.options.length) {
+    itemSel.innerHTML = ADMIN_GIFT_ITEM_OPTIONS.map((o) => `<option value="${o.key}">${escapeHTML(o.name)}</option>`).join("");
+  }
+  if ($("#adminGiftRewardKind")) $("#adminGiftRewardKind").value = "keys";
+  if ($("#adminGiftQty")) $("#adminGiftQty").value = "3";
+  if ($("#adminGiftItemLevel")) $("#adminGiftItemLevel").value = "1";
+  window.updateAdminGiftPreview();
+  if (!modal.open) modal.showModal();
+};
+
+window.closeAdminGiftModal = () => {
+  const modal = $("#adminGiftModal");
+  if (modal && modal.open) modal.close();
+};
+
+window.submitAdminGift = async (e) => {
+  if (e && e.preventDefault) e.preventDefault();
+  const userId = Number($("#adminGiftTargetUserId")?.value || 0);
+  const rewardKind = $("#adminGiftRewardKind")?.value || "keys";
+  const itemKey = $("#adminGiftItemKey")?.value || "";
+  const level = Number($("#adminGiftItemLevel")?.value || 1);
+  const quantity = Math.max(1, Math.min(999, parseInt($("#adminGiftQty")?.value || "1", 10) || 1));
+  if (!userId) return;
+
+  const btn = $("#adminGiftSubmitBtn");
+  if (btn) btn.disabled = true;
+  try {
+    const res = await requestAPI(`/api/admin/users/${userId}/gift`, {
+      method: "POST",
+      body: JSON.stringify({ rewardKind, itemKey, level, quantity })
+    });
+    window.closeAdminGiftModal();
+    if (typeof toast === "function") toast(res?.message || "Đã gửi quà tặng thành công!");
+  } catch (err) {
+    if (typeof toast === "function") toast(err.message || "Không thể gửi quà.");
+  } finally {
+    if (btn) btn.disabled = false;
   }
 };
 
@@ -8816,15 +9014,31 @@ const FRAME_OPTIONS = [
   },
   { id: "ton_vinh_phai_dep", name: "Tôn vinh phái đẹp", isLimited: true, lockNote: "Khung nhận được qua hoạt động giới hạn" },
   { id: "bua_tiec_ma_mi", name: "Bữa tiệc ma mị", isLimited: true, lockNote: "Khung nhận được qua hoạt động giới hạn" },
+  {
+    id: "thao_nguyen_ky_bi",
+    name: "Thảo nguyên kỳ bí",
+    isLimited: true,
+    eventId: "exchange_event",
+    lockNote: "Nhận qua sự kiện đổi thưởng giới hạn"
+  },
 ];
 
 const COVER_PRESETS = [
   // Ảnh bìa hữu hạn nhận qua hoạt động giới hạn
   {
+    id: "thao_nguyen_ky_bi",
+    name: "Thảo nguyên kỳ bí",
+    type: "image",
+    value: "covers/thao-nguyen-ky-bi.webp",
+    isLimited: true,
+    eventId: "exchange_event",
+    lockNote: "Nhận qua sự kiện đổi thưởng giới hạn"
+  },
+  {
     id: "phep_mau_mua_dong",
     name: "Phép màu mùa đông",
     type: "image",
-    value: "covers/phepmaumuadong.png",
+    value: "covers/phepmaumuadong.webp",
     isLimited: true,
     eventId: "phep_mau_mua_dong",
     expiresAt: "2026-12-31T23:59:59+07:00",
@@ -8835,23 +9049,23 @@ const COVER_PRESETS = [
     id: "chinh_phuc_bau_troi",
     name: "Chinh phục bầu trời",
     type: "image",
-    value: "covers/chinh-phuc-bau-troi.png",
+    value: "covers/chinh-phuc-bau-troi.webp",
     isLimited: true,
     lockNote: "Phần thưởng Đấu trường Arena mùa AS1 (2026)",
     expiredLockNote: "Vật phẩm giới hạn Đấu trường Arena mùa AS1 (2026)"
   },
-  { id: "ton_vinh_phai_dep", name: "Tôn vinh phái đẹp", type: "image", value: "covers/ton-vinh-phai-dep.png", isLimited: true, lockNote: "Ảnh bìa nhận được qua hoạt động giới hạn" },
-  { id: "bua_tiec_ma_mi", name: "Bữa tiệc ma mị", type: "image", value: "covers/bua-tiec-ma-mi.png", isLimited: true, lockNote: "Ảnh bìa nhận được qua hoạt động giới hạn" },
+  { id: "ton_vinh_phai_dep", name: "Tôn vinh phái đẹp", type: "image", value: "covers/ton-vinh-phai-dep.webp", isLimited: true, lockNote: "Ảnh bìa nhận được qua hoạt động giới hạn" },
+  { id: "bua_tiec_ma_mi", name: "Bữa tiệc ma mị", type: "image", value: "covers/bua-tiec-ma-mi.webp", isLimited: true, lockNote: "Ảnh bìa nhận được qua hoạt động giới hạn" },
 
   // Ảnh bìa Namecard độc quyền theo chuỗi
-  { id: "khu_rung_tri_thuc", name: "Khu rừng tri thức", type: "image", value: "covers/khu-rung-tri-thuc.png", minDays: 3 },
-  { id: "mua_anh_dao_no", name: "Mùa anh đào nở", type: "image", value: "covers/mua-anh-dao-no.png", minDays: 7 },
-  { id: "vuong_quoc_mua_dong", name: "Vương quốc băng giá", type: "image", value: "covers/vuong-quoc-mua-dong.png", minDays: 14 },
-  { id: "tinh_tu_sao_troi", name: "Tinh tú sao trời", type: "image", value: "covers/tinh-tu-sao-troi.png", minDays: 30 },
-  { id: "ky_nguyen_hoang_kim", name: "Kỷ nguyên hoàng kim", type: "image", value: "covers/ky-nguyen-hoang-kim.png", minDays: 50 },
-  { id: "thung_lung_suong_thu", name: "Thung lũng sương thu", type: "image", value: "covers/thung-lung-suong-thu.png", minDays: 100 },
-  { id: "thien_ha_huyen_ao", name: "Thiên hà huyền ảo", type: "image", value: "covers/thien-ha-huyen-ao.png", minDays: 200 },
-  { id: "pha_le_hoang_gia", name: "Pha lê hoàng gia", type: "image", value: "covers/pha-le-hoang-gia.png", minDays: 365 },
+  { id: "khu_rung_tri_thuc", name: "Khu rừng tri thức", type: "image", value: "covers/khu-rung-tri-thuc.webp", minDays: 3 },
+  { id: "mua_anh_dao_no", name: "Mùa anh đào nở", type: "image", value: "covers/mua-anh-dao-no.webp", minDays: 7 },
+  { id: "vuong_quoc_mua_dong", name: "Vương quốc băng giá", type: "image", value: "covers/vuong-quoc-mua-dong.webp", minDays: 14 },
+  { id: "tinh_tu_sao_troi", name: "Tinh tú sao trời", type: "image", value: "covers/tinh-tu-sao-troi.webp", minDays: 30 },
+  { id: "ky_nguyen_hoang_kim", name: "Kỷ nguyên hoàng kim", type: "image", value: "covers/ky-nguyen-hoang-kim.webp", minDays: 50 },
+  { id: "thung_lung_suong_thu", name: "Thung lũng sương thu", type: "image", value: "covers/thung-lung-suong-thu.webp", minDays: 100 },
+  { id: "thien_ha_huyen_ao", name: "Thiên hà huyền ảo", type: "image", value: "covers/thien-ha-huyen-ao.webp", minDays: 200 },
+  { id: "pha_le_hoang_gia", name: "Pha lê hoàng gia", type: "image", value: "covers/pha-le-hoang-gia.webp", minDays: 365 },
   // Màu sắc và dải chuyển màu có sẵn
   { id: "default", name: "Xanh đại dương", type: "gradient", value: "linear-gradient(135deg, #1e3a8a 0%, #3b82f6 50%, #93c5fd 100%)", minDays: 0 },
   { id: "emerald_gradient", name: "Ngọc lục bảo", type: "gradient", value: "linear-gradient(135deg, #064e3b 0%, #059669 50%, #6ee7b7 100%)", minDays: 0 },
@@ -9857,6 +10071,12 @@ function renderAvatarPicker() {
 
 function getLimitedItemLockInfo(item, limitedItemsObj) {
   if (!item) return { message: "", badgeLabel: "Sự kiện" };
+  if (item.id === "thao_nguyen_ky_bi" || item.eventId === "exchange_event") {
+    return {
+      message: item.lockNote || "Nhận qua sự kiện đổi thưởng giới hạn",
+      badgeLabel: "Đổi thưởng"
+    };
+  }
   if (item.id === "chinh_phuc_bau_troi") {
     return {
       message: item.lockNote || "Phần thưởng Đấu trường Arena mùa AS1 (2026)",
@@ -10146,7 +10366,7 @@ function renderCoverPicker() {
   }
 }
 
-// Client compression for custom cover (1MB max, client WebP optimize)
+// Client compression for custom cover (up to 10MB input, WebP optimized <= 180KB)
 if ($("#coverFileInput")) {
   $("#coverFileInput").onchange = function (e) {
     const file = e.target.files?.[0];
@@ -10157,8 +10377,8 @@ if ($("#coverFileInput")) {
       return;
     }
 
-    if (file.size > 1024 * 1024) {
-      toast("Vui lòng chọn ảnh dung lượng dưới 1MB.");
+    if (file.size > 10 * 1024 * 1024) {
+      toast("Vui lòng chọn ảnh dung lượng dưới 10MB.");
       return;
     }
 
@@ -10166,29 +10386,12 @@ if ($("#coverFileInput")) {
     reader.onload = function (evt) {
       const img = new Image();
       img.onload = function () {
-        const canvas = document.createElement("canvas");
-        const MAX_W = 1200;
-        const MAX_H = 420;
-        let w = img.width;
-        let h = img.height;
-
-        if (w > MAX_W) {
-          h = Math.round((h * MAX_W) / w);
-          w = MAX_W;
-        }
-        if (h > MAX_H) {
-          w = Math.round((w * MAX_H) / h);
-          h = MAX_H;
-        }
-
-        canvas.width = w;
-        canvas.height = h;
-        const ctx = canvas.getContext("2d");
-        ctx.drawImage(img, 0, 0, w, h);
-
-        let dataUrl = canvas.toDataURL("image/webp", 0.8);
-        if (dataUrl.length > 220000) {
-          dataUrl = canvas.toDataURL("image/webp", 0.65);
+        const dataUrl = typeof encodeScaledImageWithinBudget === "function"
+          ? encodeScaledImageWithinBudget(img, [1200, 960, 760], [0.84, 0.76, 0.66, 0.56], 220000)
+          : "";
+        if (!dataUrl) {
+          toast("Không thể nén ảnh bìa xuống mức cho phép. Vui lòng chọn ảnh khác.");
+          return;
         }
 
         currentSelectedCover = dataUrl;
@@ -13250,7 +13453,7 @@ async function finishStudySession(autoCompleted = false) {
         if (res.message) {
           toast(res.message);
         } else if (res.pointsAwarded > 0) {
-          toast(`🎉 Hoàn thành xuất sắc ca tự học (${cyclesToCredit} lượt)! +${res.pointsAwarded} điểm thưởng tuần & giữ chuỗi!`);
+          toast(`🎉 Hoàn thành xuất sắc ca tự học (${cyclesToCredit} lượt)! +${res.pointsAwarded} điểm hoạt động & giữ chuỗi!`);
         } else {
           toast(`🎉 Hoàn tất ca học (${cyclesToCredit} lượt)! Hoạt động đã được ghi nhận.`);
         }
@@ -14972,7 +15175,7 @@ function createStudyAudioPlayer(src) {
     }
   });
 
-  // Fallback 2: Auto-reconnect on network interruption / stream drops
+  // Fallback 2: Auto-reconnect on network interruption / stream drops (preserves playback position)
   player.addEventListener("error", () => {
     if (player._isExplicitlyStopped) return;
     console.warn("Study audio stream error, auto-reconnecting:", src, player.error);
@@ -14980,29 +15183,69 @@ function createStudyAudioPlayer(src) {
     retryTimer = setTimeout(() => {
       if (!player._isExplicitlyStopped) {
         try {
-          const prevTime = (player.currentTime && !isNaN(player.currentTime) && isFinite(player.currentTime)) ? player.currentTime : 0;
+          const prevTime = (player.currentTime && !isNaN(player.currentTime) && isFinite(player.currentTime))
+            ? player.currentTime
+            : (Number(player._savedPosition) || 0);
           player.src = src;
           player.load();
-          player.currentTime = prevTime;
-          player.play().catch(err => console.warn("Audio recovery play warning:", err));
+          const restoreAndPlay = () => {
+            if (prevTime > 0) {
+              try { player.currentTime = prevTime; } catch (e) { }
+            }
+            player.play().catch(err => console.warn("Audio recovery play warning:", err));
+          };
+          if (player.readyState >= 1) restoreAndPlay();
+          else player.addEventListener("loadedmetadata", restoreAndPlay, { once: true });
         } catch (recoverErr) {
           console.warn("Audio recovery failed:", recoverErr);
         }
       }
-    }, 1500);
+    }, 1200);
   });
 
   return player;
 }
 
+function createOrRestoreAudioPlayer(cacheObj, key, src) {
+  let player = cacheObj[key];
+  const prevPos = player && Number.isFinite(player.currentTime) && player.currentTime > 0
+    ? player.currentTime
+    : (Number(player?._savedPosition) || 0);
+  const broken = !player || player.error || player.networkState === 3;
+  if (broken) {
+    if (player) { try { player.pause(); player.src = ""; } catch (e) { } }
+    player = createStudyAudioPlayer(src);
+    if (prevPos > 0) player._savedPosition = prevPos;
+    cacheObj[key] = player;
+  }
+  return player;
+}
+
 function fadeAudioIn(player, targetVol, durationMs = 250) {
   if (!player) return;
+  // Cancel any pending fade-out so toggling off/on preserves position cleanly and doesn't re-pause
+  if (player._fadeInterval) {
+    clearInterval(player._fadeInterval);
+    player._fadeInterval = null;
+  }
+  player._fadeToken = (player._fadeToken || 0) + 1;
+
   const target = Math.max(0.01, Math.min(1, targetVol));
-  // On mobile Safari/iOS, setting volume to 0 or muted before play can trigger muted-audio mode.
-  // Start with target volume so mobile plays audibly immediately.
   player.volume = target;
 
-  // Ensure AudioContext is active if available
+  // Restore saved playback position if the audio element lost it during a rebuild/reload
+  if (player._savedPosition > 0 && player.currentTime < 0.5) {
+    const applyPos = () => {
+      try {
+        if (player._savedPosition > 0 && (!Number.isFinite(player.duration) || player._savedPosition < player.duration)) {
+          player.currentTime = player._savedPosition;
+        }
+      } catch (e) { }
+    };
+    if (player.readyState >= 1) applyPos();
+    else player.addEventListener("loadedmetadata", applyPos, { once: true });
+  }
+
   try {
     getAudioContext();
   } catch (e) { }
@@ -15010,33 +15253,76 @@ function fadeAudioIn(player, targetVol, durationMs = 250) {
   const playPromise = player.play();
   if (playPromise !== undefined) {
     playPromise.then(() => {
-      // Audio started successfully on user gesture.
       player.volume = target;
     }).catch(e => {
       if (e.name === "AbortError") return;
       console.warn("Audio play warning:", e);
-      toast("Chạm vào màn hình để cho phép phát âm thanh.");
+      if (e.name === "NotAllowedError") {
+        toast("Chạm vào màn hình để cho phép phát âm thanh.");
+        return;
+      }
+      // Recover once if source failed to decode or network was temporarily stale
+      if (!player._retriedOnce && player.src) {
+        player._retriedOnce = true;
+        const pos = Number.isFinite(player.currentTime) && player.currentTime > 0 ? player.currentTime : (player._savedPosition || 0);
+        try {
+          player.load();
+          const retryPlay = () => {
+            if (pos > 0) { try { player.currentTime = pos; } catch (_) { } }
+            player.play().catch(() => {
+              toast("Không thể phát âm thanh này lúc này. Vui lòng thử lại sau.");
+            });
+          };
+          if (player.readyState >= 1) retryPlay();
+          else player.addEventListener("loadedmetadata", retryPlay, { once: true });
+          return;
+        } catch (_) { }
+      }
+      toast("Không thể phát âm thanh này lúc này.");
     });
   }
 }
 
 function fadeAudioOut(player, durationMs = 180, onComplete) {
-  if (!player || player.paused) {
+  if (!player) {
     if (onComplete) onComplete();
     return;
   }
+  if (player._fadeInterval) {
+    clearInterval(player._fadeInterval);
+    player._fadeInterval = null;
+  }
+  // Save playback position so resuming later continues where the user left off (never resets to 0)
+  if (Number.isFinite(player.currentTime) && player.currentTime > 0) {
+    player._savedPosition = player.currentTime;
+  }
+  if (player.paused) {
+    player._isExplicitlyStopped = true;
+    if (onComplete) onComplete();
+    return;
+  }
+  const token = (player._fadeToken || 0) + 1;
+  player._fadeToken = token;
   const startVol = player.volume;
   const steps = 8;
   const stepTime = Math.max(10, Math.floor(durationMs / steps));
   let currentStep = 0;
-  const interval = setInterval(() => {
+  player._fadeInterval = setInterval(() => {
+    if (player._fadeToken !== token) {
+      clearInterval(player._fadeInterval);
+      player._fadeInterval = null;
+      return;
+    }
     currentStep++;
     player.volume = Math.max(0, startVol * (1 - (currentStep / steps)));
     if (currentStep >= steps) {
-      clearInterval(interval);
+      clearInterval(player._fadeInterval);
+      player._fadeInterval = null;
       try {
+        if (Number.isFinite(player.currentTime) && player.currentTime > 0) {
+          player._savedPosition = player.currentTime;
+        }
         player.pause();
-        player.currentTime = 0;
       } catch (e) { }
       if (onComplete) onComplete();
     }
@@ -15121,12 +15407,7 @@ function toggleEnvTrack(trackId) {
   getAudioContext();
 
   if (DEFAULT_ENV_AUDIO_SOURCES && DEFAULT_ENV_AUDIO_SOURCES[trackId]) {
-    let player = studyState.envAudioPlayers[trackId];
-    if (!player || player.error) {
-      if (player) { try { player.pause(); player.src = ""; } catch (e) { } }
-      player = createStudyAudioPlayer(DEFAULT_ENV_AUDIO_SOURCES[trackId]);
-      studyState.envAudioPlayers[trackId] = player;
-    }
+    const player = createOrRestoreAudioPlayer(studyState.envAudioPlayers, trackId, DEFAULT_ENV_AUDIO_SOURCES[trackId]);
     fadeAudioIn(player, userVol, 250);
     studyState.activeEnvTrack = trackId;
   }
@@ -15147,12 +15428,18 @@ function stopCurrentEnvAudio() {
   }
 
   if (studyState.activeCustomEnvId) {
+    const oldCustomId = studyState.activeCustomEnvId;
     if (studyState.customEnvAudioPlayer) {
+      if (!studyState.customAudioPositions) studyState.customAudioPositions = {};
+      if (Number.isFinite(studyState.customEnvAudioPlayer.currentTime) && studyState.customEnvAudioPlayer.currentTime > 0) {
+        studyState.customAudioPositions[oldCustomId] = studyState.customEnvAudioPlayer.currentTime;
+      }
       fadeAudioOut(studyState.customEnvAudioPlayer, 180, () => {
-        studyState.customEnvAudioPlayer = null;
+        if (studyState.activeCustomEnvId !== oldCustomId) {
+          studyState.customEnvAudioPlayer = null;
+        }
       });
     }
-    const oldCustomId = studyState.activeCustomEnvId;
     studyState.activeCustomEnvId = null;
     updateCustomTrackDOM(oldCustomId, false);
   }
@@ -15237,12 +15524,7 @@ function toggleMixTrack(trackId) {
     const userVol = savedVol / 100;
 
     if (DEFAULT_MIX_AUDIO_SOURCES && DEFAULT_MIX_AUDIO_SOURCES[trackId]) {
-      let player = studyState.mixAudioPlayers[trackId];
-      if (!player || player.error) {
-        if (player) { try { player.pause(); player.src = ""; } catch (e) { } }
-        player = createStudyAudioPlayer(DEFAULT_MIX_AUDIO_SOURCES[trackId]);
-        studyState.mixAudioPlayers[trackId] = player;
-      }
+      const player = createOrRestoreAudioPlayer(studyState.mixAudioPlayers, trackId, DEFAULT_MIX_AUDIO_SOURCES[trackId]);
       fadeAudioIn(player, userVol, 250);
     }
   }
@@ -15336,12 +15618,7 @@ function toggleMusicTrack(trackId) {
   getAudioContext();
 
   if (DEFAULT_MUSIC_AUDIO_SOURCES && DEFAULT_MUSIC_AUDIO_SOURCES[trackId]) {
-    let player = studyState.musicAudioPlayers[trackId];
-    if (!player || player.error) {
-      if (player) { try { player.pause(); player.src = ""; } catch (e) { } }
-      player = createStudyAudioPlayer(DEFAULT_MUSIC_AUDIO_SOURCES[trackId]);
-      studyState.musicAudioPlayers[trackId] = player;
-    }
+    const player = createOrRestoreAudioPlayer(studyState.musicAudioPlayers, trackId, DEFAULT_MUSIC_AUDIO_SOURCES[trackId]);
     fadeAudioIn(player, userVol, 250);
     studyState.activeMusicTrack = trackId;
   }
@@ -15362,12 +15639,18 @@ function stopCurrentMusicAudio() {
   }
 
   if (studyState.activeCustomMusicId) {
+    const oldCustomId = studyState.activeCustomMusicId;
     if (studyState.customMusicAudioPlayer) {
+      if (!studyState.customAudioPositions) studyState.customAudioPositions = {};
+      if (Number.isFinite(studyState.customMusicAudioPlayer.currentTime) && studyState.customMusicAudioPlayer.currentTime > 0) {
+        studyState.customAudioPositions[oldCustomId] = studyState.customMusicAudioPlayer.currentTime;
+      }
       fadeAudioOut(studyState.customMusicAudioPlayer, 180, () => {
-        studyState.customMusicAudioPlayer = null;
+        if (studyState.activeCustomMusicId !== oldCustomId) {
+          studyState.customMusicAudioPlayer = null;
+        }
       });
     }
-    const oldCustomId = studyState.activeCustomMusicId;
     studyState.activeCustomMusicId = null;
     updateCustomTrackDOM(oldCustomId, false);
   }
@@ -15396,10 +15679,13 @@ function stopAllStudyAudio() {
     }
   });
 
-  // Stop all active custom mix sounds
+  // Stop all active custom mix sounds without clearing playback state snapshot
   Object.keys(studyState.activeCustomMixSounds).forEach(id => {
     if (studyState.activeCustomMixSounds[id]) {
-      toggleCustomMixAudioPlay(id);
+      const p = studyState.customMixAudioPlayers[id];
+      if (p) fadeAudioOut(p, 180);
+      studyState.activeCustomMixSounds[id] = false;
+      updateCustomTrackDOM(id, false);
     }
   });
 
@@ -15873,16 +16159,8 @@ function toggleCustomEnvAudio(track) {
   }
 
   const savedVol = studyState.customVolumes[id] ?? 50;
-  player.volume = Math.max(0, Math.min(1, savedVol / 100));
-
-  const p = player.play();
-  if (p !== undefined) {
-    p.catch(e => {
-      if (e.name === "AbortError") return;
-      console.warn("Custom env play error:", e);
-      toast("Nhấp vào trang để cho phép phát âm thanh.");
-    });
-  }
+  player._savedPosition = (studyState.customAudioPositions && studyState.customAudioPositions[id]) || 0;
+  fadeAudioIn(player, savedVol / 100, 180);
 
   studyState.activeCustomEnvId = id;
   // Cập nhật DOM các track custom env khác
@@ -15922,16 +16200,8 @@ function toggleCustomMusicAudio(track) {
   }
 
   const savedVol = studyState.customVolumes[id] ?? 50;
-  player.volume = Math.max(0, Math.min(1, savedVol / 100));
-
-  const p = player.play();
-  if (p !== undefined) {
-    p.catch(e => {
-      if (e.name === "AbortError") return;
-      console.warn("Custom music play error:", e);
-      toast("Nhấp vào trang để cho phép phát âm thanh.");
-    });
-  }
+  player._savedPosition = (studyState.customAudioPositions && studyState.customAudioPositions[id]) || 0;
+  fadeAudioIn(player, savedVol / 100, 180);
 
   studyState.activeCustomMusicId = id;
   // Cập nhật DOM các track custom music khác
@@ -15950,10 +16220,11 @@ function toggleCustomMixAudio(track) {
   if (isPlaying) {
     const p = studyState.customMixAudioPlayers[id];
     if (p) {
-      try {
-        p.pause();
-        p.currentTime = 0;
-      } catch (e) { }
+      if (!studyState.customAudioPositions) studyState.customAudioPositions = {};
+      if (Number.isFinite(p.currentTime) && p.currentTime > 0) {
+        studyState.customAudioPositions[id] = p.currentTime;
+      }
+      fadeAudioOut(p, 180);
     }
     studyState.activeCustomMixSounds[id] = false;
     updateCustomTrackDOM(id, false);
@@ -15969,23 +16240,15 @@ function toggleCustomMixAudio(track) {
   }
 
   let player = studyState.customMixAudioPlayers[id];
-  if (!player || player.src !== audioUrl || player.error) {
+  if (!player || player.src !== audioUrl || player.error || player.networkState === 3) {
     if (player) { try { player.pause(); } catch (e) { } }
     player = createStudyAudioPlayer(audioUrl);
     studyState.customMixAudioPlayers[id] = player;
   }
 
   const savedVol = studyState.customVolumes[id] ?? 50;
-  player.volume = Math.max(0, Math.min(1, savedVol / 100));
-
-  const p = player.play();
-  if (p !== undefined) {
-    p.catch(e => {
-      if (e.name === "AbortError") return;
-      console.warn("Custom mix play error:", e);
-      toast("Nhấp vào trang để cho phép phát âm thanh.");
-    });
-  }
+  player._savedPosition = (studyState.customAudioPositions && studyState.customAudioPositions[id]) || 0;
+  fadeAudioIn(player, savedVol / 100, 180);
 
   studyState.activeCustomMixSounds[id] = true;
   updateCustomTrackDOM(id, true);
@@ -16123,28 +16386,72 @@ window.handleCustomMusicAudioUpload = (file) => handleCustomAudioUpload(file, 'm
 /* --- 9. WALLPAPER PRESETS, CLOCK COLOR & EXCLUSIVE COLOR GRADIENTS --- */
 const WALLPAPER_PRESETS = [
   { id: 'default', name: 'Mặc định RE:SEARCH', type: 'gradient', src: '', style: 'linear-gradient(135deg, rgba(20,24,22,0.95), rgba(12,16,14,0.98))' },
-  { id: 'christmas_2026', name: 'Giáng sinh ấm áp (31/12)', type: 'image', src: '/public/assets/wallpapers/christmas-2026.jpg', style: 'url(/public/assets/wallpapers/christmas-2026.jpg)', isChristmasFree: true },
-  { id: 'library', name: 'Thư viện cổ Oxford', type: 'image', src: '/public/assets/wallpapers/library.jpg', style: 'url(/public/assets/wallpapers/library.jpg)' },
-  { id: 'cafe', name: 'Góc Cafe ấm áp', type: 'image', src: '/public/assets/wallpapers/cafe.jpg', style: 'url(/public/assets/wallpapers/cafe.jpg)' },
-  { id: 'mountain', name: 'Sương mù trên núi', type: 'image', src: '/public/assets/wallpapers/mountain.jpg', style: 'url(/public/assets/wallpapers/mountain.jpg)' },
-  { id: 'sunset', name: 'Hoàng hôn giảng đường', type: 'image', src: '/public/assets/wallpapers/sunset.jpg', style: 'url(/public/assets/wallpapers/sunset.jpg)' },
-  { id: 'lofi', name: 'Góc học Lo-fi Chill', type: 'image', src: '/public/assets/wallpapers/lofi.jpg', style: 'url(/public/assets/wallpapers/lofi.jpg)' },
-  { id: 'zen', name: 'Không gian Thiền (Zen)', type: 'image', src: '/public/assets/wallpapers/zen.jpg', style: 'url(/public/assets/wallpapers/zen.jpg)' },
-  { id: 'space', name: 'Vũ trụ & Ngàn sao', type: 'image', src: '/public/assets/wallpapers/space.jpg', style: 'url(/public/assets/wallpapers/space.jpg)' }
+  { id: 'thao_nguyen_ky_bi', name: 'Thảo nguyên kỳ bí', type: 'image', src: '/public/assets/wallpapers/thao-nguyen-ky-bi.webp', style: 'url(/public/assets/wallpapers/thao-nguyen-ky-bi.webp)', isHandbookBg: true, isExchangeEvent: true },
+  { id: 'christmas_2026', name: 'Giáng sinh ấm áp (31/12)', type: 'image', src: '/public/assets/wallpapers/christmas-2026.webp', style: 'url(/public/assets/wallpapers/christmas-2026.webp)', isChristmasFree: true },
+  { id: 'library', name: 'Thư viện cổ Oxford', type: 'image', src: '/public/assets/wallpapers/library.webp', style: 'url(/public/assets/wallpapers/library.webp)' },
+  { id: 'cafe', name: 'Góc Cafe ấm áp', type: 'image', src: '/public/assets/wallpapers/cafe.webp', style: 'url(/public/assets/wallpapers/cafe.webp)' },
+  { id: 'mountain', name: 'Sương mù trên núi', type: 'image', src: '/public/assets/wallpapers/mountain.webp', style: 'url(/public/assets/wallpapers/mountain.webp)' },
+  { id: 'sunset', name: 'Hoàng hôn giảng đường', type: 'image', src: '/public/assets/wallpapers/sunset.webp', style: 'url(/public/assets/wallpapers/sunset.webp)' },
+  { id: 'lofi', name: 'Góc học Lo-fi Chill', type: 'image', src: '/public/assets/wallpapers/lofi.webp', style: 'url(/public/assets/wallpapers/lofi.webp)' },
+  { id: 'zen', name: 'Không gian Thiền (Zen)', type: 'image', src: '/public/assets/wallpapers/zen.webp', style: 'url(/public/assets/wallpapers/zen.webp)' },
+  { id: 'space', name: 'Vũ trụ & Ngàn sao', type: 'image', src: '/public/assets/wallpapers/space.webp', style: 'url(/public/assets/wallpapers/space.webp)' }
 ];
+
+const REMOVED_STUDY_WALLPAPER_IDS = new Set([
+  'rain_library',
+  'sakura_attic',
+  'golden_hall',
+  'winter_cabin'
+]);
 
 function getVisibleWallpaperPresets() {
   const xmasActive = typeof isChristmas2026Season === "function" ? isChristmas2026Season() : false;
-  return WALLPAPER_PRESETS.filter(p => !p.isChristmasFree || xmasActive);
+  const base = WALLPAPER_PRESETS.filter(p => (!p.isChristmasFree || xmasActive) && !REMOVED_STUDY_WALLPAPER_IDS.has(p.id));
+  const extra = Array.isArray(window.handbookStudyWallpaperCatalog) ? window.handbookStudyWallpaperCatalog : [];
+  const merged = [...base];
+  extra.forEach((eb) => {
+    const bgId = eb.id || eb.key;
+    if (bgId && !REMOVED_STUDY_WALLPAPER_IDS.has(bgId) && !merged.some((m) => m.id === bgId)) {
+      const bgSrc = eb.src || eb.imageUrl || "";
+      merged.push({
+        id: bgId,
+        name: eb.name,
+        type: eb.type || (bgSrc ? "image" : "gradient"),
+        src: bgSrc,
+        style: eb.style || (bgSrc ? `url(${bgSrc})` : eb.cssBg || ""),
+        isHandbookBg: true,
+        isExchangeEvent: Boolean(eb.isExchangeEvent),
+        isSeasonReward: Boolean(eb.isSeasonReward)
+      });
+    }
+  });
+  return merged;
 }
 
 function isWallpaperPresetUnlocked(p, streak) {
   if (!p) return false;
   if (p.id === 'default') return true;
+  if (p.isHandbookBg) {
+    const unlockedList = Array.isArray(window.handbookUnlockedStudyBackgrounds) ? window.handbookUnlockedStudyBackgrounds : [];
+    return unlockedList.includes(p.id);
+  }
   if (p.isChristmasFree) {
     return typeof isChristmas2026Season === "function" ? isChristmas2026Season() : false;
   }
   return streak >= 14;
+}
+
+function getWallpaperLockToastExpr(p) {
+  if (p.isSeasonReward) return `toast('Phần thưởng Đấu trường Arena mùa AS1 (2026)')`;
+  if (p.isExchangeEvent || p.isHandbookBg) return `toast('Nhận qua sự kiện đổi thưởng giới hạn')`;
+  return `notifyPerkLocked(14, 'Kho hình nền cơ bản')`;
+}
+
+function getWallpaperLockTitleSuffix(p, isUnlocked) {
+  if (isUnlocked) return "";
+  if (p.isSeasonReward) return " (Phần thưởng Đấu trường Arena mùa AS1)";
+  if (p.isExchangeEvent || p.isHandbookBg) return " (Nhận qua sự kiện đổi thưởng giới hạn)";
+  return " (Mở khóa ở Chuỗi 14 ngày)";
 }
 
 function renderWallpaperPresets() {
@@ -16153,7 +16460,10 @@ function renderWallpaperPresets() {
   const streak = getUserStudyStreak();
   const visiblePresets = getVisibleWallpaperPresets();
 
-  if (studySettings.activeWallpaper === 'christmas_2026' && !(typeof isChristmas2026Season === "function" && isChristmas2026Season())) {
+  if (
+    REMOVED_STUDY_WALLPAPER_IDS.has(studySettings.activeWallpaper) ||
+    (studySettings.activeWallpaper === 'christmas_2026' && !(typeof isChristmas2026Season === "function" && isChristmas2026Season()))
+  ) {
     studySettings.activeWallpaper = 'default';
     saveStudySettings(false);
   }
@@ -16167,14 +16477,14 @@ function renderWallpaperPresets() {
       const isUnlocked = isWallpaperPresetUnlocked(p, streak);
       const clickAction = isUnlocked
         ? `applyStudyWallpaperPreset('${p.id}')`
-        : `notifyPerkLocked(14, 'Kho hình nền cơ bản')`;
+        : getWallpaperLockToastExpr(p);
 
       card.classList.toggle("selected", isSelected);
       card.classList.toggle("locked", !isUnlocked);
       card.setAttribute("onclick", clickAction);
       card.title = p.isChristmasFree
         ? `${p.name} — Mở khóa miễn phí cho tất cả mọi người đến hết 31/12/2026`
-        : `${p.name}${!isUnlocked ? ' (Mở khóa ở Chuỗi 14 ngày)' : ''}`;
+        : `${p.name}${getWallpaperLockTitleSuffix(p, isUnlocked)}`;
 
       let indicator = card.querySelector(".preset-active-indicator");
       if (isSelected && !indicator) {
@@ -16194,10 +16504,10 @@ function renderWallpaperPresets() {
       : `background: ${p.style};`;
     const clickAction = isUnlocked
       ? `applyStudyWallpaperPreset('${p.id}')`
-      : `notifyPerkLocked(14, 'Kho hình nền cơ bản')`;
+      : getWallpaperLockToastExpr(p);
     const titleAttr = p.isChristmasFree
       ? `${p.name} — Mở khóa miễn phí cho tất cả mọi người đến hết 31/12/2026`
-      : `${p.name}${!isUnlocked ? ' (Mở khóa ở Chuỗi 14 ngày)' : ''}`;
+      : `${p.name}${getWallpaperLockTitleSuffix(p, isUnlocked)}`;
 
     return `
       <div class="preset-thumb-card ${isSelected ? 'selected' : ''} ${!isUnlocked ? 'locked' : ''}" data-preset-id="${p.id}" onclick="${clickAction}" title="${escapeHTML(titleAttr)}">
@@ -16225,7 +16535,13 @@ function applyStudyWallpaperPreset(presetId) {
     }
   }
   if (!isWallpaperPresetUnlocked(p, streak)) {
-    notifyPerkLocked(14, "Kho hình nền cơ bản");
+    if (p.isSeasonReward) {
+      toast("Phần thưởng Đấu trường Arena mùa AS1 (2026)");
+    } else if (p.isExchangeEvent || p.isHandbookBg) {
+      toast("Nhận qua sự kiện đổi thưởng giới hạn");
+    } else {
+      notifyPerkLocked(14, "Kho hình nền cơ bản");
+    }
     return;
   }
 
@@ -16352,12 +16668,24 @@ async function handleCustomWallpaperUpload(file) {
 
   const reader = new FileReader();
   reader.onload = async (e) => {
-    const dataUrl = e.target.result;
+    let dataUrl = e.target.result;
+    if (file.size > 350 * 1024 && typeof encodeScaledImageWithinBudget === "function") {
+      try {
+        const img = await new Promise((resolve, reject) => {
+          const i = new Image();
+          i.onload = () => resolve(i);
+          i.onerror = reject;
+          i.src = dataUrl;
+        });
+        const compressed = encodeScaledImageWithinBudget(img, [1600, 1280], [0.84, 0.74, 0.64], 420000);
+        if (compressed) dataUrl = compressed;
+      } catch (_) { }
+    }
     const item = {
       id: `wall_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
       name: file.name,
       dataUrl,
-      size: file.size,
+      size: dataUrl.length,
       createdAt: Date.now()
     };
     await idbPut("custom_wallpapers", item);
@@ -17664,20 +17992,62 @@ function initStudyLoungeEvents() {
     };
   });
 
-  // Sound master toggle: stop all or play default env
+  // Sound master toggle: pause & snapshot active sounds, or resume them from saved positions
   const masterAmbientBtn = $("#toggleAmbientMaster");
   if (masterAmbientBtn) {
     masterAmbientBtn.onclick = () => {
+      const activeMixList = Object.keys(studyState.activeMixSounds || {}).filter((k) => studyState.activeMixSounds[k]);
+      const activeCustomMixList = Object.keys(studyState.activeCustomMixSounds || {}).filter((k) => studyState.activeCustomMixSounds[k]);
       const anyActive = (studyState.activeEnvTrack !== null) ||
         (studyState.activeMusicTrack !== null) ||
         (studyState.activeCustomEnvId !== null) ||
         (studyState.activeCustomMusicId !== null) ||
-        Object.values(studyState.activeMixSounds).some(v => v) ||
-        Object.values(studyState.activeCustomMixSounds).some(v => v);
+        activeMixList.length > 0 ||
+        activeCustomMixList.length > 0;
       if (anyActive) {
+        studyState.lastMasterAudioSnapshot = {
+          envTrack: studyState.activeEnvTrack,
+          musicTrack: studyState.activeMusicTrack,
+          mixTracks: activeMixList,
+          customEnvId: studyState.activeCustomEnvId,
+          customMusicId: studyState.activeCustomMusicId,
+          customMixIds: activeCustomMixList
+        };
         stopAllStudyAudio();
       } else {
-        toggleEnvTrack('env_1');
+        const snap = studyState.lastMasterAudioSnapshot;
+        let restoredAny = false;
+        if (snap) {
+          if (snap.envTrack) {
+            toggleEnvTrack(snap.envTrack);
+            restoredAny = true;
+          } else if (snap.customEnvId) {
+            toggleCustomAudio(snap.customEnvId);
+            restoredAny = true;
+          }
+          if (snap.musicTrack) {
+            toggleMusicTrack(snap.musicTrack);
+            restoredAny = true;
+          } else if (snap.customMusicId) {
+            toggleCustomAudio(snap.customMusicId);
+            restoredAny = true;
+          }
+          (snap.mixTracks || []).forEach((id) => {
+            if (!studyState.activeMixSounds[id]) {
+              toggleMixTrack(id);
+              restoredAny = true;
+            }
+          });
+          (snap.customMixIds || []).forEach((id) => {
+            if (!studyState.activeCustomMixSounds[id]) {
+              toggleCustomAudio(id);
+              restoredAny = true;
+            }
+          });
+        }
+        if (!restoredAny) {
+          toggleEnvTrack('env_1');
+        }
       }
       updateMasterAmbientButtonState();
     };
@@ -17863,6 +18233,7 @@ function initAdaptiveGlassHeader() {
     documents: { label: "Tài liệu" },
     study: { label: "Phòng tự học" },
     arena: { label: "Đấu trường" },
+    handbook: { label: "Sổ tay khám phá" },
     account: {
       label: "Tài khoản",
       svg: '<svg class="compact-nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M5 20a7 7 0 0 1 14 0"/></svg>',
@@ -17881,6 +18252,7 @@ function initAdaptiveGlassHeader() {
     if (base === "documents" || base.startsWith("doc-") || base.startsWith("doc/")) return "documents";
     if (base === "study") return "study";
     if (base === "arena") return "arena";
+    if (base === "handbook") return "handbook";
     if (base === "account") return "account";
     return "home";
   }
@@ -18303,9 +18675,18 @@ initAdaptiveGlassHeader();
 // =========================================================================
 const HOME_BANNERS_CONFIG = [
   {
+    id: "thao-nguyen-ky-bi-2026",
+    title: "Rương báu giới hạn Thảo nguyên kỳ bí — Đổi thưởng: 01/12/2026 - 30/12/2026",
+    image: "public/assets/banner-thao-nguyen-ky-bi.webp?v=20261127_1",
+    priority: 95,
+    startsAt: new Date("2026-11-27T00:00:00+07:00").getTime(),
+    expiresAt: new Date("2026-12-30T23:59:59+07:00").getTime(),
+    action: null
+  },
+  {
     id: "rethink-2026",
     title: "Cuộc thi RE:THINK 2026 — Nhấn để xem tài liệu đề thi!",
-    image: "public/assets/banner-rethink-2026.jpg?v=20261112_1",
+    image: "public/assets/banner-rethink-2026.webp?v=20261112_1",
     // Ưu tiên xuất hiện trang đầu, kể cả các banner sau. Xuất hiện tới hết ngày 01/12/2026
     priority: 100,
     startsAt: new Date("2026-11-12T00:00:00+07:00").getTime(),
@@ -18321,7 +18702,7 @@ const HOME_BANNERS_CONFIG = [
   {
     id: "xmas-tree-2026",
     title: "Trang trí Cây thông Giáng sinh Cộng đồng RE:SEARCH 2026 — Nhấn để tham gia!",
-    image: "public/assets/banner-xmas-tree.png?v=20261112_1",
+    image: "public/assets/banner-xmas-tree.webp?v=20261112_1",
     // Thời gian xuất hiện: đến hết 31/12/2026, nhấn để mở giao diện trang trí cây thông
     startsAt: new Date("2026-11-11T00:00:00+07:00").getTime(),
     expiresAt: new Date("2026-12-31T23:59:59+07:00").getTime(),
@@ -18332,7 +18713,7 @@ const HOME_BANNERS_CONFIG = [
   {
     id: "christmas-2026",
     title: "Cập nhật Giáng sinh 2026 — Sự kiện Món quà mùa đông: Phép màu mùa đông",
-    image: "public/assets/banner-christmas-2026.jpg?v=20261111_1",
+    image: "public/assets/banner-christmas-2026.webp?v=20261111_1",
     // Thời gian xuất hiện: 11/11 đến hết 31/12/2026, banner cập nhật không tương tác
     startsAt: new Date("2026-11-11T00:00:00+07:00").getTime(),
     expiresAt: new Date("2026-12-31T23:59:59+07:00").getTime(),
@@ -18341,7 +18722,7 @@ const HOME_BANNERS_CONFIG = [
   {
     id: "community-forum",
     title: "Cộng đồng cùng bạn khám phá và chia sẻ — Khám phá ngay Diễn đàn RE:SEARCH!",
-    image: "public/assets/banner-community-forum.jpg?v=20261121_1",
+    image: "public/assets/banner-community-forum.webp?v=20261121_1",
     // thời gian hiển thị: đến hết 16/12/2026, tương tác ra trang Diễn đàn
     startsAt: new Date("2026-11-20T00:00:00+07:00").getTime(),
     expiresAt: new Date("2026-12-16T23:59:59+07:00").getTime(),
@@ -18353,7 +18734,7 @@ const HOME_BANNERS_CONFIG = [
   {
     id: "leaderboard-w05",
     title: "Bảng Vàng Tuần 05 — Mô Hình Nghiên Cứu Và Tư Duy Lý Thuyết",
-    image: "public/assets/banner-leaderboard-w05.jpg?v=20261116_1",
+    image: "public/assets/banner-leaderboard-w05.webp?v=20261116_1",
     // thời gian xuất hiện: 16/11 - hết ngày 22/11/2026, không tương tác
     startsAt: new Date("2026-11-16T00:00:00+07:00").getTime(),
     expiresAt: new Date("2026-11-22T23:59:59+07:00").getTime(),
@@ -18362,7 +18743,7 @@ const HOME_BANNERS_CONFIG = [
   {
     id: "leaderboard-w04",
     title: "Bảng Vàng Toàn Đoàn Tuần 04 — Mô Hình Nghiên Cứu",
-    image: "public/assets/banner-leaderboard-w04.jpg?v=20261109_1",
+    image: "public/assets/banner-leaderboard-w04.webp?v=20261109_1",
     // thời gian xuất hiện: 9/11 - 15/11/2026, không tương tác
     startsAt: new Date("2026-11-09T00:00:00+07:00").getTime(),
     expiresAt: new Date("2026-11-15T23:59:59+07:00").getTime(),
@@ -18371,7 +18752,7 @@ const HOME_BANNERS_CONFIG = [
   {
     id: "arena-w05",
     title: "RE:SEARCH Arena Tuần 05 — Mô hình nghiên cứu và tư duy lý thuyết",
-    image: "public/assets/banner-arena-w05.jpg?v=20261109_1",
+    image: "public/assets/banner-arena-w05.webp?v=20261109_1",
     // thời gian xuất hiện: 9/11 - 15/11/2026, tương tác: qua tab Arena
     startsAt: new Date("2026-11-09T00:00:00+07:00").getTime(),
     expiresAt: new Date("2026-11-15T23:59:59+07:00").getTime(),
@@ -18383,7 +18764,7 @@ const HOME_BANNERS_CONFIG = [
   {
     id: "namecard-update",
     title: "Cập nhật mới Namecard: Like Thẻ tên, Đọc tài liệu, Bảng xếp hạng",
-    image: "public/assets/banner-namecard-update.jpg?v=20261102_1",
+    image: "public/assets/banner-namecard-update.webp?v=20261102_1",
     // thời gian xuất hiện: 2/11 - 10/11/2026
     startsAt: new Date("2026-11-02T00:00:00+07:00").getTime(),
     expiresAt: new Date("2026-11-10T23:59:59+07:00").getTime(),
@@ -18408,7 +18789,7 @@ const HOME_BANNERS_CONFIG = [
   {
     id: "streak-30-first",
     title: "Vinh danh thành viên đầu tiên đạt chuỗi 30 ngày — Lương Bích Khuê",
-    image: "public/assets/banner-streak-30.jpg?v=20261030_1",
+    image: "public/assets/banner-streak-30.webp?v=20261030_1",
     // thời hạn: 30/10 - 3/11/2026
     startsAt: new Date("2026-10-30T00:00:00+07:00").getTime(),
     expiresAt: new Date("2026-11-03T23:59:59+07:00").getTime(),
@@ -18420,7 +18801,7 @@ const HOME_BANNERS_CONFIG = [
   {
     id: "study-update",
     title: "Cập nhật mới: Phòng tự học phiên bản mới",
-    image: "public/assets/banner-study-update.jpg?v=20261030_1",
+    image: "public/assets/banner-study-update.webp?v=20261030_1",
     // thời hạn: 30/10 - 10/11/2026
     startsAt: new Date("2026-10-30T00:00:00+07:00").getTime(),
     expiresAt: new Date("2026-11-10T23:59:59+07:00").getTime(),
@@ -18432,7 +18813,7 @@ const HOME_BANNERS_CONFIG = [
   {
     id: "dark-mode",
     title: "Tính năng mới Dark Mode đã có mặt trên RE:SEARCH!",
-    image: "public/assets/banner-dark-mode.jpg?v=20261026_1",
+    image: "public/assets/banner-dark-mode.webp?v=20261026_1",
     // thời gian hiển thị: 26/10 - 3/11/2026
     startsAt: new Date("2026-10-26T00:00:00+07:00").getTime(),
     expiresAt: new Date("2026-11-03T23:59:59+07:00").getTime(),
@@ -18444,7 +18825,7 @@ const HOME_BANNERS_CONFIG = [
   {
     id: "leaderboard-w03",
     title: "Bảng Vàng Tuần 03 — Phương Pháp Nghiên Cứu Định Lượng",
-    image: "public/assets/banner-leaderboard-w03.jpg?v=20261025_1",
+    image: "public/assets/banner-leaderboard-w03.webp?v=20261025_1",
     // thời gian hiển thị: 25/10 - 1/11/2026
     startsAt: new Date("2026-10-25T00:00:00+07:00").getTime(),
     expiresAt: new Date("2026-11-01T23:59:59+07:00").getTime(),
@@ -18456,7 +18837,7 @@ const HOME_BANNERS_CONFIG = [
   {
     id: "leaderboard-w02",
     title: "Bảng Vàng Tuần 02 — Phỏng Vấn Sâu",
-    image: "public/assets/banner-leaderboard-w02.jpg?v=20261018_1",
+    image: "public/assets/banner-leaderboard-w02.webp?v=20261018_1",
     // xuất hiện từ 18/10/2026 đến hết ngày 25/10/2026
     startsAt: new Date("2026-10-18T00:00:00+07:00").getTime(),
     expiresAt: new Date("2026-10-25T23:59:59+07:00").getTime(),
@@ -18468,7 +18849,7 @@ const HOME_BANNERS_CONFIG = [
   {
     id: "leaderboard-w01",
     title: "Bảng Vàng Tuần 01 — Phương Pháp Nghiên Cứu Định Tính",
-    image: "public/assets/banner-leaderboard-w01.jpg?v=20261016_1",
+    image: "public/assets/banner-leaderboard-w01.webp?v=20261016_1",
     // xuất hiện đến hết ngày 18/10/2026
     expiresAt: new Date("2026-10-18T23:59:59+07:00").getTime(),
     action: () => {
@@ -18479,7 +18860,7 @@ const HOME_BANNERS_CONFIG = [
   {
     id: "halloween",
     title: "Halloween — Cho Kẹo Hay Bị Ghẹo",
-    image: "public/assets/banner-halloween.jpg?v=20261016_2",
+    image: "public/assets/banner-halloween.webp?v=20261016_2",
     // sau 1/11/2026 sẽ không hiển thị nữa
     expiresAt: new Date("2026-11-01T23:59:59+07:00").getTime(),
     action: () => {
@@ -18526,11 +18907,7 @@ function initHomeBannerStack() {
     }
     stackCard.style.display = "none";
     if (arenaCard) {
-      if (arenaCard.parentElement !== showcaseRow) {
-        showcaseRow.insertBefore(arenaCard, showcaseRow.firstChild);
-      }
       arenaCard.style.display = "flex";
-      arenaCard.style.width = "100%";
     }
     if (homeBannerState.rafId) {
       cancelAnimationFrame(homeBannerState.rafId);
@@ -18563,14 +18940,9 @@ function initHomeBannerStack() {
     (lastDragAt && Date.now() - lastDragAt < 180) ||
     (window.__xmasSnowSwipeLockUntil && Date.now() < window.__xmasSnowSwipeLockUntil);
 
-  const isStackedCarouselMode = () => {
-    if (typeof window.matchMedia === "function" && window.matchMedia("(max-height: 500px) and (orientation: landscape)").matches) {
-      return false;
-    }
-    return window.innerWidth <= 980;
-  };
+  const isStackedCarouselMode = () => false;
 
-  // Render động các slide banner (bảo tồn nguyên vẹn #weeklyCompetitionModule)
+  // Render động các slide banner (giữ #weeklyCompetitionModule ở tab Sổ tay)
   bannerTrack.querySelectorAll(".banner-slide").forEach((el) => el.remove());
   activeBanners.forEach((b, idx) => {
     const slide = document.createElement("div");
@@ -18587,28 +18959,9 @@ function initHomeBannerStack() {
   });
 
   const syncLayoutAndTrack = () => {
-    const isMobile = isStackedCarouselMode();
-    let movedArenaCard = false;
-    if (isMobile) {
-      // Mobile: đưa card Arena vào làm slide đầu tiên trong bannerTrack (ngăn xếp hợp nhất)
-      if (arenaCard && arenaCard.parentElement !== bannerTrack) {
-        bannerTrack.insertBefore(arenaCard, bannerTrack.firstChild);
-        movedArenaCard = true;
-      }
-      if (arenaCard) arenaCard.style.display = "flex";
-      stackCard.style.display = "block";
-    } else {
-      // Desktop: đưa card Arena về lại cột bên trái của showcaseRow
-      if (arenaCard && arenaCard.parentElement !== showcaseRow) {
-        showcaseRow.insertBefore(arenaCard, stackCard);
-        movedArenaCard = true;
-      }
-      if (arenaCard) arenaCard.style.display = "flex";
-      stackCard.style.display = "block";
-    }
-    if (movedArenaCard && typeof syncCardSnowCaps === "function") {
-      requestAnimationFrame(() => syncCardSnowCaps());
-    }
+    // Giữ #weeklyCompetitionModule cố định trong Bento tab #handbook, không kéo về #home
+    if (arenaCard) arenaCard.style.display = "flex";
+    stackCard.style.display = "block";
   };
 
   const renderDots = (count, activeIdx) => {
@@ -19105,14 +19458,14 @@ function normalizeCompData(raw) {
       }
     ];
   }
-  const maxAttempts = raw.maxAttempts || raw.userStatus?.maxAttempts || 1;
+  const maxAttempts = raw.maxAttempts || raw.userStatus?.maxAttempts || 2;
   const totalOnTimeBonus = raw.totalOnTimeBonus ?? raw.userStatus?.totalOnTimeBonus ?? raw.userSummary?.totalOnTimeBonus ?? 0;
   const defaultAvailablePhase = (raw.userStatus?.defaultAvailablePhase !== undefined)
     ? raw.userStatus.defaultAvailablePhase
     : (raw.defaultAvailablePhase !== undefined ? raw.defaultAvailablePhase : null);
 
   const openScheduleText = raw.openScheduleText || raw.timeState?.openScheduleText || (
-    phase === 1 ? "19:00 T2 – 23:59:59 T3" : (phase === 2 ? "19:00 T4 – 23:59:59 T5" : "19:00 T6 – 23:59:59 T7")
+    phase === 1 ? "18:00 T2 – 10:00 T4" : (phase === 2 ? "18:00 T4 – 10:00 T6" : "18:00 T6 – 12:00 CN")
   );
 
   return {
@@ -19177,7 +19530,7 @@ function renderWeeklyCompetitionCard(raw) {
       attemptsTeaser.style.setProperty("display", "none", "important");
     } else {
       attemptsTeaser.style.display = "";
-      attemptsTeaser.textContent = `Số lượt thi: ${data.userAttempts || 0}/1`;
+      attemptsTeaser.textContent = `Số lượt thi: ${data.userAttempts || 0}/${data.maxAttempts || 2}`;
     }
   }
   if (bestScoreTeaser) {
@@ -19623,6 +19976,12 @@ function switchCompTab(tabName) {
     stopArenaLeaderboardAutoRefresh();
     const rEl = $("#compTabRules");
     if (rEl) rEl.style.display = "block";
+    if (typeof window.hbHydrateRuleItemIcons === "function") window.hbHydrateRuleItemIcons();
+  } else if (tabName === "rewards") {
+    stopArenaLeaderboardAutoRefresh();
+    const rwEl = $("#compTabRewards");
+    if (rwEl) rwEl.style.display = "block";
+    if (typeof window.hbHydrateRuleItemIcons === "function") window.hbHydrateRuleItemIcons();
   }
 }
 
@@ -19726,9 +20085,9 @@ function renderGatewayTab(raw) {
   const attemptsNoteText = $(".attempts-note-banner .note-banner-text");
   if (attemptsNoteText) {
     if (data.isSunday) {
-      attemptsNoteText.innerHTML = `🎯 <strong>Chế độ Luyện tập ngày Chủ Nhật:</strong> Thí sinh được làm lại toàn bộ câu hỏi của cả 3 chặng để ôn tập kiến thức. Bài làm <strong>không tính điểm đấu trường</strong>, <strong>không tính thời gian</strong>, làm <strong>không giới hạn số lượt</strong>, có thể <strong>chuyển câu trước/sau tự do</strong> và <strong>hoàn toàn không ghi nhận vào thành tích Namecard hay Bảng xếp hạng</strong>.`;
+      attemptsNoteText.innerHTML = `🎯 <strong>Chế độ Luyện tập Chủ Nhật:</strong> Làm lại toàn bộ câu hỏi của 3 chặng để ôn tập — không tính điểm đấu trường, không giới hạn thời gian hay số lượt.`;
     } else {
-      attemptsNoteText.innerHTML = `<strong>Mỗi chặng thi đấu chỉ có duy nhất 1 lượt thi!</strong> Thí sinh làm bài đúng hạn ở Chặng 1 &amp; Chặng 2 nhận thêm <strong>+50 ⭐</strong> mỗi đợt. Nếu lỡ, bạn vẫn có thể <strong>làm bù trong tuần</strong> (không cộng thưởng đúng hạn).`;
+      attemptsNoteText.innerHTML = `Mỗi chặng có tối đa <strong>2 lượt thi</strong>, hệ thống lấy điểm cao nhất. <strong>Chặng 1 và 2</strong> được thưởng <strong>+50⭐</strong> khi hoàn thành đúng hạn. Vật phẩm dùng được ở cả hai lượt, không hoàn lại sau khi tiêu hao.`;
     }
   }
 
@@ -19805,7 +20164,7 @@ function renderGatewayTab(raw) {
   }
 
   const attempts = data.userAttempts || 0;
-  if (userAttempts) userAttempts.innerHTML = `${attempts} / 1 <span class="attempt-sub">lượt</span>`;
+  if (userAttempts) userAttempts.innerHTML = `${attempts} / ${data.maxAttempts || 2} <span class="attempt-sub">lượt</span>`;
   if (bestScore) bestScore.innerHTML = `${data.userBestScore || 0} <span class="attempt-sub">⭐</span>`;
   if (userTotalOnTimeBonus) userTotalOnTimeBonus.innerHTML = `${data.totalOnTimeBonus || 0} / 100 <span class="attempt-sub">⭐</span>`;
 
@@ -19849,21 +20208,37 @@ function renderGatewayTab(raw) {
         scoreInfoHTML = `<div class="pj-score-box"><span class="pj-score-label">Còn lại:</span><span class="pj-score-val">${formatCompSeconds(p.activeRemaining || 600)}</span></div>`;
         actionBtnHTML = `<button type="button" class="pj-action-btn btn-resume" onclick="startCompetitionQuiz(${p.phase})">Tiếp tục bài thi</button>`;
       } else if (data.state === "open" && p.isAvailable) {
+        const usedAt = Number(p.attemptsUsed || 0);
+        const maxAt = Number(p.maxAttempts || 2);
+        const curBest = Number(p.bestScore ?? p.score ?? 0);
+        const playLabel = usedAt > 0 ? `Thi lượt ${usedAt + 1}/${maxAt}` : (p.isCatchUp ? `Làm bù Chặng ${p.phase}` : (p.phase === 3 ? "Bắt đầu Chặng 3" : "Bắt đầu thi (+50 ⭐)"));
         if (p.isOnTime) {
           cardClass += " card-on-time";
-          chipHTML = '<span class="pj-status-chip chip-on-time"><svg class="ui-icon" width="10" height="10" viewBox="0 0 24 24" fill="#10b981" style="vertical-align:-1px; margin-right:3px;"><circle cx="12" cy="12" r="10"/></svg>ĐÚNG HẠN (+50⭐)</span>';
-          scoreInfoHTML = `<div class="pj-score-box"><span class="pj-score-label">Đặc quyền:</span><span class="pj-score-val" style="color: #34d399;">+50 ⭐ đúng hạn</span></div>`;
-          actionBtnHTML = `<button type="button" class="pj-action-btn btn-play-ontime" onclick="openQuizStartConfirmModal(${p.phase})">Bắt đầu thi (+50 ⭐)</button>`;
+          chipHTML = `<span class="pj-status-chip chip-on-time"><svg class="ui-icon" width="10" height="10" viewBox="0 0 24 24" fill="#10b981" style="vertical-align:-1px; margin-right:3px;"><circle cx="12" cy="12" r="10"/></svg>${usedAt > 0 ? `${usedAt}/${maxAt} LƯỢT` : "ĐÚNG HẠN (+50⭐)"}</span>`;
+          scoreInfoHTML = usedAt > 0
+            ? `<div class="pj-score-box"><span class="pj-score-label">Cao nhất (${usedAt}/${maxAt}):</span><span class="pj-score-val" style="color: #34d399;">${curBest} ⭐</span></div>`
+            : `<div class="pj-score-box"><span class="pj-score-label">Đặc quyền:</span><span class="pj-score-val" style="color: #34d399;">+50 ⭐ đúng hạn</span></div>`;
+          actionBtnHTML = usedAt > 0
+            ? `<div class="pj-action-group"><button type="button" class="pj-action-btn btn-play-ontime" onclick="openQuizStartConfirmModal(${p.phase})">${playLabel}</button><button type="button" class="pj-action-btn btn-view-result" onclick="openPhaseResultModal(${p.phase})">Xem KQ</button></div>`
+            : `<button type="button" class="pj-action-btn btn-play-ontime" onclick="openQuizStartConfirmModal(${p.phase})">${playLabel}</button>`;
         } else if (p.isCatchUp) {
           cardClass += " card-catch-up";
-          chipHTML = '<span class="pj-status-chip chip-catch-up"><svg class="ui-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px; margin-right:3px;"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>LÀM BÙ TUẦN</span>';
-          scoreInfoHTML = `<div class="pj-score-box"><span class="pj-score-label">Chế độ:</span><span class="pj-score-val" style="color: #fbbf24;">Làm bù (Không +50⭐)</span></div>`;
-          actionBtnHTML = `<button type="button" class="pj-action-btn btn-play-catchup" onclick="openQuizStartConfirmModal(${p.phase})">Làm bù Chặng ${p.phase}</button>`;
+          chipHTML = `<span class="pj-status-chip chip-catch-up"><svg class="ui-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px; margin-right:3px;"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>${usedAt > 0 ? `${usedAt}/${maxAt} LƯỢT` : "LÀM BÙ TUẦN"}</span>`;
+          scoreInfoHTML = usedAt > 0
+            ? `<div class="pj-score-box"><span class="pj-score-label">Cao nhất (${usedAt}/${maxAt}):</span><span class="pj-score-val" style="color: #fbbf24;">${curBest} ⭐</span></div>`
+            : `<div class="pj-score-box"><span class="pj-score-label">Chế độ:</span><span class="pj-score-val" style="color: #fbbf24;">Làm bù (Không +50⭐)</span></div>`;
+          actionBtnHTML = usedAt > 0
+            ? `<div class="pj-action-group"><button type="button" class="pj-action-btn btn-play-catchup" onclick="openQuizStartConfirmModal(${p.phase})">${playLabel}</button><button type="button" class="pj-action-btn btn-view-result" onclick="openPhaseResultModal(${p.phase})">Xem KQ</button></div>`
+            : `<button type="button" class="pj-action-btn btn-play-catchup" onclick="openQuizStartConfirmModal(${p.phase})">${playLabel}</button>`;
         } else {
           cardClass += " card-on-time";
-          chipHTML = '<span class="pj-status-chip chip-on-time"><svg class="ui-icon" width="10" height="10" viewBox="0 0 24 24" fill="#10b981" style="vertical-align:-1px; margin-right:3px;"><circle cx="12" cy="12" r="10"/></svg>ĐANG MỞ</span>';
-          scoreInfoHTML = `<div class="pj-score-box"><span class="pj-score-label">Chặng cuối tuần:</span><span class="pj-score-val">Tối đa 1.100 ⭐</span></div>`;
-          actionBtnHTML = `<button type="button" class="pj-action-btn btn-play-ontime" onclick="openQuizStartConfirmModal(${p.phase})">Bắt đầu Chặng 3</button>`;
+          chipHTML = `<span class="pj-status-chip chip-on-time"><svg class="ui-icon" width="10" height="10" viewBox="0 0 24 24" fill="#10b981" style="vertical-align:-1px; margin-right:3px;"><circle cx="12" cy="12" r="10"/></svg>${usedAt > 0 ? `${usedAt}/${maxAt} LƯỢT` : "ĐANG MỞ"}</span>`;
+          scoreInfoHTML = usedAt > 0
+            ? `<div class="pj-score-box"><span class="pj-score-label">Cao nhất (${usedAt}/${maxAt}):</span><span class="pj-score-val">${curBest} ⭐</span></div>`
+            : `<div class="pj-score-box"><span class="pj-score-label">Chặng cuối tuần:</span><span class="pj-score-val">Tối đa 1.500 ⭐</span></div>`;
+          actionBtnHTML = usedAt > 0
+            ? `<div class="pj-action-group"><button type="button" class="pj-action-btn btn-play-ontime" onclick="openQuizStartConfirmModal(${p.phase})">${playLabel}</button><button type="button" class="pj-action-btn btn-view-result" onclick="openPhaseResultModal(${p.phase})">Xem KQ</button></div>`
+            : `<button type="button" class="pj-action-btn btn-play-ontime" onclick="openQuizStartConfirmModal(${p.phase})">${playLabel}</button>`;
         }
       } else {
         cardClass += " card-locked";
@@ -19943,7 +20318,11 @@ function renderGatewayTab(raw) {
         startBtn.style.cursor = "pointer";
         const targetP = data.defaultAvailablePhase;
         const pObj = (data.phasesStatus || []).find(p => p.phase === targetP);
-        if (pObj && pObj.isCatchUp) {
+        const targetUsed = Number(pObj?.attemptsUsed || 0);
+        const targetMax = Number(pObj?.maxAttempts || 2);
+        if (targetUsed > 0) {
+          if (startBtnText) startBtnText.textContent = `Thi lại Chặng ${targetP} (Lượt ${targetUsed + 1}/${targetMax})`;
+        } else if (pObj && pObj.isCatchUp) {
           if (startBtnText) startBtnText.textContent = `Làm bù Chặng ${targetP}`;
         } else if (targetP === 3) {
           if (startBtnText) startBtnText.textContent = `Bắt đầu Chặng 3 (Chặng cuối tuần)`;
@@ -19996,7 +20375,7 @@ function renderGatewayTab(raw) {
         startBtn.style.cursor = "not-allowed";
         startBtn.onclick = null;
         if (isCountdown) {
-          if (startBtnText) startBtnText.textContent = "Cổng chưa mở (Mở lúc 19:00)";
+          if (startBtnText) startBtnText.textContent = "Cổng chưa mở (Mở lúc 18:00)";
           if (blockedMsg) {
             blockedMsg.style.display = "block";
             blockedMsg.style.color = "";
@@ -20004,7 +20383,7 @@ function renderGatewayTab(raw) {
             blockedMsg.style.border = "";
             blockedMsg.style.borderRadius = "";
             blockedMsg.style.padding = "";
-            blockedMsg.textContent = "Cổng thi đấu mở lúc 19h00 và kéo dài xuyên suốt đến 23h59:59 hôm sau. Vui lòng quay lại đúng giờ!";
+            blockedMsg.textContent = "Cổng thi đấu mở từ 18h00 đến 10h00 sáng hôm sau (riêng Chặng 3 kết thúc Chủ Nhật 12h00). Vui lòng quay lại đúng giờ!";
           }
         } else {
           if (startBtnText) startBtnText.textContent = "Cổng thi đấu đang đóng";
@@ -20015,7 +20394,7 @@ function renderGatewayTab(raw) {
             blockedMsg.style.border = "";
             blockedMsg.style.borderRadius = "";
             blockedMsg.style.padding = "";
-            blockedMsg.textContent = "Hệ thống đang trong khung giờ chuẩn bị (0h – 15h). Vui lòng quay lại vào khung giờ mở cổng!";
+            blockedMsg.textContent = "Hệ thống đang trong khung giờ tổng kết & chuẩn bị (10h – 15h). Vui lòng quay lại lúc 18h00 hoặc làm bù đúng lịch!";
           }
         }
       }
@@ -20508,7 +20887,7 @@ function openQuizStartConfirmModal(phase) {
 
   const phaseObj = (compState.overview?.phasesStatus || []).find(p => p.phase === targetPhase);
   if (phaseObj && phaseObj.isCompleted) {
-    toast(`Bạn đã hoàn thành bài thi Chặng ${targetPhase} rồi (1/1 lượt).`);
+    toast(`Bạn đã hoàn thành tối đa bài thi Chặng ${targetPhase} rồi (${phaseObj.attemptsUsed || 2}/${phaseObj.maxAttempts || 2} lượt).`);
     return;
   }
 
@@ -20520,44 +20899,48 @@ function openQuizStartConfirmModal(phase) {
   const bonusCardEl = $("#quizStartBonusCard");
   const proceedBtnEl = $("#quizStartProceedBtn");
 
-  const daysText = targetPhase === 1 ? "Thứ Hai – Thứ Ba" : (targetPhase === 2 ? "Thứ Tư – Thứ Năm" : "Thứ Sáu – Thứ Bảy");
-  if (titleEl) titleEl.textContent = `Xác nhận lượt thi - Chặng ${targetPhase}`;
+  const daysText = targetPhase === 1 ? "Thứ Hai – Thứ Tư" : (targetPhase === 2 ? "Thứ Tư – Thứ Năm" : "Thứ Sáu – Chủ Nhật");
+  const scheduleTimeText = targetPhase === 1 ? "Thứ Hai 18:00 – Thứ Tư 10:00" : (targetPhase === 2 ? "Thứ Tư 18:00 – Thứ Sáu 10:00" : "Thứ Sáu 18:00 – Chủ Nhật 12:00");
+  if (titleEl) titleEl.textContent = `Xác nhận lượt thi · Chặng ${targetPhase}`;
   if (phaseTagEl) phaseTagEl.textContent = `Chặng ${targetPhase} (${daysText})`;
 
-  // Mandatory prompt required by user
   if (promptTextEl) {
-    promptTextEl.textContent = "Bạn chỉ có 1 lượt thi duy nhất cho chặng thi đấu này, bắt đầu thi chứ?";
+    const used = Number(phaseObj?.attemptsUsed || 0);
+    const maxAt = Number(phaseObj?.maxAttempts || 2);
+    promptTextEl.textContent = used > 0
+      ? `Lượt ${used + 1}/${maxAt} · Mỗi chặng có tối đa ${maxAt} lượt thi, hệ thống lấy điểm cao nhất. Vật phẩm đã sử dụng sẽ không được hoàn lại. Bạn đã sẵn sàng chưa?`
+      : `Mỗi chặng có tối đa ${maxAt} lượt thi, hệ thống lấy điểm cao nhất. Vật phẩm đã sử dụng sẽ không được hoàn lại. Bạn đã sẵn sàng chưa?`;
   }
 
   const isOnTime = Boolean(phaseObj ? phaseObj.isOnTime : (targetPhase === currentPhase && (targetPhase === 1 || targetPhase === 2) && !isSunday));
   const isCatchUp = Boolean(phaseObj ? phaseObj.isCatchUp : (targetPhase < currentPhase));
 
   if (bonusCardEl) {
-    if (isOnTime) {
-      bonusCardEl.className = "quiz-start-bonus-card on-time";
+    if (targetPhase === 3 || (!isOnTime && !isCatchUp)) {
+      bonusCardEl.className = "quiz-start-bonus-card final-phase";
       bonusCardEl.innerHTML = `
-        <svg class="ui-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: #10b981; flex-shrink: 0;"><polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/><line x1="12" y1="22" x2="12" y2="7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/></svg>
+        <svg class="ui-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: #6366f1; flex-shrink: 0;"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>
         <div>
-          <strong>ĐẶC QUYỀN ĐÚNG HẠN: +50 ⭐ THƯỞNG THÊM!</strong><br>
-          Bạn đang tham gia đúng hạn Chặng ${targetPhase}. Hệ thống sẽ cộng thêm <strong>+50 ⭐</strong> vào tổng điểm khi bạn hoàn thành bài thi! (Tối đa toàn bài: <strong>1.150 ⭐</strong>).
+          <strong>CHẶNG CUỐI TUẦN</strong><br>
+          Không hỗ trợ làm bù. Đóng cổng lúc <strong>12:00 Chủ Nhật</strong>. Điểm tối đa: <strong>1.500⭐</strong>.
         </div>
       `;
-    } else if (isCatchUp) {
-      bonusCardEl.className = "quiz-start-bonus-card catch-up";
+    } else if (isOnTime) {
+      bonusCardEl.className = "quiz-start-bonus-card on-time";
       bonusCardEl.innerHTML = `
-        <svg class="ui-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: #f59e0b; flex-shrink: 0;"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+        <svg class="ui-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: #10b981; flex-shrink: 0;"><polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/><line x1="12" y1="22" x2="12" y2="7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/></svg>
         <div>
-          <strong>LƯỢT LÀM BÙ TRONG TUẦN</strong><br>
-          Bạn đang làm bù Chặng ${targetPhase} đã qua. Bạn vẫn được tính điểm bài thi bình thường (tối đa <strong>1.100 ⭐</strong>), nhưng <em>không nhận điểm thưởng đúng hạn (+50 ⭐)</em>.
+          <strong>Chặng ${targetPhase} · ${scheduleTimeText}</strong><br>
+          Thưởng đúng hạn: <strong>+50⭐</strong> khi hoàn thành lượt thi.
         </div>
       `;
     } else {
-      bonusCardEl.className = "quiz-start-bonus-card final-phase";
+      bonusCardEl.className = "quiz-start-bonus-card catch-up";
       bonusCardEl.innerHTML = `
-        <svg class="ui-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: #6366f1; flex-shrink: 0;"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>
+        <svg class="ui-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: #f59e0b; flex-shrink: 0;"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
         <div>
-          <strong>CHẶNG 3 - CHẶNG CUỐI TUẦN</strong><br>
-          Đây là chặng thi đấu cuối cùng trước khi tổng kết trao giải vào Chủ Nhật. Lỡ chặng này sẽ <strong>không có cơ hội làm bù</strong>! Điểm tối đa: <strong>1.100 ⭐</strong>.
+          <strong>Chặng ${targetPhase} · Làm bù (${scheduleTimeText})</strong><br>
+          Làm bù trong tuần (không nhận thưởng đúng hạn <strong>+50⭐</strong>).
         </div>
       `;
     }
@@ -20565,6 +20948,10 @@ function openQuizStartConfirmModal(phase) {
 
   if (proceedBtnEl) {
     proceedBtnEl.innerHTML = isOnTime ? "Bắt đầu thi (+50 ⭐)" : (isCatchUp ? `Bắt đầu làm bù Chặng ${targetPhase}` : "Bắt đầu thi ngay");
+  }
+  if (typeof window.hbRenderArenaStartLoadout === "function") {
+    const usedForPhase = Number(phaseObj?.attemptsUsed || 0);
+    window.hbRenderArenaStartLoadout(false, usedForPhase);
   }
 
   try {
@@ -20698,15 +21085,27 @@ function renderPracticeQuestion() {
 
   const counter = $("#quizQuestionCounter");
   const questionText = $("#quizQuestionText");
+  if (counter) counter.textContent = `Câu ${compState.currentQIndex + 1} / ${compState.activeQuestions.length}`;
+  if (questionText) questionText.textContent = q.questionText;
   const optA = $("#quizOptA");
   const optB = $("#quizOptB");
   const optC = $("#quizOptC");
+  const optD = $("#quizOptD");
 
   if (counter) counter.textContent = `Câu ${p.currentIndex + 1} / ${p.questions.length}`;
   if (questionText) questionText.textContent = q.questionText;
   if (optA) optA.textContent = q.optionA;
   if (optB) optB.textContent = q.optionB;
   if (optC) optC.textContent = q.optionC;
+  if (optD) {
+    const optDBtn = optD.closest(".quiz-option-btn");
+    if (q.optionD) {
+      optD.textContent = q.optionD;
+      if (optDBtn) optDBtn.style.display = "";
+    } else if (optDBtn) {
+      optDBtn.style.display = "none";
+    }
+  }
 
   const userAns = p.userAnswers[p.currentIndex];
   const eliminated = userAns?.eliminatedOptions || [];
@@ -21016,7 +21415,7 @@ async function startCompetitionQuiz(targetPhase) {
 
   const phaseObj = (compState.overview?.phasesStatus || []).find(p => p.phase === Number(phase));
   if (phaseObj && phaseObj.isCompleted) {
-    toast(`Bạn đã hoàn thành bài thi Chặng ${phase} rồi (1/1 lượt).`);
+    toast(`Bạn đã hoàn thành tối đa bài thi Chặng ${phase} rồi (${phaseObj.attemptsUsed || 2}/${phaseObj.maxAttempts || 2} lượt).`);
     return;
   }
 
@@ -21025,13 +21424,17 @@ async function startCompetitionQuiz(targetPhase) {
 
 async function executeStartQuizSession(targetPhase) {
   try {
-    const payload = {};
+    const loadout = typeof window.hbGetArenaStartLoadout === "function" ? window.hbGetArenaStartLoadout() : {};
+    const payload = { ...loadout };
     if (targetPhase) payload.phase = Number(targetPhase);
 
     const res = await requestAPI("/api/competition/session/start", {
       method: "POST",
       body: JSON.stringify(payload)
     });
+    if (typeof window.hbResetArenaLoadout === "function") {
+      window.hbResetArenaLoadout();
+    }
 
     if (compState.practice) compState.practice.active = false;
     compState.sessionToken = res.sessionToken;
@@ -21049,6 +21452,10 @@ async function executeStartQuizSession(targetPhase) {
     compState.initialDisabledOptions = [];
     compState.currentSessionPhase = res.phase;
     compState.potentialOnTimeBonus = res.potentialOnTimeBonus || 0;
+    window.compState = compState;
+    if (typeof window.hbSyncArenaSessionState === "function") {
+      window.hbSyncArenaSessionState(res);
+    }
 
     closeCompetitionModal();
     const quizModal = $("#competitionQuizModal");
@@ -21122,7 +21529,7 @@ function promptQuizExit() {
   }
   if (currentQEl) {
     const totalQ = compState.activeQuestions?.length || 10;
-    currentQEl.textContent = `Câu ${compState.currentQIndex + 1} / ${totalQ}`;
+    currentQEl.textContent = `Câu ${compState.currentQIndex + 1}/${totalQ}`;
   }
   if (currentStarsEl) {
     currentStarsEl.textContent = "🔒 Đáp án ẩn";
@@ -21135,40 +21542,36 @@ function promptQuizExit() {
   if (isFinalExit) {
     if (exitBadgeIcon) exitBadgeIcon.textContent = "🚨";
     if (exitTitle) exitTitle.textContent = "Cảnh báo thoát lần 3";
-    if (exitSubTitle) exitSubTitle.textContent = "Hệ thống sẽ dừng và tính điểm bài thi luôn!";
+    if (exitSubTitle) { exitSubTitle.textContent = ""; exitSubTitle.style.display = "none"; }
     if (guaranteeCard) {
       guaranteeCard.className = "quiz-exit-guarantee-card danger-mode";
     }
     if (guaranteeText) {
       guaranteeText.innerHTML = `
-        <strong style="color: #f87171; font-size: 14px;">🚨 CẢNH BÁO: ĐÃ HẾT LƯỢT THOÁT CHO PHÉP!</strong><br>
-        Bạn đã sử dụng đủ <strong>2/2 lần thoát</strong>. Nếu bạn xác nhận thoát bây giờ (lần thứ 3), hệ thống sẽ <strong>DỪNG VÀ TÍNH ĐIỂM BÀI THI NGAY LẬP TỨC</strong> theo kết quả các câu đã làm (lượt thi này sẽ kết thúc hoàn toàn)!<br>
-        <span style="font-size: 12px; color: #fca5a5; margin-top: 4px; display: inline-block;">💡 <em>Khuyên bạn nên bấm "Tiếp tục làm bài ngay" để không bị mất lượt thi này!</em></span>
+        <div style="color: #f87171; font-weight: 700;">Đã hết 2/2 lần thoát. Nếu xác nhận thoát ngay bây giờ (lần thứ 3), hệ thống sẽ kết thúc bài thi và chốt điểm.</div>
+        <div style="font-size: 12px; color: #fca5a5; margin-top: 6px;">⏱️ Đồng hồ vẫn tiếp tục chạy khi hộp thoại đang mở.</div>
       `;
     }
     if (confirmBtn) {
       confirmBtn.className = "button quiz-exit-confirm-btn danger-confirm-btn";
-      confirmBtn.innerHTML = `🔴 Dừng bài thi & Nộp điểm ngay`;
+      confirmBtn.textContent = "Kết thúc & chốt điểm";
     }
   } else {
     if (exitBadgeIcon) exitBadgeIcon.textContent = "⏸️";
     if (exitTitle) exitTitle.textContent = "Tạm dừng & Thoát bài thi";
-    if (exitSubTitle) exitSubTitle.textContent = "Lưu tiến trình & tạm dừng đồng hồ khi ra màn hình chính";
+    if (exitSubTitle) { exitSubTitle.textContent = ""; exitSubTitle.style.display = "none"; }
     if (guaranteeCard) {
       guaranteeCard.className = "quiz-exit-guarantee-card pause-mode";
     }
     if (guaranteeText) {
-      const exitsAfter = 1 - currentExits;
       guaranteeText.innerHTML = `
-        <strong>⏸️ Tạm dừng thời gian & Lưu tiến trình:</strong><br>
-        Khi bạn bấm xác nhận thoát ra màn hình chính, thời gian sẽ được <strong>TẠM DỪNG</strong> và lưu lại toàn bộ tiến trình. Lượt thi này <em>KHÔNG bị tính là mất</em>.<br>
-        ⚠️ <strong>Giới hạn:</strong> Bạn chỉ được thoát tối đa <strong>2 lần</strong> (sau lần này còn <strong>${exitsAfter}</strong> lần). Nếu thoát lần thứ 3, hệ thống sẽ dừng và tính điểm bài thi luôn!<br>
-        <span style="font-size: 12px; color: #f59e0b; margin-top: 4px; display: inline-block;">⏱️ <em>Lưu ý: Trong lúc đang mở bảng này (chưa bấm xác nhận thoát), đồng hồ vẫn tiếp tục đếm ngược để chống gian lận!</em></span>
+        <div>Xác nhận thoát để lưu tiến trình và tạm dừng đồng hồ. Bạn có thể quay lại tiếp tục lượt thi. Tối đa <strong>2 lần thoát</strong>; lần thứ 3, hệ thống sẽ kết thúc bài thi và chốt điểm.</div>
+        <div style="font-size: 12px; color: #f59e0b; margin-top: 6px;">⏱️ Đồng hồ vẫn tiếp tục chạy khi hộp thoại đang mở. Thời gian chỉ tạm dừng sau khi xác nhận thoát.</div>
       `;
     }
     if (confirmBtn) {
       confirmBtn.className = "button button-outline quiz-exit-confirm-btn";
-      confirmBtn.innerHTML = `Thoát & Tạm dừng thời gian`;
+      confirmBtn.textContent = "Thoát và tạm dừng";
     }
   }
 
@@ -21257,6 +21660,7 @@ function startQuizTimer() {
   updateQuizTimerUI();
   compState.quizTimerInterval = setInterval(() => {
     if (compState.isSubmittingAnswer) return;
+    if (typeof window.hbIsTimerPausedByItem === "function" && window.hbIsTimerPausedByItem()) return;
     compState.quizRemainingSeconds--;
     if (compState.quizRemainingSeconds <= 0) {
       compState.quizRemainingSeconds = 0;
@@ -21309,15 +21713,24 @@ function renderQuizQuestion() {
   compState.selectedOption = null;
   const counter = $("#quizQuestionCounter");
   const questionText = $("#quizQuestionText");
+  if (counter) counter.textContent = `Câu ${compState.currentQIndex + 1} / ${compState.activeQuestions.length}`;
+  if (questionText) questionText.textContent = q.questionText;
   const optA = $("#quizOptA");
   const optB = $("#quizOptB");
   const optC = $("#quizOptC");
-
-  if (counter) counter.textContent = `Câu ${compState.currentQIndex + 1} / ${compState.activeQuestions.length}`;
-  if (questionText) questionText.textContent = q.questionText;
+  const optD = $("#quizOptD");
   if (optA) optA.textContent = q.optionA;
   if (optB) optB.textContent = q.optionB;
   if (optC) optC.textContent = q.optionC;
+  if (optD) {
+    const optDBtn = optD.closest(".quiz-option-btn");
+    if (q.optionD) {
+      optD.textContent = q.optionD;
+      if (optDBtn) optDBtn.style.display = "";
+    } else if (optDBtn) {
+      optDBtn.style.display = "none";
+    }
+  }
 
   // Ẩn thanh 3 lần thử & gợi ý trong lúc thi thật để không lộ đáp án
   const triesPill = $("#quizTriesPill");
@@ -21346,6 +21759,9 @@ function renderQuizQuestion() {
 
   compState.initialDisabledOptions = [];
   compState.isSubmittingAnswer = false;
+  if (typeof window.hbOnArenaQuestionRendered === "function") {
+    window.hbOnArenaQuestionRendered();
+  }
 }
 
 function selectQuizOption(selectedOption) {
@@ -21455,6 +21871,10 @@ async function submitBlindQuizAnswer(chosenOption, isTimeoutAuto = false) {
       })
     });
 
+    if (typeof window.hbHandleArenaAnswerSpecial === "function" && window.hbHandleArenaAnswerSpecial(res, chosenOption)) {
+      return;
+    }
+
     if (res.isQuizCompleted || compState.currentQIndex >= compState.activeQuestions.length - 1) {
       showQuizFinalResult(res.finalResult);
     } else {
@@ -21464,6 +21884,7 @@ async function submitBlindQuizAnswer(chosenOption, isTimeoutAuto = false) {
       compState.currentQIndex++;
       compState.questionTries = 0;
       compState.selectedOption = null;
+      compState.currentQuestionEffects = res.nextQuestionEffects || { disabledOptions: [], hammerActive: false, hintText: null };
       const nextRem = typeof res.remainingSeconds === "number" ? res.remainingSeconds : 60;
       compState.quizRemainingSeconds = Math.min(60, Math.max(0, nextRem));
       renderQuizQuestion();
@@ -21832,7 +22253,9 @@ function collectCurrentAdminQuestionsFromDOM() {
     const optA = card.querySelector(".admin-q-a")?.value?.trim() || "";
     const optB = card.querySelector(".admin-q-b")?.value?.trim() || "";
     const optC = card.querySelector(".admin-q-c")?.value?.trim() || "";
-    const correct = card.querySelector(".admin-q-correct")?.value || "A";
+    const optD = card.querySelector(".admin-q-d")?.value?.trim() || "";
+    const correct = (card.querySelector(".admin-q-correct")?.value || "A").toUpperCase();
+    const hint = card.querySelector(".admin-q-hint")?.value?.trim() || "";
     const explanation = card.querySelector(".admin-q-explanation")?.value?.trim() || "";
     list.push({
       questionNumber: idx + 1,
@@ -21840,7 +22263,9 @@ function collectCurrentAdminQuestionsFromDOM() {
       optionA: optA,
       optionB: optB,
       optionC: optC,
+      optionD: optD,
       correctOption: correct,
+      hint: hint,
       explanation: explanation
     });
   });
@@ -21939,7 +22364,7 @@ async function loadAdminPhaseQuestions(phase) {
     const compIdParam = compState.adminSelectedCompetitionId ? `&competitionId=${compState.adminSelectedCompetitionId}` : "";
     const track = compState.adminSelectedTrack || "main";
     const res = await requestAPI(`/api/admin/competition/questions?phase=${phase}&track=${track}${compIdParam}`);
-    // Chuẩn hóa mọi biến thể thuộc tính từ server để hiển thị trọn vẹn lên giao diện
+    // Chuẩn hóa mọi biến thể thuộc tính từ server để hiển thị trọn vẹn lên giao diện (bao gồm Đáp án D & Gợi ý Hint)
     compState.adminQuestions = (res.questions || []).map((q, idx) => ({
       id: q.id,
       questionNumber: q.questionNumber || q.question_index || (idx + 1),
@@ -21947,7 +22372,9 @@ async function loadAdminPhaseQuestions(phase) {
       optionA: q.optionA || q.option_a || "",
       optionB: q.optionB || q.option_b || "",
       optionC: q.optionC || q.option_c || "",
+      optionD: q.optionD || q.option_d || "",
       correctOption: (q.correctOption || q.correct_option || "A").toUpperCase(),
+      hint: q.hint || "",
       explanation: q.explanation || ""
     }));
 
@@ -21977,7 +22404,9 @@ function renderAdminQuestionsList() {
     const optA = q.optionA || q.option_a || "";
     const optB = q.optionB || q.option_b || "";
     const optC = q.optionC || q.option_c || "";
+    const optD = q.optionD || q.option_d || "";
     const correct = (q.correctOption || q.correct_option || "A").toUpperCase();
+    const hint = q.hint || "";
     const explanation = q.explanation || "";
     return `
       <div class="admin-q-card" data-idx="${idx}" style="background:var(--sage-2); border:1px solid var(--line); border-radius:6px; padding:10px;">
@@ -21986,17 +22415,22 @@ function renderAdminQuestionsList() {
           <button type="button" class="button button-sm button-outline" style="color:#ef4444; padding:2px 6px; font-size:11px;" onclick="adminRemoveQuestion(${idx})">Xóa</button>
         </div>
         <input type="text" class="input-field admin-q-text" style="width:100%; margin-bottom:6px; font-size:12px;" placeholder="Nội dung câu hỏi..." value="${escapeHTML(qText)}" />
-        <div style="display:grid; grid-template-columns: 1fr 1fr 1fr 110px; gap:6px; align-items:center; margin-bottom:6px;">
+        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap:6px; align-items:center; margin-bottom:6px;">
           <input type="text" class="input-field admin-q-a" style="font-size:11px;" placeholder="Đáp án A" value="${escapeHTML(optA)}" />
           <input type="text" class="input-field admin-q-b" style="font-size:11px;" placeholder="Đáp án B" value="${escapeHTML(optB)}" />
           <input type="text" class="input-field admin-q-c" style="font-size:11px;" placeholder="Đáp án C" value="${escapeHTML(optC)}" />
+          <input type="text" class="input-field admin-q-d" style="font-size:11px;" placeholder="Đáp án D (tùy chọn)" value="${escapeHTML(optD)}" />
           <select class="input-field admin-q-correct" style="font-size:11px; padding:4px;">
             <option value="A" ${correct === "A" ? "selected" : ""}>Đúng: A</option>
             <option value="B" ${correct === "B" ? "selected" : ""}>Đúng: B</option>
             <option value="C" ${correct === "C" ? "selected" : ""}>Đúng: C</option>
+            <option value="D" ${correct === "D" ? "selected" : ""}>Đúng: D</option>
           </select>
         </div>
-        <input type="text" class="input-field admin-q-explanation" style="width:100%; font-size:11px;" placeholder="💡 Gợi ý / Lời giải thích (Hint - tùy chọn, hiển thị khi người chơi bấm nút đèn)..." value="${escapeHTML(explanation)}" />
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:6px;">
+          <input type="text" class="input-field admin-q-hint" style="width:100%; font-size:11px;" placeholder="💡 Gợi ý (Hint - dùng khi bật Đèn thần)..." value="${escapeHTML(hint)}" />
+          <input type="text" class="input-field admin-q-explanation" style="width:100%; font-size:11px;" placeholder="📘 Lời giải thích (hiện khi Luyện tập)..." value="${escapeHTML(explanation)}" />
+        </div>
       </div>
     `;
   }).join("");
@@ -22012,7 +22446,9 @@ function adminAddEmptyQuestion() {
     optionA: "",
     optionB: "",
     optionC: "",
+    optionD: "",
     correctOption: "A",
+    hint: "",
     explanation: ""
   });
   renderAdminQuestionsList();
@@ -22041,7 +22477,9 @@ async function adminSaveQuestions() {
     const optA = card.querySelector(".admin-q-a")?.value?.trim();
     const optB = card.querySelector(".admin-q-b")?.value?.trim();
     const optC = card.querySelector(".admin-q-c")?.value?.trim();
+    const optD = card.querySelector(".admin-q-d")?.value?.trim() || "";
     const correct = card.querySelector(".admin-q-correct")?.value || "A";
+    const hint = card.querySelector(".admin-q-hint")?.value?.trim() || "";
     const explanation = card.querySelector(".admin-q-explanation")?.value?.trim() || "";
     if (text && optA && optB && optC) {
       questions.push({
@@ -22050,17 +22488,14 @@ async function adminSaveQuestions() {
         optionA: optA,
         optionB: optB,
         optionC: optC,
+        optionD: optD || null,
+        option_d: optD || null,
         correctOption: correct,
-        explanation: explanation
+        hint: hint || explanation,
+        explanation: explanation || hint
       });
     }
   });
-
-  if (questions.length !== 10) {
-    if (!confirm(`Bạn mới nhập ${questions.length}/10 câu hỏi hợp lệ. Giai đoạn cần đủ 10 câu để hiển thị trên trang chủ. Bạn có muốn lưu bản nháp này không?`)) {
-      return;
-    }
-  }
 
   const curPhase = compState.adminSelectedPhase || 1;
   const track = (compState.adminSelectedTrack === "free" || compState.adminBoardMode === "free") ? "free" : "main";
@@ -22142,7 +22577,7 @@ async function adminSetSimTime(preset) {
 }
 
 async function adminConcludeWeekNow() {
-  if (!confirm("Bạn có chắc chắn muốn chốt điểm và trao thưởng (+điểm hoạt động +khiên) cho toàn bộ thành viên tuần này ngay bây giờ?")) return;
+  if (!confirm("Bạn có chắc chắn muốn chốt điểm và trao thưởng (+điểm hoạt động +chìa khóa) cho toàn bộ thành viên tuần này ngay bây giờ?")) return;
   try {
     const res = await requestAPI("/api/admin/competition/conclude-week", {
       method: "POST"
@@ -22202,15 +22637,37 @@ function adminDownloadExcelTemplate() {
 
   const all3Phases = [...p1Questions, ...p2Questions, ...p3Questions];
 
+  const mapRowToNewTemplate = (r) => {
+    const corr = String(r["Đáp án đúng (A/B/C)"] || "A").trim().toUpperCase();
+    const mapOpts = { A: r["Đáp án A"], B: r["Đáp án B"], C: r["Đáp án C"], D: r["Đáp án D"] || "Tất cả các phương án còn lại đều chưa chính xác" };
+    const rightText = mapOpts[corr] || mapOpts.A;
+    const wrongTexts = ["A", "B", "C", "D"].filter(k => k !== corr).map(k => mapOpts[k]);
+    return {
+      "STT": r["STT"],
+      "Bảng thi": r["Bảng thi"],
+      "Giai đoạn": r["Giai đoạn"],
+      "Câu hỏi": r["Câu hỏi"],
+      "Đáp án đúng": rightText,
+      "Đáp án sai 1": wrongTexts[0] || "",
+      "Đáp án sai 2": wrongTexts[1] || "",
+      "Đáp án sai 3": wrongTexts[2] || "",
+      "Gợi ý (Hint)": r["Gợi ý (Hint)"] || ""
+    };
+  };
+  const p1Fmt = p1Questions.map(mapRowToNewTemplate);
+  const p2Fmt = p2Questions.map(mapRowToNewTemplate);
+  const p3Fmt = p3Questions.map(mapRowToNewTemplate);
+  const all3Fmt = [...p1Fmt, ...p2Fmt, ...p3Fmt];
+
   const colWidths = [
     { wch: 6 },  // STT
     { wch: 28 }, // Bảng thi
     { wch: 12 }, // Giai đoạn
     { wch: 65 }, // Câu hỏi
-    { wch: 38 }, // A
-    { wch: 38 }, // B
-    { wch: 38 }, // C
-    { wch: 22 }, // Đáp án đúng (A/B/C)
+    { wch: 42 }, // Đáp án đúng
+    { wch: 42 }, // Đáp án sai 1
+    { wch: 42 }, // Đáp án sai 2
+    { wch: 42 }, // Đáp án sai 3
     { wch: 55 }  // Gợi ý (Hint)
   ];
 
@@ -22218,30 +22675,30 @@ function adminDownloadExcelTemplate() {
     const wb = XLSX.utils.book_new();
 
     // Sheet 1: Tất cả 3 giai đoạn (30 câu)
-    const wsAll = XLSX.utils.json_to_sheet(all3Phases);
+    const wsAll = XLSX.utils.json_to_sheet(all3Fmt);
     wsAll['!cols'] = colWidths;
     XLSX.utils.book_append_sheet(wb, wsAll, "Tat_Ca_3_Giai_Doan");
 
     // Sheet 2, 3, 4: Từng giai đoạn riêng biệt
-    const ws1 = XLSX.utils.json_to_sheet(p1Questions);
+    const ws1 = XLSX.utils.json_to_sheet(p1Fmt);
     ws1['!cols'] = colWidths;
     XLSX.utils.book_append_sheet(wb, ws1, "Giai_Doan_1");
 
-    const ws2 = XLSX.utils.json_to_sheet(p2Questions);
+    const ws2 = XLSX.utils.json_to_sheet(p2Fmt);
     ws2['!cols'] = colWidths;
     XLSX.utils.book_append_sheet(wb, ws2, "Giai_Doan_2");
 
-    const ws3 = XLSX.utils.json_to_sheet(p3Questions);
+    const ws3 = XLSX.utils.json_to_sheet(p3Fmt);
     ws3['!cols'] = colWidths;
     XLSX.utils.book_append_sheet(wb, ws3, "Giai_Doan_3");
 
     XLSX.writeFile(wb, `RE_SEARCH_Arena_Mau_Cau_Hoi_3_Giai_Doan_${fileSuffix}.xlsx`);
-    toast(`📥 Đã tải file Excel mẫu 3 giai đoạn (.xlsx) cho [${trackLabel}] thành công! Bạn có thể nhập 1 giai đoạn hoặc cả 3 giai đoạn cùng lúc.`);
+    toast(`📥 Đã tải file Excel mẫu 3 giai đoạn (.xlsx) cho [${trackLabel}] thành công! Chỉ cần 1 cột Đáp án đúng + 3 cột Đáp án sai.`);
   } else {
     // Fallback CSV with all 30 rows
-    let csv = "\uFEFFSTT,Bảng thi,Giai đoạn,Câu hỏi,Đáp án A,Đáp án B,Đáp án C,Đáp án đúng (A/B/C),Gợi ý (Hint)\n";
-    all3Phases.forEach(r => {
-      csv += `${r["STT"]},"${r["Bảng thi"]}",${r["Giai đoạn"]},"${(r["Câu hỏi"] || "").replace(/"/g, '""')}","${(r["Đáp án A"] || "").replace(/"/g, '""')}","${(r["Đáp án B"] || "").replace(/"/g, '""')}","${(r["Đáp án C"] || "").replace(/"/g, '""')}",${r["Đáp án đúng (A/B/C)"]},"${(r["Gợi ý (Hint)"] || "").replace(/"/g, '""')}"\n`;
+    let csv = "\uFEFFSTT,Bảng thi,Giai đoạn,Câu hỏi,Đáp án đúng,Đáp án sai 1,Đáp án sai 2,Đáp án sai 3,Gợi ý (Hint)\n";
+    all3Fmt.forEach(r => {
+      csv += `${r["STT"]},"${r["Bảng thi"]}",${r["Giai đoạn"]},"${(r["Câu hỏi"] || "").replace(/"/g, '""')}","${(r["Đáp án đúng"] || "").replace(/"/g, '""')}","${(r["Đáp án sai 1"] || "").replace(/"/g, '""')}","${(r["Đáp án sai 2"] || "").replace(/"/g, '""')}","${(r["Đáp án sai 3"] || "").replace(/"/g, '""')}","${(r["Gợi ý (Hint)"] || "").replace(/"/g, '""')}"\n`;
     });
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
@@ -22311,15 +22768,36 @@ async function adminHandleExcelUpload(event) {
 
         sheetRows.forEach(row => {
           const qText = getCellVal(row, ["câu hỏi", "cau hoi", "nội dung câu hỏi", "nội dung", "noi dung", "đề bài", "de bai", "question", "bài tập", "câu"]);
-          const optA = getCellVal(row, ["đáp án a", "dap an a", "lựa chọn a", "phương án a", "option a", "a"]);
-          const optB = getCellVal(row, ["đáp án b", "dap an b", "lựa chọn b", "phương án b", "option b", "b"]);
-          const optC = getCellVal(row, ["đáp án c", "dap an c", "lựa chọn c", "phương án c", "option c", "c"]);
+          const rightAns = getCellVal(row, ["đáp án đúng", "dap an dung", "câu đúng", "cau dung", "correct answer"]);
+          const wrong1 = getCellVal(row, ["đáp án sai 1", "dap an sai 1", "sai 1", "wrong 1"]);
+          const wrong2 = getCellVal(row, ["đáp án sai 2", "dap an sai 2", "sai 2", "wrong 2"]);
+          const wrong3 = getCellVal(row, ["đáp án sai 3", "dap an sai 3", "sai 3", "wrong 3"]);
 
-          let rawCorrect = getCellVal(row, ["đáp án đúng (a/b/c)", "đáp án đúng", "dap an dung", "đáp án", "dap an", "kết quả", "đúng", "dung", "correct option", "correct", "key", "answer"]).toUpperCase().trim();
+          let optA = "";
+          let optB = "";
+          let optC = "";
+          let optD = "";
           let correct = "A";
-          if (rawCorrect.includes("A") || rawCorrect === "1") correct = "A";
-          else if (rawCorrect.includes("B") || rawCorrect === "2") correct = "B";
-          else if (rawCorrect.includes("C") || rawCorrect === "3") correct = "C";
+
+          if (rightAns && wrong1 && wrong2) {
+            // Mẫu mới: 1 cột Đáp án đúng + 3 cột Đáp án sai (hệ thống tự tráo khi thi)
+            optA = rightAns;
+            optB = wrong1;
+            optC = wrong2;
+            optD = wrong3 || "";
+            correct = "A";
+          } else {
+            optA = getCellVal(row, ["đáp án a", "dap an a", "lựa chọn a", "phương án a", "option a", "a"]);
+            optB = getCellVal(row, ["đáp án b", "dap an b", "lựa chọn b", "phương án b", "option b", "b"]);
+            optC = getCellVal(row, ["đáp án c", "dap an c", "lựa chọn c", "phương án c", "option c", "c"]);
+            optD = getCellVal(row, ["đáp án d", "dap an d", "lựa chọn d", "phương án d", "option d", "d"]);
+
+            const rawCorrect = getCellVal(row, ["đáp án đúng (a/b/c/d)", "đáp án đúng (a/b/c)", "đáp án đúng", "dap an dung", "đáp án", "dap an", "kết quả", "đúng", "dung", "correct option", "correct", "key", "answer"]).toUpperCase().trim();
+            if (rawCorrect.includes("D") || rawCorrect === "4") correct = "D";
+            else if (rawCorrect.includes("C") || rawCorrect === "3") correct = "C";
+            else if (rawCorrect.includes("B") || rawCorrect === "2") correct = "B";
+            else correct = "A";
+          }
 
           const rawPhase = getCellVal(row, ["giai đoạn", "giai doan", "gđ", "gd", "phase", "đợt", "dot", "chặng"]);
           let phaseVal = sheetDefaultPhase;
@@ -22328,11 +22806,12 @@ async function adminHandleExcelUpload(event) {
             if (m) phaseVal = parseInt(m[0], 10);
           }
 
-          const explanation = getCellVal(row, [
-            "gợi ý (hint)", "goi y (hint)", "gợi ý / lời giải thích", "gợi ý/giải thích",
-            "gợi ý", "goi y", "hint", "hints", "nội dung hint",
-            "lời giải thích", "loi giai thich", "giải thích", "giai thich", "explanation", "chú thích", "chu thich"
-          ], 7);
+          const hintText = getCellVal(row, [
+            "gợi ý (hint)", "goi y (hint)", "gợi ý", "goi y", "hint", "hints", "nội dung hint"
+          ]);
+          const explanationText = getCellVal(row, [
+            "lời giải thích", "loi giai thich", "giải thích", "giai thich", "explanation", "chú thích", "chu thich", "gợi ý / lời giải thích", "gợi ý/giải thích"
+          ], 7) || hintText;
 
           if (qText && optA && optB && optC) {
             const exists = phaseMap[phaseVal].some(q => q.questionText === qText);
@@ -22343,8 +22822,10 @@ async function adminHandleExcelUpload(event) {
                 optionA: optA,
                 optionB: optB,
                 optionC: optC,
+                optionD: optD,
                 correctOption: correct,
-                explanation: explanation || "",
+                hint: hintText || explanationText || "",
+                explanation: explanationText || hintText || "",
                 track: currentTrack
               });
             }
@@ -22363,14 +22844,33 @@ async function adminHandleExcelUpload(event) {
         headers.forEach((h, idx) => { row[h] = cols[idx] || ""; });
 
         const qText = getCellVal(row, ["câu hỏi", "cau hoi", "nội dung câu hỏi", "nội dung", "noi dung", "đề bài", "de bai", "question", "bài tập", "câu"]);
-        const optA = getCellVal(row, ["đáp án a", "dap an a", "lựa chọn a", "phương án a", "option a", "a"]);
-        const optB = getCellVal(row, ["đáp án b", "dap an b", "lựa chọn b", "phương án b", "option b", "b"]);
-        const optC = getCellVal(row, ["đáp án c", "dap an c", "lựa chọn c", "phương án c", "option c", "c"]);
-        let rawCorrect = getCellVal(row, ["đáp án đúng (a/b/c)", "đáp án đúng", "dap an dung", "đáp án", "dap an", "kết quả", "đúng", "dung", "correct option", "correct", "key", "answer"]).toUpperCase().trim();
+        const rightAns = getCellVal(row, ["đáp án đúng", "dap an dung", "câu đúng", "cau dung", "correct answer"]);
+        const wrong1 = getCellVal(row, ["đáp án sai 1", "dap an sai 1", "sai 1", "wrong 1"]);
+        const wrong2 = getCellVal(row, ["đáp án sai 2", "dap an sai 2", "sai 2", "wrong 2"]);
+        const wrong3 = getCellVal(row, ["đáp án sai 3", "dap an sai 3", "sai 3", "wrong 3"]);
+
+        let optA = "";
+        let optB = "";
+        let optC = "";
+        let optD = "";
         let correct = "A";
-        if (rawCorrect.includes("A") || rawCorrect === "1") correct = "A";
-        else if (rawCorrect.includes("B") || rawCorrect === "2") correct = "B";
-        else if (rawCorrect.includes("C") || rawCorrect === "3") correct = "C";
+        if (rightAns && wrong1 && wrong2) {
+          optA = rightAns;
+          optB = wrong1;
+          optC = wrong2;
+          optD = wrong3 || "";
+          correct = "A";
+        } else {
+          optA = getCellVal(row, ["đáp án a", "dap an a", "lựa chọn a", "phương án a", "option a", "a"]);
+          optB = getCellVal(row, ["đáp án b", "dap an b", "lựa chọn b", "phương án b", "option b", "b"]);
+          optC = getCellVal(row, ["đáp án c", "dap an c", "lựa chọn c", "phương án c", "option c", "c"]);
+          optD = getCellVal(row, ["đáp án d", "dap an d", "lựa chọn d", "phương án d", "option d", "d"]);
+          let rawCorrect = getCellVal(row, ["đáp án đúng (a/b/c/d)", "đáp án đúng (a/b/c)", "đáp án đúng", "dap an dung", "đáp án", "dap an", "kết quả", "đúng", "dung", "correct option", "correct", "key", "answer"]).toUpperCase().trim();
+          if (rawCorrect.includes("D") || rawCorrect === "4") correct = "D";
+          else if (rawCorrect.includes("C") || rawCorrect === "3") correct = "C";
+          else if (rawCorrect.includes("B") || rawCorrect === "2") correct = "B";
+          else correct = "A";
+        }
 
         const rawPhase = getCellVal(row, ["giai đoạn", "giai doan", "gđ", "gd", "phase", "đợt", "dot", "chặng"]);
         let phaseVal = currentPhase;
@@ -22379,11 +22879,12 @@ async function adminHandleExcelUpload(event) {
           if (m) phaseVal = parseInt(m[0], 10);
         }
 
-        const explanation = getCellVal(row, [
-          "gợi ý (hint)", "goi y (hint)", "gợi ý / lời giải thích", "gợi ý/giải thích",
-          "gợi ý", "goi y", "hint", "hints", "nội dung hint",
-          "lời giải thích", "loi giai thich", "giải thích", "giai thich", "explanation", "chú thích", "chu thich"
-        ], 7);
+        const hintText = getCellVal(row, [
+          "gợi ý (hint)", "goi y (hint)", "gợi ý", "goi y", "hint", "hints", "nội dung hint"
+        ]);
+        const explanationText = getCellVal(row, [
+          "lời giải thích", "loi giai thich", "giải thích", "giai thich", "explanation", "chú thích", "chu thich", "gợi ý / lời giải thích", "gợi ý/giải thích"
+        ], 7) || hintText;
 
         if (qText && optA && optB && optC) {
           phaseMap[phaseVal].push({
@@ -22392,8 +22893,10 @@ async function adminHandleExcelUpload(event) {
             optionA: optA,
             optionB: optB,
             optionC: optC,
+            optionD: optD,
             correctOption: correct,
-            explanation: explanation || "",
+            hint: hintText || explanationText || "",
+            explanation: explanationText || hintText || "",
             track: currentTrack
           });
         }
@@ -22435,8 +22938,10 @@ async function adminHandleExcelUpload(event) {
             option_a: q.optionA,
             option_b: q.optionB,
             option_c: q.optionC,
+            option_d: q.optionD || null,
             correct_option: q.correctOption,
-            explanation: q.explanation || "",
+            hint: q.hint || q.explanation || "",
+            explanation: q.explanation || q.hint || "",
             track: currentTrack
           }));
 
@@ -28705,6 +29210,8 @@ function getNotifCategoryIcon(category, stream) {
       return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>`;
     case "arena":
       return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h2"></path><path d="M18 9h2a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2h-2"></path><path d="M6 3h12v7a6 6 0 0 1-12 0V3z"></path><path d="M12 16v4"></path><path d="M8 20h8"></path></svg>`;
+    case "handbook":
+      return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>`;
     case "community":
       return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>`;
     default:
@@ -28875,7 +29382,7 @@ window.renderNotifications = function () {
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
         </div>
         <div class="notif-empty-title">Chưa có thông báo nào</div>
-        <div class="notif-empty-desc">${isAct ? "Các thông báo về thảo luận, tài liệu và hoạt động sẽ hiển thị tại đây." : "Hiện chưa có cập nhật hệ thống mới từ ban quản trị."}</div>
+        <div class="notif-empty-desc">${isAct ? "Các thông báo về thảo luận, tài liệu và hoạt động sẽ hiển thị tại đây." : "Hiện chưa có tin tức mới từ ban quản trị."}</div>
       </div>
     `;
     updateNotifFooter(0, 0);
@@ -28883,12 +29390,31 @@ window.renderNotifications = function () {
   }
 
   let html = "";
+  const claimedSet = window.__claimedGiftNotifIds || (() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem("research_claimed_gift_notifs") || "[]");
+      return new Set(Array.isArray(saved) ? saved : []);
+    } catch { return new Set(); }
+  })();
+  window.__claimedGiftNotifIds = claimedSet;
+
   for (const item of notifState.items) {
     const isUnread = !item.is_read;
     const isChecked = notifState.selectedIds.has(item.id);
     const timeFormatted = formatNotifTime(item.created_at);
     const iconSvg = getNotifCategoryIcon(item.category, item.stream);
     const hasLink = Boolean(item.link && item.link.trim().length > 0);
+    const rawLink = String(item.link || "");
+    const isGiftClaim = rawLink.startsWith("#gift-claim/");
+    let actionLabel = "Xem ngay";
+    if (isGiftClaim) {
+      let ctaText = "Nhận quà";
+      const qIdx = rawLink.indexOf("?cta=");
+      if (qIdx !== -1) {
+        try { ctaText = decodeURIComponent(rawLink.slice(qIdx + 5).split("&")[0]) || ctaText; } catch (_) { }
+      }
+      actionLabel = claimedSet.has(item.id) ? ctaText.replace(/^Nhận\s+/, "Đã nhận ") : ctaText;
+    }
 
     html += `
       <div class="notif-item ${isUnread ? "is-unread" : ""} ${isChecked ? "is-selected" : ""}" id="notif-item-${item.id}">
@@ -28908,8 +29434,8 @@ window.renderNotifications = function () {
             <span class="notif-item-time">${timeFormatted}</span>
             <div class="notif-item-actions">
               ${hasLink ? `
-                <button type="button" class="notif-action-btn-go" onclick="handleNotifNavigate(${item.id}, '${escapeHTML(item.link)}', event)" title="Xem chi tiết nguồn gửi">
-                  <span>Xem ngay</span>
+                <button type="button" class="notif-action-btn-go ${isGiftClaim && claimedSet.has(item.id) ? "is-claimed" : ""}" onclick="handleNotifNavigate(${item.id}, '${escapeHTML(item.link)}', event)" title="${isGiftClaim ? escapeHTML(actionLabel) : "Xem chi tiết nguồn gửi"}">
+                  <span>${escapeHTML(actionLabel)}</span>
                   <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
                 </button>
               ` : ""}
@@ -28975,6 +29501,26 @@ window.handleNotifNavigate = async function (id, link, e) {
   closeNotificationPopover();
 
   if (!link) return;
+  if (link.startsWith("#gift-claim/")) {
+    const giftId = Number(link.replace("#gift-claim/", "").split("?")[0]);
+    if (giftId) {
+      try {
+        const res = await requestAPI(`/api/handbook/gifts/${giftId}/claim`, { method: "POST" });
+        if (!window.__claimedGiftNotifIds) window.__claimedGiftNotifIds = new Set();
+        window.__claimedGiftNotifIds.add(id);
+        try {
+          localStorage.setItem("research_claimed_gift_notifs", JSON.stringify(Array.from(window.__claimedGiftNotifIds)));
+        } catch (_) { }
+        renderNotifications();
+        if (typeof window.loadHandbookState === "function") await window.loadHandbookState(true);
+        if (typeof hydrateServer === "function") hydrateServer(true);
+        if (typeof toast === "function") toast(res?.message || "Đã nhận quà tặng!");
+      } catch (err) {
+        if (typeof toast === "function") toast(err?.message || "Không thể nhận quà.");
+      }
+    }
+    return;
+  }
   if (link.startsWith("#changelog") || link.startsWith("#version")) {
     const cleanLink = link.replace(/^#/, "");
     let verParam = "";
@@ -29131,7 +29677,7 @@ window.batchDeleteNotifs = async function () {
 
 window.clearAllNotificationsInStream = async function () {
   const isAct = notifState.stream === "activity";
-  const name = isAct ? "luồng Hoạt động" : "luồng Cập nhật mới";
+  const name = isAct ? "luồng Hoạt động" : "luồng Tin tức";
   if (!confirm(`Bạn có chắc chắn muốn xoá tất cả thông báo trong ${name}?`)) {
     return;
   }
@@ -29302,9 +29848,20 @@ function updateHomeLeaderboardCountdown() {
     // Ngày 1 tháng sau lúc 00:00:00
     targetDate = new Date(vnNow.getFullYear(), vnNow.getMonth() + 1, 1, 0, 0, 0);
   } else if (homeLeaderboardPeriod === "quarter") {
-    // Ngày 1 của quý tiếp theo (Tháng 1, 4, 7, 10)
-    const currentQ = Math.floor(vnNow.getMonth() / 3);
-    targetDate = new Date(vnNow.getFullYear(), (currentQ + 1) * 3, 1, 0, 0, 0);
+    if (homeLeaderboardCategory === "competition") {
+      // Bảng Tinh thông thần tốc tính theo Mùa AS1 (kết thúc hết ngày 20/12/2026)
+      const as1End = new Date(2026, 11, 21, 0, 0, 0);
+      if (vnNow < as1End) {
+        targetDate = as1End;
+      } else {
+        const currentQ = Math.floor(vnNow.getMonth() / 3);
+        targetDate = new Date(vnNow.getFullYear(), (currentQ + 1) * 3, 1, 0, 0, 0);
+      }
+    } else {
+      // Đại sứ tri thức & Ong chăm chỉ reset theo Quý dương lịch
+      const currentQ = Math.floor(vnNow.getMonth() / 3);
+      targetDate = new Date(vnNow.getFullYear(), (currentQ + 1) * 3, 1, 0, 0, 0);
+    }
   } else {
     badgeEl.style.display = "none";
     return;
@@ -29338,7 +29895,7 @@ if (!homeLbCountdownTimer) {
   homeLbCountdownTimer = setInterval(updateHomeLeaderboardCountdown, 1000);
 }
 
-function formatLeaderboardPeriodDetail(period = "week", isPrevious = false) {
+function formatLeaderboardPeriodDetail(period = "week", isPrevious = false, category = "contributions") {
   const now = new Date();
   const utcMs = now.getTime() + now.getTimezoneOffset() * 60000;
   const vnNow = new Date(utcMs + 7 * 3600000);
@@ -29352,17 +29909,21 @@ function formatLeaderboardPeriodDetail(period = "week", isPrevious = false) {
     return `Tháng ${vnNow.getMonth() + 1} năm ${vnNow.getFullYear()}`;
   }
   if (period === "quarter") {
-    const currentQ = Math.floor(vnNow.getMonth() / 3) + 1;
-    if (isPrevious) {
-      let prevQ = currentQ - 1;
-      let prevYear = vnNow.getFullYear();
-      if (prevQ === 0) {
-        prevQ = 4;
-        prevYear -= 1;
+    if (category === "competition") {
+      const as1EndExclusive = new Date(2026, 11, 21, 0, 0, 0);
+      if (vnNow < as1EndExclusive) {
+        return isPrevious ? "Mùa AS0" : "Mùa AS1 (05/10 – 20/12/2026)";
       }
+      const seasonIndex = Math.max(2, Math.floor((vnNow.getFullYear() - 2026) * 4 + (vnNow.getMonth() / 3)) - 1);
+      return isPrevious ? `Mùa AS${seasonIndex - 1}` : `Mùa AS${seasonIndex}`;
+    }
+    const curQ = Math.floor(vnNow.getMonth() / 3) + 1;
+    if (isPrevious) {
+      const prevQ = curQ === 1 ? 4 : curQ - 1;
+      const prevYear = curQ === 1 ? vnNow.getFullYear() - 1 : vnNow.getFullYear();
       return `Quý ${prevQ} năm ${prevYear}`;
     }
-    return `Quý ${currentQ} năm ${vnNow.getFullYear()}`;
+    return `Quý ${curQ} năm ${vnNow.getFullYear()}`;
   }
 
   // Mặc định: Tuần x từ DD/MM đến DD/MM
@@ -29420,12 +29981,16 @@ function renderCurrentHomeLeaderboard() {
     cycleBtn.setAttribute("aria-pressed", homeLeaderboardCycle === "previous" ? "true" : "false");
   }
   if (periodDetail) {
-    periodDetail.textContent = cfg.hasPeriods ? formatLeaderboardPeriodDetail(period, homeLeaderboardCycle === "previous") : "";
+    periodDetail.textContent = cfg.hasPeriods ? formatLeaderboardPeriodDetail(period, homeLeaderboardCycle === "previous", cat) : "";
   }
   $$(".home-lb-tab-btn").forEach((btn) => {
     const isAct = btn.dataset.period === period;
     btn.classList.toggle("active", isAct);
     btn.setAttribute("aria-selected", isAct ? "true" : "false");
+    if (btn.dataset.period === "quarter") {
+      const lbl = btn.querySelector(".tab-label");
+      if (lbl) lbl.textContent = cat === "competition" ? "Mùa" : "Quý";
+    }
   });
 
   // Cập nhật countdown làm mới
@@ -29778,7 +30343,7 @@ function selectForumCommunity(slug, pushState = true) {
   if (pushState && window.history && window.history.pushState) {
     try {
       window.history.pushState({ community: slug }, "", `/re/${slug}`);
-    } catch (e) {}
+    } catch (e) { }
   }
   updateForumCommunitySelectors();
   renderForumCommunitiesSidebar();
@@ -29794,7 +30359,7 @@ function clearCommunityFilter(pushState = true) {
   if (pushState && window.history && window.history.pushState) {
     try {
       window.history.pushState(null, "", "/#forum");
-    } catch (e) {}
+    } catch (e) { }
   }
   updateForumCommunitySelectors();
   renderForumCommunitiesSidebar();
@@ -30265,10 +30830,10 @@ function renderCommMembersList() {
     const roleBadge = isCreator
       ? `<span class="comm-item-role-badge admin">👑 Sáng lập</span>`
       : m.commRole === "admin"
-      ? `<span class="comm-item-role-badge admin">Quản trị</span>`
-      : m.commRole === "moderator"
-      ? `<span class="comm-item-role-badge mod">Kiểm duyệt</span>`
-      : `<span class="comm-item-role-badge">Thành viên</span>`;
+        ? `<span class="comm-item-role-badge admin">Quản trị</span>`
+        : m.commRole === "moderator"
+          ? `<span class="comm-item-role-badge mod">Kiểm duyệt</span>`
+          : `<span class="comm-item-role-badge">Thành viên</span>`;
 
     // Nút phân quyền & thao tác
     let actionButtonsHtml = "";
@@ -30678,6 +31243,25 @@ window.openEditCommunityModal = openEditCommunityModal;
 window.selectEditCommCover = selectEditCommCover;
 window.handleEditCommunitySubmit = handleEditCommunitySubmit;
 window.confirmDissolveCommunity = confirmDissolveCommunity;
+window.requestAPI = requestAPI;
+window.toast = toast;
+window.hydrateServer = hydrateServer;
+window.getFlameSVG = getFlameSVG;
+window.getStreakTitle = getStreakTitle;
+window.applyStudyWallpaperPreset = applyStudyWallpaperPreset;
+window.renderWallpaperPresets = renderWallpaperPresets;
+window.compState = compState;
+window.session = session;
+window.go = go;
+window.requestAPI = requestAPI;
+window.toast = toast;
+window.hydrateServer = hydrateServer;
+window.getFlameSVG = getFlameSVG;
+window.getStreakTitle = getStreakTitle;
+window.applyStudyWallpaperPreset = applyStudyWallpaperPreset;
+window.renderWallpaperPresets = renderWallpaperPresets;
+window.compState = compState;
+window.session = session;
 
 window.addEventListener("popstate", () => {
   const path = window.location.pathname;

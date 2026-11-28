@@ -129,7 +129,8 @@
   <link rel="apple-touch-icon" sizes="192x192" href="public/assets/app-ios-192.png?v=4" />
   <link rel="apple-touch-icon" sizes="512x512" href="public/assets/app-ios-512.png?v=4" />
 
-  <link rel="stylesheet" href="styles.css?v=4.7.15" />
+  <link rel="stylesheet" href="styles.css?v=5.0.2" />
+  <link rel="stylesheet" href="handbook.css?v=5.0.2" />
   <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 
@@ -432,7 +433,7 @@
       <button onclick="closeBanner(2)"
         style="position:absolute; top:12px; right:12px; background:rgba(0,0,0,0.5); color:#fff; border:none; width:30px; height:30px; border-radius:50%; font-size:18px; cursor:pointer; display:flex; align-items:center; justify-content:center; z-index:10;"
         aria-label="Đóng">×</button>
-      <img src="public/assets/banner-namecard.jpg" alt="Tính năng mới Namecard"
+      <img src="public/assets/banner-namecard.webp" alt="Tính năng mới Namecard"
         style="width:100%; height:auto; display:block;"
         onerror="this.src='https://placehold.co/800x400/e9ecef/495057?text=Banner'" />
       <div style="padding:12px; text-align:center; background:var(--surface); border-top:1px solid var(--line);">
@@ -498,8 +499,8 @@
     <div class="site-header-inner">
       <a class="brand" href="#home" aria-label="RE:SEARCH Trang chủ">
         <span class="brand-mark">
-          <img class="brand-logo-light" src="public/assets/logo.png?v=4" alt="RE:SEARCH" />
-          <img class="brand-logo-dark" src="public/assets/logodark.png?v=4" alt="RE:SEARCH" />
+          <img class="brand-logo-light" src="public/assets/logo.webp?v=4" alt="RE:SEARCH" />
+          <img class="brand-logo-dark" src="public/assets/logodark.webp?v=4" alt="RE:SEARCH" />
           <svg class="christmas-santa-hat" aria-hidden="true" viewBox="0 0 40 32" fill="none">
             <path d="M7 22C8.5 10.5 17.5 3.5 28 6.5C32.5 7.8 35.5 11.2 35 16C30 13.5 23.5 14.5 19.5 20.5L7 22Z"
               fill="#dc2626" />
@@ -526,6 +527,14 @@
                   <polyline points="9 22 9 12 15 12 15 22" />
                 </svg></span>
               <span class="nav-link-text">Trang chủ</span>
+            </a>
+            <a href="#handbook" data-route="handbook" class="nav-link" id="navHandbookDesktop" title="Sổ tay khám phá">
+              <span class="nav-link-icon" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+                  <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+                </svg></span>
+              <span class="nav-link-text">Khám phá</span>
             </a>
             <a href="#forum" data-route="forum" class="nav-link" title="Diễn đàn">
               <span class="nav-link-icon" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"
@@ -617,7 +626,7 @@
                 </button>
                 <button type="button" class="notif-seg-btn" id="notifTabAnnouncement"
                   onclick="switchNotifStream('announcement')" role="tab" aria-selected="false">
-                  <span>Cập nhật mới</span>
+                  <span>Tin tức</span>
                   <span class="notif-seg-count" id="notifAnnouncementBadge" style="display: none;">0</span>
                 </button>
               </div>
@@ -678,7 +687,7 @@
                   <line x1="12" y1="5" x2="12" y2="19"></line>
                   <line x1="5" y1="12" x2="19" y2="12"></line>
                 </svg>
-                <span>Soạn cập nhật mới cho toàn bộ thành viên</span>
+                <span>Soạn tin tức mới cho toàn bộ thành viên</span>
               </button>
             </div>
 
@@ -934,7 +943,7 @@
 
   <main>
     <section id="home" class="page active-page" data-page="home">
-      <div class="home-hero">
+      <div class="home-hero home-hero-3col" id="homeShowcaseRow">
         <div class="hero-copy">
 
           <h1>Mọi câu hỏi đều xứng đáng được ghi nhận.</h1>
@@ -965,26 +974,57 @@
             </button>
           </div>
         </div>
+
+        <div id="bannerStackCard" class="banner-stack-card" aria-label="Ngăn xếp banner thông báo"
+          title="Kéo ngang để xem các banner khác">
+          <div class="banner-viewport" id="bannerViewport">
+            <div class="banner-track" id="bannerTrack">
+              <div class="banner-slide active" data-banner-id="rethink-2026" data-index="0">
+                <img src="public/assets/banner-rethink-2026.webp?v=20261112_1" class="banner-image"
+                  alt="Cuộc thi RE:THINK 2026 — Nhấn để xem tài liệu đề thi!" />
+              </div>
+              <div class="banner-slide" data-banner-id="xmas-tree-2026" data-index="1">
+                <img src="public/assets/banner-xmas-tree.webp?v=20261112_1" class="banner-image"
+                  alt="Trang trí Cây thông Giáng sinh Cộng đồng RE:SEARCH 2026" />
+              </div>
+              <div class="banner-slide no-action" data-banner-id="christmas-2026" data-index="2"
+                style="cursor: default;">
+                <img src="public/assets/banner-christmas-2026.webp?v=20261111_1" class="banner-image"
+                  alt="Giáng sinh an lành RE:SEARCH 2026" />
+              </div>
+              <div class="banner-slide" data-banner-id="community-forum" data-index="3">
+                <img src="public/assets/banner-community-forum.webp?v=20261121_1" class="banner-image"
+                  alt="Cộng đồng RE:SEARCH" />
+              </div>
+            </div>
+          </div>
+          <div class="banner-floating-controls" id="bannerFloatingControls">
+            <div class="banner-dots" id="bannerDotsContainer"></div>
+          </div>
+        </div>
+
         <aside class="contribution-card" id="homeContributionCard" data-streak-tier="0">
           <div class="card-topline">
             <div class="topline-left">
               <span>THÀNH TÍCH NĂNG ĐỘNG</span>
             </div>
             <div class="topline-actions">
-              <button type="button" class="streak-journey-btn" id="btnStreakJourney" onclick="openStreakJourneyModal()"
-                title="Xem hành trình giữ chuỗi">
+              <button type="button" class="streak-journey-btn" id="btnStreakJourney" onclick="go('handbook')"
+                title="Mở Sổ tay khám phá">
                 <svg class="ui-btn-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                   stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"></polygon>
-                  <line x1="8" y1="2" x2="8" y2="18"></line>
-                  <line x1="16" y1="6" x2="16" y2="22"></line>
-                </svg> Hành trình
+                  <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+                  <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+                </svg> Khám phá
               </button>
             </div>
           </div>
 
           <div class="streak-hero">
-            <div class="streak-flame-wrap" id="streakFlameHero" title="Chuỗi học tập liên tục"></div>
+            <div class="streak-flame-wrap" id="streakFlameHero" role="button" tabindex="0"
+              onclick="openStreakJourneyModal()"
+              onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openStreakJourneyModal();}"
+              style="cursor:pointer;" title="Bấm để xem Đặc quyền &amp; Hành trình giữ chuỗi"></div>
             <div class="streak-val-wrap">
               <div class="streak-number" id="activityStreak">
                 0 <span>ngày</span>
@@ -997,7 +1037,7 @@
                   class="shield-icon"><svg class="ui-icon shield-icon-svg" width="14" height="14" viewBox="0 0 24 24"
                     fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
-                  </svg></span> <b id="streakShieldsCount">0</b> khiên</button>
+                  </svg></span> <b id="streakShieldsCount">0/3</b> khiên</button>
             </div>
           </div>
 
@@ -1023,160 +1063,8 @@
               </svg> Khôi phục chuỗi</button>
           </div>
           <div class="week-strip" id="activityGrid" aria-label="Hoạt động trong tuần"></div>
+          <div id="homeContribEnergyBar" class="hb-contrib-energy-wrap"></div>
         </aside>
-      </div>
-
-      <!-- KHU VỰC LIÊN KẾT ĐẤU TRƯỜNG ARENA & NGĂN XẾP BANNER THÔNG BÁO -->
-      <div id="homeShowcaseRow" class="home-showcase-row">
-        <!-- CỘT TRÁI: MODAL ĐƯỜNG DẪN ARENA -->
-        <div id="weeklyCompetitionModule" class="weekly-competition-card"
-          onclick="if (window.handleHomeArenaClick) window.handleHomeArenaClick(event); else go('arena')">
-          <div class="xmas-card-bg-clip" aria-hidden="true">
-            <div class="comp-card-glow"></div>
-          </div>
-          <div class="comp-card-content">
-            <div class="comp-left">
-              <div class="comp-badge-row">
-                <span id="compStatusBadge" class="comp-status-badge">
-                  <span class="pulse-dot"></span>
-                  <span id="compStatusBadgeText">ĐANG MỞ CỔNG</span>
-                </span>
-                <span class="comp-week-tag" id="compWeekTag">TUẦN 01</span>
-                <span class="arena-portal-tag">
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                    style="vertical-align: -1px; margin-right: 3px;">
-                    <path d="M6 9H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h2" />
-                    <path d="M18 9h2a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2h-2" />
-                    <path d="M6 3h12v7a6 6 0 0 1-12 0V3z" />
-                    <path d="M12 16v4" />
-                    <path d="M8 20h8" />
-                  </svg>
-                  Đấu trường Arena
-                </span>
-              </div>
-              <h3 id="compTopicTitle" class="comp-topic-title">Phương pháp Nghiên cứu & Xử lý Dữ liệu Khoa học</h3>
-              <p id="compPhaseSubtitle" class="comp-phase-subtitle">Chặng 1: Phương pháp & Thiết kế Nghiên cứu Khoa học
-              </p>
-            </div>
-            <div class="comp-right">
-              <div class="comp-timer-box">
-                <span class="comp-timer-label" id="compTimerLabel">Thời gian mở cổng còn lại:</span>
-                <div class="comp-countdown" id="compCountdownTicker">00:00:00</div>
-              </div>
-              <div class="comp-action-box">
-                <div class="comp-user-status" id="compUserStatusTeaser">
-                  <span id="compAttemptsTeaser" style="display: none;">Số lượt thi: 0/1</span>
-                  <span id="compBestScoreTeaser" class="comp-star-score" style="display: none;"><svg class="ui-icon"
-                      width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
-                      <polygon
-                        points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2">
-                      </polygon>
-                    </svg> 0</span>
-                </div>
-                <button type="button" class="comp-cta-button" id="compCtaBtn"
-                  onclick="event.stopPropagation(); handleCompetitionCtaClick()">
-                  <span id="compCtaText">Tham gia ngay</span>
-                  <span class="comp-cta-arrow"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"
-                      stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                      <line x1="5" y1="12" x2="19" y2="12"></line>
-                      <polyline points="12 5 19 12 12 19"></polyline>
-                    </svg></span>
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- CỘT PHẢI: NGĂN XẾP BANNER THÔNG BÁO (Kích thước chuẩn 430 x 240 px, luân phiên 15s) -->
-        <div id="bannerStackCard" class="banner-stack-card" aria-label="Ngăn xếp banner thông báo"
-          title="Kéo ngang để xem các banner khác">
-          <div class="banner-viewport" id="bannerViewport">
-            <div class="banner-track" id="bannerTrack">
-              <!-- Slide 0: Cuộc thi RE:THINK 2026 (ưu tiên xuất hiện trang đầu tới hết 01/12/2026, tương tác mở tài liệu đề thi) -->
-              <div class="banner-slide active" data-banner-id="rethink-2026" data-index="0">
-                <img src="public/assets/banner-rethink-2026.jpg?v=20261112_1" class="banner-image"
-                  alt="Cuộc thi RE:THINK 2026 — Nhấn để xem tài liệu đề thi!" />
-              </div>
-              <!-- Slide 1: Sự kiện cộng đồng: Trang trí Cây thông Giáng sinh 2026 (đến hết 31/12/2026, tương tác mở modal) -->
-              <div class="banner-slide" data-banner-id="xmas-tree-2026" data-index="1">
-                <img src="public/assets/banner-xmas-tree.png?v=20261112_1" class="banner-image"
-                  alt="Trang trí Cây thông Giáng sinh Cộng đồng RE:SEARCH 2026" />
-              </div>
-              <!-- Slide 2: Cập nhật Giáng sinh 2026 & Sự kiện Món quà mùa đông (Từ 11/11 đến hết ngày 31/12/2026, không tương tác) -->
-              <div class="banner-slide no-action" data-banner-id="christmas-2026" data-index="2"
-                style="cursor: default;">
-                <img src="public/assets/banner-christmas-2026.jpg?v=20261111_1" class="banner-image"
-                  alt="Giáng sinh an lành RE:SEARCH 2026 — Sự kiện Món quà mùa đông: Phép màu mùa đông" />
-              </div>
-              <!-- Slide 3: Cập nhật mới tính năng Cộng đồng (Từ 20/11 đến hết ngày 16/12/2026, tương tác ra Diễn đàn) -->
-              <div class="banner-slide" data-banner-id="community-forum" data-index="3">
-                <img src="public/assets/banner-community-forum.jpg?v=20261121_1" class="banner-image"
-                  alt="Cộng đồng cùng bạn khám phá và chia sẻ — Khám phá ngay Diễn đàn RE:SEARCH!" />
-              </div>
-              <!-- Slide 4: Bảng Vàng Tuần 05 Arena — Mô Hình Nghiên Cứu Và Tư Duy Lý Thuyết (Từ 16/11 đến hết ngày 22/11/2026, không tương tác) -->
-              <div class="banner-slide no-action" data-banner-id="leaderboard-w05" data-index="4"
-                style="cursor: default;">
-                <img src="public/assets/banner-leaderboard-w05.jpg?v=20261116_1" class="banner-image"
-                  alt="Bảng Vàng Tuần 05 — Mô Hình Nghiên Cứu Và Tư Duy Lý Thuyết" />
-              </div>
-              <!-- Slide 4: Bảng Vàng Toàn Đoàn Tuần 04 — Mô Hình Nghiên Cứu (Từ 09/11 đến hết ngày 15/11/2026) -->
-              <div class="banner-slide no-action" data-banner-id="leaderboard-w04" data-index="4"
-                style="cursor: default;">
-                <img src="public/assets/banner-leaderboard-w04.jpg?v=20261109_1" class="banner-image"
-                  alt="Bảng Vàng Toàn Đoàn Tuần 04 — Mô Hình Nghiên Cứu" />
-              </div>
-              <!-- Slide 5: RE:SEARCH Arena Tuần 05 — Mô hình nghiên cứu và tư duy lý thuyết (Từ 09/11 đến hết ngày 15/11/2026) -->
-              <div class="banner-slide" data-banner-id="arena-w05" data-index="5">
-                <img src="public/assets/banner-arena-w05.jpg?v=20261109_1" class="banner-image"
-                  alt="RE:SEARCH Arena Tuần 05 — Mô hình nghiên cứu và tư duy lý thuyết" />
-              </div>
-              <!-- Slide 3: Cập nhật mới Namecard (Từ 02/11 đến hết ngày 10/11/2026) -->
-              <div class="banner-slide" data-banner-id="namecard-update" data-index="2">
-                <img src="public/assets/banner-namecard-update.jpg?v=20261102_1" class="banner-image"
-                  alt="Cập nhật mới Namecard: Like Thẻ tên, Đọc tài liệu, Bảng xếp hạng" />
-              </div>
-              <!-- Slide 4: Vinh danh thành viên đạt chuỗi 30 đầu tiên (Từ 30/10 đến hết ngày 03/11/2026) -->
-              <div class="banner-slide" data-banner-id="streak-30-first" data-index="3">
-                <img src="public/assets/banner-streak-30.jpg?v=20261030_1" class="banner-image"
-                  alt="Vinh danh thành viên đầu tiên đạt chuỗi 30 ngày — Lương Bích Khuê" />
-              </div>
-              <!-- Slide 5: Cập nhật phòng tự học phiên bản mới (Từ 30/10 đến hết ngày 10/11/2026) -->
-              <div class="banner-slide" data-banner-id="study-update" data-index="4">
-                <img src="public/assets/banner-study-update.jpg?v=20261030_1" class="banner-image"
-                  alt="Cập nhật mới: Phòng tự học phiên bản mới" />
-              </div>
-              <!-- Slide 6: Tính năng mới Dark Mode (Từ 26/10 đến hết ngày 03/11/2026) -->
-              <div class="banner-slide" data-banner-id="dark-mode" data-index="5">
-                <img src="public/assets/banner-dark-mode.jpg?v=20261026_1" class="banner-image"
-                  alt="Tính năng mới Dark Mode đã có mặt trên RE:SEARCH!" />
-              </div>
-              <!-- Slide 7: Bảng Vàng Tuần 03 — Phương Pháp Nghiên Cứu Định Lượng (Từ 25/10 đến hết ngày 01/11/2026) -->
-              <div class="banner-slide" data-banner-id="leaderboard-w03" data-index="6">
-                <img src="public/assets/banner-leaderboard-w03.jpg?v=20261025_1" class="banner-image"
-                  alt="Bảng Vàng Tuần 03 — Phương Pháp Nghiên Cứu Định Lượng" />
-              </div>
-              <!-- Slide 8: Bảng Vàng Tuần 02 — Phỏng Vấn Sâu (Từ 18/10 đến hết ngày 25/10/2026) -->
-              <div class="banner-slide" data-banner-id="leaderboard-w02" data-index="7">
-                <img src="public/assets/banner-leaderboard-w02.jpg?v=20261018_1" class="banner-image"
-                  alt="Bảng Vàng Tuần 02 — Phỏng Vấn Sâu" />
-              </div>
-              <!-- Slide 9: Bảng Vàng Tuần 01 — Phương Pháp Nghiên Cứu Định Tính (Hết ngày 18/10/2026) -->
-              <div class="banner-slide" data-banner-id="leaderboard-w01" data-index="8">
-                <img src="public/assets/banner-leaderboard-w01.jpg?v=20261016_1" class="banner-image"
-                  alt="Bảng Vàng Tuần 01 — Phương Pháp Nghiên Cứu Định Tính" />
-              </div>
-              <!-- Slide 10: Halloween Cho Kẹo Hay Bị Ghẹo (Sau 01/11/2026 sẽ không hiển thị) -->
-              <div class="banner-slide" data-banner-id="halloween" data-index="9">
-                <img src="public/assets/banner-halloween.jpg?v=20261016_2" class="banner-image"
-                  alt="Halloween Cho Kẹo Hay Bị Ghẹo" />
-              </div>
-            </div>
-          </div>
-          <!-- Floating Navigation Controls ở góc dưới bên phải -->
-          <div class="banner-floating-controls" id="bannerFloatingControls">
-            <div class="banner-dots" id="bannerDotsContainer"></div>
-          </div>
-        </div>
       </div>
 
       <div class="search-panel">
@@ -1256,7 +1144,7 @@
             </button>
           </div>
 
-          <!-- Bộ lọc chu kỳ xếp hạng: Tuần / Tháng / Quý (nằm dưới khu vực chuyển đổi bảng xếp hạng) -->
+          <!-- Bộ lọc chu kỳ xếp hạng: Tuần / Tháng / Mùa (nằm dưới khu vực chuyển đổi bảng xếp hạng) -->
           <div class="home-lb-period-row" id="homeLbPeriodRow">
             <div class="home-lb-period-tabs" id="homeLbPeriodTabs" role="tablist" aria-label="Chu kỳ xếp hạng">
               <button type="button" class="home-lb-tab-btn active" data-period="week"
@@ -1269,11 +1157,12 @@
               </button>
               <button type="button" class="home-lb-tab-btn" data-period="quarter"
                 onclick="switchHomeLeaderboardPeriod('quarter')" role="tab" aria-selected="false">
-                <span class="tab-label">Quý</span>
+                <span class="tab-label">Mùa</span>
               </button>
             </div>
             <div class="home-lb-period-right" id="homeLbPeriodRight">
-              <button type="button" class="home-lb-cycle-btn" id="homeLbCycleBtn" onclick="toggleHomeLeaderboardCycle()">Kỳ trước</button>
+              <button type="button" class="home-lb-cycle-btn" id="homeLbCycleBtn"
+                onclick="toggleHomeLeaderboardCycle()">Kỳ trước</button>
               <div class="home-lb-period-detail" id="homeLbPeriodDetail" aria-live="polite"></div>
               <div class="home-lb-countdown-badge" id="homeLbCountdownBadge" aria-live="polite">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
@@ -1281,7 +1170,8 @@
                   <circle cx="12" cy="12" r="10"></circle>
                   <polyline points="12 6 12 12 16 14"></polyline>
                 </svg>
-                <span id="homeLbCountdownText"><span class="home-lb-countdown-prefix">Làm mới sau </span><span id="homeLbCountdownTime">...</span></span>
+                <span id="homeLbCountdownText"><span class="home-lb-countdown-prefix">Làm mới sau </span><span
+                    id="homeLbCountdownTime">...</span></span>
               </div>
             </div>
           </div>
@@ -2487,7 +2377,7 @@
     <section id="arena" class="page" data-page="arena">
       <!-- ARENA HERO BANNER (MATCHING DEMO EXACTLY) -->
       <div class="arena-hero-banner">
-        <img src="/covers/chinh-phuc-bau-troi.png" class="arena-banner-bg-img"
+        <img src="/covers/chinh-phuc-bau-troi.webp" class="arena-banner-bg-img"
           alt="RE:SEARCH Arena - Chinh phục bầu trời" />
         <div class="arena-banner-overlay"></div>
         <div class="arena-banner-content">
@@ -2595,7 +2485,7 @@
                 <path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"></path>
               </svg></div>
             <div class="preview-card-title">Phần thưởng Độc quyền</div>
-            <p class="preview-card-desc">Nhận Khiên bảo vệ chuỗi tự học + Điểm rèn luyện hoạt động khoa học.</p>
+            <p class="preview-card-desc">Nhận Rương &amp; Chìa khóa + Điểm rèn luyện hoạt động khoa học.</p>
           </div>
         </div>
 
@@ -2732,6 +2622,9 @@
             <button type="button" class="comp-tab-btn" data-comp-tab="rules" onclick="switchCompTab('rules')">
               <span class="tab-text">Thể lệ</span>
             </button>
+            <button type="button" class="comp-tab-btn" data-comp-tab="rewards" onclick="switchCompTab('rewards')">
+              <span class="tab-text">Phần thưởng</span>
+            </button>
           </div>
 
           <!-- TAB 1: CỔNG THI ĐẤU -->
@@ -2794,8 +2687,8 @@
               </div>
               <div class="attempts-grid">
                 <div class="attempt-stat-box" id="attemptStatBoxCount">
-                  <span class="attempt-stat-label">Số lượt thi</span>
-                  <div class="attempt-stat-val" id="userAttemptsCount">0 / 1 <span class="attempt-sub">lượt</span></div>
+                  <span class="attempt-stat-label">Lượt thi</span>
+                  <div class="attempt-stat-val" id="userAttemptsCount">0 / 2 <span class="attempt-sub">lượt</span></div>
                 </div>
                 <div class="attempt-stat-box">
                   <span class="attempt-stat-label">Điểm</span>
@@ -2808,16 +2701,14 @@
                       class="attempt-sub">⭐</span></div>
                 </div>
                 <div class="attempt-stat-box">
-                  <span class="attempt-stat-label">Quy cách bài thi</span>
-                  <div class="attempt-stat-val">10 <span class="attempt-sub">phút / 10 câu</span></div>
+                  <span class="attempt-stat-label">Quy cách</span>
+                  <div class="attempt-stat-val">10 câu <span class="attempt-sub">· 60 giây/câu</span></div>
                 </div>
               </div>
               <div class="attempts-note-banner">
                 <span class="note-banner-icon">💡</span>
                 <div class="note-banner-text">
-                  <strong>Mỗi chặng thi đấu chỉ có duy nhất 1 lượt thi!</strong> Thí sinh làm bài đúng hạn ở Chặng 1
-                  &amp; Chặng 2 nhận thêm <strong>+50 ⭐</strong> mỗi đợt. Nếu lỡ, bạn vẫn có thể <strong>làm bù trong
-                    tuần</strong> (không cộng thưởng đúng hạn).
+                  Mỗi chặng có tối đa <strong>2 lượt thi</strong>, hệ thống lấy điểm cao nhất. <strong>Chặng 1 và 2</strong> được thưởng <strong>+50⭐</strong> khi hoàn thành đúng hạn. Vật phẩm dùng được ở cả hai lượt, không hoàn lại sau khi tiêu hao.
                 </div>
               </div>
             </div>
@@ -2836,7 +2727,7 @@
             <div class="gateway-action-container" id="gatewayActionContainer">
               <button type="button" class="button button-primary button-lg gateway-play-btn" id="gatewayStartQuizBtn"
                 onclick="startCompetitionQuiz()">
-                <span id="gatewayStartBtnText">Bắt đầu lượt thi duy nhất</span>
+                <span id="gatewayStartBtnText">Bắt đầu lượt thi (Tối đa 2 lượt)</span>
               </button>
               <div id="gatewayBlockedMsg" class="gateway-blocked-msg" style="display: none;"></div>
             </div>
@@ -2950,313 +2841,469 @@
             </p>
           </div>
 
-          <!-- TAB 3: THỂ LỆ & PHẦN THƯỞNG -->
+          <!-- TAB 3: THỂ LỆ -->
           <div id="compTabRules" class="comp-tab-panel" style="display: none;">
             <div class="rules-content-body">
-              <!-- SECTION 1 -->
+              <!-- 1. CHU KỲ THI ĐẤU -->
               <section class="rules-section">
-                <h3 class="rules-heading"><svg class="ui-icon" width="18" height="18" viewBox="0 0 24 24" fill="none"
-                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-                    <line x1="16" y1="2" x2="16" y2="6"></line>
-                    <line x1="8" y1="2" x2="8" y2="6"></line>
-                    <line x1="3" y1="10" x2="21" y2="10"></line>
-                  </svg> 1. Chu kỳ thi đấu &amp; 3 Chặng trong tuần</h3>
+                <h3 class="rules-heading">1. Chu kỳ thi đấu</h3>
                 <p class="rules-intro-text">
-                  Đấu trường được tổ chức định kỳ mỗi tuần từ <strong>Thứ Hai đến Chủ Nhật</strong>, chia làm 3 chặng
-                  độc lập. <strong>Mỗi chặng người chơi có duy nhất 1 lượt thi:</strong>
+                  Đấu trường Arena được tổ chức định kỳ mỗi tuần, gồm <strong>03 chặng với tổng cộng 06 lượt
+                    thi</strong>.
+                  Mỗi chặng có 02 lượt thi, hệ thống ghi nhận kết quả cao nhất để tính điểm xếp hạng.
                 </p>
-                <div class="rules-phase-cards">
-                  <div class="rules-p-card phase-1">
-                    <div class="p-card-top">
-                      <span class="p-badge">Chặng 1</span>
-                      <span class="p-bonus-tag">+50 ⭐</span>
-                    </div>
-                    <strong>Thứ Hai – Thứ Ba</strong>
-                    <p>10 câu trắc nghiệm chuyên đề. Làm đúng hạn nhận <strong>+50 ⭐ thưởng</strong>.</p>
-                  </div>
-                  <div class="rules-p-card phase-2">
-                    <div class="p-card-top">
-                      <span class="p-badge">Chặng 2</span>
-                      <span class="p-bonus-tag">+50 ⭐</span>
-                    </div>
-                    <strong>Thứ Tư – Thứ Năm</strong>
-                    <p>10 câu trắc nghiệm chuyên đề. Làm đúng hạn nhận <strong>+50 ⭐ thưởng</strong>.</p>
-                  </div>
-                  <div class="rules-p-card phase-3">
-                    <div class="p-card-top">
-                      <span class="p-badge">Chặng 3</span>
-                      <span class="p-bonus-tag finale">Chặng cuối</span>
-                    </div>
-                    <strong>Thứ Sáu – Thứ Bảy</strong>
-                    <p>10 câu trắc nghiệm chuyên đề (Chặng cuối tuần, không cộng thưởng đúng hạn).</p>
-                  </div>
-                </div>
 
-                <!-- CƠ CHẾ LÀM BÙ -->
-                <div class="rules-callout-card rules-catchup-card">
-                  <div class="callout-header">
-                    <span class="callout-badge-tag blue"><svg class="ui-icon" width="12" height="12" viewBox="0 0 24 24"
-                        fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"
-                        stroke-linejoin="round">
-                        <polyline points="23 4 23 10 17 10"></polyline>
-                        <polyline points="1 20 1 14 7 14"></polyline>
-                        <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
-                      </svg> Cơ chế làm bù trong tuần</span>
-                    <strong>Không lo mất điểm nếu bận rộn:</strong>
-                  </div>
-                  <ul class="callout-bullets">
-                    <li>• <strong>Lỡ Chặng 1 (Thứ 2, 3):</strong> Đến Thứ 4 có thể làm bù Chặng 1 và làm cả Chặng 2.
-                    </li>
-                    <li>• <strong>Lỡ cả Chặng 1 và 2:</strong> Đến Thứ 6 có thể làm bù cả Chặng 1, Chặng 2 và làm Chặng
-                      3.</li>
-                    <li>• <strong>Đặc quyền đúng hạn:</strong> Làm đúng hạn Chặng 1 và 2 được cộng thưởng <strong>+50 ⭐
-                        / chặng</strong> (tối đa +100 ⭐). Khi làm bù, bạn vẫn nhận điểm bài thi bình thường nhưng
-                      <em>không có điểm thưởng đúng hạn</em>.
-                    </li>
-                    <li>• ⚠️ <strong>Chặng 3 lỡ sẽ không thể làm bù</strong> vì Chủ Nhật là ngày hệ thống chốt sổ và
-                      trao giải toàn tuần!</li>
-                  </ul>
-                </div>
-
-                <!-- CHỦ NHẬT TỔNG KẾT -->
-                <div class="rules-callout-card rules-sunday-card">
-                  <div class="callout-header">
-                    <span class="callout-badge-tag gold"><svg class="ui-icon" width="13" height="13" viewBox="0 0 24 24"
-                        fill="currentColor" stroke="none">
-                        <path
-                          d="M5 16L3 5l5.5 5L12 4l3.5 6L21 5l-2 11H5zm14 3c0 .6-.4 1-1 1H6c-.6 0-1-.4-1-1v-1h14v1z" />
-                      </svg> Chủ Nhật</span>
-                    <strong>Tổng kết toàn tuần &amp; Trao thưởng</strong>
-                  </div>
-                  <p class="callout-desc">
-                    Khóa điểm 3 chặng, cộng dồn điểm tích lũy + thưởng đúng hạn, vinh danh Bảng vàng và trao tặng
-                    <strong>Điểm hoạt động NCKH + Khiên giữ chuỗi tự học</strong>.
-                  </p>
-                </div>
-              </section>
-
-              <!-- SECTION 2 -->
-              <section class="rules-section">
-                <h3 class="rules-heading"><svg class="ui-icon" width="18" height="18" viewBox="0 0 24 24" fill="none"
-                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <circle cx="12" cy="12" r="10"></circle>
-                    <polyline points="12 6 12 12 16 14"></polyline>
-                  </svg> 2. Khung giờ &amp; Lịch hoạt động</h3>
-                <div class="rules-schedule-grid">
-                  <div class="schedule-card gate-summary">
-                    <div class="schedule-badge">🏁 CHUẨN BỊ</div>
-                    <div class="schedule-time">0h – 15h</div>
-                    <p>Khung giờ chuẩn bị cho chặng thi đấu mới (Thứ 2 là khung giờ Khởi động tuần mới; Thứ 4, 6 chuẩn
-                      bị chặng tiếp theo).</p>
-                  </div>
-                  <div class="schedule-card gate-open"
-                    style="border-color: rgba(245, 158, 11, 0.4); background: rgba(245, 158, 11, 0.05);">
-                    <div class="schedule-badge" style="color: #d97706;">
-                      <span class="pulse-dot" style="background: #f59e0b;"></span> SẴN SÀNG ĐẾM NGƯỢC
-                    </div>
-                    <div class="schedule-time" style="color: #b45309;">15h – 19h</div>
-                    <p>Khung giờ sẵn sàng đếm ngược mở cổng thi đấu các ngày Thứ 2, Thứ 4, Thứ 6.</p>
-                  </div>
-                  <div class="schedule-card gate-open">
-                    <div class="schedule-badge">
-                      <span class="pulse-dot"></span> MỞ CỔNG THI ĐẤU
-                    </div>
-                    <div class="schedule-time">19h ngày đầu – 23h59 ngày cuối chặng</div>
-                    <p>Khung giờ mở cổng làm bài liền mạch từng chặng (T2–T3, T4–T5, T6–T7).</p>
-                  </div>
-                  <div class="schedule-card gate-summary"
-                    style="border-color: rgba(234, 179, 8, 0.4); background: rgba(234, 179, 8, 0.05);">
-                    <div class="schedule-badge" style="color: #eab308;"><svg class="ui-icon" width="13" height="13"
-                        viewBox="0 0 24 24" fill="currentColor" stroke="none">
-                        <path
-                          d="M5 16L3 5l5.5 5L12 4l3.5 6L21 5l-2 11H5zm14 3c0 .6-.4 1-1 1H6c-.6 0-1-.4-1-1v-1h14v1z" />
-                      </svg> TỔNG KẾT TUẦN</div>
-                    <div class="schedule-time" style="color: #facc15;">0h – 23h59 ngày Chủ nhật</div>
-                    <p>Khung giờ tổng kết toàn bộ tuần thi đấu, chốt điểm và vinh danh trao thưởng.</p>
-                  </div>
-                </div>
-              </section>
-
-              <!-- SECTION 3 -->
-              <section class="rules-section">
-                <h3 class="rules-heading"><svg class="ui-icon" width="18" height="18" viewBox="0 0 24 24" fill="none"
-                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <circle cx="12" cy="12" r="10"></circle>
-                    <circle cx="12" cy="12" r="6"></circle>
-                    <circle cx="12" cy="12" r="2"></circle>
-                  </svg> 3. Cơ chế làm bài, Tính điểm &amp; Thời gian</h3>
-                <div class="rules-formula-card">
-                  <div class="formula-title">TỔNG ĐIỂM = ĐIỂM ĐÚNG (500⭐) + GIÂY CÒN LẠI MỖI CÂU ĐÚNG (600⭐) +
-                    THƯỞNG ĐÚNG HẠN (+50⭐)</div>
-                  <div class="formula-grid">
-                    <div class="f-item">
-                      <span class="f-num">+50 ⭐</span>
-                      <span class="f-label">Mỗi câu trả lời đúng (Tối đa 500 sao)</span>
-                    </div>
-                    <div class="f-item">
-                      <span class="f-num">60s / câu</span>
-                      <span class="f-label">Đếm ngược riêng cho từng câu hỏi</span>
-                    </div>
-                    <div class="f-item">
-                      <span class="f-num">+1 ⭐ / s</span>
-                      <span class="f-label">Giây còn lại của câu đúng (Tối đa 600 sao)</span>
-                    </div>
-                    <div class="f-item">
-                      <span class="f-num">+50 ⭐ / Chặng</span>
-                      <span class="f-label">Đúng hạn Chặng 1 &amp; Chặng 2 (Tối đa 100 sao)</span>
-                    </div>
-                  </div>
-                  <div class="formula-max">✨ Điểm tối đa toàn tuần: <strong>3400 sao</strong></div>
-                </div>
-
-                <div class="rules-penalty-box">
-                  <div class="penalty-header">
-                    <span class="penalty-icon"><svg class="ui-icon" width="18" height="18" viewBox="0 0 24 24"
-                        fill="none" stroke="#d97706" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                        <path
-                          d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z">
-                        </path>
-                        <line x1="12" y1="9" x2="12" y2="13"></line>
-                        <line x1="12" y1="17" x2="12.01" y2="17"></line>
-                      </svg></span>
-                    <h4>Quy tắc chọn &amp; chốt đáp án (Bảo mật tuyệt đối):</h4>
-                  </div>
-                  <div class="penalty-steps-grid">
-                    <div class="penalty-step">
-                      <div class="step-badge step-1">1 lần chốt</div>
-                      <div class="step-info"><strong>Chọn tự do A/B/C</strong> rồi bấm <strong>Qua câu tiếp theo</strong> để chốt</div>
-                    </div>
-                    <div class="penalty-step">
-                      <div class="step-badge step-2">Ẩn đáp án</div>
-                      <div class="step-info"><strong>Không hiển thị đúng/sai</strong> trong suốt thời gian thi</div>
-                    </div>
-                    <div class="penalty-step step-timeout">
-                      <div class="step-badge step-zero">0 giây</div>
-                      <div class="step-info"><strong>Hết 60s/câu</strong> tự động chốt câu hiện tại và qua câu kế</div>
-                    </div>
-                  </div>
-                </div>
-              </section>
-
-              <!-- SECTION 4 -->
-              <section class="rules-section">
-                <h3 class="rules-heading"><svg class="ui-icon" width="18" height="18" viewBox="0 0 24 24" fill="none"
-                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <polyline points="20 12 20 22 4 22 4 12"></polyline>
-                    <rect x="2" y="7" width="20" height="5"></rect>
-                    <line x1="12" y1="22" x2="12" y2="7"></line>
-                    <path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"></path>
-                    <path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"></path>
-                  </svg> 4. Cơ cấu Giải thưởng Tuần &amp; Điểm thưởng Chặng</h3>
-                <p class="rules-intro-text">Sau khi kết thúc Chặng 3 vào thứ Bảy, Chủ Nhật là thời điểm hệ thống chốt
-                  Bảng xếp hạng tuần và trao thưởng chính thức:</p>
-
-                <div class="rules-rewards-table-wrap">
-                  <table class="rules-rewards-table">
+                <div class="arena-rules-table-wrap">
+                  <table class="arena-rules-table">
                     <thead>
                       <tr>
-                        <th>Thứ hạng Tuần</th>
-                        <th>Điểm hoạt động</th>
-                        <th>Khiên giữ chuỗi</th>
+                        <th>Chặng</th>
+                        <th>Lượt thi</th>
+                        <th>Thời gian mở cổng</th>
                       </tr>
                     </thead>
                     <tbody>
-                      <tr class="rank-top1">
-                        <td><svg class="ui-icon" width="16" height="16" viewBox="0 0 24 24" fill="#f59e0b" stroke="none"
-                            style="margin-right: 4px;">
-                            <circle cx="12" cy="8" r="7"></circle>
-                            <polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"></polyline>
-                          </svg> <strong>Quán quân (Top 1)</strong></td>
-                        <td><strong class="pts-val">+20 điểm</strong></td>
-                        <td><svg class="shield-icon-svg" width="15" height="15" viewBox="0 0 24 24" fill="currentColor"
-                            stroke="none" style="color: #10b981; margin-right: 2px;">
-                            <path d="M12 2L3 7v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-9-5z" />
-                          </svg><svg class="shield-icon-svg" width="15" height="15" viewBox="0 0 24 24"
-                            fill="currentColor" stroke="none" style="color: #10b981; margin-right: 4px;">
-                            <path d="M12 2L3 7v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-9-5z" />
-                          </svg> 2 khiên</td>
+                      <tr>
+                        <td rowspan="2"><strong>Chặng 1</strong></td>
+                        <td>Lượt 1</td>
+                        <td>Thứ Hai 18:00 – Thứ Ba 10:00</td>
                       </tr>
-                      <tr class="rank-top2">
-                        <td><svg class="ui-icon" width="16" height="16" viewBox="0 0 24 24" fill="#94a3b8" stroke="none"
-                            style="margin-right: 4px;">
-                            <circle cx="12" cy="8" r="7"></circle>
-                            <polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"></polyline>
-                          </svg> <strong>Á quân (Top 2)</strong></td>
-                        <td><strong class="pts-val">+18 điểm</strong></td>
-                        <td><svg class="shield-icon-svg" width="15" height="15" viewBox="0 0 24 24" fill="currentColor"
-                            stroke="none" style="color: #10b981; margin-right: 2px;">
-                            <path d="M12 2L3 7v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-9-5z" />
-                          </svg><svg class="shield-icon-svg" width="15" height="15" viewBox="0 0 24 24"
-                            fill="currentColor" stroke="none" style="color: #10b981; margin-right: 4px;">
-                            <path d="M12 2L3 7v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-9-5z" />
-                          </svg> 2 khiên</td>
+                      <tr>
+                        <td>Lượt 2</td>
+                        <td>Thứ Ba 18:00 – Thứ Tư 10:00</td>
                       </tr>
-                      <tr class="rank-top3">
-                        <td><svg class="ui-icon" width="16" height="16" viewBox="0 0 24 24" fill="#b45309" stroke="none"
-                            style="margin-right: 4px;">
-                            <circle cx="12" cy="8" r="7"></circle>
-                            <polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"></polyline>
-                          </svg> <strong>Quý quân (Top 3)</strong></td>
-                        <td><strong class="pts-val">+15 điểm</strong></td>
-                        <td><svg class="shield-icon-svg" width="15" height="15" viewBox="0 0 24 24" fill="currentColor"
-                            stroke="none" style="color: #10b981; margin-right: 2px;">
-                            <path d="M12 2L3 7v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-9-5z" />
-                          </svg><svg class="shield-icon-svg" width="15" height="15" viewBox="0 0 24 24"
-                            fill="currentColor" stroke="none" style="color: #10b981; margin-right: 4px;">
-                            <path d="M12 2L3 7v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-9-5z" />
-                          </svg> 2 khiên</td>
+                      <tr>
+                        <td rowspan="2"><strong>Chặng 2</strong></td>
+                        <td>Lượt 1</td>
+                        <td>Thứ Tư 18:00 – Thứ Năm 10:00</td>
                       </tr>
-                      <tr class="rank-top4-10">
-                        <td><svg class="ui-icon" width="16" height="16" viewBox="0 0 24 24" fill="#10b981" stroke="none"
-                            style="margin-right: 4px;">
-                            <circle cx="12" cy="8" r="7"></circle>
-                            <polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"></polyline>
-                          </svg> <strong>Top 4 – Top 10</strong></td>
-                        <td><strong class="pts-val">+10 điểm</strong></td>
-                        <td><svg class="shield-icon-svg" width="15" height="15" viewBox="0 0 24 24" fill="currentColor"
-                            stroke="none" style="color: #10b981; margin-right: 4px;">
-                            <path d="M12 2L3 7v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-9-5z" />
-                          </svg> 1 khiên</td>
+                      <tr>
+                        <td>Lượt 2</td>
+                        <td>Thứ Năm 18:00 – Thứ Sáu 10:00</td>
                       </tr>
-                      <tr class="rank-participation">
-                        <td><svg class="ui-icon" width="16" height="16" viewBox="0 0 24 24" fill="none"
-                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                            style="margin-right: 4px;">
-                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-                            <circle cx="9" cy="7" r="4"></circle>
-                            <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
-                            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-                          </svg> <strong>Tất cả thành viên tham gia (≥ 1 chặng)</strong></td>
-                        <td><strong class="pts-val">+5 điểm</strong></td>
-                        <td><svg class="shield-icon-svg" width="15" height="15" viewBox="0 0 24 24" fill="currentColor"
-                            stroke="none" style="color: #10b981; margin-right: 4px;">
-                            <path d="M12 2L3 7v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-9-5z" />
-                          </svg> 1 khiên</td>
+                      <tr>
+                        <td rowspan="2"><strong>Chặng 3</strong></td>
+                        <td>Lượt 1</td>
+                        <td>Thứ Sáu 18:00 – Thứ Bảy 10:00</td>
+                      </tr>
+                      <tr>
+                        <td>Lượt 2</td>
+                        <td>Thứ Bảy 18:00 – Chủ Nhật 12:00</td>
                       </tr>
                     </tbody>
                   </table>
                 </div>
 
-                <div class="rules-bonus-box">
-                  <h4>🌟 Điểm thưởng tham gia theo số chặng (Cộng vào Chủ Nhật):</h4>
-                  <div class="bonus-chips">
-                    <span class="bonus-chip">Tham gia 1 chặng: <strong>+1 điểm hoạt động</strong></span>
-                    <span class="bonus-chip">Tham gia 2 chặng: <strong>+3 điểm hoạt động</strong></span>
-                    <span class="bonus-chip highlight">Tham gia đủ cả 3 chặng: <strong>+5 điểm hoạt động</strong></span>
-                  </div>
+                <h4 class="arena-rules-subhead">Khung giờ tổng kết và chuẩn bị:</h4>
+                <ul class="arena-rules-list">
+                  <li><strong>10:00 – 15:00:</strong> Tổng kết kết quả lượt thi vừa kết thúc và thực hiện làm bù theo
+                    quy định (nếu có).</li>
+                  <li><strong>15:00 – 18:00:</strong> Chuẩn bị và đếm ngược trước khi mở cổng lượt thi tiếp theo.</li>
+                  <li><strong>Riêng Thứ Hai:</strong> Khung 10:00 – 15:00 được dành để chuẩn bị cho tuần thi đấu mới.
+                  </li>
+                </ul>
+
+                <h4 class="arena-rules-subhead">Tổng kết tuần và Luyện tập:</h4>
+                <ul class="arena-rules-list">
+                  <li><strong>Chủ Nhật 12:00:</strong> Đóng cổng thi đấu cuối cùng, khóa kết quả và tổng kết toàn tuần.
+                  </li>
+                  <li><strong>Chủ Nhật 12:00 – Thứ Hai 10:00:</strong> Chuyển sang chế độ Luyện tập, cho phép xem lại
+                    câu hỏi, đáp án chính xác và nội dung giải thích của các lượt thi trong tuần.</li>
+                </ul>
+
+                <div class="arena-rules-note-box">
+                  <strong>Lưu ý:</strong> Mỗi chặng có 02 lượt thi. Người chơi có thể tham gia cả hai lượt, nhưng hệ
+                  thống chỉ ghi nhận kết quả cao nhất để tính điểm chặng.
+                </div>
+              </section>
+
+              <!-- 2. CƠ CHẾ LÀM BÙ -->
+              <section class="rules-section">
+                <h3 class="rules-heading">2. Cơ chế làm bù</h3>
+                <p class="rules-intro-text">Người chơi bỏ lỡ lượt thi vẫn có thể hoàn thành chặng tương ứng theo lịch
+                  sau:</p>
+                <ul class="arena-rules-list">
+                  <li><strong>Bỏ lỡ Chặng 1:</strong> Có thể làm bù các lượt đã bỏ lỡ vào Thứ Tư, từ 10:00 – 15:00.</li>
+                  <li><strong>Bỏ lỡ Chặng 2:</strong> Có thể làm bù các lượt đã bỏ lỡ vào Thứ Sáu, từ 10:00 – 15:00.
+                  </li>
+                  <li><strong>Bỏ lỡ cả Chặng 1 và 2:</strong> Có thể làm bù cả hai chặng vào Thứ Sáu, từ 10:00 – 15:00.
+                  </li>
+                  <li><strong>Chặng 3:</strong> Không hỗ trợ làm bù vì Chủ Nhật là thời điểm hệ thống khóa kết quả và
+                    tổng kết toàn tuần.</li>
+                </ul>
+                <p class="rules-intro-text">
+                  Lượt làm bù được tính vào chặng tương ứng và không tạo thêm lượt thi ngoài số lượt quy định. Người
+                  chơi vẫn nhận điểm bài thi bình thường nhưng không được hưởng thưởng đúng hạn.
+                </p>
+                <div class="arena-rewards-highlight">
+                  <strong>Thưởng đúng hạn:</strong> Hoàn thành đủ 02 lượt thi theo lịch chính thức của Chặng 1 hoặc
+                  Chặng 2 sẽ nhận thêm <strong>+50⭐/chặng</strong>, tối đa +100⭐ mỗi tuần. Chặng 3 không có thưởng đúng
+                  hạn.
+                </div>
+              </section>
+
+              <!-- 3. THỂ LỆ LƯỢT THI -->
+              <section class="rules-section">
+                <h3 class="rules-heading">3. Thể lệ lượt thi</h3>
+                <ul class="arena-rules-list">
+                  <li>Mỗi lượt gồm <strong>10 câu hỏi trắc nghiệm</strong>, mỗi câu có 04 phương án A, B, C, D.</li>
+                  <li>Thời gian trả lời là <strong>60 giây/câu</strong>, được đếm ngược riêng cho từng câu.</li>
+                  <li>Sau khi chọn đáp án, người chơi nhấn <strong>Qua câu tiếp theo</strong> để xác nhận.</li>
+                  <li>Khi hết 60 giây, hệ thống tự động chốt câu trả lời hiện tại và chuyển sang câu tiếp theo.</li>
+                  <li>Đáp án chính xác không được công bố trong thời gian thi đấu chính thức. Người chơi có thể xem lại
+                    câu hỏi và đáp án trong chế độ Luyện tập vào Chủ Nhật.</li>
+                  <li>Mỗi chặng có tối đa 02 lượt thi. Hệ thống ghi nhận kết quả cao nhất trong 02 lượt.</li>
+                  <li>Người chơi được phép sử dụng vật phẩm hỗ trợ trong <strong>cả hai lượt thi của mỗi chặng</strong>.
+                  </li>
+                </ul>
+              </section>
+
+              <!-- 4. VẬT PHẨM HỖ TRỢ -->
+              <section class="rules-section">
+                <h3 class="rules-heading">4. Vật phẩm hỗ trợ</h3>
+                <p class="rules-intro-text">Vật phẩm được chia thành hai nhóm tùy theo thời điểm sử dụng.</p>
+
+                <h4 class="arena-rules-subhead">4.1. Trang bị trước khi vào lượt thi</h4>
+                <p class="rules-intro-text">Người chơi lựa chọn trang bị trong hộp thoại xác nhận trước mỗi lượt thi.
+                </p>
+                <div class="arena-rules-table-wrap">
+                  <table class="arena-rules-table">
+                    <thead>
+                      <tr>
+                        <th>Vật phẩm</th>
+                        <th>Công dụng</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td>
+                          <span class="arena-rule-item-cell">
+                            <span class="arena-rule-item-icon" data-arena-rule-icon="arena_eye"
+                              data-icon-size="22"></span>
+                            <span>Mắt thần <span class="arena-rule-item-rarity">(Hiếm / Siêu hiếm)</span></span>
+                          </span>
+                        </td>
+                        <td>Kiểm tra ngay đáp án vừa chọn đúng hay sai. Nếu sai, phương án bị gạch bỏ và người chơi được
+                          chọn lại mà không phải chuyển câu. Cấp I: 1 lần; Cấp II: 3 lần; Cấp III: 5 lần mỗi lượt.</td>
+                      </tr>
+                      <tr>
+                        <td>
+                          <span class="arena-rule-item-cell">
+                            <span class="arena-rule-item-icon" data-arena-rule-icon="arena_cloak"
+                              data-icon-size="22"></span>
+                            <span>Áo choàng tiên tri <span class="arena-rule-item-rarity">(Hiếm / Siêu
+                                hiếm)</span></span>
+                          </span>
+                        </td>
+                        <td>Sau câu cuối cùng, hiển thị các câu đang chọn sai và cho phép sửa đáp án trước khi nộp bài.
+                          Cấp I: sửa tối đa 1 câu; Cấp II: 2 câu; Cấp III: 3 câu.</td>
+                      </tr>
+                    </tbody>
+                  </table>
                 </div>
 
-                <!-- GIẢI THÍCH KHIÊN BẢO VỆ CHUỖI -->
-                <div class="rules-shield-explain">
-                  <span class="shield-explain-icon"><svg class="shield-icon-svg" width="22" height="22"
-                      viewBox="0 0 24 24" fill="currentColor" stroke="none" style="color: #10b981;">
-                      <path d="M12 2L3 7v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-9-5z" />
-                    </svg></span>
-                  <div>
-                    <strong>Đặc quyền Khiên giữ chuỗi tự học:</strong>
-                    <p>Khiên bảo vệ sẽ tự động kích hoạt để giữ chuỗi trong trường hợp bạn quên đăng nhập</p>
-                  </div>
+                <h4 class="arena-rules-subhead">4.2. Sử dụng trực tiếp trong trận</h4>
+                <p class="rules-intro-text">Người chơi có thể kích hoạt vật phẩm tại thanh công cụ ngay bên dưới các
+                  phương án trả lời.</p>
+                <div class="arena-rules-table-wrap">
+                  <table class="arena-rules-table">
+                    <thead>
+                      <tr>
+                        <th>Vật phẩm</th>
+                        <th>Công dụng</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td>
+                          <span class="arena-rule-item-cell">
+                            <span class="arena-rule-item-icon" data-arena-rule-icon="arena_loupe_1"
+                              data-icon-size="22"></span>
+                            <span>Kính lúp thường <span class="arena-rule-item-rarity">(Thường / Phổ
+                                thông)</span></span>
+                          </span>
+                        </td>
+                        <td>Loại bỏ ngẫu nhiên 01 phương án sai ở câu hiện tại. Tối đa 01 lần mỗi câu.</td>
+                      </tr>
+                      <tr>
+                        <td>
+                          <span class="arena-rule-item-cell">
+                            <span class="arena-rule-item-icon" data-arena-rule-icon="arena_loupe_2"
+                              data-icon-size="22"></span>
+                            <span>Kính lúp vạn năng <span class="arena-rule-item-rarity">(Phổ thông /
+                                Hiếm)</span></span>
+                          </span>
+                        </td>
+                        <td>Loại bỏ ngẫu nhiên tối đa 02 phương án sai ở câu hiện tại.</td>
+                      </tr>
+                      <tr>
+                        <td>
+                          <span class="arena-rule-item-cell">
+                            <span class="arena-rule-item-icon" data-arena-rule-icon="arena_hourglass"
+                              data-icon-size="22"></span>
+                            <span>Đồng hồ cát <span class="arena-rule-item-rarity">(Thường / Phổ thông /
+                                Hiếm)</span></span>
+                          </span>
+                        </td>
+                        <td>Tạm dừng đồng hồ câu hỏi và cộng thêm 05, 10 hoặc 15 giây tương ứng với từng cấp.</td>
+                      </tr>
+                      <tr>
+                        <td>
+                          <span class="arena-rule-item-cell">
+                            <span class="arena-rule-item-icon" data-arena-rule-icon="arena_lamp"
+                              data-icon-size="22"></span>
+                            <span>Đèn thần <span class="arena-rule-item-rarity">(Thường / Phổ thông)</span></span>
+                          </span>
+                        </td>
+                        <td>Mở gợi ý tư duy cho câu hỏi hiện tại.</td>
+                      </tr>
+                      <tr>
+                        <td>
+                          <span class="arena-rule-item-cell">
+                            <span class="arena-rule-item-icon" data-arena-rule-icon="arena_hammer"
+                              data-icon-size="22"></span>
+                            <span>Búa thần <span class="arena-rule-item-rarity">(Phổ thông / Hiếm / Siêu
+                                hiếm)</span></span>
+                          </span>
+                        </td>
+                        <td>Phá bỏ giới hạn 60 giây ở câu hiện tại, chuyển đồng hồ sang trạng thái vô hạn và bảo toàn
+                          60⭐ điểm thời gian cho câu đó nếu trả lời.</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+
+                <div class="arena-rules-note-box">
+                  <strong>Lưu ý khi sử dụng:</strong>
+                  <ul class="arena-rules-list" style="margin-bottom:0;">
+                    <li>Vật phẩm hỗ trợ được phép sử dụng ở cả 02 lượt thi trong mỗi chặng.</li>
+                    <li>Vật phẩm trang bị trước trận cần được lựa chọn lại cho từng lượt thi.</li>
+                    <li>Vật phẩm đã tiêu hao trong lượt thi trước không được tự động hoàn lại khi bước sang lượt tiếp
+                      theo.</li>
+                  </ul>
+                </div>
+              </section>
+
+              <!-- 5. CÁCH TÍNH ĐIỂM -->
+              <section class="rules-section">
+                <h3 class="rules-heading">5. Cách tính điểm</h3>
+                <p class="rules-intro-text">Điểm số mỗi lượt thi được tính từ số câu trả lời đúng và thời gian còn lại.
+                </p>
+                <div class="arena-rules-table-wrap">
+                  <table class="arena-rules-table">
+                    <thead>
+                      <tr>
+                        <th>Thành phần</th>
+                        <th class="num">Chặng 1 và 2</th>
+                        <th class="num">Chặng 3</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td>Mỗi câu trả lời đúng</td>
+                        <td class="num">+60⭐</td>
+                        <td class="num">+90⭐</td>
+                      </tr>
+                      <tr>
+                        <td>Mỗi giây còn lại</td>
+                        <td class="num">+1⭐</td>
+                        <td class="num">+1⭐</td>
+                      </tr>
+                      <tr>
+                        <td>Thưởng hoàn thành đúng hạn</td>
+                        <td class="num">+50⭐/chặng</td>
+                        <td class="num">Không áp dụng</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+                <p class="rules-intro-text">
+                  <strong>Điểm thời gian:</strong> Mỗi giây còn lại khi chốt câu được cộng 01⭐, tối đa 60⭐/câu, kể cả
+                  khi câu trả lời đúng hoặc sai.
+                </p>
+                <p class="rules-intro-text">
+                  <strong>Điểm chặng:</strong> Hệ thống lấy điểm cao nhất trong 02 lượt thi, sau đó cộng thưởng đúng hạn
+                  nếu đủ điều kiện.
+                </p>
+                <div class="arena-rewards-highlight">
+                  Tổng điểm toàn tuần là tổng điểm của 03 chặng. Người chơi có thể đạt tối đa
+                  <strong>4.000⭐/tuần</strong> khi đạt điểm tuyệt đối ở cả ba chặng và nhận đầy đủ thưởng đúng hạn.
+                </div>
+              </section>
+
+              <!-- 6. XẾP HẠNG -->
+              <section class="rules-section">
+                <h3 class="rules-heading">6. Xếp hạng</h3>
+                <p class="rules-intro-text">
+                  <strong>Bảng xếp hạng chặng:</strong> Sau khi lượt thi thứ hai của mỗi chặng đóng cổng, hệ thống tổng
+                  hợp kết quả và xác định thứ hạng của người chơi trong chặng đó. Điểm chặng được tính theo kết quả cao
+                  nhất trong hai lượt thi.
+                </p>
+                <p class="rules-intro-text">
+                  <strong>Bảng xếp hạng toàn tuần:</strong> Sau khi đóng cổng lượt thi cuối cùng của Chặng 3 vào
+                  <strong>12:00 Chủ Nhật</strong>, hệ thống cộng điểm của cả ba chặng để tổng kết bảng xếp hạng toàn
+                  đoàn và xác định thứ hạng chung cuộc trong tuần.
+                </p>
+                <p class="rules-intro-text" style="margin-bottom:0;">
+                  Kết quả xếp hạng từng chặng được ghi nhận riêng trên bảng thi; kết quả toàn tuần được tổng hợp từ
+                  thành tích của cả ba chặng.
+                </p>
+              </section>
+            </div>
+          </div>
+
+          <!-- TAB 4: PHẦN THƯỞNG -->
+          <div id="compTabRewards" class="comp-tab-panel" style="display: none;">
+            <div class="rules-content-body">
+              <!-- 1. PHẦN THƯỞNG TUẦN -->
+              <section class="rules-section">
+                <h3 class="rules-heading">1. Phần thưởng tuần</h3>
+                <p class="rules-intro-text">
+                  Phần thưởng được chia thành hai loại: <strong>Điểm hoạt động theo từng chặng</strong> và <strong>Chìa
+                    Khóa theo thứ hạng chung cuộc toàn tuần</strong>.
+                </p>
+
+                <h4 class="arena-rules-subhead">1.1. Điểm hoạt động theo từng chặng</h4>
+                <p class="rules-intro-text">Điểm hoạt động được cộng dựa trên thứ hạng của người chơi ở từng chặng:</p>
+                <div class="arena-rules-table-wrap">
+                  <table class="arena-rules-table">
+                    <thead>
+                      <tr>
+                        <th>Thứ hạng</th>
+                        <th class="num">Chặng 1</th>
+                        <th class="num">Chặng 2</th>
+                        <th class="num">Chặng 3</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr class="rank-top1">
+                        <td><strong>Top 1</strong></td>
+                        <td class="num"><span class="pts-val">+5 điểm</span></td>
+                        <td class="num"><span class="pts-val">+6 điểm</span></td>
+                        <td class="num"><span class="pts-val">+9 điểm</span></td>
+                      </tr>
+                      <tr class="rank-top2">
+                        <td><strong>Top 2</strong></td>
+                        <td class="num"><span class="pts-val">+4 điểm</span></td>
+                        <td class="num"><span class="pts-val">+5 điểm</span></td>
+                        <td class="num"><span class="pts-val">+7 điểm</span></td>
+                      </tr>
+                      <tr class="rank-top3">
+                        <td><strong>Top 3</strong></td>
+                        <td class="num"><span class="pts-val">+3 điểm</span></td>
+                        <td class="num"><span class="pts-val">+4 điểm</span></td>
+                        <td class="num"><span class="pts-val">+5 điểm</span></td>
+                      </tr>
+                      <tr>
+                        <td><strong>Top 4 – 10</strong></td>
+                        <td class="num"><span class="pts-val">+2 điểm</span></td>
+                        <td class="num"><span class="pts-val">+3 điểm</span></td>
+                        <td class="num"><span class="pts-val">+3 điểm</span></td>
+                      </tr>
+                      <tr>
+                        <td><strong>Người chơi còn lại</strong></td>
+                        <td class="num"><span class="pts-val">+1 điểm</span></td>
+                        <td class="num"><span class="pts-val">+2 điểm</span></td>
+                        <td class="num"><span class="pts-val">+2 điểm</span></td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+                <div class="arena-rewards-highlight">
+                  Điểm hoạt động được cộng riêng sau mỗi chặng. Người đạt Top 1 cả ba chặng có thể nhận tối đa
+                  <strong>20 điểm hoạt động/tuần</strong>.
+                </div>
+
+                <h4 class="arena-rules-subhead" style="margin-top:18px;">1.2. Chìa Khóa Rương may mắn</h4>
+                <p class="rules-intro-text">Sau khi tổng kết toàn tuần, Chìa Khóa được trao theo thứ hạng chung cuộc:
+                </p>
+                <div class="arena-rules-table-wrap">
+                  <table class="arena-rules-table">
+                    <thead>
+                      <tr>
+                        <th>Thứ hạng toàn tuần</th>
+                        <th class="num">Phần thưởng</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr class="rank-top1">
+                        <td><strong>Top 1</strong></td>
+                        <td class="num"><span class="arena-rule-item-cell"><span class="arena-rule-item-icon"
+                              data-arena-rule-icon="key" data-icon-size="18"></span><span>09 Chìa Khóa</span></span>
+                        </td>
+                      </tr>
+                      <tr class="rank-top2">
+                        <td><strong>Top 2 – 3</strong></td>
+                        <td class="num"><span class="arena-rule-item-cell"><span class="arena-rule-item-icon"
+                              data-arena-rule-icon="key" data-icon-size="18"></span><span>06 Chìa Khóa</span></span>
+                        </td>
+                      </tr>
+                      <tr class="rank-top3">
+                        <td><strong>Top 4 – 10</strong></td>
+                        <td class="num"><span class="arena-rule-item-cell"><span class="arena-rule-item-icon"
+                              data-arena-rule-icon="key" data-icon-size="18"></span><span>03 Chìa Khóa</span></span>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td><strong>Người chơi còn lại có tham gia</strong></td>
+                        <td class="num"><span class="arena-rule-item-cell"><span class="arena-rule-item-icon"
+                              data-arena-rule-icon="key" data-icon-size="18"></span><span>01 Chìa Khóa</span></span>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+                <p class="rules-intro-text">Chìa Khóa được sử dụng để khai mở Rương phần thưởng trên RE:SEARCH.</p>
+              </section>
+
+              <!-- 2. PHẦN THƯỞNG MÙA -->
+              <section class="rules-section" style="margin-bottom:0;">
+                <h3 class="rules-heading">2. Phần thưởng mùa</h3>
+                <p class="rules-intro-text">
+                  Phần thưởng mùa được trao dựa trên thành tích tích lũy của người chơi trong toàn bộ <strong>Mùa AS1</strong>
+                  (<strong>05/10/2026 – 20/12/2026</strong>), tính từ tuần đầu tiên đến tuần cuối cùng của mùa giải.
+                </p>
+
+                <h4 class="arena-rules-subhead">2.1. Phần thưởng tham gia mùa</h4>
+                <p class="rules-intro-text">
+                  Tất cả thành viên tham gia <strong>Mùa AS1</strong> và hoàn thành ít nhất <strong>02 lượt thi</strong> sẽ
+                  nhận được:
+                </p>
+                <ul class="arena-rules-list">
+                  <li><strong>Ảnh bìa giới hạn:</strong> Chinh phục bầu trời – thời hạn sử dụng 30 ngày.</li>
+                  <li><strong>Hình nền Phòng tự học:</strong> Chinh phục bầu trời – thời hạn sử dụng 30 ngày.</li>
+                </ul>
+
+                <h4 class="arena-rules-subhead">2.2. Phần thưởng xếp hạng toàn mùa</h4>
+                <p class="rules-intro-text">
+                  Bảng xếp hạng mùa được xác định dựa trên tổng điểm Arena tích lũy từ tất cả các tuần trong Mùa AS1.
+                </p>
+                <div class="arena-rules-table-wrap">
+                  <table class="arena-rules-table">
+                    <thead>
+                      <tr>
+                        <th>Thứ hạng toàn mùa</th>
+                        <th>Phần thưởng bổ sung</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td><strong>Top 20</strong></td>
+                        <td>Hình nền Phòng tự học Chinh phục bầu trời – vĩnh viễn.</td>
+                      </tr>
+                      <tr>
+                        <td><strong>Top 10</strong></td>
+                        <td>Toàn bộ phần thưởng Top 20 và Ảnh bìa Namecard Chinh phục bầu trời – vĩnh viễn.</td>
+                      </tr>
+                      <tr class="rank-top1">
+                        <td><strong>Top 3</strong></td>
+                        <td>Toàn bộ phần thưởng Top 10 và Khung Namecard Chinh phục bầu trời – vĩnh viễn.</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+                <div class="arena-rules-note-box">
+                  Hệ thống tự động tổng kết và trao thưởng vào cuối mùa (sau hết ngày 20/12/2026). Các phần thưởng xếp hạng được cộng dồn theo thứ hạng.
                 </div>
               </section>
             </div>
@@ -4104,7 +4151,7 @@
           <a class="brand auth-spring-brand" href="#home" onclick="exitAuthPage(); return false;"
             title="Trang chủ RE:SEARCH">
             <span class="auth-logo-icon-wrap">
-              <img class="auth-logo-symbol" src="public/assets/logo.png?v=6" alt="RE:SEARCH" />
+              <img class="auth-logo-symbol" src="public/assets/logo.webp?v=6" alt="RE:SEARCH" />
             </span>
             <span class="brand-text">RE<span class="brand-colon">:</span>SEARCH</span>
           </a>
@@ -4215,7 +4262,8 @@
                         <circle cx="12" cy="7" r="4"></circle>
                       </svg>
                     </span>
-                    <input id="authName" type="text" minlength="2" maxlength="80" placeholder="Ví dụ: Nguyễn Minh Anh" />
+                    <input id="authName" type="text" minlength="2" maxlength="80"
+                      placeholder="Ví dụ: Nguyễn Minh Anh" />
                   </div>
                 </div>
 
@@ -4290,8 +4338,8 @@
                 <!-- Nút mạng xã hội Google duy nhất -->
                 <div class="auth-google-wrapper">
                   <div id="g_id_signin" class="google-gis-btn-container"></div>
-                  <button type="button" class="auth-google-full-btn" id="customGoogleBtn" onclick="handleSocialClick('google')"
-                    title="Đăng nhập tài khoản Google">
+                  <button type="button" class="auth-google-full-btn" id="customGoogleBtn"
+                    onclick="handleSocialClick('google')" title="Đăng nhập tài khoản Google">
                     <svg width="18" height="18" viewBox="0 0 24 24">
                       <path fill="#4285F4"
                         d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
@@ -4501,6 +4549,62 @@
         <span>Email hỗ trợ: <a href="mailto:support@research.id.vn">support@research.id.vn</a></span>
       </footer>
     </section>
+
+    <!-- SỔ TAY NĂNG ĐỘNG (BENTO 1 MÀN HÌNH DESKTOP · 1 CỘT MOBILE) -->
+    <section id="handbook" class="page" data-page="handbook">
+      <div class="handbook-bento-shell">
+        <article class="hb-bento-card hb-area-streak" id="hbStreakCalendarBody"></article>
+        <article class="hb-bento-card hb-area-tasks" id="hbTasksBody"></article>
+        <div class="hb-right-top-stack">
+          <button type="button" class="hb-bento-card hb-exchange-banner-card" id="hbExchangeBannerCard"
+            onclick="hbOpenExchangeModal()" title="Mở Đổi thưởng giới hạn"></button>
+          <article class="hb-bento-card hb-area-character" id="hbCharacterEventBody"
+            aria-label="Không gian nhân vật đồng hành"></article>
+        </div>
+        <div class="hb-left-bottom-stack hb-area-chest">
+          <article class="hb-bento-card hb-chest-card" id="hbChestBody"></article>
+          <article class="hb-bento-card hb-inv-card" id="hbInventoryBody"></article>
+        </div>
+        <div id="weeklyCompetitionModule" class="weekly-competition-card hb-area-showcase"
+          onclick="if (window.handleHomeArenaClick) window.handleHomeArenaClick(event); else go('arena')">
+          <div class="xmas-card-bg-clip" aria-hidden="true">
+            <div class="comp-card-glow"></div>
+          </div>
+          <div class="comp-card-content">
+            <div class="comp-left">
+              <div class="comp-badge-row">
+                <span id="compStatusBadge" class="comp-status-badge">
+                  <span class="pulse-dot"></span>
+                  <span id="compStatusBadgeText">ĐANG MỞ CỔNG</span>
+                </span>
+                <span class="comp-week-tag" id="compWeekTag">TUẦN 01</span>
+                <span class="arena-portal-tag">Đấu trường Arena</span>
+              </div>
+              <h3 id="compTopicTitle" class="comp-topic-title">Phương pháp Nghiên cứu &amp; Xử lý Dữ liệu Khoa học
+              </h3>
+              <p id="compPhaseSubtitle" class="comp-phase-subtitle">Chặng 1: Phương pháp &amp; Thiết kế Nghiên cứu
+                Khoa học</p>
+            </div>
+            <div class="comp-right">
+              <div class="comp-timer-box">
+                <span class="comp-timer-label" id="compTimerLabel">Thời gian mở cổng còn lại:</span>
+                <div class="comp-countdown" id="compCountdownTicker">00:00:00</div>
+              </div>
+              <div class="comp-action-box">
+                <div class="comp-user-status" id="compUserStatusTeaser">
+                  <span id="compAttemptsTeaser" style="display: none;">Số lượt thi: 0/1</span>
+                  <span id="compBestScoreTeaser" class="comp-star-score" style="display: none;">0</span>
+                </div>
+                <button type="button" class="comp-cta-button" id="compCtaBtn"
+                  onclick="event.stopPropagation(); handleCompetitionCtaClick()">
+                  <span id="compCtaText">Tham gia ngay</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
   </main>
 
   <!-- SITE-WIDE COMPACT FOOTER -->
@@ -4520,7 +4624,7 @@
           Hỗ trợ: <a href="mailto:support@research.id.vn" class="site-footer-link">support@research.id.vn</a>
         </span>
         <span class="site-footer-version" id="siteFooterVersion" onclick="handleFooterVersionClick()"><em>Phiên bản
-            4.7.14</em></span>
+            5.0.1</em></span>
       </div>
     </div>
   </footer>
@@ -4533,6 +4637,14 @@
         <polyline points="9 22 9 12 15 12 15 22" />
       </svg>
       <span class="mobile-nav-label">Trang chủ</span>
+    </a>
+    <a href="#handbook" data-route="handbook" class="mobile-link" id="navHandbookMobile" title="Sổ tay khám phá">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round">
+        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+        <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+      </svg>
+      <span class="mobile-nav-label">Khám phá</span>
     </a>
     <a href="#forum" data-route="forum" class="mobile-link" title="Diễn đàn">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
@@ -4571,14 +4683,6 @@
         <path d="M8 20h8" />
       </svg>
       <span class="mobile-nav-label">Đấu trường</span>
-    </a>
-    <a href="#account" data-route="account" class="mobile-link" title="Tài khoản">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-        stroke-linecap="round" stroke-linejoin="round">
-        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-        <circle cx="12" cy="7" r="4" />
-      </svg>
-      <span class="mobile-nav-label">Tài khoản</span>
     </a>
   </nav>
   <button class="mobile-fab" id="mobileAsk" aria-label="Menu thao tác nhanh" aria-expanded="false" aria-haspopup="true">
@@ -6631,7 +6735,7 @@
               KHIÊN HIỆN CÓ</span>
             <div class="shield-count-hero">
               <span class="shield-count-num" id="shieldModalCount">0</span>
-              <span class="shield-count-max">/ 3 khiên</span>
+              <span class="shield-count-max" id="shieldModalMax">/ 3 khiên</span>
             </div>
           </div>
           <div class="shield-slots-row" id="shieldModalSlots">
@@ -6640,6 +6744,7 @@
             <div class="shield-slot empty">3</div>
           </div>
         </div>
+        <div id="shieldActiveBreakdown" class="shield-active-breakdown" style="display: none;"></div>
         <div class="shield-status-pill" id="shieldModalStatusPill">
           <span id="shieldModalStatusDot">🟢</span> <span id="shieldModalStatusText">Đang sẵn sàng tự động bảo vệ chuỗi
             khi lỡ quên 1 ngày.</span>
@@ -6675,8 +6780,11 @@
               <polyline points="1 20 1 14 7 14"></polyline>
               <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
             </svg>
-            <span><strong>Giới hạn lưu trữ:</strong> Mỗi tài khoản có thể tích lũy tối đa <strong>3 khiên</strong> cùng
-              lúc. Không áp dụng giữ chuỗi quá 2 ngày bỏ lỡ liên tiếp.</span>
+            <span><strong>Giới hạn lưu trữ theo chuỗi:</strong> Mặc định tối đa <strong>3 khiên</strong>; đạt chuỗi
+              50 ngày tối đa <strong>4 khiên</strong>; 100 ngày tối đa <strong>5 khiên</strong>; 200 ngày tối đa
+              <strong>6 khiên</strong>; 365 ngày tối đa <strong>8 khiên</strong>. Khi đầy, khiên mới kích hoạt ngay và
+              thay thế khiên còn ít ngày nhất (bằng ngày thì bỏ phẩm chất thấp hơn). Không áp dụng giữ chuỗi quá 2 ngày
+              bỏ lỡ liên tiếp.</span>
           </li>
           <li>
             <svg class="ui-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -6689,7 +6797,8 @@
               <path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"></path>
             </svg>
             <span><strong>Cách nhận thêm khiên:</strong> Tặng 1 khiên chào mừng khi tạo tài khoản; Đạt mốc chuỗi 7, 14
-              ngày (+1 khiên), 30, 50 ngày (+2 khiên); Đạt Top 1-10 Đấu trường Arena tuần (+1 đến +2 khiên).</span>
+              ngày (+1 khiên), 30, 50 ngày (+2 khiên); Mở <strong>Rương may mắn</strong> trong Sổ tay khám phá (Khiên
+              Thường 3 ngày, Khiên Lấp Lánh 7 ngày, Siêu hiếm Khiên Long Lanh 30 ngày).</span>
           </li>
         </ul>
       </div>
@@ -6831,7 +6940,7 @@
             <span>Nhật ký phiên bản (Changelog)</span>
           </h4>
           <span style="font-size: 12px; color: var(--muted, #64748b);">Phiên bản hiện tại: <strong
-              id="adminCurrentVersionBadge" style="color: var(--primary, #1e5d46);">v4.7.14</strong></span>
+              id="adminCurrentVersionBadge" style="color: var(--primary, #1e5d46);">v5.0.1</strong></span>
         </div>
         <p style="margin: 0 0 10px 0; font-size: 12.5px; color: var(--muted, #64748b); line-height: 1.45;">
           Nhập nội dung cập nhật cho phiên bản. Mặc định là <em>"Nâng cao trải nghiệm người dùng"</em>. Nhật ký chỉ tự
@@ -6843,7 +6952,8 @@
               style="font-size: 12.5px; font-weight: 600; white-space: nowrap;">Chọn phiên bản chỉnh sửa:</label>
             <select id="adminChangelogVersionSelect" class="select" onchange="onAdminChangelogVersionChange(this.value)"
               style="padding: 4px 10px; font-size: 13px; border-radius: 6px; font-weight: 600;">
-              <option value="4.7.14" selected>Phiên bản 4.7.14 (Hiện tại)</option>
+              <option value="5.0.1" selected>Phiên bản 5.0.1 (Hiện tại)</option>
+              <option value="4.7.14">Phiên bản 4.7.14</option>
               <option value="4.7.13">Phiên bản 4.7.13</option>
               <option value="4.7.12">Phiên bản 4.7.12</option>
               <option value="4.7.11">Phiên bản 4.7.11</option>
@@ -7308,7 +7418,7 @@
         style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:8px;">
         <p style="font-size:13px; color:var(--muted); margin:0;">
           Các bài đăng và bình luận bị ẩn tạm thời (không bị tự động xóa sau 7 ngày). Khi mở lại, điểm hoạt động sẽ được
-          hoàn trả (+2 điểm cho bài viết, +4 điểm cho bình luận).
+          hoàn trả chính xác theo số điểm đã trừ trước đó (kể cả 0 điểm nếu từng vượt giới hạn ngày).
         </p>
         <button type="button" class="button button-subtle button-small" id="refreshAdminHiddenBtn"
           onclick="loadAdminHidden()">Làm mới ⟳</button>
@@ -8651,7 +8761,7 @@
           <h2>Cách đặt câu hỏi &amp; Thảo luận</h2>
         </div>
         <div style="display: flex; align-items: center; gap: 8px;">
-          <a href="/public/assets/guide-asking.png" target="_blank" rel="noopener"
+          <a href="/public/assets/guide-asking.webp" target="_blank" rel="noopener"
             class="button button-outline button-sm" title="Mở ảnh gốc trong tab mới"
             style="padding: 6px 12px; font-size: 12px;">
             <svg class="ui-btn-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -8673,7 +8783,7 @@
       </div>
       <div
         style="flex: 1; width: 100%; min-height: 0; overflow: auto; padding: 16px; text-align: center; background: var(--surface-2, rgba(18, 61, 48, 0.03)); -webkit-overflow-scrolling: touch;">
-        <img src="/public/assets/guide-asking.png" alt="Hướng dẫn đặt câu hỏi"
+        <img src="/public/assets/guide-asking.webp" alt="Hướng dẫn đặt câu hỏi"
           style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08); display: inline-block; vertical-align: middle;"
           loading="lazy" />
       </div>
@@ -8785,13 +8895,19 @@
             <span class="opt-letter">C</span>
             <span class="opt-text" id="quizOptC">Đáp án C</span>
           </button>
+          <button type="button" class="quiz-option-btn" data-option="D" onclick="selectQuizOption('D')">
+            <span class="opt-letter">D</span>
+            <span class="opt-text" id="quizOptD">Đáp án D</span>
+          </button>
         </div>
 
         <!-- NÚT CHỐT ĐÁP ÁN & QUA CÂU TIẾP THEO (CHẾ ĐỘ THI THẬT) -->
         <div class="quiz-exam-action-bar" id="quizExamActionBar" style="display: none;">
-          <button type="button" class="quiz-confirm-next-btn" id="quizConfirmNextBtn" onclick="confirmQuizAnswer()" disabled>
+          <button type="button" class="quiz-confirm-next-btn" id="quizConfirmNextBtn" onclick="confirmQuizAnswer()"
+            disabled>
             <span id="quizConfirmNextText">Qua câu tiếp theo</span>
-            <svg class="ui-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+            <svg class="ui-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
               <line x1="5" y1="12" x2="19" y2="12"></line>
               <polyline points="12 5 19 12 12 19"></polyline>
             </svg>
@@ -8812,6 +8928,12 @@
             <span id="quizPracticeNextBtnText">Câu sau</span> <span>→</span>
           </button>
         </div>
+
+        <!-- THANH VẬT PHẨM HỖ TRỢ TRONG TRẬN ĐẤU TRƯỜNG (NẰM DƯỚI CÙNG MODAL, XẾP NHIỀU DÒNG) -->
+        <div class="arena-inmatch-bar" id="arenaInMatchItemBar" style="display: none;"></div>
+
+        <!-- KHUNG SỬA ĐÁP ÁN SAI KHI DÙNG ÁO CHOÀNG TIÊN TRI -->
+        <div id="arenaCloakReviewPanel" style="display: none;"></div>
       </div>
     </div>
 
@@ -8913,63 +9035,65 @@
       </div>
 
       <div class="quiz-start-body">
-        <!-- CÂU HỎI XÁC NHẬN BẮT BUỘC THEO YÊU CẦU -->
         <div class="quiz-start-warning-card">
-          <div class="warning-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#d97706" <path
-              d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+          <div class="warning-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#d97706"
+              stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
               <line x1="12" y1="9" x2="12" y2="13"></line>
               <line x1="12" y1="17" x2="12.01" y2="17"></line>
             </svg></div>
           <div class="warning-content">
-            <div class="warning-prompt" id="quizStartPromptText">Bạn chỉ có 1 lượt thi duy nhất cho chặng thi đấu này,
-              bắt đầu thi chứ?</div>
-            <p class="warning-subtext">Sau khi bắt đầu, mỗi câu hỏi sẽ có đồng hồ đếm ngược 60 giây và ghi nhận lượt
-              thi chính thức.</p>
+            <div class="warning-prompt" id="quizStartPromptText">Mỗi chặng có tối đa 2 lượt thi, hệ thống lấy điểm cao nhất. Vật phẩm đã sử dụng sẽ không được hoàn lại. Bạn đã sẵn sàng chưa?</div>
           </div>
         </div>
 
-        <!-- THÔNG BÁO ĐẶC QUYỀN ĐÚNG HẠN HOẶC LÀM BÙ -->
         <div class="quiz-start-bonus-card" id="quizStartBonusCard">
           <!-- Dynamic via JS -->
         </div>
 
         <div class="quiz-start-rules-summary">
           <div class="qsr-item">
-            <span class="qsr-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            <span class="qsr-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <circle cx="12" cy="12" r="10"></circle>
                 <polyline points="12 6 12 12 16 14"></polyline>
               </svg></span>
-            <div class="qsr-info">
-              <strong>60 giây / mỗi câu hỏi</strong>
-              <span>10 câu hỏi • Cộng giây còn lại khi đúng (Tối đa +600 ⭐)</span>
-            </div>
+            <div class="qsr-info"><strong>10 câu hỏi · 60 giây/câu.</strong></div>
           </div>
           <div class="qsr-item">
-            <span class="qsr-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            <span class="qsr-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="12" cy="12" r="10"></circle>
-                <circle cx="12" cy="12" r="6"></circle>
-                <circle cx="12" cy="12" r="2"></circle>
+                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
               </svg></span>
-            <div class="qsr-info">
-              <strong>Đáp án đúng: +50 ⭐/câu</strong>
-              <span>Chọn đáp án rồi bấm "Qua câu tiếp theo" để chốt (ẩn đúng/sai)</span>
-            </div>
+            <div class="qsr-info"><strong>Mỗi câu đúng: +60⭐ (Chặng 1–2) / +90⭐ (Chặng 3).</strong></div>
           </div>
           <div class="qsr-item">
-            <span class="qsr-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            <span class="qsr-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+              </svg></span>
+            <div class="qsr-info"><strong>Mỗi giây còn lại: +1⭐, tối đa 60⭐/câu.</strong></div>
+          </div>
+          <div class="qsr-item">
+            <span class="qsr-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="9 11 12 14 22 4"></polyline>
+                <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+              </svg></span>
+            <div class="qsr-info"><span>Chọn đáp án và nhấn <strong>"Qua câu tiếp theo"</strong> để chốt. Đáp án đúng/sai được ẩn trong lúc thi.</span></div>
+          </div>
+          <div class="qsr-item qsr-exit-rule">
+            <span class="qsr-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
                 <polyline points="16 17 21 12 16 7"></polyline>
                 <line x1="21" y1="12" x2="9" y2="12"></line>
               </svg></span>
-            <div class="qsr-info">
-              <strong>Tối đa 2 lần tạm dừng thoát</strong>
-              <span>Thoát lần thứ 3 sẽ dừng và tính điểm bài thi luôn</span>
-            </div>
+            <div class="qsr-info"><span><strong>Tối đa 2 lần thoát/lượt.</strong> Lần thứ 3, bài thi tự động kết thúc và chốt điểm.</span></div>
           </div>
         </div>
+
+        <div id="quizStartLoadoutContainer"></div>
       </div>
 
       <div class="quiz-start-footer">
@@ -8996,8 +9120,8 @@
             <rect x="14" y="4" width="4" height="16"></rect>
           </svg></div>
         <div class="quiz-exit-title-group">
-          <h3 id="quizExitTitle">Tạm dừng & Thoát bài thi</h3>
-          <p id="quizExitSubTitle">Lưu tiến trình & tạm dừng đồng hồ khi ra màn hình chính</p>
+          <h3 id="quizExitTitle">Tạm dừng &amp; Thoát bài thi</h3>
+          <p id="quizExitSubTitle" style="display:none;"></p>
         </div>
       </div>
 
@@ -9009,7 +9133,7 @@
                 style="margin-right: 3px;">
                 <circle cx="12" cy="12" r="10"></circle>
                 <polyline points="12 6 12 12 16 14"></polyline>
-              </svg> Thời gian</span>
+              </svg> Thời gian còn lại</span>
             <strong class="stat-box-val" id="quizExitTimeLeft">10:00</strong>
           </div>
           <div class="quiz-exit-stat-box">
@@ -9018,17 +9142,17 @@
                 style="margin-right: 3px;">
                 <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
                 <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-              </svg> Tiến trình</span>
+              </svg> Tiến trình câu hỏi</span>
             <strong class="stat-box-val" id="quizExitCurrentQ">Câu 1 / 10</strong>
           </div>
           <div class="quiz-exit-stat-box">
-            <span class="stat-box-label"><svg class="ui-icon" width="12" height="12" viewBox="0 0 24 24"
-                fill="currentColor" stroke="none" style="color: #f59e0b; margin-right: 3px;">
-                <polygon
-                  points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2">
-                </polygon>
-              </svg> Tạm tính</span>
-            <strong class="stat-box-val" id="quizExitCurrentStars">⭐ 0</strong>
+            <span class="stat-box-label"><svg class="ui-icon" width="12" height="12" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                style="margin-right: 3px;">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+              </svg> Trạng thái đáp án</span>
+            <strong class="stat-box-val" id="quizExitCurrentStars">🔒 Đáp án ẩn</strong>
           </div>
           <div class="quiz-exit-stat-box">
             <span class="stat-box-label"><svg class="ui-icon" width="12" height="12" viewBox="0 0 24 24" fill="none"
@@ -9037,7 +9161,7 @@
                 <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
                 <polyline points="16 17 21 12 16 7"></polyline>
                 <line x1="21" y1="12" x2="9" y2="12"></line>
-              </svg> Lần thoát</span>
+              </svg> Số lần thoát</span>
             <strong class="stat-box-val" id="quizExitCountBadge">0 / 2</strong>
           </div>
         </div>
@@ -9049,14 +9173,8 @@
               <rect x="14" y="4" width="4" height="16"></rect>
             </svg></div>
           <div class="guarantee-text" id="quizExitGuaranteeText">
-            <strong>⏸️ Tạm dừng thời gian & Lưu tiến trình:</strong><br>
-            Khi bạn bấm xác nhận thoát ra màn hình chính, thời gian sẽ được <strong>TẠM DỪNG</strong> và lưu lại toàn bộ
-            tiến trình. Lượt thi này <em>KHÔNG bị tính là mất</em>.<br>
-            ⚠️ <strong>Giới hạn:</strong> Bạn chỉ được thoát tối đa <strong>2 lần</strong>. Nếu thoát lần thứ 3, hệ
-            thống sẽ dừng và tính điểm bài thi luôn!<br>
-            <span style="font-size: 12px; color: #f59e0b; margin-top: 4px; display: inline-block;">⏱️ <em>Lưu ý: Trong
-                lúc đang mở bảng này (chưa bấm xác nhận thoát), đồng hồ vẫn tiếp tục đếm ngược để chống gian
-                lận!</em></span>
+            <div>Xác nhận thoát để lưu tiến trình và tạm dừng đồng hồ. Bạn có thể quay lại tiếp tục lượt thi. Tối đa <strong>2 lần thoát</strong>; lần thứ 3, hệ thống sẽ kết thúc bài thi và chốt điểm.</div>
+            <div style="font-size: 12px; color: #f59e0b; margin-top: 6px;">⏱️ Đồng hồ vẫn tiếp tục chạy khi hộp thoại đang mở. Thời gian chỉ tạm dừng sau khi xác nhận thoát.</div>
           </div>
         </div>
       </div>
@@ -9064,11 +9182,11 @@
       <div class="quiz-exit-footer">
         <button type="button" class="button button-primary quiz-exit-resume-btn" id="quizExitCancelBtn"
           onclick="cancelQuizExit()">
-          Tiếp tục làm bài ngay
+          Tiếp tục làm bài
         </button>
         <button type="button" class="button button-outline quiz-exit-confirm-btn" id="quizExitConfirmBtn"
           onclick="confirmQuizExit()">
-          Thoát & Tạm dừng thời gian
+          Thoát và tạm dừng
         </button>
       </div>
     </div>
@@ -9348,7 +9466,7 @@
             <path d="m3 11 18-5v12L3 14v-3z"></path>
             <path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"></path>
           </svg>
-          <span>Soạn cập nhật mới cho thành viên</span>
+          <span>Soạn tin tức mới cho thành viên</span>
         </h3>
         <button type="button" class="modal-close" onclick="closeAdminBroadcastModal()" aria-label="Đóng">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
@@ -9397,7 +9515,7 @@
         <h3 id="versionChangelogTitle"
           style="font-size: 16px; font-weight: 700; margin: 0; display: flex; align-items: center; gap: 8px;">
           <span>🚀</span>
-          <span id="versionChangelogHeaderTitle">Nhật ký phiên bản v4.7.14</span>
+          <span id="versionChangelogHeaderTitle">Nhật ký phiên bản v5.0.1</span>
         </h3>
         <button type="button" class="modal-close" onclick="closeVersionChangelogModal()" aria-label="Đóng">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
@@ -9432,7 +9550,7 @@
     aria-label="Cài đặt ứng dụng">
     <div class="pwa-install-content">
       <img src="public/assets/app-ios-192.png?v=4" alt="RE:SEARCH" class="pwa-install-icon pwa-icon-light" />
-      <img src="public/assets/app-ios-dark-192.png?v=4" alt="RE:SEARCH" class="pwa-install-icon pwa-icon-dark" />
+      <img src="public/assets/app-ios-dark-192.webp?v=4" alt="RE:SEARCH" class="pwa-install-icon pwa-icon-dark" />
       <div class="pwa-install-text">
         <strong>Cài đặt RE:SEARCH</strong>
         <span>Mở trực tiếp từ màn hình chính, mượt mà & tiện lợi</span>
@@ -9591,7 +9709,66 @@
     })();
   </script>
 
-  <script src="app.js?v=4.7.15" defer></script>
+  <dialog id="adminGiftModal" class="hb-dialog" style="max-width:460px;">
+    <form onsubmit="submitAdminGift(event)" style="padding:20px; display:flex; flex-direction:column; gap:12px;">
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <h3 style="margin:0; font-size:17px;">🎁 Gửi quà tặng cho thành viên</h3>
+        <button type="button" class="button button-sm button-outline" onclick="closeAdminGiftModal()" aria-label="Đóng">✕</button>
+      </div>
+      <input type="hidden" id="adminGiftTargetUserId" value="" />
+      <div style="font-size:13px; color:var(--muted);">Người nhận: <strong id="adminGiftTargetUserLabel" style="color:var(--ink);"></strong></div>
+      <div>
+        <label for="adminGiftRewardKind" style="display:block; font-size:12px; font-weight:700; margin-bottom:4px;">Loại phần quà</label>
+        <select id="adminGiftRewardKind" class="input" style="width:100%;" onchange="updateAdminGiftPreview()">
+          <option value="keys">Chìa khoá mở Rương</option>
+          <option value="item">Vật phẩm trong Sổ tay</option>
+        </select>
+      </div>
+      <div id="adminGiftItemSelectRow" style="display:none;">
+        <label for="adminGiftItemKey" style="display:block; font-size:12px; font-weight:700; margin-bottom:4px;">Chọn vật phẩm</label>
+        <select id="adminGiftItemKey" class="input" style="width:100%;" onchange="updateAdminGiftPreview()"></select>
+      </div>
+      <div id="adminGiftLevelRow" style="display:none;">
+        <label for="adminGiftItemLevel" style="display:block; font-size:12px; font-weight:700; margin-bottom:4px;">Cấp độ vật phẩm</label>
+        <select id="adminGiftItemLevel" class="input" style="width:100%;" onchange="updateAdminGiftPreview()">
+          <option value="1">Cấp I</option>
+          <option value="2">Cấp II</option>
+          <option value="3">Cấp III</option>
+        </select>
+      </div>
+      <div>
+        <label for="adminGiftQty" style="display:block; font-size:12px; font-weight:700; margin-bottom:4px;">Số lượng</label>
+        <input id="adminGiftQty" type="number" min="1" max="999" value="3" class="input" style="width:100%;" oninput="updateAdminGiftPreview()" required />
+      </div>
+      <div style="padding:10px 12px; border-radius:10px; background:var(--hb-surface-soft); border:1px solid var(--hb-card-border); font-size:12px; line-height:1.45;">
+        <div style="font-weight:800; color:var(--ink);">Quà tặng từ RE:SEARCH</div>
+        <div style="color:var(--muted); margin-top:2px;">Cảm ơn bạn đã đồng hành cùng RE:SEARCH. Đây là món quà nhỏ thay cho lời cảm ơn chân thành mà RE:SEARCH muốn gửi đến bạn.</div>
+        <div style="margin-top:8px; display:flex; justify-content:flex-end;">
+          <span id="adminGiftCtaPreview" style="display:inline-block; padding:4px 10px; border-radius:999px; background:#0f766e; color:#fff; font-weight:700; font-size:11.5px;">Nhận x3 Chìa khoá</span>
+        </div>
+      </div>
+      <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:4px;">
+        <button type="button" class="button button-outline button-sm" onclick="closeAdminGiftModal()">Huỷ</button>
+        <button type="submit" id="adminGiftSubmitBtn" class="button button-primary button-sm">Gửi quà kèm thông báo</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="handbookItemModal" class="hb-dialog">
+    <div id="hbItemDetailBody"></div>
+  </dialog>
+  <dialog id="handbookChestModal" class="hb-chest-dialog">
+    <div id="hbChestStage" class="hb-chest-stage"></div>
+  </dialog>
+  <dialog id="handbookChestRatesModal" class="hb-dialog hb-rates-dialog">
+    <div id="hbChestRatesBody"></div>
+  </dialog>
+  <dialog id="handbookExchangeModal" class="hb-dialog hb-exchange-dialog">
+    <div id="hbExchangeBody"></div>
+  </dialog>
+
+  <script src="app.js?v=5.0.2" defer></script>
+  <script src="handbook_ui.js?v=5.0.2" defer></script>
 </body>
 
 </html>

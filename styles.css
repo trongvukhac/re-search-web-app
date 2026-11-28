@@ -3934,7 +3934,7 @@ body.dark-theme [data-user-theme="diamond"] .mobile-link.active .mobile-nav-labe
 /* Tier 7 (200-364d): Bậc thầy học thuật - Super Duolingo Neon */
 .contribution-card[data-streak-tier="7"] {
   background-color: #070926;
-  background-image: url('covers/super-space-bg.jpg'), linear-gradient(135deg, #070926 0%, #0d1238 35%, #1e1b4b 70%, #2e0854 100%);
+  background-image: url('covers/super-space-bg.webp'), linear-gradient(135deg, #070926 0%, #0d1238 35%, #1e1b4b 70%, #2e0854 100%);
   background-size: cover;
   background-position: center;
   border: 1.5px solid rgba(0, 210, 255, 0.55);
@@ -4861,9 +4861,47 @@ body.dark-theme .btn-admin-streak-preset:hover {
 }
 
 .shield-slot.filled {
-  background: rgba(56, 189, 248, 0.2);
+  background: rgba(56, 189, 248, 0.14);
   border: 1.5px solid #38bdf8;
-  box-shadow: 0 0 12px rgba(56, 189, 248, 0.35);
+  box-shadow: 0 0 10px rgba(56, 189, 248, 0.25);
+}
+.shield-slot.filled.rarity-rare {
+  background: rgba(139, 92, 246, 0.18);
+  border-color: #a78bfa;
+  box-shadow: 0 0 10px rgba(139, 92, 246, 0.28);
+}
+.shield-slot.filled.rarity-legendary {
+  background: rgba(245, 158, 11, 0.18);
+  border-color: #fbbf24;
+  box-shadow: 0 0 12px rgba(245, 158, 11, 0.3);
+}
+.shield-active-breakdown {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+.shield-breakdown-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 9px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  font-size: 11.5px;
+  color: #f1f5f9;
+}
+.shield-bp-name {
+  font-weight: 700;
+}
+.shield-bp-qty {
+  font-weight: 800;
+  color: #7dd3fc;
+}
+.shield-bp-exp {
+  font-size: 10.5px;
+  color: #cbd5e1;
 }
 
 .shield-slot.empty {
@@ -17239,75 +17277,81 @@ body.dark-theme .doc-viewer-save-btn.is-saved {
 
 /* 5 Khung nghệ thuật cao cấp - Scale chuẩn xác theo insets gốc và tỉ lệ 680x760 */
 .mini-card-frame-layer[data-frame="leaves"] {
-  background-image: url("frames/v2/leaves.png?v=5");
+  background-image: url("frames/v2/leaves.webp?v=5");
   inset: calc(-42px * var(--mini-scale)) calc(-38px * var(--mini-scale)) calc(-61px * var(--mini-scale)) calc(-38px * var(--mini-scale));
   background-size: 100% 100%;
 }
 
 .mini-card-frame-layer[data-frame="sakura"] {
-  background-image: url("frames/v2/sakura.png?v=5");
+  background-image: url("frames/v2/sakura.webp?v=5");
   inset: calc(-46px * var(--mini-scale)) calc(-42px * var(--mini-scale)) calc(-64px * var(--mini-scale)) calc(-42px * var(--mini-scale));
   background-size: 100% 100%;
 }
 
 .mini-card-frame-layer[data-frame="ice"] {
-  background-image: url("frames/v2/ice.png?v=5");
+  background-image: url("frames/v2/ice.webp?v=5");
   inset: calc(-54px * var(--mini-scale)) calc(-52px * var(--mini-scale)) calc(-58px * var(--mini-scale)) calc(-66px * var(--mini-scale));
   background-size: 100% 100%;
 }
 
 .mini-card-frame-layer[data-frame="stars"] {
-  background-image: url("frames/v2/stars.png?v=5");
+  background-image: url("frames/v2/stars.webp?v=5");
   inset: calc(-54px * var(--mini-scale)) calc(-50px * var(--mini-scale)) calc(-58px * var(--mini-scale)) calc(-66px * var(--mini-scale));
   background-size: 100% 100%;
 }
 
 .mini-card-frame-layer[data-frame="gold"] {
-  background-image: url("frames/v2/gold.png?v=8");
+  background-image: url("frames/v2/gold.webp?v=8");
   inset: calc(-34px * var(--mini-scale)) calc(-44px * var(--mini-scale)) calc(-34px * var(--mini-scale)) calc(-44px * var(--mini-scale));
   background-size: 100% 100%;
 }
 
 .mini-card-frame-layer[data-frame="thung_lung_suong_thu"] {
-  background-image: url("frames/v2/thung_lung_suong_thu.png?v=3");
+  background-image: url("frames/v2/thung_lung_suong_thu.webp?v=3");
   inset: calc(-36px * var(--mini-scale)) calc(-44px * var(--mini-scale)) calc(-36px * var(--mini-scale)) calc(-44px * var(--mini-scale));
   background-size: 100% 100%;
 }
 
 .mini-card-frame-layer[data-frame="thien_ha_huyen_ao"] {
-  background-image: url("frames/v2/thien_ha_huyen_ao.png?v=3");
+  background-image: url("frames/v2/thien_ha_huyen_ao.webp?v=3");
   inset: calc(-32px * var(--mini-scale)) calc(-44px * var(--mini-scale)) calc(-32px * var(--mini-scale)) calc(-44px * var(--mini-scale));
   background-size: 100% 100%;
 }
 
 .mini-card-frame-layer[data-frame="pha_le_hoang_gia"] {
-  background-image: url("frames/v2/pha_le_hoang_gia.png?v=3");
+  background-image: url("frames/v2/pha_le_hoang_gia.webp?v=3");
   inset: calc(-34px * var(--mini-scale)) calc(-46px * var(--mini-scale)) calc(-34px * var(--mini-scale)) calc(-46px * var(--mini-scale));
   background-size: 100% 100%;
 }
 
 /* Khung hoạt động giới hạn */
 .mini-card-frame-layer[data-frame="chinh_phuc_bau_troi"] {
-  background-image: url("frames/v2/chinh_phuc_bau_troi.png?v=1");
+  background-image: url("frames/v2/chinh_phuc_bau_troi.webp?v=1");
   inset: calc(-50px * var(--mini-scale)) calc(-71px * var(--mini-scale)) calc(-61px * var(--mini-scale)) calc(-64px * var(--mini-scale));
   background-size: 100% 100%;
 }
 
 .mini-card-frame-layer[data-frame="ton_vinh_phai_dep"] {
-  background-image: url("frames/v2/ton_vinh_phai_dep.png?v=2");
+  background-image: url("frames/v2/ton_vinh_phai_dep.webp?v=2");
   inset: calc(-46px * var(--mini-scale)) calc(-29px * var(--mini-scale)) calc(-45px * var(--mini-scale)) calc(-41px * var(--mini-scale));
   background-size: 100% 100%;
 }
 
 .mini-card-frame-layer[data-frame="bua_tiec_ma_mi"] {
-  background-image: url("frames/v2/bua_tiec_ma_mi.png?v=2");
+  background-image: url("frames/v2/bua_tiec_ma_mi.webp?v=2");
   inset: calc(-52px * var(--mini-scale)) calc(-40px * var(--mini-scale)) calc(-53px * var(--mini-scale)) calc(-42px * var(--mini-scale));
   background-size: 100% 100%;
 }
 
 .mini-card-frame-layer[data-frame="phep_mau_mua_dong"] {
-  background-image: url("frames/v2/phep_mau_mua_dong.png?v=5");
+  background-image: url("frames/v2/phep_mau_mua_dong.webp?v=5");
   inset: calc(-34px * var(--mini-scale)) calc(-38px * var(--mini-scale)) calc(-34px * var(--mini-scale)) calc(-40px * var(--mini-scale));
+  background-size: 100% 100%;
+}
+
+.mini-card-frame-layer[data-frame="thao_nguyen_ky_bi"] {
+  background-image: url("frames/v2/thao_nguyen_ky_bi.webp?v=1");
+  inset: calc(-38px * var(--mini-scale)) calc(-32px * var(--mini-scale)) calc(-40px * var(--mini-scale)) calc(-46px * var(--mini-scale));
   background-size: 100% 100%;
 }
 
@@ -18778,6 +18822,100 @@ body.dark-theme .doc-viewer-save-btn.is-saved {
   line-height: 1.45;
 }
 
+/* Updated Arena Rules & Rewards Tables */
+.arena-rules-subhead {
+  margin: 14px 0 8px 0;
+  font-size: 13.5px;
+  font-weight: 800;
+  color: var(--ink);
+}
+.arena-rules-list {
+  margin: 8px 0 12px 18px;
+  padding: 0;
+  font-size: 13.5px;
+  line-height: 1.65;
+  color: var(--ink);
+}
+.arena-rules-list li + li {
+  margin-top: 5px;
+}
+.arena-rules-note-box {
+  margin-top: 12px;
+  padding: 12px 16px;
+  border-radius: 12px;
+  background: var(--sage-2);
+  border: 1px solid var(--line);
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--ink);
+}
+.arena-rules-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface);
+  margin: 10px 0 12px 0;
+}
+.arena-rules-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  color: var(--ink);
+}
+.arena-rules-table thead th {
+  text-align: left;
+  padding: 10px 14px;
+  font-size: 12px;
+  font-weight: 800;
+  background: var(--sage-2);
+  border-bottom: 1px solid var(--line);
+  white-space: nowrap;
+}
+.arena-rules-table tbody td {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--line);
+  vertical-align: middle;
+  line-height: 1.5;
+}
+.arena-rules-table tbody tr:last-child td {
+  border-bottom: none;
+}
+.arena-rules-table td.num,
+.arena-rules-table th.num {
+  text-align: right;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.arena-rule-item-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+}
+.arena-rule-item-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  filter: drop-shadow(0 2px 3px rgba(15, 23, 42, 0.14));
+}
+.arena-rule-item-rarity {
+  font-weight: 600;
+  font-size: 12px;
+  color: var(--muted);
+}
+.arena-rewards-highlight {
+  margin-top: 10px;
+  padding: 12px 15px;
+  border-radius: 12px;
+  background: rgba(16, 185, 129, 0.09);
+  border: 1px solid rgba(16, 185, 129, 0.28);
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--ink);
+}
+
 /* 9. DARK THEME OVERRIDES FOR ARENA */
 [data-user-theme="dark"] .arena-locked-card,
 [data-user-theme="midnight"] .arena-locked-card,
@@ -18896,7 +19034,7 @@ body.dark-theme .comp-tab-btn.active {
 
   .comp-nav-tabs.arena-nav-tabs {
     display: grid !important;
-    grid-template-columns: repeat(3, 1fr) !important;
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
     gap: 4px !important;
     padding: 4px !important;
     border-radius: 12px !important;
@@ -20443,9 +20581,10 @@ dialog.quiz-arena-modal,
     width: 100%;
     min-width: 100%;
     max-width: 100%;
-    height: 228px;
-    max-height: 228px;
-    min-height: 228px;
+    aspect-ratio: 16 / 9;
+    height: auto;
+    max-height: none;
+    min-height: 0;
     border-radius: 14px;
     overflow: hidden;
     position: relative;
@@ -20949,6 +21088,7 @@ dialog.quiz-exit-confirm-modal,
 }
 
 .stat-box-val {
+  white-space: nowrap;
   font-size: 15px;
   color: #38bdf8;
   font-weight: 800;
@@ -22376,75 +22516,81 @@ dialog.modal.namecard-modal {
 
 /* 5 Khung nghệ thuật cao cấp */
 .namecard-frame-layer[data-frame="leaves"] {
-  background-image: url("frames/v2/leaves.png?v=5");
+  background-image: url("frames/v2/leaves.webp?v=5");
   inset: -42px -38px -61px -38px;
   background-size: 100% 100%;
 }
 
 .namecard-frame-layer[data-frame="sakura"] {
-  background-image: url("frames/v2/sakura.png?v=5");
+  background-image: url("frames/v2/sakura.webp?v=5");
   inset: -46px -42px -64px -42px;
   background-size: 100% 100%;
 }
 
 .namecard-frame-layer[data-frame="ice"] {
-  background-image: url("frames/v2/ice.png?v=5");
+  background-image: url("frames/v2/ice.webp?v=5");
   inset: -54px -52px -58px -66px;
   background-size: 100% 100%;
 }
 
 .namecard-frame-layer[data-frame="stars"] {
-  background-image: url("frames/v2/stars.png?v=5");
+  background-image: url("frames/v2/stars.webp?v=5");
   inset: -54px -50px -58px -66px;
   background-size: 100% 100%;
 }
 
 .namecard-frame-layer[data-frame="gold"] {
-  background-image: url("frames/v2/gold.png?v=8");
+  background-image: url("frames/v2/gold.webp?v=8");
   inset: -34px -44px -34px -44px;
   background-size: 100% 100%;
 }
 
 .namecard-frame-layer[data-frame="thung_lung_suong_thu"] {
-  background-image: url("frames/v2/thung_lung_suong_thu.png?v=3");
+  background-image: url("frames/v2/thung_lung_suong_thu.webp?v=3");
   inset: -36px -44px -36px -44px;
   background-size: 100% 100%;
 }
 
 .namecard-frame-layer[data-frame="thien_ha_huyen_ao"] {
-  background-image: url("frames/v2/thien_ha_huyen_ao.png?v=3");
+  background-image: url("frames/v2/thien_ha_huyen_ao.webp?v=3");
   inset: -32px -44px -32px -44px;
   background-size: 100% 100%;
 }
 
 .namecard-frame-layer[data-frame="pha_le_hoang_gia"] {
-  background-image: url("frames/v2/pha_le_hoang_gia.png?v=3");
+  background-image: url("frames/v2/pha_le_hoang_gia.webp?v=3");
   inset: -34px -46px -34px -46px;
   background-size: 100% 100%;
 }
 
 /* Khung hoạt động giới hạn */
 .namecard-frame-layer[data-frame="chinh_phuc_bau_troi"] {
-  background-image: url("frames/v2/chinh_phuc_bau_troi.png?v=1");
+  background-image: url("frames/v2/chinh_phuc_bau_troi.webp?v=1");
   inset: -50px -71px -61px -64px;
   background-size: 100% 100%;
 }
 
 .namecard-frame-layer[data-frame="ton_vinh_phai_dep"] {
-  background-image: url("frames/v2/ton_vinh_phai_dep.png?v=2");
+  background-image: url("frames/v2/ton_vinh_phai_dep.webp?v=2");
   inset: -46px -29px -45px -41px;
   background-size: 100% 100%;
 }
 
 .namecard-frame-layer[data-frame="bua_tiec_ma_mi"] {
-  background-image: url("frames/v2/bua_tiec_ma_mi.png?v=2");
+  background-image: url("frames/v2/bua_tiec_ma_mi.webp?v=2");
   inset: -52px -40px -53px -42px;
   background-size: 100% 100%;
 }
 
 .namecard-frame-layer[data-frame="phep_mau_mua_dong"] {
-  background-image: url("frames/v2/phep_mau_mua_dong.png?v=5");
+  background-image: url("frames/v2/phep_mau_mua_dong.webp?v=5");
   inset: -34px -38px -34px -40px;
+  background-size: 100% 100%;
+}
+
+.namecard-frame-layer[data-frame="thao_nguyen_ky_bi"] {
+  background-image: url("frames/v2/thao_nguyen_ky_bi.webp?v=1");
+  inset: -38px -32px -40px -46px;
   background-size: 100% 100%;
 }
 
@@ -22560,62 +22706,67 @@ dialog.modal.namecard-modal {
 
 /* 5 ảnh thumb cao cấp chính thức */
 .frame-choice-preview[data-frame-preview="leaves"] {
-  background-image: url("frames/v2/thumbs/leaves.png?v=6");
+  background-image: url("frames/v2/thumbs/leaves.webp?v=6");
   background-size: 100% 100%;
 }
 
 .frame-choice-preview[data-frame-preview="stars"] {
-  background-image: url("frames/v2/thumbs/stars.png?v=6");
+  background-image: url("frames/v2/thumbs/stars.webp?v=6");
   background-size: 100% 100%;
 }
 
 .frame-choice-preview[data-frame-preview="gold"] {
-  background-image: url("frames/v2/thumbs/gold.png?v=7");
+  background-image: url("frames/v2/thumbs/gold.webp?v=7");
   background-size: 100% 100%;
 }
 
 .frame-choice-preview[data-frame-preview="thung_lung_suong_thu"] {
-  background-image: url("frames/v2/thumbs/thung_lung_suong_thu.png?v=1");
+  background-image: url("frames/v2/thumbs/thung_lung_suong_thu.webp?v=1");
   background-size: 100% 100%;
 }
 
 .frame-choice-preview[data-frame-preview="thien_ha_huyen_ao"] {
-  background-image: url("frames/v2/thumbs/thien_ha_huyen_ao.png?v=1");
+  background-image: url("frames/v2/thumbs/thien_ha_huyen_ao.webp?v=1");
   background-size: 100% 100%;
 }
 
 .frame-choice-preview[data-frame-preview="pha_le_hoang_gia"] {
-  background-image: url("frames/v2/thumbs/pha_le_hoang_gia.png?v=1");
+  background-image: url("frames/v2/thumbs/pha_le_hoang_gia.webp?v=1");
   background-size: 100% 100%;
 }
 
 .frame-choice-preview[data-frame-preview="sakura"] {
-  background-image: url("frames/v2/thumbs/sakura.png?v=6");
+  background-image: url("frames/v2/thumbs/sakura.webp?v=6");
   background-size: 100% 100%;
 }
 
 .frame-choice-preview[data-frame-preview="ice"] {
-  background-image: url("frames/v2/thumbs/ice.png?v=6");
+  background-image: url("frames/v2/thumbs/ice.webp?v=6");
   background-size: 100% 100%;
 }
 
 .frame-choice-preview[data-frame-preview="chinh_phuc_bau_troi"] {
-  background-image: url("frames/v2/thumbs/chinh_phuc_bau_troi.png?v=1");
+  background-image: url("frames/v2/thumbs/chinh_phuc_bau_troi.webp?v=1");
   background-size: 100% 100%;
 }
 
 .frame-choice-preview[data-frame-preview="ton_vinh_phai_dep"] {
-  background-image: url("frames/v2/thumbs/ton_vinh_phai_dep.png?v=1");
+  background-image: url("frames/v2/thumbs/ton_vinh_phai_dep.webp?v=1");
   background-size: 100% 100%;
 }
 
 .frame-choice-preview[data-frame-preview="bua_tiec_ma_mi"] {
-  background-image: url("frames/v2/thumbs/bua_tiec_ma_mi.png?v=1");
+  background-image: url("frames/v2/thumbs/bua_tiec_ma_mi.webp?v=1");
   background-size: 100% 100%;
 }
 
 .frame-choice-preview[data-frame-preview="phep_mau_mua_dong"] {
-  background-image: url("frames/v2/thumbs/phep_mau_mua_dong.png?v=3");
+  background-image: url("frames/v2/thumbs/phep_mau_mua_dong.webp?v=3");
+  background-size: 100% 100%;
+}
+
+.frame-choice-preview[data-frame-preview="thao_nguyen_ky_bi"] {
+  background-image: url("frames/v2/thumbs/thao_nguyen_ky_bi.webp?v=1");
   background-size: 100% 100%;
 }
 
@@ -25943,9 +26094,10 @@ input:disabled {
 
   .weekly-competition-card,
   .banner-stack-card {
-    height: 190px !important;
-    min-height: 190px !important;
-    max-height: 190px !important;
+    aspect-ratio: 16 / 9 !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
     width: 100% !important;
     min-width: 0 !important;
     border-radius: 12px !important;
@@ -40646,7 +40798,7 @@ html:not([data-user-theme]) body.christmas-season:not(.christmas-effects-off) .n
 
 .home-lb-container {
   background-color: var(--card-bg, #ffffff);
-  background-image: url('public/assets/lb-bg-desktop-light.jpg');
+  background-image: url('public/assets/lb-bg-desktop-light.webp');
   background-repeat: no-repeat;
   background-size: cover;
   background-position: center bottom;
@@ -40662,7 +40814,7 @@ html:not([data-user-theme]) body.christmas-season:not(.christmas-effects-off) .n
 body.dark-theme .home-lb-container,
 html.dark-theme .home-lb-container {
   background-color: #0d151c;
-  background-image: url('public/assets/lb-bg-desktop-dark.jpg');
+  background-image: url('public/assets/lb-bg-desktop-dark.webp');
   background-repeat: no-repeat;
   background-size: cover;
   background-position: center bottom;
@@ -42461,7 +42613,7 @@ html.dark-theme .privacy-option-card input[type="radio"]:checked ~ .privacy-card
   .home-lb-container {
     padding: 18px 16px 18px;
     border-radius: 20px;
-    background-image: url('public/assets/lb-bg-mobile-light.jpg');
+    background-image: url('public/assets/lb-bg-mobile-light.webp');
     background-repeat: no-repeat;
     background-size: cover;
     background-position: center bottom;
@@ -42470,7 +42622,7 @@ html.dark-theme .privacy-option-card input[type="radio"]:checked ~ .privacy-card
   [data-theme="dark"] .home-lb-container,
   body.dark-theme .home-lb-container,
   html.dark-theme .home-lb-container {
-    background-image: url('public/assets/lb-bg-mobile-dark.jpg');
+    background-image: url('public/assets/lb-bg-mobile-dark.webp');
     background-repeat: no-repeat;
     background-size: cover;
     background-position: center bottom;
@@ -43499,7 +43651,7 @@ body.page-login main {
   margin: 0 !important;
   padding: 0 !important;
   box-sizing: border-box !important;
-  background: url('public/assets/auth-bg.jpg?v=5') center center / cover no-repeat;
+  background: url('public/assets/auth-bg.webp?v=5') center center / cover no-repeat;
   color: #ffffff;
   z-index: 9999 !important;
   overflow: hidden !important;
@@ -44463,7 +44615,7 @@ body.page-login main {
     max-height: 100vh !important;
     overflow-y: auto !important;
     z-index: 9999 !important;
-    background: url('public/assets/auth-bg.jpg?v=5') top center / cover no-repeat fixed, #0b2920 !important;
+    background: url('public/assets/auth-bg.webp?v=5') top center / cover no-repeat fixed, #0b2920 !important;
     padding: 0 !important;
     flex-direction: column !important;
     justify-content: flex-start !important;

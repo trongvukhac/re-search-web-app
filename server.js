@@ -5,6 +5,7 @@ const https = require("node:https");
 const fs = require("node:fs");
 const path = require("node:path");
 const crypto = require("node:crypto");
+const zlib = require("node:zlib");
 const { DatabaseSync } = require("node:sqlite");
 
 const ROOT = __dirname;
@@ -32,12 +33,126 @@ function computeAppBuildId() {
   }
 }
 const APP_BUILD_ID = computeAppBuildId();
-const APP_VERSION = "4.7.14";
+const APP_VERSION = "5.0.2";
+
+function isMaintenanceMode() {
+  return process.env.MAINTENANCE_MODE === "1" || process.env.MAINTENANCE_MODE === "true";
+}
+
+const MAINTENANCE_TARGET_MS = Number(process.env.MAINTENANCE_UNTIL_MS || Date.UTC(2026, 10, 27, 14, 0, 0));
+
+function formatMaintenanceRemaining(ms) {
+  const secTotal = Math.max(0, Math.floor(ms / 1000));
+  const h = Math.floor(secTotal / 3600);
+  const m = Math.floor((secTotal % 3600) / 60);
+  const s = secTotal % 60;
+  return [h, m, s].map((n) => String(n).padStart(2, "0")).join(":");
+}
+
+function renderMaintenanceHtml() {
+  const initial = formatMaintenanceRemaining(MAINTENANCE_TARGET_MS - Date.now());
+  return `<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="robots" content="noindex, nofollow" />
+  <title>RE:SEARCH</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; width: 100%; background: #0d1512; color: #f3f7f5; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { display: flex; align-items: center; justify-content: center; padding: 24px; text-align: center; }
+    main { display: flex; flex-direction: column; align-items: center; gap: 16px; }
+    .line-1 { font-size: clamp(20px, 4vw, 32px); font-weight: 700; letter-spacing: -0.02em; line-height: 1.3; }
+    .line-2 { font-size: clamp(32px, 7vw, 56px); font-weight: 800; font-variant-numeric: tabular-nums; letter-spacing: 0.04em; color: #86efac; }
+  </style>
+</head>
+<body>
+  <main>
+    <p class="line-1">RE:SEARCH đang tiến hành bảo trì</p>
+    <p class="line-2" id="cd">${initial}</p>
+  </main>
+  <script>
+    (function () {
+      var target = ${MAINTENANCE_TARGET_MS};
+      var el = document.getElementById("cd");
+      function pad(n) { return n < 10 ? "0" + n : String(n); }
+      function tick() {
+        var diff = Math.max(0, Math.floor((target - Date.now()) / 1000));
+        var h = Math.floor(diff / 3600);
+        var m = Math.floor((diff % 3600) / 60);
+        var s = diff % 60;
+        el.textContent = pad(h) + ":" + pad(m) + ":" + pad(s);
+      }
+      tick();
+      setInterval(tick, 1000);
+    })();
+  </script>
+</body>
+</html>`;
+}
+
+function renderAdminMaintenanceLoginHtml() {
+  return `<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="robots" content="noindex, nofollow" />
+  <title>RE:SEARCH Admin Access</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center; background: #0d1512; color: #f3f7f5; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; padding: 20px; }
+    form { width: 100%; max-width: 360px; background: #14221c; border: 1px solid #243b31; border-radius: 14px; padding: 22px; display: flex; flex-direction: column; gap: 12px; }
+    h1 { font-size: 17px; margin: 0 0 4px; }
+    input { width: 100%; padding: 10px 12px; border-radius: 8px; border: 1px solid #2d4a3d; background: #0d1512; color: #fff; font-size: 14px; }
+    button { padding: 11px; border: 0; border-radius: 8px; background: #16a34a; color: #fff; font-weight: 700; font-size: 14px; cursor: pointer; }
+    #msg { font-size: 13px; color: #fca5a5; min-height: 18px; }
+  </style>
+</head>
+<body>
+  <form id="f">
+    <h1>Admin Maintenance Login</h1>
+    <input id="email" type="email" placeholder="Email Admin" required autocomplete="email" />
+    <input id="pw" type="password" placeholder="Mật khẩu" required autocomplete="current-password" />
+    <button type="submit">Đăng nhập</button>
+    <div id="msg"></div>
+  </form>
+  <script>
+    document.getElementById("f").addEventListener("submit", async function (e) {
+      e.preventDefault();
+      var msg = document.getElementById("msg");
+      msg.textContent = "";
+      try {
+        var res = await fetch("/api/auth/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email: document.getElementById("email").value.trim(),
+            password: document.getElementById("pw").value,
+            rememberMe: true
+          })
+        });
+        var data = await res.json().catch(function () { return {}; });
+        if (!res.ok) {
+          msg.textContent = data.error || "Không thể đăng nhập.";
+          return;
+        }
+        location.href = "/";
+      } catch (err) {
+        msg.textContent = "Lỗi kết nối.";
+      }
+    });
+  </script>
+</body>
+</html>`;
+}
 
 // ============================================================
 // FEATURE FLAG & ROSTER: Kích hoạt tính năng RE:SEARCH ARENA & 2 Bảng thi (Lớp 06 & 07)
 // ============================================================
 const ARENA_ENABLED = true;
+const handbook = require("./handbook_system.js");
 const ARENA_ROSTER = require("./arena_roster.json");
 const CLASS_06_STUDENT_IDS = new Set(ARENA_ROSTER["06"].studentIds.map(x => String(x).trim()));
 const CLASS_07_STUDENT_IDS = new Set(ARENA_ROSTER["07"].studentIds.map(x => String(x).trim()));
@@ -72,7 +187,7 @@ const MIME = {
 
 fs.mkdirSync(DATABASE_DIR, { recursive: true });
 const db = new DatabaseSync(DATABASE_PATH);
-db.exec("PRAGMA foreign_keys = ON; PRAGMA journal_mode = WAL; PRAGMA synchronous = NORMAL; PRAGMA busy_timeout = 5000; PRAGMA cache_size = -64000;");
+db.exec("PRAGMA foreign_keys = ON; PRAGMA journal_mode = WAL; PRAGMA synchronous = NORMAL; PRAGMA busy_timeout = 5000; PRAGMA cache_size = -16000;");
 try { db.exec("PRAGMA wal_checkpoint(TRUNCATE);"); } catch (e) { }
 db.exec(`
   CREATE TABLE IF NOT EXISTS users (
@@ -461,7 +576,7 @@ try {
 try {
   db.prepare("DELETE FROM user_limited_items WHERE item_id = 'chinh_phuc_bau_troi'").run();
   db.prepare("UPDATE users SET namecard_frame = 'none' WHERE namecard_frame = 'chinh_phuc_bau_troi' AND role NOT IN ('admin', 'ta')").run();
-  db.prepare("UPDATE users SET cover_image = 'default' WHERE (cover_image = 'chinh_phuc_bau_troi' OR cover_image LIKE '%covers/chinh-phuc-bau-troi.png%') AND role NOT IN ('admin', 'ta')").run();
+  db.prepare("UPDATE users SET cover_image = 'default' WHERE (cover_image = 'chinh_phuc_bau_troi' OR cover_image LIKE '%covers/chinh-phuc-bau-troi.webp%') AND role NOT IN ('admin', 'ta')").run();
 } catch (e) { }
 try {
   db.exec(`
@@ -863,8 +978,10 @@ db.exec(`
     option_a TEXT NOT NULL,
     option_b TEXT NOT NULL,
     option_c TEXT NOT NULL,
-    correct_option TEXT NOT NULL CHECK(correct_option IN ('A','B','C')),
+    option_d TEXT,
+    correct_option TEXT NOT NULL CHECK(correct_option IN ('A','B','C','D')),
     explanation TEXT,
+    hint TEXT,
     track TEXT NOT NULL DEFAULT 'main' CHECK(track IN ('main','free')),
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
     UNIQUE(competition_id, phase, question_index, track)
@@ -942,6 +1059,57 @@ try { db.exec("ALTER TABLE competition_sessions ADD COLUMN is_on_time INTEGER NO
 try { db.exec("ALTER TABLE competition_sessions ADD COLUMN on_time_bonus INTEGER NOT NULL DEFAULT 0;"); } catch (e) { }
 try { db.exec("ALTER TABLE competition_sessions ADD COLUMN is_shuffled INTEGER NOT NULL DEFAULT 0;"); } catch (e) { }
 try { db.exec("ALTER TABLE competition_phase_results ADD COLUMN on_time_bonus INTEGER NOT NULL DEFAULT 0;"); } catch (e) { }
+
+/** Enforce 1-attempt cap on Phases 1 & 2 during week 2026-11-23..2026-11-29 only. */
+function getArenaPhaseMaxAttempts(comp, phase) {
+  if (comp && comp.start_date === "2026-11-23" && (Number(phase) === 1 || Number(phase) === 2)) {
+    return 1;
+  }
+  return 2;
+}
+
+/** Idempotently strip attempt >= 2 in Phases 1 & 2 for week 2026-11-23 and recompute results from attempt 1. */
+function reconcileNov23WeekSingleAttempt() {
+  try {
+    const targetComps = db.prepare("SELECT id FROM weekly_competitions WHERE start_date = '2026-11-23'").all();
+    if (!targetComps.length) return;
+    db.exec("BEGIN IMMEDIATE");
+    for (const c of targetComps) {
+      for (const phase of [1, 2]) {
+        const resultRows = db.prepare(
+          "SELECT id, user_id FROM competition_phase_results WHERE competition_id = ? AND phase = ?"
+        ).all(c.id, phase);
+        for (const r of resultRows) {
+          const s1 = db.prepare(
+            "SELECT id, total_score, on_time_bonus, finished_at FROM competition_sessions WHERE competition_id = ? AND phase = ? AND user_id = ? AND attempt_number = 1 AND status IN ('completed', 'expired') ORDER BY id ASC LIMIT 1"
+          ).get(c.id, phase, r.user_id);
+          if (s1) {
+            db.prepare(
+              "UPDATE competition_phase_results SET best_session_id = ?, best_score = ?, attempts_used = 1, on_time_bonus = ?, updated_at = COALESCE(?, CURRENT_TIMESTAMP) WHERE id = ?"
+            ).run(s1.id, s1.total_score || 0, s1.on_time_bonus || 0, s1.finished_at || null, r.id);
+          } else {
+            db.prepare("DELETE FROM competition_phase_results WHERE id = ?").run(r.id);
+          }
+        }
+        db.prepare(
+          "UPDATE competition_phase_results SET best_session_id = NULL WHERE best_session_id IN (SELECT id FROM competition_sessions WHERE competition_id = ? AND phase = ? AND attempt_number >= 2)"
+        ).run(c.id, phase);
+        db.prepare(
+          "DELETE FROM competition_answers WHERE session_id IN (SELECT id FROM competition_sessions WHERE competition_id = ? AND phase = ? AND attempt_number >= 2)"
+        ).run(c.id, phase);
+        db.prepare(
+          "DELETE FROM competition_sessions WHERE competition_id = ? AND phase = ? AND attempt_number >= 2"
+        ).run(c.id, phase);
+      }
+    }
+    db.exec("COMMIT");
+  } catch (err) {
+    try { db.exec("ROLLBACK"); } catch (_) { }
+    console.error("[Arena Migration 2026-11-23 Single Attempt]", err.message);
+  }
+}
+reconcileNov23WeekSingleAttempt();
+
 try { db.exec("ALTER TABLE posts ADD COLUMN deleted_at TEXT;"); } catch (e) { }
 try { db.exec("ALTER TABLE responses ADD COLUMN deleted_at TEXT;"); } catch (e) { }
 try { db.exec("ALTER TABLE posts ADD COLUMN document_id INTEGER REFERENCES documents(id);"); } catch (e) { }
@@ -1133,7 +1301,7 @@ try {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
       stream TEXT NOT NULL DEFAULT 'activity' CHECK(stream IN ('activity', 'announcement')),
-      category TEXT NOT NULL DEFAULT 'post' CHECK(category IN ('post', 'response', 'document', 'saved', 'study', 'arena', 'announcement', 'community')),
+      category TEXT NOT NULL DEFAULT 'post' CHECK(category IN ('post', 'response', 'document', 'saved', 'study', 'arena', 'announcement', 'community', 'handbook')),
       title TEXT NOT NULL,
       content TEXT NOT NULL,
       link TEXT NOT NULL DEFAULT '',
@@ -1145,9 +1313,9 @@ try {
     CREATE INDEX IF NOT EXISTS idx_notifications_user_unread ON notifications(user_id, is_read);
   `);
 
-  // Migrate existing table if 'community' category CHECK constraint fails
+  // Migrate existing table if 'community' or 'handbook' category CHECK constraint fails
   try {
-    const testInsert = db.prepare("INSERT INTO notifications (user_id, stream, category, title, content) VALUES (1, 'activity', 'community', '__test__', '__test__')");
+    const testInsert = db.prepare("INSERT INTO notifications (user_id, stream, category, title, content) VALUES (1, 'activity', 'handbook', '__test__', '__test__')");
     testInsert.run();
     db.prepare("DELETE FROM notifications WHERE title = '__test__'").run();
   } catch (e) {
@@ -1157,7 +1325,7 @@ try {
           id INTEGER PRIMARY KEY AUTOINCREMENT,
           user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
           stream TEXT NOT NULL DEFAULT 'activity' CHECK(stream IN ('activity', 'announcement')),
-          category TEXT NOT NULL DEFAULT 'post' CHECK(category IN ('post', 'response', 'document', 'saved', 'study', 'arena', 'announcement', 'community')),
+          category TEXT NOT NULL DEFAULT 'post' CHECK(category IN ('post', 'response', 'document', 'saved', 'study', 'arena', 'announcement', 'community', 'handbook')),
           title TEXT NOT NULL,
           content TEXT NOT NULL,
           link TEXT NOT NULL DEFAULT '',
@@ -1322,37 +1490,57 @@ try { db.exec("ALTER TABLE weekly_competitions ADD COLUMN free_phase1_topic TEXT
 try { db.exec("ALTER TABLE weekly_competitions ADD COLUMN free_phase2_topic TEXT;"); } catch (e) { }
 try { db.exec("ALTER TABLE weekly_competitions ADD COLUMN free_phase3_topic TEXT;"); } catch (e) { }
 
-// Migration: Cập nhật bảng competition_questions hỗ trợ cột track ('main' / 'free')
+// Migration: Cập nhật bảng competition_questions hỗ trợ track ('main'/'free'), đáp án D (option_d, correct 'D') và hint
 try {
   const qTableSql = db.prepare("SELECT sql FROM sqlite_master WHERE type='table' AND name='competition_questions'").get()?.sql || "";
-  if (!qTableSql.includes("track")) {
+  if (qTableSql && (!qTableSql.includes("track") || !qTableSql.includes("'D'") || !qTableSql.includes("option_d") || !qTableSql.includes("hint"))) {
+    const qCols = new Set(db.prepare("PRAGMA table_info(competition_questions)").all().map((c) => c.name));
+    const selOptD = qCols.has("option_d") ? "option_d" : "NULL";
+    const selHint = qCols.has("hint") ? "hint" : "NULL";
+    const selTrack = qCols.has("track") ? "track" : "'main'";
     db.exec("PRAGMA foreign_keys = OFF;");
-    db.exec(`
-      CREATE TABLE competition_questions_v2 (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        competition_id INTEGER NOT NULL REFERENCES weekly_competitions(id) ON DELETE CASCADE,
-        phase INTEGER NOT NULL CHECK(phase IN (1, 2, 3)),
-        question_index INTEGER NOT NULL CHECK(question_index BETWEEN 1 AND 10),
-        question_text TEXT NOT NULL,
-        option_a TEXT NOT NULL,
-        option_b TEXT NOT NULL,
-        option_c TEXT NOT NULL,
-        correct_option TEXT NOT NULL CHECK(correct_option IN ('A','B','C')),
-        explanation TEXT,
-        track TEXT NOT NULL DEFAULT 'main' CHECK(track IN ('main','free')),
-        created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        UNIQUE(competition_id, phase, question_index, track)
-      );
-      INSERT INTO competition_questions_v2 (id, competition_id, phase, question_index, question_text, option_a, option_b, option_c, correct_option, explanation, track, created_at)
-        SELECT id, competition_id, phase, question_index, question_text, option_a, option_b, option_c, correct_option, explanation, 'main', created_at FROM competition_questions;
-      DROP TABLE competition_questions;
-      ALTER TABLE competition_questions_v2 RENAME TO competition_questions;
-    `);
-    db.exec("PRAGMA foreign_keys = ON;");
-    console.log("[Migration] Đã nâng cấp bảng competition_questions hỗ trợ track 'main' và 'free'");
+    db.exec("BEGIN;");
+    try {
+      db.exec(`
+        CREATE TABLE competition_questions_v3 (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          competition_id INTEGER NOT NULL REFERENCES weekly_competitions(id) ON DELETE CASCADE,
+          phase INTEGER NOT NULL CHECK(phase IN (1, 2, 3)),
+          question_index INTEGER NOT NULL CHECK(question_index BETWEEN 1 AND 10),
+          question_text TEXT NOT NULL,
+          option_a TEXT NOT NULL,
+          option_b TEXT NOT NULL,
+          option_c TEXT NOT NULL,
+          option_d TEXT,
+          correct_option TEXT NOT NULL CHECK(correct_option IN ('A','B','C','D')),
+          explanation TEXT,
+          hint TEXT,
+          track TEXT NOT NULL DEFAULT 'main' CHECK(track IN ('main','free')),
+          created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          UNIQUE(competition_id, phase, question_index, track)
+        );
+        INSERT INTO competition_questions_v3 (
+          id, competition_id, phase, question_index, question_text,
+          option_a, option_b, option_c, option_d, correct_option, explanation, hint, track, created_at
+        )
+        SELECT
+          id, competition_id, phase, question_index, question_text,
+          option_a, option_b, option_c, ${selOptD}, correct_option, explanation, ${selHint}, ${selTrack}, created_at
+        FROM competition_questions;
+        DROP TABLE competition_questions;
+        ALTER TABLE competition_questions_v3 RENAME TO competition_questions;
+      `);
+      db.exec("COMMIT;");
+      console.log("[Migration] Đã nâng cấp bảng competition_questions hỗ trợ 4 đáp án (A/B/C/D), hint và track");
+    } catch (innerErr) {
+      db.exec("ROLLBACK;");
+      throw innerErr;
+    } finally {
+      db.exec("PRAGMA foreign_keys = ON;");
+    }
   }
 } catch (e) {
-  console.error("[Migration error competition_questions track]", e);
+  console.error("[Migration error competition_questions]", e);
 }
 
 // Migration: Cập nhật bảng users hỗ trợ role 'member' và quản lý không hoạt động
@@ -1407,6 +1595,9 @@ try {
     db.exec("PRAGMA foreign_keys = ON;");
     console.log("[Migration] users table successfully updated to support 'member' role and inactivity tracking.");
   }
+
+  // Khởi tạo bảng Sổ tay năng động, Túi đồ & Rương may mắn
+  handbook.initHandbookTables(db);
 
   // Khởi tạo last_active_at cho người dùng chưa có
   const uninitializedUsers = db.prepare("SELECT id, created_at FROM users WHERE last_active_at IS NULL").all();
@@ -1649,14 +1840,31 @@ function parseCookies(request) {
   );
 }
 function json(response, status, body, headers = {}) {
-  response.writeHead(status, {
+  const payloadBuf = Buffer.from(JSON.stringify(body), "utf8");
+  const acceptEnc = String(response.req?.headers?.["accept-encoding"] || "");
+  const baseHeaders = {
     "Content-Type": "application/json; charset=utf-8",
     "Cache-Control": "no-store",
     "X-App-Build": APP_BUILD_ID,
     "X-App-Version": APP_VERSION,
     ...headers,
+  };
+  if (payloadBuf.length >= 1024 && /\bgzip\b/i.test(acceptEnc)) {
+    const gz = zlib.gzipSync(payloadBuf, { level: 6 });
+    response.writeHead(status, {
+      ...baseHeaders,
+      "Content-Encoding": "gzip",
+      "Vary": "Accept-Encoding",
+      "Content-Length": gz.length,
+    });
+    response.end(gz);
+    return;
+  }
+  response.writeHead(status, {
+    ...baseHeaders,
+    "Content-Length": payloadBuf.length,
   });
-  response.end(JSON.stringify(body));
+  response.end(payloadBuf);
 }
 function error(response, status, message) {
   json(response, status, { error: message });
@@ -1731,6 +1939,7 @@ function calculateUserStreak(userId, todayDate, formatYMD) {
     return {
       streak: 0,
       streakTier: 0,
+      maxShields: 3,
       shields: 0,
       autoShieldUsed: false,
       streakStartDate: "9999-99-99",
@@ -1743,10 +1952,13 @@ function calculateUserStreak(userId, todayDate, formatYMD) {
     const shieldRow = db.prepare("SELECT * FROM user_streak_shields WHERE user_id = ?").get(userId);
     if (shieldRow && shieldRow.custom_streak !== null && shieldRow.custom_streak !== undefined) {
       const s = Math.max(0, Number(shieldRow.custom_streak) || 0);
+      const maxSh = handbook.getMaxShieldsForStreak(s);
+      const synced = handbook.reconcileUserShields(db, userId, maxSh);
       return {
         streak: s,
         streakTier: getStreakTier(s),
-        shields: shieldRow.shields ?? 3,
+        maxShields: maxSh,
+        shields: synced,
         autoShieldUsed: false,
         streakStartDate: "2026-01-01",
         streakStartCreatedAt: "2026-01-01T00:00:00Z",
@@ -1758,10 +1970,13 @@ function calculateUserStreak(userId, todayDate, formatYMD) {
   }
 
   if (userId === 89) {
+    const maxSh = handbook.getMaxShieldsForStreak(31);
+    const synced = handbook.reconcileUserShields(db, userId, maxSh);
     return {
       streak: 31,
       streakTier: 4,
-      shields: 3,
+      maxShields: maxSh,
+      shields: synced,
       autoShieldUsed: false,
       streakStartDate: "2026-10-10",
       streakStartCreatedAt: "2026-10-10T00:00:00Z",
@@ -1770,10 +1985,13 @@ function calculateUserStreak(userId, todayDate, formatYMD) {
 
   const uRow = db.prepare("SELECT role FROM users WHERE id = ?").get(userId);
   if (uRow && (uRow.role === "admin" || uRow.role === "ta")) {
+    const maxSh = handbook.getMaxShieldsForStreak(52);
+    const synced = handbook.reconcileUserShields(db, userId, maxSh);
     return {
       streak: 52,
       streakTier: 5,
-      shields: 3,
+      maxShields: maxSh,
+      shields: synced,
       autoShieldUsed: false,
       streakStartDate: "2026-08-01",
       streakStartCreatedAt: "2026-08-01T00:00:00Z",
@@ -1823,18 +2041,23 @@ function calculateUserStreak(userId, todayDate, formatYMD) {
   const restoreMap = new Map();
   streakRestores.forEach(r => restoreMap.set(r.restored_date, r.created_at));
 
-  // Auto-shield logic: CHỈ tự động kích hoạt 1 ngày hôm qua NẾU ngày trước đó (dayBefore) là ngày người dùng thực sự có hoạt động (không phải ngày đã được cứu bởi khiên)
+  // Đồng bộ toàn bộ khiên vào user_inventory & dùng khiên sắp hết hạn nhất trước
+  handbook.reconcileUserShields(db, userId, 8);
   let autoShieldUsed = false;
-  if (!activityMap.has(yesterday) && !restoreMap.has(yesterday) && shieldRow.shields > 0) {
+  const invShieldsBefore = handbook.getInventoryShieldsCount(db, userId);
+  if (!activityMap.has(yesterday) && !restoreMap.has(yesterday) && invShieldsBefore > 0) {
     const wasRealActivityBefore = activityMap.has(dayBefore) && !restoreMap.has(dayBefore);
 
     if (wasRealActivityBefore) {
-      db.prepare("INSERT OR IGNORE INTO streak_restores(user_id, restored_date) VALUES (?,?)").run(userId, yesterday);
-      restoreMap.set(yesterday, new Date().toISOString());
-      shieldRow.shields = Math.max(0, shieldRow.shields - 1);
-      db.prepare("UPDATE user_streak_shields SET shields = ?, updated_at = CURRENT_TIMESTAMP WHERE user_id = ?").run(shieldRow.shields, userId);
-      autoShieldUsed = true;
-      logShieldTransaction(userId, 'use', 1, shieldRow.shields, `Tự động kích hoạt bảo vệ chuỗi ngày ${formatDMY(yesterday)}`);
+      const consumedInvShield = handbook.consumeSoonestInventoryShield(db, userId);
+      if (consumedInvShield) {
+        db.prepare("INSERT OR IGNORE INTO streak_restores(user_id, restored_date) VALUES (?,?)").run(userId, yesterday);
+        restoreMap.set(yesterday, new Date().toISOString());
+        autoShieldUsed = true;
+        const leftInv = handbook.getInventoryShieldsCount(db, userId);
+        const sLabel = handbook.ITEM_METADATA[consumedInvShield.item_key]?.name || "Khiên bảo vệ";
+        logShieldTransaction(userId, 'use', 1, leftInv, `Dùng ${sLabel} bảo vệ chuỗi ngày ${formatDMY(yesterday)}`);
+      }
     }
   }
 
@@ -1863,7 +2086,9 @@ function calculateUserStreak(userId, todayDate, formatYMD) {
     }
   }
 
-  // Check milestones and grant new shields
+  // Check milestones and grant new shields via unified shield capacity
+  const maxShields = handbook.getMaxShieldsForStreak(currentStreak);
+
   const milestones = [
     { streak: 7, reward: 1 },
     { streak: 14, reward: 1 },
@@ -1871,29 +2096,28 @@ function calculateUserStreak(userId, todayDate, formatYMD) {
     { streak: 50, reward: 2 },
   ];
 
-  let newShields = 0;
   let highestPassed = shieldRow.last_milestone_rewarded || 0;
+  let earnedMilestone = false;
   for (const m of milestones) {
     if (currentStreak >= m.streak && highestPassed < m.streak) {
-      newShields += m.reward;
       if (m.streak > highestPassed) highestPassed = m.streak;
-      const balanceAfter = Math.min(3, shieldRow.shields + newShields);
+      const balanceAfter = handbook.grantShieldWithCapacity(db, userId, "shield_milestone", 1, null, "rare", maxShields, m.reward);
       logShieldTransaction(userId, 'add', m.reward, balanceAfter, `Thưởng đạt mốc chuỗi ${m.streak} ngày (+${m.reward} khiên)`);
+      earnedMilestone = true;
     }
   }
 
-  if (newShields > 0) {
-    shieldRow.shields = Math.min(3, shieldRow.shields + newShields);
-    shieldRow.last_milestone_rewarded = highestPassed;
-    db.prepare("UPDATE user_streak_shields SET shields = ?, last_milestone_rewarded = ?, updated_at = CURRENT_TIMESTAMP WHERE user_id = ?").run(shieldRow.shields, highestPassed, userId);
+  if (earnedMilestone) {
+    db.prepare("UPDATE user_streak_shields SET last_milestone_rewarded = ?, updated_at = CURRENT_TIMESTAMP WHERE user_id = ?").run(highestPassed, userId);
   }
 
   const streakTier = getStreakTier(currentStreak);
-
+  const syncedShields = handbook.reconcileUserShields(db, userId, maxShields);
   return {
     streak: currentStreak,
     streakTier,
-    shields: shieldRow.shields,
+    maxShields,
+    shields: syncedShields,
     autoShieldUsed,
     streakStartDate: streakStartDate || "9999-99-99",
     streakStartCreatedAt: streakStartCreatedAt || "9999-99-99",
@@ -2087,13 +2311,38 @@ function recordContribution(
     "INSERT OR IGNORE INTO activity_days(user_id,activity_date) VALUES (?,?)",
   ).run(userId, today);
   recordUserActivity(userId);
-  const limits = { post_created: 5, response_created: 10, document_approved: 5, document_discussion: 20 };
-  const maxAllowed = limits[type];
-  if (maxAllowed) {
+
+  // Giới hạn theo tổng điểm ngày (theo Sổ tay khám phá) cho post_created (+3, tối đa 6đ/ngày) & response_created (+2/+1, tối đa 4đ/ngày)
+  const dailyPointLimits = { post_created: 6, response_created: 4 };
+  if (dailyPointLimits[type] && points > 0) {
+    const maxDailyPts = dailyPointLimits[type];
+    const rowPts = db.prepare(
+      "SELECT coalesce(sum(CASE WHEN points > 0 THEN points ELSE 0 END), 0) as totalPts FROM contribution_events WHERE user_id = ? AND event_type = ? AND date(datetime(created_at, '+7 hours')) = ?"
+    ).get(userId, type, today);
+    const earnedToday = Number(rowPts?.totalPts || 0);
+    if (earnedToday >= maxDailyPts) {
+      points = 0;
+      reason = (reason || type) + ` (Đã đạt giới hạn ${maxDailyPts}đ/ngày)`;
+    } else if (earnedToday + points > maxDailyPts) {
+      points = maxDailyPts - earnedToday;
+      reason = (reason || type) + ` (Chạm trần ${maxDailyPts}đ/ngày)`;
+    }
+  }
+
+  // Giới hạn theo số lượt ngày (2 lượt/ngày cho document_discussion) hoặc 24h trượt (5 lượt/24h cho document_approved)
+  if (type === "document_discussion" && points > 0) {
     const countObj = db.prepare(
-      "SELECT count(*) as c FROM contribution_events WHERE user_id=? AND event_type=? AND points > 0 AND created_at >= datetime('now', '-24 hours')"
-    ).get(userId, type);
-    if (countObj.c >= maxAllowed) {
+      "SELECT count(*) as c FROM contribution_events WHERE user_id = ? AND event_type = 'document_discussion' AND points > 0 AND date(datetime(created_at, '+7 hours')) = ?"
+    ).get(userId, today);
+    if ((countObj?.c || 0) >= 2) {
+      points = 0;
+      reason = (reason || type) + " (Giới hạn nhận điểm 2 lượt/ngày)";
+    }
+  } else if (type === "document_approved" && points > 0) {
+    const countObj = db.prepare(
+      "SELECT count(*) as c FROM contribution_events WHERE user_id=? AND event_type='document_approved' AND points > 0 AND created_at >= datetime('now', '-24 hours')"
+    ).get(userId);
+    if ((countObj?.c || 0) >= 5) {
       points = 0;
       reason = (reason || type) + " (Giới hạn nhận điểm 24h)";
     }
@@ -2102,6 +2351,25 @@ function recordContribution(
   db.prepare(
     "INSERT INTO contribution_events(user_id,event_type,points,reference_type,reference_id,reason) VALUES (?,?,?,?,?,?)",
   ).run(userId, type, points, referenceType, referenceId, reason);
+  if (points > 0) {
+    handbook.applyActiveDoubleBonus(db, userId, points, reason || type);
+  }
+}
+
+function resolveSymmetryPoints(userId, refType, refId, lookupTypes, defaultAbsPts, isRestore = false) {
+  if (!userId || !refType || !refId || !Array.isArray(lookupTypes) || !lookupTypes.length) {
+    const absDef = Math.max(0, Number(defaultAbsPts) || 0);
+    return isRestore ? absDef : -absDef;
+  }
+  const placeholders = lookupTypes.map(() => "?").join(",");
+  const row = db.prepare(`
+    SELECT points FROM contribution_events
+    WHERE user_id = ? AND reference_type = ? AND reference_id = ? AND event_type IN (${placeholders})
+    ORDER BY id DESC LIMIT 1
+  `).get(userId, refType, refId, ...lookupTypes);
+  const absVal = row ? Math.abs(Number(row.points) || 0) : Math.max(0, Number(defaultAbsPts) || 0);
+  if (absVal === 0) return 0;
+  return isRestore ? absVal : -absVal;
 }
 function stripHtml(text) {
   if (!text) return "";
@@ -2238,7 +2506,7 @@ async function sendPasswordResetEmail(toEmail, displayName, code, expiresAt) {
           <!-- Header Banner -->
           <tr>
             <td style="padding: 0; line-height: 0; background-color: #0b2920; border-top-left-radius: 18px; border-top-right-radius: 18px; overflow: hidden;">
-              <img src="https://research.id.vn/public/assets/email-banner.jpg" alt="RE:SEARCH" width="580" style="display: block; width: 100%; max-width: 580px; height: auto; border: 0; outline: none; text-decoration: none;" />
+              <img src="https://research.id.vn/public/assets/email-banner.webp" alt="RE:SEARCH" width="580" style="display: block; width: 100%; max-width: 580px; height: auto; border: 0; outline: none; text-decoration: none;" />
             </td>
           </tr>
 
@@ -2565,14 +2833,19 @@ const AUDIO_TRACK_URLS = {
 
 const azureAudioUrlCache = new Map(); // trackId -> { url: string, expiresAt: number }
 
-function resolveGitHubRedirectOnce(ghUrl) {
+function resolveGitHubRedirectOnce(targetUrl, remainingHops = 5) {
   return new Promise((resolve, reject) => {
-    const req = https.get(ghUrl, (res) => {
+    const req = https.get(targetUrl, { headers: { "User-Agent": "RESEARCH-AudioProxy/1.0" } }, (res) => {
       res.resume(); // Ensure stream data is consumed to free the socket
       if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
-        resolve(res.headers.location);
+        const nextUrl = new URL(res.headers.location, targetUrl).toString();
+        if (remainingHops > 0) {
+          resolveGitHubRedirectOnce(nextUrl, remainingHops - 1).then(resolve, reject);
+        } else {
+          reject(new Error("Too many audio redirects"));
+        }
       } else if (res.statusCode === 200) {
-        resolve(ghUrl);
+        resolve(targetUrl);
       } else {
         reject(new Error(`GitHub redirect failed with status ${res.statusCode}`));
       }
@@ -2644,14 +2917,16 @@ async function fetchAzureAudioStream(trackId, reqMethod, headers, isRetry = fals
         azureReq.setTimeout(0);
         azureReq.removeAllListeners("timeout");
 
-        // If expired SAS token or forbidden, retry once with a fresh URL
-        if ((azureRes.statusCode === 403 || azureRes.statusCode === 401) && !isRetry) {
+        // If expired SAS token or upstream error (401/403/404/416/5xx), drain and retry once with a fresh resolved URL
+        if (azureRes.statusCode >= 400 && !isRetry) {
+          azureRes.resume();
+          azureReq.destroy();
           azureAudioUrlCache.delete(trackId);
           try {
             const retried = await fetchAzureAudioStream(trackId, reqMethod, headers, true);
             return resolve(retried);
           } catch (e) {
-            return resolve({ statusCode: azureRes.statusCode, headers: azureRes.headers, stream: azureRes, req: azureReq });
+            return resolve(null);
           }
         }
         resolve({ statusCode: azureRes.statusCode, headers: azureRes.headers, stream: azureRes, req: azureReq });
@@ -2690,6 +2965,11 @@ async function streamAudioTrack(request, response, trackId) {
     }
 
     const { statusCode, headers: azureHeaders, stream, req: azureReq } = result;
+    if (!statusCode || statusCode >= 400) {
+      try { stream.resume(); } catch (e) { }
+      try { azureReq.destroy(); } catch (e) { }
+      return error(response, 502, "Không thể phát tệp âm thanh từ máy chủ lưu trữ.");
+    }
 
     // Disable socket timeouts for audio streaming requests
     if (request.socket) {
@@ -2845,8 +3125,8 @@ function getEventLoginDaysCount(userId, eventId = "phep_mau_mua_dong") {
   return Number(row?.cnt || 0);
 }
 
-const LIMITED_COVER_IDS = new Set(["ton_vinh_phai_dep", "bua_tiec_ma_mi", "chinh_phuc_bau_troi", "phep_mau_mua_dong"]);
-const LIMITED_FRAME_IDS = new Set(["ton_vinh_phai_dep", "bua_tiec_ma_mi", "chinh_phuc_bau_troi", "phep_mau_mua_dong"]);
+const LIMITED_COVER_IDS = new Set(["ton_vinh_phai_dep", "bua_tiec_ma_mi", "chinh_phuc_bau_troi", "phep_mau_mua_dong", "thao_nguyen_ky_bi"]);
+const LIMITED_FRAME_IDS = new Set(["ton_vinh_phai_dep", "bua_tiec_ma_mi", "chinh_phuc_bau_troi", "phep_mau_mua_dong", "thao_nguyen_ky_bi"]);
 
 // Đặc quyền khung và ảnh bìa theo chuỗi (Mở khóa theo ngày, duy trì thì "Khả dụng", đứt chuỗi thì đếm ngược hạn giờ)
 const STREAK_PERK_ITEMS = [
@@ -2913,11 +3193,36 @@ const LIMITED_THEMES = [
       if (!isChristmas2026Window(vnDate)) return false;
       return getEventLoginDaysCount(userId, "phep_mau_mua_dong") >= 3;
     }
+  },
+  {
+    id: "thao_nguyen_ky_bi",
+    name: "Thảo nguyên kỳ bí",
+    coverId: "thao_nguyen_ky_bi",
+    frameId: "thao_nguyen_ky_bi",
+    isEligible: () => false, // Mở khóa qua sự kiện đổi thưởng giới hạn (Nấm thần kỳ)
+    isExchangeEvent: true
   }
 ];
 
+const ARENA_SEASONS = [
+  {
+    code: "AS1",
+    label: "Mùa AS1",
+    title: "Chinh phục bầu trời",
+    startMs: Date.parse("2026-10-05T00:00:00+07:00"),
+    endExclusiveMs: Date.parse("2026-12-21T00:00:00+07:00"),
+    coverId: "chinh_phuc_bau_troi",
+    frameId: "chinh_phuc_bau_troi",
+    studyBgKey: "sky_observatory"
+  }
+];
+
+function toSqlUtcDateTime(ms) {
+  return new Date(ms).toISOString().replace("T", " ").substring(0, 19);
+}
+
 function checkAndGrantArenaSkyLimitedItems(userId, vnNow) {
-  // Bộ khung và ảnh bìa Chinh phục bầu trời là phần thưởng Đấu trường Arena mùa AS1 (2026), tạm khoá với mọi người dùng
+  // Bộ khung và ảnh bìa Chinh phục bầu trời do cron cuối mùa tự động trao theo thứ hạng / tham gia Mùa AS1
   return;
 }
 
@@ -3120,40 +3425,30 @@ function getUserLimitedItemsStatus(userId) {
 
   // 1. Vật phẩm sự kiện giới hạn
   for (const theme of LIMITED_THEMES) {
-    if (theme.id === "chinh_phuc_bau_troi") {
-      if (isPrivileged) {
-        res.frames[theme.frameId] = { isUnlocked: true, expiresAt: null, remainingDays: 9999, isPermanent: true, isMaintaining: false };
-        res.covers[theme.coverId] = { isUnlocked: true, expiresAt: null, remainingDays: 9999, isPermanent: true, isMaintaining: false };
-      } else {
-        // Phần thưởng Đấu trường Arena mùa AS1 (2026)
-        res.frames[theme.frameId] = { isUnlocked: false, expiresAt: null, remainingDays: 0, isPermanent: false, isMaintaining: false, isLocked: true, isSeasonReward: true };
-        res.covers[theme.coverId] = { isUnlocked: false, expiresAt: null, remainingDays: 0, isPermanent: false, isMaintaining: false, isLocked: true, isSeasonReward: true };
-      }
-      continue;
-    }
+    const isSeasonItem = theme.id === "chinh_phuc_bau_troi";
     const isFixedThemeExpired = Boolean(theme.fixedExpiresAt) && (new Date(theme.fixedExpiresAt).getTime() <= now);
     const frameRow = rowMap.get(`frame:${theme.frameId}`);
-    if (isPrivileged) {
-      res.frames[theme.frameId] = { isUnlocked: true, expiresAt: null, remainingDays: 9999, isPermanent: true, isMaintaining: false };
+    if (isPrivileged || (frameRow && (frameRow.expires_at === null || String(frameRow.expires_at).startsWith("2099-")))) {
+      res.frames[theme.frameId] = { isUnlocked: true, expiresAt: null, remainingDays: 9999, isPermanent: true, isMaintaining: false, ...(isSeasonItem ? { isSeasonReward: true } : {}) };
     } else if (frameRow && !isFixedThemeExpired) {
       const expTime = new Date(frameRow.expires_at).getTime();
       const isUnlocked = expTime > now;
       const remainingDays = isUnlocked ? Math.ceil((expTime - now) / (24 * 60 * 60 * 1000)) : 0;
-      res.frames[theme.frameId] = { isUnlocked, expiresAt: frameRow.expires_at, remainingDays, isPermanent: false, isMaintaining: false };
+      res.frames[theme.frameId] = { isUnlocked, expiresAt: frameRow.expires_at, remainingDays, isPermanent: false, isMaintaining: false, ...(isSeasonItem ? { isSeasonReward: true, isLocked: !isUnlocked } : {}) };
     } else {
-      res.frames[theme.frameId] = { isUnlocked: false, expiresAt: frameRow?.expires_at || null, remainingDays: 0, isPermanent: false, isMaintaining: false };
+      res.frames[theme.frameId] = { isUnlocked: false, expiresAt: frameRow?.expires_at || null, remainingDays: 0, isPermanent: false, isMaintaining: false, ...(isSeasonItem ? { isLocked: true, isSeasonReward: true } : {}) };
     }
 
     const coverRow = rowMap.get(`cover:${theme.coverId}`);
-    if (isPrivileged) {
-      res.covers[theme.coverId] = { isUnlocked: true, expiresAt: null, remainingDays: 9999, isPermanent: true, isMaintaining: false };
+    if (isPrivileged || (coverRow && (coverRow.expires_at === null || String(coverRow.expires_at).startsWith("2099-")))) {
+      res.covers[theme.coverId] = { isUnlocked: true, expiresAt: null, remainingDays: 9999, isPermanent: true, isMaintaining: false, ...(isSeasonItem ? { isSeasonReward: true } : {}) };
     } else if (coverRow && !isFixedThemeExpired) {
       const expTime = new Date(coverRow.expires_at).getTime();
       const isUnlocked = expTime > now;
       const remainingDays = isUnlocked ? Math.ceil((expTime - now) / (24 * 60 * 60 * 1000)) : 0;
-      res.covers[theme.coverId] = { isUnlocked, expiresAt: coverRow.expires_at, remainingDays, isPermanent: false, isMaintaining: false };
+      res.covers[theme.coverId] = { isUnlocked, expiresAt: coverRow.expires_at, remainingDays, isPermanent: false, isMaintaining: false, ...(isSeasonItem ? { isSeasonReward: true, isLocked: !isUnlocked } : {}) };
     } else {
-      res.covers[theme.coverId] = { isUnlocked: false, expiresAt: coverRow?.expires_at || null, remainingDays: 0, isPermanent: false, isMaintaining: false };
+      res.covers[theme.coverId] = { isUnlocked: false, expiresAt: coverRow?.expires_at || null, remainingDays: 0, isPermanent: false, isMaintaining: false, ...(isSeasonItem ? { isLocked: true, isSeasonReward: true } : {}) };
     }
   }
 
@@ -3212,6 +3507,19 @@ function getUserLimitedItemsStatus(userId) {
     }
   }
 
+  try {
+    const rawBgs = db.prepare("SELECT bg_key, expires_at FROM user_study_backgrounds WHERE user_id = ?").all(userId);
+    res.studyBackgrounds = rawBgs
+      .filter((r) => {
+        if (isPrivileged || !r.expires_at || String(r.expires_at).startsWith("2099-")) return true;
+        const t = Date.parse(r.expires_at);
+        return !Number.isNaN(t) && t > Date.now();
+      })
+      .map((r) => r.bg_key);
+  } catch (_) {
+    res.studyBackgrounds = [];
+  }
+
   return res;
 }
 
@@ -3243,11 +3551,11 @@ function getWeekRange(date) {
   return { monday, sunday, mondayStr: formatYMD(monday), sundayStr: formatYMD(sunday), year, weekNumber, weekKey };
 }
 
-function getPhaseForDayOfWeek(dayOfWeek) {
-  if (dayOfWeek === 1 || dayOfWeek === 2) return 1;
-  if (dayOfWeek === 3 || dayOfWeek === 4) return 2;
-  if (dayOfWeek === 5 || dayOfWeek === 6) return 3;
-  return 0; // Sunday
+function getPhaseForDayOfWeek(dayOfWeek, hours = 18) {
+  if (dayOfWeek === 1 || dayOfWeek === 2 || (dayOfWeek === 3 && hours < 10)) return 1;
+  if (dayOfWeek === 3 || dayOfWeek === 4 || (dayOfWeek === 5 && hours < 10)) return 2;
+  if (dayOfWeek === 5 || dayOfWeek === 6 || (dayOfWeek === 0 && hours < 12)) return 3;
+  return 0; // Sunday >= 12:00 (Tổng kết & Luyện tập)
 }
 
 function isPhaseOnTimeWindow(comp, phase, vnDate) {
@@ -3261,16 +3569,18 @@ function isPhaseOnTimeWindow(comp, phase, vnDate) {
   const hours = vnDate.getHours();
 
   if (phase === 1) {
-    // Chặng 1: Thứ Hai 19:00:00 đến hết Thứ Ba 23:59:59 (Giờ VN)
-    if (dayOfWeek === 1) return hours >= 19;
+    // Chặng 1: Thứ Hai 18:00 đến Thứ Tư 10:00 (Lượt 1: T2 18:00-T3 10:00, Lượt 2: T3 18:00-T4 10:00)
+    if (dayOfWeek === 1) return hours >= 18;
     if (dayOfWeek === 2) return true;
+    if (dayOfWeek === 3) return hours < 10;
     return false;
   }
 
   if (phase === 2) {
-    // Chặng 2: Thứ Tư 19:00:00 đến hết Thứ Năm 23:59:59 (Giờ VN)
-    if (dayOfWeek === 3) return hours >= 19;
+    // Chặng 2: Thứ Tư 18:00 đến Thứ Sáu 10:00 (Lượt 1: T4 18:00-T5 10:00, Lượt 2: T5 18:00-T6 10:00)
+    if (dayOfWeek === 3) return hours >= 18;
     if (dayOfWeek === 4) return true;
+    if (dayOfWeek === 5) return hours < 10;
     return false;
   }
 
@@ -3625,7 +3935,7 @@ function deterministicShuffle(items, seedStr) {
  */
 function getCompetitionPhaseRawQuestions(competitionId, phase, track) {
   return db.prepare(
-    "SELECT id, question_index, question_text, option_a, option_b, option_c, correct_option, explanation FROM competition_questions WHERE competition_id = ? AND phase = ? AND track = ? ORDER BY question_index ASC"
+    "SELECT id, question_index, question_text, option_a, option_b, option_c, option_d, correct_option, explanation, hint FROM competition_questions WHERE competition_id = ? AND phase = ? AND track = ? ORDER BY question_index ASC"
   ).all(competitionId, phase, track);
 }
 
@@ -3642,7 +3952,8 @@ function formatNextQuestionPayload(q) {
     text: q.questionText,
     optionA: q.optionA,
     optionB: q.optionB,
-    optionC: q.optionC
+    optionC: q.optionC,
+    optionD: q.optionD || null
   };
 }
 
@@ -3704,7 +4015,7 @@ function syncUnpausedSessionTimeout(session, userId, nowMs, questionsOverride = 
     const vnNow = getVietnamNow();
     const comp = db.prepare("SELECT * FROM weekly_competitions WHERE id = ?").get(session.competition_id);
     const isSessionOnTime = comp ? isPhaseOnTimeWindow(comp, session.phase, vnNow) : false;
-    const onTimeBonus = (session.is_on_time === 1 && isSessionOnTime) ? 50 : 0;
+    const onTimeBonus = (session.is_on_time === 1 && isSessionOnTime && Number(session.phase) !== 3) ? 50 : 0;
     const finalScore = (session.correct_points || 0) + (session.first_try_bonus || 0) + (session.time_points || 0) + onTimeBonus;
 
     db.prepare(`
@@ -3744,8 +4055,10 @@ function getCompetitionQuestionsForUser(rawQuestions, { userId, competitionId, p
       optionA: q.option_a,
       optionB: q.option_b,
       optionC: q.option_c,
+      optionD: q.option_d || null,
       correctOption: String(q.correct_option || "A").toUpperCase(),
-      explanation: q.explanation || ""
+      explanation: q.explanation || "",
+      hint: q.hint || ""
     }));
   }
 
@@ -3762,6 +4075,9 @@ function getCompetitionQuestionsForUser(rawQuestions, { userId, competitionId, p
       { key: "B", text: q.option_b },
       { key: "C", text: q.option_c }
     ];
+    if (q.option_d) {
+      optEntries.push({ key: "D", text: q.option_d });
+    }
 
     let shuffledOpts = optEntries;
     const aPositional = ARENA_POSITIONAL_OPTION_RE.test(q.option_a || "");
@@ -3774,11 +4090,11 @@ function getCompetitionQuestionsForUser(rawQuestions, { userId, competitionId, p
     } else if (!aPositional && !bPositional && cPositional) {
       // Preserve positional "all/both of the above" option C while still shuffling A & B
       const ab = deterministicShuffle([optEntries[0], optEntries[1]], optSeed);
-      shuffledOpts = [ab[0], ab[1], optEntries[2]];
+      shuffledOpts = optEntries.length === 4 ? [ab[0], ab[1], optEntries[2], optEntries[3]] : [ab[0], ab[1], optEntries[2]];
     }
 
     const correctPos = shuffledOpts.findIndex(opt => opt.key === origCorrect);
-    const mappedCorrect = ["A", "B", "C"][correctPos >= 0 ? correctPos : 0];
+    const mappedCorrect = ["A", "B", "C", "D"][correctPos >= 0 ? correctPos : 0];
 
     return {
       id: q.id,
@@ -3788,8 +4104,10 @@ function getCompetitionQuestionsForUser(rawQuestions, { userId, competitionId, p
       optionA: shuffledOpts[0].text,
       optionB: shuffledOpts[1].text,
       optionC: shuffledOpts[2].text,
+      optionD: shuffledOpts[3]?.text || null,
       correctOption: mappedCorrect,
-      explanation: q.explanation || ""
+      explanation: q.explanation || "",
+      hint: q.hint || ""
     };
   });
 }
@@ -3858,37 +4176,39 @@ function getCompetitionTimeState(vnDate, comp, track = "main") {
   const minutes = vnDate.getMinutes();
   const seconds = vnDate.getSeconds();
   const timeInMinutes = hours * 60 + minutes;
+  const secOfDay = (hours * 3600) + (minutes * 60) + seconds;
 
-  // 1. CHỦ NHẬT: Ngày tổng kết toàn bộ tuần thi đấu (từ 0h đến hết CN)
-  if (dayOfWeek === 0) {
-    const secondsUntilMonday = ((23 - hours) * 3600) + ((59 - minutes) * 60) + (60 - seconds);
+  // 1. CHỦ NHẬT từ 12:00 trở đi: Tổng kết toàn tuần & chuyển sang Luyện tập
+  if (dayOfWeek === 0 && hours >= 12) {
+    const secondsUntilMon10 = (86400 - secOfDay) + (10 * 3600);
     return {
       phase: 3,
       dayOfWeek: 0,
       isSaturday: false,
       isSunday: true,
+      isPracticeWindow: true,
+      canCatchUp: false,
       openScheduleText: "Đã đóng cổng",
       state: "sunday_summary",
       stateLabel: "TỔNG KẾT TUẦN",
       ctaText: "Xem bảng vinh danh",
       phaseName: "Tổng kết tuần thi đấu",
       phaseTopic: weekTopic,
-      secondsUntilNext: Math.max(0, secondsUntilMonday),
-      nextStateLabel: "Tuần mới khởi động (Thứ Hai 00:00)",
+      secondsUntilNext: Math.max(0, secondsUntilMon10),
+      nextStateLabel: "Chuẩn bị tuần mới (Thứ Hai 10:00)",
       isReady: true,
       visible: true,
       track
     };
   }
 
-  const phase = getPhaseForDayOfWeek(dayOfWeek);
+  const phase = getPhaseForDayOfWeek(dayOfWeek, hours);
   const phaseTopic = isFree
     ? (phase === 1 ? (comp.free_phase1_topic || comp.phase1_topic) : (phase === 2 ? (comp.free_phase2_topic || comp.phase2_topic) : (comp.free_phase3_topic || comp.phase3_topic)))
     : (phase === 1 ? comp.phase1_topic : (phase === 2 ? comp.phase2_topic : comp.phase3_topic));
-  const phaseDays = phase === 1 ? "Thứ Hai – Thứ Ba" : phase === 2 ? "Thứ Tư – Thứ Năm" : "Thứ Sáu – Thứ Bảy";
+  const phaseDays = phase === 1 ? "Thứ Hai – Thứ Tư 10:00" : phase === 2 ? "Thứ Tư – Thứ Sáu 10:00" : "Thứ Sáu – Chủ Nhật 12:00";
   const phaseName = `Chặng ${phase} (${phaseDays})`;
 
-  // Check if phase has 10 questions for the track
   const qCount = db.prepare("SELECT count(*) as c FROM competition_questions WHERE competition_id = ? AND phase = ? AND track = ?").get(comp.id, phase, track)?.c || 0;
   const isReady = qCount >= 10;
 
@@ -3897,55 +4217,81 @@ function getCompetitionTimeState(vnDate, comp, track = "main") {
   let ctaText = "Xem thể lệ & Chuẩn bị";
   let secondsUntilNext = 0;
   let nextStateLabel = "Sắp mở cổng";
+  let canCatchUp = false;
+  let isPracticeWindow = false;
 
-  // Quy cách mở cổng: 19h ngày đầu – 23h59 ngày cuối chặng
-  // - Chặng 1: 19h00 tối Thứ Hai đến 23:59:59 Thứ Ba
-  // - Chặng 2: 19h00 tối Thứ Tư đến 23:59:59 Thứ Năm
-  // - Chặng 3: 19h00 tối Thứ Sáu đến 23:59:59 Thứ Bảy
   const openScheduleText = phase === 1
-    ? "19:00 T2 – 23:59:59 T3"
-    : (phase === 2 ? "19:00 T4 – 23:59:59 T5" : "19:00 T6 – 23:59:59 T7");
+    ? "18:00 T2 – 10:00 T4"
+    : (phase === 2 ? "18:00 T4 – 10:00 T6" : "18:00 T6 – 12:00 CN");
 
-  const isPhaseStartDay = (dayOfWeek === 1 || dayOfWeek === 3 || dayOfWeek === 5); // Thứ 2, 4, 6
-  const isPhaseEndDay = (dayOfWeek === 2 || dayOfWeek === 4 || dayOfWeek === 6);   // Thứ 3, 5, 7
-
-  if (isPhaseStartDay) {
-    if (timeInMinutes >= 19 * 60) {
-      // 19h ngày đầu – 23h59 ngày cuối: Khung giờ mở cổng thi đấu liền mạch
-      state = "open";
-      const targetDayName = dayOfWeek === 1 ? "Thứ Ba" : (dayOfWeek === 3 ? "Thứ Năm" : "Thứ Bảy");
-      stateLabel = "ĐANG MỞ CỔNG";
-      ctaText = "Tham gia ngay";
-      // Đếm ngược đến 23:59:59 của ngày mai (ngày kết thúc chặng)
-      const secRemainingToday = ((23 - hours) * 3600) + ((59 - minutes) * 60) + (60 - seconds);
-      secondsUntilNext = 86400 + secRemainingToday;
-      nextStateLabel = `Đóng cổng Chặng ${phase} (${targetDayName} 23:59:59)`;
-    } else if (timeInMinutes >= 15 * 60) {
-      // 15:00 – 19:00: Khung giờ sẵn sàng đếm ngược
-      state = "upcoming";
-      stateLabel = "ĐANG ĐẾM NGƯỢC";
-      ctaText = "Xem thể lệ & Chuẩn bị";
-      secondsUntilNext = ((19 * 60 - timeInMinutes - 1) * 60) + (60 - seconds);
-      nextStateLabel = `Mở cổng Chặng ${phase} (19:00)`;
-    } else {
-      // 00:00 – 15:00:
-      // - Thứ Hai: Khung giờ Khởi động tuần mới / Chuẩn bị
-      // - Thứ Tư, Thứ Sáu: Khung giờ Chuẩn bị cho chặng mới
-      state = "reviewing";
-      stateLabel = "CHUẨN BỊ";
-      ctaText = (dayOfWeek === 1) ? "Xem thể lệ & Bảng vàng" : `Xem bảng xếp hạng Chặng ${phase - 1}`;
-      secondsUntilNext = ((15 * 60 - timeInMinutes - 1) * 60) + (60 - seconds);
-      nextStateLabel = `Khung giờ sẵn sàng đếm ngược (15:00)`;
-    }
-  } else if (isPhaseEndDay) {
-    // Thứ Ba, Thứ Năm, Thứ Bảy: Mở liền mạch cả ngày đến 23:59:59
+  if (dayOfWeek === 0 && hours < 12) {
+    // Chủ Nhật trước 12:00: Chặng 3 Lượt 2 vẫn mở đến 12:00
     state = "open";
     stateLabel = "ĐANG MỞ CỔNG";
     ctaText = "Tham gia ngay";
-    secondsUntilNext = ((23 - hours) * 3600) + ((59 - minutes) * 60) + (60 - seconds);
-    nextStateLabel = (phase === 3)
-      ? "Đóng cổng tuần thi đấu (23:59:59)"
-      : `Đóng cổng Chặng ${phase} (23:59:59)`;
+    secondsUntilNext = Math.max(0, (12 * 3600) - secOfDay);
+    nextStateLabel = "Đóng cổng tuần thi đấu (Chủ Nhật 12:00)";
+  } else if (dayOfWeek === 1) {
+    // Thứ Hai
+    if (hours < 10) {
+      state = "reviewing";
+      stateLabel = "LUYỆN TẬP TUẦN TRƯỚC";
+      ctaText = "Xem thể lệ & Luyện tập";
+      isPracticeWindow = true;
+      secondsUntilNext = Math.max(0, (10 * 3600) - secOfDay);
+      nextStateLabel = "Chuẩn bị tuần thi đấu mới (10:00)";
+    } else if (hours < 15) {
+      state = "reviewing";
+      stateLabel = "CHUẨN BỊ TUẦN MỚI";
+      ctaText = "Xem thể lệ & Bảng vàng";
+      secondsUntilNext = Math.max(0, (15 * 3600) - secOfDay);
+      nextStateLabel = "Đếm ngược mở cổng Chặng 1 (15:00)";
+    } else if (hours < 18) {
+      state = "upcoming";
+      stateLabel = "ĐANG ĐẾM NGƯỢC";
+      ctaText = "Xem thể lệ & Chuẩn bị";
+      secondsUntilNext = Math.max(0, (18 * 3600) - secOfDay);
+      nextStateLabel = "Mở cổng Chặng 1 Lượt 1 (18:00)";
+    } else {
+      state = "open";
+      stateLabel = "ĐANG MỞ CỔNG";
+      ctaText = "Tham gia ngay";
+      secondsUntilNext = (86400 - secOfDay) + (10 * 3600);
+      nextStateLabel = "Đóng cổng Lượt 1 Chặng 1 (Thứ Ba 10:00)";
+    }
+  } else {
+    // Thứ Ba – Thứ Bảy
+    if (hours < 10) {
+      state = "open";
+      stateLabel = "ĐANG MỞ CỔNG";
+      ctaText = "Tham gia ngay";
+      secondsUntilNext = Math.max(0, (10 * 3600) - secOfDay);
+      nextStateLabel = `Tổng kết lượt thi Chặng ${phase} (10:00)`;
+    } else if (hours < 15) {
+      canCatchUp = (dayOfWeek === 3 || dayOfWeek === 5);
+      state = "reviewing";
+      stateLabel = canCatchUp ? "TỔNG KẾT & LÀM BÙ" : "TỔNG KẾT LƯỢT THI";
+      ctaText = canCatchUp ? "Làm bù chặng bỏ lỡ" : "Xem bảng xếp hạng";
+      secondsUntilNext = Math.max(0, (15 * 3600) - secOfDay);
+      nextStateLabel = "Đếm ngược mở lượt tiếp theo (15:00)";
+    } else if (hours < 18) {
+      state = "upcoming";
+      stateLabel = "ĐANG ĐẾM NGƯỢC";
+      ctaText = "Xem thể lệ & Chuẩn bị";
+      secondsUntilNext = Math.max(0, (18 * 3600) - secOfDay);
+      nextStateLabel = `Mở cổng Chặng ${phase} (18:00)`;
+    } else {
+      state = "open";
+      stateLabel = "ĐANG MỞ CỔNG";
+      ctaText = "Tham gia ngay";
+      if (dayOfWeek === 6) {
+        secondsUntilNext = (86400 - secOfDay) + (12 * 3600);
+        nextStateLabel = "Đóng cổng tuần thi đấu (Chủ Nhật 12:00)";
+      } else {
+        secondsUntilNext = (86400 - secOfDay) + (10 * 3600);
+        nextStateLabel = `Đóng lượt thi Chặng ${phase} (10:00 hôm sau)`;
+      }
+    }
   }
 
   return {
@@ -3953,6 +4299,8 @@ function getCompetitionTimeState(vnDate, comp, track = "main") {
     dayOfWeek,
     isSaturday: (dayOfWeek === 6),
     isSunday: false,
+    isPracticeWindow,
+    canCatchUp,
     openScheduleText,
     state: isReady ? state : "not_ready",
     stateLabel,
@@ -4013,6 +4361,12 @@ function awardCompetitionSundayRewards(competitionId) {
 
     db.exec("BEGIN");
     try {
+      // Trao điểm hoạt động diễn đàn phân theo từng Chặng (Chặng 1: 5-4-3-2-1, Chặng 2: 6-5-4-3-2, Chặng 3: 9-7-5-3-2 -> Tối đa 20đ)
+      const p1Res = handbook.awardArenaPhasePoints(db, competitionId, 1);
+      const p2Res = handbook.awardArenaPhasePoints(db, competitionId, 2);
+      const p3Res = handbook.awardArenaPhasePoints(db, competitionId, 3);
+      awardedCount = (p1Res.awarded || 0) + (p2Res.awarded || 0) + (p3Res.awarded || 0);
+
       for (const cls of classes) {
         let classParts = [];
         if (cls === "TD") {
@@ -4040,63 +4394,18 @@ function awardCompetitionSundayRewards(competitionId) {
           const existing = db.prepare("SELECT id FROM competition_weekly_rewards WHERE competition_id = ? AND user_id = ?").get(competitionId, p.userId);
           if (existing) continue;
 
-          // Participation bonus
-          let partBonus = 1;
-          if (p.phasesParticipated === 2) partBonus = 3;
-          else if (p.phasesParticipated >= 3) partBonus = 5;
-
-          // Rank base reward
-          let rankActivityPoints = 5;
-          let shields = 1;
-
-          if (rank === 1) {
-            rankActivityPoints = 20;
-            shields = 2;
-          } else if (rank === 2) {
-            rankActivityPoints = 18;
-            shields = 2;
-          } else if (rank === 3) {
-            rankActivityPoints = 15;
-            shields = 2;
-          } else if (rank <= 10) {
-            rankActivityPoints = 10;
-            shields = 1;
+          // Điểm hoạt động diễn đàn đã được trao theo từng Chặng qua handbook.awardArenaPhasePoints (tối đa 20đ Top 1)
+          // Thưởng Chìa khóa Rương may mắn toàn tuần (Top 1: 9, Top 2-3: 6, Top 4-10: 3, Còn lại: 1)
+          const weeklyKeys = rank === 1 ? 9 : (rank <= 3 ? 6 : (rank <= 10 ? 3 : 1));
+          if (weeklyKeys > 0) {
+            db.prepare(`
+              INSERT INTO user_chest_wallet (user_id, keys_count, pity_counter, total_opened)
+              VALUES (?, ?, 0, 0)
+              ON CONFLICT(user_id) DO UPDATE SET
+                keys_count = keys_count + ?,
+                updated_at = CURRENT_TIMESTAMP
+            `).run(p.userId, weeklyKeys, weeklyKeys);
           }
-
-          const totalPointsToAward = rankActivityPoints + partBonus;
-
-          // Add activity points
-          insertEvent.run(
-            p.userId,
-            "competition_reward",
-            rankActivityPoints,
-            "competition",
-            competitionId,
-            `Thưởng Top ${rank} Hoạt động Đấu trường tuần (${comp.week_key} - ${clsLabel}): +${rankActivityPoints}đ, +${shields} khiên bảo vệ chuỗi`
-          );
-
-          if (partBonus > 0) {
-            insertEvent.run(
-              p.userId,
-              "competition_phase_bonus",
-              partBonus,
-              "competition",
-              competitionId,
-              `Thưởng tham gia ${p.phasesParticipated}/3 chặng Đấu trường tuần (${comp.week_key} - ${clsLabel}): +${partBonus}đ hoạt động`
-            );
-          }
-
-          // Add shields
-          const prevShields = db.prepare("SELECT shields FROM user_streak_shields WHERE user_id = ?").get(p.userId)?.shields || 0;
-          const balanceAfter = Math.min(3, prevShields + shields);
-          db.prepare(`
-            INSERT INTO user_streak_shields (user_id, shields, last_milestone_rewarded, updated_at)
-            VALUES (?, ?, 0, CURRENT_TIMESTAMP)
-            ON CONFLICT(user_id) DO UPDATE SET 
-              shields = MIN(3, shields + ?),
-              updated_at = CURRENT_TIMESTAMP
-          `).run(p.userId, shields, shields);
-          logShieldTransaction(p.userId, 'add', shields, balanceAfter, `Thưởng Top ${rank} Đấu trường Tuần (${comp.week_key} - ${clsLabel})`);
 
           insertReward.run(
             competitionId,
@@ -4104,9 +4413,9 @@ function awardCompetitionSundayRewards(competitionId) {
             rank,
             p.totalStars,
             p.phasesParticipated,
-            partBonus,
-            totalPointsToAward,
-            shields
+            0,
+            0,
+            weeklyKeys
           );
 
           awardedCount++;
@@ -4115,7 +4424,7 @@ function awardCompetitionSundayRewards(competitionId) {
 
       db.prepare("UPDATE weekly_competitions SET status = 'concluded' WHERE id = ?").run(competitionId);
       db.exec("COMMIT");
-      console.log(`[Weekly Competition] Đã tổng kết và trao thưởng cho ${awardedCount} thành viên tuần ${comp.week_key}`);
+      console.log(`[Weekly Competition] Đã tổng kết và trao thưởng theo chặng cho tuần ${comp.week_key} (${awardedCount} mục)`);
       return { awarded: awardedCount, ok: true };
     } catch (err) {
       db.exec("ROLLBACK");
@@ -4136,6 +4445,12 @@ async function api(request, response, url) {
       return error(response, 404, "Không tìm thấy track âm thanh.");
     }
     return await streamAudioTrack(request, response, trackId);
+  }
+  if (pathName.startsWith("/api/handbook/")) {
+    const handled = await handbook.handleHandbookApi({
+      method, pathName, request, response, db, requireUser, requireCsrf, readJSON, json, error, sessionFrom, calculateUserStreak, isAdmin
+    });
+    if (handled !== false) return handled;
   }
   if (method === "GET" && pathName === "/api/health")
     return json(response, 200, { ok: true });
@@ -4178,8 +4493,8 @@ async function api(request, response, url) {
     const user = requireUser(request, response);
     if (!user || !requireCsrf(request, response, user)) return;
 
-    let shieldRow = db.prepare("SELECT * FROM user_streak_shields WHERE user_id=?").get(user.id);
-    if (!shieldRow || shieldRow.shields < 1) {
+    const preStreak = calculateUserStreak(user.id);
+    if ((preStreak.shields || 0) < 1) {
       return error(response, 400, "Bạn không có đủ khiên bảo vệ để khôi phục chuỗi.");
     }
 
@@ -4222,23 +4537,32 @@ async function api(request, response, url) {
       return error(response, 400, "Không tìm thấy chuỗi hoạt động trước đó để khôi phục.");
     }
 
-    if (shieldRow.shields < missingDays.length) {
+    if ((preStreak.shields || 0) < missingDays.length) {
       return error(response, 400, `Bạn cần ${missingDays.length} khiên để khôi phục chuỗi ngày bị nhỡ.`);
     }
 
-    for (const d of missingDays) {
-      db.prepare("INSERT OR IGNORE INTO streak_restores(user_id, restored_date) VALUES (?,?)").run(user.id, d);
-    }
+    db.exec("BEGIN TRANSACTION;");
+    try {
+      for (const d of missingDays) {
+        db.prepare("INSERT OR IGNORE INTO streak_restores(user_id, restored_date) VALUES (?,?)").run(user.id, d);
+      }
 
-    const newShieldCount = Math.max(0, shieldRow.shields - missingDays.length);
-    db.prepare("UPDATE user_streak_shields SET shields = ?, updated_at = CURRENT_TIMESTAMP WHERE user_id = ?").run(newShieldCount, user.id);
-    logShieldTransaction(user.id, 'use', missingDays.length, newShieldCount, `Khôi phục thủ công chuỗi ngày ${missingDays.map(formatDMY).join(', ')}`);
+      for (let k = 0; k < missingDays.length; k++) {
+        handbook.consumeSoonestInventoryShield(db, user.id);
+      }
+      const newShieldCount = handbook.reconcileUserShields(db, user.id, preStreak.maxShields || 3);
+      logShieldTransaction(user.id, 'use', missingDays.length, newShieldCount, `Khôi phục thủ công chuỗi ngày ${missingDays.map(formatDMY).join(', ')}`);
+      db.exec("COMMIT;");
+    } catch (err) {
+      try { db.exec("ROLLBACK;"); } catch { }
+      return error(response, 500, "Không thể khôi phục chuỗi lúc này.");
+    }
 
     const streakInfo = calculateUserStreak(user.id, todayDate, formatYMD);
     recordUserActivity(user.id);
     return json(response, 200, {
       success: true,
-      shields: newShieldCount,
+      shields: streakInfo.shields,
       streak: streakInfo.streak,
       restoredDates: missingDays
     });
@@ -4338,6 +4662,9 @@ async function api(request, response, url) {
       recordEventLoginDay(user.id);
       checkAndGrantLimitedItems(user.id);
       const isRemember = rememberMe !== false;
+      if (isMaintenanceMode() && user.role !== "admin") {
+        return error(response, 503, "RE:SEARCH đang tiến hành bảo trì");
+      }
       const csrfToken = createSession(response, user.id, request, isRemember);
       const freshRegUser = db.prepare("SELECT * FROM users WHERE id=?").get(user.id);
       return json(response, 201, { user: publicUser(freshRegUser), csrfToken });
@@ -4377,6 +4704,9 @@ async function api(request, response, url) {
     recordEventLoginDay(user.id);
     checkAndGrantLimitedItems(user.id);
     const isRemember = rememberMe !== false;
+    if (isMaintenanceMode() && user.role !== "admin") {
+      return error(response, 503, "RE:SEARCH đang tiến hành bảo trì");
+    }
     const csrfToken = createSession(response, user.id, request, isRemember);
     const freshUser = db.prepare("SELECT * FROM users WHERE id=?").get(user.id);
     return json(response, 200, { user: publicUser(freshUser), csrfToken });
@@ -4412,6 +4742,9 @@ async function api(request, response, url) {
       recordEventLoginDay(user.id);
       checkAndGrantLimitedItems(user.id);
       const isRemember = rememberMe !== false;
+      if (isMaintenanceMode() && user.role !== "admin") {
+        return error(response, 503, "RE:SEARCH đang tiến hành bảo trì");
+      }
       const csrfToken = createSession(response, user.id, request, isRemember);
       const freshUser = db.prepare("SELECT * FROM users WHERE id=?").get(user.id);
       return json(response, 200, { user: publicUser(freshUser), csrfToken });
@@ -5311,11 +5644,16 @@ async function api(request, response, url) {
     recordContribution(
       user.id,
       "post_created",
-      2,
+      3,
       "post",
       newPostId,
       "Đăng bài thảo luận",
     );
+    // Tích hợp Sổ tay năng động: Đăng bài (+35 NL, +3đ tối đa 2 lần/ngày)
+    const todayVNPost = handbook ? (new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Ho_Chi_Minh" }).format(new Date())) : "";
+    if (todayVNPost) db.prepare("INSERT OR IGNORE INTO activity_days(user_id,activity_date) VALUES (?,?)").run(user.id, todayVNPost);
+    recordUserActivity(user.id);
+    handbook.recordDailyTaskProgress(db, user.id, "create_post", newPostId);
 
     // Thông báo cho các thành viên trong cộng đồng khi có bài đăng mới
     if (validCommId) {
@@ -5558,14 +5896,19 @@ async function api(request, response, url) {
         "INSERT INTO responses(post_id,author_id,content,is_anonymous,parent_id) VALUES (?,?,?,?,?)",
       )
       .run(post.id, user.id, content.trim(), anonymous, finalParentId);
-    const points = finalParentId ? 1 : 4;
+    const points = finalParentId ? 1 : 2;
     recordContribution(
       user.id,
       "response_created",
       points,
       "response",
       result.lastInsertRowid,
+      finalParentId ? "Phản hồi bình luận" : "Trả lời bài viết",
     );
+    const todayVNResp = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Ho_Chi_Minh" }).format(new Date());
+    db.prepare("INSERT OR IGNORE INTO activity_days(user_id,activity_date) VALUES (?,?)").run(user.id, todayVNResp);
+    recordUserActivity(user.id);
+    handbook.recordDailyTaskProgress(db, user.id, "reply_post", result.lastInsertRowid);
 
     // Notification Hooks for Responses
     try {
@@ -5790,7 +6133,7 @@ async function api(request, response, url) {
       return error(response, 409, "Không thể cập nhật đánh giá.");
     }
   }
-  function getLeaderboardPeriodRange(period, isPrevious = false) {
+  function getLeaderboardPeriodRange(period, isPrevious = false, quarterMode = "calendar") {
     const now = new Date();
     // Vietnam is UTC+7
     const vnTime = new Date(now.getTime() + (7 * 60 * 60 * 1000));
@@ -5838,19 +6181,48 @@ async function api(request, response, url) {
         startDate = 1;
       }
     } else if (period === "quarter") {
-      const currentQMonth = Math.floor(month / 3) * 3;
-      if (isPrevious) {
-        const prevQDate = new Date(Date.UTC(year, currentQMonth - 3, 1));
-        startYear = prevQDate.getUTCFullYear();
-        startMonth = prevQDate.getUTCMonth();
-        startDate = 1;
+      if (quarterMode === "season") {
+        const as1 = ARENA_SEASONS[0];
+        const nowMs = Date.now();
+        if (nowMs < as1.endExclusiveMs) {
+          if (isPrevious) {
+            return { start: "1970-01-01 00:00:00", end: toSqlUtcDateTime(as1.startMs) };
+          }
+          return { start: toSqlUtcDateTime(as1.startMs), end: toSqlUtcDateTime(as1.endExclusiveMs) };
+        }
+        const currentQMonth = Math.floor(month / 3) * 3;
+        if (isPrevious && month < 3 && year === 2027) {
+          return { start: toSqlUtcDateTime(as1.startMs), end: toSqlUtcDateTime(as1.endExclusiveMs) };
+        }
+        if (isPrevious) {
+          const prevQDate = new Date(Date.UTC(year, currentQMonth - 3, 1));
+          startYear = prevQDate.getUTCFullYear();
+          startMonth = prevQDate.getUTCMonth();
+          startDate = 1;
 
-        endYear = year;
-        endMonth = currentQMonth;
-        endDate = 1;
+          endYear = year;
+          endMonth = currentQMonth;
+          endDate = 1;
+        } else {
+          startMonth = currentQMonth;
+          startDate = 1;
+        }
       } else {
-        startMonth = currentQMonth;
-        startDate = 1;
+        // Chu kỳ Quý dương lịch chuẩn (dùng cho Đại sứ tri thức & Ong chăm chỉ)
+        const currentQMonth = Math.floor(month / 3) * 3;
+        if (isPrevious) {
+          const prevQDate = new Date(Date.UTC(year, currentQMonth - 3, 1));
+          startYear = prevQDate.getUTCFullYear();
+          startMonth = prevQDate.getUTCMonth();
+          startDate = 1;
+
+          endYear = year;
+          endMonth = currentQMonth;
+          endDate = 1;
+        } else {
+          startMonth = currentQMonth;
+          startDate = 1;
+        }
       }
     } else {
       return { start: "1970-01-01 00:00:00", end: null };
@@ -5948,7 +6320,7 @@ async function api(request, response, url) {
   }
 
   function getCompetitionPeriodLeaderboard(period, currentUserId, isPrevious = false) {
-    const range = getLeaderboardPeriodRange(period, isPrevious);
+    const range = getLeaderboardPeriodRange(period, isPrevious, "season");
     const timeFilter = range.end ? "r.updated_at >= ? AND r.updated_at < ?" : "r.updated_at >= ?";
     const params = range.end ? [range.start, range.end] : [range.start];
     let rows = db.prepare(`
@@ -6588,6 +6960,7 @@ async function api(request, response, url) {
       activityDays: activity,
       streak: streakInfo.streak,
       streakTier: streakInfo.streakTier,
+      maxShields: streakInfo.maxShields || 3,
       shields: streakInfo.shields,
       autoShieldUsed: Boolean(streakInfo.autoShieldUsed),
       canRestoreStreak: canRestoreStreak,
@@ -6639,12 +7012,38 @@ async function api(request, response, url) {
       }
     }
 
+    const activeShields = db.prepare(`
+      SELECT id, item_key, rarity, level, quantity, expires_at
+      FROM user_inventory
+      WHERE user_id = ? AND category = 'khien' AND quantity > 0
+      ORDER BY
+        CASE WHEN expires_at IS NULL THEN 1 ELSE 0 END ASC,
+        julianday(expires_at) ASC,
+        CASE rarity WHEN 'common' THEN 1 WHEN 'rare' THEN 2 WHEN 'epic' THEN 3 WHEN 'legendary' THEN 4 ELSE 5 END ASC,
+        id ASC
+    `).all(user.id).map((r) => {
+      const meta = handbook.ITEM_METADATA[r.item_key] || {};
+      const expMs = r.expires_at ? Date.parse(r.expires_at) : null;
+      return {
+        id: r.id,
+        itemKey: r.item_key,
+        name: meta.name || r.item_key,
+        rarity: r.rarity || meta.rarity || "common",
+        level: r.level || 1,
+        quantity: Number(r.quantity || 1),
+        expiresAt: r.expires_at || null,
+        isPermanent: !r.expires_at,
+        remainingDays: expMs ? Math.max(1, Math.ceil((expMs - Date.now()) / (24 * 60 * 60 * 1000))) : null
+      };
+    });
+
     return json(response, 200, {
       shields: streakInfo.shields,
-      maxShields: 3,
+      maxShields: streakInfo.maxShields || 3,
       streak: streakInfo.streak,
       streakTier: streakInfo.streakTier,
       autoShieldUsed: Boolean(streakInfo.autoShieldUsed),
+      activeShields,
       logs: logs.map(l => ({
         id: l.id,
         changeType: l.change_type,
@@ -6957,6 +7356,7 @@ async function api(request, response, url) {
         streak: currentStreak,
         streakTier,
         streakTitle,
+        maxShields: streakInfo.maxShields || 3,
         shields: streakInfo.shields || 0,
         autoShieldUsed: Boolean(streakInfo.autoShieldUsed),
         weekDays
@@ -7058,9 +7458,6 @@ async function api(request, response, url) {
         }
         newCoverImage = trimmedCover;
       } else if (LIMITED_COVER_IDS.has(trimmedCover) || STREAK_COVER_IDS.has(trimmedCover)) {
-        if (trimmedCover === "chinh_phuc_bau_troi" && !isPrivileged) {
-          return error(response, 403, "Ảnh bìa này là phần thưởng Đấu trường Arena mùa AS1 (2026).");
-        }
         const coverStatus = userLimited.covers[trimmedCover];
         const isCoverUnlocked = isPrivileged || (coverStatus && coverStatus.isUnlocked);
         if (!isCoverUnlocked) {
@@ -7070,6 +7467,9 @@ async function api(request, response, url) {
           const perk = STREAK_PERK_ITEMS.find(p => p.coverId === trimmedCover);
           if (perk) {
             return error(response, 403, `Ảnh bìa này yêu cầu chuỗi hoạt động ${perk.minStreak}+ ngày (hoặc hạn dùng sau đứt chuỗi đã hết).`);
+          }
+          if (trimmedCover === "thao_nguyen_ky_bi") {
+            return error(response, 403, "Nhận qua sự kiện đổi thưởng giới hạn.");
           }
           return error(response, 403, "Ảnh bìa này nhận được qua hoạt động giới hạn và hiện đang bị khóa.");
         }
@@ -7107,9 +7507,6 @@ async function api(request, response, url) {
     ]);
     const requestedFrame = typeof namecardFrame === "string" ? namecardFrame.trim() : (currentUser.namecard_frame || "none");
     if (LIMITED_FRAME_IDS.has(requestedFrame) || STREAK_FRAME_IDS.has(requestedFrame)) {
-      if (requestedFrame === "chinh_phuc_bau_troi" && !isPrivileged) {
-        return error(response, 403, "Khung này là phần thưởng Đấu trường Arena mùa AS1 (2026).");
-      }
       const frameStatus = userLimited.frames[requestedFrame];
       const isFrameUnlocked = isPrivileged || (frameStatus && frameStatus.isUnlocked);
       if (!isFrameUnlocked) {
@@ -7119,6 +7516,9 @@ async function api(request, response, url) {
         const perk = STREAK_PERK_ITEMS.find(p => p.frameId === requestedFrame);
         if (perk) {
           return error(response, 403, `Khung này yêu cầu chuỗi hoạt động ${perk.minStreak}+ ngày (hoặc hạn dùng sau đứt chuỗi đã hết).`);
+        }
+        if (requestedFrame === "thao_nguyen_ky_bi") {
+          return error(response, 403, "Nhận qua sự kiện đổi thưởng giới hạn.");
         }
         return error(response, 403, "Khung này nhận được qua hoạt động giới hạn và hiện đang bị khóa.");
       }
@@ -8597,9 +8997,9 @@ async function api(request, response, url) {
     recordContribution(
       user.id,
       "document_discussion",
-      3,
-      "document",
-      docId,
+      2,
+      "document_comment",
+      res.lastInsertRowid,
       `Bạn đã thảo luận về tài liệu "${doc.title.trim()}"`
     );
 
@@ -8727,13 +9127,21 @@ async function api(request, response, url) {
 
     const doc = db.prepare("SELECT title FROM documents WHERE id=?").get(comment.document_id);
 
-    // Hoàn trả (trừ lại) 3 điểm cho thảo luận bị xoá
+    // Hoàn trả (trừ lại) đúng số điểm đã nhận của thảo luận bị xoá (mặc định -2đ hoặc 0 nếu vượt giới hạn ngày)
+    const deductPts = resolveSymmetryPoints(
+      comment.user_id,
+      "document_comment",
+      commentId,
+      ["document_discussion"],
+      2,
+      false
+    );
     recordContribution(
       comment.user_id,
       "document_comment_deleted",
-      -3,
-      "document",
-      comment.document_id,
+      deductPts,
+      "document_comment",
+      commentId,
       `Thảo luận về tài liệu "${doc?.title ? doc.title.trim() : ''}" đã bị xóa`
     );
 
@@ -9633,58 +10041,57 @@ async function api(request, response, url) {
     return json(response, 200, { success: true });
   }
 
-  // Helper ghi nhận ca học hoàn thành hoặc thời gian học lẻ (dùng chung cho complete & complete-beacon)
+  // Helper ghi nhận ca học hoàn thành (đồng bộ giới hạn ngày với Sổ tay khám phá: +2đ/ngày khi >=25 phút)
   function recordCompletedStudySession(userId, minutes, cycles, goal) {
-    // Tính ngày Thứ Hai của tuần hiện tại theo giờ VN (GMT+7)
-    const vnNow = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Ho_Chi_Minh" }));
-    const vnDayIndex = vnNow.getDay() === 0 ? 6 : vnNow.getDay() - 1;
-    const mondayDate = new Date(vnNow);
-    mondayDate.setDate(vnNow.getDate() - vnDayIndex);
-    const y = mondayDate.getFullYear();
-    const m = String(mondayDate.getMonth() + 1).padStart(2, '0');
-    const d = String(mondayDate.getDate()).padStart(2, '0');
-    const mondayDateStr = `${y}-${m}-${d}`;
+    const todayVNStudy = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Ho_Chi_Minh" }).format(new Date());
 
-    // Kiểm tra xem tuần này đã nhận điểm study_session (+10đ) chưa
-    const hasWeeklyStudyReward = db.prepare(`
-      SELECT count(*) as c FROM contribution_events 
-      WHERE user_id = ? AND event_type = 'study_session' AND points > 0 
-        AND date(datetime(created_at, '+7 hours')) >= ?
-    `).get(userId, mondayDateStr).c > 0;
+    const hasDailyStudyReward = db.prepare(`
+      SELECT count(*) as c FROM contribution_events
+      WHERE user_id = ? AND event_type IN ('study_session', 'handbook_study_25m') AND points > 0
+        AND date(datetime(created_at, '+7 hours')) = ?
+    `).get(userId, todayVNStudy).c > 0;
 
     let pointsAwarded = 0;
-    let toastMessage = "";
-    let reason = "";
+    let studyTaskRes = null;
 
-    // Tính tổng số phút đã học trong tuần này (tính từ ngày Thứ Hai theo giờ VN GMT+7)
-    const weeklyMinutesRow = db.prepare(`
-      SELECT coalesce(sum(duration_minutes), 0) as totalMins
-      FROM study_logs
-      WHERE user_id = ? AND date(datetime(completed_at, '+7 hours')) >= ?
-    `).get(userId, mondayDateStr);
-    const totalWeeklyMinsWithCurrent = (weeklyMinutesRow?.totalMins || 0) + minutes;
-
-    // Phải hoàn thành tối thiểu 2 lượt hoặc >= 40 phút (trong ca học này hoặc tích lũy trong tuần) và chưa nhận trong tuần
-    const meetsWeeklyReward = (cycles >= 2 || minutes >= 40 || totalWeeklyMinsWithCurrent >= 40);
-    if (meetsWeeklyReward) {
-      if (!hasWeeklyStudyReward) {
-        pointsAwarded = 10;
-        reason = `Hoàn thành tự học Pomodoro (${cycles > 0 ? cycles + ' lượt, ' : ''}${totalWeeklyMinsWithCurrent} phút/tuần) - Thưởng tuần +10đ`;
-        toastMessage = `🎉 Hoàn thành xuất sắc mục tiêu tự học tuần! +10 điểm thưởng tuần & giữ chuỗi thành công!`;
+    if (minutes >= 25) {
+      studyTaskRes = handbook.recordDailyTaskProgress(db, userId, "study_25m", 0);
+      if (!hasDailyStudyReward) {
+        pointsAwarded = 2;
+        recordContribution(
+          userId,
+          "study_session",
+          2,
+          "study",
+          0,
+          `Hoàn thành ca tự học tập trung (${minutes} phút)`
+        );
       } else {
-        pointsAwarded = 0;
-        reason = `Hoàn thành ca tự học Pomodoro (${cycles > 0 ? cycles + ' lượt, ' : ''}${minutes} phút) - Đã nhận thưởng tuần này (1 lần/tuần)`;
-        toastMessage = `🎉 Hoàn tất ca học (${minutes} phút)! Hoạt động đã được ghi nhận giữ chuỗi!`;
+        recordContribution(
+          userId,
+          "study_session",
+          0,
+          "study",
+          0,
+          `Hoàn thành ca tự học tập trung (${minutes} phút) (Giới hạn nhận điểm 1 lần/ngày)`
+        );
       }
-    } else {
-      pointsAwarded = 0;
-      reason = `Hoàn thành ca tự học (${minutes} phút, ${cycles} lượt) - Cần tối thiểu 2 lượt hoặc 40 phút/tuần để nhận thưởng (+10đ)`;
-      toastMessage = `🎉 Hoàn tất ca học (${minutes} phút)! Tích lũy đủ 40 phút hoặc 2 lượt trong tuần để nhận 10đ thưởng tuần. Hoạt động đã được ghi nhận giữ chuỗi!`;
+    } else if (minutes >= 10 || cycles >= 1) {
+      db.prepare("INSERT OR IGNORE INTO activity_days(user_id,activity_date) VALUES (?,?)").run(userId, todayVNStudy);
+      recordUserActivity(userId);
+      recordContribution(
+        userId,
+        "study_session",
+        0,
+        "study",
+        0,
+        `Hoàn thành ca tự học (${minutes} phút - cần tối thiểu 25 phút để nhận +2đ/ngày)`
+      );
     }
 
-    if (minutes >= 10 || cycles >= 1 || totalWeeklyMinsWithCurrent >= 20) {
-      recordContribution(userId, "study_session", pointsAwarded, "study", null, reason);
-    }
+    const toastMessage = minutes >= 25
+      ? `Hoàn thành ${minutes} phút tự học!${pointsAwarded > 0 ? " (+2đ)" : ""}${studyTaskRes?.addedEnergy ? ` (+${studyTaskRes.addedEnergy} năng lượng)` : ""}`
+      : `Hoàn tất ca học (${minutes} phút)! Hoạt động đã được ghi nhận.`;
     if (minutes > 0) {
       try {
         db.prepare("INSERT INTO study_logs (user_id, duration_minutes) VALUES (?, ?)").run(userId, minutes);
@@ -9935,6 +10342,60 @@ async function api(request, response, url) {
       streakTitle: getStreakTitle(info.streak, info.streakTier)
     });
   }
+  const giftMatch = pathName.match(/^\/api\/admin\/users\/(\d+)\/gift$/);
+  if (method === "POST" && giftMatch) {
+    const user = requireUser(request, response);
+    if (!user) return;
+    if (!requireCsrf(request, response, user)) return;
+    if (!isSuperAdmin(user))
+      return error(response, 403, "Chỉ TA/Admin mới có quyền này.");
+    const targetId = Number(giftMatch[1]);
+    const targetUser = db.prepare("SELECT id, display_name FROM users WHERE id = ?").get(targetId);
+    if (!targetUser) return error(response, 404, "Không tìm thấy thành viên.");
+
+    const body = await readJSON(request).catch(() => ({}));
+    const rewardKind = body.rewardKind === "item" ? "item" : "keys";
+    const itemKey = rewardKind === "keys" ? "keys" : String(body.itemKey || "").trim();
+    const level = Math.min(3, Math.max(1, parseInt(body.level, 10) || 1));
+    const quantity = Math.min(999, Math.max(1, parseInt(body.quantity, 10) || 1));
+
+    try {
+      const claim = handbook.createHandbookGiftClaim(db, {
+        targetUserId: targetId,
+        actorId: user.id,
+        rewardKind,
+        itemKey,
+        level,
+        quantity
+      });
+      const giftLink = `#gift-claim/${claim.id}?cta=${encodeURIComponent(claim.ctaLabel)}`;
+      createNotification(
+        targetId,
+        "activity",
+        "handbook",
+        "Quà tặng từ RE:SEARCH",
+        "Cảm ơn bạn đã đồng hành cùng RE:SEARCH. Đây là món quà nhỏ thay cho lời cảm ơn chân thành mà RE:SEARCH muốn gửi đến bạn.",
+        giftLink,
+        user.id
+      );
+      db.prepare(
+        "INSERT INTO audit_logs(actor_id,action,subject_type,subject_id,reason) VALUES (?,?,?,?,?)"
+      ).run(
+        user.id,
+        "admin_gift_sent",
+        "user",
+        targetId,
+        `Tặng ${claim.ctaLabel} cho ${targetUser.display_name}`
+      );
+      return json(response, 200, {
+        ok: true,
+        claim,
+        message: `Đã gửi quà tặng (${claim.ctaLabel}) kèm thông báo cho ${targetUser.display_name}!`
+      });
+    } catch (err) {
+      return error(response, 400, err.message || "Không thể gửi quà tặng.");
+    }
+  }
   const moderationMatch = pathName.match(
     /^\/api\/admin\/posts\/(\d+)\/status$/,
   );
@@ -9959,22 +10420,24 @@ async function api(request, response, url) {
         db.prepare("UPDATE posts SET status=?, deleted_at=NULL, updated_at=CURRENT_TIMESTAMP WHERE id=?").run(status, postId);
       }
 
-      // 1. Chuyển từ visible sang deleted (Xoá bài -> Thùng rác): trừ điểm (-2 cho post, -4 cho các responses visible)
+      // 1. Chuyển từ visible sang deleted (Xoá bài -> Thùng rác): trừ đúng số điểm đã nhận (+0 nếu từng tràn điểm)
       if (status === "deleted" && oldStatus === "visible") {
+        const postDeduct = resolveSymmetryPoints(post.author_id, "post", postId, ["post_created", "post_unhidden", "post_restored"], 3, false);
         recordContribution(
           post.author_id,
           "post_deleted",
-          -2,
+          postDeduct,
           "post",
           postId,
           "Bài đăng bị chuyển vào Thùng rác bởi Admin"
         );
-        const responses = db.prepare("SELECT id, author_id FROM responses WHERE post_id=? AND status='visible'").all(postId);
+        const responses = db.prepare("SELECT id, author_id, parent_id FROM responses WHERE post_id=? AND status='visible'").all(postId);
         for (const r of responses) {
+          const respDeduct = resolveSymmetryPoints(r.author_id, "response", r.id, ["response_created", "response_unhidden", "response_restored"], r.parent_id ? 1 : 2, false);
           recordContribution(
             r.author_id,
             "response_deleted",
-            -4,
+            respDeduct,
             "response",
             r.id,
             "Bài đăng gốc bị chuyển vào Thùng rác bởi Admin"
@@ -10018,22 +10481,24 @@ async function api(request, response, url) {
       else if (status === "deleted" && oldStatus === "hidden") {
         db.prepare("UPDATE responses SET status='deleted', deleted_at=CURRENT_TIMESTAMP, updated_at=CURRENT_TIMESTAMP WHERE post_id=? AND status='hidden'").run(postId);
       }
-      // 3. Chuyển từ visible sang hidden (Ẩn bài): trừ điểm (-2 cho post, -4 cho các responses visible)
+      // 3. Chuyển từ visible sang hidden (Ẩn bài): trừ đúng số điểm đã nhận (+0 nếu từng tràn điểm)
       else if (status === "hidden" && oldStatus === "visible") {
+        const postDeduct = resolveSymmetryPoints(post.author_id, "post", postId, ["post_created", "post_unhidden", "post_restored"], 3, false);
         recordContribution(
           post.author_id,
           "post_hidden",
-          -2,
+          postDeduct,
           "post",
           postId,
           "Bài đăng bị ẩn bởi Admin"
         );
-        const responses = db.prepare("SELECT id, author_id FROM responses WHERE post_id=? AND status='visible'").all(postId);
+        const responses = db.prepare("SELECT id, author_id, parent_id FROM responses WHERE post_id=? AND status='visible'").all(postId);
         for (const r of responses) {
+          const respDeduct = resolveSymmetryPoints(r.author_id, "response", r.id, ["response_created", "response_unhidden", "response_restored"], r.parent_id ? 1 : 2, false);
           recordContribution(
             r.author_id,
             "response_hidden",
-            -4,
+            respDeduct,
             "response",
             r.id,
             "Bài đăng gốc bị ẩn bởi Admin"
@@ -10041,26 +10506,28 @@ async function api(request, response, url) {
           db.prepare("UPDATE responses SET status='hidden', deleted_at=NULL, updated_at=CURRENT_TIMESTAMP WHERE id=?").run(r.id);
         }
       }
-      // 4. Chuyển từ deleted sang hidden: điểm giữ nguyên (-2), huỷ thời hạn thùng rác
+      // 4. Chuyển từ deleted sang hidden: giữ nguyên điểm đã trừ, huỷ thời hạn thùng rác
       else if (status === "hidden" && oldStatus === "deleted") {
         db.prepare("UPDATE responses SET status='hidden', deleted_at=NULL, updated_at=CURRENT_TIMESTAMP WHERE post_id=? AND status='deleted'").run(postId);
       }
-      // 5. Chuyển từ hidden sang visible (HUỶ ẨN / MỞ LẠI BÀI): cộng lại điểm (+2 cho post, +4 cho responses bị ẩn)
+      // 5. Chuyển từ hidden sang visible (HUỶ ẨN / MỞ LẠI BÀI): hoàn lại đúng số điểm đã trừ (+0 nếu trừ 0)
       else if (status === "visible" && oldStatus === "hidden") {
+        const postRestore = resolveSymmetryPoints(post.author_id, "post", postId, ["post_hidden", "post_deleted"], 3, true);
         recordContribution(
           post.author_id,
           "post_unhidden",
-          2,
+          postRestore,
           "post",
           postId,
           "Admin mở lại (huỷ ẩn) bài đăng"
         );
-        const responses = db.prepare("SELECT id, author_id FROM responses WHERE post_id=? AND status='hidden'").all(postId);
+        const responses = db.prepare("SELECT id, author_id, parent_id FROM responses WHERE post_id=? AND status='hidden'").all(postId);
         for (const r of responses) {
+          const respRestore = resolveSymmetryPoints(r.author_id, "response", r.id, ["response_hidden", "response_deleted"], r.parent_id ? 1 : 2, true);
           recordContribution(
             r.author_id,
             "response_unhidden",
-            4,
+            respRestore,
             "response",
             r.id,
             "Bình luận được mở lại do bài viết gốc được huỷ ẩn"
@@ -10068,22 +10535,24 @@ async function api(request, response, url) {
           db.prepare("UPDATE responses SET status='visible', deleted_at=NULL, updated_at=CURRENT_TIMESTAMP WHERE id=?").run(r.id);
         }
       }
-      // 6. Chuyển từ deleted sang visible (Khôi phục bài từ thùng rác): cộng lại điểm (+2 cho post, +4 cho responses deleted)
+      // 6. Chuyển từ deleted sang visible (Khôi phục bài từ thùng rác): hoàn lại đúng số điểm đã trừ (+0 nếu trừ 0)
       else if (status === "visible" && oldStatus === "deleted") {
+        const postRestore = resolveSymmetryPoints(post.author_id, "post", postId, ["post_deleted", "post_hidden"], 3, true);
         recordContribution(
           post.author_id,
           "post_restored",
-          2,
+          postRestore,
           "post",
           postId,
           "Admin khôi phục bài đăng từ thùng rác"
         );
-        const responses = db.prepare("SELECT id, author_id FROM responses WHERE post_id=? AND status='deleted'").all(postId);
+        const responses = db.prepare("SELECT id, author_id, parent_id FROM responses WHERE post_id=? AND status='deleted'").all(postId);
         for (const r of responses) {
+          const respRestore = resolveSymmetryPoints(r.author_id, "response", r.id, ["response_deleted", "response_hidden"], r.parent_id ? 1 : 2, true);
           recordContribution(
             r.author_id,
             "response_restored",
-            4,
+            respRestore,
             "response",
             r.id,
             "Bình luận được khôi phục do bài viết gốc được phục hồi"
@@ -10118,7 +10587,7 @@ async function api(request, response, url) {
     if (!["visible", "hidden", "deleted"].includes(status))
       return error(response, 400, "Trạng thái không hợp lệ.");
     const responseId = Number(responseModMatch[1]);
-    const resp = db.prepare("SELECT author_id, status FROM responses WHERE id=?").get(responseId);
+    const resp = db.prepare("SELECT author_id, status, parent_id FROM responses WHERE id=?").get(responseId);
     if (!resp) return error(response, 404, "Không tìm thấy bình luận.");
     const oldStatus = resp.status;
 
@@ -10130,28 +10599,31 @@ async function api(request, response, url) {
       }
 
       if ((status === "deleted" || status === "hidden") && oldStatus === "visible") {
+        const deductPts = resolveSymmetryPoints(resp.author_id, "response", responseId, ["response_created", "response_unhidden", "response_restored"], resp.parent_id ? 1 : 2, false);
         recordContribution(
           resp.author_id,
           `response_${status}`,
-          -4,
+          deductPts,
           "response",
           responseId,
           `Bình luận bị ${status === "hidden" ? "ẩn" : "xoá"} bởi Admin`
         );
       } else if (status === "visible" && oldStatus === "hidden") {
+        const restorePts = resolveSymmetryPoints(resp.author_id, "response", responseId, ["response_hidden", "response_deleted"], resp.parent_id ? 1 : 2, true);
         recordContribution(
           resp.author_id,
           "response_unhidden",
-          4,
+          restorePts,
           "response",
           responseId,
           "Admin mở lại (huỷ ẩn) bình luận"
         );
       } else if (status === "visible" && oldStatus === "deleted") {
+        const restorePts = resolveSymmetryPoints(resp.author_id, "response", responseId, ["response_deleted", "response_hidden"], resp.parent_id ? 1 : 2, true);
         recordContribution(
           resp.author_id,
           "response_restored",
-          4,
+          restorePts,
           "response",
           responseId,
           "Admin khôi phục bình luận từ thùng rác"
@@ -10614,23 +11086,24 @@ async function api(request, response, url) {
       const post = db.prepare("SELECT * FROM posts WHERE id = ?").get(targetId);
       if (!post) return error(response, 404, "Không tìm thấy bài viết.");
       db.prepare("UPDATE posts SET status = 'visible', deleted_at = NULL, updated_at = CURRENT_TIMESTAMP WHERE id = ?").run(targetId);
-      // Khôi phục điểm thưởng đóng góp cho tác giả (+2)
+      const postRestore = resolveSymmetryPoints(post.author_id, "post", targetId, ["post_deleted", "post_hidden"], 3, true);
       recordContribution(
         post.author_id,
         'post_restored',
-        2,
+        postRestore,
         'post',
         targetId,
         'Admin khôi phục bài đăng từ thùng rác'
       );
       // Cũng khôi phục các bình luận thuộc bài viết này nếu trước đó bị xóa cùng bài
-      const relatedResponses = db.prepare("SELECT id, author_id FROM responses WHERE post_id = ? AND status = 'deleted'").all(targetId);
+      const relatedResponses = db.prepare("SELECT id, author_id, parent_id FROM responses WHERE post_id = ? AND status = 'deleted'").all(targetId);
       for (const r of relatedResponses) {
         db.prepare("UPDATE responses SET status = 'visible', deleted_at = NULL, updated_at = CURRENT_TIMESTAMP WHERE id = ?").run(r.id);
+        const respRestore = resolveSymmetryPoints(r.author_id, "response", r.id, ["response_deleted", "response_hidden"], r.parent_id ? 1 : 2, true);
         recordContribution(
           r.author_id,
           'response_restored',
-          4,
+          respRestore,
           'response',
           r.id,
           'Khôi phục bình luận do bài viết gốc được phục hồi'
@@ -10655,10 +11128,11 @@ async function api(request, response, url) {
       }
 
       db.prepare("UPDATE responses SET status = 'visible', deleted_at = NULL, updated_at = CURRENT_TIMESTAMP WHERE id = ?").run(targetId);
+      const respRestore = resolveSymmetryPoints(resp.author_id, "response", targetId, ["response_deleted", "response_hidden"], resp.parent_id ? 1 : 2, true);
       recordContribution(
         resp.author_id,
         'response_restored',
-        4,
+        respRestore,
         'response',
         targetId,
         'Admin khôi phục phản hồi từ thùng rác'
@@ -10723,7 +11197,7 @@ async function api(request, response, url) {
       requiresStudentId: false,
       arenaClass: null,
       attemptsUsed: 0,
-      maxAttempts: 1,
+      maxAttempts: getArenaPhaseMaxAttempts(comp, timeState.phase || 1),
       canPlay: false,
       bestScore: 0,
       hasPlayedPhase: false
@@ -10731,6 +11205,7 @@ async function api(request, response, url) {
 
     if (user) {
       const phaseToQuery = timeState.phase || 1;
+      const phaseMaxAttempts = getArenaPhaseMaxAttempts(comp, phaseToQuery);
       const phaseRes = db.prepare(
         "SELECT best_score, attempts_used FROM competition_phase_results WHERE user_id = ? AND competition_id = ? AND phase = ?"
       ).get(user.id, comp.id, phaseToQuery);
@@ -10741,14 +11216,14 @@ async function api(request, response, url) {
       const isPrivileged = Boolean(user && (user.role === "admin" || user.role === "ta" || user.role === "lecturer"));
       const arenaClass = getArenaClassByStudentId(user.student_id);
       const requiresStudentId = Boolean(!isPrivileged && !arenaClass);
-      const canPlay = !requiresStudentId && (timeState.state === "open" || isSuperAdmin(user)) && timeState.isReady && attemptsUsed < 1;
+      const canPlay = !requiresStudentId && (timeState.state === "open" || isSuperAdmin(user)) && timeState.isReady && attemptsUsed < phaseMaxAttempts;
 
       userStatus = {
         authenticated: true,
         requiresStudentId,
         arenaClass,
         attemptsUsed,
-        maxAttempts: 1,
+        maxAttempts: phaseMaxAttempts,
         canPlay,
         bestScore,
         hasPlayedPhase
@@ -10958,18 +11433,25 @@ async function api(request, response, url) {
         }
       }
 
+      const p1Max = getArenaPhaseMaxAttempts(comp, 1);
+      const p2Max = getArenaPhaseMaxAttempts(comp, 2);
+      const p3Max = getArenaPhaseMaxAttempts(comp, 3);
+      const curPhaseMax = getArenaPhaseMaxAttempts(comp, curPhase);
+
       phasesStatus = [
         {
           phase: 1,
           name: "Chặng 1",
           days: "Thứ Hai – Thứ Ba",
           topic: p1Topic,
-          isCompleted: completedP1 >= 1,
+          attemptsUsed: completedP1,
+          maxAttempts: p1Max,
+          isCompleted: completedP1 >= p1Max,
           score: p1,
           bestScore: p1,
           isCurrent: curPhase === 1 && !timeState.isSunday,
-          isAvailable: !timeState.isSunday && (curPhase >= 1) && (completedP1 < 1 || (hasActiveSession && activePhase === 1)),
-          isCatchUp: !timeState.isSunday && (curPhase > 1 || !isPhaseOnTimeWindow(comp, 1, vnNow)) && completedP1 < 1,
+          isAvailable: !timeState.isSunday && (curPhase >= 1) && (completedP1 < p1Max || (hasActiveSession && activePhase === 1)),
+          isCatchUp: !timeState.isSunday && (curPhase > 1 || !isPhaseOnTimeWindow(comp, 1, vnNow)) && completedP1 < p1Max,
           isOnTime: !timeState.isSunday && isPhaseOnTimeWindow(comp, 1, vnNow),
           onTimeBonusEligible: (!timeState.isSunday && isPhaseOnTimeWindow(comp, 1, vnNow)) ? 50 : 0,
           onTimeBonusEarned: p1Bonus,
@@ -10980,12 +11462,14 @@ async function api(request, response, url) {
           name: "Chặng 2",
           days: "Thứ Tư – Thứ Năm",
           topic: p2Topic,
-          isCompleted: completedP2 >= 1,
+          attemptsUsed: completedP2,
+          maxAttempts: p2Max,
+          isCompleted: completedP2 >= p2Max,
           score: p2,
           bestScore: p2,
           isCurrent: curPhase === 2 && !timeState.isSunday,
-          isAvailable: !timeState.isSunday && (curPhase >= 2) && (completedP2 < 1 || (hasActiveSession && activePhase === 2)),
-          isCatchUp: !timeState.isSunday && (curPhase > 2 || !isPhaseOnTimeWindow(comp, 2, vnNow)) && completedP2 < 1,
+          isAvailable: !timeState.isSunday && (curPhase >= 2) && (completedP2 < p2Max || (hasActiveSession && activePhase === 2)),
+          isCatchUp: !timeState.isSunday && (curPhase > 2 || !isPhaseOnTimeWindow(comp, 2, vnNow)) && completedP2 < p2Max,
           isOnTime: !timeState.isSunday && isPhaseOnTimeWindow(comp, 2, vnNow),
           onTimeBonusEligible: (!timeState.isSunday && isPhaseOnTimeWindow(comp, 2, vnNow)) ? 50 : 0,
           onTimeBonusEarned: p2Bonus,
@@ -10996,11 +11480,13 @@ async function api(request, response, url) {
           name: "Chặng 3",
           days: "Thứ Sáu – Thứ Bảy",
           topic: p3Topic,
-          isCompleted: completedP3 >= 1,
+          attemptsUsed: completedP3,
+          maxAttempts: p3Max,
+          isCompleted: completedP3 >= p3Max,
           score: p3,
           bestScore: p3,
           isCurrent: curPhase === 3 && !timeState.isSunday,
-          isAvailable: !timeState.isSunday && (curPhase >= 3) && (completedP3 < 1 || (hasActiveSession && activePhase === 3)),
+          isAvailable: !timeState.isSunday && (curPhase >= 3) && (completedP3 < p3Max || (hasActiveSession && activePhase === 3)),
           isCatchUp: false,
           isOnTime: false,
           onTimeBonusEligible: 0,
@@ -11023,7 +11509,7 @@ async function api(request, response, url) {
 
       userStatus = {
         attemptsUsed: curCompleted,
-        maxAttempts: 1,
+        maxAttempts: curPhaseMax,
         hasActiveSession,
         activePhase,
         activeRemaining,
@@ -11101,8 +11587,8 @@ async function api(request, response, url) {
 
     const isPrivileged = Boolean(user && (user.role === "admin" || user.role === "ta" || user.role === "lecturer"));
     const timeState = getCompetitionTimeState(vnNow, comp, track);
-    if (!timeState.isSunday && !isPrivileged) {
-      return error(response, 403, "Chế độ luyện tập và xem đáp án chỉ mở vào ngày Chủ nhật sau khi đóng cổng tuần.");
+    if (!timeState.isSunday && !timeState.isPracticeWindow && !isPrivileged) {
+      return error(response, 403, "Chế độ luyện tập và xem đáp án mở từ Chủ Nhật 12:00 đến Thứ Hai 10:00.");
     }
     if (!isPrivileged) {
       const arenaClass = getArenaClassByStudentId(user.student_id);
@@ -11115,20 +11601,24 @@ async function api(request, response, url) {
       }
     }
 
+    const practiceComp = (timeState.isPracticeWindow && !timeState.isSunday)
+      ? (db.prepare("SELECT * FROM weekly_competitions WHERE id < ? ORDER BY id DESC LIMIT 1").get(comp.id) || comp)
+      : comp;
+
     const targetPhase = Math.max(1, Math.min(3, parseInt(url.searchParams.get("phase") || "1", 10)));
     const phaseTopic = (track === "free")
-      ? ((targetPhase === 1 ? comp.free_phase1_topic : targetPhase === 2 ? comp.free_phase2_topic : comp.free_phase3_topic) || comp.free_topic_name || comp.topic_name)
-      : (comp[`phase${targetPhase}_topic`] || comp.topic_name || "Nội dung câu hỏi chuyên đề");
+      ? ((targetPhase === 1 ? practiceComp.free_phase1_topic : targetPhase === 2 ? practiceComp.free_phase2_topic : practiceComp.free_phase3_topic) || practiceComp.free_topic_name || practiceComp.topic_name)
+      : (practiceComp[`phase${targetPhase}_topic`] || practiceComp.topic_name || "Nội dung câu hỏi chuyên đề");
 
     let questions = db.prepare(
-      "SELECT id, question_index, question_text, option_a, option_b, option_c, correct_option, explanation FROM competition_questions WHERE competition_id = ? AND phase = ? AND track = ? ORDER BY question_index ASC"
-    ).all(comp.id, targetPhase, track);
+      "SELECT id, question_index, question_text, option_a, option_b, option_c, option_d, correct_option, explanation FROM competition_questions WHERE competition_id = ? AND phase = ? AND track = ? ORDER BY question_index ASC"
+    ).all(practiceComp.id, targetPhase, track);
 
     if (questions.length === 0 && track === "free") {
-      seedSampleCompetitionQuestions(comp.id, "free");
+      seedSampleCompetitionQuestions(practiceComp.id, "free");
       questions = db.prepare(
-        "SELECT id, question_index, question_text, option_a, option_b, option_c, correct_option, explanation FROM competition_questions WHERE competition_id = ? AND phase = ? AND track = ? ORDER BY question_index ASC"
-      ).all(comp.id, targetPhase, track);
+        "SELECT id, question_index, question_text, option_a, option_b, option_c, option_d, correct_option, explanation FROM competition_questions WHERE competition_id = ? AND phase = ? AND track = ? ORDER BY question_index ASC"
+      ).all(practiceComp.id, targetPhase, track);
     }
 
     return json(response, 200, {
@@ -11136,7 +11626,7 @@ async function api(request, response, url) {
       mode: "practice",
       phase: targetPhase,
       phaseTopic,
-      weekTopic: comp.topic_name,
+      weekTopic: practiceComp.topic_name,
       questions: questions.map(q => ({
         id: q.id,
         questionIndex: q.question_index,
@@ -11144,6 +11634,7 @@ async function api(request, response, url) {
         optionA: q.option_a,
         optionB: q.option_b,
         optionC: q.option_c,
+        optionD: q.option_d || null,
         correctOption: q.correct_option,
         explanation: q.explanation || ""
       }))
@@ -11428,12 +11919,18 @@ async function api(request, response, url) {
     const comp = curComp;
     const timeState = getCompetitionTimeState(vnNow, comp, track);
 
-    if (timeState.state !== "open" && !isSuperAdmin(user)) {
-      return error(response, 403, "Cổng thi đấu hiện không mở. Lịch mở cổng: GĐ 1 (19h T2 – 23h59 T3), GĐ 2 (19h T4 – 23h59 T5), GĐ 3 (19h T6 – 23h59 T7).");
-    }
-
     const body = await readJSON(request);
     const requestedPhase = Number(body?.phase || body?.targetPhase);
+    const isValidCatchUp = Boolean(
+      timeState.canCatchUp &&
+      requestedPhase &&
+      ((vnNow.getDay() === 3 && requestedPhase === 1) ||
+        (vnNow.getDay() === 5 && (requestedPhase === 1 || requestedPhase === 2)))
+    );
+
+    if (timeState.state !== "open" && !isValidCatchUp && !isSuperAdmin(user)) {
+      return error(response, 403, "Cổng thi đấu hiện không mở. Lịch mở cổng: 18:00 – 10:00 (làm bù T4/T6 10:00 – 15:00).");
+    }
 
     const nowMs = getVietnamTimestampMs();
     const currentPhase = timeState.phase || 1;
@@ -11459,18 +11956,22 @@ async function api(request, response, url) {
         sessionPhase = currentPhase;
       }
 
+      const phaseMaxAttempts = getArenaPhaseMaxAttempts(comp, sessionPhase);
       const completedSessions = db.prepare(
         "SELECT count(*) as c FROM competition_sessions WHERE user_id = ? AND competition_id = ? AND phase = ? AND status IN ('completed', 'expired')"
       ).get(user.id, comp.id, sessionPhase)?.c || 0;
 
       const hasPhaseResult = db.prepare(
-        "SELECT count(*) as c FROM competition_phase_results WHERE user_id = ? AND competition_id = ? AND phase = ? AND attempts_used >= 1"
-      ).get(user.id, comp.id, sessionPhase)?.c || 0;
+        "SELECT count(*) as c FROM competition_phase_results WHERE user_id = ? AND competition_id = ? AND phase = ? AND attempts_used >= ?"
+      ).get(user.id, comp.id, sessionPhase, phaseMaxAttempts)?.c || 0;
 
-      if (completedSessions >= 1 || hasPhaseResult >= 1) {
-        return error(response, 400, "Bạn chỉ có 1 lượt thi duy nhất cho chặng thi đấu này và đã hoàn thành.");
+      if (completedSessions >= phaseMaxAttempts || hasPhaseResult >= 1) {
+        return error(response, 400, `Bạn đã hoàn thành tối đa ${phaseMaxAttempts} lượt thi cho chặng đấu này.`);
       }
     }
+
+    // Ghi nhận nhiệm vụ Sổ tay năng động: Tham gia 1 lượt thi đấu trường (+20 năng lượng)
+    try { handbook.recordDailyTaskProgress(db, user.id, "arena_play", comp.id); } catch (_) { }
 
     const phase = sessionPhase;
     let rawQuestions = getCompetitionPhaseRawQuestions(comp.id, phase, track);
@@ -11484,6 +11985,9 @@ async function api(request, response, url) {
       return error(response, 400, "Bộ câu hỏi cho chặng này chưa sẵn sàng.");
     }
 
+    const completedCountForPhase = activeSession
+      ? Math.max(0, (activeSession.attempt_number || 1) - 1)
+      : (db.prepare("SELECT count(*) as c FROM competition_sessions WHERE user_id = ? AND competition_id = ? AND phase = ? AND status IN ('completed', 'expired')").get(user.id, comp.id, sessionPhase)?.c || 0);
     const isResumed = Boolean(activeSession);
     if (activeSession) {
       const preQuestions = getCompetitionQuestionsForUser(rawQuestions, {
@@ -11510,14 +12014,42 @@ async function api(request, response, url) {
 
     if (!activeSession) {
       const sessionToken = randomToken();
-      const attemptNumber = 1;
+      const attemptNumber = Math.min(getArenaPhaseMaxAttempts(comp, phase), completedCountForPhase + 1);
       const isOnTime = isPhaseOnTimeWindow(comp, phase, vnNow) ? 1 : 0;
+
+      const eyeInvId = Number(body?.eyeInvId || 0);
+      const cloakInvId = Number(body?.cloakInvId || 0);
+
+      // Xử lý vật phẩm cả trận (Mắt thần / Áo choàng tiên tri) — cho phép trang bị ở cả Lượt 1 & Lượt 2
+      const loadoutItems = {};
+      if (eyeInvId > 0) {
+        const eyeRow = db.prepare("SELECT * FROM user_inventory WHERE id = ? AND user_id = ? AND item_key = 'arena_eye' AND quantity > 0").get(eyeInvId, user.id);
+        if (eyeRow) {
+          if (eyeRow.quantity > 1) db.prepare("UPDATE user_inventory SET quantity = quantity - 1 WHERE id = ?").run(eyeRow.id);
+          else db.prepare("DELETE FROM user_inventory WHERE id = ?").run(eyeRow.id);
+          const charges = eyeRow.level === 3 ? 5 : (eyeRow.level === 2 ? 3 : 1);
+          loadoutItems.eyeRemaining = charges;
+          loadoutItems.eyeTotal = charges;
+          loadoutItems.eyeLevel = eyeRow.level;
+        }
+      }
+      if (cloakInvId > 0) {
+        const cloakRow = db.prepare("SELECT * FROM user_inventory WHERE id = ? AND user_id = ? AND item_key = 'arena_cloak' AND quantity > 0").get(cloakInvId, user.id);
+        if (cloakRow) {
+          if (cloakRow.quantity > 1) db.prepare("UPDATE user_inventory SET quantity = quantity - 1 WHERE id = ?").run(cloakRow.id);
+          else db.prepare("DELETE FROM user_inventory WHERE id = ?").run(cloakRow.id);
+          const fixLimit = cloakRow.level === 3 ? 3 : (cloakRow.level === 2 ? 2 : 1);
+          loadoutItems.cloakLimit = fixLimit;
+          loadoutItems.cloakLevel = cloakRow.level;
+          loadoutItems.cloakUsed = false;
+        }
+      }
 
       db.prepare(`
         INSERT INTO competition_sessions (
-          session_token, user_id, competition_id, phase, attempt_number, server_start_timestamp_ms, initial_seconds, remaining_seconds, is_paused, exit_count, is_on_time, on_time_bonus, status, is_shuffled
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, 0, ?, 0, 'in_progress', 1)
-      `).run(sessionToken, user.id, comp.id, phase, attemptNumber, nowMs, ARENA_QUESTION_SECONDS, ARENA_QUESTION_SECONDS, isOnTime);
+          session_token, user_id, competition_id, phase, attempt_number, server_start_timestamp_ms, initial_seconds, remaining_seconds, is_paused, exit_count, is_on_time, on_time_bonus, status, is_shuffled, active_items_json, item_effects_json
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, 0, ?, 0, 'in_progress', 1, ?, '{}')
+      `).run(sessionToken, user.id, comp.id, phase, attemptNumber, nowMs, ARENA_QUESTION_SECONDS, ARENA_QUESTION_SECONDS, isOnTime, JSON.stringify(loadoutItems));
 
       activeSession = db.prepare("SELECT * FROM competition_sessions WHERE session_token = ?").get(sessionToken);
     }
@@ -11539,8 +12071,26 @@ async function api(request, response, url) {
       questionText: q.questionText,
       optionA: q.optionA,
       optionB: q.optionB,
-      optionC: q.optionC
+      optionC: q.optionC,
+      optionD: q.optionD || null
     }));
+
+    let activeItemsObj = {};
+    let itemEffectsObj = {};
+    try { activeItemsObj = JSON.parse(activeSession.active_items_json || "{}"); } catch { activeItemsObj = {}; }
+    try { itemEffectsObj = JSON.parse(activeSession.item_effects_json || "{}"); } catch { itemEffectsObj = {}; }
+    const curQEffects = itemEffectsObj[`q_${currentQ.questionIndex}`] || {};
+    const curAnsRow = db.prepare("SELECT history_json FROM competition_answers WHERE session_id = ? AND question_index = ?").get(activeSession.id, currentQ.questionIndex);
+    let curDisabledOpts = Array.isArray(curQEffects.disabledOptions) ? [...curQEffects.disabledOptions] : [];
+    if (curAnsRow && curAnsRow.history_json) {
+      try {
+        for (const h of JSON.parse(curAnsRow.history_json)) {
+          if (["A", "B", "C", "D"].includes(h) && !curDisabledOpts.includes(h)) curDisabledOpts.push(h);
+        }
+      } catch { }
+    }
+    const allowArenaItems = true;
+    const arenaInventory = handbook.getFormattedUserInventory(db, user.id).filter(it => it.category === "dau_truong");
 
     const phaseTopic = phase === 1 ? comp.phase1_topic : (phase === 2 ? comp.phase2_topic : comp.phase3_topic);
     const phaseDays = phase === 1 ? "Thứ Hai – Thứ Ba" : (phase === 2 ? "Thứ Tư – Thứ Năm" : "Thứ Sáu – Thứ Bảy");
@@ -11569,6 +12119,14 @@ async function api(request, response, url) {
       exitCount: activeSession.exit_count || 0,
       exitsLeft: Math.max(0, 2 - (activeSession.exit_count || 0)),
       isPaused: false,
+      allowArenaItems,
+      activeItems: activeItemsObj,
+      currentQuestionEffects: {
+        disabledOptions: curDisabledOpts,
+        hammerActive: Boolean(curQEffects.hammerActive),
+        hintText: curQEffects.hintText || null
+      },
+      arenaInventory,
       questions: formattedQuestions,
       question: {
         id: currentQ.id,
@@ -11576,9 +12134,87 @@ async function api(request, response, url) {
         text: currentQ.questionText,
         optionA: currentQ.optionA,
         optionB: currentQ.optionB,
-        optionC: currentQ.optionC
+        optionC: currentQ.optionC,
+        optionD: currentQ.optionD || null
       }
     });
+  }
+
+  if (method === "POST" && pathName === "/api/competition/session/use-item") {
+    const user = requireUser(request, response);
+    if (!user) return;
+    if (!requireCsrf(request, response, user)) return;
+
+    const body = await readJSON(request).catch(() => ({}));
+    const { sessionToken, inventoryId } = body;
+    if (!sessionToken || !inventoryId) return error(response, 400, "Thiếu thông tin vật phẩm.");
+
+    const session = db.prepare("SELECT * FROM competition_sessions WHERE session_token = ? AND user_id = ? AND status = 'in_progress'").get(sessionToken, user.id);
+    if (!session) return error(response, 404, "Không tìm thấy phiên thi đấu đang hoạt động.");
+
+    const invRow = db.prepare("SELECT * FROM user_inventory WHERE id = ? AND user_id = ? AND category = 'dau_truong' AND quantity > 0").get(Number(inventoryId), user.id);
+    if (!invRow) return error(response, 404, "Bạn không có vật phẩm này trong túi đồ.");
+
+    const qIdx = session.current_question_index || 1;
+    let itemEffects = {};
+    try { itemEffects = JSON.parse(session.item_effects_json || "{}"); } catch { itemEffects = {}; }
+    const qKey = `q_${qIdx}`;
+    const qEffect = itemEffects[qKey] || {};
+
+    const studentClass = getArenaClassByStudentId(user.student_id);
+    const track = (studentClass === "TD") ? "free" : "main";
+    const rawQuestions = getCompetitionPhaseRawQuestions(session.competition_id, session.phase, track);
+    const shuffledQuestions = getCompetitionQuestionsForUser(rawQuestions, {
+      userId: user.id,
+      competitionId: session.competition_id,
+      phase: session.phase,
+      track,
+      isShuffled: Boolean(session.is_shuffled)
+    });
+    const question = shuffledQuestions[qIdx - 1];
+    if (!question) return error(response, 404, "Không tìm thấy câu hỏi hiện tại.");
+
+    let effectResult = {};
+    if (invRow.item_key === "arena_loupe_1" || invRow.item_key === "arena_loupe_2") {
+      if (qEffect.loupeUsed) return error(response, 400, "Bạn đã dùng Kính lúp ở câu này rồi.");
+      const allOpts = question.optionD ? ["A", "B", "C", "D"] : ["A", "B", "C"];
+      const existingDisabled = Array.isArray(qEffect.disabledOptions) ? qEffect.disabledOptions : [];
+      const wrongPool = allOpts.filter(o => o !== question.correctOption && !existingDisabled.includes(o));
+      const removeCount = invRow.item_key === "arena_loupe_2" ? Math.min(2, wrongPool.length) : Math.min(1, wrongPool.length);
+      if (removeCount === 0) return error(response, 400, "Không còn đáp án sai để loại bỏ.");
+
+      const shuffledWrong = [...wrongPool].sort(() => Math.random() - 0.5).slice(0, removeCount);
+      qEffect.loupeUsed = true;
+      qEffect.disabledOptions = [...existingDisabled, ...shuffledWrong];
+      effectResult = { itemKey: invRow.item_key, removedOptions: shuffledWrong, disabledOptions: qEffect.disabledOptions };
+    } else if (invRow.item_key === "arena_hourglass") {
+      let meta = {};
+      try { meta = JSON.parse(invRow.meta_json || "{}"); } catch { meta = {}; }
+      const freezeSec = Number(meta.freezeSeconds || invRow.level * 5 || 5);
+      const newStartMs = (session.server_start_timestamp_ms || getVietnamTimestampMs()) + freezeSec * 1000;
+      db.prepare("UPDATE competition_sessions SET server_start_timestamp_ms = ? WHERE id = ?").run(newStartMs, session.id);
+      effectResult = { itemKey: "arena_hourglass", freezeSeconds: freezeSec };
+    } else if (invRow.item_key === "arena_lamp") {
+      if (qEffect.hintText) return error(response, 400, "Bạn đã mở gợi ý ở câu này rồi.");
+      const hintText = (question.hint && question.hint.trim()) ? question.hint.trim() : (question.explanation ? `Gợi ý trọng tâm: ${question.explanation}` : "Hãy đọc kỹ từ khóa trọng tâm trong câu hỏi.");
+      qEffect.hintText = hintText;
+      effectResult = { itemKey: "arena_lamp", hintText };
+    } else if (invRow.item_key === "arena_hammer") {
+      if (qEffect.hammerActive) return error(response, 400, "Búa thần đã được kích hoạt ở câu này.");
+      qEffect.hammerActive = true;
+      effectResult = { itemKey: "arena_hammer", hammerActive: true };
+    } else {
+      return error(response, 400, "Vật phẩm không hỗ trợ kích hoạt trong trận.");
+    }
+
+    if (invRow.quantity > 1) db.prepare("UPDATE user_inventory SET quantity = quantity - 1 WHERE id = ?").run(invRow.id);
+    else db.prepare("DELETE FROM user_inventory WHERE id = ?").run(invRow.id);
+
+    itemEffects[qKey] = qEffect;
+    db.prepare("UPDATE competition_sessions SET item_effects_json = ? WHERE id = ?").run(JSON.stringify(itemEffects), session.id);
+
+    const updatedInv = handbook.getFormattedUserInventory(db, user.id).filter(it => it.category === "dau_truong");
+    return json(response, 200, { ok: true, ...effectResult, arenaInventory: updatedInv });
   }
 
   if (method === "POST" && pathName === "/api/competition/session/answer") {
@@ -11627,14 +12263,23 @@ async function api(request, response, url) {
     }
 
     const nowMs = getVietnamTimestampMs();
+    let activeItems = {};
+    let itemEffects = {};
+    try { activeItems = JSON.parse(session.active_items_json || "{}"); } catch { activeItems = {}; }
+    try { itemEffects = JSON.parse(session.item_effects_json || "{}"); } catch { itemEffects = {}; }
+    const qEffect = itemEffects[`q_${questionIndex}`] || {};
+    const hammerActive = Boolean(qEffect.hammerActive);
+
     const baseRemaining = Math.min(ARENA_QUESTION_SECONDS, Math.max(0, Number(session.remaining_seconds ?? ARENA_QUESTION_SECONDS)));
     const elapsed = session.is_paused ? 0 : Math.max(0, Math.floor((nowMs - session.server_start_timestamp_ms) / 1000));
-    const effectiveRemaining = Math.min(ARENA_QUESTION_SECONDS, Math.max(0, baseRemaining - elapsed));
-    const isWithinNetworkGrace = elapsed <= (baseRemaining + 2);
+    const effectiveRemaining = hammerActive
+      ? ARENA_QUESTION_SECONDS
+      : Math.min(ARENA_QUESTION_SECONDS, Math.max(0, baseRemaining - elapsed));
+    const isWithinNetworkGrace = hammerActive || (elapsed <= (baseRemaining + 2));
 
     const isTimeoutRequest = (selectedOption === "TIMEOUT");
     const normalizedOption = isTimeoutRequest ? "TIMEOUT" : String(selectedOption).toUpperCase().trim();
-    if (!isTimeoutRequest && !["A", "B", "C"].includes(normalizedOption)) {
+    if (!isTimeoutRequest && !["A", "B", "C", "D"].includes(normalizedOption)) {
       return error(response, 400, "Đáp án không hợp lệ.");
     }
 
@@ -11674,9 +12319,41 @@ async function api(request, response, url) {
     const isQuestionExpired = isTimeoutRequest || (!isWithinNetworkGrace && effectiveRemaining <= 0);
     const isCorrect = !isQuestionExpired && (normalizedOption === question.correctOption);
 
-    const addCorrectPts = isCorrect ? 40 : 0;
-    const addBonusPts = isCorrect ? 10 : 0;
-    const addTimePts = isCorrect ? effectiveRemaining : 0;
+    // Mắt thần: tiêu hao 1 lượt cho mỗi lần bấm chọn, nếu sai cho chọn lại
+    let eyeRevealUsed = false;
+    let eyeRemainingNow = Number(activeItems.eyeRemaining || 0);
+    if (!isQuestionExpired && eyeRemainingNow > 0) {
+      eyeRevealUsed = true;
+      eyeRemainingNow -= 1;
+      activeItems.eyeRemaining = eyeRemainingNow;
+      db.prepare("UPDATE competition_sessions SET active_items_json = ? WHERE id = ?").run(JSON.stringify(activeItems), session.id);
+
+      if (!isCorrect) {
+        let hist = [];
+        try { hist = JSON.parse(answerRow.history_json || "[]"); } catch { hist = []; }
+        if (!hist.includes(normalizedOption)) hist.push(normalizedOption);
+        const triesNow = (answerRow.tries_count || 0) + 1;
+        db.prepare("UPDATE competition_answers SET tries_count = ?, history_json = ? WHERE id = ?")
+          .run(triesNow, JSON.stringify(hist), answerRow.id);
+
+        return json(response, 200, {
+          eyeReveal: true,
+          isCorrect: false,
+          eyeRemaining: eyeRemainingNow,
+          eyeExhausted: eyeRemainingNow <= 0,
+          allowRetry: true,
+          disabledOptions: hist,
+          remainingSeconds: effectiveRemaining,
+          sessionCompleted: false,
+          isQuizCompleted: false
+        });
+      }
+    }
+
+    const isPhase3 = Number(session.phase) === 3;
+    const addCorrectPts = isCorrect ? (isPhase3 ? 90 : 60) : 0;
+    const addBonusPts = 0;
+    const addTimePts = Math.max(0, Math.min(60, Number(effectiveRemaining) || 0));
 
     const newCorrectPoints = (session.correct_points || 0) + addCorrectPts;
     const newFirstTryBonus = (session.first_try_bonus || 0) + addBonusPts;
@@ -11684,22 +12361,77 @@ async function api(request, response, url) {
     const newCorrectCount = (session.correct_count || 0) + (isCorrect ? 1 : 0);
     const newFirstTryCount = (session.first_try_correct_count || 0) + (isCorrect ? 1 : 0);
 
+    let prevHist = [];
+    try { prevHist = JSON.parse(answerRow.history_json || "[]"); } catch { prevHist = []; }
+    if (!prevHist.includes(normalizedOption)) prevHist.push(normalizedOption);
+
     db.prepare(`
       UPDATE competition_answers
-      SET tries_count = 1,
+      SET tries_count = ?,
           is_correct = ?,
           is_first_try = ?,
           history_json = ?,
           is_finalized = 1
       WHERE id = ?
-    `).run(isCorrect ? 1 : 0, isCorrect ? 1 : 0, JSON.stringify([normalizedOption]), answerRow.id);
+    `).run((answerRow.tries_count || 0) + 1, isCorrect ? 1 : 0, isCorrect ? 1 : 0, JSON.stringify(prevHist), answerRow.id);
 
     const nextQIndex = questionIndex + 1;
     if (nextQIndex > shuffledQuestions.length) {
+      // Áo choàng tiên tri: kiểm tra xem có kích hoạt và còn câu sai nào để sửa trước khi chốt bài không
+      if (Number(activeItems.cloakLimit || 0) > 0 && !activeItems.cloakUsed) {
+        const wrongRows = db.prepare("SELECT question_index, history_json FROM competition_answers WHERE session_id = ? AND is_correct = 0 ORDER BY question_index ASC").all(session.id);
+        const wrongIndices = wrongRows.map(r => r.question_index);
+        const wrongSelectedMap = new Map();
+        for (const r of wrongRows) {
+          let sel = null;
+          try {
+            const h = JSON.parse(r.history_json || "[]");
+            if (Array.isArray(h) && h.length > 0) {
+              const lastOpt = String(h[h.length - 1] || "").toUpperCase().trim();
+              if (["A", "B", "C", "D"].includes(lastOpt)) sel = lastOpt;
+            }
+          } catch (_) { }
+          wrongSelectedMap.set(r.question_index, sel);
+        }
+        if (wrongIndices.length > 0) {
+          db.prepare(`
+            UPDATE competition_sessions
+            SET current_question_index = ?,
+                correct_count = ?,
+                first_try_correct_count = ?,
+                correct_points = ?,
+                first_try_bonus = ?,
+                time_points = ?
+            WHERE id = ?
+          `).run(shuffledQuestions.length, newCorrectCount, newFirstTryCount, newCorrectPoints, newFirstTryBonus, newTimePoints, session.id);
+
+          const questionsSummary = shuffledQuestions.map(sq => ({
+            index: sq.questionIndex,
+            questionText: sq.questionText,
+            text: sq.questionText,
+            optionA: sq.optionA,
+            optionB: sq.optionB,
+            optionC: sq.optionC,
+            optionD: sq.optionD || null,
+            selectedOption: wrongSelectedMap.has(sq.questionIndex) ? wrongSelectedMap.get(sq.questionIndex) : null,
+            isWrong: wrongIndices.includes(sq.questionIndex)
+          }));
+
+          return json(response, 200, {
+            cloakReview: true,
+            cloakLimit: Number(activeItems.cloakLimit),
+            wrongQuestionIndices: wrongIndices,
+            questionsSummary,
+            sessionCompleted: false,
+            isQuizCompleted: false
+          });
+        }
+      }
+
       const vnNow = getVietnamNow();
       const comp = db.prepare("SELECT * FROM weekly_competitions WHERE id = ?").get(session.competition_id);
       const isSessionOnTime = isPhaseOnTimeWindow(comp, session.phase, vnNow);
-      const onTimeBonus = (session.is_on_time === 1 && isSessionOnTime) ? 50 : 0;
+      const onTimeBonus = (session.is_on_time === 1 && isSessionOnTime && Number(session.phase) !== 3) ? 50 : 0;
       const totalScore = newCorrectPoints + newFirstTryBonus + newTimePoints + onTimeBonus;
 
       db.prepare(`
@@ -11738,7 +12470,10 @@ async function api(request, response, url) {
       };
 
       return json(response, 200, {
-        blindMode: true,
+        blindMode: !eyeRevealUsed,
+        eyeReveal: eyeRevealUsed,
+        isCorrect: eyeRevealUsed ? isCorrect : undefined,
+        eyeRemaining: eyeRevealUsed ? eyeRemainingNow : undefined,
         questionTimeExpired: isQuestionExpired,
         sessionCompleted: true,
         isQuizCompleted: true,
@@ -11766,7 +12501,10 @@ async function api(request, response, url) {
     const nextQ = shuffledQuestions[nextQIndex - 1] || null;
 
     return json(response, 200, {
-      blindMode: true,
+      blindMode: !eyeRevealUsed,
+      eyeReveal: eyeRevealUsed,
+      isCorrect: eyeRevealUsed ? isCorrect : undefined,
+      eyeRemaining: eyeRevealUsed ? eyeRemainingNow : undefined,
       questionTimeExpired: isQuestionExpired,
       sessionCompleted: false,
       isQuizCompleted: false,
@@ -11775,6 +12513,102 @@ async function api(request, response, url) {
       remainingTime: ARENA_QUESTION_SECONDS,
       nextQuestion: formatNextQuestionPayload(nextQ)
     });
+  }
+
+  if (method === "POST" && pathName === "/api/competition/session/cloak-submit") {
+    const user = requireUser(request, response);
+    if (!user) return;
+    if (!requireCsrf(request, response, user)) return;
+
+    const body = await readJSON(request).catch(() => ({}));
+    const { sessionToken, corrections } = body;
+    const session = db.prepare("SELECT * FROM competition_sessions WHERE session_token = ? AND user_id = ?").get(sessionToken, user.id);
+    if (!session) return error(response, 404, "Không tìm thấy phiên thi đấu.");
+    if (session.status !== "in_progress") return error(response, 400, "Phiên thi đã kết thúc.");
+
+    let activeItems = {};
+    try { activeItems = JSON.parse(session.active_items_json || "{}"); } catch { activeItems = {}; }
+    const cloakLimit = Number(activeItems.cloakLimit || 0);
+    if (cloakLimit <= 0 || activeItems.cloakUsed) return error(response, 400, "Không có Áo choàng tiên tri khả dụng.");
+
+    const studentClass = getArenaClassByStudentId(user.student_id);
+    const track = (studentClass === "TD") ? "free" : "main";
+    const rawQuestions = getCompetitionPhaseRawQuestions(session.competition_id, session.phase, track);
+    const shuffledQuestions = getCompetitionQuestionsForUser(rawQuestions, {
+      userId: user.id,
+      competitionId: session.competition_id,
+      phase: session.phase,
+      track,
+      isShuffled: Boolean(session.is_shuffled)
+    });
+
+    const list = Array.isArray(corrections) ? corrections.slice(0, cloakLimit) : [];
+    let addCorrect = 0;
+    let addCorrectPts = 0;
+    let addBonusPts = 0;
+    let addTimePts = 0;
+
+    for (const corr of list) {
+      const qIdx = Number(corr?.questionIndex);
+      const opt = String(corr?.selectedOption || "").toUpperCase().trim();
+      if (!qIdx || !["A", "B", "C", "D"].includes(opt)) continue;
+      const ans = db.prepare("SELECT * FROM competition_answers WHERE session_id = ? AND question_index = ?").get(session.id, qIdx);
+      const q = shuffledQuestions[qIdx - 1];
+      if (!ans || !q || ans.is_correct === 1) continue;
+      if (opt === q.correctOption) {
+        addCorrect++;
+        addCorrectPts += 40;
+        addBonusPts += 10;
+        addTimePts += 30;
+        db.prepare("UPDATE competition_answers SET is_correct = 1, tries_count = tries_count + 1 WHERE id = ?").run(ans.id);
+      }
+    }
+
+    activeItems.cloakUsed = true;
+    const newCorrectCount = (session.correct_count || 0) + addCorrect;
+    const newCorrectPoints = (session.correct_points || 0) + addCorrectPts;
+    const newFirstTryBonus = (session.first_try_bonus || 0) + addBonusPts;
+    const newTimePoints = (session.time_points || 0) + addTimePts;
+
+    const vnNow = getVietnamNow();
+    const comp = db.prepare("SELECT * FROM weekly_competitions WHERE id = ?").get(session.competition_id);
+    const isSessionOnTime = isPhaseOnTimeWindow(comp, session.phase, vnNow);
+    const onTimeBonus = (session.is_on_time === 1 && isSessionOnTime && Number(session.phase) !== 3) ? 50 : 0;
+    const totalScore = newCorrectPoints + newFirstTryBonus + newTimePoints + onTimeBonus;
+
+    db.prepare(`
+      UPDATE competition_sessions
+      SET correct_count = ?,
+          correct_points = ?,
+          first_try_bonus = ?,
+          time_points = ?,
+          is_on_time = ?,
+          on_time_bonus = ?,
+          total_score = ?,
+          active_items_json = ?,
+          status = 'completed',
+          finished_at = CURRENT_TIMESTAMP
+      WHERE id = ?
+    `).run(newCorrectCount, newCorrectPoints, newFirstTryBonus, newTimePoints, onTimeBonus > 0 ? 1 : 0, onTimeBonus, totalScore, JSON.stringify(activeItems), session.id);
+
+    const bestScore = updateUserPhaseBestScore(user.id, session.competition_id, session.phase, totalScore, session.id, onTimeBonus);
+    const resData = {
+      phase: session.phase,
+      totalScore,
+      correctPoints: newCorrectPoints,
+      firstTryBonus: newFirstTryBonus,
+      firstTryBonusPoints: newFirstTryBonus,
+      timePoints: newTimePoints,
+      onTimeBonus,
+      remainingSeconds: 0,
+      correctCount: newCorrectCount,
+      correctAnswersCount: newCorrectCount,
+      firstTryCount: session.first_try_correct_count || 0,
+      bestScore,
+      phaseBestScore: bestScore
+    };
+
+    return json(response, 200, { ok: true, sessionCompleted: true, isQuizCompleted: true, result: resData, finalResult: resData });
   }
 
   if (method === "POST" && pathName === "/api/competition/session/heartbeat") {
@@ -12032,13 +12866,13 @@ async function api(request, response, url) {
     const track = url.searchParams.get("track") === "free" ? "free" : "main";
 
     let questions = db.prepare(
-      "SELECT id, question_index, question_text, option_a, option_b, option_c, correct_option, explanation, track FROM competition_questions WHERE competition_id = ? AND phase = ? AND track = ? ORDER BY question_index ASC"
+      "SELECT id, question_index, question_text, option_a, option_b, option_c, option_d, correct_option, explanation, hint, track FROM competition_questions WHERE competition_id = ? AND phase = ? AND track = ? ORDER BY question_index ASC"
     ).all(compId, phase, track);
 
     if (questions.length === 0 && track === "free") {
       seedSampleCompetitionQuestions(compId, "free");
       questions = db.prepare(
-        "SELECT id, question_index, question_text, option_a, option_b, option_c, correct_option, explanation, track FROM competition_questions WHERE competition_id = ? AND phase = ? AND track = ? ORDER BY question_index ASC"
+        "SELECT id, question_index, question_text, option_a, option_b, option_c, option_d, correct_option, explanation, hint, track FROM competition_questions WHERE competition_id = ? AND phase = ? AND track = ? ORDER BY question_index ASC"
       ).all(compId, phase, track);
     }
 
@@ -12049,8 +12883,10 @@ async function api(request, response, url) {
       option_a: q.option_a,
       option_b: q.option_b,
       option_c: q.option_c,
+      option_d: q.option_d || null,
       correct_option: q.correct_option,
       explanation: q.explanation || "",
+      hint: q.hint || "",
       track: q.track || track,
       // Aliases for camelCase
       questionNumber: q.question_index,
@@ -12058,6 +12894,7 @@ async function api(request, response, url) {
       optionA: q.option_a,
       optionB: q.option_b,
       optionC: q.option_c,
+      optionD: q.option_d || null,
       correctOption: q.correct_option
     }));
 
@@ -12103,8 +12940,8 @@ async function api(request, response, url) {
 
       const insert = db.prepare(`
         INSERT INTO competition_questions (
-          competition_id, phase, question_index, question_text, option_a, option_b, option_c, correct_option, explanation, track
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          competition_id, phase, question_index, question_text, option_a, option_b, option_c, option_d, correct_option, explanation, hint, track
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `);
 
       for (let i = 0; i < questions.length; i++) {
@@ -12118,8 +12955,10 @@ async function api(request, response, url) {
           q.option_a || q.optionA || "Đáp án A",
           q.option_b || q.optionB || "Đáp án B",
           q.option_c || q.optionC || "Đáp án C",
+          q.option_d || q.optionD || null,
           q.correct_option || q.correctOption || q.correct || "A",
           q.explanation || "",
+          q.hint || q.explanation || "",
           track
         );
       }
@@ -12260,6 +13099,19 @@ async function api(request, response, url) {
     return json(response, 200, { ok: true, result });
   }
 
+  if (method === "POST" && pathName === "/api/admin/arena/award-season") {
+    const user = requireUser(request, response);
+    if (!user || !isSuperAdmin(user)) return user ? error(response, 403, "Chỉ TA/Admin mới có quyền này.") : undefined;
+    if (!requireCsrf(request, response, user)) return;
+
+    const body = await readJSON(request).catch(() => ({}));
+    const code = String(body.seasonCode || "AS1").trim().toUpperCase();
+    const force = Boolean(body.force);
+    const season = ARENA_SEASONS.find((s) => s.code === code) || ARENA_SEASONS[0];
+    const result = awardArenaSeasonRewards(season, Date.now(), force);
+    return json(response, result.ok ? 200 : 400, result);
+  }
+
   // =========================================================================
   // NOTIFICATIONS API
   // =========================================================================
@@ -12284,28 +13136,8 @@ async function api(request, response, url) {
     const limit = Math.min(50, Math.max(1, parseInt(url.searchParams.get("limit") || "10", 10)));
     const offset = (page - 1) * limit;
 
-    // Check study room & arena reminders once per day for user
+    // Thông báo tăng trưởng thành viên cộng đồng 7 ngày qua (không tự bắn thông báo Phòng tự học hay Arena lúc mở popover)
     try {
-      const todayVN = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Ho_Chi_Minh" }).format(new Date());
-      const hasDailyStudyNotif = db.prepare("SELECT id FROM notifications WHERE user_id = ? AND category = 'study' AND date(created_at) = date(?)").get(user.id, todayVN);
-      if (!hasDailyStudyNotif) {
-        const sessionsCount = db.prepare("SELECT count(*) as count FROM study_sessions WHERE user_id = ? AND date(started_at) = date(?)").get(user.id, todayVN)?.count || 0;
-        if (sessionsCount > 0) {
-          createNotification(user.id, "activity", "study", "Hoàn thành tự học", `Hôm nay bạn đã hoàn thành ${sessionsCount} phiên tập trung. Tiếp tục phát huy nhé!`, "#study");
-        } else {
-          createNotification(user.id, "activity", "study", "Mục tiêu tự học hôm nay", "Hôm nay bạn có đến Phòng tự học không? Cùng vào tự học để giữ vững chuỗi tập trung nào!", "#study");
-        }
-      }
-
-      const hasDailyArenaNotif = db.prepare("SELECT id FROM notifications WHERE user_id = ? AND category = 'arena' AND date(created_at) = date(?)").get(user.id, todayVN);
-      if (!hasDailyArenaNotif) {
-        const comp = getOrCreateCurrentCompetition(getVietnamNow());
-        if (comp) {
-          createNotification(user.id, "activity", "arena", "Đấu trường Arena", "Đấu trường Arena tuần này đang mở. Thử sức ngay để ghi điểm và thăng hạng!", "#arena");
-        }
-      }
-
-      // Thông báo tăng trưởng thành viên tuần qua (không hiện nếu dưới 2)
       const managedComms = db.prepare(`
         SELECT c.id, c.name, c.slug 
         FROM communities c
@@ -12356,6 +13188,7 @@ async function api(request, response, url) {
     if (stream === "announcement") {
       whereClause += " AND n.stream = 'announcement'";
     } else {
+      whereClause += " AND n.stream = 'activity'";
       if (category && category !== "all") {
         whereClause += " AND n.category = ?";
         params.push(category);
@@ -12531,7 +13364,23 @@ function serveStatic(request, response, url) {
     return error(response, 404, "Không tìm thấy trang.");
   }
 
-  const file = path.resolve(ROOT, `.${relative}`);
+  let file = path.resolve(ROOT, `.${relative}`);
+  const acceptHeader = String(request.headers.accept || "");
+  if (
+    file.startsWith(ROOT + path.sep) &&
+    !file.startsWith(DATABASE_DIR + path.sep) &&
+    file !== DATABASE_PATH &&
+    file !== path.resolve(ROOT, "server.js") &&
+    !fs.existsSync(file) &&
+    /\.(png|jpe?g)$/i.test(file) &&
+    acceptHeader.includes("image/webp")
+  ) {
+    const webpCandidate = file.replace(/\.(png|jpe?g)$/i, ".webp");
+    if (fs.existsSync(webpCandidate)) {
+      file = webpCandidate;
+    }
+  }
+
   if (
     !file.startsWith(ROOT + path.sep) ||
     file.startsWith(DATABASE_DIR + path.sep) ||
@@ -12553,11 +13402,14 @@ function serveStatic(request, response, url) {
     return error(response, 404, "Không tìm thấy trang.");
   }
 
-  // Đối với file .js, chỉ cho phép app.js, sw.js hoặc script trong public/
-  if (extension === ".js" && relative !== "/app.js" && relative !== "/sw.js" && !relative.startsWith("/public/")) {
+  // Đối với file .js, chỉ cho phép app.js, handbook_ui.js, sw.js hoặc script trong public/
+  if (extension === ".js" && relative !== "/app.js" && relative !== "/handbook_ui.js" && relative !== "/sw.js" && !relative.startsWith("/public/")) {
     return error(response, 404, "Không tìm thấy trang.");
   }
 
+  const stat = fs.statSync(file);
+  const fileSize = stat.size;
+  const etag = `W/"${fileSize.toString(16)}-${Math.floor(stat.mtimeMs).toString(16)}"`;
   const headers = {
     "Content-Type": MIME[extension] || "application/octet-stream",
     "X-Content-Type-Options": "nosniff",
@@ -12573,14 +13425,25 @@ function serveStatic(request, response, url) {
     headers["Pragma"] = "no-cache";
     headers["Expires"] = "0";
   } else if (relative.startsWith("/frames/")) {
-    headers["Cache-Control"] = "no-cache, must-revalidate";
+    headers["Cache-Control"] = "public, max-age=3600, stale-while-revalidate=86400";
+    headers["ETag"] = etag;
   } else if (relative.startsWith("/public/") || [".png", ".jpg", ".jpeg", ".webp", ".gif", ".svg", ".ico", ".mp3", ".wav", ".woff2", ".ttf"].includes(extension)) {
-    headers["Cache-Control"] = "public, max-age=86400, stale-while-revalidate=604800";
+    headers["Cache-Control"] = "public, max-age=604800, stale-while-revalidate=2592000";
+    headers["ETag"] = etag;
   } else if ([".css", ".js"].includes(extension)) {
-    headers["Cache-Control"] = "public, max-age=3600";
+    headers["Cache-Control"] = "public, max-age=3600, must-revalidate";
+    headers["ETag"] = etag;
   }
-  const stat = fs.statSync(file);
-  const fileSize = stat.size;
+  if (extension === ".webp" && /\.(png|jpe?g)$/i.test(relative)) {
+    headers["Vary"] = "Accept";
+  }
+
+  if (headers["ETag"] && request.headers["if-none-match"] === etag) {
+    response.writeHead(304, headers);
+    response.end();
+    return;
+  }
+
   const isRangeMedia = [".mp3", ".m4a", ".wav", ".ogg", ".webm"].includes(extension);
   if (isRangeMedia) {
     headers["Accept-Ranges"] = "bytes";
@@ -12606,6 +13469,17 @@ function serveStatic(request, response, url) {
     fs.createReadStream(file, { start, end }).pipe(response);
     return;
   }
+
+  const compressibleExt = [".html", ".css", ".js", ".svg", ".json", ".xml", ".txt"].includes(extension);
+  const acceptEncoding = String(request.headers["accept-encoding"] || "");
+  if (compressibleExt && fileSize >= 1024 && /\bgzip\b/i.test(acceptEncoding) && request.method !== "HEAD") {
+    headers["Content-Encoding"] = "gzip";
+    headers["Vary"] = headers["Vary"] ? `${headers["Vary"]}, Accept-Encoding` : "Accept-Encoding";
+    response.writeHead(200, headers);
+    fs.createReadStream(file).pipe(zlib.createGzip({ level: 6 })).pipe(response);
+    return;
+  }
+
   headers["Content-Length"] = fileSize;
   response.writeHead(200, headers);
   if (request.method === "HEAD") {
@@ -12620,6 +13494,52 @@ const server = http.createServer(async (request, response) => {
       request.url,
       `http://${request.headers.host || "localhost"}`,
     );
+
+    if (isMaintenanceMode()) {
+      const viewer = sessionFrom(request);
+      const isAdminSession = Boolean(viewer && viewer.role === "admin");
+      const isAuthGateRoute =
+        url.pathname === "/__admin" ||
+        (request.method === "POST" && (url.pathname === "/api/auth/login" || url.pathname === "/api/auth/google"));
+
+      if (!isAdminSession && !isAuthGateRoute) {
+        const maintHeaders = {
+          "Cache-Control": "no-store, no-cache, must-revalidate",
+          "Pragma": "no-cache",
+          "Expires": "0",
+          "Retry-After": "300"
+        };
+        if (url.pathname.startsWith("/api/")) {
+          const payload = JSON.stringify({
+            error: "RE:SEARCH đang tiến hành bảo trì",
+            remaining: formatMaintenanceRemaining(MAINTENANCE_TARGET_MS - Date.now())
+          });
+          response.writeHead(503, { ...maintHeaders, "Content-Type": "application/json; charset=utf-8" });
+          response.end(request.method === "HEAD" ? undefined : payload);
+          return;
+        }
+        const html = renderMaintenanceHtml();
+        response.writeHead(503, { ...maintHeaders, "Content-Type": "text/html; charset=utf-8" });
+        response.end(request.method === "HEAD" ? undefined : html);
+        return;
+      }
+
+      if (url.pathname === "/__admin" && ["GET", "HEAD"].includes(request.method)) {
+        if (isAdminSession) {
+          response.writeHead(302, { Location: "/" });
+          response.end();
+          return;
+        }
+        const loginHtml = renderAdminMaintenanceLoginHtml();
+        response.writeHead(200, {
+          "Cache-Control": "no-store",
+          "Content-Type": "text/html; charset=utf-8"
+        });
+        response.end(request.method === "HEAD" ? undefined : loginHtml);
+        return;
+      }
+    }
+
     if (url.pathname.startsWith("/api/"))
       return await api(request, response, url);
     if (["GET", "HEAD"].includes(request.method))
@@ -12717,7 +13637,7 @@ try {
   db.prepare("DELETE FROM kv_store WHERE key LIKE 'reward_given_%'").run();
 } catch (e) { }
 
-// Chạy kiểm tra khi khởi động và định kỳ mỗi 1 phút (+5 điểm năng động tuần và tổng kết thi đua Chủ Nhật)
+// Chạy kiểm tra khi khởi động và định kỳ mỗi 1 phút (trao điểm Arena từng Chặng sau khi kết thúc và tổng kết Chủ Nhật >= 12h)
 function checkAndAwardSundayCompetitionRewards() {
   try {
     const vnNow = getVietnamNow();
@@ -12735,10 +13655,20 @@ function checkAndAwardSundayCompetitionRewards() {
       awardCompetitionSundayRewards(p.id);
     }
 
-    // Vào ngày Chủ Nhật (getDay() === 0), tự động chốt bảng thi đua của tuần hiện tại
-    if (vnNow.getDay() === 0) {
-      const comp = getOrCreateCurrentCompetition(vnNow);
-      if (comp && comp.status !== 'concluded') {
+    const comp = getOrCreateCurrentCompetition(vnNow);
+    if (comp && comp.status !== 'concluded') {
+      const day = vnNow.getDay();
+      const h = vnNow.getHours();
+      // Chặng 1: cộng thưởng ngay sau khung làm bù Thứ Tư 15:00 (hoặc ngày T5/T6/T7/CN)
+      if ((day === 3 && h >= 15) || day >= 4 || day === 0) {
+        handbook.awardArenaPhasePoints(db, comp.id, 1);
+      }
+      // Chặng 2: cộng thưởng ngay sau khung làm bù Thứ Sáu 15:00 (hoặc ngày T7/CN)
+      if ((day === 5 && h >= 15) || day === 6 || day === 0) {
+        handbook.awardArenaPhasePoints(db, comp.id, 2);
+      }
+      // Chặng 3 & tổng kết tuần: Chủ Nhật từ 12:00 trở đi
+      if (day === 0 && h >= 12) {
         awardCompetitionSundayRewards(comp.id);
       }
     }
@@ -12747,12 +13677,227 @@ function checkAndAwardSundayCompetitionRewards() {
   }
 }
 
+function broadcastScheduledSystemNotif(stream, category, title, content, link = "") {
+  const users = db.prepare("SELECT id FROM users").all();
+  if (!users.length) return 0;
+  const insertStmt = db.prepare(`
+    INSERT INTO notifications (user_id, stream, category, title, content, link, actor_id, is_read)
+    VALUES (?, ?, ?, ?, ?, ?, NULL, 0)
+  `);
+  db.exec("BEGIN TRANSACTION;");
+  try {
+    for (const u of users) {
+      insertStmt.run(u.id, stream, category, title, content, link);
+    }
+    db.exec("COMMIT;");
+    return users.length;
+  } catch (err) {
+    try { db.exec("ROLLBACK;"); } catch { }
+    throw err;
+  }
+}
+
+function checkAndSendScheduledNotifications() {
+  try {
+    const vnNow = getVietnamNow();
+    const y = vnNow.getFullYear();
+    const m = String(vnNow.getMonth() + 1).padStart(2, "0");
+    const d = String(vnNow.getDate()).padStart(2, "0");
+    const todayStr = `${y}-${m}-${d}`;
+
+    // 1. Thông báo tự động lúc 00:00 mỗi ngày (theo giờ VN): Làm mới Sổ tay khám phá
+    const handbookKey = `cron_notif_handbook_${todayStr}`;
+    if (!db.prepare("SELECT 1 FROM kv_store WHERE key = ?").get(handbookKey)) {
+      broadcastScheduledSystemNotif(
+        "activity",
+        "handbook",
+        "Sổ tay khám phá đã được làm mới",
+        "Ngày mới đến rồi! Tiến bộ hơn mỗi ngày, dù ít hay nhiều, đều sẽ tạo nên thành tựu lớn.",
+        "#handbook"
+      );
+      db.prepare("INSERT OR IGNORE INTO kv_store (key, value) VALUES (?, '1')").run(handbookKey);
+    }
+
+    // 2. Thông báo Arena tự động đúng lúc đến giờ mở cổng (18:00 các lượt thi trong tuần)
+    const comp = getOrCreateCurrentCompetition(vnNow);
+    if (comp && !comp.is_paused) {
+      const timeState = getCompetitionTimeState(vnNow, comp, "main");
+      const day = vnNow.getDay();
+      const h = vnNow.getHours();
+      if (timeState.state === "open" && day >= 1 && day <= 6 && h >= 18) {
+        const turnKey = `cron_notif_arena_open_${comp.week_key}_p${timeState.phase}_d${day}`;
+        if (!db.prepare("SELECT 1 FROM kv_store WHERE key = ?").get(turnKey)) {
+          broadcastScheduledSystemNotif(
+            "activity",
+            "arena",
+            `Đấu trường Arena Chặng ${timeState.phase} đã mở cổng`,
+            `${timeState.phaseName} (${timeState.openScheduleText}) đã chính thức mở cổng. Tham gia ngay để ghi điểm!`,
+            "#arena"
+          );
+          db.prepare("INSERT OR IGNORE INTO kv_store (key, value) VALUES (?, '1')").run(turnKey);
+        }
+      }
+    }
+  } catch (e) {
+    console.error("Cronjob thông báo tự động lỗi:", e);
+  }
+}
+
+function grantLimitedDecorWithExpiry(userId, itemType, itemId, expiresAtIso) {
+  const existing = db.prepare("SELECT expires_at FROM user_limited_items WHERE user_id = ? AND item_type = ? AND item_id = ?").get(userId, itemType, itemId);
+  if (!existing) {
+    db.prepare("INSERT INTO user_limited_items (user_id, item_type, item_id, unlocked_at, expires_at) VALUES (?, ?, ?, CURRENT_TIMESTAMP, ?)").run(userId, itemType, itemId, expiresAtIso);
+    return true;
+  }
+  const curExp = existing.expires_at;
+  if (!curExp || String(curExp).startsWith("2099-")) return false;
+  if (expiresAtIso.startsWith("2099-") || Date.parse(expiresAtIso) > Date.parse(curExp)) {
+    db.prepare("UPDATE user_limited_items SET expires_at = ? WHERE user_id = ? AND item_type = ? AND item_id = ?").run(expiresAtIso, userId, itemType, itemId);
+    return true;
+  }
+  return false;
+}
+
+function grantStudyBackgroundWithExpiry(userId, bgKey, expiresAtIso) {
+  const existing = db.prepare("SELECT expires_at FROM user_study_backgrounds WHERE user_id = ? AND bg_key = ?").get(userId, bgKey);
+  if (!existing) {
+    db.prepare("INSERT INTO user_study_backgrounds (user_id, bg_key, expires_at) VALUES (?, ?, ?)").run(userId, bgKey, expiresAtIso);
+    return true;
+  }
+  const curExp = existing.expires_at;
+  if (!curExp || String(curExp).startsWith("2099-")) return false;
+  if (expiresAtIso.startsWith("2099-") || Date.parse(expiresAtIso) > Date.parse(curExp)) {
+    db.prepare("UPDATE user_study_backgrounds SET expires_at = ? WHERE user_id = ? AND bg_key = ?").run(expiresAtIso, userId, bgKey);
+    return true;
+  }
+  return false;
+}
+
+function awardArenaSeasonRewards(season, nowMs = Date.now(), force = false) {
+  if (!season) return { ok: false, error: "Không tìm thấy thông tin mùa giải." };
+  if (!force && nowMs < season.endExclusiveMs) {
+    return { ok: false, error: `${season.label} chưa kết thúc.` };
+  }
+  const doneKey = `season_reward_awarded_${season.code}`;
+  if (!force && db.prepare("SELECT 1 FROM kv_store WHERE key = ?").get(doneKey)) {
+    return { ok: true, alreadyAwarded: true, seasonCode: season.code, rankedCount: 0, participantsCount: 0 };
+  }
+
+  const startUtc = toSqlUtcDateTime(season.startMs);
+  const endUtc = toSqlUtcDateTime(season.endExclusiveMs);
+  const permIso = "2099-12-31T23:59:59.000Z";
+  const exp30Iso = new Date(nowMs + 30 * 24 * 60 * 60 * 1000).toISOString();
+
+  const rankedRows = db.prepare(`
+    SELECT u.id as userId,
+           sum(r.best_score) as periodScore,
+           min(r.updated_at) as firstCompletedAt
+    FROM users u
+    JOIN competition_phase_results r ON u.id = r.user_id AND r.updated_at >= ? AND r.updated_at < ?
+    WHERE u.role NOT IN ('admin', 'lecturer', 'member') AND u.id != 89
+    GROUP BY u.id
+    HAVING periodScore > 0
+    ORDER BY periodScore DESC, firstCompletedAt ASC, u.id ASC
+  `).all(startUtc, endUtc);
+
+  const participantRows = db.prepare(`
+    SELECT cs.user_id as userId, count(*) as completedCount
+    FROM competition_sessions cs
+    JOIN users u ON u.id = cs.user_id
+    WHERE cs.status IN ('completed', 'expired')
+      AND COALESCE(cs.finished_at, cs.created_at) >= ? AND COALESCE(cs.finished_at, cs.created_at) < ?
+      AND u.role NOT IN ('admin', 'lecturer', 'member') AND u.id != 89
+    GROUP BY cs.user_id
+    HAVING completedCount >= 2
+  `).all(startUtc, endUtc);
+
+  const notifiedUsers = new Set();
+  let rankedCount = 0;
+  let participantsCount = 0;
+
+  db.exec("BEGIN TRANSACTION;");
+  try {
+    for (let i = 0; i < rankedRows.length && i < 20; i++) {
+      const rank = i + 1;
+      const uid = rankedRows[i].userId;
+      grantStudyBackgroundWithExpiry(uid, season.studyBgKey, permIso);
+      if (rank <= 10) grantLimitedDecorWithExpiry(uid, "cover", season.coverId, permIso);
+      if (rank <= 3) grantLimitedDecorWithExpiry(uid, "frame", season.frameId, permIso);
+
+      const tierDesc = rank <= 3
+        ? `Hạng ${rank} toàn ${season.label}: Hình nền, Ảnh bìa & Khung Namecard "${season.title}" (vĩnh viễn)`
+        : (rank <= 10
+          ? `Top 10 (${rank}) toàn ${season.label}: Hình nền & Ảnh bìa "${season.title}" (vĩnh viễn)`
+          : `Top 20 (${rank}) toàn ${season.label}: Hình nền Phòng tự học "${season.title}" (vĩnh viễn)`);
+
+      createNotification(
+        uid,
+        "activity",
+        "arena",
+        `Tổng kết ${season.label} · Chúc mừng bạn đạt ${rank <= 3 ? `Hạng ${rank}` : (rank <= 10 ? "Top 10" : "Top 20")}!`,
+        `${tierDesc}.`,
+        "#account",
+        null
+      );
+      notifiedUsers.add(uid);
+      rankedCount++;
+    }
+
+    for (const p of participantRows) {
+      const uid = p.userId;
+      grantLimitedDecorWithExpiry(uid, "cover", season.coverId, exp30Iso);
+      grantStudyBackgroundWithExpiry(uid, season.studyBgKey, exp30Iso);
+      if (!notifiedUsers.has(uid)) {
+        createNotification(
+          uid,
+          "activity",
+          "arena",
+          `Phần thưởng tham gia ${season.label}`,
+          `Bạn đã hoàn thành từ 2 lượt thi trong ${season.label} và nhận Ảnh bìa + Hình nền Phòng tự học "${season.title}" (30 ngày).`,
+          "#account",
+          null
+        );
+        notifiedUsers.add(uid);
+      }
+      participantsCount++;
+    }
+
+    db.prepare("INSERT OR IGNORE INTO kv_store (key, value) VALUES (?, ?)").run(doneKey, new Date(nowMs).toISOString());
+    db.exec("COMMIT;");
+  } catch (err) {
+    try { db.exec("ROLLBACK;"); } catch { }
+    throw err;
+  }
+
+  return { ok: true, seasonCode: season.code, rankedCount, participantsCount };
+}
+
+function checkAndAwardSeasonRewards() {
+  try {
+    const realNowMs = Date.now();
+    for (const season of ARENA_SEASONS) {
+      if (realNowMs >= season.endExclusiveMs) {
+        const res = awardArenaSeasonRewards(season, realNowMs, false);
+        if (res.ok && !res.alreadyAwarded) {
+          console.log(`[Season Award] ${season.code}: ranked=${res.rankedCount}, participants=${res.participantsCount}`);
+        }
+      }
+    }
+  } catch (e) {
+    console.error("Cronjob thưởng mùa giải lỗi:", e);
+  }
+}
+
 checkAndAwardWeeklyRewards();
 checkAndAwardSundayCompetitionRewards();
+checkAndAwardSeasonRewards();
+checkAndSendScheduledNotifications();
 cleanupExpiredTrash();
 sweepExpiredUserDecorations();
 setInterval(checkAndAwardWeeklyRewards, 60000);
 setInterval(checkAndAwardSundayCompetitionRewards, 60000);
+setInterval(checkAndAwardSeasonRewards, 60000);
+setInterval(checkAndSendScheduledNotifications, 60000);
 setInterval(sweepExpiredUserDecorations, 60000);
 setInterval(cleanupExpiredTrash, 60 * 60 * 1000);
 

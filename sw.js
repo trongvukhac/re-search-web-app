@@ -1,5 +1,5 @@
-/* RE:SEARCH — Progressive Web App Service Worker (v1.0.1) */
-const CACHE_NAME = "research-pwa-v2";
+/* RE:SEARCH — Progressive Web App Service Worker (v5.0.2) */
+const CACHE_NAME = "research-pwa-v5.0.2";
 
 const PRECACHE_ASSETS = [
   "/",
@@ -44,8 +44,8 @@ self.addEventListener("fetch", (event) => {
   const req = event.request;
   const url = new URL(req.url);
 
-  // 1. Tuyệt đối không cache API requests và phương thức không phải GET
-  if (req.method !== "GET" || url.pathname.startsWith("/api/")) {
+  // 1. Tuyệt đối không cache API requests, localhost dev, và phương thức không phải GET
+  if (req.method !== "GET" || url.pathname.startsWith("/api/") || url.hostname === "localhost" || url.hostname === "127.0.0.1") {
     return;
   }
 
